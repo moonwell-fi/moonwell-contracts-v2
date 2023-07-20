@@ -47,26 +47,4 @@ contract LiveSystemIntegrationTest is Test {
         assertEq(token.balanceOf(address(mToken)) - startingTokenBalance, mintAmount); /// ensure underlying balance is sent to mToken
     }
 
-    // function testBorrowMTokenSucceeds() public {
-    //     testMintMTokenSucceeds();
-
-    //     address sender = address(this);
-    //     uint256 borrowAmount = 100e6;
-
-    //     IERC20 token = IERC20(addresses.getAddress("WETH"));
-    //     MErc20Delegator mToken = MErc20Delegator(payable(addresses.getAddress("MOONWELL_USDC")));
-    //     Comptroller comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
-    //     uint256 startingTokenBalance = token.balanceOf(sender);
-
-    //     address[] memory mTokens = new address[](1);
-    //     mTokens[0] = address(mToken);
-
-    //     comptroller.enterMarkets(mTokens);
-    //     assertTrue(comptroller.checkMembership(sender, MToken(address(mToken)))); /// ensure sender and mToken is in market
-
-    //     MErc20Delegator mEth = MErc20Delegator(payable(addresses.getAddress("MOONWELL_ETH")));
-        
-    //     assertEq(mEth.borrow(borrowAmount), 1); /// ensure successful borrow
-    //     assertEq(token.balanceOf(sender), borrowAmount); /// ensure balance is correct
-    // }
 }
