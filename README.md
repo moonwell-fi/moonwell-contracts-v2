@@ -75,6 +75,15 @@ Automated findings output for the audit can be found [here](add link to report) 
 
 *Please provide some context about the code being audited, and identify any areas of specific concern in reviewing the code. (This is a good place to link to your docs, if you have them.)*
 
+The Moonwell Protocol is a fork of Benqi, which is a fork of Compound v2 with features like borrow caps and multi-token emissions.
+
+Specific areas of concern include:
+* [ChainlinkCompositeOracle](src/core/Oracles/ChainlinkCompositeOracle.sol) which aggregates mulitple exchange rates together.
+* [MultiRewardDistributor](src/core/MultiRewardDistributor/MultiRewardDistributor.sol) allow distributing and rewarding users with multiple tokens per MToken. Parts of this system that require special attention are what happens when hooks fail in the Comptroller. Are there states this system could be in that would allow an attacker to pull more than their pro rata share of rewards out? This contract is based on the Flywheel logic in the [Comptroller](https://github.com/compound-finance/compound-protocol/blob/master/contracts/ComptrollerG7.sol#L1102-L1187).
+* [TemporalGovernor](src/core/Governance/TemporalGovernor.sol) which is the cross chain governance contract. Specific areas of concern include delays, the pause guardian, putting the contract into a state where it cannot be updated.
+
+For more in depth review of the MToken <-> Comptroller <-> Multi Reward Distributor, see the Cross Contract Interaction [Documentation](CROSSCONTRACTINTERACTION.md).
+
 # Scope
 
 *List all files in scope in the table below (along with hyperlinks) -- and feel free to add notes here to emphasize areas of focus.*
@@ -88,7 +97,7 @@ Automated findings output for the audit can be found [here](add link to report) 
 | [src/core/Unitroller.sol](src/core/Unitroller.sol) | 64 | This contract delegate calls most actions to the Comptroller and acts as the storage proxy | [`@openzeppelin/*`](https://openzeppelin.com/contracts/) |
 | [src/core/Governance/TemporalGovernor.sol](src/core/Governance/TemporalGovernor.sol) | 248 | This contract governs the Base deployment of Moonwell through actions submitted through Wormhole | [`@openzeppelin/*`](https://openzeppelin.com/contracts/) |
 | [src/core/MToken.sol](src/core/MToken.sol) | 693 | Abstract base for MTokens | none |
-| [src/core/MErc20.sol](src/core/MErc20.sol) | 693 | Moonwell MERC20 Token Contract | none |
+| [src/core/MErc20.sol](src/core/MErc20.sol) | 112 | Moonwell MERC20 Token Contract | none |
 | [src/core/MErc20Delegator.sol](src/core/MErc20Delegator.sol) | 212 | Moonwell Delegator Contract | none |
 | [src/core/MErc20Delegate.sol](src/core/MErc20Delegate.sol) | 18 | Moonwell Delegate Contract, delegate-called by delegator | none |
 | [src/core/router/WETHRouter.sol](src/core/router/WETHRouter.sol) | 40 | Mint and redeem MTokens for raw ETH |  [`@openzeppelin/*`](https://openzeppelin.com/contracts/) |
@@ -97,26 +106,14 @@ Automated findings output for the audit can be found [here](add link to report) 
 | [src/core/IRModels/JumpRateModel.sol](src/core/IRModels/JumpRateModel.sol) | 41 | Jump rate interest rate model, rates spike after kink  | none |
 | [src/core/Oracles/ChainlinkCompositeOracle.sol](src/core/Oracles/ChainlinkCompositeOracle.sol) | 138 | Chainlink composite oracle, combines 2 or 3 chainlink oracle feeds into a single composite price  | none |
 | [src/core/Oracles/ChainlinkOracle.sol](src/core/Oracles/ChainlinkOracle.sol) | 109 | Stores all chainlink oracle addresses for each respective underlying asset  | none |
-
-/// Contracts in scope
-- MRD ⭐️
-- Comptroller ⭐️
-- Unitroller ⭐️
-- MToken ⭐️
-- MERC20Delegator ⭐️
-- MERC20Delegate⭐️
-- JRM ⭐️
-- IRM ⭐️
-- ChainlinkCompositeOracle⭐️
-- ChainlinkOracle⭐️
-- Temporal Governance⭐️
-- WETH Router⭐️
+| [test/proposals/mips/mip00.sol](test/proposals/mips/mip00.sol) | 586 | Handles deployment and parameterization of initial system  | [`@openzeppelin/*`](https://openzeppelin.com/contracts/) |
 
 ## Out of scope
 
 * All files in the [deprecated](src/core/Governance/deprecated/) folder are out of scope
 * All files in the [mock](test/mock/) folder are out of scope
-* All dependencies
+* [Safemath](src/core/SafeMath.sol)
+* All openzeppelin dependencies
 
 # Additional Context
 
