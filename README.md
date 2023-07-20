@@ -64,6 +64,9 @@ For more in depth review of the MToken <-> Comptroller <-> Multi Reward Distribu
 * [Safemath](src/core/SafeMath.sol)
 * All openzeppelin dependencies
 
+# Video Walkthroughs
+Videos of the codebase walkthrough can be found in the [videos](videos/) folder.
+
 # Additional Context
 
 The MultiRewardDistributor contains logic that is modified and heavily inspired by Compound Flywheel. Verifying the user rewards are properly calculated and this system cannot brick the rest of the instance is of utmost importance.
@@ -82,11 +85,7 @@ The MultiRewardDistributor contains logic that is modified and heavily inspired 
 - Check all that apply (e.g. timelock, NFT, AMM, ERC20, rollups, etc.): Multi-Chain, ERC-20 Token, Timelock function
 - Is there a need to understand a separate part of the codebase / get context in order to audit this part of the protocol?:   True
 - Please describe required context:   Understand governance system on moonbeam to figure out how temporal governance works
-<<<<<<< HEAD
 - Does it use an oracle?:  Yes, chainlink
-=======
-- Does it use an oracle?:  Yes
->>>>>>> acdb96dc818d06ecfbc91c6a61dd8f454dcc96d7
 - Describe any novel or unique curve logic or mathematical models your code uses: n/a
 - Is this either a fork of or an alternate implementation of another project?:   True; Compound with MRD
 - Does it use a side-chain?: False
