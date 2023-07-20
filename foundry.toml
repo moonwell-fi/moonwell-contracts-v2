@@ -1,0 +1,26 @@
+[profile.default]
+src = 'src'
+out = 'artifacts/foundry'
+libs = ['node_modules', 'lib']
+test = 'test'
+cache_path  = 'artifacts/forge-cache'
+fs_permissions = [{ access = "read", path = "./"}]
+
+[rpc_endpoints]
+localhost = "http://127.0.0.1:8545"
+moonriver = "https://rpc.api.moonriver.moonbeam.network"
+moonbeam = "https://rpc.api.moonbeam.network"
+moonbase = "https://rpc.api.moonbase.moonbeam.network"
+ethereum = "https://rpc.ankr.com/eth"
+optimism = "https://endpoints.omniatech.io/v1/op/mainnet/public"
+avalanche = "https://rpc.ankr.com/avalanche"
+base = "https://developer-access-mainnet.base.org"
+baseGoerli = "https://goerli.base.org"
+
+[etherscan]
+moonriver = { key = "${MOONRIVER_API_KEY}", url= "https://api-moonriver.moonscan.io/api" }
+moonbeam = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbeam.moonscan.io/api" }
+moonbase = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbase.moonscan.io/api" }
+goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/api" }
+sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
+baseGoerli = { key = "PLACEHOLDER_STRING", url= "https://api-goerli.basescan.org/api" }
