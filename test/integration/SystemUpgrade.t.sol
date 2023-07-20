@@ -6,13 +6,35 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 
 import "@forge-std/Test.sol";
 
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+// import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
-contract SystemUpgradeUnitTest is PostProposalCheck {
+import {Addresses} from "@test/proposals/Addresses.sol";
+import {TestProposals} from "@test/proposals/TestProposals.sol";
+
+contract SystemUpgradeUnitTest is Test {
     bytes32 public constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
     bytes32 public constant _ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+    Addresses addresses;
+
+    function _setup() private {
+                // Run all pending proposals before doing e2e tests
+                TestProposals proposals = new TestProposals();
+                proposals.setUp();
+                proposals.setDebug(false);
+                proposals.testProposals(
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true
+                );
+                addresses = proposals.addresses();
+    }
 
     function testSystemUpgradeAsTemporalGovernorSucceeds() public {
+        _setup();
         address newProxyImplementation = address(this);
 
         ITransparentUpgradeableProxy proxy = ITransparentUpgradeableProxy(
@@ -40,6 +62,7 @@ contract SystemUpgradeUnitTest is PostProposalCheck {
     }
 
     function testSystemProxyAdminChangeAsTemporalGovernorSucceeds() public {
+        _setup();
         ProxyAdmin newProxyAdmin = new ProxyAdmin();
 
         ITransparentUpgradeableProxy proxy = ITransparentUpgradeableProxy(

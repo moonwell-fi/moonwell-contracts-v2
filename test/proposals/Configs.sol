@@ -24,7 +24,6 @@ contract Configs {
         string addressesString; /// string used to set address in Addresses.sol
         string symbol; /// symbol of the mToken
         string name; /// name of the mToken
-        uint8 decimals; /// decimals of the mToken
         JumpRateModelConfiguration jrm; /// jump rate model configuration information
     }
 
@@ -52,8 +51,8 @@ contract Configs {
     uint256 public constant _baseGoerliChainId = 84531;
     uint256 public constant localChainId = 31337;
 
-    /// @notice initial mETH mint amount
-    uint256 public constant initialMintAmount = 1;
+    /// @notice initial mToken mint amount
+    uint256 public constant initialMintAmount = 1 ether;
 
     function localInit(Addresses addresses) public {
         if (block.chainid == localChainId) {
@@ -155,7 +154,6 @@ contract Configs {
                     name: "Moonwell USDC",
                     symbol: "mUSDC",
                     addressesString: "MOONWELL_USDC",
-                    decimals: 18,
                     jrm: jrmConfig
                 });
 
@@ -189,7 +187,6 @@ contract Configs {
                     addressesString: "MOONWELL_ETH",
                     name: "Moonwell ETH",
                     symbol: "mETH",
-                    decimals: 18,
                     jrm: jrmConfig
                 });
 
@@ -226,7 +223,6 @@ contract Configs {
                     name: "Moonwell USDC",
                     symbol: "mUSDC",
                     addressesString: "MOONWELL_USDC",
-                    decimals: 18,
                     jrm: jrmConfig
                 });
 
@@ -255,7 +251,6 @@ contract Configs {
                     addressesString: "MOONWELL_ETH",
                     name: "Moonwell ETH",
                     symbol: "mETH",
-                    decimals: 18,
                     jrm: jrmConfig
                 });
 
@@ -284,7 +279,6 @@ contract Configs {
                     addressesString: "MOONWELL_BTC",
                     name: "Moonwell BTC",
                     symbol: "mBTC",
-                    decimals: 18,
                     jrm: jrmConfig
                 });
 
@@ -337,7 +331,6 @@ contract Configs {
                     tokenAddress: cTokenConfigurations[chainId][i].tokenAddress,
                     symbol: cTokenConfigurations[chainId][i].symbol,
                     name: cTokenConfigurations[chainId][i].name,
-                    decimals: cTokenConfigurations[chainId][i].decimals,
                     jrm: cTokenConfigurations[chainId][i].jrm
                 });
             }
