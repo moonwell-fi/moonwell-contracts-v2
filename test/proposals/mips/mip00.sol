@@ -87,7 +87,6 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             addresses.getAddress("MOONBEAM_TIMELOCK")
         );
 
-        deployAndMint(addresses);
         localInit(addresses);
 
         {
@@ -112,6 +111,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             addresses.addAddress("TEMPORAL_GOVERNOR", address(governor));
         }
 
+        deployAndMint(addresses);
         init(addresses);
 
         /// ------- Reward Distributor -------
