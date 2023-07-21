@@ -14,7 +14,7 @@ import {Comptroller} from "@protocol/core/Comptroller.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/core/MErc20Delegator.sol";
 
-contract LiveSystemIntegrationTest is Test {
+contract LiveSystemTest is Test {
     TestProposals proposals;
     Addresses addresses;
 

@@ -66,6 +66,7 @@ contract Configs {
 
     function deployAndMint(Addresses addresses) public {
         if (block.chainid == _baseGoerliChainId) {
+            console.log("\n----- deploy and mint on base goerli -----\n");
             {
                 FaucetTokenWithPermit token = new FaucetTokenWithPermit(
                     1e18,
@@ -97,6 +98,10 @@ contract Configs {
                     "Wrapped Bitcoin",
                     18, /// 6 decimals
                     "WBTC"
+                );
+                token.allocateTo(
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    initialMintAmount
                 );
 
                 addresses.addAddress("WBTC", address(token));
@@ -219,7 +224,7 @@ contract Configs {
                     supplyCap: 100e18,
                     borrowCap: 100e18,
                     priceFeed: addresses.getAddress("USDC_ORACLE"),
-                    tokenAddress: address(token),
+                    tokenAddress: token,
                     name: "Moonwell USDC",
                     symbol: "mUSDC",
                     addressesString: "MOONWELL_USDC",
@@ -247,7 +252,7 @@ contract Configs {
                     supplyCap: 100e18,
                     borrowCap: 100e18,
                     priceFeed: addresses.getAddress("ETH_ORACLE"),
-                    tokenAddress: address(token),
+                    tokenAddress: token,
                     addressesString: "MOONWELL_ETH",
                     name: "Moonwell ETH",
                     symbol: "mETH",
@@ -275,7 +280,7 @@ contract Configs {
                     supplyCap: 100e18,
                     borrowCap: 100e18,
                     priceFeed: addresses.getAddress("BTC_ORACLE"),
-                    tokenAddress: address(token),
+                    tokenAddress: token,
                     addressesString: "MOONWELL_BTC",
                     name: "Moonwell BTC",
                     symbol: "mBTC",
