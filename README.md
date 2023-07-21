@@ -19,6 +19,9 @@
 Automated findings output for the audit can be found [here](add link to report) within 24 hours of audit opening.
 
 *Note for C4 wardens: Anything included in the automated findings output is considered a publicly known issue and is ineligible for awards.*
+* ChainlinkCompositeOracle `getPriceAndDecimals` uses roundId, roundId is deprecated, so this is a known issue.
+* ChainlinkOracle `getChainlinkPrice` checks that roundId is 0, roundId is deprecated, and this is a known issue.
+* Temporal Governor `unSetTrustedSenders` does not check to ensure that there is at least 1 trusted sender after removing trusted senders. Because of this, a governance proposal could brick the TemporalGovernor and not allow any future governance proposals to be sent through the Temporal Governor again.
 
 # Overview
 
