@@ -1,6 +1,6 @@
 # Moonwell audit details
 - Total Prize Pool: $100,000 USDC 
-  - HM awards: $69,712.50 USDC 
+  - HM awards: $71,825 USDC 
   - Analysis awards: $4,225 USDC 
   - QA awards: $2,112.50 USDC 
   - Bot Race awards: $6,337.50 USDC 
@@ -13,7 +13,10 @@
 - [Read our guidelines for more details](https://docs.code4rena.com/roles/wardens)
 - Starts July 24, 2023 20:00 UTC 
 - Ends July 31, 2023 20:00 UTC
-  
+
+**Note for C4 wardens:** For this contest, gas optimizations are out of scope. The Moonwell team will not be awarding prize funds for gas-specific submissions.
+
+
 ## Automated Findings / Publicly Known Issues
 
 Automated findings output for the audit can be found [here](add link to report) within 24 hours of audit opening.
