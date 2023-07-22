@@ -28,7 +28,7 @@ Automated findings output for the audit can be found [here](add link to report) 
 
 ### Known Compound v2 Issues
 
-The following issues are known issues with the Compoundv2 codebase, and as such, are considered publicly known issues and ineligible for wards.
+The following issues are known issues with the Compoundv2 codebase, and as such, are considered publicly known issues and ineligible for awards.
 
 * Borrowing rewards for markets where a reward speed is not set do not accrue without a user calling `claim` (or someone calling `claimBehalf`).
 * When setting reward speed = 0 and later turning it back on (setting a non-zero value) for a market, rewards will accrue as if the new rate was always on.
