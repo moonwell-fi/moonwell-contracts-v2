@@ -76,7 +76,10 @@ For more in depth review of the MToken <-> Comptroller <-> Multi Reward Distribu
 * All openzeppelin dependencies
 
 # Video Walkthroughs
-Videos of the codebase walkthrough can be found in the [videos](https://github.com/code-423n4/2023-07-moonwell/blob/main/videos/) folder.
+Videos of the codebase walkthrough can be found at the following links:
+* Walkthrough of major changes to the Comptroller: [Comptroller Changes](https://www.youtube.com/watch?v=6J-srDiCptA)
+* Walkthrough of other changes to the Compound v2 codebase: [Other Changes](https://www.youtube.com/watch?v=L8kkMvtjQWE)
+* Walkthrough of the Multi-Reward Distributor: [Multi-Reward Distributor](https://www.youtube.com/watch?v=xAFHItFkXMA)
 
 # Additional Context
 
