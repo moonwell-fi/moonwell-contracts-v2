@@ -34,10 +34,11 @@ The following issues are known issues with the Compoundv2 codebase, and as such,
 * When setting reward speed = 0 and later turning it back on (setting a non-zero value) for a market, rewards will accrue as if the new rate was always on.
 * Assets which are supplied which a user hasn't called `enterMarkets` for can still be seized. This is working as designed.
 * New markets must be added with no collateral factor, and some small amount of the collateral token supply must be burned in order to avoid market manipulation. This is a known issue.
+* Comptroller `_rescueFunds` function does not check the return value of transfer. This is expected.
+* MToken `sweepToken` does not check the return value of transfer. This is expected.
+
 
 # Overview
-
-
 The Moonwell Protocol is a fork of Benqi, which is a fork of Compound v2 with features like borrow caps and multi-token emissions.
 
 Specific areas of concern include:
