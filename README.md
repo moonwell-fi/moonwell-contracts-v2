@@ -47,6 +47,8 @@ Specific areas of concern include:
 
 For more in depth review of the MToken <-> Comptroller <-> Multi Reward Distributor, see the Cross Contract Interaction [Documentation](https://github.com/code-423n4/2023-07-moonwell/blob/main/CROSSCONTRACTINTERACTION.md).
 
+More docs can be found on [docs.moonwell.fi](https://docs.moonwell.fi/), but bear in mind that those are for V1 and don't include the changes introduced in V2.
+
 # Scope
 
 
