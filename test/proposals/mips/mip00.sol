@@ -67,14 +67,13 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
     struct CTokenAddresses {
         address mTokenImpl;
         address irModel;
-        address temporalGov;
         address unitroller;
     }
 
     /// @notice the deployer should have both USDC, WETH and any other assets that will be started as
     /// listed to be able to deploy on base. This allows the deployer to be able to initialize the
     /// markets with a balance to avoid exploits
-    function deploy(Addresses addresses, address) public {
+    function deploy(Addresses addresses, address deployer) public {
         /// ------- TemporalGovernor -------
 
         console.log(
@@ -203,7 +202,6 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                             )
                         )
                     ),
-                    temporalGov: addresses.getAddress("TEMPORAL_GOVERNOR"),
                     unitroller: addresses.getAddress("UNITROLLER")
                 });
 
@@ -224,7 +222,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                     config.name,
                     config.symbol,
                     mTokenDecimals,
-                    payable(addr.temporalGov),
+                    payable(deployer),
                     addr.mTokenImpl,
                     ""
                 );
@@ -256,20 +254,20 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             addresses.getAddress("CHAINLINK_ORACLE")
         );
 
-        /// set proxy admin as the owner of the temporal governor
+        /// set temporal governor as owner of the proxy admin
         proxyAdmin.transferOwnership(governor);
 
+        /// set chainlink oracle on the comptroller implementation contract
         Comptroller(address(unitroller))._setPriceOracle(
             PriceOracle(address(oracle))
         );
-
-        /// set chainlink oracle on the comptroller implementation contract
 
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         MToken[] memory mTokens = new MToken[](cTokenConfigs.length);
         uint256[] memory supplyCaps = new uint256[](cTokenConfigs.length);
         uint256[] memory borrowCaps = new uint256[](cTokenConfigs.length);
+
         //// set mint paused for all of the deployed MTokens
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
@@ -282,7 +280,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                     config.priceFeed
                 );
 
-                /// list both mUSDC and mETH in the comptroller
+                /// list mToken in the comptroller
                 Comptroller(address(unitroller))._supportMarket(
                     MToken(addresses.getAddress(config.addressesString))
                 );
@@ -296,6 +294,15 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 /// get the mToken
                 mTokens[i] = MToken(
                     addresses.getAddress(config.addressesString)
+                );
+
+                mTokens[i]._setReserveFactor(config.reserveFactor);
+                mTokens[i]._setProtocolSeizeShare(config.seizeShare);
+                mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+
+                Comptroller(address(unitroller))._setCollateralFactor(
+                    mTokens[i],
+                    config.collateralFactor
                 );
             }
         }
@@ -338,6 +345,13 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                     config.addressesString
                 );
 
+                /// temporal governor accepts admin of mToken
+                _pushCrossChainAction(
+                    cTokenAddress,
+                    abi.encodeWithSignature("_acceptAdmin()"),
+                    "Temporal governor accepts admin on mToken"
+                );
+
                 _pushCrossChainAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
@@ -366,36 +380,13 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                     "Initialize token market to prevent exploit"
                 );
 
-                /// _setCollateralFactor
                 _pushCrossChainAction(
-                    unitrollerAddress,
-                    abi.encodeWithSignature(
-                        "_setCollateralFactor(address,uint256)",
-                        cTokenAddress,
-                        config.collateralFactor
-                    ),
-                    "Set CF on CToken"
+                    cTokenAddress,
+                    abi.encodeWithSignature("transfer(address,uint256)", address(0), initialMintAmount),
+                    "Send initial amount address 0 to prevent a state where market has 0 mToken"
                 );
             }
         }
-
-        _pushCrossChainAction(
-            unitrollerAddress,
-            abi.encodeWithSignature(
-                "_setLiquidationIncentive(uint256)",
-                liquidationIncentive
-            ),
-            "Set CF on CToken"
-        );
-
-        _pushCrossChainAction(
-            unitrollerAddress,
-            abi.encodeWithSignature(
-                "_setCloseFactor(uint256)",
-                closeFactor
-            ),
-            "Set Close Factor on CToken"
-        );
 
         _pushCrossChainAction(
             addresses.getAddress("UNITROLLER"),
@@ -407,21 +398,18 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
         );
 
         _pushCrossChainAction(
-            addresses.getAddress("UNITROLLER"),
+            unitrollerAddress,
             abi.encodeWithSignature(
-                "_setSupplyCapGuardian(address)",
-                addresses.getAddress("GUARDIAN")
+                "_setLiquidationIncentive(uint256)",
+                liquidationIncentive
             ),
-            "Set supply cap guardian"
+            "Set Liquidation Incentive on Unitroller"
         );
 
         _pushCrossChainAction(
-            addresses.getAddress("UNITROLLER"),
-            abi.encodeWithSignature(
-                "_setBorrowCapGuardian(address)",
-                addresses.getAddress("GUARDIAN")
-            ),
-            "Set borrow cap guardian"
+            unitrollerAddress,
+            abi.encodeWithSignature("_setCloseFactor(uint256)", closeFactor),
+            "Set Close Factor on Unitroller"
         );
 
         _pushCrossChainAction(
@@ -507,11 +495,11 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             );
             assertEq(
                 Comptroller(address(unitroller)).borrowCapGuardian(),
-                addresses.getAddress("GUARDIAN")
+                address(0)
             );
             assertEq(
                 Comptroller(address(unitroller)).supplyCapGuardian(),
-                addresses.getAddress("GUARDIAN")
+                address(0)
             );
             assertEq(
                 address(Comptroller(address(unitroller)).rewardDistributor()),
@@ -697,7 +685,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             );
 
             assertEq(comptroller.closeFactorMantissa(), closeFactor);
-            assertEq(comptroller.liquidationIncentiveMantissa(), liquidationIncentive);
+            assertEq(
+                comptroller.liquidationIncentiveMantissa(),
+                liquidationIncentive
+            );
 
             Configs.CTokenConfiguration[]
                 memory cTokenConfigs = getCTokenConfigurations(block.chainid);
@@ -713,7 +704,12 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                         comptroller.mintGuardianPaused(
                             addresses.getAddress(config.addressesString)
                         )
-                    );
+                    ); /// minting allowed by guardian
+                    assertFalse(
+                        comptroller.borrowGuardianPaused(
+                            addresses.getAddress(config.addressesString)
+                        )
+                    ); /// borrowing allowed by guardian
                     assertEq(
                         comptroller.borrowCaps(
                             addresses.getAddress(config.addressesString)
@@ -732,6 +728,8 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                         ),
                         config.supplyCap
                     );
+
+                    /// todo add additional checks by calling mToken, look for reserveFactor and protocol seize share
 
                     /// assert cToken irModel is correct
 
