@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.8.0;
+pragma solidity 0.8.19;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -25,7 +24,6 @@ import {ITemporalGovernor} from "@protocol/core/Governance/ITemporalGovernor.sol
 /// if 3. is untrue, then this contract will be paused until moonbeam governance is restored, if gov control
 /// cannot be restored, then this governance will be compromised.
 contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
-    using SafeCast for *;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     /// ----------- IMMUTABLES -----------
@@ -281,7 +279,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
             );
 
             guardianPauseAllowed = false;
-            lastPauseTime = block.timestamp.toUint248();
+            lastPauseTime = uint248(block.timestamp);
             _pause();
         }
 
@@ -336,7 +334,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
         /// Effect
 
         // Add the VAA to queued messages so that it can't be replayed
-        queuedTransactions[vm.hash].queueTime = block.timestamp.toUint248();
+        queuedTransactions[vm.hash].queueTime = uint248(block.timestamp);
 
         emit QueuedTransaction(intendedRecipient, targets, values, calldatas);
     }
@@ -363,7 +361,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
             );
         } else if (queuedTransactions[vm.hash].queueTime == 0) {
             /// if queue time is 0 due to fast track execution, set it to current block timestamp
-            queuedTransactions[vm.hash].queueTime = block.timestamp.toUint248();
+            queuedTransactions[vm.hash].queueTime = uint248(block.timestamp);
         }
 
         // Ensure the emitterAddress of this VAA is a trusted address

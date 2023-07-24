@@ -1,4 +1,4 @@
-pragma solidity ^0.8.0;
+pragma solidity 0.8.19;
 
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import "@forge-std/Test.sol";

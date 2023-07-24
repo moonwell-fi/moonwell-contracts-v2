@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v4.6.0) (governance/TimelockController.sol)
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.19;
 
 /**
  * @dev Contract module which acts as a timelocked controller. When set as the
