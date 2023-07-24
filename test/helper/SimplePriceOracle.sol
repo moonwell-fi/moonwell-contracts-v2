@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 import "@protocol/core/MErc20.sol";
 import "@protocol/core/Oracles/PriceOracle.sol";
