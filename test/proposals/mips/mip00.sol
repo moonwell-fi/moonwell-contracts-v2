@@ -140,7 +140,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             bytes memory initData = abi.encodeWithSignature(
                 "initialize(address,address)",
                 address(unitroller),
-                addresses.getAddress("GUARDIAN") /// TODO figure out what the pause guardian is on Base, then replace it
+                addresses.getAddress("GUARDIAN") /// TODO figure out what the pause guardian is on Base, then replace it in Addresses.sol
             );
 
             TransparentUpgradeableProxy mrdProxy = new TransparentUpgradeableProxy(
@@ -205,7 +205,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                     unitroller: addresses.getAddress("UNITROLLER")
                 });
 
-                /// TODO calculate initial exchange rate
+                /// calculate initial exchange rate
                 /// BigNumber.from("10").pow(token.decimals + 8).mul("2");
                 /// (10 ** (18 + 8)) * 2 // 18 decimals example
                 ///    = 2e26
