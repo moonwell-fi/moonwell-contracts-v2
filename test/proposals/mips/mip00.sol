@@ -43,7 +43,7 @@ import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainPropos
 contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
     string public constant name = "MIP00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
-    uint256 public constant closeFactor = 5e17; /// close factor is 50%, i.e. seize share
+    uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
 
     /// @notice proposal delay time
@@ -492,6 +492,14 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
         TemporalGovernor governor = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
+
+        {
+            ChainlinkOracle oracle = ChainlinkOracle(
+                addresses.getAddress("CHAINLINK_ORACLE")
+            );
+    
+            assertEq(oracle.admin(), address(governor));
+        }
 
         /// assert comptroller and unitroller are wired together properly
         {
