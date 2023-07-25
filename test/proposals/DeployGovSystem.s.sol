@@ -7,7 +7,7 @@ import {Script} from "@forge-std/Script.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {mip00 as mip} from "@test/proposals/mips/mip00.sol";
 
-import {MoonwellGovernorArtemis} from "@protocol/core/Governance/deprecated/MoonwellArtemisGovernor.sol";
+import {MoonwellArtemisGovernor} from "@protocol/core/Governance/deprecated/MoonwellArtemisGovernor.sol";
 import {Timelock} from "@protocol/core/Governance/deprecated/Timelock.sol";
 import {Well} from "@protocol/core/Governance/deprecated/Well.sol";
 
@@ -39,7 +39,7 @@ contract DeployGovSystem is Script, mip {
         Timelock timelock = new Timelock(deployerAddress, 1 minutes);
         // DISTRIBUTOR = new address(0xe7E6cdb90797f053229c0A81C3De9dC8110188b5); // Moonbase Distributor
         // SAFETY_MODULE = new address(0x11fD9c97B0B8F50f6EB0e68342e3de8F76dd45fc); // Moonbase SM
-        MoonwellGovernorArtemis governor = new MoonwellGovernorArtemis(
+        MoonwellArtemisGovernor governor = new MoonwellArtemisGovernor(
             address(timelock), // timelock
             address(well), // gov token (for voting power)
             0xe7E6cdb90797f053229c0A81C3De9dC8110188b5, // Moonbase distributor (for voting power)

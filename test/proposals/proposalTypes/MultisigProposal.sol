@@ -48,12 +48,9 @@ abstract contract MultisigProposal is Proposal {
                 value: actions[i].value
             }(actions[i].arguments);
 
-            if (success == false) {
-                assembly {
-                    revert(add(result, 32), mload(result))
-                }
-            }
+            require(success, string(result));
         }
+
         vm.stopPrank();
     }
 }

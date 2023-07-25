@@ -7,6 +7,7 @@ import {ChainIds} from "@test/utils/ChainIds.sol";
 contract Addresses is Test, ChainIds {
     /// mapping for a network such as arbitrum
     mapping(string => mapping(uint256 => address)) _addresses;
+    uint256 private constant localChainId = 31337;
 
     uint256 chainId;
 
@@ -18,6 +19,33 @@ contract Addresses is Test, ChainIds {
 
     constructor() {
         chainId = block.chainid;
+
+        /// ----------------- BORROW_SUPPLY_GUARDIAN -----------------
+
+        /// LOCAL
+        _addAddress(
+            "BORROW_SUPPLY_GUARDIAN",
+            localChainId,
+            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A /// Random address is borrow supply guardian
+        );
+        /// MOONBASE
+        _addAddress(
+            "BORROW_SUPPLY_GUARDIAN",
+            moonBeamChainId,
+            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A /// TODO add correct guantlet msig
+        );
+        /// BASE
+        _addAddress(
+            "BORROW_SUPPLY_GUARDIAN",
+            moonBaseChainId, /// TODO replace with guantlet multisig address
+            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A /// TODO add correct guantlet msig
+        );
+        /// GOERLI
+        _addAddress(
+            "BORROW_SUPPLY_GUARDIAN",
+            goerliChainId,
+            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A /// EOA owner
+        );
 
         //// actual moonbeam timelock deployment
         _addAddress(
