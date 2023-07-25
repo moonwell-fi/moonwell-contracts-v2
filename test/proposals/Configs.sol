@@ -71,7 +71,7 @@ contract Configs {
                 FaucetTokenWithPermit token = new FaucetTokenWithPermit(
                     1e18,
                     "USD Coin",
-                    6, /// 6 decimals
+                    6, /// USDC is 6 decimals
                     "USDC"
                 );
 
@@ -95,8 +95,8 @@ contract Configs {
             {
                 FaucetTokenWithPermit token = new FaucetTokenWithPermit(
                     1e18,
-                    "Wrapped Bitcoin",
-                    18, /// 6 decimals
+                    "Wrapped BTC",
+                    8, /// WBTC is 8 decimals
                     "WBTC"
                 );
                 token.allocateTo(
@@ -106,6 +106,36 @@ contract Configs {
 
                 addresses.addAddress("WBTC", address(token));
             }
+
+            {
+                FaucetTokenWithPermit token = new FaucetTokenWithPermit(
+                    1e18,
+                    "Coinbase Wrapped Staked ETH",
+                    18, /// cbETH is 18 decimals
+                    "cbETH"
+                );
+                token.allocateTo(
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    initialMintAmount
+                );
+
+                addresses.addAddress("cbETH", address(token));
+            }
+
+            {
+                FaucetTokenWithPermit token = new FaucetTokenWithPermit(
+                    1e18,
+                    "Wrapped liquid staked Ether 2.0",
+                    18, /// wstETH is 18 decimals
+                    "wstETH"
+                );
+                token.allocateTo(
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    initialMintAmount
+                );
+
+                addresses.addAddress("wstETH", address(token));
+            }
         }
     }
 
@@ -113,7 +143,7 @@ contract Configs {
         if (block.chainid == localChainId) {
             console.log("\n----- deploying locally -----\n");
 
-            /// cToken config for WETH, WBTC and USDC on base goerli testnet
+            /// cToken config for WETH, WBTC and USDC on local
 
             {
                 MockChainlinkOracle usdcOracle = new MockChainlinkOracle(
@@ -142,10 +172,10 @@ contract Configs {
 
                 JumpRateModelConfiguration
                     memory jrmConfig = JumpRateModelConfiguration(
-                        0.04e18,
-                        0.45e18,
-                        0.8e18,
-                        0.8e18
+                        0.04e18, // 0.04 Base
+                        0.45e18, // 0.45 Multiplier
+                        0.8e18, // 0.8 Jump Multiplier
+                        0.8e18 // 0.8 Kink
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
@@ -175,10 +205,10 @@ contract Configs {
 
                 JumpRateModelConfiguration
                     memory jrmConfig = JumpRateModelConfiguration(
-                        0.04e18,
-                        0.45e18,
-                        0.8e18,
-                        0.8e18
+                        0.04e18, // 0.04 Base
+                        0.45e18, // 0.45 Multiplier
+                        0.8e18, // 0.8 Jump Multiplier
+                        0.8e18 // 0.8 Kink
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
@@ -204,31 +234,31 @@ contract Configs {
         if (block.chainid == _baseGoerliChainId) {
             console.log("\n----- deploying on base goerli -----\n");
 
-            /// cToken config for WETH, WBTC and USDC on base goerli testnet
+            /// cToken config for WETH, WBTC, USDC, cbETH, and wstETH on base goerli testnet
             {
 
                 address token = addresses.getAddress("USDC");
 
                 JumpRateModelConfiguration
-                    memory jrmConfig = JumpRateModelConfiguration(
-                        0.04e18,
-                        0.45e18,
-                        0.8e18,
-                        0.8e18
+                    memory jrmConfigUSDC = JumpRateModelConfiguration(
+                        0.00e18, // 0 Base per Gauntlet recommendation
+                        0.15e18, // 0.15 Multiplier per Gauntlet recommendation 
+                        3e18, // 3 Jump Multiplier per Gauntlet recommendation
+                        0.6e18 // 0.6 Kink per Gauntlet recommendation
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
-                    collateralFactor: 0.9e18,
-                    reserveFactor: 0.1e18,
-                    seizeShare: 2.8e16, //2.8%,
-                    supplyCap: 100e18,
-                    borrowCap: 100e18,
+                    collateralFactor: 0.8e18, // 80% per Gauntlet recommendation
+                    reserveFactor: 0.15e18, // 15% per Gauntlet recommendation
+                    seizeShare: 0.03e18, // 3% per Gauntlet recommendation
+                    supplyCap: 40_000_000e18, // $40m per Gauntlet recommendation
+                    borrowCap: 32_000_000e18, // $32m per Gauntlet recommendation
                     priceFeed: addresses.getAddress("USDC_ORACLE"),
                     tokenAddress: token,
                     name: "Moonwell USDC",
                     symbol: "mUSDC",
                     addressesString: "MOONWELL_USDC",
-                    jrm: jrmConfig
+                    jrm: jrmConfigUSDC
                 });
 
                 cTokenConfigurations[_baseGoerliChainId].push(config);
@@ -238,25 +268,25 @@ contract Configs {
                 address token = addresses.getAddress("WETH");
 
                 JumpRateModelConfiguration
-                    memory jrmConfig = JumpRateModelConfiguration(
-                        0.04e18,
-                        0.45e18,
-                        0.8e18,
-                        0.8e18
+                    memory jrmConfigWETH = JumpRateModelConfiguration(
+                        0.02e18, // 0.02 Base per Gauntlet recommendation
+                        0.15e18, // 0.15 Multiplier per Gauntlet recommendation
+                        3e18, // 3 Jump Multiplier per Gauntlet recommendation
+                        0.6e18 // 0.6 Kink per Gauntlet recommendation
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
-                    collateralFactor: 0.6e18,
-                    reserveFactor: 0.1e18,
-                    seizeShare: 2.8e16, //2.8%,
-                    supplyCap: 100e18,
-                    borrowCap: 100e18,
+                    collateralFactor: 0.75e18, // 75% per Gauntlet recommendation
+                    reserveFactor: 0.25e18, // 25% per Gauntlet recommendation
+                    seizeShare: 0.03e18, // 3% per Gauntlet recommendation
+                    supplyCap: 10_500e18, // 10,500 WETH per Gauntlet recommendation
+                    borrowCap: 6_300e18, // 6,300 WETH per Gauntlet recommendation
                     priceFeed: addresses.getAddress("ETH_ORACLE"),
                     tokenAddress: token,
-                    addressesString: "MOONWELL_ETH",
-                    name: "Moonwell ETH",
-                    symbol: "mETH",
-                    jrm: jrmConfig
+                    addressesString: "MOONWELL_WETH",
+                    name: "Moonwell WETH",
+                    symbol: "mWETH",
+                    jrm: jrmConfigWETH
                 });
 
                 cTokenConfigurations[_baseGoerliChainId].push(config);
@@ -266,25 +296,81 @@ contract Configs {
                 address token = addresses.getAddress("WBTC");
 
                 JumpRateModelConfiguration
-                    memory jrmConfig = JumpRateModelConfiguration(
-                        0.04e18,
-                        0.45e18,
-                        0.8e18,
-                        0.8e18
+                    memory jrmConfigWBTC = JumpRateModelConfiguration(
+                        0.02e18, // 0.02 Base per Gauntlet recommendation
+                        0.15e18, // 0.15 Multiplier per Gauntlet recommendation
+                        3e18, // 3 Jump Multiplier per Gauntlet recommendation
+                        0.6e18 // 0.6 Kink per Gauntlet recommendation
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
-                    collateralFactor: 0.4e18,
-                    reserveFactor: 0.1e18,
-                    seizeShare: 2.8e16, //2.8%,
-                    supplyCap: 100e18,
-                    borrowCap: 100e18,
-                    priceFeed: addresses.getAddress("BTC_ORACLE"),
+                    collateralFactor: 0.7e18, // 70% per Gauntlet recommendation
+                    reserveFactor: 0.25e18, // 25% per Gauntlet recommendation
+                    seizeShare: 0.03e18, // 3% per Gauntlet recommendation
+                    supplyCap: 330e18, // 330 WBTC per Gauntlet recommendation
+                    borrowCap: 132e18, // 132 WBTC per Gauntlet recommendation
+                    priceFeed: addresses.getAddress("WBTC_ORACLE"),
                     tokenAddress: token,
-                    addressesString: "MOONWELL_BTC",
-                    name: "Moonwell BTC",
-                    symbol: "mBTC",
-                    jrm: jrmConfig
+                    addressesString: "MOONWELL_WBTC",
+                    name: "Moonwell WBTC",
+                    symbol: "mWBTC",
+                    jrm: jrmConfigWBTC
+                });
+
+                cTokenConfigurations[_baseGoerliChainId].push(config);
+            }
+
+            {
+                address token = addresses.getAddress("cbETH");
+
+                JumpRateModelConfiguration
+                    memory jrmConfigCbETH = JumpRateModelConfiguration(
+                        0.01e18, // 0.01 Base per Gauntlet recommendation
+                        0.2e18, // 0.2 Multiplier per Gauntlet recommendation
+                        3e18, // 3 Jump Multiplier per Gauntlet recommendation
+                        0.45e18 // 0.45 Kink per Gauntlet recommendation
+                    );
+
+                CTokenConfiguration memory config = CTokenConfiguration({
+                    collateralFactor: 0.73e18, // 73% per Gauntlet recommendation
+                    reserveFactor: 0.25e18, // 25% per Gauntlet recommendation
+                    seizeShare: 0.03e18, // 3% per Gauntlet recommendation
+                    supplyCap: 5_000e18, // 5,000 cbETH per Gauntlet recommendation
+                    borrowCap: 1_500e18, // 1,500 cbETH per Gauntlet recommendation
+                    priceFeed: addresses.getAddress("cbETH_ORACLE"),
+                    tokenAddress: token,
+                    addressesString: "MOONWELL_cbETH",
+                    name: "Moonwell cbETH",
+                    symbol: "mcbETH",
+                    jrm: jrmConfigCbETH
+                });
+
+                cTokenConfigurations[_baseGoerliChainId].push(config);
+            }
+
+            {
+                address token = addresses.getAddress("wstETH");
+
+                JumpRateModelConfiguration
+                    memory jrmConfigWstETH = JumpRateModelConfiguration(
+                        0.01e18, // 0.01 Base per Gauntlet recommendation
+                        0.2e18, // 0.2 Multiplier per Gauntlet recommendation
+                        3e18, // 3 Jump Multiplier per Gauntlet recommendation
+                        0.45e18 // 0.45 Kink per Gauntlet recommendation
+                    );
+
+                CTokenConfiguration memory config = CTokenConfiguration({
+                    collateralFactor: 0.73e18, // 73% per Gauntlet recommendation
+                    reserveFactor: 0.25e18, // 25% per Gauntlet recommendation
+                    seizeShare: 0.03e18, // 3% per Gauntlet recommendation
+                    supplyCap: 3_700e18, // 3,700 wstETH per Gauntlet recommendation
+                    borrowCap: 1_110e18, // 1,110 wstETH per Gauntlet recommendation
+                    priceFeed: addresses.getAddress("wstETH_ORACLE"),
+                    tokenAddress: token,
+                    addressesString: "MOONWELL_wstETH",
+                    name: "Moonwell wstETH",
+                    symbol: "mwstETH",
+                    jrm: jrmConfigWstETH
                 });
 
                 cTokenConfigurations[_baseGoerliChainId].push(config);
