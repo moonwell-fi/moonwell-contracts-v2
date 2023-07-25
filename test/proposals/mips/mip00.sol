@@ -497,8 +497,28 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             ChainlinkOracle oracle = ChainlinkOracle(
                 addresses.getAddress("CHAINLINK_ORACLE")
             );
-    
+
             assertEq(oracle.admin(), address(governor));
+            /// validate chainlink price feeds are correctly set according to config in oracle
+
+            Configs.CTokenConfiguration[]
+                memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
+            //// set mint paused for all of the deployed MTokens
+            unchecked {
+                for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+                    Configs.CTokenConfiguration memory config = cTokenConfigs[
+                        i
+                    ];
+
+                    assertEq(
+                        address(
+                            oracle.getFeed(ERC20(config.tokenAddress).symbol())
+                        ),
+                        config.priceFeed
+                    );
+                }
+            }
         }
 
         /// assert comptroller and unitroller are wired together properly
