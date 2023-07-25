@@ -219,8 +219,8 @@ contract Configs {
                     borrowCap: 100e18,
                     priceFeed: addresses.getAddress("ETH_ORACLE"),
                     tokenAddress: address(token),
-                    addressesString: "MOONWELL_ETH",
-                    name: "Moonwell ETH",
+                    addressesString: "MOONWELL_WETH",
+                    name: "Moonwell WETH",
                     symbol: "mETH",
                     jrm: jrmConfig
                 });
@@ -385,7 +385,7 @@ contract Configs {
             {
                 /// pay USDC Emissions for depositing ETH locally
                 EmissionConfig memory emissionConfig = EmissionConfig({
-                    mToken: addresses.getAddress("MOONWELL_ETH"),
+                    mToken: addresses.getAddress("MOONWELL_WETH"),
                     owner: addresses.getAddress("GUARDIAN"),
                     emissionToken: addresses.getAddress("USDC"),
                     supplyEmissionPerSec: 1e18,

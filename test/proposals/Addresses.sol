@@ -150,7 +150,7 @@ contract Addresses is Test, ChainIds {
             0x682E7b16C21FE5b8F4e578da90870347f181Fb3c
         );
         _addAddress(
-            "MOONWELL_ETH",
+            "MOONWELL_WETH",
             11155111,
             0xbf08A960B7443E971ea9a0173B95FE31E946f611
         );
@@ -216,22 +216,22 @@ contract Addresses is Test, ChainIds {
             0xfd693042E524284796226234c4878F9b790Ef6C2
         );
         _addAddress(
-            "JUMP_RATE_IRM_MOONWELL_ETH",
+            "JUMP_RATE_IRM_MOONWELL_WETH",
             84531,
             0x152DEDB508bE6F5c050f44Fb5AefcA150CD7eB34
         );
         _addAddress(
-            "MOONWELL_ETH",
+            "MOONWELL_WETH",
             84531,
             0x1376a2d851209cb4EcA0288C8d4e10c3C67526F7
         );
         _addAddress(
-            "JUMP_RATE_IRM_MOONWELL_BTC",
+            "JUMP_RATE_IRM_MOONWELL_WBTC",
             84531,
             0x8eb6176Aee8cE5B67b07f1f6fa4f910123dCD3B8
         );
         _addAddress(
-            "MOONWELL_BTC",
+            "MOONWELL_WBTC",
             84531,
             0x6FaEA4BD6FecaBA689bd0Eb678b34584Fe3C3772
         );
@@ -264,7 +264,7 @@ contract Addresses is Test, ChainIds {
             0xcD2A119bD1F7DF95d706DE6F2057fDD45A0503E2
         );
         _addAddress(
-            "BTC_ORACLE",
+            "WBTC_ORACLE",
             84531,
             0xAC15714c08986DACC0379193e22382736796496f
         );
