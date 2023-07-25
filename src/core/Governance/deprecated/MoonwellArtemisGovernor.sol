@@ -75,7 +75,7 @@ interface IERC20 {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
 
-contract MoonwellGovernorArtemis {
+contract MoonwellArtemisGovernor {
     /// @notice The name of this contract
     string public constant name = "Moonwell Artemis Governor";
 

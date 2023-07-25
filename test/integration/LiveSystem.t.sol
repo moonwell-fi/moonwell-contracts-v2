@@ -23,8 +23,6 @@ contract LiveSystemTest is Test {
         proposals.setUp();
         proposals.setDebug(true);
         addresses = proposals.addresses();
-
-        // Configs(address(proposals.proposals(0))).init(addresses); /// init configs so
     }
     
     function testMintMTokenSucceeds() public {
