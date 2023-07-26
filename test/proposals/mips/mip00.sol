@@ -101,7 +101,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
 
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
-                addresses.getAddress("WORMHOLE_CORE"),
+                addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
                 proposalDelay,
                 permissionlessUnpauseTime,
                 trustedSenders

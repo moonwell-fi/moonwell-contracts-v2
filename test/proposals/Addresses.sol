@@ -76,14 +76,27 @@ contract Addresses is Test, ChainIds {
             sepoliaChainId,
             0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78
         );
-
-        /// WORMHOLE
-        _addAddress(
+        
+        /// ----------------------------------
+        /// ------------ WORMHOLE CORE ------------
+        /// ----------------------------------
+        
+        _addAddress( /// base goerli
             "WORMHOLE_CORE",
             baseGoerliChainId,
-            0xA31aa3FDb7aF7Db93d18DDA4e19F811342EDF780
+            0x23908A62110e21C04F3A4e011d24F901F911744A
+        );
+        
+        _addAddress( /// moonbase
+            "WORMHOLE_CORE",
+            moonBaseChainId,
+            0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901
         );
 
+        /// ----------------------------------
+        /// ----------------------------------
+        /// ----------------------------------
+        
         _addAddress(
             "PAUSE_GUARDIAN",
             baseGoerliChainId,
@@ -340,6 +353,13 @@ contract Addresses is Test, ChainIds {
 
     function getAddress(string memory name) public view returns (address) {
         return _addresses[name][chainId];
+    }
+
+    function getAddress(
+        string memory name,
+        uint256 _chainId
+    ) public view returns (address) {
+        return _addresses[name][_chainId];
     }
 
     function addAddress(string memory name, address addr) public {
