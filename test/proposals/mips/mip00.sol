@@ -140,7 +140,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             bytes memory initData = abi.encodeWithSignature(
                 "initialize(address,address)",
                 address(unitroller),
-                addresses.getAddress("GUARDIAN") /// TODO figure out what the pause guardian is on Base, then replace it in Addresses.sol
+                addresses.getAddress("PAUSE_GUARDIAN") /// TODO figure out what the pause guardian is on Base, then replace it in Addresses.sol
             );
 
             TransparentUpgradeableProxy mrdProxy = new TransparentUpgradeableProxy(
@@ -231,7 +231,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             }
         }
 
-        initEmissions(addresses);
+        initEmissions(addresses, deployer);
 
         WETHRouter router = new WETHRouter(
             WETH9(addresses.getAddress("WETH")),
@@ -315,12 +315,55 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             mTokens,
             borrowCaps
         );
+        Comptroller(address(unitroller))._setRewardDistributor(
+            MultiRewardDistributor(addresses.getAddress("MRD_PROXY"))
+        );
+        Comptroller(address(unitroller))._setLiquidationIncentive(
+            liquidationIncentive
+        );
+        Comptroller(address(unitroller))._setCloseFactor(closeFactor);
+
+        /// ------------ SET GUARDIANS ------------
+
+        Comptroller(address(unitroller))._setBorrowCapGuardian(
+            addresses.getAddress("BORROW_SUPPLY_GUARDIAN")
+        );
+        Comptroller(address(unitroller))._setSupplyCapGuardian(
+            addresses.getAddress("BORROW_SUPPLY_GUARDIAN")
+        );
+        Comptroller(address(unitroller))._setPauseGuardian(
+            addresses.getAddress("PAUSE_GUARDIAN")
+        );
 
         /// set temporal governor as the pending admin
         unitroller._setPendingAdmin(governor);
 
         /// set temporal governor as the admin of the chainlink feed
         oracle.setAdmin(governor);
+
+        /// -------------- EMISSION CONFIGURATION --------------
+
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
+            block.chainid
+        );
+        MultiRewardDistributor mrd = MultiRewardDistributor(
+            addresses.getAddress("MRD_PROXY")
+        );
+
+        unchecked {
+            for (uint256 i = 0; i < emissionConfig.length; i++) {
+                EmissionConfig memory config = emissionConfig[i];
+
+                mrd._addEmissionConfig(
+                    MToken(config.mToken),
+                    config.owner,
+                    config.emissionToken,
+                    config.supplyEmissionPerSec,
+                    config.borrowEmissionsPerSec,
+                    config.endTime
+                );
+            }
+        }
     }
 
     function build(Addresses addresses) public {
@@ -392,84 +435,6 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                         1
                     ),
                     "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
-                );
-            }
-        }
-
-        /// ------------ SET UNITROLLER VALUES ------------
-
-        _pushCrossChainAction(
-            addresses.getAddress("UNITROLLER"),
-            abi.encodeWithSignature(
-                "_setRewardDistributor(address)",
-                addresses.getAddress("MRD_PROXY")
-            ),
-            "Set reward distributor on comptroller"
-        );
-
-        _pushCrossChainAction(
-            unitrollerAddress,
-            abi.encodeWithSignature(
-                "_setLiquidationIncentive(uint256)",
-                liquidationIncentive
-            ),
-            "Set Liquidation Incentive on Unitroller"
-        );
-
-        _pushCrossChainAction(
-            unitrollerAddress,
-            abi.encodeWithSignature("_setCloseFactor(uint256)", closeFactor),
-            "Set Close Factor on Unitroller"
-        );
-
-        /// ------------ SET GUARDIANS ------------
-
-        _pushCrossChainAction(
-            addresses.getAddress("UNITROLLER"),
-            abi.encodeWithSignature(
-                "_setBorrowCapGuardian(address)",
-                addresses.getAddress("BORROW_SUPPLY_GUARDIAN")
-            ),
-            "Set borrow cap guardian on Unitroller"
-        );
-        _pushCrossChainAction(
-            addresses.getAddress("UNITROLLER"),
-            abi.encodeWithSignature(
-                "_setSupplyCapGuardian(address)",
-                addresses.getAddress("BORROW_SUPPLY_GUARDIAN")
-            ),
-            "Set supply cap guardian on Unitroller"
-        );
-        _pushCrossChainAction(
-            addresses.getAddress("UNITROLLER"),
-            abi.encodeWithSignature(
-                "_setPauseGuardian(address)",
-                addresses.getAddress("GUARDIAN")
-            ),
-            "Set pause guardian"
-        );
-
-        /// -------------- EMISSION CONFIGURATION --------------
-
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
-
-        unchecked {
-            for (uint256 i = 0; i < emissionConfig.length; i++) {
-                EmissionConfig memory config = emissionConfig[i];
-                _pushCrossChainAction(
-                    addresses.getAddress("MRD_PROXY"),
-                    abi.encodeWithSignature(
-                        "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
-                        config.mToken,
-                        config.owner,
-                        config.emissionToken,
-                        config.supplyEmissionPerSec,
-                        config.borrowEmissionsPerSec,
-                        config.endTime
-                    ),
-                    "Add emission configuration"
                 );
             }
         }
@@ -547,7 +512,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             );
             assertEq(
                 Comptroller(address(unitroller)).pauseGuardian(),
-                addresses.getAddress("GUARDIAN")
+                addresses.getAddress("PAUSE_GUARDIAN")
             );
             assertEq(
                 Comptroller(address(unitroller)).supplyCapGuardian(),
@@ -603,7 +568,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             );
             assertEq(
                 address(distributor.pauseGuardian()),
-                addresses.getAddress("GUARDIAN")
+                addresses.getAddress("PAUSE_GUARDIAN")
             );
             assertEq(distributor.emissionCap(), 100e18);
             assertEq(distributor.initialIndexConstant(), 1e36);

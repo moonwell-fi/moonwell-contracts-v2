@@ -7,12 +7,9 @@ import {Addresses} from "@test/proposals/Addresses.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
+import {ChainlinkCompositeOracle} from "@protocol/core/Oracles/ChainlinkCompositeOracle.sol";
 
 contract Configs {
-    /// ----------------------------------------------------
-    /// TODO add in interest rate model to this struct later
-    /// once we get numbers around rates for each market
-    /// ----------------------------------------------------
     struct CTokenConfiguration {
         uint256 collateralFactor; /// collateral factor of the asset
         uint256 reserveFactor; /// reserve factor of the asset
@@ -60,7 +57,7 @@ contract Configs {
             MockWormholeCore wormholeCore = new MockWormholeCore();
 
             addresses.addAddress("WORMHOLE_CORE", address(wormholeCore));
-            addresses.addAddress("GUARDIAN", address(this));
+            addresses.addAddress("PAUSE_GUARDIAN", address(this));
         }
     }
 
@@ -236,13 +233,12 @@ contract Configs {
 
             /// cToken config for WETH, WBTC, USDC, cbETH, and wstETH on base goerli testnet
             {
-
                 address token = addresses.getAddress("USDC");
 
                 JumpRateModelConfiguration
                     memory jrmConfigUSDC = JumpRateModelConfiguration(
                         0.00e18, // 0 Base per Gauntlet recommendation
-                        0.15e18, // 0.15 Multiplier per Gauntlet recommendation 
+                        0.15e18, // 0.15 Multiplier per Gauntlet recommendation
                         3e18, // 3 Jump Multiplier per Gauntlet recommendation
                         0.6e18 // 0.6 Kink per Gauntlet recommendation
                     );
@@ -322,6 +318,19 @@ contract Configs {
 
             {
                 address token = addresses.getAddress("cbETH");
+                /// 1 cbETH = 1.0429 ETH
+                MockChainlinkOracle oracle = new MockChainlinkOracle(
+                    1.04296945e18,
+                    18
+                );
+
+                ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
+                        addresses.getAddress("ETH_ORACLE"),
+                        address(oracle),
+                        address(0)
+                    );
+
+                addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
 
                 JumpRateModelConfiguration
                     memory jrmConfigCbETH = JumpRateModelConfiguration(
@@ -350,6 +359,26 @@ contract Configs {
 
             {
                 address token = addresses.getAddress("wstETH");
+
+                /// 1 stETH = 0.99938151 ETH
+                MockChainlinkOracle stETHETHOracle = new MockChainlinkOracle(
+                    0.99938151e18,
+                    18
+                );
+
+                /// 1 wstETH = 1.13297632 stETH
+                MockChainlinkOracle wstETHstETHOracle = new MockChainlinkOracle(
+                    1.13297632e18,
+                    18
+                );
+
+                ChainlinkCompositeOracle wstETHOracle = new ChainlinkCompositeOracle(
+                        addresses.getAddress("ETH_ORACLE"),
+                        address(stETHETHOracle),
+                        address(wstETHstETHOracle)
+                    );
+
+                addresses.addAddress("wstETH_ORACLE", address(wstETHOracle));
 
                 JumpRateModelConfiguration
                     memory jrmConfigWstETH = JumpRateModelConfiguration(
@@ -380,20 +409,64 @@ contract Configs {
         }
     }
 
-    function initEmissions(Addresses addresses) public {
-        if (block.chainid == localChainId) {
-            {
-                /// pay USDC Emissions for depositing ETH locally
-                EmissionConfig memory emissionConfig = EmissionConfig({
-                    mToken: addresses.getAddress("MOONWELL_WETH"),
-                    owner: addresses.getAddress("GUARDIAN"),
-                    emissionToken: addresses.getAddress("USDC"),
-                    supplyEmissionPerSec: 1e18,
-                    borrowEmissionsPerSec: 0,
-                    endTime: block.timestamp + 365 days
-                });
+    function initEmissions(Addresses addresses, address deployer) public {
+        Configs.CTokenConfiguration[]
+            memory mTokenConfigs = getCTokenConfigurations(block.chainid);
 
-                emissions[localChainId].push(emissionConfig);
+        if (
+            block.chainid == localChainId || block.chainid == _baseGoerliChainId
+        ) {
+            FaucetTokenWithPermit token = new FaucetTokenWithPermit(
+                1e18,
+                "Wormhole WELL",
+                18, /// WELL is 18 decimals
+                "WELL"
+            );
+
+            token.allocateTo(
+                addresses.getAddress("MRD_PROXY"),
+                100_000_000e18
+            );
+
+            addresses.addAddress("WELL", address(token));
+        }
+
+        //// create reward configuration for all mTokens
+        unchecked {
+            for (uint256 i = 0; i < mTokenConfigs.length; i++) {
+                if (block.chainid == localChainId) {
+                    /// set supply speed to be 0 and borrow reward speeds to 1
+
+                    /// pay USDC Emissions for depositing ETH locally
+                    EmissionConfig memory emissionConfig = EmissionConfig({
+                        mToken: addresses.getAddress(
+                            mTokenConfigs[i].addressesString
+                        ),
+                        owner: deployer,
+                        emissionToken: addresses.getAddress("WELL"),
+                        supplyEmissionPerSec: 0,
+                        borrowEmissionsPerSec: 1,
+                        endTime: block.timestamp + 4 weeks
+                    });
+
+                    emissions[localChainId].push(emissionConfig);
+                }
+
+                if (block.chainid == _baseGoerliChainId) {
+                    /// pay USDC Emissions for depositing ETH locally
+                    EmissionConfig memory emissionConfig = EmissionConfig({
+                        mToken: addresses.getAddress(
+                            mTokenConfigs[i].addressesString
+                        ),
+                        owner: deployer,
+                        emissionToken: addresses.getAddress("WELL"),
+                        supplyEmissionPerSec: 0,
+                        borrowEmissionsPerSec: 1,
+                        endTime: block.timestamp + 4 weeks
+                    });
+
+                    emissions[localChainId].push(emissionConfig);
+                }
             }
         }
     }

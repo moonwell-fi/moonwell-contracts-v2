@@ -26,25 +26,31 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",
             localChainId,
-            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A /// Random address is borrow supply guardian
+            0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// Random address is borrow supply guardian
         );
         /// MOONBASE
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",
             moonBeamChainId,
-            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A /// TODO add correct guantlet msig
+            0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// TODO add correct guantlet msig
         );
         /// BASE
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",
             moonBaseChainId, /// TODO replace with guantlet multisig address
-            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A /// TODO add correct guantlet msig
+            0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// TODO add correct guantlet msig
         );
         /// GOERLI
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",
             goerliChainId,
-            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A /// EOA owner
+            0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// EOA owner
+        );
+        /// GOERLI
+        _addAddress(
+            "BORROW_SUPPLY_GUARDIAN",
+            baseGoerliChainId,
+            0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// EOA owner
         );
 
         //// actual moonbeam timelock deployment
@@ -79,15 +85,15 @@ contract Addresses is Test, ChainIds {
         );
 
         _addAddress(
-            "GUARDIAN",
+            "PAUSE_GUARDIAN",
             baseGoerliChainId,
-            0x29353c2e5dCDF7dE3c92E81325B0C54Cb451750E
+            0xc191A4db4E05e478778eDB6a201cb7F13A257C23
         );
 
         _addAddress(
-            "GUARDIAN",
+            "PAUSE_GUARDIAN",
             moonBaseChainId,
-            0x29353c2e5dCDF7dE3c92E81325B0C54Cb451750E
+            0xc191A4db4E05e478778eDB6a201cb7F13A257C23
         );
 
         /// -----------------------------------------------
