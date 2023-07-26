@@ -53,6 +53,14 @@ contract CrossChainProposalUnitTest is Test {
         vm.warp(block.timestamp + 1);
     }
 
+    function testPrintCalldata() public {
+        proposals.printCalldata(
+            0,
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
+            addresses.getAddress("WORMHOLE_CORE", 1287) /// get moonbase wormhole address so proposal will work
+        );
+    }
+
     function testGovernorAcceptsAdmin() public {
         governor.__acceptAdminOnTimelock();
 
@@ -108,6 +116,15 @@ contract CrossChainProposalUnitTest is Test {
         console.log("cross chain gov payload");
         emit log_bytes(payloads[0]);
 
+        console.log("propose artemis gov payload");
+        emit log_bytes(
+            CrossChainProposal(address(proposals.proposals(0)))
+                .getArtemisGovernorCalldata(
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    addresses.getAddress("WORMHOLE_CORE", 1287) /// call wormhole core on moonbeam
+                )
+        );
+
         string[] memory signatures = new string[](1);
         signatures[0] = ""; /// signature is already in payload
 
@@ -125,17 +142,8 @@ contract CrossChainProposalUnitTest is Test {
 
         governor.castVote(proposalId, 0); /// VOTE YES
 
-        console.log(
-            "proposal state after vote: ",
-            uint256(governor.state(proposalId))
-        );
-
         vm.warp(governor.votingPeriod() + block.timestamp + 1);
         governor.queue(proposalId);
-        console.log(
-            "proposal state after queue: ",
-            uint256(governor.state(proposalId))
-        );
 
         vm.warp(block.timestamp + timelock.delay() + 1); /// finish timelock
 

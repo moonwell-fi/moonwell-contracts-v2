@@ -15,4 +15,3 @@ library AddressName {
     string constant mrdProxyAdmin = "MRD_PROXY_ADMIN";
     string constant mTokenImpl = "MTOKEN_IMPLEMENTATION";
 }
-
