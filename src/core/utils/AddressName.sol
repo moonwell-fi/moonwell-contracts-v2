@@ -10,7 +10,6 @@ library AddressName {
     string constant pauseGuardian = "PAUSE_GUARDIAN";
     string constant borrowSupplyGuardian = "BORROW_SUPPLY_GUARDIAN";
     string constant wethRouter = "WETH_ROUTER";
-
     string constant mrd = "MULTI_REWARD_DISTRIBUTOR";
     string constant mrdProxy = "MRD_PROXY";
     string constant mrdProxyAdmin = "MRD_PROXY_ADMIN";
