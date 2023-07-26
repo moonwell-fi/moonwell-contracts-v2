@@ -361,7 +361,7 @@ contract Configs {
                 address token = addresses.getAddress("wstETH");
 
                 /// 1 stETH = 0.99938151 ETH
-                MockChainlinkOracle stethEthOracle = new MockChainlinkOracle(
+                MockChainlinkOracle stETHETHOracle = new MockChainlinkOracle(
                     0.99938151e18,
                     18
                 );
@@ -374,7 +374,7 @@ contract Configs {
 
                 ChainlinkCompositeOracle wstETHOracle = new ChainlinkCompositeOracle(
                         addresses.getAddress("ETH_ORACLE"),
-                        address(stethEthOracle),
+                        address(stETHETHOracle),
                         address(wstETHstETHOracle)
                     );
 
@@ -418,9 +418,9 @@ contract Configs {
         ) {
             FaucetTokenWithPermit token = new FaucetTokenWithPermit(
                 1e18,
-                "Wormhole Well",
-                18, /// whWELL is 18 decimals
-                "whWELL"
+                "Wormhole WELL",
+                18, /// WELL is 18 decimals
+                "WELL"
             );
 
             token.allocateTo(
@@ -428,7 +428,7 @@ contract Configs {
                 100_000_000e18
             );
 
-            addresses.addAddress("whWELL", address(token));
+            addresses.addAddress("WELL", address(token));
         }
 
         //// create reward configuration for all mTokens
@@ -443,7 +443,7 @@ contract Configs {
                             mTokenConfigs[i].addressesString
                         ),
                         owner: deployer,
-                        emissionToken: addresses.getAddress("whWELL"),
+                        emissionToken: addresses.getAddress("WELL"),
                         supplyEmissionPerSec: 0,
                         borrowEmissionsPerSec: 1,
                         endTime: block.timestamp + 4 weeks
@@ -459,7 +459,7 @@ contract Configs {
                             mTokenConfigs[i].addressesString
                         ),
                         owner: deployer,
-                        emissionToken: addresses.getAddress("whWELL"),
+                        emissionToken: addresses.getAddress("WELL"),
                         supplyEmissionPerSec: 0,
                         borrowEmissionsPerSec: 1,
                         endTime: block.timestamp + 4 weeks
