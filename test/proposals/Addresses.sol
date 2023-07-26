@@ -79,13 +79,13 @@ contract Addresses is Test, ChainIds {
         );
 
         _addAddress(
-            "GUARDIAN",
+            "PAUSE_GUARDIAN",
             baseGoerliChainId,
             0x29353c2e5dCDF7dE3c92E81325B0C54Cb451750E
         );
 
         _addAddress(
-            "GUARDIAN",
+            "PAUSE_GUARDIAN",
             moonBaseChainId,
             0x29353c2e5dCDF7dE3c92E81325B0C54Cb451750E
         );
