@@ -235,7 +235,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
 
         WETHRouter router = new WETHRouter(
             WETH9(addresses.getAddress("WETH")),
-            MErc20(addresses.getAddress("MOONWELL_ETH"))
+            MErc20(addresses.getAddress("MOONWELL_WETH"))
         );
         addresses.addAddress("WETH_ROUTER", address(router));
 
@@ -588,7 +588,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             assertEq(address(router.weth()), addresses.getAddress("WETH"));
             assertEq(
                 address(router.mToken()),
-                addresses.getAddress("MOONWELL_ETH")
+                addresses.getAddress("MOONWELL_WETH")
             );
         }
 
