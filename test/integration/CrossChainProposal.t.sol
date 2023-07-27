@@ -53,14 +53,6 @@ contract CrossChainProposalUnitTest is Test {
         vm.warp(block.timestamp + 1);
     }
 
-    function testPrintCalldata() public {
-        proposals.printCalldata(
-            0,
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress("WORMHOLE_CORE", 1287) /// get moonbase wormhole address so proposal will work
-        );
-    }
-
     function testGovernorAcceptsAdmin() public {
         governor.__acceptAdminOnTimelock();
 

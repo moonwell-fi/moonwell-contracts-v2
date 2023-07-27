@@ -415,7 +415,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                     abi.encodeWithSignature(
                         "approve(address,uint256)",
                         cTokenAddress,
-                        initialMintAmount
+                        config.initialMintAmount
                     ),
                     "Approve underlying token to be spent by market"
                 );
@@ -423,7 +423,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 /// Initialize markets
                 _pushCrossChainAction(
                     cTokenAddress,
-                    abi.encodeWithSignature("mint(uint256)", initialMintAmount),
+                    abi.encodeWithSignature("mint(uint256)", config.initialMintAmount),
                     "Initialize token market to prevent exploit"
                 );
 

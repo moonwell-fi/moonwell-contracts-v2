@@ -26,8 +26,9 @@ contract InitProposalSucceedsTest is Test {
 
     function testInitProposalSucceeds() public {
         Configs(address(proposals.proposals(0))).init(addresses); /// init configs
+        Configs(address(proposals.proposals(0))).initEmissions(addresses, 0xc191A4db4E05e478778eDB6a201cb7F13A257C23); /// init configs
         proposals.testProposals(true, false, false, true, true, false, false);
-        proposals.printCalldata(0, addresses.getAddress("TEMPORAL_GOVERNOR"), addresses.getAddress("WORMHOLE_CORE")); /// print calldata out
+        proposals.printCalldata(0, addresses.getAddress("TEMPORAL_GOVERNOR"), addresses.getAddress("WORMHOLE_CORE", 1287)); /// print calldata out
     }
 
     function testDeployAfterDeployBuildRunValidateProposalSucceeds() public {
