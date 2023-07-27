@@ -11,6 +11,7 @@ import {ChainlinkCompositeOracle} from "@protocol/core/Oracles/ChainlinkComposit
 
 contract Configs {
     struct CTokenConfiguration {
+        uint256 initialMintAmount;
         uint256 collateralFactor; /// collateral factor of the asset
         uint256 reserveFactor; /// reserve factor of the asset
         uint256 seizeShare; /// fee gotten from liquidation
@@ -176,6 +177,7 @@ contract Configs {
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
+                    initialMintAmount: 1e6, /// supply 1 USDC
                     collateralFactor: 0.9e18,
                     reserveFactor: 0.1e18,
                     seizeShare: 2.8e16, //2.8%,
@@ -209,6 +211,7 @@ contract Configs {
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
+                    initialMintAmount: 0.00001e18, /// supply .00001 eth
                     collateralFactor: 0.6e18,
                     reserveFactor: 0.1e18,
                     seizeShare: 2.8e16, //2.8%,
@@ -244,6 +247,7 @@ contract Configs {
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
+                    initialMintAmount: 1e6, /// supply 1 usdc
                     collateralFactor: 0.8e18, // 80% per Gauntlet recommendation
                     reserveFactor: 0.15e18, // 15% per Gauntlet recommendation
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
@@ -272,6 +276,7 @@ contract Configs {
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
+                    initialMintAmount: 0.00001e18, /// supply .00001 eth
                     collateralFactor: 0.75e18, // 75% per Gauntlet recommendation
                     reserveFactor: 0.25e18, // 25% per Gauntlet recommendation
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
@@ -300,6 +305,7 @@ contract Configs {
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
+                    initialMintAmount: 0.00001e8, /// supply .00001 wBTC
                     collateralFactor: 0.7e18, // 70% per Gauntlet recommendation
                     reserveFactor: 0.25e18, // 25% per Gauntlet recommendation
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
@@ -341,6 +347,7 @@ contract Configs {
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
+                    initialMintAmount: 0.00001e18, /// supply .00001 cbETH
                     collateralFactor: 0.73e18, // 73% per Gauntlet recommendation
                     reserveFactor: 0.25e18, // 25% per Gauntlet recommendation
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
@@ -389,6 +396,7 @@ contract Configs {
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
+                    initialMintAmount: 0.00001e18, /// supply .00001 wSTETH
                     collateralFactor: 0.73e18, // 73% per Gauntlet recommendation
                     reserveFactor: 0.25e18, // 25% per Gauntlet recommendation
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
@@ -423,10 +431,7 @@ contract Configs {
                 "WELL"
             );
 
-            token.allocateTo(
-                addresses.getAddress("MRD_PROXY"),
-                100_000_000e18
-            );
+            token.allocateTo(addresses.getAddress("MRD_PROXY"), 100_000_000e18);
 
             addresses.addAddress("WELL", address(token));
         }
@@ -482,6 +487,8 @@ contract Configs {
             uint256 configLength = configs.length;
             for (uint256 i = 0; i < configLength; i++) {
                 configs[i] = CTokenConfiguration({
+                    initialMintAmount: cTokenConfigurations[chainId][i]
+                        .initialMintAmount,
                     collateralFactor: cTokenConfigurations[chainId][i]
                         .collateralFactor,
                     reserveFactor: cTokenConfigurations[chainId][i]

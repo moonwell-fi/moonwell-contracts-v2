@@ -81,7 +81,7 @@ abstract contract CrossChainProposal is MultisigProposal {
     }
 
     function getTemporalGovCalldata(
-        address intendedRecipient
+        address temporalGovernor
     ) public view returns (bytes memory) {
         (
             address[] memory targets,
@@ -94,17 +94,17 @@ abstract contract CrossChainProposal is MultisigProposal {
             abi.encodeWithSignature(
                 "publishMessage(uint32,bytes,uint8)",
                 nonce,
-                abi.encode(intendedRecipient, targets, values, payloads),
+                abi.encode(temporalGovernor, targets, values, payloads),
                 consistencyLevel
             );
     }
 
     function getArtemisGovernorCalldata(
-        address intendedRecipient,
+        address temporalGovernor,
         address wormholeCore
     ) public view returns (bytes memory) {
         bytes memory temporalGovCalldata = getTemporalGovCalldata(
-            intendedRecipient
+            temporalGovernor
         );
 
         address[] memory targets = new address[](1);
@@ -132,11 +132,11 @@ abstract contract CrossChainProposal is MultisigProposal {
     }
 
     function printActions(
-        address intendedRecipient,
+        address temporalGovernor,
         address wormholeCore
     ) public {
         bytes memory temporalGovCalldata = getTemporalGovCalldata(
-            intendedRecipient
+            temporalGovernor
         );
 
         console.log("temporal governance calldata");
@@ -153,7 +153,7 @@ abstract contract CrossChainProposal is MultisigProposal {
         emit log_bytes(wormholeTemporalGovPayload);
 
         bytes memory artemisPayload = getArtemisGovernorCalldata(
-            intendedRecipient,
+            temporalGovernor,
             wormholeCore
         );
 
