@@ -26,3 +26,10 @@ To generate calldata for an existing proposal that is already pushed onto the pr
 
 ```forge test -vvv --match-test testQueueAndPublishMessage --fork-url network_name|network_url```
 
+### MIP00
+
+In order to configure the system before go live on Base, we need to run a proposal to set the initial parameters. This proposal is MIP00. It is a cross chain proposal that sets the initial parameters for the system. It is run on Base, and then the system is deployed to the other networks. The proposal is then run on the other networks to set the parameters for those networks.
+
+Currently, there are mock values in the `mainnetMTokens.json` file that are used to set the initial parameters. These values are not final, and will be updated by Guantlet before go live.
+
+Additionally, the Pause Guardian, Borrow Supply Guardian, and other parameters like the chainlink oracles, and underlying tokens must be set in the `Addresses.sol` before the proposal is run.

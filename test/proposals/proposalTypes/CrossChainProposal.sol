@@ -1,5 +1,6 @@
 pragma solidity 0.8.19;
 
+import {MarketCreationHook} from "@test/proposals/hooks/MarketCreationHook.sol";
 import {MultisigProposal} from "@test/proposals/proposalTypes/MultisigProposal.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 
@@ -8,7 +9,7 @@ import "@forge-std/Test.sol";
 import {MoonwellArtemisGovernor} from "@protocol/core/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
-abstract contract CrossChainProposal is MultisigProposal {
+abstract contract CrossChainProposal is MultisigProposal, MarketCreationHook {
     uint32 public nonce; /// nonce for wormhole
 
     /// instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
@@ -26,6 +27,7 @@ abstract contract CrossChainProposal is MultisigProposal {
         bytes memory data,
         string memory description
     ) internal {
+        require(value == 0, "Cross chain proposal cannot have value");
         _pushMultisigAction(value, target, data, description);
     }
 
@@ -41,7 +43,9 @@ abstract contract CrossChainProposal is MultisigProposal {
     /// @notice simulate cross chain proposal
     /// @param temporalGovAddress address of the cross chain governor executing the calls
     function _simulateCrossChainActions(address temporalGovAddress) internal {
+        _verifyActionsPreRun(actions);
         _simulateMultisigActions(temporalGovAddress);
+        _verifyMTokensPostRun();
     }
 
     function getTargetsPayloadsValues()
