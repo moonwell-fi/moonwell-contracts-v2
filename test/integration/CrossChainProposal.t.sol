@@ -7,6 +7,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import "@forge-std/Test.sol";
 
 import {Well} from "@protocol/core/Governance/deprecated/Well.sol";
+import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/core/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {MockWormhole} from "@test/mock/MockWormhole.sol";
@@ -14,7 +15,7 @@ import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 import {MoonwellArtemisGovernor} from "@protocol/core/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
-contract CrossChainProposalUnitTest is Test {
+contract CrossChainProposalUnitTest is Test, ChainIds {
     MoonwellArtemisGovernor governor;
     MockWormhole wormhole;
     TestProposals proposals;
@@ -113,7 +114,10 @@ contract CrossChainProposalUnitTest is Test {
             CrossChainProposal(address(proposals.proposals(0)))
                 .getArtemisGovernorCalldata(
                     addresses.getAddress("TEMPORAL_GOVERNOR"),
-                    addresses.getAddress("WORMHOLE_CORE", 1287) /// call wormhole core on moonbeam
+                    addresses.getAddress(
+                        "WORMHOLE_CORE",
+                        sendingChainIdToReceivingChainId[block.chainid]
+                    ) /// call wormhole core on moonbeam
                 )
         );
 

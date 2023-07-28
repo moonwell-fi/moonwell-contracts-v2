@@ -46,8 +46,8 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
     uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
 
-    /// @notice proposal delay time
-    uint256 public constant proposalDelay = 5 minutes;
+    /// @notice proposal delay time, wait 1 day before execution is possible
+    uint256 public constant proposalDelay = 24 hours;
 
     /// @notice time before anyone can unpause the contract after a guardian pause
     uint256 public constant permissionlessUnpauseTime = 30 days;

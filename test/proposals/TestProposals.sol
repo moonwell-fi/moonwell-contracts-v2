@@ -8,6 +8,7 @@ import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 
 import {mip00} from "@test/proposals/mips/mip00.sol";
+import {mip01} from "@test/proposals/mips/mip01.sol";
 
 /*
 How to use:
@@ -44,6 +45,7 @@ contract TestProposals is Test {
         addresses = new Addresses();
 
         proposals.push(Proposal(address(new mip00())));
+        // proposals.push(Proposal(address(new mip01())));
         nProposals = proposals.length;
     }
 

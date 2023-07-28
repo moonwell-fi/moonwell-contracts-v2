@@ -4,12 +4,11 @@ pragma solidity 0.8.19;
 contract ChainIds {
     /// ------------ BASE ------------
 
-    uint256 public constant baseChainId = 84531;
+    uint256 public constant baseChainId = 8453;
     uint16 public constant baseWormholeChainId = 30; /// TODO update when actual base chain id is known
-    
+
     uint256 public constant baseGoerliChainId = 84531;
     uint16 public constant baseGoerliWormholeChainId = 30;
-
 
     /// ------------ MOONBEAM ------------
 
@@ -31,11 +30,17 @@ contract ChainIds {
 
     /// @notice map a sending chain id to a wormhole chain id
     /// this way during a deployment, we can know which governance contract should own this deployment
-    mapping (uint256 => uint16) public chainIdToWormHoleId;
+    mapping(uint256 => uint16) public chainIdToWormHoleId;
+
+    /// @notice map a sending chain id to a receiving chainid so that we can create the correct calldata
+    mapping(uint256 => uint256) public sendingChainIdToReceivingChainId;
 
     constructor() {
         chainIdToWormHoleId[sepoliaChainId] = goerliWormholeChainId; /// sepolia deployment is owned by goerli
         chainIdToWormHoleId[baseChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
         chainIdToWormHoleId[baseGoerliChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
+
+        sendingChainIdToReceivingChainId[baseGoerliChainId] = moonBaseChainId; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
+        sendingChainIdToReceivingChainId[baseChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking base, and sending from moonbeam
     }
 }

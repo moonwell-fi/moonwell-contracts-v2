@@ -7,10 +7,11 @@ import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {Configs} from "@test/proposals/Configs.sol";
+import {ChainIds} from "@test/utils/ChainIds.sol";
 import {TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
 
 /// validate the deployment on sepolia testnet
-contract InitProposalSucceedsTest is Test {
+contract InitProposalSucceedsTest is Test, ChainIds {
     TestProposals proposals;
     Addresses addresses;
 
@@ -27,7 +28,7 @@ contract InitProposalSucceedsTest is Test {
         Configs(address(proposals.proposals(0))).init(addresses); /// init configs
         Configs(address(proposals.proposals(0))).initEmissions(addresses, 0xc191A4db4E05e478778eDB6a201cb7F13A257C23); /// init configs
         proposals.testProposals(true, false, false, true, true, false, false);
-        proposals.printCalldata(0, addresses.getAddress("TEMPORAL_GOVERNOR"), addresses.getAddress("WORMHOLE_CORE", 1287)); /// print calldata out
+        proposals.printCalldata(0, addresses.getAddress("TEMPORAL_GOVERNOR"), addresses.getAddress("WORMHOLE_CORE", sendingChainIdToReceivingChainId[block.chainid])); /// print calldata out
     }
     
     function testAfterCrosschainProposalValidateSucceeds() public {
