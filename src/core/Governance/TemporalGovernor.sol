@@ -261,7 +261,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// periods of emergency when the governance on moonbeam is
     /// compromised and we need to stop additional proposals from going through.
     /// @param VAA The signed Verified Action Approval to process
-    function fastTrackProposalExecution(bytes memory VAA) external onlyOwner {
+    function fastTrackProposalExecution(bytes memory VAA) external onlyOwner whenPaused {
         _executeProposal(VAA, true); /// override timestamp checks and execute
     }
 

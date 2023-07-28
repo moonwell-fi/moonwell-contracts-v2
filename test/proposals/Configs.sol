@@ -9,38 +9,38 @@ import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {ChainlinkCompositeOracle} from "@protocol/core/Oracles/ChainlinkCompositeOracle.sol";
 
-contract Configs {
+contract Configs is Test {
     struct CTokenConfiguration {
-        uint256 initialMintAmount;
+        string addressesString; /// string used to set address in Addresses.sol
+        uint256 borrowCap; /// borrow cap
         uint256 collateralFactor; /// collateral factor of the asset
+        uint256 initialMintAmount;
+        JumpRateModelConfiguration jrm; /// jump rate model configuration information
+        string name; /// name of the mToken
+        address priceFeed; /// chainlink price oracle
         uint256 reserveFactor; /// reserve factor of the asset
         uint256 seizeShare; /// fee gotten from liquidation
         uint256 supplyCap; /// supply cap
-        uint256 borrowCap; /// borrow cap
-        address priceFeed; /// chainlink price oracle
-        address tokenAddress; /// underlying token address
-        string addressesString; /// string used to set address in Addresses.sol
         string symbol; /// symbol of the mToken
-        string name; /// name of the mToken
-        JumpRateModelConfiguration jrm; /// jump rate model configuration information
+        address tokenAddress; /// underlying token address
     }
 
     struct JumpRateModelConfiguration {
         uint256 baseRatePerYear;
-        uint256 multiplierPerYear;
         uint256 jumpMultiplierPerYear;
         uint256 kink;
+        uint256 multiplierPerYear;
     }
 
     mapping(uint256 => CTokenConfiguration[]) public cTokenConfigurations;
 
     struct EmissionConfig {
+        uint256 borrowEmissionsPerSec;
+        address emissionToken;
+        uint256 endTime;
         address mToken;
         address owner;
-        address emissionToken;
         uint256 supplyEmissionPerSec;
-        uint256 borrowEmissionsPerSec;
-        uint256 endTime;
     }
 
     /// mapping of all emission configs per chainid
@@ -48,9 +48,87 @@ contract Configs {
 
     uint256 public constant _baseGoerliChainId = 84531;
     uint256 public constant localChainId = 31337;
+    uint256 public constant _baseChainId = 8453;
 
     /// @notice initial mToken mint amount
     uint256 public constant initialMintAmount = 1 ether;
+
+    constructor() {
+        string memory fileContents = vm.readFile(
+            "./test/proposals/mainnetMTokens.json"
+        );
+        bytes memory rawJson = vm.parseJson(fileContents);
+
+        CTokenConfiguration[] memory decodedJson = abi.decode(rawJson, (CTokenConfiguration[]));
+
+        for (uint256 i = 0; i < decodedJson.length; i++) {
+            console.log("\n ------ MToken Configuration ------");
+            console.log("addressesString:", decodedJson[i].addressesString);
+            console.log("supplyCap:", decodedJson[i].supplyCap);
+            console.log("borrowCap:", decodedJson[i].borrowCap);
+            console.log("collateralFactor:", decodedJson[i].collateralFactor);
+            console.log("initialMintAmount:", decodedJson[i].initialMintAmount);
+            console.log("name:", decodedJson[i].name);
+            console.log("priceFeed:", decodedJson[i].priceFeed);
+            console.log("reserveFactor:", decodedJson[i].reserveFactor);
+            console.log("seizeShare:", decodedJson[i].seizeShare);
+            console.log("supplyCap:", decodedJson[i].supplyCap);
+            console.log("symbol:", decodedJson[i].symbol);
+            console.log("tokenAddress:", decodedJson[i].tokenAddress);
+            console.log(
+                "jrm.baseRatePerYear:",
+                decodedJson[i].jrm.baseRatePerYear
+            );
+            console.log(
+                "jrm.multiplierPerYear:",
+                decodedJson[i].jrm.multiplierPerYear
+            );
+            console.log(
+                "jrm.jumpMultiplierPerYear:",
+                decodedJson[i].jrm.jumpMultiplierPerYear
+            );
+            console.log("jrm.kink:", decodedJson[i].jrm.kink);
+            
+            cTokenConfigurations[_baseChainId].push(decodedJson[i]);
+        }
+
+        fileContents = vm.readFile("./test/proposals/mainnetRewardStreams.json");
+        rawJson = vm.parseJson(fileContents);
+        EmissionConfig[] memory decodedEmissions = abi.decode(
+            rawJson,
+            (EmissionConfig[])
+        );
+
+        for (uint256 i = 0; i < decodedEmissions.length; i++) {
+            console.log("\n ------ Emission Configuration ------");
+            console.log(
+                "borrowEmissionsPerSec:",
+                decodedEmissions[i].borrowEmissionsPerSec
+            );
+            console.log(
+                "emissionToken:",
+                decodedEmissions[i].emissionToken
+            );
+            console.log(
+                "endTime:",
+                decodedEmissions[i].endTime
+            );
+            console.log(
+                "mToken:",
+                decodedEmissions[i].mToken
+            );
+            console.log(
+                "owner:",
+                decodedEmissions[i].owner
+            );
+            console.log(
+                "supplyEmissionPerSec:",
+                decodedEmissions[i].supplyEmissionPerSec
+            );
+
+            emissions[_baseChainId].push(decodedEmissions[i]);
+        }
+    }
 
     function localInit(Addresses addresses) public {
         if (block.chainid == localChainId) {
@@ -324,19 +402,21 @@ contract Configs {
 
             {
                 address token = addresses.getAddress("cbETH");
+
                 /// 1 cbETH = 1.0429 ETH
-                MockChainlinkOracle oracle = new MockChainlinkOracle(
-                    1.04296945e18,
-                    18
-                );
-
-                ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
-                        addresses.getAddress("ETH_ORACLE"),
-                        address(oracle),
-                        address(0)
+                if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
+                    MockChainlinkOracle oracle = new MockChainlinkOracle(
+                        1.04296945e18,
+                        18
                     );
+                    ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
+                            addresses.getAddress("ETH_ORACLE"),
+                            address(oracle),
+                            address(0)
+                        );
 
-                addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
+                    addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
+                }
 
                 JumpRateModelConfiguration
                     memory jrmConfigCbETH = JumpRateModelConfiguration(
@@ -367,25 +447,30 @@ contract Configs {
             {
                 address token = addresses.getAddress("wstETH");
 
-                /// 1 stETH = 0.99938151 ETH
-                MockChainlinkOracle stETHETHOracle = new MockChainlinkOracle(
-                    0.99938151e18,
-                    18
-                );
+                if (addresses.getAddress("wstETH_ORACLE") == address(0)) {
+                    /// 1 stETH = 0.99938151 ETH
+                    MockChainlinkOracle stETHETHOracle = new MockChainlinkOracle(
+                            0.99938151e18,
+                            18
+                        );
 
-                /// 1 wstETH = 1.13297632 stETH
-                MockChainlinkOracle wstETHstETHOracle = new MockChainlinkOracle(
-                    1.13297632e18,
-                    18
-                );
+                    /// 1 wstETH = 1.13297632 stETH
+                    MockChainlinkOracle wstETHstETHOracle = new MockChainlinkOracle(
+                            1.13297632e18,
+                            18
+                        );
 
-                ChainlinkCompositeOracle wstETHOracle = new ChainlinkCompositeOracle(
-                        addresses.getAddress("ETH_ORACLE"),
-                        address(stETHETHOracle),
-                        address(wstETHstETHOracle)
+                    ChainlinkCompositeOracle wstETHOracle = new ChainlinkCompositeOracle(
+                            addresses.getAddress("ETH_ORACLE"),
+                            address(stETHETHOracle),
+                            address(wstETHstETHOracle)
+                        );
+
+                    addresses.addAddress(
+                        "wstETH_ORACLE",
+                        address(wstETHOracle)
                     );
-
-                addresses.addAddress("wstETH_ORACLE", address(wstETHOracle));
+                }
 
                 JumpRateModelConfiguration
                     memory jrmConfigWstETH = JumpRateModelConfiguration(
@@ -422,7 +507,9 @@ contract Configs {
             memory mTokenConfigs = getCTokenConfigurations(block.chainid);
 
         if (
-            block.chainid == localChainId || block.chainid == _baseGoerliChainId
+            (block.chainid == localChainId ||
+                block.chainid == _baseGoerliChainId) &&
+            addresses.getAddress("WELL") == address(0)
         ) {
             FaucetTokenWithPermit token = new FaucetTokenWithPermit(
                 1e18,

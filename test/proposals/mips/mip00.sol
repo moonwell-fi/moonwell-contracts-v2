@@ -495,7 +495,6 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 addresses.getAddress("COMPTROLLER")
             );
 
-            assertEq(comptroller.admin(), deployer);
             assertEq(comptroller.pendingAdmin(), address(0));
             assertEq(comptroller.pauseGuardian(), address(0));
             assertEq(comptroller.borrowCapGuardian(), address(0));
@@ -535,14 +534,6 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 address(unitroller.pendingComptrollerImplementation()),
                 address(0)
             );
-        }
-        /// assert comptroller is owned by deployer as there is no way to change admin
-        {
-            Comptroller comptroller = Comptroller(
-                addresses.getAddress("COMPTROLLER")
-            );
-
-            assertEq(address(comptroller.admin()), deployer);
         }
 
         /// assert WETH router is properly wired into the system

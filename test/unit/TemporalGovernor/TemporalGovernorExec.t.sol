@@ -445,7 +445,9 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         assertTrue(governor.isTrustedSender(trustedChainid, admin)); /// existing admin is also a trusted sender
 
         assertEq(governor.allTrustedSenders(trustedChainid).length, 2);
-        bytes32[] memory trustedSenders = governor.allTrustedSenders(trustedChainid);
+        bytes32[] memory trustedSenders = governor.allTrustedSenders(
+            trustedChainid
+        );
 
         assertEq(trustedSenders[0], governor.addressToBytes(admin));
         assertEq(trustedSenders[1], governor.addressToBytes(newAdmin));
@@ -476,6 +478,7 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
     function testFastTrackProposalExecutionSucceedsGuardian() public {
         _setupMock();
 
+        governor.togglePause();
         governor.fastTrackProposalExecution("");
 
         bytes32 hash = keccak256(abi.encodePacked(""));
@@ -486,6 +489,13 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
 
         assertTrue(governor.isTrustedSender(trustedChainid, newAdmin));
         assertTrue(governor.isTrustedSender(trustedChainid, admin)); /// existing admin is also a trusted sender
+    }
+
+    function testFastTrackProposalExecutionFailsNotPaused() public {
+        _setupMock();
+
+        vm.expectRevert("Pausable: not paused");
+        governor.fastTrackProposalExecution("");
     }
 
     function testFastTrackProposalExecutionFailsNonGuardian() public {
@@ -634,10 +644,10 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         governor.queueProposal("00");
         vm.warp(block.timestamp + proposalDelay * 2);
         governor.executeProposal("00");
-        
+
         assertFalse(governor.isTrustedSender(trustedChainid, newAdmin));
     }
-    
+
     function testUnsetNewAdminAsOldAdminSucceeds() public {
         testExecuteSucceeds();
         _setupMockUnsetTrustedSenders(admin, newAdmin); /// admin will remove new admin as a trusted sender
@@ -645,18 +655,20 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         governor.queueProposal("00");
         vm.warp(block.timestamp + proposalDelay * 2);
         governor.executeProposal("00");
-        
+
         assertTrue(governor.isTrustedSender(trustedChainid, admin));
         assertEq(governor.allTrustedSenders(trustedChainid).length, 1);
 
-        bytes32[] memory trustedSenders = governor.allTrustedSenders(trustedChainid);
+        bytes32[] memory trustedSenders = governor.allTrustedSenders(
+            trustedChainid
+        );
         assertEq(trustedSenders[0], governor.addressToBytes(admin));
     }
-    
+
     function _setupMock() private {
         address[] memory targets = new address[](1);
         targets[0] = address(governor);
-        
+
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
@@ -692,7 +704,10 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         );
     }
 
-    function _setupMockUnsetTrustedSenders(address _caller, address _toRemove) private {
+    function _setupMockUnsetTrustedSenders(
+        address _caller,
+        address _toRemove
+    ) private {
         address[] memory targets = new address[](1);
         targets[0] = address(governor);
 
