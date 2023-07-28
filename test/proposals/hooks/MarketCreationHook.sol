@@ -38,7 +38,7 @@ contract MarketCreationHook {
     /// proposal conforms to the expected market creation pattern.
     function _verifyActionsPreRun(
         MultisigProposal.MultisigAction[] memory proposal
-    ) internal view {
+    ) internal {
         uint256 proposalLength = proposal.length;
         for (uint256 i = 0; i < proposalLength; i++) {
             if (functionDetectors[bytesToBytes4(proposal[i].arguments)]) {
