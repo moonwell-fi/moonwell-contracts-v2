@@ -2,6 +2,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {WETH9} from "@protocol/core/router/IWETH.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
@@ -59,7 +60,10 @@ contract Configs is Test {
         );
         bytes memory rawJson = vm.parseJson(fileContents);
 
-        CTokenConfiguration[] memory decodedJson = abi.decode(rawJson, (CTokenConfiguration[]));
+        CTokenConfiguration[] memory decodedJson = abi.decode(
+            rawJson,
+            (CTokenConfiguration[])
+        );
 
         for (uint256 i = 0; i < decodedJson.length; i++) {
             console.log("\n ------ MToken Configuration ------");
@@ -88,11 +92,13 @@ contract Configs is Test {
                 decodedJson[i].jrm.jumpMultiplierPerYear
             );
             console.log("jrm.kink:", decodedJson[i].jrm.kink);
-            
+
             cTokenConfigurations[_baseChainId].push(decodedJson[i]);
         }
 
-        fileContents = vm.readFile("./test/proposals/mainnetRewardStreams.json");
+        fileContents = vm.readFile(
+            "./test/proposals/mainnetRewardStreams.json"
+        );
         rawJson = vm.parseJson(fileContents);
         EmissionConfig[] memory decodedEmissions = abi.decode(
             rawJson,
@@ -105,22 +111,10 @@ contract Configs is Test {
                 "borrowEmissionsPerSec:",
                 decodedEmissions[i].borrowEmissionsPerSec
             );
-            console.log(
-                "emissionToken:",
-                decodedEmissions[i].emissionToken
-            );
-            console.log(
-                "endTime:",
-                decodedEmissions[i].endTime
-            );
-            console.log(
-                "mToken:",
-                decodedEmissions[i].mToken
-            );
-            console.log(
-                "owner:",
-                decodedEmissions[i].owner
-            );
+            console.log("emissionToken:", decodedEmissions[i].emissionToken);
+            console.log("endTime:", decodedEmissions[i].endTime);
+            console.log("mToken:", decodedEmissions[i].mToken);
+            console.log("owner:", decodedEmissions[i].owner);
             console.log(
                 "supplyEmissionPerSec:",
                 decodedEmissions[i].supplyEmissionPerSec
@@ -160,12 +154,12 @@ contract Configs is Test {
             }
 
             {
-                MockWeth token = new MockWeth();
-                token.mint(
+                WETH9 weth = WETH9(addresses.getAddress("WETH"));
+                deal(
+                    address(weth),
                     addresses.getAddress("TEMPORAL_GOVERNOR"),
                     initialMintAmount
                 );
-                addresses.addAddress("WETH", address(token));
             }
 
             {
@@ -557,7 +551,7 @@ contract Configs is Test {
                         endTime: block.timestamp + 4 weeks
                     });
 
-                    emissions[localChainId].push(emissionConfig);
+                    emissions[block.chainid].push(emissionConfig);
                 }
             }
         }

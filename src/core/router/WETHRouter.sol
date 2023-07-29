@@ -62,5 +62,7 @@ contract WETHRouter {
         require(success, "WETHRouter: ETH transfer failed");
     }
 
-    receive() external payable {}
+    receive() external payable {
+        require(msg.sender == address(weth), "WETHRouter: not weth");   // only accept ETH via fallback from the WETH contract
+    }
 }

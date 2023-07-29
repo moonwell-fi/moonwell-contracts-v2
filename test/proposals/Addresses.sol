@@ -52,6 +52,12 @@ contract Addresses is Test, ChainIds {
             baseGoerliChainId,
             0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// EOA owner
         );
+        /// GOERLI
+        _addAddress(
+            "WETH",
+            baseGoerliChainId,
+            0x4200000000000000000000000000000000000006
+        );
 
         //// actual moonbeam timelock deployment
         _addAddress(

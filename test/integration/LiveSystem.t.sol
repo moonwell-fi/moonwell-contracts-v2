@@ -23,11 +23,18 @@ contract LiveSystemTest is Test {
         proposals.setUp();
         proposals.setDebug(true);
         addresses = proposals.addresses();
-    }
-    
-    function testMintMTokenSucceeds() public {
         proposals.testProposals(true, true, true, true, true, false, false); /// deploy, after deploy, build, and run, do not validate
+    }
 
+    function testSetup() public {
+        Configs.EmissionConfig[] memory configs = Configs(address(proposals.proposals(0))).getEmissionConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory mTokenConfigs = Configs(address(proposals.proposals(0))).getCTokenConfigurations(block.chainid);
+
+        assertEq(configs.length, 5); /// 5 configs on base goerli
+        assertEq(mTokenConfigs.length, 5); /// 5 mTokens on base goerli
+    }
+
+    function testMintMTokenSucceeds() public {
         address sender = address(this);
         uint256 mintAmount = 100e6;
 
@@ -70,9 +77,47 @@ contract LiveSystemTest is Test {
         assertTrue(
             comptroller.checkMembership(sender, MToken(address(mToken)))
         ); /// ensure sender and mToken is in market
-        
+
         assertEq(mToken.borrow(borrowAmount), 0); /// ensure successful borrow
 
         assertEq(token.balanceOf(sender), borrowAmount); /// ensure balance is correct
+    }
+
+    function testBorrowOtherMTokenSucceeds() public {
+        testMintMTokenSucceeds();
+
+        address sender = address(this);
+        deal(
+            addresses.getAddress("WETH"),
+            addresses.getAddress("MOONWELL_WETH"),
+            1 ether
+        );
+
+        IERC20 weth = IERC20(addresses.getAddress("WETH"));
+
+        uint256 borrowAmount = 1e6;
+
+        MErc20Delegator mToken = MErc20Delegator(
+            payable(addresses.getAddress("MOONWELL_WETH"))
+        );
+        Comptroller comptroller = Comptroller(
+            addresses.getAddress("UNITROLLER")
+        );
+        // mToken.mint(0.001 ether);
+        uint256 startingTokenBalance = weth.balanceOf(sender);
+
+        address[] memory mTokens = new address[](1);
+        mTokens[0] = addresses.getAddress("MOONWELL_USDC");
+
+        comptroller.enterMarkets(mTokens);
+        assertTrue(
+            comptroller.checkMembership(sender, MToken(addresses.getAddress("MOONWELL_USDC")))
+        ); /// ensure sender and mToken is in market
+
+        (, uint256 liquidity, uint256 shortfall) = comptroller.getAccountLiquidity(sender);
+
+        assertEq(mToken.borrow(borrowAmount), 0); /// ensure successful borrow
+
+        assertEq(weth.balanceOf(sender), borrowAmount); /// ensure balance is correct
     }
 }
