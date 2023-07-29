@@ -153,14 +153,14 @@ contract Configs is Test {
                 );
             }
 
-            {
-                WETH9 weth = WETH9(addresses.getAddress("WETH"));
-                deal(
-                    address(weth),
-                    addresses.getAddress("TEMPORAL_GOVERNOR"),
-                    initialMintAmount
-                );
-            }
+            // {
+            //     WETH9 weth = WETH9(addresses.getAddress("WETH"));
+            //     deal(
+            //         address(weth),
+            //         addresses.getAddress("TEMPORAL_GOVERNOR"),
+            //         initialMintAmount
+            //     );
+            // }
 
             {
                 FaucetTokenWithPermit token = new FaucetTokenWithPermit(
