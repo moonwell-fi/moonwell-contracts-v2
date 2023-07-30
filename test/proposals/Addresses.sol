@@ -123,120 +123,122 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "TEMPORAL_GOVERNOR",
             84531,
-            0x491a706b5c67D0AFd6d47D598C48D742EA81224B
+            0x840725c0a903521cbA1C0020dBdf54Aa4Ae813A5
         );
-        _addAddress("USDC", 84531, 0x9437D72632D65eD3555dBf14Bb073b3aD51b7D11);
-        _addAddress("WBTC", 84531, 0xD9F71201D872836fE9E1cCc975Ed2e42F65c675F);
-        _addAddress("cbETH", 84531, 0x7cb221de6ebb6f82b698bb758c55E895A819Be91);
+        _addAddress("USDC", 84531, 0xFACD0Fc9A841A1E1b960a8E90755C4911C1Dd53A);
+        _addAddress("WBTC", 84531, 0xE259C5C337cb78607D286d91d3D1663305e8CD30);
+        _addAddress("cbETH", 84531, 0x7A455bf197cF61d33fc1Ae9F74a24D7A40231061);
         _addAddress(
             "wstETH",
             84531,
-            0x093282bac66E5c99cDD9a89127b5F07CD13726ff
+            0xBE812Ed32135929038B436f594D0835a97fFc12e
         );
         _addAddress(
             "cbETH_ORACLE",
             84531,
-            0xA30872b4a4Fd90F331403BA78f034D121a5E68A6
+            0x45E62c1D07365c46631a4F2032c0e630CCA91c55
         );
         _addAddress(
             "wstETH_ORACLE",
             84531,
-            0xA4C50a6c71193c777d9F47e53dCF51d77050700C
+            0x3a52fB70713032B182F351829573a318a4f8E4E6
         );
         _addAddress(
             "MULTI_REWARD_DISTRIBUTOR",
             84531,
-            0x904611A9aDE4616F6995F74bDE54c5C753BBb5f6
+            0xd321f44038aF2234D6F37f5216820c8c3Aa7b5De
         );
         _addAddress(
             "COMPTROLLER",
             84531,
-            0x072D6B177929D4733ef372234a8eAfC1182936Ab
+            0x6eb2bcBEAD4649279C88769316b9eD8A5578BF20
         );
         _addAddress(
             "UNITROLLER",
             84531,
-            0x76A5f69c1463E246a5f7e4B0ff77837E14632f91
+            0x9B0f96C3a99C64d437AC0B901A28C1ea83e7A2e7
         );
         _addAddress(
             "MRD_PROXY",
             84531,
-            0x256E87D70008bAD43906577D3Fd5000c48C7EFdd
+            0x35B5330DB1eff5C52e04f8F32a7FD5814c19593C
         );
         _addAddress(
             "MRD_PROXY_ADMIN",
             84531,
-            0x7fc8612C04C56211a4a1AC1F1BCAD67A2022538b
+            0xc0af8FEC778be65eC5f2dE755c4253Ab057E9D78
         );
         _addAddress(
             "MTOKEN_IMPLEMENTATION",
             84531,
-            0xFF1AB71D92c1bA1d9fBDb5C8b44304bedD415F65
+            0xD97DfBc72131B67E7518448162F233FDdE43B1b0
         );
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_USDC",
             84531,
-            0x2aFB1F22cA6724c988B9fc6E06A23B1BE6C480A2
+            0xC84105b1D809CF65B6DFaf2C044980cA37F5fb79
         );
         _addAddress(
             "MOONWELL_USDC",
             84531,
-            0x758B0dC9B4FD6dF4254AED781E45e29F286b8a66
+            0xA4Cb22C4bDE7FDBB20b05387dd45c875f18353Ab
         );
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_WETH",
             84531,
-            0x3429FEF13159b86562207b5a35E5f09DE26226C6
+            0x7973bb764EF6fd10fBFc531CfcE0EcC88683E3C0
         );
         _addAddress(
             "MOONWELL_WETH",
             84531,
-            0x35da0D92b9C5955ff6306886A00Ebbb380B27A61
+            0xB1c7730f7D2ba7FE80476F421e68FA846A187088
         );
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_WBTC",
             84531,
-            0x2B7d7ef70FAbECdb548E358ecdFf67A04DCB6332
+            0x71848131bDe3e45294fe9Cd54562358a7AC86203
         );
         _addAddress(
             "MOONWELL_WBTC",
             84531,
-            0x6015dbBCBd736a2B713946823ee7799125a1b3Ac
+            0xd9D5c354063d96Af6d05eF733a53da5500a30bc6
         );
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_cbETH",
             84531,
-            0x55af06bc23858f8e4070629FFfbf9DD75Ef1e45C
+            0x2521Bde567F64143B47b065c479945208c60e1Ca
         );
         _addAddress(
             "MOONWELL_cbETH",
             84531,
-            0x7078F2d9de0B5CbAebAdb9F0e5a94281006Ff27c
+            0x45442965DF9CA611cf59B524C899b6E4c4E2e14A
         );
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_wstETH",
             84531,
-            0x53AD167aa94CEc249Af4dE59abA1787E706e449B
+            0x2e9edeDF20aaa3178Ba4884441BBa934066153Aa
         );
         _addAddress(
             "MOONWELL_wstETH",
             84531,
-            0x7aE810995dB8656d035e0703b44152B9F0F965f3
+            0x475d693703E7c0D2f9Af2aBE53acE89F21f639Ac
         );
-        _addAddress("WELL", 84531, 0xD8d10a120FF9F754bf8EB9dd82fe8F85C79E6054);
+        _addAddress("WELL", 84531, 0x6295749d818E3a2caEe60b274700593ffBBdE1d7);
         _addAddress(
             "WETH_ROUTER",
             84531,
-            0x3C7A684546d729C61948e09f146cD8a6D3B8567E
+            0xc55138f18761BEC3c8d3Ea850D1dB3CfC760e240
         );
         _addAddress(
             "CHAINLINK_ORACLE",
             84531,
-            0x472688624d9b11dE33792843Fa5AB0A29d064d44
+            0x8a318A4493f38567528d17B5E91A30BDFAA5Fd06
         );
 
         /// -----------------------------------------------
-        ///            BASE GOERLI Contracts
+
+        /// -----------------------------------------------
+        ///        BASE GOERLI CHAINLINK ORACLES
         /// -----------------------------------------------
 
         /// ORACLES

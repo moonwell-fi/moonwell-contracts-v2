@@ -155,11 +155,8 @@ contract Configs is Test {
 
             {
                 WETH9 weth = WETH9(addresses.getAddress("WETH"));
-                deal(
-                    address(weth),
-                    addresses.getAddress("TEMPORAL_GOVERNOR"),
-                    initialMintAmount
-                );
+                vm.deal(address(this), 0.00001e18);
+                weth.deposit{value: 0.00001e18}();
             }
 
             {
