@@ -28,8 +28,6 @@ contract PrintCalldataTest is Test, ChainIds {
     }
     
     function testPrintCalldata() public {
-        Configs(address(proposals.proposals(0))).localInit(addresses); /// init configs
-        Configs(address(proposals.proposals(0))).deployAndMint(addresses); /// init configs
         Configs(address(proposals.proposals(0))).init(addresses); /// init configs
         Configs(address(proposals.proposals(0))).initEmissions(addresses, 0xc191A4db4E05e478778eDB6a201cb7F13A257C23); /// init configs
 
