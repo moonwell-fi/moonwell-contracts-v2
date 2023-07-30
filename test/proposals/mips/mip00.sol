@@ -46,9 +46,6 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
     uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
 
-    /// @notice proposal delay time, wait 1 day before execution is possible
-    uint256 public constant proposalDelay = 24 hours;
-
     /// @notice time before anyone can unpause the contract after a guardian pause
     uint256 public constant permissionlessUnpauseTime = 30 days;
 
@@ -102,7 +99,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
                 addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
-                proposalDelay,
+                chainIdTemporalGovTimelock[block.chainid], /// get timelock period for deployment chain is on
                 permissionlessUnpauseTime,
                 trustedSenders
             );
@@ -457,6 +454,8 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
         TemporalGovernor governor = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
+
+        assertEq(chainIdTemporalGovTimelock[block.chainid], governor.proposalDelay());
 
         {
             ChainlinkOracle oracle = ChainlinkOracle(

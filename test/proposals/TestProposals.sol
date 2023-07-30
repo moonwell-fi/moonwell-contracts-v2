@@ -101,7 +101,7 @@ contract TestProposals is Test {
                         address[] memory recordedAddresses
                     ) = addresses.getRecordedAddresses();
                     for (uint256 j = 0; j < recordedNames.length; j++) {
-                        console.log('_addAddress("%s', recordedNames[j], '", ');
+                        console.log('_addAddress("%s",', recordedNames[j]);
                         console.log(block.chainid);
                         console.log(", ");
                         console.log(recordedAddresses[j]);

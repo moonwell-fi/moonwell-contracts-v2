@@ -14,9 +14,15 @@ optionally, you can deploy with verification on BaseScan Goerli:
 
 once that is done, put generated _addAddress function calls into the Addresses.sol constructor. Then remove all whitespaces from the names "TEMPORAL_GOVERNOR " becomes "TEMPORAL_GOVERNOR" etc.
 
-then, create the calldata to submit on the proposing chain:
+then, create the calldata to submit on the proposing chain, for testnet fork base goerli:
 
-```forge test -vvv --match-contract InitProposalSucceedsTest --rpc-url $ETH_RPC_URL```
+```forge test --match-test testPrintCalldata -vvv --fork-url baseGoerli```
+
+then scroll up to get the calldata after section "artemis governor queue governance calldata", and send the calldata to the governance contract on moonbase. 
+
+for mainnet calldata:
+
+```forge test --match-test testPrintCalldata -vvv --fork-url base```
 
 now take the  wormhole publish governance calldata and send it to the wormhole core contract on the sending chain
 

@@ -35,6 +35,9 @@ contract ChainIds {
     /// @notice map a sending chain id to a receiving chainid so that we can create the correct calldata
     mapping(uint256 => uint256) public sendingChainIdToReceivingChainId;
 
+    /// @notice map a chain id to a temporal gov timelock period
+    mapping (uint256 => uint256) public chainIdTemporalGovTimelock;
+
     constructor() {
         chainIdToWormHoleId[sepoliaChainId] = goerliWormholeChainId; /// sepolia deployment is owned by goerli
         chainIdToWormHoleId[baseChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
@@ -42,5 +45,8 @@ contract ChainIds {
 
         sendingChainIdToReceivingChainId[baseGoerliChainId] = moonBaseChainId; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
         sendingChainIdToReceivingChainId[baseChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking base, and sending from moonbeam
+
+        chainIdTemporalGovTimelock[baseGoerliChainId] = 0; /// no wait on testnet
+        chainIdTemporalGovTimelock[baseChainId] = 1 days;
     }
 }
