@@ -18,12 +18,12 @@ contract Configs is Test {
         uint256 initialMintAmount;
         JumpRateModelConfiguration jrm; /// jump rate model configuration information
         string name; /// name of the mToken
-        address priceFeed; /// chainlink price oracle
+        string priceFeedName; /// chainlink price oracle
         uint256 reserveFactor; /// reserve factor of the asset
         uint256 seizeShare; /// fee gotten from liquidation
         uint256 supplyCap; /// supply cap
         string symbol; /// symbol of the mToken
-        address tokenAddress; /// underlying token address
+        string tokenAddressName; /// underlying token address
     }
 
     struct JumpRateModelConfiguration {
@@ -73,12 +73,12 @@ contract Configs is Test {
             console.log("collateralFactor:", decodedJson[i].collateralFactor);
             console.log("initialMintAmount:", decodedJson[i].initialMintAmount);
             console.log("name:", decodedJson[i].name);
-            console.log("priceFeed:", decodedJson[i].priceFeed);
+            console.log("priceFeedName:", decodedJson[i].priceFeedName);
             console.log("reserveFactor:", decodedJson[i].reserveFactor);
             console.log("seizeShare:", decodedJson[i].seizeShare);
             console.log("supplyCap:", decodedJson[i].supplyCap);
             console.log("symbol:", decodedJson[i].symbol);
-            console.log("tokenAddress:", decodedJson[i].tokenAddress);
+            console.log("tokenAddressName:", decodedJson[i].tokenAddressName);
             console.log(
                 "jrm.baseRatePerYear:",
                 decodedJson[i].jrm.baseRatePerYear
@@ -253,8 +253,8 @@ contract Configs is Test {
                     seizeShare: 2.8e16, //2.8%,
                     supplyCap: 100e18,
                     borrowCap: 100e18,
-                    priceFeed: address(usdcOracle),
-                    tokenAddress: address(token),
+                    priceFeedName: "USDC_ORACLE",
+                    tokenAddressName: "USDC",
                     name: "Moonwell USDC",
                     symbol: "mUSDC",
                     addressesString: "MOONWELL_USDC",
@@ -287,8 +287,8 @@ contract Configs is Test {
                     seizeShare: 2.8e16, //2.8%,
                     supplyCap: 100e18,
                     borrowCap: 100e18,
-                    priceFeed: addresses.getAddress("ETH_ORACLE"),
-                    tokenAddress: address(token),
+                    priceFeedName: "ETH_ORACLE",
+                    tokenAddressName: "WETH",
                     addressesString: "MOONWELL_WETH",
                     name: "Moonwell WETH",
                     symbol: "mETH",
@@ -323,8 +323,8 @@ contract Configs is Test {
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
                     supplyCap: 40_000_000e18, // $40m per Gauntlet recommendation
                     borrowCap: 32_000_000e18, // $32m per Gauntlet recommendation
-                    priceFeed: addresses.getAddress("USDC_ORACLE"),
-                    tokenAddress: token,
+                    priceFeedName: "USDC_ORACLE",
+                    tokenAddressName: "USDC",
                     name: "Moonwell USDC",
                     symbol: "mUSDC",
                     addressesString: "MOONWELL_USDC",
@@ -352,8 +352,8 @@ contract Configs is Test {
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
                     supplyCap: 10_500e18, // 10,500 WETH per Gauntlet recommendation
                     borrowCap: 6_300e18, // 6,300 WETH per Gauntlet recommendation
-                    priceFeed: addresses.getAddress("ETH_ORACLE"),
-                    tokenAddress: token,
+                    priceFeedName: "ETH_ORACLE",
+                    tokenAddressName: "WETH",
                     addressesString: "MOONWELL_WETH",
                     name: "Moonwell WETH",
                     symbol: "mWETH",
@@ -381,8 +381,8 @@ contract Configs is Test {
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
                     supplyCap: 330e18, // 330 WBTC per Gauntlet recommendation
                     borrowCap: 132e18, // 132 WBTC per Gauntlet recommendation
-                    priceFeed: addresses.getAddress("WBTC_ORACLE"),
-                    tokenAddress: token,
+                    priceFeedName: "WBTC_ORACLE",
+                    tokenAddressName: "WBTC",
                     addressesString: "MOONWELL_WBTC",
                     name: "Moonwell WBTC",
                     symbol: "mWBTC",
@@ -425,8 +425,8 @@ contract Configs is Test {
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
                     supplyCap: 5_000e18, // 5,000 cbETH per Gauntlet recommendation
                     borrowCap: 1_500e18, // 1,500 cbETH per Gauntlet recommendation
-                    priceFeed: addresses.getAddress("cbETH_ORACLE"),
-                    tokenAddress: token,
+                    priceFeedName: "cbETH_ORACLE",
+                    tokenAddressName: "cbETH",
                     addressesString: "MOONWELL_cbETH",
                     name: "Moonwell cbETH",
                     symbol: "mcbETH",
@@ -479,8 +479,8 @@ contract Configs is Test {
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
                     supplyCap: 3_700e18, // 3,700 wstETH per Gauntlet recommendation
                     borrowCap: 1_110e18, // 1,110 wstETH per Gauntlet recommendation
-                    priceFeed: addresses.getAddress("wstETH_ORACLE"),
-                    tokenAddress: token,
+                    priceFeedName: "wstETH_ORACLE",
+                    tokenAddressName: "wstETH",
                     addressesString: "MOONWELL_wstETH",
                     name: "Moonwell wstETH",
                     symbol: "mwstETH",
@@ -492,6 +492,7 @@ contract Configs is Test {
 
             return;
         }
+        /// TODO add branch for base mainnet to deploy chainlink composite oracles
     }
 
     function initEmissions(Addresses addresses, address deployer) public {
@@ -577,8 +578,8 @@ contract Configs is Test {
                     borrowCap: cTokenConfigurations[chainId][i].borrowCap,
                     addressesString: cTokenConfigurations[chainId][i]
                         .addressesString,
-                    priceFeed: cTokenConfigurations[chainId][i].priceFeed,
-                    tokenAddress: cTokenConfigurations[chainId][i].tokenAddress,
+                    priceFeedName: cTokenConfigurations[chainId][i].priceFeedName,
+                    tokenAddressName: cTokenConfigurations[chainId][i].tokenAddressName,
                     symbol: cTokenConfigurations[chainId][i].symbol,
                     name: cTokenConfigurations[chainId][i].name,
                     jrm: cTokenConfigurations[chainId][i].jrm

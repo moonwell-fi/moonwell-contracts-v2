@@ -210,10 +210,11 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 /// (10 ** (6 + 8)) * 2 // 6 decimals example
                 ///    = 2e14
                 uint256 initialExchangeRate = (10 **
-                    (ERC20(config.tokenAddress).decimals() + 8)) * 2;
+                    (ERC20(addresses.getAddress(config.tokenAddressName))
+                        .decimals() + 8)) * 2;
 
                 MErc20Delegator mToken = new MErc20Delegator(
-                    config.tokenAddress,
+                    addresses.getAddress(config.tokenAddressName),
                     ComptrollerInterface(addr.unitroller),
                     InterestRateModel(addr.irModel),
                     initialExchangeRate,
@@ -274,8 +275,9 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 borrowCaps[i] = config.borrowCap;
 
                 oracle.setFeed(
-                    ERC20(config.tokenAddress).symbol(),
-                    config.priceFeed
+                    ERC20(addresses.getAddress(config.tokenAddressName))
+                        .symbol(),
+                    addresses.getAddress(config.priceFeedName)
                 );
 
                 /// list mToken in the comptroller
@@ -409,7 +411,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
 
                 /// Approvals
                 _pushCrossChainAction(
-                    config.tokenAddress,
+                    addresses.getAddress(config.tokenAddressName),
                     abi.encodeWithSignature(
                         "approve(address,uint256)",
                         cTokenAddress,
@@ -421,7 +423,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 /// Initialize markets
                 _pushCrossChainAction(
                     cTokenAddress,
-                    abi.encodeWithSignature("mint(uint256)", config.initialMintAmount),
+                    abi.encodeWithSignature(
+                        "mint(uint256)",
+                        config.initialMintAmount
+                    ),
                     "Initialize token market to prevent exploit"
                 );
 
@@ -456,7 +461,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
 
-        assertEq(chainIdTemporalGovTimelock[block.chainid], governor.proposalDelay());
+        assertEq(
+            chainIdTemporalGovTimelock[block.chainid],
+            governor.proposalDelay()
+        );
 
         {
             ChainlinkOracle oracle = ChainlinkOracle(
@@ -478,9 +486,15 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
 
                     assertEq(
                         address(
-                            oracle.getFeed(ERC20(config.tokenAddress).symbol())
+                            oracle.getFeed(
+                                ERC20(
+                                    addresses.getAddress(
+                                        config.tokenAddressName
+                                    )
+                                ).symbol()
+                            )
                         ),
-                        config.priceFeed
+                        addresses.getAddress(config.priceFeedName)
                     );
                 }
             }
@@ -719,7 +733,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                     );
 
                     /// assert mToken underlying is correct
-                    assertEq(address(mToken.underlying()), config.tokenAddress);
+                    assertEq(
+                        address(mToken.underlying()),
+                        addresses.getAddress(config.tokenAddressName)
+                    );
 
                     /// assert mToken delegate is uniform across contracts
                     assertEq(
@@ -731,7 +748,9 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                     );
 
                     uint256 initialExchangeRate = (10 **
-                        (8 + ERC20(config.tokenAddress).decimals())) * 2;
+                        (8 +
+                            ERC20(addresses.getAddress(config.tokenAddressName))
+                                .decimals())) * 2;
 
                     /// assert mToken initial exchange rate is correct
                     assertEq(mToken.exchangeRateCurrent(), initialExchangeRate);
