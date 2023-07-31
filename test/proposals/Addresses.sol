@@ -63,7 +63,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "MOONBEAM_TIMELOCK",
             moonBeamChainId,
-            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A /// EOA owner
+            0x3a9249d70dCb4A4E9ef4f3AF99a3A130452ec19B
         );
 
         /// sepolia
@@ -263,7 +263,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "MOONBEAM_TIMELOCK",
             baseGoerliChainId,
-            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A //// TODO Luke to fill in timelock address on Moonbase and uncomment
+            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A
         );
 
         /// TODO add WETH and Guardian Multisig address on Base once we have it

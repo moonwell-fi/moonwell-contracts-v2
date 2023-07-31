@@ -27,8 +27,12 @@ contract LiveSystemTest is Test {
     }
 
     function testSetup() public {
-        Configs.EmissionConfig[] memory configs = Configs(address(proposals.proposals(0))).getEmissionConfigurations(block.chainid);
-        Configs.CTokenConfiguration[] memory mTokenConfigs = Configs(address(proposals.proposals(0))).getCTokenConfigurations(block.chainid);
+        Configs.EmissionConfig[] memory configs = Configs(
+            address(proposals.proposals(0))
+        ).getEmissionConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory mTokenConfigs = Configs(
+            address(proposals.proposals(0))
+        ).getCTokenConfigurations(block.chainid);
 
         assertEq(configs.length, 5); /// 5 configs on base goerli
         assertEq(mTokenConfigs.length, 5); /// 5 mTokens on base goerli
@@ -111,10 +115,14 @@ contract LiveSystemTest is Test {
 
         comptroller.enterMarkets(mTokens);
         assertTrue(
-            comptroller.checkMembership(sender, MToken(addresses.getAddress("MOONWELL_USDC")))
+            comptroller.checkMembership(
+                sender,
+                MToken(addresses.getAddress("MOONWELL_USDC"))
+            )
         ); /// ensure sender and mToken is in market
 
-        (, uint256 liquidity, uint256 shortfall) = comptroller.getAccountLiquidity(sender);
+        (, uint256 liquidity, uint256 shortfall) = comptroller
+            .getAccountLiquidity(sender);
 
         assertEq(mToken.borrow(borrowAmount), 0); /// ensure successful borrow
 

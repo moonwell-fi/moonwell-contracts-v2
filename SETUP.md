@@ -17,6 +17,10 @@ optionally, you can deploy with verification on BaseScan Goerli:
 
 ```forge script test/proposals/DeployProposal.s.sol:DeployProposal -vvv --etherscan-api-key baseGoerli --verify --rpc-url baseGoerli --broadcast```
 
+Substitute out the rpc-url for the chain to deploy on if the destination is not base goerli.
+
+If deploying on mainnet, double check that `mainnetMTokens.json` and `mainnetRewardStreams.json` in the `test/proposals/` folder are correctly filled out. Then, double check that in `Addresses.sol`, all the oracles, tokens and guardians.
+
 Once contracts are deployed, add generated _addAddress function calls into the Addresses.sol constructor.
 
 Create the calldata to submit on the proposing chain, for testnet fork base goerli:
@@ -30,6 +34,8 @@ for mainnet calldata:
 ```forge test --match-test testPrintCalldata -vvv --fork-url base```
 
 Once the calldata is sent, wait for the proposal to finish the voting period, then queue and execute it.
+
+If on base goerli, send .00001 eth to the Temporal Governor contract. If on mainnet, send .00001 eth to the Temporal Governor contract and all required amounts for other tokens as well.
 
 After the proposal is executed, get the proposal execute transaction hash, and pass the transaction hash to the VAA script.
 

@@ -55,6 +55,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
     ///  Ethereum (Sepolia)	  10002          11155111	    0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78   |///
     ///  Base	                 30    	        84531	    0xA31aa3FDb7aF7Db93d18DDA4e19F811342EDF780   |///
     ///  Moonbeam	             16	             1284 	    0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3   |///
+    ///  Moonbase alpha          16	             1287	    0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901
     /// --------------------------------------------------------------------------------------------------///
 
     constructor() {
@@ -670,12 +671,6 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                         ),
                         config.supplyCap
                     );
-                    assertEq(
-                        comptroller.supplyCaps(
-                            addresses.getAddress(config.addressesString)
-                        ),
-                        config.supplyCap
-                    );
 
                     /// assert cToken irModel is correct
                     JumpRateModel jrm = JumpRateModel(
@@ -727,13 +722,6 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                     assertEq(address(mToken.underlying()), config.tokenAddress);
 
                     /// assert mToken delegate is uniform across contracts
-                    assertEq(
-                        address(
-                            MErc20Delegator(payable(address(mToken)))
-                                .implementation()
-                        ),
-                        addresses.getAddress("MTOKEN_IMPLEMENTATION")
-                    );
                     assertEq(
                         address(
                             MErc20Delegator(payable(address(mToken)))
