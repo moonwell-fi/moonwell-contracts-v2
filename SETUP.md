@@ -17,9 +17,12 @@ optionally, you can deploy with verification on BaseScan Goerli:
 
 ```forge script test/proposals/DeployProposal.s.sol:DeployProposal -vvv --etherscan-api-key baseGoerli --verify --rpc-url baseGoerli --broadcast```
 
+
 Substitute out the rpc-url for the chain to deploy on if the destination is not base goerli.
 
-If deploying on mainnet, double check that `mainnetMTokens.json` and `mainnetRewardStreams.json` in the `test/proposals/` folder are correctly filled out. Then, double check that in `Addresses.sol`, all the oracles, tokens and guardians.
+If deploying on mainnet, double check that `mainnetMTokens.json` and `mainnetRewardStreams.json` in the `test/proposals/` folder are correctly filled out. Then, double check that in `Addresses.sol`, all the oracles, tokens and guardians are correctly set. If no reward streams will be created, ensure the rewards json file is an empty array. Triple check that the addresses for the system are correct in `Addresses.sol`, then deploy to base mainnet:
+
+```forge script test/proposals/DeployProposal.s.sol:DeployProposal -vvv --rpc-url base --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key base --verify```
 
 Once contracts are deployed, add generated _addAddress function calls into the Addresses.sol constructor.
 
@@ -27,11 +30,11 @@ Create the calldata to submit on the proposing chain, for testnet fork base goer
 
 ```forge test --match-test testPrintCalldata -vvv --fork-url baseGoerli```
 
-Then, scroll up to get the calldata after section "artemis governor queue governance calldata", and send the calldata to the governance contract on moonbase by going to metamask and submitting a transaction to the ArtemisGovernor contract with the calldata the raw hex copied.
-
 for mainnet calldata:
 
 ```forge test --match-test testPrintCalldata -vvv --fork-url base```
+
+Then, scroll up to get the calldata after section "artemis governor queue governance calldata", and send the calldata to the governance contract on moonbase by going to metamask and submitting a transaction to the ArtemisGovernor contract with the calldata the raw hex copied.
 
 Once the calldata is sent, wait for the proposal to finish the voting period, then queue and execute it.
 
