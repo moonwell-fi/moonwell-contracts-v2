@@ -251,8 +251,8 @@ contract Configs is Test {
                     collateralFactor: 0.9e18,
                     reserveFactor: 0.1e18,
                     seizeShare: 2.8e16, //2.8%,
-                    supplyCap: 100e18,
-                    borrowCap: 100e18,
+                    supplyCap: 10_000_000e6,
+                    borrowCap: 10_000_000e6,
                     priceFeedName: "USDC_ORACLE",
                     tokenAddressName: "USDC",
                     name: "Moonwell USDC",
@@ -321,8 +321,8 @@ contract Configs is Test {
                     collateralFactor: 0.8e18, // 80% per Gauntlet recommendation
                     reserveFactor: 0.15e18, // 15% per Gauntlet recommendation
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
-                    supplyCap: 40_000_000e18, // $40m per Gauntlet recommendation
-                    borrowCap: 32_000_000e18, // $32m per Gauntlet recommendation
+                    supplyCap: 40_000_000e6, // $40m per Gauntlet recommendation
+                    borrowCap: 32_000_000e6, // $32m per Gauntlet recommendation
                     priceFeedName: "USDC_ORACLE",
                     tokenAddressName: "USDC",
                     name: "Moonwell USDC",
@@ -556,7 +556,7 @@ contract Configs is Test {
                         owner: deployer,
                         emissionToken: addresses.getAddress("WELL"),
                         supplyEmissionPerSec: 0,
-                        borrowEmissionsPerSec: 1,
+                        borrowEmissionsPerSec: 0,
                         endTime: block.timestamp + 4 weeks
                     });
 
@@ -569,10 +569,10 @@ contract Configs is Test {
                         mToken: addresses.getAddress(
                             mTokenConfigs[i].addressesString
                         ),
-                        owner: deployer,
+                        owner: addresses.getAddress("TEMPORAL_GOVERNOR"),
                         emissionToken: addresses.getAddress("WELL"),
                         supplyEmissionPerSec: 0,
-                        borrowEmissionsPerSec: 1,
+                        borrowEmissionsPerSec: 0,
                         endTime: block.timestamp + 4 weeks
                     });
 
