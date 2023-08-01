@@ -126,6 +126,68 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         assertFalse(executed);
     }
 
+    function testProposeGrantGuardianPauseSucceedsUnpauseFails() public {
+        address[] memory targets = new address[](1);
+        targets[0] = address(governor);
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        TemporalGovernor.TrustedSender[]
+            memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
+
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({
+            chainId: trustedChainid,
+            addr: newAdmin
+        });
+
+        bytes[] memory payloads = new bytes[](1);
+
+        payloads[0] = abi.encodeWithSignature(
+            "grantGuardiansPause()",
+            trustedSenders
+        );
+
+        /// to be unbundled by the temporal governor
+        bytes memory payload = abi.encode(
+            address(governor),
+            targets,
+            values,
+            payloads
+        );
+
+        governor.togglePause();
+        assertTrue(governor.paused());
+
+        mockCore.setStorage(
+            true,
+            trustedChainid,
+            governor.addressToBytes(admin),
+            "reeeeeee",
+            payload
+        );
+        governor.fastTrackProposalExecution("");
+
+        bytes32 hash = keccak256(abi.encodePacked(""));
+        (bool executed, uint248 queueTime) = governor.queuedTransactions(hash);
+
+        assertEq(queueTime, block.timestamp);
+        assertTrue(executed);
+        assertTrue(governor.guardianPauseAllowed());
+    }
+    
+    function testUnpauseTogglePauseAfterGrantGuardiansPause() public {
+        testProposeGrantGuardianPauseSucceedsUnpauseFails();
+        governor.togglePause();
+    }
+    
+    function testUnpausePermissionlessAfterGrantGuardiansPause() public {
+        testProposeGrantGuardianPauseSucceedsUnpauseFails();
+
+        vm.warp(governor.permissionlessUnpauseTime() + 1 + block.timestamp);
+        governor.permissionlessUnpause();
+    }
+
     function testProposeFailsWormholeError() public {
         address[] memory targets = new address[](1);
         targets[0] = address(governor);
