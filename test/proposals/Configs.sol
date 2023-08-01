@@ -492,7 +492,33 @@ contract Configs is Test {
 
             return;
         }
-        /// TODO add branch for base mainnet to deploy chainlink composite oracles
+
+        /// TODO test this on chainforked mainnet
+        if (block.chainid == _baseChainId) {
+            if (addresses.getAddress("wstETH_ORACLE") == address(0)) {
+                ChainlinkCompositeOracle wstETHOracle = new ChainlinkCompositeOracle(
+                        addresses.getAddress("ETH_ORACLE"),
+                        addresses.getAddress("stETHETH_ORACLE"),
+                        addresses.getAddress("wstETHstETH_ORACLE")
+                    );
+
+                addresses.addAddress(
+                    "wstETH_ORACLE",
+                    address(wstETHOracle)
+                );
+            }
+            if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
+                ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
+                        addresses.getAddress("ETH_ORACLE"),
+                        addresses.getAddress("cbETHETH_ORACLE"),
+                        address(0)
+                    );
+
+                addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
+            }
+
+            return;
+        }
     }
 
     function initEmissions(Addresses addresses, address deployer) public {
