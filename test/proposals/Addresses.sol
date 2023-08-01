@@ -28,13 +28,13 @@ contract Addresses is Test, ChainIds {
             localChainId,
             0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// Random address is borrow supply guardian
         );
-        /// MOONBASE
+        /// MOONBEAM
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",
             moonBeamChainId,
             0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// TODO add correct guantlet msig
         );
-        /// BASE
+        /// MOON BASE
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",
             moonBaseChainId, /// TODO replace with guantlet multisig address
@@ -46,7 +46,7 @@ contract Addresses is Test, ChainIds {
             goerliChainId,
             0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// EOA owner
         );
-        /// GOERLI
+        /// BASE GOERLI
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",
             baseGoerliChainId,
@@ -266,7 +266,17 @@ contract Addresses is Test, ChainIds {
             0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A
         );
 
-        /// TODO add WETH and Guardian Multisig address on Base once we have it
+        _addAddress(
+            "WETH",
+            baseChainId,
+            0x4200000000000000000000000000000000000006
+        );
+
+        /// TODO add Guardian Multisig address on Base once we have it
+        /// TODO add chainlink oracle addresses on Base once we have it
+        /// stETHETH_ORACLE, wstETHstETH_ORACLE, cbETH_ORACLE, ETH_ORACLE, WBTC_ORACLE, USDC_ORACLE
+        /// ADD WBTC, USDC, wstETH, cbETH, WELL
+        /// TODO update mainnetMTokens.json and mainnetRewardStreams.json once we have the addresses
     }
 
     /// @notice add an address for a specific chainId
