@@ -1,10 +1,10 @@
 [
     {
-        "borrowEmissionsPerSec": 1,
+        "borrowEmissionsPerSec": 1e18,
         "emissionToken": "0xF72741e0F01Af32863f23a1245Cd59d67CDAD406",
         "endTime": 1690508299,
         "mToken": "0x8C3270FeC76c99c7C07926ed76229C91204F9069",
         "owner": "0xe8d2B1462C59F527B2C888772A39dbE0Fba4f8b6",
-        "supplyEmissionPerSec": 1
+        "supplyEmissionPerSec": 1e18
     }
 ]

@@ -1,40 +1,40 @@
 [
     {
-        "initialMintAmount": 1000000,
-        "collateralFactor": 900000000000000000,
-        "reserveFactor": 100000000000000000,
-        "seizeShare": 28000000000000000,
-        "supplyCap": 100000000000000000000,
-        "borrowCap": 100000000000000000000,
+        "initialMintAmount": 1e6,
+        "collateralFactor": 9e17,
+        "reserveFactor": 0.1e18,
+        "seizeShare": 2.8e16,
+        "supplyCap": 40000000e6,
+        "borrowCap": 32000000e6,
         "priceFeedName": "USDC_ORACLE",
         "tokenAddressName": "USDC",
         "name": "Moonwell USDC",
         "symbol": "mUSDC",
         "addressesString": "MOONWELL_USDC",
         "jrm": {
-            "baseRatePerYear": 40000000000000000,
-            "multiplierPerYear": 450000000000000000,
-            "jumpMultiplierPerYear": 800000000000000000,
-            "kink": 800000000000000000
+            "baseRatePerYear": 4e16,
+            "multiplierPerYear": 4.5e17,
+            "jumpMultiplierPerYear": 0.8e18,
+            "kink": 0.8e18
         }
     },
     {
-        "initialMintAmount": 1000000000000,
-        "collateralFactor": 700000000000000000,
-        "reserveFactor": 100000000000000000,
-        "seizeShare": 28000000000000000,
-        "supplyCap": 100000000000000000000,
-        "borrowCap": 100000000000000000000,
+        "initialMintAmount": 1e12,
+        "collateralFactor": 7e17,
+        "reserveFactor": 1e17,
+        "seizeShare": 2.8e16,
+        "supplyCap": 10500e18,
+        "borrowCap": 6300e18,
         "priceFeedName": "ETH_ORACLE",
         "tokenAddressName": "WETH",
         "name": "Moonwell WETH",
         "symbol": "mWETH",
         "addressesString": "MOONWELL_WETH",
         "jrm": {
-            "baseRatePerYear": 40000000000000000,
-            "multiplierPerYear": 450000000000000000,
-            "jumpMultiplierPerYear": 800000000000000000,
-            "kink": 800000000000000000
+            "baseRatePerYear": 4e16,
+            "multiplierPerYear": 4.5e17,
+            "jumpMultiplierPerYear": 0.8e18,
+            "kink": 0.8e18
         }
     }
 ]
