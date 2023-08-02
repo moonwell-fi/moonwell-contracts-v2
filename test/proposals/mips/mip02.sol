@@ -3,34 +3,21 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {IVotes} from "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+import {MToken} from "@protocol/core/MToken.sol";
+import {MErc20} from "@protocol/core/MErc20.sol";
+import {Configs} from "@test/proposals/Configs.sol";
+import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {TimelockProposal} from "@test/proposals/proposalTypes/TimelockProposal.sol";
-
-import {Comptroller, ComptrollerInterface} from "@protocol/core/Comptroller.sol";
+import {Unitroller} from "@protocol/core/Unitroller.sol";
 import {MErc20Delegate} from "@protocol/core/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/core/MErc20Delegator.sol";
-
 import {ChainlinkOracle} from "@protocol/core/Oracles/ChainlinkOracle.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/core/IRModels/JumpRateModel.sol";
-import {TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
-import {IWormhole} from "@protocol/core/Governance/IWormhole.sol";
-import {Unitroller} from "@protocol/core/Unitroller.sol";
-import {MErc20} from "@protocol/core/MErc20.sol";
-
-import {MToken} from "@protocol/core/MToken.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
-
-import {Configs} from "@test/proposals/Configs.sol";
-
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
+import {JumpRateModel, InterestRateModel} from "@protocol/core/IRModels/JumpRateModel.sol";
+import {Comptroller, ComptrollerInterface} from "@protocol/core/Comptroller.sol";
 
 /// @notice This MIP deploys and lists new MTokens for the protocol.
 /// It reads in the configuration from Config.sol, which reads in the mainnetMTokens.json file and deploys the MTokens specified in that file.
@@ -183,7 +170,7 @@ contract mip02 is Proposal, CrossChainProposal, ChainIds, Configs {
 
                 supplyCaps[i] = config.supplyCap;
                 borrowCaps[i] = config.borrowCap;
-                
+
                 address cTokenAddress = addresses.getAddress(
                     config.addressesString
                 );
@@ -306,16 +293,14 @@ contract mip02 is Proposal, CrossChainProposal, ChainIds, Configs {
     function teardown(Addresses addresses, address) public pure {}
 
     function validate(Addresses addresses, address deployer) public {
-        TemporalGovernor governor = TemporalGovernor(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
-        );
+        address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
         {
             ChainlinkOracle oracle = ChainlinkOracle(
                 addresses.getAddress("CHAINLINK_ORACLE")
             );
 
-            assertEq(oracle.admin(), address(governor));
+            assertEq(oracle.admin(), governor);
             /// validate chainlink price feeds are correctly set according to config in oracle
 
             Configs.CTokenConfiguration[]
@@ -416,11 +401,11 @@ contract mip02 is Proposal, CrossChainProposal, ChainIds, Configs {
                     );
 
                     /// assert initial mToken balances are correct
-                    assertTrue(mToken.balanceOf(address(governor)) > 0); /// governor has some
+                    assertTrue(mToken.balanceOf(governor) > 0); /// governor has some
                     assertEq(mToken.balanceOf(address(0)), 1); /// address 0 has 1 wei of assets
 
                     /// assert cToken admin is the temporal governor
-                    assertEq(address(mToken.admin()), address(governor));
+                    assertEq(address(mToken.admin()), governor);
 
                     /// assert mToken comptroller is correct
                     assertEq(
