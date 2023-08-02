@@ -13,11 +13,6 @@ then to deploy the entire system on base goerli:
 
 ```forge script test/proposals/DeployProposal.s.sol:DeployProposal -vvv --rpc-url baseGoerli --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key baseGoerli --verify```
 
-optionally, you can deploy with verification on BaseScan Goerli:
-
-```forge script test/proposals/DeployProposal.s.sol:DeployProposal -vvv --etherscan-api-key baseGoerli --verify --rpc-url baseGoerli --broadcast```
-
-
 Substitute out the rpc-url for the chain to deploy on if the destination is not base goerli.
 
 If deploying on mainnet, double check that `mainnetMTokens.json` and `mainnetRewardStreams.json` in the `test/proposals/` folder are correctly filled out. Then, double check that in `Addresses.sol`, all the oracles, tokens and guardians are correctly set. If no reward streams will be created, ensure the rewards json file is an empty array. Triple check that the addresses for the system are correct in `Addresses.sol`, then deploy to base mainnet:
