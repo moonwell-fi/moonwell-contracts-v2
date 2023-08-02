@@ -1,44 +1,32 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
-
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {IVotes} from "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+import "@forge-std/Test.sol";
+
+import {WETH9} from "@protocol/core/router/IWETH.sol";
+import {MErc20} from "@protocol/core/MErc20.sol";
+import {MToken} from "@protocol/core/MToken.sol";
+import {Configs} from "@test/proposals/Configs.sol";
+import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {TimelockProposal} from "@test/proposals/proposalTypes/TimelockProposal.sol";
-
-import {Comptroller, ComptrollerInterface} from "@protocol/core/Comptroller.sol";
-import {MErc20Delegate} from "@protocol/core/MErc20Delegate.sol";
-import {MErc20Delegator} from "@protocol/core/MErc20Delegator.sol";
-
-import {PriceOracle} from "@protocol/core/Oracles/PriceOracle.sol";
-import {ChainlinkOracle} from "@protocol/core/Oracles/ChainlinkOracle.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/core/IRModels/JumpRateModel.sol";
-import {TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
 import {IWormhole} from "@protocol/core/Governance/IWormhole.sol";
 import {Unitroller} from "@protocol/core/Unitroller.sol";
-import {MErc20} from "@protocol/core/MErc20.sol";
-
+import {WETHRouter} from "@protocol/core/router/WETHRouter.sol";
+import {PriceOracle} from "@protocol/core/Oracles/PriceOracle.sol";
+import {MErc20Delegate} from "@protocol/core/MErc20Delegate.sol";
+import {MErc20Delegator} from "@protocol/core/MErc20Delegator.sol";
+import {ChainlinkOracle} from "@protocol/core/Oracles/ChainlinkOracle.sol";
+import {TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
+import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 import {MultiRewardDistributor} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
-import {WETH9} from "@protocol/core/router/IWETH.sol";
-
-import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
-import {MockWeth} from "@test/mock/MockWeth.sol";
-import {WETHRouter} from "@protocol/core/router/WETHRouter.sol";
-import {MToken} from "@protocol/core/MToken.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
-
-import {Configs} from "@test/proposals/Configs.sol";
-
-import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
+import {JumpRateModel, InterestRateModel} from "@protocol/core/IRModels/JumpRateModel.sol";
+import {Comptroller, ComptrollerInterface} from "@protocol/core/Comptroller.sol";
 
 contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
     string public constant name = "MIP00";
