@@ -157,7 +157,10 @@ contract Configs is Test {
                 WETH9 weth = WETH9(addresses.getAddress("WETH"));
                 vm.deal(address(this), 0.00001e18);
                 weth.deposit{value: 0.00001e18}();
-                weth.transfer(addresses.getAddress("TEMPORAL_GOVERNOR"), 0.00001e18);
+                weth.transfer(
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    0.00001e18
+                );
             }
 
             {
@@ -306,8 +309,6 @@ contract Configs is Test {
 
             /// cToken config for WETH, WBTC, USDC, cbETH, and wstETH on base goerli testnet
             {
-                address token = addresses.getAddress("USDC");
-
                 JumpRateModelConfiguration
                     memory jrmConfigUSDC = JumpRateModelConfiguration(
                         0.00e18, // 0 Base per Gauntlet recommendation
@@ -335,8 +336,6 @@ contract Configs is Test {
             }
 
             {
-                address token = addresses.getAddress("WETH");
-
                 JumpRateModelConfiguration
                     memory jrmConfigWETH = JumpRateModelConfiguration(
                         0.02e18, // 0.02 Base per Gauntlet recommendation
@@ -364,8 +363,6 @@ contract Configs is Test {
             }
 
             {
-                address token = addresses.getAddress("WBTC");
-
                 JumpRateModelConfiguration
                     memory jrmConfigWBTC = JumpRateModelConfiguration(
                         0.02e18, // 0.02 Base per Gauntlet recommendation
@@ -393,8 +390,6 @@ contract Configs is Test {
             }
 
             {
-                address token = addresses.getAddress("cbETH");
-
                 /// 1 cbETH = 1.0429 ETH
                 if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
                     MockChainlinkOracle oracle = new MockChainlinkOracle(
@@ -437,8 +432,6 @@ contract Configs is Test {
             }
 
             {
-                address token = addresses.getAddress("wstETH");
-
                 if (addresses.getAddress("wstETH_ORACLE") == address(0)) {
                     /// 1 stETH = 0.99938151 ETH
                     MockChainlinkOracle stETHETHOracle = new MockChainlinkOracle(
@@ -502,10 +495,7 @@ contract Configs is Test {
                         addresses.getAddress("wstETHstETH_ORACLE")
                     );
 
-                addresses.addAddress(
-                    "wstETH_ORACLE",
-                    address(wstETHOracle)
-                );
+                addresses.addAddress("wstETH_ORACLE", address(wstETHOracle));
             }
             if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
                 ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
@@ -604,8 +594,10 @@ contract Configs is Test {
                     borrowCap: cTokenConfigurations[chainId][i].borrowCap,
                     addressesString: cTokenConfigurations[chainId][i]
                         .addressesString,
-                    priceFeedName: cTokenConfigurations[chainId][i].priceFeedName,
-                    tokenAddressName: cTokenConfigurations[chainId][i].tokenAddressName,
+                    priceFeedName: cTokenConfigurations[chainId][i]
+                        .priceFeedName,
+                    tokenAddressName: cTokenConfigurations[chainId][i]
+                        .tokenAddressName,
                     symbol: cTokenConfigurations[chainId][i].symbol,
                     name: cTokenConfigurations[chainId][i].name,
                     jrm: cTokenConfigurations[chainId][i].jrm
