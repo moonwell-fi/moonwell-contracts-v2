@@ -232,103 +232,113 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
     }
 
     function afterDeploy(Addresses addresses, address) public {
-        ProxyAdmin proxyAdmin = ProxyAdmin(
-            addresses.getAddress("MRD_PROXY_ADMIN")
-        );
-        Unitroller unitroller = Unitroller(addresses.getAddress("UNITROLLER"));
-        address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        ChainlinkOracle oracle = ChainlinkOracle(
-            addresses.getAddress("CHAINLINK_ORACLE")
-        );
+        {
+            ProxyAdmin proxyAdmin = ProxyAdmin(
+                addresses.getAddress("MRD_PROXY_ADMIN")
+            );
+            Unitroller unitroller = Unitroller(
+                addresses.getAddress("UNITROLLER")
+            );
+            address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
+            ChainlinkOracle oracle = ChainlinkOracle(
+                addresses.getAddress("CHAINLINK_ORACLE")
+            );
 
-        /// set temporal governor as owner of the proxy admin
-        proxyAdmin.transferOwnership(governor);
+            /// set temporal governor as owner of the proxy admin
+            proxyAdmin.transferOwnership(governor);
 
-        /// set chainlink oracle on the comptroller implementation contract
-        Comptroller(address(unitroller))._setPriceOracle(
-            PriceOracle(address(oracle))
-        );
+            /// TODO add GOVERNOR GUARDIAN to Addresses.sol, then hand ownership over to governor guardian
+            // TemporalGovernor(governor).transferOwnership(
+            //     addresses.getAddress("GOVERNOR_GUARDIAN")
+            // );
 
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
-        MToken[] memory mTokens = new MToken[](cTokenConfigs.length);
-        uint256[] memory supplyCaps = new uint256[](cTokenConfigs.length);
-        uint256[] memory borrowCaps = new uint256[](cTokenConfigs.length);
+            /// set chainlink oracle on the comptroller implementation contract
+            Comptroller(address(unitroller))._setPriceOracle(
+                PriceOracle(address(oracle))
+            );
 
-        //// set mint paused for all of the deployed MTokens
-        unchecked {
-            for (uint256 i = 0; i < cTokenConfigs.length; i++) {
-                Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-                supplyCaps[i] = config.supplyCap;
-                borrowCaps[i] = config.borrowCap;
+            Configs.CTokenConfiguration[]
+                memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+            MToken[] memory mTokens = new MToken[](cTokenConfigs.length);
+            uint256[] memory supplyCaps = new uint256[](cTokenConfigs.length);
+            uint256[] memory borrowCaps = new uint256[](cTokenConfigs.length);
 
-                oracle.setFeed(
-                    ERC20(addresses.getAddress(config.tokenAddressName))
-                        .symbol(),
-                    addresses.getAddress(config.priceFeedName)
-                );
+            //// set mint paused for all of the deployed MTokens
+            unchecked {
+                for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+                    Configs.CTokenConfiguration memory config = cTokenConfigs[
+                        i
+                    ];
+                    supplyCaps[i] = config.supplyCap;
+                    borrowCaps[i] = config.borrowCap;
 
-                /// list mToken in the comptroller
-                Comptroller(address(unitroller))._supportMarket(
-                    MToken(addresses.getAddress(config.addressesString))
-                );
+                    oracle.setFeed(
+                        ERC20(addresses.getAddress(config.tokenAddressName))
+                            .symbol(),
+                        addresses.getAddress(config.priceFeedName)
+                    );
 
-                /// set mint paused for all MTokens
-                Comptroller(address(unitroller))._setMintPaused(
-                    MToken(addresses.getAddress(config.addressesString)),
-                    true
-                );
+                    /// list mToken in the comptroller
+                    Comptroller(address(unitroller))._supportMarket(
+                        MToken(addresses.getAddress(config.addressesString))
+                    );
 
-                /// get the mToken
-                mTokens[i] = MToken(
-                    addresses.getAddress(config.addressesString)
-                );
+                    /// set mint paused for all MTokens
+                    Comptroller(address(unitroller))._setMintPaused(
+                        MToken(addresses.getAddress(config.addressesString)),
+                        true
+                    );
 
-                mTokens[i]._setReserveFactor(config.reserveFactor);
-                mTokens[i]._setProtocolSeizeShare(config.seizeShare);
-                mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+                    /// get the mToken
+                    mTokens[i] = MToken(
+                        addresses.getAddress(config.addressesString)
+                    );
 
-                Comptroller(address(unitroller))._setCollateralFactor(
-                    mTokens[i],
-                    config.collateralFactor
-                );
+                    mTokens[i]._setReserveFactor(config.reserveFactor);
+                    mTokens[i]._setProtocolSeizeShare(config.seizeShare);
+                    mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+
+                    Comptroller(address(unitroller))._setCollateralFactor(
+                        mTokens[i],
+                        config.collateralFactor
+                    );
+                }
             }
+
+            Comptroller(address(unitroller))._setMarketSupplyCaps(
+                mTokens,
+                supplyCaps
+            );
+            Comptroller(address(unitroller))._setMarketBorrowCaps(
+                mTokens,
+                borrowCaps
+            );
+            Comptroller(address(unitroller))._setRewardDistributor(
+                MultiRewardDistributor(addresses.getAddress("MRD_PROXY"))
+            );
+            Comptroller(address(unitroller))._setLiquidationIncentive(
+                liquidationIncentive
+            );
+            Comptroller(address(unitroller))._setCloseFactor(closeFactor);
+
+            /// ------------ SET GUARDIANS ------------
+
+            Comptroller(address(unitroller))._setBorrowCapGuardian(
+                addresses.getAddress("BORROW_SUPPLY_GUARDIAN")
+            );
+            Comptroller(address(unitroller))._setSupplyCapGuardian(
+                addresses.getAddress("BORROW_SUPPLY_GUARDIAN")
+            );
+            Comptroller(address(unitroller))._setPauseGuardian(
+                addresses.getAddress("PAUSE_GUARDIAN")
+            );
+
+            /// set temporal governor as the pending admin
+            unitroller._setPendingAdmin(governor);
+
+            /// set temporal governor as the admin of the chainlink feed
+            oracle.setAdmin(governor);
         }
-
-        Comptroller(address(unitroller))._setMarketSupplyCaps(
-            mTokens,
-            supplyCaps
-        );
-        Comptroller(address(unitroller))._setMarketBorrowCaps(
-            mTokens,
-            borrowCaps
-        );
-        Comptroller(address(unitroller))._setRewardDistributor(
-            MultiRewardDistributor(addresses.getAddress("MRD_PROXY"))
-        );
-        Comptroller(address(unitroller))._setLiquidationIncentive(
-            liquidationIncentive
-        );
-        Comptroller(address(unitroller))._setCloseFactor(closeFactor);
-
-        /// ------------ SET GUARDIANS ------------
-
-        Comptroller(address(unitroller))._setBorrowCapGuardian(
-            addresses.getAddress("BORROW_SUPPLY_GUARDIAN")
-        );
-        Comptroller(address(unitroller))._setSupplyCapGuardian(
-            addresses.getAddress("BORROW_SUPPLY_GUARDIAN")
-        );
-        Comptroller(address(unitroller))._setPauseGuardian(
-            addresses.getAddress("PAUSE_GUARDIAN")
-        );
-
-        /// set temporal governor as the pending admin
-        unitroller._setPendingAdmin(governor);
-
-        /// set temporal governor as the admin of the chainlink feed
-        oracle.setAdmin(governor);
-
         /// -------------- EMISSION CONFIGURATION --------------
 
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
@@ -343,8 +353,8 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 EmissionConfig memory config = emissionConfig[i];
 
                 mrd._addEmissionConfig(
-                    MToken(config.mToken),
-                    config.owner,
+                    MToken(addresses.getAddress(config.mToken)),
+                    addresses.getAddress(config.owner),
                     config.emissionToken,
                     config.supplyEmissionPerSec,
                     config.borrowEmissionsPerSec,
@@ -448,6 +458,8 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
         TemporalGovernor governor = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
+
+        /// TODO validate that governor guardian is correctly set on temporal governor
 
         assertEq(
             chainIdTemporalGovTimelock[block.chainid],
@@ -796,11 +808,14 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                     EmissionConfig memory config = emissionConfig[i];
                     MultiRewardDistributorCommon.MarketConfig
                         memory marketConfig = distributor.getConfigForMarket(
-                            MToken(config.mToken),
+                            MToken(addresses.getAddress(config.mToken)),
                             config.emissionToken
                         );
 
-                    assertEq(marketConfig.owner, config.owner);
+                    assertEq(
+                        marketConfig.owner,
+                        addresses.getAddress(config.owner)
+                    );
                     assertEq(marketConfig.emissionToken, config.emissionToken);
                     assertEq(marketConfig.endTime, config.endTime);
                     assertEq(

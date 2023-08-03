@@ -86,11 +86,11 @@ contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
                 EmissionConfig memory config = emissionConfig[i];
                 MultiRewardDistributorCommon.MarketConfig
                     memory marketConfig = distributor.getConfigForMarket(
-                        MToken(config.mToken),
+                        MToken(addresses.getAddress(config.mToken)),
                         config.emissionToken
                     );
 
-                assertEq(marketConfig.owner, config.owner);
+                assertEq(marketConfig.owner, addresses.getAddress(config.owner));
                 assertEq(marketConfig.emissionToken, config.emissionToken);
                 assertEq(marketConfig.endTime, config.endTime);
                 assertEq(
