@@ -46,6 +46,6 @@ The contract provides various functionalities:
 
 - Guardian management: The contract allows for a guardian who can pause the contract. This ability can be granted, revoked, and its status can be toggled. The guardian's ability to pause is revoked when the contract is paused.
 
-- Emergency actions: In case of an emergency, the contract provides a fast-track mechanism for proposals to be executed even when the contract is paused.
+- Emergency actions: In case of an emergency, the contract provides a fast-track mechanism for proposals to be executed only when the contract is paused. A proposal cannot be fast tracked when the contract is unpaused.
 
 - Helper functions: There are several private helper functions used internally by the contract for queueing proposals, executing proposals, and performing payload sanity checks.
