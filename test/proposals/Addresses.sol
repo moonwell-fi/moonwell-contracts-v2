@@ -266,10 +266,26 @@ contract Addresses is Test, ChainIds {
             0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A
         );
 
+        /// ---------- base goerli deployment ----------
+
+
+
+        _addAddress(
+            "USDC",
+            baseChainId,
+            0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA
+        );
+
         _addAddress(
             "WETH",
             baseChainId,
             0x4200000000000000000000000000000000000006
+        );
+
+        _addAddress(
+            "cbETH",
+            baseChainId,
+            0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22
         );
 
         /// TODO add Guardian Multisig address on Base once we have it

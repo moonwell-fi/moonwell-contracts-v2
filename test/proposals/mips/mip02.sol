@@ -122,7 +122,6 @@ contract mip02 is Proposal, CrossChainProposal, ChainIds, Configs {
     }
 
     function afterDeploy(Addresses addresses, address) public {
-        Unitroller unitroller = Unitroller(addresses.getAddress("UNITROLLER"));
         address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
         Configs.CTokenConfiguration[]
