@@ -2,6 +2,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {WETH9} from "@protocol/core/router/IWETH.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
@@ -9,38 +10,38 @@ import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {ChainlinkCompositeOracle} from "@protocol/core/Oracles/ChainlinkCompositeOracle.sol";
 
-contract Configs {
+contract Configs is Test {
     struct CTokenConfiguration {
-        uint256 initialMintAmount;
+        string addressesString; /// string used to set address in Addresses.sol
+        uint256 borrowCap; /// borrow cap
         uint256 collateralFactor; /// collateral factor of the asset
+        uint256 initialMintAmount;
+        JumpRateModelConfiguration jrm; /// jump rate model configuration information
+        string name; /// name of the mToken
+        string priceFeedName; /// chainlink price oracle
         uint256 reserveFactor; /// reserve factor of the asset
         uint256 seizeShare; /// fee gotten from liquidation
         uint256 supplyCap; /// supply cap
-        uint256 borrowCap; /// borrow cap
-        address priceFeed; /// chainlink price oracle
-        address tokenAddress; /// underlying token address
-        string addressesString; /// string used to set address in Addresses.sol
         string symbol; /// symbol of the mToken
-        string name; /// name of the mToken
-        JumpRateModelConfiguration jrm; /// jump rate model configuration information
+        string tokenAddressName; /// underlying token address
     }
 
     struct JumpRateModelConfiguration {
         uint256 baseRatePerYear;
-        uint256 multiplierPerYear;
         uint256 jumpMultiplierPerYear;
         uint256 kink;
+        uint256 multiplierPerYear;
     }
 
     mapping(uint256 => CTokenConfiguration[]) public cTokenConfigurations;
 
     struct EmissionConfig {
-        address mToken;
-        address owner;
-        address emissionToken;
-        uint256 supplyEmissionPerSec;
         uint256 borrowEmissionsPerSec;
+        address emissionToken;
         uint256 endTime;
+        string mToken;
+        string owner;
+        uint256 supplyEmissionPerSec;
     }
 
     /// mapping of all emission configs per chainid
@@ -48,9 +49,80 @@ contract Configs {
 
     uint256 public constant _baseGoerliChainId = 84531;
     uint256 public constant localChainId = 31337;
+    uint256 public constant _baseChainId = 8453;
 
     /// @notice initial mToken mint amount
     uint256 public constant initialMintAmount = 1 ether;
+
+    constructor() {
+        string memory fileContents = vm.readFile(
+            "./test/proposals/mainnetMTokens.json"
+        );
+        bytes memory rawJson = vm.parseJson(fileContents);
+
+        CTokenConfiguration[] memory decodedJson = abi.decode(
+            rawJson,
+            (CTokenConfiguration[])
+        );
+
+        for (uint256 i = 0; i < decodedJson.length; i++) {
+            console.log("\n ------ MToken Configuration ------");
+            console.log("addressesString:", decodedJson[i].addressesString);
+            console.log("supplyCap:", decodedJson[i].supplyCap);
+            console.log("borrowCap:", decodedJson[i].borrowCap);
+            console.log("collateralFactor:", decodedJson[i].collateralFactor);
+            console.log("initialMintAmount:", decodedJson[i].initialMintAmount);
+            console.log("name:", decodedJson[i].name);
+            console.log("priceFeedName:", decodedJson[i].priceFeedName);
+            console.log("reserveFactor:", decodedJson[i].reserveFactor);
+            console.log("seizeShare:", decodedJson[i].seizeShare);
+            console.log("supplyCap:", decodedJson[i].supplyCap);
+            console.log("symbol:", decodedJson[i].symbol);
+            console.log("tokenAddressName:", decodedJson[i].tokenAddressName);
+            console.log(
+                "jrm.baseRatePerYear:",
+                decodedJson[i].jrm.baseRatePerYear
+            );
+            console.log(
+                "jrm.multiplierPerYear:",
+                decodedJson[i].jrm.multiplierPerYear
+            );
+            console.log(
+                "jrm.jumpMultiplierPerYear:",
+                decodedJson[i].jrm.jumpMultiplierPerYear
+            );
+            console.log("jrm.kink:", decodedJson[i].jrm.kink);
+
+            cTokenConfigurations[_baseChainId].push(decodedJson[i]);
+        }
+
+        fileContents = vm.readFile(
+            "./test/proposals/mainnetRewardStreams.json"
+        );
+        rawJson = vm.parseJson(fileContents);
+        EmissionConfig[] memory decodedEmissions = abi.decode(
+            rawJson,
+            (EmissionConfig[])
+        );
+
+        for (uint256 i = 0; i < decodedEmissions.length; i++) {
+            console.log("\n ------ Emission Configuration ------");
+            console.log(
+                "borrowEmissionsPerSec:",
+                decodedEmissions[i].borrowEmissionsPerSec
+            );
+            console.log("emissionToken:", decodedEmissions[i].emissionToken);
+            console.log("endTime:", decodedEmissions[i].endTime);
+            console.log("mToken:", decodedEmissions[i].mToken);
+            console.log("owner:", decodedEmissions[i].owner);
+            console.log(
+                "supplyEmissionPerSec:",
+                decodedEmissions[i].supplyEmissionPerSec
+            );
+
+            emissions[_baseChainId].push(decodedEmissions[i]);
+        }
+    }
 
     function localInit(Addresses addresses) public {
         if (block.chainid == localChainId) {
@@ -82,12 +154,13 @@ contract Configs {
             }
 
             {
-                MockWeth token = new MockWeth();
-                token.mint(
+                WETH9 weth = WETH9(addresses.getAddress("WETH"));
+                vm.deal(address(this), 0.00001e18);
+                weth.deposit{value: 0.00001e18}();
+                weth.transfer(
                     addresses.getAddress("TEMPORAL_GOVERNOR"),
-                    initialMintAmount
+                    0.00001e18
                 );
-                addresses.addAddress("WETH", address(token));
             }
 
             {
@@ -181,10 +254,10 @@ contract Configs {
                     collateralFactor: 0.9e18,
                     reserveFactor: 0.1e18,
                     seizeShare: 2.8e16, //2.8%,
-                    supplyCap: 100e18,
-                    borrowCap: 100e18,
-                    priceFeed: address(usdcOracle),
-                    tokenAddress: address(token),
+                    supplyCap: 10_000_000e6,
+                    borrowCap: 10_000_000e6,
+                    priceFeedName: "USDC_ORACLE",
+                    tokenAddressName: "USDC",
                     name: "Moonwell USDC",
                     symbol: "mUSDC",
                     addressesString: "MOONWELL_USDC",
@@ -217,8 +290,8 @@ contract Configs {
                     seizeShare: 2.8e16, //2.8%,
                     supplyCap: 100e18,
                     borrowCap: 100e18,
-                    priceFeed: addresses.getAddress("ETH_ORACLE"),
-                    tokenAddress: address(token),
+                    priceFeedName: "ETH_ORACLE",
+                    tokenAddressName: "WETH",
                     addressesString: "MOONWELL_WETH",
                     name: "Moonwell WETH",
                     symbol: "mETH",
@@ -236,8 +309,6 @@ contract Configs {
 
             /// cToken config for WETH, WBTC, USDC, cbETH, and wstETH on base goerli testnet
             {
-                address token = addresses.getAddress("USDC");
-
                 JumpRateModelConfiguration
                     memory jrmConfigUSDC = JumpRateModelConfiguration(
                         0.00e18, // 0 Base per Gauntlet recommendation
@@ -251,10 +322,10 @@ contract Configs {
                     collateralFactor: 0.8e18, // 80% per Gauntlet recommendation
                     reserveFactor: 0.15e18, // 15% per Gauntlet recommendation
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
-                    supplyCap: 40_000_000e18, // $40m per Gauntlet recommendation
-                    borrowCap: 32_000_000e18, // $32m per Gauntlet recommendation
-                    priceFeed: addresses.getAddress("USDC_ORACLE"),
-                    tokenAddress: token,
+                    supplyCap: 40_000_000e6, // $40m per Gauntlet recommendation
+                    borrowCap: 32_000_000e6, // $32m per Gauntlet recommendation
+                    priceFeedName: "USDC_ORACLE",
+                    tokenAddressName: "USDC",
                     name: "Moonwell USDC",
                     symbol: "mUSDC",
                     addressesString: "MOONWELL_USDC",
@@ -265,8 +336,6 @@ contract Configs {
             }
 
             {
-                address token = addresses.getAddress("WETH");
-
                 JumpRateModelConfiguration
                     memory jrmConfigWETH = JumpRateModelConfiguration(
                         0.02e18, // 0.02 Base per Gauntlet recommendation
@@ -282,8 +351,8 @@ contract Configs {
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
                     supplyCap: 10_500e18, // 10,500 WETH per Gauntlet recommendation
                     borrowCap: 6_300e18, // 6,300 WETH per Gauntlet recommendation
-                    priceFeed: addresses.getAddress("ETH_ORACLE"),
-                    tokenAddress: token,
+                    priceFeedName: "ETH_ORACLE",
+                    tokenAddressName: "WETH",
                     addressesString: "MOONWELL_WETH",
                     name: "Moonwell WETH",
                     symbol: "mWETH",
@@ -294,8 +363,6 @@ contract Configs {
             }
 
             {
-                address token = addresses.getAddress("WBTC");
-
                 JumpRateModelConfiguration
                     memory jrmConfigWBTC = JumpRateModelConfiguration(
                         0.02e18, // 0.02 Base per Gauntlet recommendation
@@ -311,8 +378,8 @@ contract Configs {
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
                     supplyCap: 330e18, // 330 WBTC per Gauntlet recommendation
                     borrowCap: 132e18, // 132 WBTC per Gauntlet recommendation
-                    priceFeed: addresses.getAddress("WBTC_ORACLE"),
-                    tokenAddress: token,
+                    priceFeedName: "WBTC_ORACLE",
+                    tokenAddressName: "WBTC",
                     addressesString: "MOONWELL_WBTC",
                     name: "Moonwell WBTC",
                     symbol: "mWBTC",
@@ -323,20 +390,20 @@ contract Configs {
             }
 
             {
-                address token = addresses.getAddress("cbETH");
                 /// 1 cbETH = 1.0429 ETH
-                MockChainlinkOracle oracle = new MockChainlinkOracle(
-                    1.04296945e18,
-                    18
-                );
-
-                ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
-                        addresses.getAddress("ETH_ORACLE"),
-                        address(oracle),
-                        address(0)
+                if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
+                    MockChainlinkOracle oracle = new MockChainlinkOracle(
+                        1.04296945e18,
+                        18
                     );
+                    ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
+                            addresses.getAddress("ETH_ORACLE"),
+                            address(oracle),
+                            address(0)
+                        );
 
-                addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
+                    addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
+                }
 
                 JumpRateModelConfiguration
                     memory jrmConfigCbETH = JumpRateModelConfiguration(
@@ -353,8 +420,8 @@ contract Configs {
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
                     supplyCap: 5_000e18, // 5,000 cbETH per Gauntlet recommendation
                     borrowCap: 1_500e18, // 1,500 cbETH per Gauntlet recommendation
-                    priceFeed: addresses.getAddress("cbETH_ORACLE"),
-                    tokenAddress: token,
+                    priceFeedName: "cbETH_ORACLE",
+                    tokenAddressName: "cbETH",
                     addressesString: "MOONWELL_cbETH",
                     name: "Moonwell cbETH",
                     symbol: "mcbETH",
@@ -365,27 +432,30 @@ contract Configs {
             }
 
             {
-                address token = addresses.getAddress("wstETH");
+                if (addresses.getAddress("wstETH_ORACLE") == address(0)) {
+                    /// 1 stETH = 0.99938151 ETH
+                    MockChainlinkOracle stETHETHOracle = new MockChainlinkOracle(
+                            0.99938151e18,
+                            18
+                        );
 
-                /// 1 stETH = 0.99938151 ETH
-                MockChainlinkOracle stETHETHOracle = new MockChainlinkOracle(
-                    0.99938151e18,
-                    18
-                );
+                    /// 1 wstETH = 1.13297632 stETH
+                    MockChainlinkOracle wstETHstETHOracle = new MockChainlinkOracle(
+                            1.13297632e18,
+                            18
+                        );
 
-                /// 1 wstETH = 1.13297632 stETH
-                MockChainlinkOracle wstETHstETHOracle = new MockChainlinkOracle(
-                    1.13297632e18,
-                    18
-                );
+                    ChainlinkCompositeOracle wstETHOracle = new ChainlinkCompositeOracle(
+                            addresses.getAddress("ETH_ORACLE"),
+                            address(stETHETHOracle),
+                            address(wstETHstETHOracle)
+                        );
 
-                ChainlinkCompositeOracle wstETHOracle = new ChainlinkCompositeOracle(
-                        addresses.getAddress("ETH_ORACLE"),
-                        address(stETHETHOracle),
-                        address(wstETHstETHOracle)
+                    addresses.addAddress(
+                        "wstETH_ORACLE",
+                        address(wstETHOracle)
                     );
-
-                addresses.addAddress("wstETH_ORACLE", address(wstETHOracle));
+                }
 
                 JumpRateModelConfiguration
                     memory jrmConfigWstETH = JumpRateModelConfiguration(
@@ -402,8 +472,8 @@ contract Configs {
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
                     supplyCap: 3_700e18, // 3,700 wstETH per Gauntlet recommendation
                     borrowCap: 1_110e18, // 1,110 wstETH per Gauntlet recommendation
-                    priceFeed: addresses.getAddress("wstETH_ORACLE"),
-                    tokenAddress: token,
+                    priceFeedName: "wstETH_ORACLE",
+                    tokenAddressName: "wstETH",
                     addressesString: "MOONWELL_wstETH",
                     name: "Moonwell wstETH",
                     symbol: "mwstETH",
@@ -415,6 +485,21 @@ contract Configs {
 
             return;
         }
+
+        /// TODO test this on chainforked mainnet
+        if (block.chainid == _baseChainId) {
+            if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
+                ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
+                        addresses.getAddress("ETH_ORACLE"),
+                        addresses.getAddress("cbETHETH_ORACLE"),
+                        address(0)
+                    );
+
+                addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
+            }
+
+            return;
+        }
     }
 
     function initEmissions(Addresses addresses, address deployer) public {
@@ -422,7 +507,9 @@ contract Configs {
             memory mTokenConfigs = getCTokenConfigurations(block.chainid);
 
         if (
-            block.chainid == localChainId || block.chainid == _baseGoerliChainId
+            (block.chainid == localChainId ||
+                block.chainid == _baseGoerliChainId) &&
+            addresses.getAddress("WELL") == address(0)
         ) {
             FaucetTokenWithPermit token = new FaucetTokenWithPermit(
                 1e18,
@@ -444,13 +531,11 @@ contract Configs {
 
                     /// pay USDC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({
-                        mToken: addresses.getAddress(
-                            mTokenConfigs[i].addressesString
-                        ),
-                        owner: deployer,
+                        mToken: mTokenConfigs[i].addressesString,
+                        owner: "TEMPORAL_GOVERNOR",
                         emissionToken: addresses.getAddress("WELL"),
                         supplyEmissionPerSec: 0,
-                        borrowEmissionsPerSec: 1,
+                        borrowEmissionsPerSec: 0,
                         endTime: block.timestamp + 4 weeks
                     });
 
@@ -460,17 +545,15 @@ contract Configs {
                 if (block.chainid == _baseGoerliChainId) {
                     /// pay USDC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({
-                        mToken: addresses.getAddress(
-                            mTokenConfigs[i].addressesString
-                        ),
-                        owner: deployer,
+                        mToken: mTokenConfigs[i].addressesString,
+                        owner: "TEMPORAL_GOVERNOR",
                         emissionToken: addresses.getAddress("WELL"),
                         supplyEmissionPerSec: 0,
-                        borrowEmissionsPerSec: 1,
+                        borrowEmissionsPerSec: 0,
                         endTime: block.timestamp + 4 weeks
                     });
 
-                    emissions[localChainId].push(emissionConfig);
+                    emissions[block.chainid].push(emissionConfig);
                 }
             }
         }
@@ -498,8 +581,10 @@ contract Configs {
                     borrowCap: cTokenConfigurations[chainId][i].borrowCap,
                     addressesString: cTokenConfigurations[chainId][i]
                         .addressesString,
-                    priceFeed: cTokenConfigurations[chainId][i].priceFeed,
-                    tokenAddress: cTokenConfigurations[chainId][i].tokenAddress,
+                    priceFeedName: cTokenConfigurations[chainId][i]
+                        .priceFeedName,
+                    tokenAddressName: cTokenConfigurations[chainId][i]
+                        .tokenAddressName,
                     symbol: cTokenConfigurations[chainId][i].symbol,
                     name: cTokenConfigurations[chainId][i].name,
                     jrm: cTokenConfigurations[chainId][i].jrm

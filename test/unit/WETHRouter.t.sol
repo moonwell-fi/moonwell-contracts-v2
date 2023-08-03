@@ -143,6 +143,12 @@ contract WETHRouterUnitTest is Test {
         router.redeem(cTokenBalance, address(this));
     }
 
+    function testSendEtherToWethRouterFails() public {
+        vm.deal(address(this), 1 ether);
+        vm.expectRevert("WETHRouter: not weth");
+        address(router).call{value: 1 ether}("");
+    }
+
     receive() external payable {
         require(acceptEth, "Eth not accepted");
     }

@@ -8,6 +8,7 @@ import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 
 import {mip00} from "@test/proposals/mips/mip00.sol";
+import {mip01} from "@test/proposals/mips/mip01.sol";
 
 /*
 How to use:
@@ -44,6 +45,7 @@ contract TestProposals is Test {
         addresses = new Addresses();
 
         proposals.push(Proposal(address(new mip00())));
+        // proposals.push(Proposal(address(new mip01())));
         nProposals = proposals.length;
     }
 
@@ -99,7 +101,7 @@ contract TestProposals is Test {
                         address[] memory recordedAddresses
                     ) = addresses.getRecordedAddresses();
                     for (uint256 j = 0; j < recordedNames.length; j++) {
-                        console.log('_addAddress("%s', recordedNames[j], '", ');
+                        console.log('_addAddress("%s",', recordedNames[j]);
                         console.log(block.chainid);
                         console.log(", ");
                         console.log(recordedAddresses[j]);

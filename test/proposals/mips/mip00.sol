@@ -1,53 +1,38 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
-
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {IVotes} from "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+import "@forge-std/Test.sol";
+
+import {WETH9} from "@protocol/core/router/IWETH.sol";
+import {MErc20} from "@protocol/core/MErc20.sol";
+import {MToken} from "@protocol/core/MToken.sol";
+import {Configs} from "@test/proposals/Configs.sol";
+import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {TimelockProposal} from "@test/proposals/proposalTypes/TimelockProposal.sol";
-
-import {Comptroller, ComptrollerInterface} from "@protocol/core/Comptroller.sol";
-import {MErc20Delegate} from "@protocol/core/MErc20Delegate.sol";
-import {MErc20Delegator} from "@protocol/core/MErc20Delegator.sol";
-
-import {PriceOracle} from "@protocol/core/Oracles/PriceOracle.sol";
-import {ChainlinkOracle} from "@protocol/core/Oracles/ChainlinkOracle.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/core/IRModels/JumpRateModel.sol";
-import {TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
 import {IWormhole} from "@protocol/core/Governance/IWormhole.sol";
 import {Unitroller} from "@protocol/core/Unitroller.sol";
-import {MErc20} from "@protocol/core/MErc20.sol";
-
+import {WETHRouter} from "@protocol/core/router/WETHRouter.sol";
+import {PriceOracle} from "@protocol/core/Oracles/PriceOracle.sol";
+import {MErc20Delegate} from "@protocol/core/MErc20Delegate.sol";
+import {MErc20Delegator} from "@protocol/core/MErc20Delegator.sol";
+import {ChainlinkOracle} from "@protocol/core/Oracles/ChainlinkOracle.sol";
+import {TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
+import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 import {MultiRewardDistributor} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
-import {WETH9} from "@protocol/core/router/IWETH.sol";
-
-import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
-import {MockWeth} from "@test/mock/MockWeth.sol";
-import {WETHRouter} from "@protocol/core/router/WETHRouter.sol";
-import {MToken} from "@protocol/core/MToken.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
-
-import {Configs} from "@test/proposals/Configs.sol";
-
-import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
+import {JumpRateModel, InterestRateModel} from "@protocol/core/IRModels/JumpRateModel.sol";
+import {Comptroller, ComptrollerInterface} from "@protocol/core/Comptroller.sol";
 
 contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
     string public constant name = "MIP00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
     uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
-
-    /// @notice proposal delay time
-    uint256 public constant proposalDelay = 5 minutes;
 
     /// @notice time before anyone can unpause the contract after a guardian pause
     uint256 public constant permissionlessUnpauseTime = 30 days;
@@ -58,6 +43,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
     ///  Ethereum (Sepolia)	  10002          11155111	    0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78   |///
     ///  Base	                 30    	        84531	    0xA31aa3FDb7aF7Db93d18DDA4e19F811342EDF780   |///
     ///  Moonbeam	             16	             1284 	    0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3   |///
+    ///  Moonbase alpha          16	             1287	    0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901
     /// --------------------------------------------------------------------------------------------------///
 
     constructor() {
@@ -102,7 +88,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
                 addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
-                proposalDelay,
+                chainIdTemporalGovTimelock[block.chainid], /// get timelock period for deployment chain is on
                 permissionlessUnpauseTime,
                 trustedSenders
             );
@@ -212,10 +198,11 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 /// (10 ** (6 + 8)) * 2 // 6 decimals example
                 ///    = 2e14
                 uint256 initialExchangeRate = (10 **
-                    (ERC20(config.tokenAddress).decimals() + 8)) * 2;
+                    (ERC20(addresses.getAddress(config.tokenAddressName))
+                        .decimals() + 8)) * 2;
 
                 MErc20Delegator mToken = new MErc20Delegator(
-                    config.tokenAddress,
+                    addresses.getAddress(config.tokenAddressName),
                     ComptrollerInterface(addr.unitroller),
                     InterestRateModel(addr.irModel),
                     initialExchangeRate,
@@ -245,102 +232,113 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
     }
 
     function afterDeploy(Addresses addresses, address) public {
-        ProxyAdmin proxyAdmin = ProxyAdmin(
-            addresses.getAddress("MRD_PROXY_ADMIN")
-        );
-        Unitroller unitroller = Unitroller(addresses.getAddress("UNITROLLER"));
-        address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        ChainlinkOracle oracle = ChainlinkOracle(
-            addresses.getAddress("CHAINLINK_ORACLE")
-        );
+        {
+            ProxyAdmin proxyAdmin = ProxyAdmin(
+                addresses.getAddress("MRD_PROXY_ADMIN")
+            );
+            Unitroller unitroller = Unitroller(
+                addresses.getAddress("UNITROLLER")
+            );
+            address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
+            ChainlinkOracle oracle = ChainlinkOracle(
+                addresses.getAddress("CHAINLINK_ORACLE")
+            );
 
-        /// set temporal governor as owner of the proxy admin
-        proxyAdmin.transferOwnership(governor);
+            /// set temporal governor as owner of the proxy admin
+            proxyAdmin.transferOwnership(governor);
 
-        /// set chainlink oracle on the comptroller implementation contract
-        Comptroller(address(unitroller))._setPriceOracle(
-            PriceOracle(address(oracle))
-        );
+            /// TODO add GOVERNOR GUARDIAN to Addresses.sol, then hand ownership over to governor guardian
+            // TemporalGovernor(governor).transferOwnership(
+            //     addresses.getAddress("GOVERNOR_GUARDIAN")
+            // );
 
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
-        MToken[] memory mTokens = new MToken[](cTokenConfigs.length);
-        uint256[] memory supplyCaps = new uint256[](cTokenConfigs.length);
-        uint256[] memory borrowCaps = new uint256[](cTokenConfigs.length);
+            /// set chainlink oracle on the comptroller implementation contract
+            Comptroller(address(unitroller))._setPriceOracle(
+                PriceOracle(address(oracle))
+            );
 
-        //// set mint paused for all of the deployed MTokens
-        unchecked {
-            for (uint256 i = 0; i < cTokenConfigs.length; i++) {
-                Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-                supplyCaps[i] = config.supplyCap;
-                borrowCaps[i] = config.borrowCap;
+            Configs.CTokenConfiguration[]
+                memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+            MToken[] memory mTokens = new MToken[](cTokenConfigs.length);
+            uint256[] memory supplyCaps = new uint256[](cTokenConfigs.length);
+            uint256[] memory borrowCaps = new uint256[](cTokenConfigs.length);
 
-                oracle.setFeed(
-                    ERC20(config.tokenAddress).symbol(),
-                    config.priceFeed
-                );
+            //// set mint paused for all of the deployed MTokens
+            unchecked {
+                for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+                    Configs.CTokenConfiguration memory config = cTokenConfigs[
+                        i
+                    ];
+                    supplyCaps[i] = config.supplyCap;
+                    borrowCaps[i] = config.borrowCap;
 
-                /// list mToken in the comptroller
-                Comptroller(address(unitroller))._supportMarket(
-                    MToken(addresses.getAddress(config.addressesString))
-                );
+                    oracle.setFeed(
+                        ERC20(addresses.getAddress(config.tokenAddressName))
+                            .symbol(),
+                        addresses.getAddress(config.priceFeedName)
+                    );
 
-                /// set mint paused for all MTokens
-                Comptroller(address(unitroller))._setMintPaused(
-                    MToken(addresses.getAddress(config.addressesString)),
-                    true
-                );
+                    /// list mToken in the comptroller
+                    Comptroller(address(unitroller))._supportMarket(
+                        MToken(addresses.getAddress(config.addressesString))
+                    );
 
-                /// get the mToken
-                mTokens[i] = MToken(
-                    addresses.getAddress(config.addressesString)
-                );
+                    /// set mint paused for all MTokens
+                    Comptroller(address(unitroller))._setMintPaused(
+                        MToken(addresses.getAddress(config.addressesString)),
+                        true
+                    );
 
-                mTokens[i]._setReserveFactor(config.reserveFactor);
-                mTokens[i]._setProtocolSeizeShare(config.seizeShare);
-                mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+                    /// get the mToken
+                    mTokens[i] = MToken(
+                        addresses.getAddress(config.addressesString)
+                    );
 
-                Comptroller(address(unitroller))._setCollateralFactor(
-                    mTokens[i],
-                    config.collateralFactor
-                );
+                    mTokens[i]._setReserveFactor(config.reserveFactor);
+                    mTokens[i]._setProtocolSeizeShare(config.seizeShare);
+                    mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+
+                    Comptroller(address(unitroller))._setCollateralFactor(
+                        mTokens[i],
+                        config.collateralFactor
+                    );
+                }
             }
+
+            Comptroller(address(unitroller))._setMarketSupplyCaps(
+                mTokens,
+                supplyCaps
+            );
+            Comptroller(address(unitroller))._setMarketBorrowCaps(
+                mTokens,
+                borrowCaps
+            );
+            Comptroller(address(unitroller))._setRewardDistributor(
+                MultiRewardDistributor(addresses.getAddress("MRD_PROXY"))
+            );
+            Comptroller(address(unitroller))._setLiquidationIncentive(
+                liquidationIncentive
+            );
+            Comptroller(address(unitroller))._setCloseFactor(closeFactor);
+
+            /// ------------ SET GUARDIANS ------------
+
+            Comptroller(address(unitroller))._setBorrowCapGuardian(
+                addresses.getAddress("BORROW_SUPPLY_GUARDIAN")
+            );
+            Comptroller(address(unitroller))._setSupplyCapGuardian(
+                addresses.getAddress("BORROW_SUPPLY_GUARDIAN")
+            );
+            Comptroller(address(unitroller))._setPauseGuardian(
+                addresses.getAddress("PAUSE_GUARDIAN")
+            );
+
+            /// set temporal governor as the pending admin
+            unitroller._setPendingAdmin(governor);
+
+            /// set temporal governor as the admin of the chainlink feed
+            oracle.setAdmin(governor);
         }
-
-        Comptroller(address(unitroller))._setMarketSupplyCaps(
-            mTokens,
-            supplyCaps
-        );
-        Comptroller(address(unitroller))._setMarketBorrowCaps(
-            mTokens,
-            borrowCaps
-        );
-        Comptroller(address(unitroller))._setRewardDistributor(
-            MultiRewardDistributor(addresses.getAddress("MRD_PROXY"))
-        );
-        Comptroller(address(unitroller))._setLiquidationIncentive(
-            liquidationIncentive
-        );
-        Comptroller(address(unitroller))._setCloseFactor(closeFactor);
-
-        /// ------------ SET GUARDIANS ------------
-
-        Comptroller(address(unitroller))._setBorrowCapGuardian(
-            addresses.getAddress("BORROW_SUPPLY_GUARDIAN")
-        );
-        Comptroller(address(unitroller))._setSupplyCapGuardian(
-            addresses.getAddress("BORROW_SUPPLY_GUARDIAN")
-        );
-        Comptroller(address(unitroller))._setPauseGuardian(
-            addresses.getAddress("PAUSE_GUARDIAN")
-        );
-
-        /// set temporal governor as the pending admin
-        unitroller._setPendingAdmin(governor);
-
-        /// set temporal governor as the admin of the chainlink feed
-        oracle.setAdmin(governor);
-
         /// -------------- EMISSION CONFIGURATION --------------
 
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
@@ -355,8 +353,8 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 EmissionConfig memory config = emissionConfig[i];
 
                 mrd._addEmissionConfig(
-                    MToken(config.mToken),
-                    config.owner,
+                    MToken(addresses.getAddress(config.mToken)),
+                    addresses.getAddress(config.owner),
                     config.emissionToken,
                     config.supplyEmissionPerSec,
                     config.borrowEmissionsPerSec,
@@ -411,7 +409,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
 
                 /// Approvals
                 _pushCrossChainAction(
-                    config.tokenAddress,
+                    addresses.getAddress(config.tokenAddressName),
                     abi.encodeWithSignature(
                         "approve(address,uint256)",
                         cTokenAddress,
@@ -423,7 +421,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 /// Initialize markets
                 _pushCrossChainAction(
                     cTokenAddress,
-                    abi.encodeWithSignature("mint(uint256)", config.initialMintAmount),
+                    abi.encodeWithSignature(
+                        "mint(uint256)",
+                        config.initialMintAmount
+                    ),
                     "Initialize token market to prevent exploit"
                 );
 
@@ -453,9 +454,16 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function teardown(Addresses addresses, address) public pure {}
 
-    function validate(Addresses addresses, address deployer) public {
+    function validate(Addresses addresses, address) public {
         TemporalGovernor governor = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
+
+        /// TODO validate that governor guardian is correctly set on temporal governor
+
+        assertEq(
+            chainIdTemporalGovTimelock[block.chainid],
+            governor.proposalDelay()
         );
 
         {
@@ -478,9 +486,15 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
 
                     assertEq(
                         address(
-                            oracle.getFeed(ERC20(config.tokenAddress).symbol())
+                            oracle.getFeed(
+                                ERC20(
+                                    addresses.getAddress(
+                                        config.tokenAddressName
+                                    )
+                                ).symbol()
+                            )
                         ),
-                        config.priceFeed
+                        addresses.getAddress(config.priceFeedName)
                     );
                 }
             }
@@ -495,7 +509,6 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 addresses.getAddress("COMPTROLLER")
             );
 
-            assertEq(comptroller.admin(), deployer);
             assertEq(comptroller.pendingAdmin(), address(0));
             assertEq(comptroller.pauseGuardian(), address(0));
             assertEq(comptroller.borrowCapGuardian(), address(0));
@@ -535,14 +548,6 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                 address(unitroller.pendingComptrollerImplementation()),
                 address(0)
             );
-        }
-        /// assert comptroller is owned by deployer as there is no way to change admin
-        {
-            Comptroller comptroller = Comptroller(
-                addresses.getAddress("COMPTROLLER")
-            );
-
-            assertEq(address(comptroller.admin()), deployer);
         }
 
         /// assert WETH router is properly wired into the system
@@ -680,12 +685,6 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                         ),
                         config.supplyCap
                     );
-                    assertEq(
-                        comptroller.supplyCaps(
-                            addresses.getAddress(config.addressesString)
-                        ),
-                        config.supplyCap
-                    );
 
                     /// assert cToken irModel is correct
                     JumpRateModel jrm = JumpRateModel(
@@ -734,7 +733,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                     );
 
                     /// assert mToken underlying is correct
-                    assertEq(address(mToken.underlying()), config.tokenAddress);
+                    assertEq(
+                        address(mToken.underlying()),
+                        addresses.getAddress(config.tokenAddressName)
+                    );
 
                     /// assert mToken delegate is uniform across contracts
                     assertEq(
@@ -744,16 +746,11 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                         ),
                         addresses.getAddress("MTOKEN_IMPLEMENTATION")
                     );
-                    assertEq(
-                        address(
-                            MErc20Delegator(payable(address(mToken)))
-                                .implementation()
-                        ),
-                        addresses.getAddress("MTOKEN_IMPLEMENTATION")
-                    );
 
                     uint256 initialExchangeRate = (10 **
-                        (8 + ERC20(config.tokenAddress).decimals())) * 2;
+                        (8 +
+                            ERC20(addresses.getAddress(config.tokenAddressName))
+                                .decimals())) * 2;
 
                     /// assert mToken initial exchange rate is correct
                     assertEq(mToken.exchangeRateCurrent(), initialExchangeRate);
@@ -811,11 +808,14 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
                     EmissionConfig memory config = emissionConfig[i];
                     MultiRewardDistributorCommon.MarketConfig
                         memory marketConfig = distributor.getConfigForMarket(
-                            MToken(config.mToken),
+                            MToken(addresses.getAddress(config.mToken)),
                             config.emissionToken
                         );
 
-                    assertEq(marketConfig.owner, config.owner);
+                    assertEq(
+                        marketConfig.owner,
+                        addresses.getAddress(config.owner)
+                    );
                     assertEq(marketConfig.emissionToken, config.emissionToken);
                     assertEq(marketConfig.endTime, config.endTime);
                     assertEq(

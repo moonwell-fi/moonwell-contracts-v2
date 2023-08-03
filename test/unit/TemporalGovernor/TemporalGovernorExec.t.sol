@@ -126,6 +126,62 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         assertFalse(executed);
     }
 
+    function testProposeGrantGuardianPauseSucceedsUnpauseFails() public {
+        address[] memory targets = new address[](1);
+        targets[0] = address(governor);
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory payloads = new bytes[](1);
+
+        payloads[0] = abi.encodeWithSignature(
+            "grantGuardiansPause()"
+        );
+
+        /// to be unbundled by the temporal governor
+        bytes memory payload = abi.encode(
+            address(governor),
+            targets,
+            values,
+            payloads
+        );
+
+        governor.togglePause();
+        assertTrue(governor.paused());
+        assertFalse(governor.guardianPauseAllowed());
+
+        mockCore.setStorage(
+            true,
+            trustedChainid,
+            governor.addressToBytes(admin),
+            "reeeeeee",
+            payload
+        );
+
+        vm.warp(block.timestamp + 100);
+        governor.fastTrackProposalExecution("");
+
+        bytes32 hash = keccak256(abi.encodePacked(""));
+        (bool executed, uint248 queueTime) = governor.queuedTransactions(hash);
+
+        assertEq(queueTime, block.timestamp);
+        assertTrue(executed);
+        assertTrue(governor.guardianPauseAllowed());
+    }
+    
+    function testUnpauseTogglePauseAfterGrantGuardiansPause() public {
+        testProposeGrantGuardianPauseSucceedsUnpauseFails();
+        governor.togglePause();
+    }
+    
+    function testUnpausePermissionlessAfterGrantGuardiansPause() public {
+        testProposeGrantGuardianPauseSucceedsUnpauseFails();
+
+        vm.warp(governor.permissionlessUnpauseTime() + 1 + block.timestamp);
+        governor.permissionlessUnpause();
+    }
+
     function testProposeFailsWormholeError() public {
         address[] memory targets = new address[](1);
         targets[0] = address(governor);
@@ -307,6 +363,52 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         governor.queueProposal("");
     }
 
+    function testFastTrackProposeFailsIncorrectSenderChainId() public {
+        address[] memory targets = new address[](1);
+        targets[0] = address(governor);
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        TemporalGovernor.TrustedSender[]
+            memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
+
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({
+            chainId: trustedChainid,
+            addr: newAdmin
+        });
+
+        bytes[] memory payloads = new bytes[](1);
+
+        payloads[0] = abi.encodeWithSignature( /// if issues use encode with selector
+            "setTrustedSenders((uint16,address)[])",
+            trustedSenders
+        );
+
+        /// to be unbundled by the temporal governor
+        bytes memory payload = abi.encode(
+            address(governor),
+            targets,
+            values,
+            payloads
+        );
+
+        mockCore.setStorage(
+            true,
+            trustedChainid + 1,
+            governor.addressToBytes(admin),
+            "reeeeeee",
+            payload
+        );
+
+        governor.togglePause();
+        assertTrue(governor.paused());
+        assertFalse(governor.guardianPauseAllowed());
+
+        vm.expectRevert("TemporalGovernor: Invalid Emitter Address");
+        governor.fastTrackProposalExecution("");
+    }
+
     function testQueueEmptyProposalFails() public {
         address[] memory targets = new address[](0);
 
@@ -445,7 +547,9 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         assertTrue(governor.isTrustedSender(trustedChainid, admin)); /// existing admin is also a trusted sender
 
         assertEq(governor.allTrustedSenders(trustedChainid).length, 2);
-        bytes32[] memory trustedSenders = governor.allTrustedSenders(trustedChainid);
+        bytes32[] memory trustedSenders = governor.allTrustedSenders(
+            trustedChainid
+        );
 
         assertEq(trustedSenders[0], governor.addressToBytes(admin));
         assertEq(trustedSenders[1], governor.addressToBytes(newAdmin));
@@ -476,6 +580,7 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
     function testFastTrackProposalExecutionSucceedsGuardian() public {
         _setupMock();
 
+        governor.togglePause();
         governor.fastTrackProposalExecution("");
 
         bytes32 hash = keccak256(abi.encodePacked(""));
@@ -486,6 +591,13 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
 
         assertTrue(governor.isTrustedSender(trustedChainid, newAdmin));
         assertTrue(governor.isTrustedSender(trustedChainid, admin)); /// existing admin is also a trusted sender
+    }
+
+    function testFastTrackProposalExecutionFailsNotPaused() public {
+        _setupMock();
+
+        vm.expectRevert("Pausable: not paused");
+        governor.fastTrackProposalExecution("");
     }
 
     function testFastTrackProposalExecutionFailsNonGuardian() public {
@@ -634,10 +746,10 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         governor.queueProposal("00");
         vm.warp(block.timestamp + proposalDelay * 2);
         governor.executeProposal("00");
-        
+
         assertFalse(governor.isTrustedSender(trustedChainid, newAdmin));
     }
-    
+
     function testUnsetNewAdminAsOldAdminSucceeds() public {
         testExecuteSucceeds();
         _setupMockUnsetTrustedSenders(admin, newAdmin); /// admin will remove new admin as a trusted sender
@@ -645,18 +757,20 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         governor.queueProposal("00");
         vm.warp(block.timestamp + proposalDelay * 2);
         governor.executeProposal("00");
-        
+
         assertTrue(governor.isTrustedSender(trustedChainid, admin));
         assertEq(governor.allTrustedSenders(trustedChainid).length, 1);
 
-        bytes32[] memory trustedSenders = governor.allTrustedSenders(trustedChainid);
+        bytes32[] memory trustedSenders = governor.allTrustedSenders(
+            trustedChainid
+        );
         assertEq(trustedSenders[0], governor.addressToBytes(admin));
     }
-    
+
     function _setupMock() private {
         address[] memory targets = new address[](1);
         targets[0] = address(governor);
-        
+
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
@@ -692,7 +806,10 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         );
     }
 
-    function _setupMockUnsetTrustedSenders(address _caller, address _toRemove) private {
+    function _setupMockUnsetTrustedSenders(
+        address _caller,
+        address _toRemove
+    ) private {
         address[] memory targets = new address[](1);
         targets[0] = address(governor);
 

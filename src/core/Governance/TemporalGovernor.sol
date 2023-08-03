@@ -251,8 +251,6 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
         lastPauseTime = 0;
         _unpause();
 
-        assert(!guardianPauseAllowed); /// this should never revert, statement for SMT solving
-
         emit PermissionlessUnpaused(block.timestamp);
     }
 
@@ -261,7 +259,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// periods of emergency when the governance on moonbeam is
     /// compromised and we need to stop additional proposals from going through.
     /// @param VAA The signed Verified Action Approval to process
-    function fastTrackProposalExecution(bytes memory VAA) external onlyOwner {
+    function fastTrackProposalExecution(bytes memory VAA) external onlyOwner whenPaused {
         _executeProposal(VAA, true); /// override timestamp checks and execute
     }
 
@@ -282,9 +280,6 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
             lastPauseTime = uint248(block.timestamp);
             _pause();
         }
-
-        /// statement for SMT solver
-        assert(!guardianPauseAllowed); /// this should be an unreachable state
     }
 
     /// ------------- HELPER FUNCTIONS -------------

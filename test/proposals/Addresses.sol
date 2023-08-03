@@ -28,13 +28,13 @@ contract Addresses is Test, ChainIds {
             localChainId,
             0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// Random address is borrow supply guardian
         );
-        /// MOONBASE
+        /// MOONBEAM
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",
             moonBeamChainId,
             0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// TODO add correct guantlet msig
         );
-        /// BASE
+        /// MOON BASE
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",
             moonBaseChainId, /// TODO replace with guantlet multisig address
@@ -46,18 +46,24 @@ contract Addresses is Test, ChainIds {
             goerliChainId,
             0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// EOA owner
         );
-        /// GOERLI
+        /// BASE GOERLI
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",
             baseGoerliChainId,
             0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// EOA owner
+        );
+        /// GOERLI
+        _addAddress(
+            "WETH",
+            baseGoerliChainId,
+            0x4200000000000000000000000000000000000006
         );
 
         //// actual moonbeam timelock deployment
         _addAddress(
             "MOONBEAM_TIMELOCK",
             moonBeamChainId,
-            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A /// EOA owner
+            0x3a9249d70dCb4A4E9ef4f3AF99a3A130452ec19B
         );
 
         /// sepolia
@@ -117,121 +123,122 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "TEMPORAL_GOVERNOR",
             84531,
-            0xFD47739E8B8f2c3523c4F98405C373120a11ABA4
+            0x840725c0a903521cbA1C0020dBdf54Aa4Ae813A5
         );
-        _addAddress("USDC", 84531, 0xA2E7CF5C3B659D33D3D5bf7810564974Ea874Aa7);
-        _addAddress("WETH", 84531, 0x737975350808f0975007d62555f52F8236A630fb);
-        _addAddress("WBTC", 84531, 0x9988614F302e0506FE11CF56229023BdDdc99663);
-        _addAddress("cbETH", 84531, 0xcDA2600818488C2A9d4cecAc6CE0298De2FE65A4);
+        _addAddress("USDC", 84531, 0xFACD0Fc9A841A1E1b960a8E90755C4911C1Dd53A);
+        _addAddress("WBTC", 84531, 0xE259C5C337cb78607D286d91d3D1663305e8CD30);
+        _addAddress("cbETH", 84531, 0x7A455bf197cF61d33fc1Ae9F74a24D7A40231061);
         _addAddress(
             "wstETH",
             84531,
-            0x21961e7FF9f87cAbE1400deb8Cf8823944018006
+            0xBE812Ed32135929038B436f594D0835a97fFc12e
         );
         _addAddress(
             "cbETH_ORACLE",
             84531,
-            0xA42E50B8F0BE5cFF1B965B5ee5C5864f314F7F0F
+            0x45E62c1D07365c46631a4F2032c0e630CCA91c55
         );
         _addAddress(
             "wstETH_ORACLE",
             84531,
-            0x2F086a1Ad900767d76C853DAC427d570d7189c1F
+            0x3a52fB70713032B182F351829573a318a4f8E4E6
         );
         _addAddress(
             "MULTI_REWARD_DISTRIBUTOR",
             84531,
-            0x152eD2d9a31face4E031f0AF458D82589a3C5dcb
+            0xd321f44038aF2234D6F37f5216820c8c3Aa7b5De
         );
         _addAddress(
             "COMPTROLLER",
             84531,
-            0x13a6572798da30bF7779C52ff0fEB1C355313516
+            0x6eb2bcBEAD4649279C88769316b9eD8A5578BF20
         );
         _addAddress(
             "UNITROLLER",
             84531,
-            0x5046404DEcE336F2D6FEc94AFF3E55EE4Ea154B5
+            0x9B0f96C3a99C64d437AC0B901A28C1ea83e7A2e7
         );
         _addAddress(
             "MRD_PROXY",
             84531,
-            0xa3e44539833075DC6847DC6446A884F9EB06159d
+            0x35B5330DB1eff5C52e04f8F32a7FD5814c19593C
         );
         _addAddress(
             "MRD_PROXY_ADMIN",
             84531,
-            0xc5414c598223De46A57c6Ca73c6637490f07d127
+            0xc0af8FEC778be65eC5f2dE755c4253Ab057E9D78
         );
         _addAddress(
             "MTOKEN_IMPLEMENTATION",
             84531,
-            0x267E65E9df3E9E95078b360c26F6729AE954F44d
+            0xD97DfBc72131B67E7518448162F233FDdE43B1b0
         );
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_USDC",
             84531,
-            0xD25310e43B9112835B9eCC44FdbD757B99C5aC78
+            0xC84105b1D809CF65B6DFaf2C044980cA37F5fb79
         );
         _addAddress(
             "MOONWELL_USDC",
             84531,
-            0xF2994BbAB35AeCfD3DcC26559Fa8c24fAb5A5862
+            0xA4Cb22C4bDE7FDBB20b05387dd45c875f18353Ab
         );
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_WETH",
             84531,
-            0x7b124f2f442e39Ff6EA2e07a9e826bF3EB63a1af
+            0x7973bb764EF6fd10fBFc531CfcE0EcC88683E3C0
         );
         _addAddress(
             "MOONWELL_WETH",
             84531,
-            0x91e1B7308b5477eD6D2a0B9E12a1B737Ba991d74
+            0xB1c7730f7D2ba7FE80476F421e68FA846A187088
         );
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_WBTC",
             84531,
-            0x246Fa7472ddF3334b1f5187558e2798858bd694a
+            0x71848131bDe3e45294fe9Cd54562358a7AC86203
         );
         _addAddress(
             "MOONWELL_WBTC",
             84531,
-            0x49FCf1b315b3eDc6fF65DD6889A8cdF2D4308387
+            0xd9D5c354063d96Af6d05eF733a53da5500a30bc6
         );
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_cbETH",
             84531,
-            0xf1b137DB523980dC9068aBEa5EBB2Cb6e43Bf6cA
+            0x2521Bde567F64143B47b065c479945208c60e1Ca
         );
         _addAddress(
             "MOONWELL_cbETH",
             84531,
-            0xA7E6719009d6a3BB412D530d50f399495d233797
+            0x45442965DF9CA611cf59B524C899b6E4c4E2e14A
         );
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_wstETH",
             84531,
-            0xC6bdEe41ac7ace77b9084B7174Fc59219b2A7459
+            0x2e9edeDF20aaa3178Ba4884441BBa934066153Aa
         );
         _addAddress(
             "MOONWELL_wstETH",
             84531,
-            0x2fdC09311b1ea0aBb44E8580B4e7dAcCFf34e6E5
+            0x475d693703E7c0D2f9Af2aBE53acE89F21f639Ac
         );
-        _addAddress("WELL", 84531, 0xbcA0EE692fD51a4b46269cDf024CCE9920b2AD2A);
+        _addAddress("WELL", 84531, 0x6295749d818E3a2caEe60b274700593ffBBdE1d7);
         _addAddress(
             "WETH_ROUTER",
             84531,
-            0xbb9060edfE28C53890168937835e02438772D513
+            0xc55138f18761BEC3c8d3Ea850D1dB3CfC760e240
         );
         _addAddress(
             "CHAINLINK_ORACLE",
             84531,
-            0x40B488cA4C1a5279380692f8e79F3855d6c19Bb5
+            0x8a318A4493f38567528d17B5E91A30BDFAA5Fd06
         );
 
         /// -----------------------------------------------
-        ///            BASE GOERLI Contracts
+
+        /// -----------------------------------------------
+        ///        BASE GOERLI CHAINLINK ORACLES
         /// -----------------------------------------------
 
         /// ORACLES
@@ -256,10 +263,81 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "MOONBEAM_TIMELOCK",
             baseGoerliChainId,
-            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A //// TODO Luke to fill in timelock address on Moonbase and uncomment
+            0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A
         );
 
-        /// TODO add WETH and Guardian Multisig address on Base once we have it
+        /// ------------ base deployment constants ------------
+        /// ---------- DO NOT CHANGE BELOW THIS LINE ----------
+
+        _addAddress(
+            "WORMHOLE_CORE",
+            baseChainId,
+            0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6
+        );
+
+        _addAddress(
+            "USDC",
+            baseChainId,
+            0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA
+        );
+
+        _addAddress(
+            "WETH",
+            baseChainId,
+            0x4200000000000000000000000000000000000006
+        );
+
+        _addAddress(
+            "WELL",
+            baseChainId,
+            0xFF8adeC2221f9f4D8dfbAFa6B9a297d17603493D
+        );
+
+        _addAddress(
+            "cbETH",
+            baseChainId,
+            0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22
+        );
+
+        _addAddress(
+            "USDC_ORACLE",
+            baseChainId,
+            0x7e860098F58bBFC8648a4311b374B1D669a2bc6B
+        );
+
+        _addAddress(
+            "ETH_ORACLE",
+            baseChainId,
+            0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70
+        );
+
+        _addAddress( /// UNUSED for now since are not deploying a wstETH market
+            "wstETHstETH_ORACLE",
+            baseChainId,
+            0xB88BAc61a4Ca37C43a3725912B1f472c9A5bc061
+        );
+
+        _addAddress(
+            "stETHETH_ORACLE",
+            baseChainId,
+            0xf586d0728a47229e747d824a939000Cf21dEF5A0
+        );
+
+        _addAddress(
+            "cbETHETH_ORACLE",
+            baseChainId,
+            0x806b4Ac04501c29769051e42783cF04dCE41440b
+        );
+
+        /// ------------ base deployment ------------
+
+
+        /// TODO add Guardian Multisig address on Base once we have it
+        /// TODO add chainlink oracle addresses on Base once we have it
+        /// stETHETH_ORACLE, wstETHstETH_ORACLE, cbETH_ORACLE, ETH_ORACLE, WBTC_ORACLE, USDC_ORACLE
+        /// ADD WBTC, USDC, wstETH, cbETH, WELL
+        /// TODO update mainnetMTokens.json and mainnetRewardStreams.json once we have the addresses
+        /// TODO add governor guardian
     }
 
     /// @notice add an address for a specific chainId

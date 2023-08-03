@@ -61,7 +61,7 @@ contract DeployProposal is Script, mip {
             console.log();
 
             for (uint256 i = 0; i < recordedNames.length; i++) {
-                console.log('_addAddress("%s',recordedNames[i],'", ');
+                console.log('_addAddress("%s",',recordedNames[i]);
                 console.log(block.chainid);
                 console.log(", ");
                 console.log(recordedAddresses[i]);
