@@ -39,8 +39,8 @@ contract Configs is Test {
         uint256 borrowEmissionsPerSec;
         address emissionToken;
         uint256 endTime;
-        address mToken;
-        address owner;
+        string mToken;
+        string owner;
         uint256 supplyEmissionPerSec;
     }
 
@@ -488,15 +488,6 @@ contract Configs is Test {
 
         /// TODO test this on chainforked mainnet
         if (block.chainid == _baseChainId) {
-            if (addresses.getAddress("wstETH_ORACLE") == address(0)) {
-                ChainlinkCompositeOracle wstETHOracle = new ChainlinkCompositeOracle(
-                        addresses.getAddress("ETH_ORACLE"),
-                        addresses.getAddress("stETHETH_ORACLE"),
-                        addresses.getAddress("wstETHstETH_ORACLE")
-                    );
-
-                addresses.addAddress("wstETH_ORACLE", address(wstETHOracle));
-            }
             if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
                 ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
                         addresses.getAddress("ETH_ORACLE"),
@@ -540,10 +531,8 @@ contract Configs is Test {
 
                     /// pay USDC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({
-                        mToken: addresses.getAddress(
-                            mTokenConfigs[i].addressesString
-                        ),
-                        owner: deployer,
+                        mToken: mTokenConfigs[i].addressesString,
+                        owner: "TEMPORAL_GOVERNOR",
                         emissionToken: addresses.getAddress("WELL"),
                         supplyEmissionPerSec: 0,
                         borrowEmissionsPerSec: 0,
@@ -556,10 +545,8 @@ contract Configs is Test {
                 if (block.chainid == _baseGoerliChainId) {
                     /// pay USDC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({
-                        mToken: addresses.getAddress(
-                            mTokenConfigs[i].addressesString
-                        ),
-                        owner: addresses.getAddress("TEMPORAL_GOVERNOR"),
+                        mToken: mTokenConfigs[i].addressesString,
+                        owner: "TEMPORAL_GOVERNOR",
                         emissionToken: addresses.getAddress("WELL"),
                         supplyEmissionPerSec: 0,
                         borrowEmissionsPerSec: 0,
