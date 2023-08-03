@@ -24,7 +24,7 @@ contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
         _setNonce(2);
     }
 
-    function deploy(Addresses addresses, address deployer) public {}
+    function deploy(Addresses addresses, address) public {}
 
     function afterDeploy(Addresses addresses, address) public {}
 
@@ -73,7 +73,7 @@ contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
     /// @notice assert that all the configurations are correctly set
     /// @dev this function is called after the proposal is executed to
     /// validate that all state transitions worked correctly
-    function validate(Addresses addresses, address deployer) public {
+    function validate(Addresses addresses, address) public {
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
             block.chainid
         );

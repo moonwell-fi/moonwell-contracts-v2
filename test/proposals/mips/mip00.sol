@@ -444,7 +444,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function teardown(Addresses addresses, address) public pure {}
 
-    function validate(Addresses addresses, address deployer) public {
+    function validate(Addresses addresses, address) public {
         TemporalGovernor governor = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );

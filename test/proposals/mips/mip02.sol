@@ -292,7 +292,7 @@ contract mip02 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function teardown(Addresses addresses, address) public pure {}
 
-    function validate(Addresses addresses, address deployer) public {
+    function validate(Addresses addresses, address) public {
         address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
         {
