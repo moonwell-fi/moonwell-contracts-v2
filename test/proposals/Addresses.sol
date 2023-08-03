@@ -266,9 +266,14 @@ contract Addresses is Test, ChainIds {
             0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A
         );
 
-        /// ---------- base goerli deployment ----------
+        /// ------------ base deployment constants ------------
+        /// ---------- DO NOT CHANGE BELOW THIS LINE ----------
 
-
+        _addAddress(
+            "WORMHOLE_CORE",
+            baseChainId,
+            0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6
+        );
 
         _addAddress(
             "USDC",
@@ -283,16 +288,56 @@ contract Addresses is Test, ChainIds {
         );
 
         _addAddress(
+            "WELL",
+            baseChainId,
+            0xFF8adeC2221f9f4D8dfbAFa6B9a297d17603493D
+        );
+
+        _addAddress(
             "cbETH",
             baseChainId,
             0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22
         );
+
+        _addAddress(
+            "USDC_ORACLE",
+            baseChainId,
+            0x7e860098F58bBFC8648a4311b374B1D669a2bc6B
+        );
+
+        _addAddress(
+            "ETH_ORACLE",
+            baseChainId,
+            0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70
+        );
+
+        _addAddress( /// UNUSED for now since are not deploying a wstETH market
+            "wstETHstETH_ORACLE",
+            baseChainId,
+            0xB88BAc61a4Ca37C43a3725912B1f472c9A5bc061
+        );
+
+        _addAddress(
+            "stETHETH_ORACLE",
+            baseChainId,
+            0xf586d0728a47229e747d824a939000Cf21dEF5A0
+        );
+
+        _addAddress(
+            "cbETHETH_ORACLE",
+            baseChainId,
+            0x806b4Ac04501c29769051e42783cF04dCE41440b
+        );
+
+        /// ------------ base deployment ------------
+
 
         /// TODO add Guardian Multisig address on Base once we have it
         /// TODO add chainlink oracle addresses on Base once we have it
         /// stETHETH_ORACLE, wstETHstETH_ORACLE, cbETH_ORACLE, ETH_ORACLE, WBTC_ORACLE, USDC_ORACLE
         /// ADD WBTC, USDC, wstETH, cbETH, WELL
         /// TODO update mainnetMTokens.json and mainnetRewardStreams.json once we have the addresses
+        /// TODO add governor guardian
     }
 
     /// @notice add an address for a specific chainId
