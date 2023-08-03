@@ -135,9 +135,6 @@ contract LiveSystemTest is Test {
         MErc20Delegator mToken = MErc20Delegator(
             payable(addresses.getAddress("MOONWELL_USDC"))
         );
-        Comptroller comptroller = Comptroller(
-            addresses.getAddress("UNITROLLER")
-        );
 
         address[] memory mTokens = new address[](1);
         mTokens[0] = address(mToken);
@@ -169,11 +166,6 @@ contract LiveSystemTest is Test {
         MErc20Delegator mToken = MErc20Delegator(
             payable(addresses.getAddress("MOONWELL_WETH"))
         );
-        Comptroller comptroller = Comptroller(
-            addresses.getAddress("UNITROLLER")
-        );
-        // mToken.mint(0.001 ether);
-        uint256 startingTokenBalance = weth.balanceOf(sender);
 
         address[] memory mTokens = new address[](1);
         mTokens[0] = addresses.getAddress("MOONWELL_USDC");
@@ -340,7 +332,6 @@ contract LiveSystemTest is Test {
             liquidator,
             address(this),
             MErc20(address(mToken)),
-            Comptroller(addresses.getAddress("UNITROLLER")),
             1e6
         );
 
@@ -374,7 +365,6 @@ contract LiveSystemTest is Test {
         address liquidator,
         address liquidated,
         MErc20 token,
-        Comptroller comptroller,
         uint256 repayAmt
     ) private {
         vm.prank(liquidator);
