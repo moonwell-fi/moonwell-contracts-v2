@@ -1,7 +1,7 @@
 [
     {
         "initialMintAmount": 1e6,
-        "collateralFactor": 8e17,
+        "collateralFactor": 0.8e18,
         "reserveFactor": 0.15e18,
         "seizeShare": 0.03e18,
         "supplyCap": 40000000e6,
@@ -20,7 +20,7 @@
     },
     {
         "initialMintAmount": 1e12,
-        "collateralFactor": 7.5e17,
+        "collateralFactor": 0.75e18,
         "reserveFactor": 0.25e18,
         "seizeShare": 0.03e18,
         "supplyCap": 10500e18,
@@ -39,7 +39,7 @@
     },
     {
         "initialMintAmount": 1e12,
-        "collateralFactor": 7.3e17,
+        "collateralFactor": 0.73e18,
         "reserveFactor": 0.25e18,
         "seizeShare": 0.03e18,
         "supplyCap": 5000e18,
