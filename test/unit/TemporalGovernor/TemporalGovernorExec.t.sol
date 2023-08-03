@@ -133,19 +133,10 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[]
-            memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
-
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: newAdmin
-        });
-
         bytes[] memory payloads = new bytes[](1);
 
         payloads[0] = abi.encodeWithSignature(
-            "grantGuardiansPause()",
-            trustedSenders
+            "grantGuardiansPause()"
         );
 
         /// to be unbundled by the temporal governor
@@ -158,6 +149,7 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
 
         governor.togglePause();
         assertTrue(governor.paused());
+        assertFalse(governor.guardianPauseAllowed());
 
         mockCore.setStorage(
             true,
@@ -166,6 +158,8 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
             "reeeeeee",
             payload
         );
+
+        vm.warp(block.timestamp + 100);
         governor.fastTrackProposalExecution("");
 
         bytes32 hash = keccak256(abi.encodePacked(""));
@@ -367,6 +361,52 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         );
         vm.expectRevert("TemporalGovernor: Invalid Emitter Address");
         governor.queueProposal("");
+    }
+
+    function testFastTrackProposeFailsIncorrectSenderChainId() public {
+        address[] memory targets = new address[](1);
+        targets[0] = address(governor);
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        TemporalGovernor.TrustedSender[]
+            memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
+
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({
+            chainId: trustedChainid,
+            addr: newAdmin
+        });
+
+        bytes[] memory payloads = new bytes[](1);
+
+        payloads[0] = abi.encodeWithSignature( /// if issues use encode with selector
+            "setTrustedSenders((uint16,address)[])",
+            trustedSenders
+        );
+
+        /// to be unbundled by the temporal governor
+        bytes memory payload = abi.encode(
+            address(governor),
+            targets,
+            values,
+            payloads
+        );
+
+        mockCore.setStorage(
+            true,
+            trustedChainid + 1,
+            governor.addressToBytes(admin),
+            "reeeeeee",
+            payload
+        );
+
+        governor.togglePause();
+        assertTrue(governor.paused());
+        assertFalse(governor.guardianPauseAllowed());
+
+        vm.expectRevert("TemporalGovernor: Invalid Emitter Address");
+        governor.fastTrackProposalExecution("");
     }
 
     function testQueueEmptyProposalFails() public {
