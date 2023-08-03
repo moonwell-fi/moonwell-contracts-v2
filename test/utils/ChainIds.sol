@@ -5,7 +5,7 @@ contract ChainIds {
     /// ------------ BASE ------------
 
     uint256 public constant baseChainId = 8453;
-    uint16 public constant baseWormholeChainId = 30; /// TODO update when actual base chain id is known
+    uint16 public constant baseWormholeChainId = 30;
 
     uint256 public constant baseGoerliChainId = 84531;
     uint16 public constant baseGoerliWormholeChainId = 30;
