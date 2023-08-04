@@ -28,12 +28,35 @@ contract Addresses is Test, ChainIds {
             localChainId,
             0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// Random address is borrow supply guardian
         );
+
+        _addAddress(
+            "TEMPORAL_GOVERNOR_GUARDIAN",
+            localChainId,
+            0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// Random address is temporal governor guardian
+        );
+        _addAddress(
+            "TEMPORAL_GOVERNOR_GUARDIAN",
+            baseGoerliChainId,
+            0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// Random address is temporal governor guardian on base goerli, for testing purposes only
+        );
+        _addAddress(
+            "TEMPORAL_GOVERNOR_GUARDIAN",
+            moonBaseChainId,
+            0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// Random address is temporal governor guardian on moonbase
+        );
+        _addAddress(
+            "EMISSIONS_ADMIN",
+            baseGoerliChainId,
+            0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa
+        );
+
         /// MOONBEAM
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",
             moonBeamChainId,
             0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// TODO add correct guantlet msig
         );
+
         /// MOON BASE
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",
@@ -327,6 +350,30 @@ contract Addresses is Test, ChainIds {
             "cbETHETH_ORACLE",
             baseChainId,
             0x806b4Ac04501c29769051e42783cF04dCE41440b
+        );
+
+        _addAddress(
+            "EMISSIONS_ADMIN",
+            baseChainId,
+            0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa
+        );
+
+        _addAddress(
+            "PAUSE_GUARDIAN",
+            baseChainId,
+            0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38
+        );
+
+        _addAddress(
+            "TEMPORAL_GOVERNOR_GUARDIAN",
+            baseChainId,
+            0x446342AF4F3bCD374276891C6bb3411bf2F8779E
+        );
+
+        _addAddress(
+            "BORROW_SUPPLY_GUARDIAN",
+            baseChainId,
+            0x35b3314EA652899154BbfE937E3cCC2775ba712e
         );
 
         /// ------------ base deployment ------------
