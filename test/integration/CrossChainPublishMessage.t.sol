@@ -155,5 +155,16 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
         }
 
         vm.stopPrank();
+
+        proposals.testProposals(
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true
+        );
     }
 }
