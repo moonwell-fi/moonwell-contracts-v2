@@ -69,7 +69,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
         );
         console.log(
             "governor owner: ",
-            addresses.getAddress("MOONBEAM_TIMELOCK")
+            addresses.getAddress(
+                "MOONBEAM_TIMELOCK",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
         );
 
         localInit(addresses);
@@ -78,7 +81,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             TemporalGovernor.TrustedSender[]
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
             trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid];
-            trustedSenders[0].addr = addresses.getAddress("MOONBEAM_TIMELOCK");
+            trustedSenders[0].addr = addresses.getAddress(
+                "MOONBEAM_TIMELOCK",
+                sendingChainIdToReceivingChainId[block.chainid]
+            );
 
             require(
                 addresses.getAddress("WORMHOLE_CORE") != address(0),
@@ -639,7 +645,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             governor.isTrustedSender(
                 chainIdToWormHoleId[block.chainid],
                 governor.addressToBytes(
-                    addresses.getAddress("MOONBEAM_TIMELOCK")
+                    addresses.getAddress(
+                        "MOONBEAM_TIMELOCK",
+                        sendingChainIdToReceivingChainId[block.chainid]
+                    )
                 )
             )
         );
