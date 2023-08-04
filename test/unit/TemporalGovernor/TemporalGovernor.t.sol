@@ -219,6 +219,21 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         governor.revokeGuardian();
     }
 
+    function testChangeGuardianAsNonGovernorFails() public {
+        vm.prank(admin);
+        vm.expectRevert("TemporalGovernor: cannot change guardian");
+        governor.changeGuardian(address(1));
+    }
+
+    function testChangeGuardianAsGovernorSucceeds() public {
+        address newGuardian = address(1);
+
+        vm.prank(address(governor));
+        governor.changeGuardian(newGuardian);
+
+        assertEq(newGuardian, governor.owner());
+    }
+
     function testPermissionlessUnpauseSucceedsAfterWaitTime() public {
         governor.togglePause();
         assertTrue(governor.paused());

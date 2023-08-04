@@ -126,6 +126,59 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         assertFalse(executed);
     }
 
+    function testProposeChangeGuardianSucceeds() public {
+        address[] memory targets = new address[](1);
+        targets[0] = address(governor);
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory payloads = new bytes[](1);
+
+        payloads[0] = abi.encodeWithSignature( /// if issues use encode with selector
+            "changeGuardian(address)",
+            newAdmin
+        );
+
+        /// to be unbundled by the temporal governor
+        bytes memory payload = abi.encode(
+            address(governor),
+            targets,
+            values,
+            payloads
+        );
+
+        mockCore.setStorage(
+            true,
+            trustedChainid,
+            governor.addressToBytes(admin),
+            "reeeeeee",
+            payload
+        );
+        governor.queueProposal("");
+
+        {
+            bytes32 hash = keccak256(abi.encodePacked(""));
+            (bool executed, uint248 queueTime) = governor.queuedTransactions(hash);
+    
+            assertEq(queueTime, block.timestamp);
+            assertFalse(executed);
+    
+            vm.warp(queueTime + proposalDelay + 1);
+        }
+        
+        governor.executeProposal("");
+
+        {
+            bytes32 hash = keccak256(abi.encodePacked(""));
+            (bool executed, ) = governor.queuedTransactions(hash);
+    
+            assertTrue(executed);
+        }
+
+        assertEq(governor.owner(), newAdmin);
+    }
+
     function testProposeGrantGuardianPauseSucceedsUnpauseFails() public {
         address[] memory targets = new address[](1);
         targets[0] = address(governor);
