@@ -532,7 +532,7 @@ contract Configs is Test {
                     /// pay USDC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({
                         mToken: mTokenConfigs[i].addressesString,
-                        owner: "TEMPORAL_GOVERNOR",
+                        owner: "EMISSIONS_ADMIN",
                         emissionToken: addresses.getAddress("WELL"),
                         supplyEmissionPerSec: 0,
                         borrowEmissionsPerSec: 0,
@@ -546,7 +546,7 @@ contract Configs is Test {
                     /// pay USDC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({
                         mToken: mTokenConfigs[i].addressesString,
-                        owner: "TEMPORAL_GOVERNOR",
+                        owner: "EMISSIONS_ADMIN",
                         emissionToken: addresses.getAddress("WELL"),
                         supplyEmissionPerSec: 0,
                         borrowEmissionsPerSec: 0,
