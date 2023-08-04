@@ -24,6 +24,7 @@ contract PostProposalCheck is Test {
             true,
             true,
             true,
+            true,
             false,
             true
         );

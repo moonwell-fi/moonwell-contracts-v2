@@ -26,19 +26,50 @@ contract InitProposalSucceedsTest is Test, ChainIds {
 
     function testInitProposalSucceeds() public {
         Configs(address(proposals.proposals(0))).init(addresses); /// init configs
-        Configs(address(proposals.proposals(0))).initEmissions(addresses, 0xc191A4db4E05e478778eDB6a201cb7F13A257C23); /// init configs
-        proposals.testProposals(true, false, false, true, true, false, false);
-        proposals.printCalldata(0, addresses.getAddress("TEMPORAL_GOVERNOR"), addresses.getAddress("WORMHOLE_CORE", sendingChainIdToReceivingChainId[block.chainid])); /// print calldata out
+        Configs(address(proposals.proposals(0))).initEmissions(
+            addresses,
+            0xc191A4db4E05e478778eDB6a201cb7F13A257C23
+        ); /// init configs
+        proposals.testProposals(
+            true,
+            false,
+            false,
+            false,
+            true,
+            true,
+            false,
+            false
+        );
+        proposals.printCalldata(
+            0,
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
+            addresses.getAddress(
+                "WORMHOLE_CORE",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
+        ); /// print calldata out
     }
-    
+
     function testAfterCrosschainProposalValidateSucceeds() public {
         Configs(address(proposals.proposals(0))).init(addresses); /// init configs
-        Configs(address(proposals.proposals(0))).initEmissions(addresses, 0xc191A4db4E05e478778eDB6a201cb7F13A257C23); /// init configs
-        proposals.testProposals(true, false, false, false, false, false, true);
+        Configs(address(proposals.proposals(0))).initEmissions(
+            addresses,
+            0xc191A4db4E05e478778eDB6a201cb7F13A257C23
+        ); /// init configs
+        proposals.testProposals(
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true
+        );
     }
 
     function testDeployAfterDeployBuildRunValidateProposalSucceeds() public {
-        proposals.testProposals(true, true, true, true, true, false, true);
+        proposals.testProposals(true, true, true, true, true, true, false, true);
     }
 
     function testValidateSucceeds() public {
@@ -46,14 +77,21 @@ contract InitProposalSucceedsTest is Test, ChainIds {
 
         /// validate mip 00 after gov proposal succeeds
         /// moonbeam timelock corresponds to EOA owner on sepolia testnet
-        proposals.proposals(0).validate(addresses, addresses.getAddress("MOONBEAM_TIMELOCK"));
+        proposals.proposals(0).validate(
+            addresses,
+            addresses.getAddress("MOONBEAM_TIMELOCK")
+        );
     }
 
     function testBuildProcessRequestSucceeds() public view {
         console.log("queueProposal: ");
-        console.logBytes(abi.encodePacked(TemporalGovernor.queueProposal.selector));
+        console.logBytes(
+            abi.encodePacked(TemporalGovernor.queueProposal.selector)
+        );
 
         console.log("executeProposal: ");
-        console.logBytes(abi.encodePacked(TemporalGovernor.executeProposal.selector));
+        console.logBytes(
+            abi.encodePacked(TemporalGovernor.executeProposal.selector)
+        );
     }
 }

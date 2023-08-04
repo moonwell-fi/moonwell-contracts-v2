@@ -21,7 +21,7 @@ contract SystemUpgradeUnitTest is Test {
         TestProposals proposals = new TestProposals();
         proposals.setUp();
         proposals.setDebug(false);
-        proposals.testProposals(true, true, true, true, true, false, true);
+        proposals.testProposals(true, true, true, true, true, true, false, true);
         addresses = proposals.addresses();
     }
 

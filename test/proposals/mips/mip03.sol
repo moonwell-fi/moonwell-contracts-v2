@@ -38,6 +38,8 @@ contract mip03 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function afterDeploy(Addresses, address) public {}
 
+    function afterDeploySetup(Addresses addresses) public {}
+
     function build(Addresses addresses) public {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         address cTokenAddress = addresses.getAddress("MOONWELL_USDC");

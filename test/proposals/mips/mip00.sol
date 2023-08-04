@@ -369,6 +369,26 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
         }
     }
 
+    function afterDeploySetup(Addresses addresses) public {
+        Configs.CTokenConfiguration[]
+            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
+        uint256 cTokenConfigsLength = cTokenConfigs.length;
+        unchecked {
+            for (uint256 i = 0; i < cTokenConfigsLength; i++) {
+                Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+                address tokenAddress = addresses.getAddress(
+                    config.tokenAddressName
+                );
+                deal(
+                    tokenAddress,
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    cTokenConfigs[i].initialMintAmount
+                );
+            }
+        }
+    }
+
     function build(Addresses addresses) public {
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 

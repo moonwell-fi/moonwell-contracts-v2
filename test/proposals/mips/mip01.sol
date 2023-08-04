@@ -28,6 +28,8 @@ contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function afterDeploy(Addresses addresses, address) public {}
 
+    function afterDeploySetup(Addresses addresses) public {}
+
     function build(Addresses addresses) public {
         /// -------------- EMISSION CONFIGURATION --------------
 
@@ -90,7 +92,10 @@ contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
                         config.emissionToken
                     );
 
-                assertEq(marketConfig.owner, addresses.getAddress(config.owner));
+                assertEq(
+                    marketConfig.owner,
+                    addresses.getAddress(config.owner)
+                );
                 assertEq(marketConfig.emissionToken, config.emissionToken);
                 assertEq(marketConfig.endTime, config.endTime);
                 assertEq(

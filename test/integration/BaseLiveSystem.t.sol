@@ -11,28 +11,43 @@ import {MErc20} from "@protocol/core/MErc20.sol";
 import {MToken} from "@protocol/core/MToken.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
+import {WETHRouter} from "@protocol/core/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/core/Comptroller.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/core/MErc20Delegator.sol";
+import {ChainlinkOracle} from "@protocol/core/Oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
 
-contract LiveSystemTest is Test {
+contract LiveSystemBaseTest is Test, Configs {
     MultiRewardDistributor mrd;
     Comptroller comptroller;
     TestProposals proposals;
     Addresses addresses;
+    WETHRouter router;
+    ChainlinkOracle oracle;
     address public well;
 
     function setUp() public {
         proposals = new TestProposals();
         proposals.setUp();
         addresses = proposals.addresses();
-        proposals.testProposals(false, true, true, true, true, true, false, false); /// do not debug, deploy, after deploy, build, and run, do not validate
+        proposals.testProposals(
+            false,
+            false,
+            false,
+            true,
+            true,
+            true,
+            false,
+            false
+        ); /// only setup after deploy, build, and run, do not validate
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         well = addresses.getAddress("WELL");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+        router = WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));
+        oracle = ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"));
     }
 
     function testSetup() public {
@@ -43,8 +58,28 @@ contract LiveSystemTest is Test {
             address(proposals.proposals(0))
         ).getCTokenConfigurations(block.chainid);
 
-        assertEq(configs.length, 5); /// 5 configs on base goerli
-        assertEq(mTokenConfigs.length, 5); /// 5 mTokens on base goerli
+        assertEq(configs.length, 3); /// 5 configs on base goerli
+        assertEq(mTokenConfigs.length, 3); /// 5 mTokens on base goerli
+    }
+
+    function testOraclesReturnCorrectValues() public {
+        Configs.CTokenConfiguration[]
+            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+        unchecked {
+            for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+                assertGt(
+                    oracle.getUnderlyingPrice(
+                        MToken(
+                            addresses.getAddress(
+                                cTokenConfigs[i].addressesString
+                            )
+                        )
+                    ),
+                    1,
+                    "oracle price must be non zero"
+                );
+            }
+        }
     }
 
     function testGuardianCanPauseTemporalGovernor() public {
@@ -92,10 +127,14 @@ contract LiveSystemTest is Test {
                 addresses.getAddress("WELL")
             );
 
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
+            block.chainid
+        );
+
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.supplyEmissionsPerSec, 1e18);
-        assertEq(config.endTime, block.timestamp + 4 weeks);
+        assertEq(config.endTime, emissionConfig[0].endTime);
         assertEq(config.supplyGlobalIndex, 1e36);
         assertEq(config.borrowGlobalIndex, 1e36);
     }
@@ -121,12 +160,57 @@ contract LiveSystemTest is Test {
                 addresses.getAddress("WELL")
             );
 
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
+            block.chainid
+        );
+
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.borrowEmissionsPerSec, 1e18);
-        assertEq(config.endTime, block.timestamp + 4 weeks);
+        assertEq(config.endTime, emissionConfig[0].endTime);
         assertEq(config.supplyGlobalIndex, 1e36);
         assertEq(config.borrowGlobalIndex, 1e36);
+    }
+
+    function testMintMWethMTokenSucceeds() public {
+        address sender = address(this);
+        uint256 mintAmount = 100e18;
+
+        IERC20 token = IERC20(addresses.getAddress("WETH"));
+        MErc20Delegator mToken = MErc20Delegator(
+            payable(addresses.getAddress("MOONWELL_WETH"))
+        );
+        uint256 startingTokenBalance = token.balanceOf(address(mToken));
+
+        vm.deal(sender, mintAmount); /// fund with raw eth
+        token.approve(address(mToken), mintAmount);
+
+        router.mint{value: mintAmount}(address(this)); /// ensure successful mint
+        assertTrue(mToken.balanceOf(sender) > 0); /// ensure balance is gt 0
+        assertEq(
+            token.balanceOf(address(mToken)) - startingTokenBalance,
+            mintAmount
+        ); /// ensure underlying balance is sent to mToken
+
+        address[] memory mTokens = new address[](1);
+        mTokens[0] = address(mToken);
+
+        comptroller.enterMarkets(mTokens);
+        assertTrue(
+            comptroller.checkMembership(
+                sender,
+                MToken(addresses.getAddress("MOONWELL_WETH"))
+            )
+        ); /// ensure sender and mToken is in market
+
+        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+            .getAccountLiquidity(address(this));
+
+        assertEq(err, 0, "Error getting account liquidity");
+        assertGt(liquidity, mintAmount * 1_000, "liquidity not correct");
+        assertEq(shortfall, 0, "Incorrect shortfall");
+
+        comptroller.exitMarket(address(mToken));
     }
 
     function testMintMTokenSucceeds() public {
@@ -148,6 +232,76 @@ contract LiveSystemTest is Test {
             token.balanceOf(address(mToken)) - startingTokenBalance,
             mintAmount
         ); /// ensure underlying balance is sent to mToken
+
+        address[] memory mTokens = new address[](1);
+        mTokens[0] = address(mToken);
+
+        comptroller.enterMarkets(mTokens);
+        assertTrue(
+            comptroller.checkMembership(
+                sender,
+                MToken(addresses.getAddress("MOONWELL_USDC"))
+            )
+        ); /// ensure sender and mToken is in market
+
+        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+            .getAccountLiquidity(address(this));
+
+        console.log("liquidity: ", liquidity);
+
+        assertEq(err, 0, "Error getting account liquidity");
+        assertApproxEqRel(
+            liquidity,
+            80e18,
+            1e15,
+            "liquidity not within .1% of $80"
+        );
+        assertEq(shortfall, 0, "Incorrect shortfall");
+
+        comptroller.exitMarket(address(mToken));
+    }
+
+    function testMintcbETHmTokenSucceeds() public {
+        address sender = address(this);
+        uint256 mintAmount = 100e18;
+
+        IERC20 token = IERC20(addresses.getAddress("cbETH"));
+        MErc20Delegator mToken = MErc20Delegator(
+            payable(addresses.getAddress("MOONWELL_cbETH"))
+        );
+        uint256 startingTokenBalance = token.balanceOf(address(mToken));
+
+        deal(address(token), sender, mintAmount);
+        token.approve(address(mToken), mintAmount);
+
+        assertEq(mToken.mint(mintAmount), 0); /// ensure successful mint
+        assertTrue(mToken.balanceOf(sender) > 0); /// ensure balance is gt 0
+        assertEq(
+            token.balanceOf(address(mToken)) - startingTokenBalance,
+            mintAmount
+        ); /// ensure underlying balance is sent to mToken
+
+        address[] memory mTokens = new address[](1);
+        mTokens[0] = address(mToken);
+
+        comptroller.enterMarkets(mTokens);
+        assertTrue(
+            comptroller.checkMembership(
+                sender,
+                MToken(addresses.getAddress("MOONWELL_cbETH"))
+            )
+        ); /// ensure sender and mToken is in market
+
+        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+            .getAccountLiquidity(address(this));
+
+        console.log("liquidity: ", liquidity);
+
+        assertEq(err, 0, "Error getting account liquidity");
+        assertGt(liquidity, mintAmount * 1200, "liquidity incorrect");
+        assertEq(shortfall, 0, "Incorrect shortfall");
+
+        comptroller.exitMarket(address(mToken));
     }
 
     function testBorrowMTokenSucceeds() public {
@@ -267,16 +421,22 @@ contract LiveSystemTest is Test {
         assertApproxEqRel(
             rewards[0].totalAmount,
             toWarp * 1e18,
-            1e17,
-            "Total rewards not within 1%"
+            5e16,
+            "Total rewards not within 5%"
         ); /// allow 1% error, anything more causes test failure
         assertApproxEqRel(
             rewards[0].borrowSide,
             toWarp * 1e18,
-            1e17,
-            "Supply side rewards not within 1%"
+            5e16,
+            "Borrow side rewards not within 5%"
         ); /// allow 1% error, anything more causes test failure
-        assertEq(rewards[0].supplySide, 0);
+
+        assertApproxEqRel(
+            rewards[0].supplySide,
+            toWarp,
+            5e16,
+            "Supply side rewards not within 5%"
+        );
     }
 
     function testSupplyBorrowUsdcReceivesRewards(uint256 toWarp) public {
