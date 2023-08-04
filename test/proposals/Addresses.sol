@@ -56,6 +56,16 @@ contract Addresses is Test, ChainIds {
             moonBeamChainId,
             0xc191A4db4E05e478778eDB6a201cb7F13A257C23 /// TODO add correct guantlet msig
         );
+        _addAddress(
+            "ARTEMIS_GOVERNOR",
+            moonBeamChainId,
+            0xfc4DFB17101A12C5CEc5eeDd8E92B5b16557666d /// TODO add correct guantlet msig
+        );
+        _addAddress(
+            "WELL",
+            moonBeamChainId,
+            0x511aB53F793683763E5a8829738301368a2411E3
+        );
 
         /// MOON BASE
         _addAddress(
@@ -120,6 +130,12 @@ contract Addresses is Test, ChainIds {
             "WORMHOLE_CORE",
             moonBaseChainId,
             0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901
+        );
+
+        _addAddress( /// moonbeam
+            "WORMHOLE_CORE",
+            moonBeamChainId,
+            0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3
         );
 
         /// ----------------------------------
@@ -458,13 +474,6 @@ contract Addresses is Test, ChainIds {
             8453,
             0xEC942bE8A8114bFD0396A5052c36027f2cA6a9d0
         );
-
-        /// TODO add Guardian Multisig address on Base once we have it
-        /// TODO add chainlink oracle addresses on Base once we have it
-        /// stETHETH_ORACLE, wstETHstETH_ORACLE, cbETH_ORACLE, ETH_ORACLE, WBTC_ORACLE, USDC_ORACLE
-        /// ADD WBTC, USDC, wstETH, cbETH, WELL
-        /// TODO update mainnetMTokens.json and mainnetRewardStreams.json once we have the addresses
-        /// TODO add governor guardian
     }
 
     /// @notice add an address for a specific chainId

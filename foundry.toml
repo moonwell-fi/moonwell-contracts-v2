@@ -26,5 +26,5 @@ local = "http://127.0.0.1:8545"
 # moonbase = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbase.moonscan.io/api" }
 # goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/api" }
 # sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
-base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
+# base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
 # baseGoerli = { key = "PLACEHOLDER_STRING", url= "https://api-goerli.basescan.org/api" }
