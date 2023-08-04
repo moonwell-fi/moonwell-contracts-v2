@@ -14,6 +14,7 @@ import {Addresses} from "@test/proposals/Addresses.sol";
 import {Comptroller} from "@protocol/core/Comptroller.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/core/MErc20Delegator.sol";
+import {TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
 
@@ -46,6 +47,30 @@ contract LiveSystemTest is Test {
         assertEq(mTokenConfigs.length, 5); /// 5 mTokens on base goerli
     }
 
+    function testGuardianCanPauseTemporalGovernor() public {
+        TemporalGovernor gov = TemporalGovernor(
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
+
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN"));
+        gov.togglePause();
+
+        assertTrue(gov.paused());
+        assertFalse(gov.guardianPauseAllowed());
+        assertEq(gov.lastPauseTime(), block.timestamp);
+    }
+
+    function testEmissionsAdminCanChangeRewardStream() public {
+        address emissionsAdmin = addresses.getAddress("EMISSIONS_ADMIN");
+        MToken musdc = MToken(addresses.getAddress("MOONWELL_USDC"));
+
+        vm.prank(emissionsAdmin);
+        mrd._updateOwner(musdc, address(well), emissionsAdmin);
+
+        vm.prank(emissionsAdmin);
+        mrd._updateBorrowSpeed(musdc, address(well), 1e18);
+    }
+
     function testUpdateEmissionConfigSupplyUsdcSuccess() public {
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         mrd._updateSupplySpeed(
@@ -67,7 +92,7 @@ contract LiveSystemTest is Test {
                 addresses.getAddress("WELL")
             );
 
-        assertEq(config.owner, addresses.getAddress("TEMPORAL_GOVERNOR"));
+        assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.supplyEmissionsPerSec, 1e18);
         assertEq(config.endTime, block.timestamp + 4 weeks);
@@ -76,7 +101,7 @@ contract LiveSystemTest is Test {
     }
 
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
-        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
         mrd._updateBorrowSpeed(
             MToken(addresses.getAddress("MOONWELL_USDC")), /// reward mUSDC
             well, /// rewards paid in WELL
@@ -96,7 +121,7 @@ contract LiveSystemTest is Test {
                 addresses.getAddress("WELL")
             );
 
-        assertEq(config.owner, addresses.getAddress("TEMPORAL_GOVERNOR"));
+        assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.borrowEmissionsPerSec, 1e18);
         assertEq(config.endTime, block.timestamp + 4 weeks);

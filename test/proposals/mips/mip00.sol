@@ -126,7 +126,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             bytes memory initData = abi.encodeWithSignature(
                 "initialize(address,address)",
                 address(unitroller),
-                addresses.getAddress("PAUSE_GUARDIAN") /// TODO figure out what the pause guardian is on Base, then replace it in Addresses.sol
+                addresses.getAddress("PAUSE_GUARDIAN")
             );
 
             TransparentUpgradeableProxy mrdProxy = new TransparentUpgradeableProxy(
@@ -247,10 +247,9 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             /// set temporal governor as owner of the proxy admin
             proxyAdmin.transferOwnership(governor);
 
-            /// TODO add GOVERNOR GUARDIAN to Addresses.sol, then hand ownership over to governor guardian
-            // TemporalGovernor(governor).transferOwnership(
-            //     addresses.getAddress("GOVERNOR_GUARDIAN")
-            // );
+            TemporalGovernor(governor).transferOwnership(
+                addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN")
+            );
 
             /// set chainlink oracle on the comptroller implementation contract
             Comptroller(address(unitroller))._setPriceOracle(
@@ -459,8 +458,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
 
-        /// TODO validate that governor guardian is correctly set on temporal governor
-
+        assertEq(
+            governor.owner(),
+            addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN")
+        );
         assertEq(
             chainIdTemporalGovTimelock[block.chainid],
             governor.proposalDelay()
