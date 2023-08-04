@@ -194,6 +194,23 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
 
         emit GuardianPauseGranted(block.timestamp);
     }
+    
+    /// @notice callable only via a gov proposal (governance)
+    /// this transfers the guardian to a new address
+    /// @param newGuardian The new guardian address
+    function changeGuardian(address newGuardian) external {
+        require(
+            msg.sender == address(this),
+            "TemporalGovernor: cannot change guardian"
+        );
+
+        _transferOwnership(newGuardian);
+
+        guardianPauseAllowed = true;
+        lastPauseTime = 0;
+
+        emit GuardianChanged(newGuardian);
+    }
 
     /// ------------- GUARDIAN / GOVERNOR ONLY API -------------
 
