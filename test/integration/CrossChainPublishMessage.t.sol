@@ -96,6 +96,9 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
                 )
             );
 
+        console.log("artemis governor queue governance calldata");
+        emit log_bytes(artemisQueuePayload);
+
         vm.selectFork(moonbeamForkId);
         testMintSelf();
         vm.prank(voter);
