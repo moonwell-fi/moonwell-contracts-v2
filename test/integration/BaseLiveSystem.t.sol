@@ -590,7 +590,7 @@ contract LiveSystemBaseTest is Test, Configs {
             .getAccountLiquidity(address(this));
 
         /// normalize up usdc decimals from 6 to 18 by adding 12
-        uint256 expectedMinLiquidity = ((usdcMintAmount * 1e12) * 8 / 10) +
+        uint256 expectedMinLiquidity = (((usdcMintAmount * 1e12) * 8) / 10) +
             wethMintAmount *
             1_000 +
             cbEthMintAmount *
@@ -599,6 +599,45 @@ contract LiveSystemBaseTest is Test, Configs {
         assertEq(err, 0, "Error getting account liquidity");
         assertGt(liquidity, expectedMinLiquidity, "liquidity not correct");
         assertEq(shortfall, 0, "Incorrect shortfall");
+    }
+
+    function testMaxBorrowWeth() public {
+        testAddCloseToMaxLiquidity();
+
+        uint256 borrowAmount = 6_299e18;
+        address mweth = addresses.getAddress("MOONWELL_WETH");
+
+        assertEq(MErc20(mweth).borrow(borrowAmount), 0);
+        assertEq(
+            IERC20(addresses.getAddress("WETH")).balanceOf(address(this)),
+            borrowAmount
+        );
+    }
+
+    function testMaxBorrowcbEth() public {
+        testAddCloseToMaxLiquidity();
+
+        uint256 borrowAmount = 1_499e18;
+        address mcbeth = addresses.getAddress("MOONWELL_cbETH");
+
+        assertEq(MErc20(mcbeth).borrow(borrowAmount), 0);
+        assertEq(
+            IERC20(addresses.getAddress("cbETH")).balanceOf(address(this)),
+            borrowAmount
+        );
+    }
+
+    function testMaxBorrowUsdc() public {
+        testAddCloseToMaxLiquidity();
+
+        uint256 borrowAmount = 31_999_999e6;
+        address mcbeth = addresses.getAddress("MOONWELL_USDC");
+
+        assertEq(MErc20(mcbeth).borrow(borrowAmount), 0);
+        assertEq(
+            IERC20(addresses.getAddress("USDC")).balanceOf(address(this)),
+            borrowAmount
+        );
     }
 
     function _addLiquidity(address market, uint256 amount) private {
