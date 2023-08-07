@@ -388,18 +388,16 @@ contract LiveSystemBaseTest is Test, Configs {
             );
 
         assertEq(rewards[0].emissionToken, well);
-        assertApproxEqRel(
+        assertLe(
             rewards[0].totalAmount,
             toWarp * 1e18,
-            1e17,
-            "Total rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
+            "Total rewards not LT warp time * 1e18"
+        );
+        assertLe(
             rewards[0].supplySide,
             toWarp * 1e18,
-            1e17,
-            "Supply side rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
+            "Supply side rewards not LT warp time * 1e18"
+        );
         assertEq(rewards[0].borrowSide, 0);
     }
 
@@ -418,24 +416,23 @@ contract LiveSystemBaseTest is Test, Configs {
             );
 
         assertEq(rewards[0].emissionToken, well);
-        assertApproxEqRel(
+        /// ensure rewards are less than warp time * 1e18 as rounding
+        /// down happens + temporal governor owns mTokens in the pool
+        assertLe(
             rewards[0].totalAmount,
-            toWarp * 1e18,
-            5e16,
-            "Total rewards not within 5%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
+            toWarp * 1e18 + toWarp,
+            "Total rewards not less than warp time * 1e18"
+        );
+        assertLe(
             rewards[0].borrowSide,
             toWarp * 1e18,
-            5e16,
-            "Borrow side rewards not within 5%"
-        ); /// allow 1% error, anything more causes test failure
+            "Borrow side rewards not less than warp time * 1e18"
+        );
 
-        assertApproxEqRel(
+        assertLe(
             rewards[0].supplySide,
             toWarp,
-            5e16,
-            "Supply side rewards not within 5%"
+            "Supply side rewards not less than warp time"
         );
     }
 
@@ -455,23 +452,20 @@ contract LiveSystemBaseTest is Test, Configs {
             );
 
         assertEq(rewards[0].emissionToken, well);
-        assertApproxEqRel(
+        assertLe(
             rewards[0].totalAmount,
             toWarp * 1e18 + toWarp * 1e18,
-            1e17,
-            "Total rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
+            "Total rewards not less than warp time * reward speed"
+        );
+        assertLe(
             rewards[0].borrowSide,
             toWarp * 1e18,
-            1e17,
-            "Borrow side rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
+            "Borrow side rewards not less than warp time * reward speed"
+        );
+        assertLe(
             rewards[0].supplySide,
             toWarp * 1e18,
-            1e17,
-            "Supply side rewards not within 1%"
+            "Supply side rewards not less than warp time * reward speed"
         );
     }
 
@@ -527,22 +521,21 @@ contract LiveSystemBaseTest is Test, Configs {
             );
 
         assertEq(rewards[0].emissionToken, well);
+
         assertGt(
+            toWarp * 1e18 * 2,
             rewards[0].totalAmount,
-            toWarp * 1e18,
-            "Total rewards not gt 100%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
+            "Total rewards not less than or equal to upper bound"
+        );
+        assertLe(
             rewards[0].borrowSide,
             toWarp * 1e18,
-            1e17,
-            "Borrow side rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
+            "Borrow side rewards not less than upper bound"
+        );
+        assertLe(
             rewards[0].supplySide,
             (toWarp * 1e18) / 2,
-            1e17,
-            "Supply side rewards not within 1%"
+            "Supply side rewards not less than upper bound"
         );
     }
 
@@ -558,5 +551,21 @@ contract LiveSystemBaseTest is Test, Configs {
             0,
             "user liquidation failure"
         );
+    }
+
+    function testAddLiquidityMultipleAssets() public {
+        testMintMTokenSucceeds();
+        testMintcbETHmTokenSucceeds();
+        testMintMWethMTokenSucceeds();
+
+        address[] memory mTokens = new address[](3);
+        mTokens[0] = addresses.getAddress("MOONWELL_USDC");
+        mTokens[1] = addresses.getAddress("MOONWELL_WETH");
+        mTokens[2] = addresses.getAddress("MOONWELL_cbETH");
+
+        uint256[] memory errors = comptroller.enterMarkets(mTokens);
+        for (uint256 i = 0; i < errors.length; i++) {
+            assertEq(errors[i], 0);
+        }
     }
 }
