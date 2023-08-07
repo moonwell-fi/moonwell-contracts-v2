@@ -1,6 +1,6 @@
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";

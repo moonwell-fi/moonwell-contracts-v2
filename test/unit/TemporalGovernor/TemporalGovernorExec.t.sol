@@ -1,6 +1,6 @@
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 

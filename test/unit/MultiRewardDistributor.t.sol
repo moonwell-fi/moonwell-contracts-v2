@@ -1,6 +1,6 @@
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 import "@protocol/core/MultiRewardDistributor/MultiRewardDistributor.sol";
 import {MToken} from "@protocol/core/MToken.sol";
 import {FaucetToken, FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
