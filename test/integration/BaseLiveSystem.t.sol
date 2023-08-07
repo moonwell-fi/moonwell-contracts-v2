@@ -567,5 +567,44 @@ contract LiveSystemBaseTest is Test, Configs {
         for (uint256 i = 0; i < errors.length; i++) {
             assertEq(errors[i], 0);
         }
+
+        MToken[] memory assets = comptroller.getAssetsIn(address(this));
+
+        assertEq(address(assets[0]), addresses.getAddress("MOONWELL_USDC"));
+        assertEq(address(assets[1]), addresses.getAddress("MOONWELL_WETH"));
+        assertEq(address(assets[2]), addresses.getAddress("MOONWELL_cbETH"));
+    }
+
+    function testAddCloseToMaxLiquidity() public {
+        uint256 usdcMintAmount = 39_000_000e6;
+        uint256 wethMintAmount = 10_000e18;
+        uint256 cbEthMintAmount = 4_000e18;
+
+        testAddLiquidityMultipleAssets();
+
+        _addLiquidity(addresses.getAddress("MOONWELL_USDC"), usdcMintAmount);
+        _addLiquidity(addresses.getAddress("MOONWELL_WETH"), wethMintAmount);
+        _addLiquidity(addresses.getAddress("MOONWELL_cbETH"), cbEthMintAmount);
+
+        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+            .getAccountLiquidity(address(this));
+
+        /// normalize up usdc decimals from 6 to 18 by adding 12
+        uint256 expectedMinLiquidity = ((usdcMintAmount * 1e12) * 8 / 10) +
+            wethMintAmount *
+            1_000 +
+            cbEthMintAmount *
+            1_200;
+
+        assertEq(err, 0, "Error getting account liquidity");
+        assertGt(liquidity, expectedMinLiquidity, "liquidity not correct");
+        assertEq(shortfall, 0, "Incorrect shortfall");
+    }
+
+    function _addLiquidity(address market, uint256 amount) private {
+        address underlying = MErc20(market).underlying();
+        deal(underlying, address(this), amount);
+        IERC20(underlying).approve(market, amount);
+        assertEq(MErc20(market).mint(amount), 0);
     }
 }
