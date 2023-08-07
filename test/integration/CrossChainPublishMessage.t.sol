@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-
 import "@forge-std/Test.sol";
 
 import {Well} from "@protocol/core/Governance/deprecated/Well.sol";
@@ -43,7 +40,7 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
             true,
             false,
             false,
-            true,
+            false,
             true,
             false,
             false,
@@ -77,11 +74,6 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
 
         vm.roll(block.number + 1000);
         vm.warp(block.timestamp + 1000);
-
-        console.log(
-            "prior votes: ",
-            well.getPriorVotes(voter, block.number - 1)
-        );
     }
 
     function testQueueAndPublishMessageRawBytes() public {
@@ -134,18 +126,14 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
 
-        console.log("here");
-
         (
             address[] memory targets, /// contracts to call
             uint256[] memory values, /// native token amount to send
             bytes[] memory calldatas
         ) = CrossChainProposal(address(proposals.proposals(0)))
                 .getTargetsPayloadsValues();
-        console.log("here1");
 
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        console.log("here2");
 
         for (uint256 i = 0; i < targets.length; i++) {
             (bool success, bytes memory errorString) = targets[i].call(
