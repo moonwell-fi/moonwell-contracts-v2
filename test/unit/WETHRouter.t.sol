@@ -5,21 +5,21 @@ import "@forge-std/Test.sol";
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {WETH9} from "@protocol/core/router/IWETH.sol";
-import {MErc20} from "@protocol/core/MErc20.sol";
+import {WETH9} from "@protocol/router/IWETH.sol";
+import {MErc20} from "@protocol/MErc20.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
 import {MockCToken} from "@test/mock/MockCToken.sol";
-import {WETHRouter} from "@protocol/core/router/WETHRouter.sol";
+import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 
-import {MToken} from "@protocol/core/MToken.sol";
+import {MToken} from "@protocol/MToken.sol";
 import {SigUtils} from "@test/helper/SigUtils.sol";
-import {Comptroller} from "@protocol/core/Comptroller.sol";
-import {MErc20Immutable} from "@protocol/core/MErc20Immutable.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {MErc20Immutable} from "@protocol/MErc20Immutable.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
-import {InterestRateModel} from "@protocol/core/IRModels/InterestRateModel.sol";
-import {MultiRewardDistributor} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {ComptrollerErrorReporter} from "@protocol/core/ErrorReporter.sol";
-import {WhitePaperInterestRateModel} from "@protocol/core/IRModels/WhitePaperInterestRateModel.sol";
+import {InterestRateModel} from "@protocol/IRModels/InterestRateModel.sol";
+import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
+import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
+import {WhitePaperInterestRateModel} from "@protocol/IRModels/WhitePaperInterestRateModel.sol";
 
 contract WETHRouterUnitTest is Test {
     MockWeth public weth;
@@ -145,8 +145,10 @@ contract WETHRouterUnitTest is Test {
 
     function testSendEtherToWethRouterFails() public {
         vm.deal(address(this), 1 ether);
+
         vm.expectRevert("WETHRouter: not weth");
-        address(router).call{value: 1 ether}("");
+        (bool success, ) = address(router).call{value: 1 ether}("");
+        success; /// shhhhh
     }
 
     receive() external payable {

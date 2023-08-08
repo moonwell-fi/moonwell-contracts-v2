@@ -6,7 +6,7 @@ import {Script} from "@forge-std/Script.sol";
 
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {mip00 as mip} from "@test/proposals/mips/mip00.sol";
-import {TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 
 /*
 How to use:

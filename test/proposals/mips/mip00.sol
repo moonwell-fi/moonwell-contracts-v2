@@ -7,26 +7,26 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {WETH9} from "@protocol/core/router/IWETH.sol";
-import {MErc20} from "@protocol/core/MErc20.sol";
-import {MToken} from "@protocol/core/MToken.sol";
+import {WETH9} from "@protocol/router/IWETH.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {IWormhole} from "@protocol/core/Governance/IWormhole.sol";
-import {Unitroller} from "@protocol/core/Unitroller.sol";
-import {WETHRouter} from "@protocol/core/router/WETHRouter.sol";
-import {PriceOracle} from "@protocol/core/Oracles/PriceOracle.sol";
-import {MErc20Delegate} from "@protocol/core/MErc20Delegate.sol";
-import {MErc20Delegator} from "@protocol/core/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/core/Oracles/ChainlinkOracle.sol";
-import {TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
+import {IWormhole} from "@protocol/Governance/IWormhole.sol";
+import {Unitroller} from "@protocol/Unitroller.sol";
+import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {PriceOracle} from "@protocol/Oracles/PriceOracle.sol";
+import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
+import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
-import {MultiRewardDistributor} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/core/IRModels/JumpRateModel.sol";
-import {Comptroller, ComptrollerInterface} from "@protocol/core/Comptroller.sol";
+import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {JumpRateModel, InterestRateModel} from "@protocol/IRModels/JumpRateModel.sol";
+import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
 contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
     string public constant name = "MIP00";

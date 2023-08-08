@@ -6,7 +6,7 @@ import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 
 import "@forge-std/Test.sol";
 
-import {MoonwellArtemisGovernor} from "@protocol/core/Governance/deprecated/MoonwellArtemisGovernor.sol";
+import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
 abstract contract CrossChainProposal is MultisigProposal, MarketCreationHook {

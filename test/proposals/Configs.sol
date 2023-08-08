@@ -2,13 +2,13 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {WETH9} from "@protocol/core/router/IWETH.sol";
+import {WETH9} from "@protocol/router/IWETH.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
-import {ChainlinkCompositeOracle} from "@protocol/core/Oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/Oracles/ChainlinkCompositeOracle.sol";
 
 contract Configs is Test {
     struct CTokenConfiguration {
@@ -501,7 +501,7 @@ contract Configs is Test {
         }
     }
 
-    function initEmissions(Addresses addresses, address deployer) public {
+    function initEmissions(Addresses addresses, address) public {
         Configs.CTokenConfiguration[]
             memory mTokenConfigs = getCTokenConfigurations(block.chainid);
 

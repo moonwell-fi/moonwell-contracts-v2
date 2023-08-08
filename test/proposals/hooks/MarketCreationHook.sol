@@ -2,9 +2,9 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {MErc20} from "@protocol/core/MErc20.sol";
-import {MToken} from "@protocol/core/MToken.sol";
-import {Comptroller} from "@protocol/core/Comptroller.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
 import {MultisigProposal} from "@test/proposals/proposalTypes/MultisigProposal.sol";
 
 contract MarketCreationHook {
@@ -86,6 +86,10 @@ contract MarketCreationHook {
                 require(
                     mtoken == secondMToken,
                     "mtoken supported and minted must be the same"
+                );
+                require(
+                    mtoken == approvalMToken,
+                    "must approve mtoken to spend tokens"
                 );
 
                 createdMTokens.push(mtoken); /// add mToken to created mTokens array

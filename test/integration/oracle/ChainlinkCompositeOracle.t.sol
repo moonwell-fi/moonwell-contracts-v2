@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
-import {ChainlinkCompositeOracle} from "@protocol/core/Oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/Oracles/ChainlinkCompositeOracle.sol";
 
 contract ChainlinkCompositeOracleIntegrationTest is Test {
     ChainlinkCompositeOracle public oracle;

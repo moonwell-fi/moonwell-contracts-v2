@@ -5,19 +5,19 @@ import "@forge-std/Test.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import {MToken} from "@protocol/core/MToken.sol";
-import {MErc20} from "@protocol/core/MErc20.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {MErc20} from "@protocol/MErc20.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {Unitroller} from "@protocol/core/Unitroller.sol";
-import {MErc20Delegate} from "@protocol/core/MErc20Delegate.sol";
-import {MErc20Delegator} from "@protocol/core/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/core/Oracles/ChainlinkOracle.sol";
+import {Unitroller} from "@protocol/Unitroller.sol";
+import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/core/IRModels/JumpRateModel.sol";
-import {Comptroller, ComptrollerInterface} from "@protocol/core/Comptroller.sol";
+import {JumpRateModel, InterestRateModel} from "@protocol/IRModels/JumpRateModel.sol";
+import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
 /// @notice This MIP deploys and lists new MTokens for the protocol.
 /// It reads in the configuration from Config.sol, which reads in the mainnetMTokens.json file and deploys the MTokens specified in that file.

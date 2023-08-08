@@ -5,9 +5,9 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import {IWormhole} from "@protocol/core/Governance/IWormhole.sol";
+import {IWormhole} from "@protocol/Governance/IWormhole.sol";
 
-import {ITemporalGovernor} from "@protocol/core/Governance/ITemporalGovernor.sol";
+import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
 
 /// @notice contract that governs the Base deployment of moonwell leveraging the wormhole bridge
 /// as the source of truth. Wormhole will be fed in actions from the moonbeam chain and this contract

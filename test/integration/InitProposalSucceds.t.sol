@@ -8,7 +8,7 @@ import {Addresses} from "@test/proposals/Addresses.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 
 /// validate the deployment on sepolia testnet
 contract InitProposalSucceedsTest is Test, ChainIds {

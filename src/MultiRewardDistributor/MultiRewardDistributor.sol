@@ -7,11 +7,11 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {MToken} from "@protocol/core/MToken.sol";
-import {Comptroller} from "@protocol/core/Comptroller.sol";
-import {MTokenInterface} from "@protocol/core/MTokenInterfaces.sol";
-import {ExponentialNoError} from "@protocol/core/ExponentialNoError.sol";
-import {MultiRewardDistributorCommon} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {MTokenInterface} from "@protocol/MTokenInterfaces.sol";
+import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
+import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
 
 /**
     @title A multi-asset distributor that tracks mTokens supply/borrows

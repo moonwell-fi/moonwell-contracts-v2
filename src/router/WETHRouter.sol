@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {WETH9} from "@protocol/core/router/IWETH.sol";
-import {MErc20} from "@protocol/core/MErc20.sol";
+import {WETH9} from "@protocol/router/IWETH.sol";
+import {MErc20} from "@protocol/MErc20.sol";
 
 /// @notice WETH router for depositing raw ETH into Moonwell by wrapping into WETH then calling mint
 /// allows for a single transaction to remove ETH from Moonwell

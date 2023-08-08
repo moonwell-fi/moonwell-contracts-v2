@@ -3,14 +3,14 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Well} from "@protocol/core/Governance/deprecated/Well.sol";
+import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Timelock} from "@protocol/core/Governance/deprecated/Timelock.sol";
+import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {IWormhole} from "@protocol/core/Governance/IWormhole.sol";
+import {IWormhole} from "@protocol/Governance/IWormhole.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
-import {MoonwellArtemisGovernor} from "@protocol/core/Governance/deprecated/MoonwellArtemisGovernor.sol";
+import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -128,7 +128,7 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
 
         (
             address[] memory targets, /// contracts to call
-            uint256[] memory values, /// native token amount to send
+            , /// native token amount to send
             bytes[] memory calldatas
         ) = CrossChainProposal(address(proposals.proposals(0)))
                 .getTargetsPayloadsValues();
