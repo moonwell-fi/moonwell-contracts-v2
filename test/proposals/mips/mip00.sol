@@ -69,7 +69,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
         );
         console.log(
             "governor owner: ",
-            addresses.getAddress("MOONBEAM_TIMELOCK")
+            addresses.getAddress(
+                "MOONBEAM_TIMELOCK",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
         );
 
         localInit(addresses);
@@ -78,7 +81,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             TemporalGovernor.TrustedSender[]
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
             trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid];
-            trustedSenders[0].addr = addresses.getAddress("MOONBEAM_TIMELOCK");
+            trustedSenders[0].addr = addresses.getAddress(
+                "MOONBEAM_TIMELOCK",
+                sendingChainIdToReceivingChainId[block.chainid]
+            );
 
             require(
                 addresses.getAddress("WORMHOLE_CORE") != address(0),
@@ -363,6 +369,26 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
         }
     }
 
+    function afterDeploySetup(Addresses addresses) public {
+        Configs.CTokenConfiguration[]
+            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
+        uint256 cTokenConfigsLength = cTokenConfigs.length;
+        unchecked {
+            for (uint256 i = 0; i < cTokenConfigsLength; i++) {
+                Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+                address tokenAddress = addresses.getAddress(
+                    config.tokenAddressName
+                );
+                deal(
+                    tokenAddress,
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    cTokenConfigs[i].initialMintAmount
+                );
+            }
+        }
+    }
+
     function build(Addresses addresses) public {
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
@@ -639,7 +665,10 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
             governor.isTrustedSender(
                 chainIdToWormHoleId[block.chainid],
                 governor.addressToBytes(
-                    addresses.getAddress("MOONBEAM_TIMELOCK")
+                    addresses.getAddress(
+                        "MOONBEAM_TIMELOCK",
+                        sendingChainIdToReceivingChainId[block.chainid]
+                    )
                 )
             )
         );

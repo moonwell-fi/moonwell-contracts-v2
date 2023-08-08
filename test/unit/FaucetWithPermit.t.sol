@@ -1,6 +1,6 @@
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 
 import {SigUtils} from "@test/helper/SigUtils.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";

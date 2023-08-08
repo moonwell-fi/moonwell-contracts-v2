@@ -29,6 +29,7 @@ contract TestProposals is Test {
     bool public DEBUG;
     bool public DO_DEPLOY;
     bool public DO_AFTER_DEPLOY;
+    bool public DO_AFTER_DEPLOY_SETUP;
     bool public DO_BUILD;
     bool public DO_RUN;
     bool public DO_TEARDOWN;
@@ -71,6 +72,7 @@ contract TestProposals is Test {
         bool debug,
         bool deploy,
         bool afterDeploy,
+        bool afterDeploySetup,
         bool build,
         bool run,
         bool teardown,
@@ -116,6 +118,12 @@ contract TestProposals is Test {
                 proposals[i].afterDeploy(addresses, address(proposals[i]));
             }
 
+            // After-deploy-setup step
+            if (afterDeploySetup) {
+                if (debug) console.log("Proposal", name, "afterDeploySetup()");
+                proposals[i].afterDeploySetup(addresses);
+            }
+
             // Build step
             if (build) {
                 if (debug) console.log("Proposal", name, "build()");
@@ -157,6 +165,7 @@ contract TestProposals is Test {
                 DEBUG,
                 DO_DEPLOY,
                 DO_AFTER_DEPLOY,
+                DO_AFTER_DEPLOY_SETUP,
                 DO_BUILD,
                 DO_RUN,
                 DO_TEARDOWN,

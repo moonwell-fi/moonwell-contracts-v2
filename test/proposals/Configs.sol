@@ -486,7 +486,6 @@ contract Configs is Test {
             return;
         }
 
-        /// TODO test this on chainforked mainnet
         if (block.chainid == _baseChainId) {
             if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
                 ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(

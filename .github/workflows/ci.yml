@@ -9,6 +9,10 @@ on:
 env:
   ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
   ARB_RPC_URL: ${{secrets.ARB_RPC_URL}}
+  MOONRIVER_API_KEY: ${{secrets.MOONRIVER_API_KEY}}
+  MOONBEAM_API_KEY: ${{secrets.MOONBEAM_API_KEY}}
+  ETHERSCAN_API_KEY: ${{secrets.ETHERSCAN_API_KEY}}
+  BASESCAN_API_KEY: ${{secrets.BASESCAN_API_KEY}}
 
 jobs:
   build_scripts:
@@ -44,3 +48,6 @@ jobs:
 
       - name: Integration Test Hundred Finance Exploit Fails
         run: forge test --match-contract HundredFinanceExploitTest --fork-url baseGoerli -vvv
+
+      - name: Integration Tests Base Mainnet
+        run: forge test --match-contract LiveSystemBaseTest --fork-url base -vvv

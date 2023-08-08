@@ -149,6 +149,8 @@ contract mip02 is Proposal, CrossChainProposal, ChainIds, Configs {
         }
     }
 
+    function afterDeploySetup(Addresses addresses) public {}
+
     function build(Addresses addresses) public {
         ChainlinkOracle oracle = ChainlinkOracle(
             addresses.getAddress("CHAINLINK_ORACLE")

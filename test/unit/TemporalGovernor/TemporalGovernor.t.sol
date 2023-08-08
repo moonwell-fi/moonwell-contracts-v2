@@ -1,6 +1,6 @@
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
 
@@ -217,6 +217,21 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         vm.prank(admin);
         vm.expectRevert("TemporalGovernor: cannot revoke guardian");
         governor.revokeGuardian();
+    }
+
+    function testChangeGuardianAsNonGovernorFails() public {
+        vm.prank(admin);
+        vm.expectRevert("TemporalGovernor: cannot change guardian");
+        governor.changeGuardian(address(1));
+    }
+
+    function testChangeGuardianAsGovernorSucceeds() public {
+        address newGuardian = address(1);
+
+        vm.prank(address(governor));
+        governor.changeGuardian(newGuardian);
+
+        assertEq(newGuardian, governor.owner());
     }
 
     function testPermissionlessUnpauseSucceedsAfterWaitTime() public {

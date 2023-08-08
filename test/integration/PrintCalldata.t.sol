@@ -31,7 +31,7 @@ contract PrintCalldataTest is Test, ChainIds {
         Configs(address(proposals.proposals(0))).init(addresses); /// init configs
         Configs(address(proposals.proposals(0))).initEmissions(addresses, 0xc191A4db4E05e478778eDB6a201cb7F13A257C23); /// init configs
 
-        proposals.testProposals(true, false, false, true, false, false, false); /// set debug to true, build, and run proposal
+        proposals.testProposals(true, false, false, false, true, false, false, false); /// set debug to true, build, and run proposal
         addresses = proposals.addresses();
 
         proposals.printCalldata(

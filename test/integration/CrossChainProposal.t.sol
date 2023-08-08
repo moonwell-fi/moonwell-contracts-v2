@@ -45,7 +45,7 @@ contract CrossChainProposalUnitTest is Test, ChainIds {
         proposals = new TestProposals();
         proposals.setUp();
         proposals.setDebug(false);
-        proposals.testProposals(true, true, true, true, true, false, true);
+        proposals.testProposals(true, true, true, true, true, true, false, true);
         addresses = proposals.addresses();
 
         vm.roll(block.number + 1);

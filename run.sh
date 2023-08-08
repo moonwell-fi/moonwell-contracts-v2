@@ -3,3 +3,4 @@ forge test --match-contract IntegrationTest --fork-url $ETH_RPC_URL -vvv
 forge test --match-contract ArbitrumTest --fork-url $ARB_RPC_URL -vvv
 forge test --match-contract LiveSystemTest --fork-url baseGoerli -vvv
 forge test --match-contract HundredFinanceExploitTest --fork-url baseGoerli -vvv
+forge test --match-contract LiveSystemBaseTest --fork-url base -vvv

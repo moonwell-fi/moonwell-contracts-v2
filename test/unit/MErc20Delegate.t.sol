@@ -1,6 +1,6 @@
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "@forge-std/Test.sol";
 
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 

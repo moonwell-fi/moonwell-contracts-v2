@@ -56,6 +56,9 @@ interface ITemporalGovernor {
     /// @notice Emitted when a trusted guardian is revoked
     event GuardianRevoked(address indexed guardian);
 
+    /// @notice Emitted when guardian is changed through a governance proposal
+    event GuardianChanged(address indexed guardian);
+
     /// @notice emitted when guardian pause is granted
     event GuardianPauseGranted(uint256 indexed timestamp);
 
