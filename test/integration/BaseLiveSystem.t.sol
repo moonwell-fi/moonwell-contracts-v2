@@ -606,12 +606,29 @@ contract LiveSystemBaseTest is Test, Configs {
 
         uint256 borrowAmount = 6_299e18;
         address mweth = addresses.getAddress("MOONWELL_WETH");
+        {
+            (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+                .getAccountLiquidity(address(this));
+
+            console.log("liquidity before max borrowing eth", liquidity);
+            assertEq(0, err);
+            assertEq(0, shortfall);
+        }
 
         assertEq(MErc20(mweth).borrow(borrowAmount), 0);
         assertEq(
             IERC20(addresses.getAddress("WETH")).balanceOf(address(this)),
             borrowAmount
         );
+
+        {
+            (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+                .getAccountLiquidity(address(this));
+
+            console.log("liquidity after max borrowing eth", liquidity);
+            assertEq(0, err);
+            assertEq(0, shortfall);
+        }
     }
 
     function testMaxBorrowcbEth() public {
