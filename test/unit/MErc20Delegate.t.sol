@@ -4,18 +4,18 @@ import "@forge-std/Test.sol";
 
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {MToken} from "@protocol/core/MToken.sol";
+import {MToken} from "@protocol/MToken.sol";
 import {SigUtils} from "@test/helper/SigUtils.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
-import {Comptroller} from "@protocol/core/Comptroller.sol";
-import {MErc20Delegate} from "@protocol/core/MErc20Delegate.sol";
-import {MErc20Delegator} from "@protocol/core/MErc20Delegator.sol";
-import {MErc20Immutable} from "@protocol/core/MErc20Immutable.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {MErc20Immutable} from "@protocol/MErc20Immutable.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
-import {InterestRateModel} from "@protocol/core/IRModels/InterestRateModel.sol";
-import {WhitePaperInterestRateModel} from "@protocol/core/IRModels/WhitePaperInterestRateModel.sol";
-import {ComptrollerErrorReporter} from "@protocol/core/ErrorReporter.sol";
-import {MultiRewardDistributor} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributor.sol";
+import {InterestRateModel} from "@protocol/IRModels/InterestRateModel.sol";
+import {WhitePaperInterestRateModel} from "@protocol/IRModels/WhitePaperInterestRateModel.sol";
+import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
+import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
 
 interface InstrumentedExternalEvents {
     event PricePosted(address asset, uint previousPriceMantissa, uint requestedPriceMantissa, uint newPriceMantissa);

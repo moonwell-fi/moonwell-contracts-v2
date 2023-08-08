@@ -7,18 +7,18 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {MErc20} from "@protocol/core/MErc20.sol";
-import {MToken} from "@protocol/core/MToken.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {WETHRouter} from "@protocol/core/router/WETHRouter.sol";
-import {Comptroller} from "@protocol/core/Comptroller.sol";
+import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
-import {MErc20Delegator} from "@protocol/core/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/core/Oracles/ChainlinkOracle.sol";
-import {TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
-import {MultiRewardDistributor} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/core/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
+import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
+import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
 
 contract LiveSystemBaseTest is Test, Configs {
     MultiRewardDistributor mrd;

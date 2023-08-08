@@ -5,7 +5,7 @@ import "@forge-std/Test.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
-import {ITemporalGovernor, TemporalGovernor} from "@protocol/core/Governance/TemporalGovernor.sol";
+import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 
 interface InstrumentedExternalEvents {
     /// @notice Emitted when a VAA is decoded

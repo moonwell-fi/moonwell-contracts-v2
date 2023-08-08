@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-import {AggregatorV3Interface} from "@protocol/core/Oracles/AggregatorV3Interface.sol";
+import {AggregatorV3Interface} from "@protocol/Oracles/AggregatorV3Interface.sol";
 
 /// @notice contract to combine multiple chainlink oracle prices together
 /// allows combination of either 2 or 3 chainlink oracles

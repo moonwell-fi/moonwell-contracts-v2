@@ -16,7 +16,7 @@ contract MLikeDelegate is MErc20Delegate {
   /**
    * @notice Construct an empty delegate
    */
-  constructor() public MErc20Delegate() {}
+  constructor() MErc20Delegate() {}
 
   /**
    * @notice Admin call to delegate the votes of the Moonwell-like underlying

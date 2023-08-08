@@ -6,14 +6,14 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 
 import "@forge-std/Test.sol";
 
-import {Well} from "@protocol/core/Governance/deprecated/Well.sol";
+import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Timelock} from "@protocol/core/Governance/deprecated/Timelock.sol";
+import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {MockWormhole} from "@test/mock/MockWormhole.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
-import {MoonwellArtemisGovernor} from "@protocol/core/Governance/deprecated/MoonwellArtemisGovernor.sol";
+import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
 contract CrossChainProposalUnitTest is Test, ChainIds {
     MoonwellArtemisGovernor governor;

@@ -7,9 +7,9 @@ import {Script} from "@forge-std/Script.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {mip00 as mip} from "@test/proposals/mips/mip00.sol";
 
-import {MoonwellArtemisGovernor} from "@protocol/core/Governance/deprecated/MoonwellArtemisGovernor.sol";
-import {Timelock} from "@protocol/core/Governance/deprecated/Timelock.sol";
-import {Well} from "@protocol/core/Governance/deprecated/Well.sol";
+import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
+import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
+import {Well} from "@protocol/Governance/deprecated/Well.sol";
 
 /*
 How to use:

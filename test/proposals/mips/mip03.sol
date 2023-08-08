@@ -5,13 +5,13 @@ import "@forge-std/Test.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import {MToken} from "@protocol/core/MToken.sol";
-import {MErc20} from "@protocol/core/MErc20.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {MErc20} from "@protocol/MErc20.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {Comptroller} from "@protocol/core/Comptroller.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 
 /// @notice This changes the collateral and reserve factors of the mTokens on the mainnet
