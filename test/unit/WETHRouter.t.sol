@@ -143,6 +143,43 @@ contract WETHRouterUnitTest is Test {
         router.redeem(cTokenBalance, address(this));
     }
 
+    function testRepayBorrowBehalfSucceeds() public {
+        MockCToken cToken = new MockCToken(IERC20(address(weth)), false);
+        router = new WETHRouter(WETH9(address(weth)), MErc20(address(cToken)));
+
+        vm.deal(address(this), 1 ether);
+
+        router.repayBorrowBehalf{value: 1 ether}(address(this));
+
+        assertEq(address(this).balance, 0, "this contract balance should be 0");
+        assertEq(
+            weth.balanceOf(address(router)),
+            0,
+            "router weth balance should be 0"
+        );
+        assertEq(
+            weth.balanceOf(address(cToken)),
+            1 ether,
+            "mToken weth balance should be 1 ether"
+        );
+        assertEq(
+            cToken.borrowBalanceRepaid(address(this)),
+            1 ether,
+            "borrow balance repaid should be 1 ether"
+        );
+    }
+
+    function testRepayBorrowBehalfFails() public {
+        MockCToken cToken = new MockCToken(IERC20(address(weth)), false);
+        router = new WETHRouter(WETH9(address(weth)), MErc20(address(cToken)));
+
+        vm.deal(address(this), 1 ether);
+
+        cToken.setError(true);
+        vm.expectRevert("WETHRouter: repay borrow behalf failed");
+        router.repayBorrowBehalf{value: 1 ether}(address(this));
+    }
+
     function testSendEtherToWethRouterFails() public {
         vm.deal(address(this), 1 ether);
 

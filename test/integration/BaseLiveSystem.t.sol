@@ -7,6 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
+import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@test/proposals/Configs.sol";
@@ -30,6 +31,11 @@ contract LiveSystemBaseTest is Test, Configs {
     address public well;
 
     function setUp() public {
+        vm.createSelectFork(
+            "https://developer-access-mainnet.base.org",
+            2415691
+        );
+
         proposals = new TestProposals();
         proposals.setUp();
         addresses = proposals.addresses();
@@ -655,6 +661,25 @@ contract LiveSystemBaseTest is Test, Configs {
             IERC20(addresses.getAddress("USDC")).balanceOf(address(this)),
             borrowAmount
         );
+    }
+
+    function testRepayBorrowBehalfWethRouter() public {
+        testMaxBorrowWeth();
+        uint256 borrowAmount = 6_299e18;
+        address mweth = addresses.getAddress("MOONWELL_WETH");
+
+        router = new WETHRouter(
+            WETH9(addresses.getAddress("WETH")),
+            MErc20(addresses.getAddress("MOONWELL_WETH"))
+        );
+
+        vm.deal(address(this), borrowAmount);
+
+        router.repayBorrowBehalf{value: borrowAmount}(
+            address(this)
+        );
+
+        assertEq(MErc20(mweth).borrowBalanceStored(address(this)), 0); /// fully repaid
     }
 
     function _addLiquidity(address market, uint256 amount) private {

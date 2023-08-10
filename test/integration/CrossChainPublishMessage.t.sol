@@ -25,7 +25,7 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
     bytes artemisQueuePayload;
 
     uint256 public baseForkId =
-        vm.createFork("https://developer-access-mainnet.base.org");
+        vm.createFork("https://developer-access-mainnet.base.org", 2415691 - 1000);
 
     uint256 public moonbeamForkId =
         vm.createFork("https://rpc.api.moonbeam.network");
@@ -127,8 +127,8 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
         );
 
         (
-            address[] memory targets, /// contracts to call
-            , /// native token amount to send
+            address[] memory targets, /// contracts to call /// native token amount to send
+            ,
             bytes[] memory calldatas
         ) = CrossChainProposal(address(proposals.proposals(0)))
                 .getTargetsPayloadsValues();

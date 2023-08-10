@@ -20,6 +20,10 @@ contract SystemUpgradeLiveSystemBaseTest is Test, Configs {
     Addresses addresses;
 
     function setUp() public {
+        vm.createSelectFork(
+            "https://developer-access-mainnet.base.org",
+            2415691
+        );
         // Run all pending proposals before doing e2e tests
         TestProposals proposals = new TestProposals();
         proposals.setUp();
