@@ -34,14 +34,15 @@ contract DeployWethRouter is Script {
     }
 
     function run() public {
-        address deployerAddress = vm.addr(PRIVATE_KEY);
-
         vm.startBroadcast(PRIVATE_KEY);
 
         WETHRouter router = new WETHRouter(
             WETH9(addresses.getAddress("WETH")),
             MErc20(addresses.getAddress("MOONWELL_WETH"))
         );
+
+        console.log("WETH address %s", address(router.weth()));
+        console.log("mToken address %s", address(router.mToken()));
 
         console.log("successfully deployed WETHRouter at %s", address(router));
 
