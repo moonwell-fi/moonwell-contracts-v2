@@ -32,12 +32,9 @@ contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
         _setNonce(3);
     }
 
-    /// @notice the deployer should have both USDC, WETH and any other assets that will be started as
-    /// listed to be able to deploy on base. This allows the deployer to be able to initialize the
-    /// markets with a balance to avoid exploits
-    function deploy(Addresses addresses, address) public {
-        /// ------ MTOKENS -------
 
+    /// @notice deploy the new MWETH logic contract
+    function deploy(Addresses addresses, address) public {
         MWethDelegate mWethLogic = new MWethDelegate();
         addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic));
     }

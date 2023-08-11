@@ -17,7 +17,7 @@ contract MWethDelegate is MErc20Delegate {
     using SafeERC20 for IERC20;
 
     /// @notice the WETH unwrapper address
-    address constant public wethUnwrapper = 0x876fa6f4EB3Aad22f9893f82784095401499d6cA;
+    address constant public wethUnwrapper = 0x7414dfe385D20D807402138ea157E02990e381B7;
 
     /// @notice transfer ETH underlying to the recipient
     /// first unwrap the WETH into raw ETH, then transfer
@@ -30,6 +30,6 @@ contract MWethDelegate is MErc20Delegate {
         IERC20 weth = IERC20(underlying);
 
         weth.safeTransfer(wethUnwrapper, amount);
-        WethUnwrapper(payable(wethUnwrapper)).send(address(underlying), to, amount); /// send and destruct wrapper
+        WethUnwrapper(payable(wethUnwrapper)).send(to, amount); /// send to user through wethUnwrapper
     }
 }

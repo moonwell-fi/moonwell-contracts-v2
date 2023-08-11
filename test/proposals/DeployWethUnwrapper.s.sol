@@ -13,14 +13,14 @@ import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
 
 /*
 How to use:
-forge script test/proposals/DeployWethRouter.s.sol:DeployWethRouter \
+forge script test/proposals/DeployWethUnwrapper.s.sol:DeployWethUnwrapper \
     -vvvv \
     --rpc-url base \
     --broadcast
 Remove --broadcast if you want to try locally first, without paying any gas.
 */
 
-contract DeployWethRouter is Script {
+contract DeployWethUnwrapper is Script {
     uint256 public PRIVATE_KEY;
     Addresses addresses;
 
@@ -39,17 +39,8 @@ contract DeployWethRouter is Script {
 
         vm.startBroadcast(PRIVATE_KEY);
 
-        WETHRouter router = new WETHRouter(
-            WETH9(addresses.getAddress("WETH")),
-            MErc20(addresses.getAddress("MOONWELL_WETH"))
-        );
+        WethUnwrapper unwrapper = new WethUnwrapper(addresses.getAddress("WETH"));
 
-        WethUnwrapper unwrapper = new WethUnwrapper();
-
-        console.log("WETH address %s", address(router.weth()));
-        console.log("mToken address %s", address(router.mToken()));
-
-        console.log("successfully deployed WETHRouter at %s", address(router));
         console.log("successfully deployed WethUnwrapper at %s", address(unwrapper));
 
         vm.stopBroadcast();

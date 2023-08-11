@@ -342,8 +342,6 @@ contract LiveSystemBaseTest is Test, Configs {
         );
         vm.deal(sender, 0); /// set sender's WETH balance to 0 ether
 
-        IERC20 weth = IERC20(addresses.getAddress("WETH"));
-
         uint256 borrowAmount = 1e6;
 
         MErc20Delegator mToken = MErc20Delegator(
