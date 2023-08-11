@@ -14,7 +14,6 @@ import {Addresses} from "@test/proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {MWethDelegate} from "@protocol/MWethDelegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {CompoundERC4626} from "@protocol/4626/CompoundERC4626.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
 
@@ -29,39 +28,6 @@ contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
     function deploy(Addresses addresses, address) public {
         MWethDelegate mWethLogic = new MWethDelegate();
         addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic));
-
-        addresses.addAddress("REWARDS_RECEIVER", address(10_000_000));
-
-        address rewardRecipient = addresses.getAddress("REWARDS_RECEIVER");
-
-        /// deploy the ERC20 wrapper for USDC
-        CompoundERC4626 usdcVault = new CompoundERC4626(
-            ERC20(addresses.getAddress("USDC")),
-            ERC20(addresses.getAddress("WELL")),
-            MErc20(addresses.getAddress("MOONWELL_USDC")),
-            rewardRecipient,
-            IComptroller(addresses.getAddress("UNITROLLER"))
-        );
-
-        CompoundERC4626 wethVault = new CompoundERC4626(
-            ERC20(addresses.getAddress("WETH")),
-            ERC20(addresses.getAddress("WELL")),
-            MErc20(addresses.getAddress("MOONWELL_WETH")),
-            rewardRecipient,
-            IComptroller(addresses.getAddress("UNITROLLER"))
-        );
-
-        CompoundERC4626 cbethVault = new CompoundERC4626(
-            ERC20(addresses.getAddress("cbETH")),
-            ERC20(addresses.getAddress("WELL")),
-            MErc20(addresses.getAddress("MOONWELL_cbETH")),
-            rewardRecipient,
-            IComptroller(addresses.getAddress("UNITROLLER"))
-        );
-
-        addresses.addAddress("USDC_VAULT", address(usdcVault));
-        addresses.addAddress("WETH_VAULT", address(wethVault));
-        addresses.addAddress("cbETH_VAULT", address(cbethVault));
     }
 
     function afterDeploy(Addresses addresses, address) public {}
@@ -96,39 +62,6 @@ contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
     function teardown(Addresses addresses, address) public pure {}
 
     function validate(Addresses addresses, address) public {
-        address rewardRecipient = addresses.getAddress("REWARDS_RECEIVER");
-
-        {
-            CompoundERC4626 vault = CompoundERC4626(
-                addresses.getAddress("USDC_VAULT")
-            );
-            assertEq(address(vault.asset()), addresses.getAddress("USDC"));
-            assertEq(address(vault.well()), addresses.getAddress("WELL"));
-            assertEq(address(vault.mToken()), addresses.getAddress("MOONWELL_USDC"));
-            assertEq(address(vault.comptroller()), addresses.getAddress("UNITROLLER"));
-            assertEq(vault.rewardRecipient(), rewardRecipient);
-        }
-        {
-            CompoundERC4626 vault = CompoundERC4626(
-                addresses.getAddress("WETH_VAULT")
-            );
-            assertEq(address(vault.asset()), addresses.getAddress("WETH"));
-            assertEq(address(vault.well()), addresses.getAddress("WELL"));
-            assertEq(address(vault.mToken()), addresses.getAddress("MOONWELL_WETH"));
-            assertEq(address(vault.comptroller()), addresses.getAddress("UNITROLLER"));
-            assertEq(vault.rewardRecipient(), rewardRecipient);
-        }
-        {
-            CompoundERC4626 vault = CompoundERC4626(
-                addresses.getAddress("cbETH_VAULT")
-            );
-            assertEq(address(vault.asset()), addresses.getAddress("cbETH"));
-            assertEq(address(vault.well()), addresses.getAddress("WELL"));
-            assertEq(address(vault.mToken()), addresses.getAddress("MOONWELL_cbETH"));
-            assertEq(address(vault.comptroller()), addresses.getAddress("UNITROLLER"));
-            assertEq(vault.rewardRecipient(), rewardRecipient);
-        }
-
         assertTrue(
             addresses.getAddress("MOONWELL_WETH") != address(0),
             "MOONWELL_WETH not set"
