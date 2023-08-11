@@ -16,6 +16,14 @@ contract WethUnwrapperUnitTest is Test {
         acceptEth = true;
     }
 
+    function testSetup() public {
+        assertEq(
+            unwrapper.mToken(),
+            0x628ff693426583D9a7FB391E54366292F509D457
+        );
+        assertEq(unwrapper.weth(), address(weth));
+    }
+
     function testWethUnwrapFailsNotMToken() public {
         vm.expectRevert("only mToken can call send");
         unwrapper.send(payable(address(0)), 0);
@@ -39,6 +47,13 @@ contract WethUnwrapperUnitTest is Test {
         vm.prank(unwrapper.mToken());
         vm.expectRevert("not accepting eth");
         unwrapper.send(payable(address(this)), mintAmount);
+    }
+
+    function testSendRawEthToWethUnwrapperFails() public {
+        vm.deal(address(this), 1 ether);
+        vm.expectRevert("not accepting eth");
+        (bool success, ) = address(unwrapper).call{value: 1 ether}("");
+        assertEq(success, true); /// idk why this is true, but it is even though it reverts
     }
 
     receive() external payable {

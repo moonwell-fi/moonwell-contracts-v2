@@ -477,7 +477,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "WETH_UNWRAPPER",
             8453,
-            0x7414dfe385D20D807402138ea157E02990e381B7
+            0xcd57F6D5162174D16b0215841B4414fF2A0441Ac
         );
     }
 

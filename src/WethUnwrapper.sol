@@ -34,5 +34,7 @@ contract WethUnwrapper {
         }
     }
 
-    receive() external payable {}
+    receive() external payable {
+        require(msg.sender == weth, "not accepting eth");
+    }
 }
