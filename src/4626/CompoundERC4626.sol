@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.13;
+pragma solidity 0.8.19;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {ERC4626} from "solmate/mixins/ERC4626.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {ERC4626} from "solmate/mixins/ERC4626.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
@@ -12,7 +12,7 @@ import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
 
 /// @title CompoundERC4626
 /// @author zefram.eth
-/// @notice ERC4626 wrapper for Compound Finance
+/// @notice ERC4626 wrapper for Moonwell Finance
 contract CompoundERC4626 is ERC4626 {
     /// -----------------------------------------------------------------------
     /// Libraries usage
@@ -117,7 +117,7 @@ contract CompoundERC4626 is ERC4626 {
     /// -----------------------------------------------------------------------
 
     function totalAssets() public view virtual override returns (uint256) {
-        return MErc20(address(mToken)).viewUnderlyingBalanceOf(address(this));
+        return mToken.viewUnderlyingBalanceOf(address(this));
     }
 
     function beforeWithdraw(
@@ -153,16 +153,20 @@ contract CompoundERC4626 is ERC4626 {
     }
 
     function maxDeposit(address) public view override returns (uint256) {
-        if (comptroller.mintGuardianPaused(address(mToken))) {
-            return 0;
-        }
-        return type(uint256).max;
+        return maxMint(address(0));
     }
 
     function maxMint(address) public view override returns (uint256) {
         if (comptroller.mintGuardianPaused(address(mToken))) {
             return 0;
         }
+
+        uint256 borrowCap = comptroller.borrowCaps(address(mToken));
+        if (borrowCap != 0) {
+            uint256 totalBorrows = mToken.totalBorrows();
+            return borrowCap - totalBorrows;
+        }
+
         return type(uint256).max;
     }
 
