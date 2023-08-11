@@ -10,6 +10,7 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {mip00 as mip} from "@test/proposals/mips/mip00.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 
 contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
@@ -30,7 +31,10 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
     uint256 public constant maxMintAmountcbEth = 5_000e18;
 
     function setUp() public {
-        proposals = new TestProposals();
+        address[] memory mips = new address[](1);
+        mips[0] = address(new mip());
+
+        proposals = new TestProposals(mips);
         proposals.setUp();
         addresses = proposals.addresses();
         proposals.testProposals(

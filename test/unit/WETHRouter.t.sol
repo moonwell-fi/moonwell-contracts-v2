@@ -14,7 +14,7 @@ import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {SigUtils} from "@test/helper/SigUtils.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {MErc20Immutable} from "@protocol/MErc20Immutable.sol";
+import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
 import {InterestRateModel} from "@protocol/IRModels/InterestRateModel.sol";
 import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
@@ -185,7 +185,10 @@ contract WETHRouterUnitTest is Test {
 
         vm.expectRevert("WETHRouter: not weth");
         (bool success, ) = address(router).call{value: 1 ether}("");
-        success; /// shhhhh
+        success; /// shhhhh apparently this call succeeds but reverts? go figure
+
+        assertEq(address(this).balance, 1 ether, "incorrect test contract eth value");
+        assertEq(address(router).balance, 0, "incorrect router eth value");
     }
 
     receive() external payable {

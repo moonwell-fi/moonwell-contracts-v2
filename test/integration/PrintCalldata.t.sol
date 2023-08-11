@@ -11,6 +11,7 @@ import {Configs} from "@test/proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {MockWormhole} from "@test/mock/MockWormhole.sol";
+import {mip00 as mip} from "@test/proposals/mips/mip00.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
@@ -21,8 +22,10 @@ contract PrintCalldataTest is Test, ChainIds {
 
     function setUp() public {
         // Run all pending proposals before doing e2e tests
-        proposals = new TestProposals();
+        address[] memory mips = new address[](1);
+        mips[0] = address(new mip());
 
+        proposals = new TestProposals(mips);
         proposals.setUp();
         addresses = proposals.addresses();
     }

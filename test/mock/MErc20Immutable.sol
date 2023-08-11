@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "./MErc20.sol";
+import "@protocol/MErc20.sol";
 
+/// @notice unused in production so moved to mock folder
 /**
  * @title Moonwell's MErc20Immutable Contract
  * @notice MTokens which wrap an EIP-20 underlying and are immutable

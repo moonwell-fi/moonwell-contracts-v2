@@ -1,62 +1,63 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
 import "@forge-std/Test.sol";
 
+import {WETH9} from "@protocol/router/IWETH.sol";
+import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {TimelockProposal} from "@test/proposals/proposalTypes/TimelockProposal.sol";
+import {IWormhole} from "@protocol/Governance/IWormhole.sol";
+import {Unitroller} from "@protocol/Unitroller.sol";
+import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {MWethDelegate} from "@protocol/MWethDelegate.sol";
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
+import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {JumpRateModel, InterestRateModel} from "@protocol/IRModels/JumpRateModel.sol";
+import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
-/// This MIP sets the reward speeds for different markets in the MultiRewardDistributor
-/// contract. It is intended to be used as a template for future MIPs that need to set reward speeds.
-/// The first step is to open `mainnetRewardStreams.json` and add the reward streams for the
-/// different mTokens. Then generate calldata by adding MIP01 to the TestProposals file.
 contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
     string public constant name = "MIP01";
 
     constructor() {
-        _setNonce(2);
+        _setNonce(3);
     }
 
-    function deploy(Addresses addresses, address) public {}
+    /// @notice the deployer should have both USDC, WETH and any other assets that will be started as
+    /// listed to be able to deploy on base. This allows the deployer to be able to initialize the
+    /// markets with a balance to avoid exploits
+    function deploy(Addresses addresses, address) public {
+        /// ------ MTOKENS -------
+
+        MWethDelegate mWethLogic = new MWethDelegate();
+        addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic));
+    }
 
     function afterDeploy(Addresses addresses, address) public {}
 
     function afterDeploySetup(Addresses addresses) public {}
 
     function build(Addresses addresses) public {
-        /// -------------- EMISSION CONFIGURATION --------------
-
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
+        /// point weth mToken to new logic contract
+        _pushCrossChainAction(
+            addresses.getAddress("MOONWELL_WETH"),
+            abi.encodeWithSignature(
+                "_setImplementation(address,bool,bytes)",
+                addresses.getAddress("MWETH_IMPLEMENTATION"),
+                true,
+                ""
+            ),
+            "Point Moonwell WETH to new logic contract"
         );
-        address mrd = addresses.getAddress("MRD_PROXY");
-
-        unchecked {
-            for (uint256 i = 0; i < emissionConfig.length; i++) {
-                EmissionConfig memory config = emissionConfig[i];
-
-                _pushCrossChainAction(
-                    mrd,
-                    abi.encodeWithSignature(
-                        "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
-                        config.mToken,
-                        config.owner,
-                        config.emissionToken,
-                        config.supplyEmissionPerSec,
-                        config.borrowEmissionsPerSec,
-                        config.endTime
-                    ),
-                    "Temporal governor accepts admin on Unitroller"
-                );
-            }
-        }
     }
 
     function run(Addresses addresses, address) public {
@@ -72,43 +73,43 @@ contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function teardown(Addresses addresses, address) public pure {}
 
-    /// @notice assert that all the configurations are correctly set
-    /// @dev this function is called after the proposal is executed to
-    /// validate that all state transitions worked correctly
     function validate(Addresses addresses, address) public {
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
+        assertTrue(
+            addresses.getAddress("MOONWELL_WETH") != address(0),
+            "MOONWELL_WETH not set"
         );
-        MultiRewardDistributor distributor = MultiRewardDistributor(
-            addresses.getAddress("MRD_PROXY")
+        assertTrue(
+            addresses.getAddress("MWETH_IMPLEMENTATION") != address(0),
+            "MWETH_IMPLEMENTATION not set"
+        );
+        assertTrue(
+            addresses.getAddress("WETH_ROUTER") != address(0),
+            "WETH_ROUTER not set"
         );
 
-        unchecked {
-            for (uint256 i = 0; i < emissionConfig.length; i++) {
-                EmissionConfig memory config = emissionConfig[i];
-                MultiRewardDistributorCommon.MarketConfig
-                    memory marketConfig = distributor.getConfigForMarket(
-                        MToken(addresses.getAddress(config.mToken)),
-                        config.emissionToken
-                    );
+        WETHRouter router = WETHRouter(
+            payable(addresses.getAddress("WETH_ROUTER"))
+        );
+        assertEq(
+            address(router.weth()),
+            addresses.getAddress("WETH"),
+            "WETH_ROUTER weth not set"
+        );
+        assertEq(
+            address(router.mToken()),
+            addresses.getAddress("MOONWELL_WETH"),
+            "WETH_ROUTER mWeth not set"
+        );
 
-                assertEq(
-                    marketConfig.owner,
-                    addresses.getAddress(config.owner)
-                );
-                assertEq(marketConfig.emissionToken, config.emissionToken);
-                assertEq(marketConfig.endTime, config.endTime);
-                assertEq(
-                    marketConfig.supplyEmissionsPerSec,
-                    config.supplyEmissionPerSec
-                );
-                assertEq(
-                    marketConfig.borrowEmissionsPerSec,
-                    config.borrowEmissionsPerSec
-                );
-                assertEq(marketConfig.supplyGlobalIndex, 1e36);
-                assertEq(marketConfig.borrowGlobalIndex, 1e36);
-            }
-        }
+        /// ensure that the mWeth implementation is set correctly
+        MErc20Delegator mWeth = MErc20Delegator(
+            payable(addresses.getAddress("MOONWELL_WETH"))
+        );
+        assertEq(
+            mWeth.implementation(),
+            addresses.getAddress("MWETH_IMPLEMENTATION"),
+            "MOONWELL_WETH implementation not correctly set"
+        );
+        assertEq(mWeth.admin(), addresses.getAddress("TEMPORAL_GOVERNOR")); /// ensure temporal gov is still admin
     }
 }

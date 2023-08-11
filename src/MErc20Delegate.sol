@@ -9,6 +9,7 @@ import "./MErc20.sol";
  * @author Moonwell
  */
 contract MErc20Delegate is MErc20, MDelegateInterface {
+
     /**
      * @notice Construct an empty delegate
      */

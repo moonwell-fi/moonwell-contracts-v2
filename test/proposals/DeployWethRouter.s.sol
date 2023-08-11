@@ -9,6 +9,7 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {mip00 as mip} from "@test/proposals/mips/mip00.sol";
+import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
 
 /*
 How to use:
@@ -34,6 +35,8 @@ contract DeployWethRouter is Script {
     }
 
     function run() public {
+        console.log("deployer address: ", vm.addr(PRIVATE_KEY));
+
         vm.startBroadcast(PRIVATE_KEY);
 
         WETHRouter router = new WETHRouter(
@@ -41,10 +44,13 @@ contract DeployWethRouter is Script {
             MErc20(addresses.getAddress("MOONWELL_WETH"))
         );
 
+        WethUnwrapper unwrapper = new WethUnwrapper();
+
         console.log("WETH address %s", address(router.weth()));
         console.log("mToken address %s", address(router.mToken()));
 
         console.log("successfully deployed WETHRouter at %s", address(router));
+        console.log("successfully deployed WethUnwrapper at %s", address(unwrapper));
 
         vm.stopBroadcast();
     }
