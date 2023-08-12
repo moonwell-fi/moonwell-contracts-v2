@@ -9,6 +9,7 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {LibCompound} from "@protocol/4626/LibCompound.sol";
 import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
+import {MultiRewardDistributor, MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
 
 /// @title CompoundERC4626
 /// @author zefram.eth
@@ -88,13 +89,35 @@ contract CompoundERC4626 is ERC4626 {
 
         comptroller.claimReward(holders, mTokens, false, true);
 
-        uint256 amount = well.balanceOf(address(this));
-        well.safeTransfer(rewardRecipient, amount);
+        MultiRewardDistributor mrd = comptroller.rewardDistributor();
 
-        emit ClaimRewards(amount, address(well));
+        if (address(mrd) != address(0)) {
+            MultiRewardDistributorCommon.MarketConfig[] memory configs = mrd
+                .getAllMarketConfigs(MToken(address(mToken)));
+
+            unchecked {
+                for (uint256 i = 0; i < configs.length; i++) {
+                    uint256 amount = ERC20(configs[i].emissionToken).balanceOf(
+                        address(this)
+                    );
+
+                    if (amount != 0) {
+                        /// gas opti, skip transfer and event emission if no rewards
+                        ERC20(configs[i].emissionToken).safeTransfer(
+                            rewardRecipient,
+                            amount
+                        );
+
+                        emit ClaimRewards(amount, configs[i].emissionToken);
+                    }
+                }
+            }
+        }
     }
 
     /// @notice Claims liquidity mining rewards from Compound and sends it to rewardRecipient
+    /// used for edgecase where 
+    /// @param tokens The tokens to sweep
     function sweepRewards(address[] memory tokens) public {
         for (uint256 i = 0; i < tokens.length; i++) {
             ERC20 token = ERC20(tokens[i]);
@@ -102,14 +125,6 @@ contract CompoundERC4626 is ERC4626 {
             token.safeTransfer(rewardRecipient, amount);
             emit ClaimRewards(amount, address(token));
         }
-    }
-
-    /// @notice Claims liquidity mining rewards from Compound and sends it to
-    /// rewardRecipient for all tokens
-    /// @param tokens The tokens to sweep
-    function claimAndSweep(address[] memory tokens) external {
-        claimRewards();
-        sweepRewards(tokens);
     }
 
     /// -----------------------------------------------------------------------

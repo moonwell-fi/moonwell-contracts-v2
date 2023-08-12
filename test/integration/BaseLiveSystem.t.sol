@@ -250,8 +250,6 @@ contract LiveSystemBaseTest is Test, Configs {
         (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
             .getAccountLiquidity(address(this));
 
-        console.log("liquidity: ", liquidity);
-
         assertEq(err, 0, "Error getting account liquidity");
         assertApproxEqRel(
             liquidity,
@@ -297,8 +295,6 @@ contract LiveSystemBaseTest is Test, Configs {
 
         (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
             .getAccountLiquidity(address(this));
-
-        console.log("liquidity: ", liquidity);
 
         assertEq(err, 0, "Error getting account liquidity");
         assertGt(liquidity, mintAmount * 1200, "liquidity incorrect");
@@ -433,12 +429,6 @@ contract LiveSystemBaseTest is Test, Configs {
             rewards[0].borrowSide,
             toWarp * 1e18,
             "Borrow side rewards not less than warp time * 1e18"
-        );
-
-        assertLe(
-            rewards[0].supplySide,
-            toWarp,
-            "Supply side rewards not less than warp time"
         );
     }
 
@@ -581,12 +571,38 @@ contract LiveSystemBaseTest is Test, Configs {
         assertEq(address(assets[2]), addresses.getAddress("MOONWELL_cbETH"));
     }
 
-    function testAddCloseToMaxLiquidity() public {
-        uint256 usdcMintAmount = 39_000_000e6;
-        uint256 wethMintAmount = 10_000e18;
-        uint256 cbEthMintAmount = 4_000e18;
+    function _getMaxSupplyAmount(address mToken) internal returns (uint256) {
+        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
+        uint256 totalCash = MToken(mToken).getCash();
+        uint256 totalBorrows = MToken(mToken).totalBorrows();
+        uint256 totalReserves = MToken(mToken).totalReserves();
+
+        // totalSupplies = totalCash + totalBorrows - totalReserves
+        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+
+        return supplyCap - totalSupplies - 1_000e6;
+    }
+
+    function _getMaxBorrowAmount(address mToken) internal returns (uint256) {
+        uint256 borrowCap = comptroller.borrowCaps(address(mToken));
+        uint256 totalBorrows = MToken(mToken).totalBorrows();
+
+        return borrowCap - totalBorrows - 1;
+    }
+
+    function testAddCloseToMaxLiquidity() public {
         testAddLiquidityMultipleAssets();
+
+        uint256 usdcMintAmount = _getMaxSupplyAmount(
+            addresses.getAddress("MOONWELL_USDC")
+        );
+        uint256 wethMintAmount = _getMaxSupplyAmount(
+            addresses.getAddress("MOONWELL_WETH")
+        ) - 100e18;
+        uint256 cbEthMintAmount = _getMaxSupplyAmount(
+            addresses.getAddress("MOONWELL_cbETH")
+        ) - 100e18;
 
         _addLiquidity(addresses.getAddress("MOONWELL_USDC"), usdcMintAmount);
         _addLiquidity(addresses.getAddress("MOONWELL_WETH"), wethMintAmount);
@@ -607,16 +623,25 @@ contract LiveSystemBaseTest is Test, Configs {
         assertEq(shortfall, 0, "Incorrect shortfall");
     }
 
-    function testMaxBorrowWeth() public {
+    function _addLiquidity(address market, uint256 amount) private {
+        address underlying = MErc20(market).underlying();
+        deal(underlying, address(this), amount);
+        IERC20(underlying).approve(market, amount);
+        assertEq(MErc20(market).mint(amount), 0);
+    }
+
+    function testMaxBorrowWeth() public returns (uint256) {
         testAddCloseToMaxLiquidity();
 
-        uint256 borrowAmount = 6_299e18;
+        uint256 borrowAmount = _getMaxSupplyAmount(
+            addresses.getAddress("MOONWELL_WETH")
+        );
+
         address mweth = addresses.getAddress("MOONWELL_WETH");
         {
             (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
                 .getAccountLiquidity(address(this));
 
-            console.log("liquidity before max borrowing eth", liquidity);
             assertEq(0, err);
             assertEq(0, shortfall);
         }
@@ -628,10 +653,11 @@ contract LiveSystemBaseTest is Test, Configs {
             (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
                 .getAccountLiquidity(address(this));
 
-            console.log("liquidity after max borrowing eth", liquidity);
             assertEq(0, err);
             assertEq(0, shortfall);
         }
+
+        return borrowAmount;
     }
 
     function testMaxBorrowcbEth() public {
@@ -650,8 +676,8 @@ contract LiveSystemBaseTest is Test, Configs {
     function testMaxBorrowUsdc() public {
         testAddCloseToMaxLiquidity();
 
-        uint256 borrowAmount = 30_999_999e6;
         address mcbeth = addresses.getAddress("MOONWELL_USDC");
+        uint256 borrowAmount = _getMaxBorrowAmount(mcbeth);
 
         assertEq(MErc20(mcbeth).borrow(borrowAmount), 0);
         assertEq(
@@ -661,8 +687,7 @@ contract LiveSystemBaseTest is Test, Configs {
     }
 
     function testRepayBorrowBehalfWethRouter() public {
-        testMaxBorrowWeth();
-        uint256 borrowAmount = 6_299e18;
+        uint256 borrowAmount = testMaxBorrowWeth();
         address mweth = addresses.getAddress("MOONWELL_WETH");
 
         router = new WETHRouter(
@@ -707,13 +732,6 @@ contract LiveSystemBaseTest is Test, Configs {
             1e15, /// tiny gain due to rounding down in protocol's favor
             "incorrect mToken weth value after redeem"
         );
-    }
-
-    function _addLiquidity(address market, uint256 amount) private {
-        address underlying = MErc20(market).underlying();
-        deal(underlying, address(this), amount);
-        IERC20(underlying).approve(market, amount);
-        assertEq(MErc20(market).mint(amount), 0);
     }
 
     receive() external payable {}

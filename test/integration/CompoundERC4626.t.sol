@@ -118,7 +118,7 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         uint256 mintAmount = 10_000_000e6;
 
         deal(address(underlying), address(this), mintAmount);
-        deal(address(well), addresses.getAddress("MRD_PROXY"), 1_000e18);
+        deal(address(well), addresses.getAddress("MRD_PROXY"), 10_000_000e18);
 
         underlying.approve(address(vault), mintAmount);
 
