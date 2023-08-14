@@ -5,14 +5,15 @@ import {WETH9} from "@protocol/router/IWETH.sol";
 
 contract WethUnwrapper {
     /// @notice the mToken address
-    address public constant mToken = 0x628ff693426583D9a7FB391E54366292F509D457;
+    address public immutable mToken;
 
     /// @notice reference to the WETH contract
     address public immutable weth;
 
     /// @notice construct a new WethUnwrapper
     /// @param _weth the WETH contract address
-    constructor(address _weth) {
+    constructor(address _mToken, address _weth) {
+        mToken = _mToken;
         weth = _weth;
     }
 

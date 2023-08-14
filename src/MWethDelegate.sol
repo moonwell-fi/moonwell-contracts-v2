@@ -17,7 +17,7 @@ contract MWethDelegate is MErc20Delegate {
     using SafeERC20 for IERC20;
 
     /// @notice the WETH unwrapper address
-    address constant public wethUnwrapper = 0xcd57F6D5162174D16b0215841B4414fF2A0441Ac;
+    address constant public wethUnwrapper = 0x1382cFf3CeE10D283DccA55A30496187759e4cAf;
 
     /// @notice transfer ETH underlying to the recipient
     /// first unwrap the WETH into raw ETH, then transfer
