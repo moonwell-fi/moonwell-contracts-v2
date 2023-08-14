@@ -4,11 +4,12 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
+import {mip01b} from "@test/proposals/mips/mip01b.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {IWormhole} from "@protocol/Governance/IWormhole.sol";
-import {TestProposals} from "@test/proposals/TestProposals.sol";
+import {TestProposals2 as TestProposals} from "@test/proposals/TestProposals2.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
@@ -34,17 +35,21 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
 
     function setUp() public {
         vm.selectFork(baseForkId);
-        proposals = new TestProposals();
+        mip01b mip = new mip01b();
+        address[] memory mips = new address[](1);
+        mips[0] = address(mip);
+
+        proposals = new TestProposals(mips);
         proposals.setUp();
         proposals.testProposals(
-            true,
             false,
             false,
             false,
             true,
+            true,
             false,
             false,
-            false
+            true
         ); /// only setup after deploy, build, and run, do not validate
         addresses = proposals.addresses();
 
