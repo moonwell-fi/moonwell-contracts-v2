@@ -9,17 +9,18 @@ contract WethUnwrapperUnitTest is Test {
     WethUnwrapper unwrapper;
     bool acceptEth;
     MockWeth weth;
+    address public constant mToken = 0x628ff693426583D9a7FB391E54366292F509D457;
 
     function setUp() public {
         weth = new MockWeth();
-        unwrapper = new WethUnwrapper(address(weth));
+        unwrapper = new WethUnwrapper(mToken, address(weth));
         acceptEth = true;
     }
 
     function testSetup() public {
         assertEq(
             unwrapper.mToken(),
-            0x628ff693426583D9a7FB391E54366292F509D457
+            mToken
         );
         assertEq(unwrapper.weth(), address(weth));
     }

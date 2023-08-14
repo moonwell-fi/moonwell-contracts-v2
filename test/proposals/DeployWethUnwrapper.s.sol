@@ -39,9 +39,15 @@ contract DeployWethUnwrapper is Script {
 
         vm.startBroadcast(PRIVATE_KEY);
 
-        WethUnwrapper unwrapper = new WethUnwrapper(addresses.getAddress("WETH"));
+        WethUnwrapper unwrapper = new WethUnwrapper(
+            addresses.getAddress("MOONWELL_WETH"),
+            addresses.getAddress("WETH")
+        );
 
-        console.log("successfully deployed WethUnwrapper at %s", address(unwrapper));
+        console.log(
+            "successfully deployed WethUnwrapper at %s",
+            address(unwrapper)
+        );
 
         vm.stopBroadcast();
     }
