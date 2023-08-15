@@ -21,6 +21,7 @@ contract PrintCalldataTest is Test, ChainIds {
     TestProposals proposals;
     TestProposals2 proposals2;
     Addresses addresses;
+    Addresses addresses2;
 
     function setUp() public {
         mip01b mip = new mip01b();
@@ -28,6 +29,7 @@ contract PrintCalldataTest is Test, ChainIds {
         mips[0] = address(mip);
 
         proposals2 = new TestProposals2(mips);
+        proposals2.setUp();
 
         // Run all pending proposals before doing e2e tests
         proposals = new TestProposals();
@@ -76,12 +78,12 @@ contract PrintCalldataTest is Test, ChainIds {
             false,
             true
         ); /// set debug to true, build, run and validate proposal
-        addresses = proposals2.addresses();
+        addresses2 = proposals2.addresses();
 
         proposals2.printCalldata(
             0,
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress(
+            addresses2.getAddress("TEMPORAL_GOVERNOR"),
+            addresses2.getAddress(
                 "WORMHOLE_CORE",
                 sendingChainIdToReceivingChainId[block.chainid]
             ) /// get moonbase wormhole address so proposal will work

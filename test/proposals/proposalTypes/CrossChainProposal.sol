@@ -23,6 +23,7 @@ abstract contract CrossChainProposal is MultisigProposal, MarketCreationHook {
             vm.readFile("./test/proposals/proposalTypes/ProposalDescription.md")
         );
 
+        console.log("\nproposal description bytes");
         emit log_bytes(PROPOSAL_DESCRIPTION);
     }
 
