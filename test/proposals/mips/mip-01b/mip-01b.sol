@@ -20,8 +20,8 @@ import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/Mul
 /// different mTokens. Then generate calldata by adding MIP01 to the TestProposals file.
 contract mip01b is Proposal, CrossChainProposal, ChainIds, Configs {
     string public constant name = "MIP-01b";
-    uint public constant timestampsPerYear = 60 * 60 * 24 * 365;
-    uint public constant SCALE = 1e18;
+    uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
+    uint256 public constant SCALE = 1e18;
 
     constructor() {
         _setNonce(2);

@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
-import {mip01b} from "@test/proposals/mips/mip01b.sol";
+import {mip01b} from "@test/proposals/mips/mip-01b/mip-01b.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";

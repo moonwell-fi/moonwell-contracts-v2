@@ -7,7 +7,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import "@forge-std/Test.sol";
 
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
-import {mip01b} from "@test/proposals/mips/mip01b.sol";
+import {mip01b} from "@test/proposals/mips/mip-01b/mip-01b.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";

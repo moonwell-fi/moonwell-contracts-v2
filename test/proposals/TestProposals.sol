@@ -7,8 +7,8 @@ import {Addresses} from "@test/proposals/Addresses.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 
-import {mip00} from "@test/proposals/mips/mip00.sol";
-import {mip01} from "@test/proposals/mips/mip01.sol";
+import {mip00} from "@test/proposals/mips/mip-00/mip-00.sol";
+import {mip01b} from "@test/proposals/mips/mip-01b/mip-01b.sol";
 
 /*
 How to use:

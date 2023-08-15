@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {mip01b} from "@test/proposals/mips/mip01b.sol";
+import {mip01b} from "@test/proposals/mips/mip-01b/mip-01b.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@test/proposals/Configs.sol";

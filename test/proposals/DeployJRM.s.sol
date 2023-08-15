@@ -5,7 +5,7 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {mip00 as mip} from "@test/proposals/mips/mip00.sol";
+import {mip00 as mip} from "@test/proposals/mips/mip-00/mip-00.sol";
 
 import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
