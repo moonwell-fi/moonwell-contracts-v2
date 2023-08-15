@@ -70,9 +70,9 @@ contract PrintCalldataTest is Test, ChainIds {
             false,
             false,
             false,
-            true,
-            true,
             false,
+            true,
+            true,
             false,
             true
         ); /// set debug to true, build, run and validate proposal
