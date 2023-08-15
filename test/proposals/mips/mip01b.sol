@@ -69,14 +69,19 @@ contract mip01b is Proposal, CrossChainProposal, ChainIds, Configs {
                 MToken(addresses.getAddress("MOONWELL_WETH"))
                     .interestRateModel()
             ),
-            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH")
+            address(jrm)
         );
 
         assertEq(jrm.kink(), 0.75e18, "kink verification failed");
-        assertEq(jrm.timestampsPerYear(), 365 days, "timestamps per year verifiacation failed");
+        assertEq(
+            jrm.timestampsPerYear(),
+            365 days,
+            "timestamps per year verifiacation failed"
+        );
         assertEq(
             jrm.baseRatePerTimestamp(),
-            (0.01e18 * SCALE) / timestampsPerYear / SCALE, "base rate per timestamp validation failed"
+            (0.01e18 * SCALE) / timestampsPerYear / SCALE,
+            "base rate per timestamp validation failed"
         );
         assertEq(
             jrm.multiplierPerTimestamp(),
@@ -96,7 +101,11 @@ contract mip01b is Proposal, CrossChainProposal, ChainIds, Configs {
         );
 
         assertEq(guantletJrm.kink(), jrm.kink(), "kink verification failed");
-        assertEq(guantletJrm.timestampsPerYear(), jrm.timestampsPerYear(), "timestamps per year verifiacation failed");
+        assertEq(
+            guantletJrm.timestampsPerYear(),
+            jrm.timestampsPerYear(),
+            "timestamps per year verifiacation failed"
+        );
         assertEq(
             guantletJrm.baseRatePerTimestamp(),
             jrm.baseRatePerTimestamp(),

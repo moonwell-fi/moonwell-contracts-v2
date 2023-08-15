@@ -33,7 +33,7 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
 
     address public constant voter = address(100_000_000);
 
-    function setUp() public {
+    function _setUp() private {
         vm.selectFork(baseForkId);
         mip01b mip = new mip01b();
         address[] memory mips = new address[](1);
@@ -45,9 +45,9 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
             false,
             false,
             false,
-            true,
-            true,
             false,
+            true,
+            true,
             false,
             true
         ); /// only setup after deploy, build, and run, do not validate
@@ -68,6 +68,7 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
     }
 
     function testMintSelf() public {
+        _setUp();
         uint256 transferAmount = well.balanceOf(
             0x933fCDf708481c57E9FD82f6BAA084f42e98B60e
         );
@@ -82,6 +83,7 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
     }
 
     function testQueueAndPublishMessageRawBytes() public {
+        _setUp();
         vm.selectFork(baseForkId);
         artemisQueuePayload = CrossChainProposal(
             address(proposals.proposals(0))
@@ -132,8 +134,8 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
         );
 
         (
-            address[] memory targets, /// contracts to call
-            , /// native token amount to send
+            address[] memory targets, /// contracts to call /// native token amount to send
+            ,
             bytes[] memory calldatas
         ) = CrossChainProposal(address(proposals.proposals(0)))
                 .getTargetsPayloadsValues();

@@ -44,8 +44,6 @@ contract DeployJRM is Script {
     }
 
     function run() public {
-        address deployerAddress = vm.addr(PRIVATE_KEY);
-
         vm.startBroadcast(PRIVATE_KEY);
         JumpRateModel jrm = new JumpRateModel(
             BASE_RATE_PER_YEAR,
