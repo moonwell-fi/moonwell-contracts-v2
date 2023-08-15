@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
-import {mip01b} from "@test/proposals/mips/mip-01b/mip-01b.sol";
+import {mipb01} from "@test/proposals/mips/mip-b01/mip-b01.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
@@ -35,7 +35,7 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
 
     function setUp() public {
         vm.selectFork(baseForkId);
-        mip01b mip = new mip01b();
+        mipb01 mip = new mipb01();
         address[] memory mips = new address[](1);
         mips[0] = address(mip);
 

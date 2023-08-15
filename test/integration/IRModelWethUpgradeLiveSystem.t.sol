@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {mip01b} from "@test/proposals/mips/mip-01b/mip-01b.sol";
+import {mipb01} from "@test/proposals/mips/mip-b01/mip-b01.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@test/proposals/Configs.sol";
@@ -22,7 +22,7 @@ contract IRModelWethUpgradeLiveSystemBaseTest is Test, Configs {
     MErc20 mcbEth;
 
     function setUp() public {
-        mip01b mip = new mip01b();
+        mipb01 mip = new mipb01();
         address[] memory mips = new address[](1);
         mips[0] = address(mip);
 

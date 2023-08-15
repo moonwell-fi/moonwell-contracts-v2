@@ -7,7 +7,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import "@forge-std/Test.sol";
 
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
-import {mip01b} from "@test/proposals/mips/mip-01b/mip-01b.sol";
+import {mipb01} from "@test/proposals/mips/mip-b01/mip-b01.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
@@ -24,7 +24,7 @@ contract PrintCalldataTest is Test, ChainIds {
     Addresses addresses2;
 
     function setUp() public {
-        mip01b mip = new mip01b();
+        mipb01 mip = new mipb01();
         address[] memory mips = new address[](1);
         mips[0] = address(mip);
 
@@ -67,7 +67,7 @@ contract PrintCalldataTest is Test, ChainIds {
         );
     }
 
-    function testPrintCalldataMip01b() public {
+    function testPrintCalldatamipb01() public {
         proposals2.testProposals(
             false,
             false,
