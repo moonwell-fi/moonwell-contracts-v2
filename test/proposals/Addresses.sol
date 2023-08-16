@@ -447,7 +447,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_WETH",
             8453,
-            0x14994008E5b7547d2dFE9dEcBb47456cEA217176
+            0x4393277B02ef3cA293990A772B7160a8c76F2443
         );
         _addAddress(
             "MOONWELL_WETH",

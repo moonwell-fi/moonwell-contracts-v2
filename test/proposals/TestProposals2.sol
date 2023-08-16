@@ -7,8 +7,7 @@ import {Addresses} from "@test/proposals/Addresses.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 
-import {mipb00} from "@test/proposals/mips/mip-b00/mip-b00.sol";
-import {mipb01} from "@test/proposals/mips/mip-b01/mip-b01.sol";
+import {mipb01 as mip} from "@test/proposals/mips/mip-b01/mip-b01.sol";
 
 /*
 How to use:
@@ -22,7 +21,7 @@ Or, from another Solidity file (for post-proposal integration testing):
     Addresses addresses = proposals.addresses();
 */
 
-contract TestProposals is Test {
+contract TestProposals2 is Test {
     Addresses public addresses;
     Proposal[] public proposals;
     uint256 public nProposals;
@@ -34,6 +33,13 @@ contract TestProposals is Test {
     bool public DO_RUN;
     bool public DO_TEARDOWN;
     bool public DO_VALIDATE;
+    constructor(address[] memory _proposals) {
+        for (uint256 i = 0; i < _proposals.length; i++) {
+            proposals.push(Proposal(_proposals[i]));
+        }
+
+        nProposals = _proposals.length;
+    }
 
     function setUp() public {
         DEBUG = vm.envOr("DEBUG", true);
@@ -45,7 +51,6 @@ contract TestProposals is Test {
         DO_VALIDATE = vm.envOr("DO_VALIDATE", true);
         addresses = new Addresses();
 
-        proposals.push(Proposal(address(new mipb00())));
         // proposals.push(Proposal(address(new mip01())));
         nProposals = proposals.length;
     }

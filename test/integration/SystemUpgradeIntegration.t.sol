@@ -29,10 +29,10 @@ contract SystemUpgradeLiveSystemBaseTest is Test, Configs {
             false,
             false,
             false,
-            true,
-            true,
             false,
-            true
+            false,
+            false,
+            false
         );
         addresses = proposals.addresses();
     }
