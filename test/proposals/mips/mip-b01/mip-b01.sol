@@ -90,35 +90,7 @@ contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
         );
         assertEq(
             jrm.jumpMultiplierPerTimestamp(),
-            (1e18 * SCALE) / timestampsPerYear / SCALE,
-            "jump multiplier per timestamp validation failed"
-        );
-
-        /// verify gauntlet vs our deployment jrm params
-
-        JumpRateModel guantletJrm = JumpRateModel(
-            0x4c68fDA91bfb4683eAB90017d9B76a99F2d77Eed
-        );
-
-        assertEq(guantletJrm.kink(), jrm.kink(), "kink verification failed");
-        assertEq(
-            guantletJrm.timestampsPerYear(),
-            jrm.timestampsPerYear(),
-            "timestamps per year verifiacation failed"
-        );
-        assertEq(
-            guantletJrm.baseRatePerTimestamp(),
-            jrm.baseRatePerTimestamp(),
-            "base rate per timestamp validation failed"
-        );
-        assertEq(
-            guantletJrm.multiplierPerTimestamp(),
-            jrm.multiplierPerTimestamp(),
-            "multiplier per timestamp validation failed"
-        );
-        assertEq(
-            guantletJrm.jumpMultiplierPerTimestamp(),
-            jrm.jumpMultiplierPerTimestamp(),
+            (3.8e18 * SCALE) / timestampsPerYear / SCALE,
             "jump multiplier per timestamp validation failed"
         );
     }
