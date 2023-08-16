@@ -8,7 +8,7 @@ import "@forge-std/Test.sol";
 
 import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {mip00 as mip} from "@test/proposals/mips/mip00.sol";
+import {mipb00 as mip} from "@test/proposals/mips/mip-b00/mip-b00.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 

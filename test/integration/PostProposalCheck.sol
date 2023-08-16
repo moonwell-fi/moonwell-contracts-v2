@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {Test} from "@forge-std/Test.sol";
 
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {mip00 as mip} from "@test/proposals/mips/mip00.sol";
+import {mipb00 as mip} from "@test/proposals/mips/mip-b00/mip-b00.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 
 contract PostProposalCheck is Test {

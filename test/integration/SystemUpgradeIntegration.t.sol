@@ -8,7 +8,7 @@ import "@forge-std/Test.sol";
 
 import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {mip01 as mip} from "@test/proposals/mips/mip01.sol";
+import {mipb01 as mip} from "@test/proposals/mips/mip-b01/mip-b01.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 
 contract SystemUpgradeLiveSystemBaseTest is Test, Configs {
@@ -33,10 +33,10 @@ contract SystemUpgradeLiveSystemBaseTest is Test, Configs {
             true,
             false,
             false,
-            true,
-            true,
             false,
-            true
+            false,
+            false,
+            false
         );
         addresses = proposals.addresses();
     }

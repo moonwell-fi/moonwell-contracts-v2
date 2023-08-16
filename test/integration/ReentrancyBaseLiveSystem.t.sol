@@ -11,7 +11,7 @@ import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {mip01 as mip} from "@test/proposals/mips/mip01.sol";
+import {mipb02 as mip} from "@test/proposals/mips/mip-b02/mip-b02.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MaliciousBorrower} from "@test/mock/MaliciousBorrower.sol";
@@ -42,7 +42,7 @@ contract ReentrancyLiveSystemBaseTest is
             true,
             true,
             false,
-            false
+            true
         ); /// only setup after deploy, build, and run, do not validate
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         router = WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));

@@ -14,7 +14,7 @@ import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {mip01 as mip} from "@test/proposals/mips/mip01.sol";
+import {mipb02 as mip} from "@test/proposals/mips/mip-b02/mip-b02.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";

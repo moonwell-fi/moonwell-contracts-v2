@@ -8,7 +8,7 @@ import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {mip00 as mip} from "@test/proposals/mips/mip00.sol";
+import {mipb00 as mip} from "@test/proposals/mips/mip-b00/mip-b00.sol";
 import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
 
 /*
