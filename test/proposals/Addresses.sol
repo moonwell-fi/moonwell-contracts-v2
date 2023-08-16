@@ -479,6 +479,11 @@ contract Addresses is Test, ChainIds {
             8453,
             0x1382cFf3CeE10D283DccA55A30496187759e4cAf
         );
+        _addAddress(
+            "MWETH_IMPLEMENTATION",
+            8453,
+            0x599D4a1538d686814eE11b331EACBBa166D7C41a
+        );
     }
 
     /// @notice add an address for a specific chainId
