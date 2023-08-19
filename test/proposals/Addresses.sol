@@ -273,6 +273,16 @@ contract Addresses is Test, ChainIds {
             84531,
             0x8a318A4493f38567528d17B5E91A30BDFAA5Fd06
         );
+        _addAddress(
+            "MWETH_IMPLEMENTATION",
+            84531,
+            0x7c8599bE1f71b8eAF9bAD1B1e9D5F8676C1C1958
+        );
+        _addAddress(
+            "WETH_UNWRAPPER",
+            84531,
+            0x59847ac7E204144c097483D763AaC2a11CD4cd9F
+        );
 
         /// -----------------------------------------------
 
