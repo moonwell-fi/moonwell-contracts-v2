@@ -22,11 +22,34 @@ contract PrintNewMarketAddCalldataTest is Test, ChainIds {
         addresses = proposals.addresses();
     }
 
-    function testPrintNewMarketCalldata() public {
+    function testPrintNewMarketCalldataDeployMToken() public {
         proposals.testProposals(
             true,
             true,
             true,
+            true,
+            true,
+            true,
+            true,
+            true
+        ); /// set debug to true, build, and run proposal
+        addresses = proposals.addresses();
+
+        proposals.printCalldata(
+            0,
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
+            addresses.getAddress(
+                "WORMHOLE_CORE",
+                sendingChainIdToReceivingChainId[block.chainid]
+            ) /// get moonbase wormhole address so proposal will work
+        );
+    }
+
+    function testPrintNewMarketCalldataAlreadyDeployedMToken() public {
+        proposals.testProposals(
+            true,
+            false,
+            false,
             true,
             true,
             true,

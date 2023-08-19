@@ -64,9 +64,14 @@ forge script test/proposals/DeployMarketCreationProposal.s.sol:DeployMarketCreat
 Once the contracts are deployed, copy and paste the `_addAddress()` commands the deployment script outputted into the `Addresses.sol` file under the proper network section. Now, save these changes and proceed to the next step.
 
 ## 6. Governance Proposal
-Now that the contracts are deployed, it's time to generate the calldata. Generate this calldata by running:
+Now that the contracts are deployed, it's time to generate the calldata. If the contracts have not been deployed and added to Addresses.sol yet, generate this calldata by running:
 ```
-forge test --match-test testPrintNewMarketCalldata -vvv --fork-url base
+forge test --match-test testPrintNewMarketCalldataDeployMToken -vvv --fork-url base
+```
+
+otherwise, generate the calldata by running:
+```
+forge test --match-test testPrintNewMarketCalldataAlreadyDeployedMToken -vvv --fork-url base
 ```
 
 Then, scroll up to get the calldata to propose these changes to the DAO. After section "artemis governor queue governance calldata", copy and paste the calldata and send the calldata to the governance contract on moonbase by going to metamask and submitting a transaction to the ArtemisGovernor contract with the calldata the raw hex copied.
