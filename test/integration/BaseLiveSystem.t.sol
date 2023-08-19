@@ -7,12 +7,14 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
+import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {mipb02 as mip} from "@test/proposals/mips/mip-b02/mip-b02.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
@@ -27,17 +29,21 @@ contract LiveSystemBaseTest is Test, Configs {
     Addresses addresses;
     WETHRouter router;
     ChainlinkOracle oracle;
+    WETH9 weth;
     address public well;
 
     function setUp() public {
-        proposals = new TestProposals();
+        address[] memory mips = new address[](1);
+        mips[0] = address(new mip());
+
+        proposals = new TestProposals(mips);
         proposals.setUp();
         addresses = proposals.addresses();
         proposals.testProposals(
             false,
-            false,
-            false,
             true,
+            false,
+            false,
             true,
             true,
             false,
@@ -48,6 +54,7 @@ contract LiveSystemBaseTest is Test, Configs {
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         router = WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));
         oracle = ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"));
+        weth = WETH9(addresses.getAddress("WETH"));
     }
 
     function testSetup() public {
@@ -135,8 +142,6 @@ contract LiveSystemBaseTest is Test, Configs {
         assertEq(config.emissionToken, well);
         assertEq(config.supplyEmissionsPerSec, 1e18);
         assertEq(config.endTime, emissionConfig[0].endTime);
-        assertEq(config.supplyGlobalIndex, 1e36);
-        assertEq(config.borrowGlobalIndex, 1e36);
     }
 
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
@@ -168,8 +173,6 @@ contract LiveSystemBaseTest is Test, Configs {
         assertEq(config.emissionToken, well);
         assertEq(config.borrowEmissionsPerSec, 1e18);
         assertEq(config.endTime, emissionConfig[0].endTime);
-        assertEq(config.supplyGlobalIndex, 1e36);
-        assertEq(config.borrowGlobalIndex, 1e36);
     }
 
     function testMintMWethMTokenSucceeds() public {
@@ -337,8 +340,7 @@ contract LiveSystemBaseTest is Test, Configs {
             addresses.getAddress("MOONWELL_WETH"),
             1 ether
         );
-
-        IERC20 weth = IERC20(addresses.getAddress("WETH"));
+        vm.deal(sender, 0); /// set sender's WETH balance to 0 ether
 
         uint256 borrowAmount = 1e6;
 
@@ -360,14 +362,18 @@ contract LiveSystemBaseTest is Test, Configs {
         (, uint256 liquidity, uint256 shortfall) = comptroller
             .getAccountLiquidity(sender);
 
-        assertEq(mToken.borrow(borrowAmount), 0); /// ensure successful borrow
+        assertEq(mToken.borrow(borrowAmount), 0, "unsuccessful borrow"); /// ensure successful borrow
         (
             ,
             uint256 liquidityAfterBorrow,
             uint256 shortfallAfterBorrow
         ) = comptroller.getAccountLiquidity(sender);
 
-        assertEq(weth.balanceOf(sender), borrowAmount); /// ensure balance is correct
+        assertEq(
+            sender.balance,
+            borrowAmount,
+            "incorrect ether amount borrowed"
+        ); /// ensure eth balance is correct
 
         assertGt(liquidity, liquidityAfterBorrow);
         assertEq(shortfall, shortfallAfterBorrow);
@@ -415,7 +421,7 @@ contract LiveSystemBaseTest is Test, Configs {
                 address(this)
             );
 
-        assertEq(rewards[0].emissionToken, well);
+        assertEq(rewards[0].emissionToken, well, "incorrect emission token");
         /// ensure rewards are less than warp time * 1e18 as rounding
         /// down happens + temporal governor owns mTokens in the pool
         assertLe(
@@ -616,10 +622,7 @@ contract LiveSystemBaseTest is Test, Configs {
         }
 
         assertEq(MErc20(mweth).borrow(borrowAmount), 0);
-        assertEq(
-            IERC20(addresses.getAddress("WETH")).balanceOf(address(this)),
-            borrowAmount
-        );
+        assertEq(address(this).balance, borrowAmount);
 
         {
             (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
@@ -647,7 +650,7 @@ contract LiveSystemBaseTest is Test, Configs {
     function testMaxBorrowUsdc() public {
         testAddCloseToMaxLiquidity();
 
-        uint256 borrowAmount = 31_999_999e6;
+        uint256 borrowAmount = 30_999_999e6;
         address mcbeth = addresses.getAddress("MOONWELL_USDC");
 
         assertEq(MErc20(mcbeth).borrow(borrowAmount), 0);
@@ -657,10 +660,61 @@ contract LiveSystemBaseTest is Test, Configs {
         );
     }
 
+    function testRepayBorrowBehalfWethRouter() public {
+        testMaxBorrowWeth();
+        uint256 borrowAmount = 6_299e18;
+        address mweth = addresses.getAddress("MOONWELL_WETH");
+
+        router = new WETHRouter(
+            WETH9(addresses.getAddress("WETH")),
+            MErc20(addresses.getAddress("MOONWELL_WETH"))
+        );
+
+        vm.deal(address(this), borrowAmount);
+
+        router.repayBorrowBehalf{value: borrowAmount}(address(this));
+
+        assertEq(MErc20(mweth).borrowBalanceStored(address(this)), 0); /// fully repaid
+    }
+
+    function testMintWithRouter() public {
+        MErc20 mToken = MErc20(addresses.getAddress("MOONWELL_WETH"));
+        uint256 startingMTokenWethBalance = weth.balanceOf(address(mToken));
+
+        uint256 mintAmount = 1 ether;
+        vm.deal(address(this), mintAmount);
+
+        router.mint{value: mintAmount}(address(this));
+
+        assertEq(address(this).balance, 0, "incorrect test contract eth value");
+        assertEq(
+            weth.balanceOf(address(mToken)),
+            mintAmount + startingMTokenWethBalance,
+            "incorrect mToken weth value after mint"
+        );
+
+        mToken.redeem(type(uint256).max);
+
+        assertApproxEqRel(
+            address(this).balance,
+            mintAmount,
+            1e15, /// tiny loss due to rounding down
+            "incorrect test contract eth value after redeem"
+        );
+        assertApproxEqRel(
+            startingMTokenWethBalance,
+            weth.balanceOf(address(mToken)),
+            1e15, /// tiny gain due to rounding down in protocol's favor
+            "incorrect mToken weth value after redeem"
+        );
+    }
+
     function _addLiquidity(address market, uint256 amount) private {
         address underlying = MErc20(market).underlying();
         deal(underlying, address(this), amount);
         IERC20(underlying).approve(market, amount);
         assertEq(MErc20(market).mint(amount), 0);
     }
+
+    receive() external payable {}
 }

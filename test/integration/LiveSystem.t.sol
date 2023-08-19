@@ -12,6 +12,7 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {mipb00 as mip} from "@test/proposals/mips/mip-b00/mip-b00.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
@@ -26,10 +27,22 @@ contract LiveSystemTest is Test {
     address public well;
 
     function setUp() public {
-        proposals = new TestProposals();
+        address[] memory mips = new address[](1);
+        mips[0] = address(new mip());
+
+        proposals = new TestProposals(mips);
         proposals.setUp();
         addresses = proposals.addresses();
-        proposals.testProposals(false, true, true, true, true, true, false, false); /// do not debug, deploy, after deploy, build, and run, do not validate
+        proposals.testProposals(
+            false,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            false
+        ); /// do not debug, deploy, after deploy, build, and run, do not validate
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         well = addresses.getAddress("WELL");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));

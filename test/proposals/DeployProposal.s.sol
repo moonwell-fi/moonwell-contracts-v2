@@ -5,7 +5,7 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {mipb00 as mip} from "@test/proposals/mips/mip-b00/mip-b00.sol";
+import {mipb02 as mip} from "@test/proposals/mips/mip-b02/mip-b02.sol";
 
 /*
 How to use:
@@ -14,6 +14,12 @@ forge script test/proposals/DeployProposal.s.sol:DeployProposal \
     --rpc-url $ETH_RPC_URL \
     --broadcast
 Remove --broadcast if you want to try locally first, without paying any gas.
+
+to verify after deploy:
+  forge verify-contract --etherscan-api-key $BASESCAN_API_KEY \ 
+        <deployed contract address> src/MWethDelegate.sol:MWethDelegate
+        --chain 8453
+
 */
 
 contract DeployProposal is Script, mip {
@@ -42,6 +48,8 @@ contract DeployProposal is Script, mip {
         Addresses addresses = new Addresses();
         addresses.resetRecordingAddresses();
         address deployerAddress = vm.addr(PRIVATE_KEY);
+
+        console.log("deployerAddress: ", deployerAddress);
 
         vm.startBroadcast(PRIVATE_KEY);
         if (DO_DEPLOY) deploy(addresses, deployerAddress);

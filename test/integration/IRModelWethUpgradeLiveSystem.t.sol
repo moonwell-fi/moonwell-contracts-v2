@@ -11,7 +11,7 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {TestProposals2 as TestProposals} from "@test/proposals/TestProposals2.sol";
+import {TestProposals} from "@test/proposals/TestProposals.sol";
 
 contract IRModelWethUpgradeLiveSystemBaseTest is Test, Configs {
     Comptroller comptroller;

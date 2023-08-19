@@ -7,6 +7,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import "@forge-std/Test.sol";
 
 import {Addresses} from "@test/proposals/Addresses.sol";
+import {mipb00 as mip} from "@test/proposals/mips/mip-b00/mip-b00.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 
 contract SystemUpgradeUnitTest is Test {
@@ -20,7 +21,10 @@ contract SystemUpgradeUnitTest is Test {
 
     function setUp() public {
         // Run all pending proposals before doing e2e tests
-        TestProposals proposals = new TestProposals();
+        address[] memory mips = new address[](1);
+        mips[0] = address(new mip());
+
+        TestProposals proposals = new TestProposals(mips);
         proposals.setUp();
         proposals.setDebug(false);
         proposals.testProposals(

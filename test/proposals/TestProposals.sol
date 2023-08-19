@@ -35,6 +35,14 @@ contract TestProposals is Test {
     bool public DO_TEARDOWN;
     bool public DO_VALIDATE;
 
+    constructor(address[] memory _proposals) {
+        for (uint256 i = 0; i < _proposals.length; i++) {
+            proposals.push(Proposal(_proposals[i]));
+        }
+
+        nProposals = _proposals.length;
+    }
+
     function setUp() public {
         DEBUG = vm.envOr("DEBUG", true);
         DO_DEPLOY = vm.envOr("DO_DEPLOY", true);
@@ -45,8 +53,7 @@ contract TestProposals is Test {
         DO_VALIDATE = vm.envOr("DO_VALIDATE", true);
         addresses = new Addresses();
 
-        proposals.push(Proposal(address(new mipb00())));
-        // proposals.push(Proposal(address(new mip01())));
+        // proposals.push(Proposal(address(new mipb01())));
         nProposals = proposals.length;
     }
 

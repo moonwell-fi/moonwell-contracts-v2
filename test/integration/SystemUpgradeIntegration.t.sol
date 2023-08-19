@@ -8,6 +8,7 @@ import "@forge-std/Test.sol";
 
 import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
+import {mipb01 as mip} from "@test/proposals/mips/mip-b01/mip-b01.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 
 contract SystemUpgradeLiveSystemBaseTest is Test, Configs {
@@ -21,12 +22,15 @@ contract SystemUpgradeLiveSystemBaseTest is Test, Configs {
 
     function setUp() public {
         // Run all pending proposals before doing e2e tests
-        TestProposals proposals = new TestProposals();
+        address[] memory mips = new address[](1);
+        mips[0] = address(new mip());
+
+        TestProposals proposals = new TestProposals(mips);
         proposals.setUp();
         proposals.setDebug(false);
         proposals.testProposals(
             false,
-            false,
+            true,
             false,
             false,
             false,

@@ -7,7 +7,7 @@ import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openze
 import {MToken} from "@protocol/MToken.sol";
 import {SigUtils} from "@test/helper/SigUtils.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {MErc20Immutable} from "@protocol/MErc20Immutable.sol";
+import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
 import {InterestRateModel} from "@protocol/IRModels/InterestRateModel.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";

@@ -62,7 +62,18 @@ contract WETHRouter {
         require(success, "WETHRouter: ETH transfer failed");
     }
 
+    /// @notice repay borrow using raw ETH
+    /// @param borrower to repay on behalf of
+    function repayBorrowBehalf(address borrower) external payable {
+        weth.deposit{value: msg.value}();
+
+        require(
+            mToken.repayBorrowBehalf(borrower, msg.value) == 0,
+            "WETHRouter: repay borrow behalf failed"
+        );
+    }
+
     receive() external payable {
-        require(msg.sender == address(weth), "WETHRouter: not weth");   // only accept ETH via fallback from the WETH contract
+        require(msg.sender == address(weth), "WETHRouter: not weth"); // only accept ETH via fallback from the WETH contract
     }
 }

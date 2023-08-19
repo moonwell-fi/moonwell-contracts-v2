@@ -17,7 +17,7 @@ import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/Mul
 /// contract. It is intended to be used as a template for future MIPs that need to set reward speeds.
 /// The first step is to open `mainnetRewardStreams.json` and add the reward streams for the
 /// different mTokens. Then generate calldata by adding MIP01 to the TestProposals file.
-contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
+contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
     string public constant name = "MIP01";
 
     constructor() {

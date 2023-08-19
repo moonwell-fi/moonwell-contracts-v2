@@ -10,7 +10,7 @@ import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {MErc20Immutable} from "@protocol/MErc20Immutable.sol";
+import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
 import {WhitePaperInterestRateModel} from "@protocol/IRModels/WhitePaperInterestRateModel.sol";
 import {InterestRateModel} from "@protocol/IRModels/InterestRateModel.sol";
