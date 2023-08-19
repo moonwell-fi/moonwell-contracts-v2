@@ -333,6 +333,12 @@ contract Addresses is Test, ChainIds {
         );
 
         _addAddress(
+            "DAI",
+            baseChainId,
+            0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb
+        );
+
+        _addAddress(
             "cbETH",
             baseChainId,
             0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22
@@ -348,6 +354,12 @@ contract Addresses is Test, ChainIds {
             "ETH_ORACLE",
             baseChainId,
             0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70
+        );
+
+        _addAddress(
+            "DAI_ORACLE",
+            baseChainId,
+            0x591e79239a7d679378eC8c847e5038150364C78F
         );
 
         _addAddress( /// UNUSED for now since are not deploying a wstETH market
