@@ -32,7 +32,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 /// in the Addresses.sol contract for the network the MTokens are being deployed on.
 contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
     /// @notice the name of the proposal
-    string public constant name = "MIP-0X";
+    string public constant name = "MIP-B0X";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;
@@ -235,31 +235,11 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
                     "Support MToken market in comptroller"
                 );
 
-                _pushCrossChainAction(
-                    unitrollerAddress,
-                    abi.encodeWithSignature(
-                        "_setCollateralFactor(address,uint256)",
-                        addresses.getAddress(config.addressesString),
-                        config.collateralFactor
-                    ),
-                    "Set Collateral Factor for MToken market in comptroller"
-                );
-
                 /// temporal governor accepts admin of mToken
                 _pushCrossChainAction(
                     cTokenAddress,
                     abi.encodeWithSignature("_acceptAdmin()"),
                     "Temporal governor accepts admin on mToken"
-                );
-
-                _pushCrossChainAction(
-                    unitrollerAddress,
-                    abi.encodeWithSignature(
-                        "_setMintPaused(address,bool)",
-                        cTokenAddress,
-                        false
-                    ),
-                    "Unpause MToken market"
                 );
 
                 /// Approvals
@@ -292,18 +272,29 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
                     ),
                     "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
                 );
+
+                _pushCrossChainAction(
+                    unitrollerAddress,
+                    abi.encodeWithSignature(
+                        "_setCollateralFactor(address,uint256)",
+                        addresses.getAddress(config.addressesString),
+                        config.collateralFactor
+                    ),
+                    "Set Collateral Factor for MToken market in comptroller"
+                );
             }
         }
     }
 
     function run(Addresses addresses, address) public {
+        printCalldata(addresses);
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
     function printCalldata(Addresses addresses) public {
         printActions(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress("WORMHOLE_CORE")
+            addresses.getAddress("WORMHOLE_CORE", sendingChainIdToReceivingChainId[block.chainid])
         );
     }
 

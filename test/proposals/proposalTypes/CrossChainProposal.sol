@@ -57,9 +57,13 @@ abstract contract CrossChainProposal is MultisigProposal, MarketCreationHook {
     /// run pre and post proposal hooks to ensure that mToken markets created by the
     /// proposal are valid and mint at least 1 wei worth of mTokens to address 0
     function _simulateCrossChainActions(address temporalGovAddress) internal {
+        console.log("verifying actions pre run...");
         _verifyActionsPreRun(actions);
+        console.log("successfully verified actions pre run");
         _simulateMultisigActions(temporalGovAddress);
+        console.log("successfully simulated actions");
         _verifyMTokensPostRun();
+        console.log("successfully verified actions post run");
     }
 
     function getTargetsPayloadsValues()

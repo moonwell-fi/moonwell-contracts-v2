@@ -66,7 +66,7 @@ Once the contracts are deployed, copy and paste the `_addAddress()` commands the
 ## 6. Governance Proposal
 Now that the contracts are deployed, it's time to generate the calldata. Generate this calldata by running:
 ```
-forge test --match-test testPrintCalldata -vvv --fork-url base
+forge test --match-test testPrintNewMarketCalldata -vvv --fork-url base
 ```
 
 Then, scroll up to get the calldata to propose these changes to the DAO. After section "artemis governor queue governance calldata", copy and paste the calldata and send the calldata to the governance contract on moonbase by going to metamask and submitting a transaction to the ArtemisGovernor contract with the calldata the raw hex copied.
