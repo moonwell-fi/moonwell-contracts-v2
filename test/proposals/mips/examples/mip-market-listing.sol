@@ -141,12 +141,12 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-                supplyCaps[i] = config.supplyCap;
-                borrowCaps[i] = config.borrowCap;
+                supplyCaps.push(config.supplyCap);
+                borrowCaps.push(config.borrowCap);
 
                 /// get the mToken
-                mTokens[i] = MToken(
-                    addresses.getAddress(config.addressesString)
+                mTokens.push(
+                    MToken(addresses.getAddress(config.addressesString))
                 );
 
                 mTokens[i]._setReserveFactor(config.reserveFactor);
@@ -156,7 +156,25 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
         }
     }
 
-    function afterDeploySetup(Addresses addresses) public {}
+    function afterDeploySetup(Addresses addresses) public {
+        Configs.CTokenConfiguration[]
+            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
+        uint256 cTokenConfigsLength = cTokenConfigs.length;
+        unchecked {
+            for (uint256 i = 0; i < cTokenConfigsLength; i++) {
+                Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+                address tokenAddress = addresses.getAddress(
+                    config.tokenAddressName
+                );
+                deal(
+                    tokenAddress,
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    cTokenConfigs[i].initialMintAmount
+                );
+            }
+        }
+    }
 
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
 
@@ -295,7 +313,9 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        Comptroller comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+        Comptroller comptroller = Comptroller(
+            addresses.getAddress("UNITROLLER")
+        );
 
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
