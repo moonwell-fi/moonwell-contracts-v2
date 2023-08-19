@@ -82,33 +82,6 @@ contract Configs is Test {
                 revert("borrow cap must be set with a supply cap");
             }
 
-            console.log("\n ------ MToken Configuration ------");
-            console.log("addressesString:", decodedJson[i].addressesString);
-            console.log("supplyCap:", decodedJson[i].supplyCap);
-            console.log("borrowCap:", decodedJson[i].borrowCap);
-            console.log("collateralFactor:", decodedJson[i].collateralFactor);
-            console.log("initialMintAmount:", decodedJson[i].initialMintAmount);
-            console.log("name:", decodedJson[i].name);
-            console.log("priceFeedName:", decodedJson[i].priceFeedName);
-            console.log("reserveFactor:", decodedJson[i].reserveFactor);
-            console.log("seizeShare:", decodedJson[i].seizeShare);
-            console.log("supplyCap:", decodedJson[i].supplyCap);
-            console.log("symbol:", decodedJson[i].symbol);
-            console.log("tokenAddressName:", decodedJson[i].tokenAddressName);
-            console.log(
-                "jrm.baseRatePerYear:",
-                decodedJson[i].jrm.baseRatePerYear
-            );
-            console.log(
-                "jrm.multiplierPerYear:",
-                decodedJson[i].jrm.multiplierPerYear
-            );
-            console.log(
-                "jrm.jumpMultiplierPerYear:",
-                decodedJson[i].jrm.jumpMultiplierPerYear
-            );
-            console.log("jrm.kink:", decodedJson[i].jrm.kink);
-
             cTokenConfigurations[_baseChainId].push(decodedJson[i]);
         }
 
@@ -122,20 +95,6 @@ contract Configs is Test {
         );
 
         for (uint256 i = 0; i < decodedEmissions.length; i++) {
-            console.log("\n ------ Emission Configuration ------");
-            console.log(
-                "borrowEmissionsPerSec:",
-                decodedEmissions[i].borrowEmissionsPerSec
-            );
-            console.log("emissionToken:", decodedEmissions[i].emissionToken);
-            console.log("endTime:", decodedEmissions[i].endTime);
-            console.log("mToken:", decodedEmissions[i].mToken);
-            console.log("owner:", decodedEmissions[i].owner);
-            console.log(
-                "supplyEmissionPerSec:",
-                decodedEmissions[i].supplyEmissionPerSec
-            );
-
             emissions[_baseChainId].push(decodedEmissions[i]);
         }
     }
