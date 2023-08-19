@@ -32,7 +32,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 /// in the Addresses.sol contract for the network the MTokens are being deployed on.
 contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
     /// @notice the name of the proposal
-    string public constant name = "MIP-B0X";
+    string public constant name = "MIP Market Creation";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;
@@ -54,6 +54,51 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
 
     constructor() {
         _setNonce(4);
+        /// for example, should be set to
+        /// LISTING_PATH="./test/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
+        string memory descriptionPath = vm.envString("LISTING_PATH");
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile(descriptionPath)
+        );
+
+        _setProposalDescription(proposalDescription);
+
+        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken configs
+
+        string memory mtokensPath = vm.envString("MTOKENS_PATH");
+        /// MTOKENS_PATH="./test/proposals/mips/examples/mip-market-listing/MTokens.json"
+        string memory fileContents = vm.readFile(mtokensPath);
+        bytes memory rawJson = vm.parseJson(fileContents);
+
+        CTokenConfiguration[] memory decodedJson = abi.decode(
+            rawJson,
+            (CTokenConfiguration[])
+        );
+
+        for (uint256 i = 0; i < decodedJson.length; i++) {
+            require(
+                decodedJson[i].collateralFactor <= 0.95e18,
+                "collateral factor absurdly high, are you sure you want to proceed?"
+            );
+
+            /// possible to set supply caps and not borrow caps,
+            /// but not set borrow caps and not set supply caps
+            if (decodedJson[i].supplyCap != 0) {
+                require(
+                    decodedJson[i].supplyCap > decodedJson[i].borrowCap,
+                    "borrow cap gte supply cap, are you sure you want to proceed?"
+                );
+            } else if (decodedJson[i].borrowCap != 0) {
+                revert("borrow cap must be set with a supply cap");
+            }
+
+            cTokenConfigurations[block.chainid].push(decodedJson[i]);
+        }
+
+        console.log(
+            "loaded in %d MToken configs",
+            cTokenConfigurations[block.chainid].length
+        );
     }
 
     /// @notice no contracts are deployed in this proposal
@@ -137,7 +182,6 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
-        //// set mint paused for all of the deployed MTokens
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
@@ -206,7 +250,6 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
             "Set borrow caps MToken market"
         );
 
-        /// set mint unpaused for all of the deployed MTokens
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
@@ -294,7 +337,10 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
     function printCalldata(Addresses addresses) public {
         printActions(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress("WORMHOLE_CORE", sendingChainIdToReceivingChainId[block.chainid])
+            addresses.getAddress(
+                "WORMHOLE_CORE",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
         );
     }
 

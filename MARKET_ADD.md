@@ -4,7 +4,7 @@ This document explains how to add new markets to Moonwell from end to end, lever
 
 ## 1. Setup
 
-Go to `mainnetMTokensExample.json` to see what an example mToken JSON configuration looks like. Then, copy and paste that structure into `mainnetMTokens.json`, replacing all of the values with the correct values for those markets. Initial mint amount, collateral factor, should be set to the correct values and replaced with the actual values the market should have once deployed.
+Go to `mainnetMTokensExample.json` to see what an example mToken JSON configuration looks like. Then, copy and paste that structure into [`MTokens.json`](./test/proposals/mips/examples/mip-market-listing/MTokens.json) in the `test/proposals/mips/examples/mip-market-listing` folder, replacing all of the values with the correct values for those markets. Initial mint amount, collateral factor, should be set to the correct values and replaced with the actual values the market should have once deployed.
 ```
         "initialMintAmount": 1e12,
         "collateralFactor": 0.75e18,
@@ -41,17 +41,20 @@ Go to `mainnetMTokensExample.json` to see what an example mToken JSON configurat
 - `jumpMultiplierPerYear` rate multiplier as a percentage, scaled by `1e18` after kink is hit.
 - `kink` the point on the utilization curve after which the interest rate spikes using `jumpMultiplierPerYear` as a percentage, scaled by `1e18`
 
-## 3. Versioning
+## 2. Proposal Description
 
-Modify the [`mip-market-listing.sol`](./test/proposals/mips/examples/mip-market-listing.sol) `name` variable to the correct proposal number.
+Once the proposal description has been created, copy and paste it into [`MarketListingDescription.md`](./test/proposals/mips/examples/mip-market-listing/MarketListingDescription.md), deleting all previous data from this file.
 
-**WARNING** Do not modify the [`mip-market-listing.sol`](./test/proposals/mips/examples/mip-market-listing.sol) other than the name variable. Do not change the file name or the contract name as this will break other files.
+## 3. Environment Variables
+Once both the `MarketListingDescription.md` and `MTokens.json` file have the necessary contents, environment variables must be set for the script to read in their path. In the example folder, run these commands:
 
-## 4. Proposal Description
+```
+export LISTING_PATH="./test/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
+export MTOKENS_PATH="./test/proposals/mips/examples/mip-market-listing/MTokens.json"
+```
+If any errors show up relating to not being able to read in a file, double check the environment variables and make sure the paths are correct.
 
-Once the proposal description has been created, copy and paste it into [`ProposalDescription.md`](./test/proposals/proposalTypes/ProposalDescription.md), deleting all previous data from this file.
-
-## 5. Deployment
+## 4. Deployment
 To deploy these new markets, run `DeployMarketCreationProposal.s.sol` using command:
 
 ```
@@ -63,7 +66,7 @@ forge script test/proposals/DeployMarketCreationProposal.s.sol:DeployMarketCreat
 
 Once the contracts are deployed, copy and paste the `_addAddress()` commands the deployment script outputted into the `Addresses.sol` file under the proper network section. Now, save these changes and proceed to the next step.
 
-## 6. Governance Proposal
+## 5. Governance Proposal
 Now that the contracts are deployed, it's time to generate the calldata. If the contracts have not been deployed and added to Addresses.sol yet, generate this calldata by running:
 ```
 forge test --match-test testPrintNewMarketCalldataDeployMToken -vvv --fork-url base
@@ -78,7 +81,7 @@ Then, scroll up to get the calldata to propose these changes to the DAO. After s
 
 Once the calldata is sent, wait for the proposal to finish the voting period, then queue and execute it.
 
-## 7. Testing
+## 6. Testing
 
 To test the changes introduced by creating these market(s) and ensure the system solvency, modify the [PostProposalCheck](./test/integration/PostProposalCheck.sol) to add the newMarketDeploy mip to the array of mips tested. This can be done by uncommenting the line that adds it to the `mips` address array, and lengthening the array to support 2 active proposals, or if only doing this as a single proposal, write to mips array at index 0 and comment out the other line adds the incorrect MIP.
 

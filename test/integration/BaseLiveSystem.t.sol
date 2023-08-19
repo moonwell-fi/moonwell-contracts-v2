@@ -65,8 +65,8 @@ contract LiveSystemBaseTest is Test, Configs {
             address(proposals.proposals(0))
         ).getCTokenConfigurations(block.chainid);
 
-        assertEq(configs.length, 3); /// 5 configs on base goerli
-        assertEq(mTokenConfigs.length, 3); /// 5 mTokens on base goerli
+        assertEq(configs.length, 3); /// 3 starting configs on base
+        assertEq(mTokenConfigs.length, 0); /// 0 mTokens on base
     }
 
     function testOraclesReturnCorrectValues() public {

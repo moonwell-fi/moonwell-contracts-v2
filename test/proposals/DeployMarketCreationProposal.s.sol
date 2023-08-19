@@ -5,7 +5,7 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {mip0x as mip} from "@test/proposals/mips/examples/mip-market-listing.sol";
+import {mip0x as mip} from "@test/proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
 
 /*
 How to use:

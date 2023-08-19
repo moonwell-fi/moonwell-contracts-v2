@@ -18,13 +18,10 @@ abstract contract CrossChainProposal is MultisigProposal, MarketCreationHook {
     /// @notice hex encoded description of the proposal
     bytes public PROPOSAL_DESCRIPTION;
 
-    constructor() {
-        PROPOSAL_DESCRIPTION = abi.encodePacked(
-            vm.readFile("./test/proposals/proposalTypes/ProposalDescription.md")
-        );
 
-        console.log("\nproposal description bytes");
-        emit log_bytes(PROPOSAL_DESCRIPTION);
+    /// @notice set the governance proposal's description
+    function _setProposalDescription(bytes memory newProposalDescription) internal {
+        PROPOSAL_DESCRIPTION = newProposalDescription;
     }
 
     /// @notice set the nonce for the cross chain proposal

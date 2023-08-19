@@ -20,6 +20,12 @@ contract mipb02 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     constructor() {
         _setNonce(2);
+
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile("./test/proposals/mips/mip-b02/MIP-B02.md")
+        );
+
+        _setProposalDescription(proposalDescription);
     }
 
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers

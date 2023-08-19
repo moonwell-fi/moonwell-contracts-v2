@@ -6,7 +6,7 @@ import {Test} from "@forge-std/Test.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {mipb00 as mip} from "@test/proposals/mips/mip-b00/mip-b00.sol";
-import {mip0x as marketDeployMip} from "@test/proposals/mips/examples/mip-market-listing.sol";
+import {mip0x as marketDeployMip} from "@test/proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
 
 contract PostProposalCheck is Test {
     Addresses addresses;
