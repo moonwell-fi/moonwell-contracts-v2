@@ -67,7 +67,7 @@ async function storeVAA(event, sequence) {
   console.log(`Updated KV store value for ${network}: ${value}`);
   let timestamp = Math.floor(Date.now() / 1000);
   // On testnet, there is no 24 hour timelock
-  // timestamp += 60 * 60 * 24 // 24 hours
+  timestamp += 60 * 60 * 24 // 24 hours
   await kvStore.put(`${network}-${sequence}`, timestamp.toString());
   console.log(`Stored ${network}-${sequence} with expiry ${timestamp}`);
 }
