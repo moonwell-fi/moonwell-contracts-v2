@@ -1,21 +1,21 @@
 [
     {
         "addressesString": "MOONWELL_DAI",
-        "supplyCap": 5000000000000000000000000,
-        "borrowCap": 4000000000000000000000000,
-        "collateralFactor": 800000000000000000,
-        "initialMintAmount": 1000000000000,
+        "supplyCap": 5000000e18,
+        "borrowCap": 4000000e18,
+        "collateralFactor": 0.8e18,
+        "initialMintAmount": 1e12,
         "name": "Moonwell DAI",
         "priceFeedName": "DAI_ORACLE",
-        "reserveFactor": 150000000000000000,
-        "seizeShare": 30000000000000000,
+        "reserveFactor": 0.15e18,
+        "seizeShare": 0.03e18,
         "symbol": "mDAI",
         "tokenAddressName": "DAI",
         "jrm": {
             "baseRatePerYear": 0,
-            "jumpMultiplierPerYear": 4775000000000000000,
-            "kink": 800000000000000000,
-            "multiplierPerYear": 50000000000000000
+            "jumpMultiplierPerYear": 4.775e18,
+            "kink": 0.8e18,
+            "multiplierPerYear": 0.05e18
         }
     }
 ]
