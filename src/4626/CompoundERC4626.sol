@@ -46,9 +46,6 @@ contract CompoundERC4626 is ERC4626 {
     /// Immutable params
     /// -----------------------------------------------------------------------
 
-    /// @notice The WELL token contract
-    ERC20 public immutable well;
-
     /// @notice The Moonwell mToken contract
     MErc20 public immutable mToken;
 
@@ -64,12 +61,10 @@ contract CompoundERC4626 is ERC4626 {
 
     constructor(
         ERC20 asset_,
-        ERC20 well_,
         MErc20 mToken_,
         address rewardRecipient_,
         IComptroller comptroller_
     ) ERC4626(asset_, _vaultName(asset_), _vaultSymbol(asset_)) {
-        well = well_;
         mToken = mToken_;
         comptroller = comptroller_;
         rewardRecipient = rewardRecipient_;
@@ -116,9 +111,10 @@ contract CompoundERC4626 is ERC4626 {
     }
 
     /// @notice Claims liquidity mining rewards from Compound and sends it to rewardRecipient
-    /// used for edgecase where 
-    /// @param tokens The tokens to sweep
-    function sweepRewards(address[] memory tokens) public {
+    /// used for edgecase where reward distribution is not yet configured or was removed
+    /// the tokens were swept into the vault.
+    /// @param tokens The list of tokens to sweep
+    function sweepRewards(address[] calldata tokens) external {
         for (uint256 i = 0; i < tokens.length; i++) {
             ERC20 token = ERC20(tokens[i]);
             uint256 amount = token.balanceOf(address(this));
@@ -167,30 +163,68 @@ contract CompoundERC4626 is ERC4626 {
         }
     }
 
+    /// @notice maximum amount of underlying tokens that can be deposited into the underlying protocol
     function maxDeposit(address) public view override returns (uint256) {
         return maxMint(address(0));
     }
 
+    /// @notice Returns the maximum amount of tokens that can be supplied
+    /// no way for this function to ever revert unless comptroller or mToken is broken
+    /// @dev accrue interest must be called before this function is called, otherwise
+    /// an outdated value will be fetched, and the returned value will be incorrect
+    /// (greater than actual amount available to be minted will be returned)
     function maxMint(address) public view override returns (uint256) {
         if (comptroller.mintGuardianPaused(address(mToken))) {
             return 0;
         }
 
-        uint256 borrowCap = comptroller.borrowCaps(address(mToken));
-        if (borrowCap != 0) {
-            uint256 totalBorrows = mToken.totalBorrows();
-            return borrowCap - totalBorrows;
+        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
+        if (supplyCap != 0) {
+            uint256 currentExchangeRate = mToken.viewExchangeRate();
+            uint256 totalSupply = MToken(address(mToken)).totalSupply();
+            uint256 totalSupplies = (totalSupply * currentExchangeRate) / 1e18; /// exchange rate is scaled up by 1e18, so needs to be divided off to get accurate total supply
+    
+            // uint256 totalCash = MToken(address(mToken)).getCash();
+            // uint256 totalBorrows = MToken(address(mToken)).totalBorrows();
+            // uint256 totalReserves = MToken(address(mToken)).totalReserves();
+
+            // // (Pseudocode) totalSupplies = totalCash + totalBorrows - totalReserves
+            // uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+
+            // supply cap is      3
+            // total supplies is  1
+            /// no room for additional supplies
+
+            // supply cap is      3
+            // total supplies is  0
+            /// room for 1 additional supplies
+
+            // supply cap is      4
+            // total supplies is  1
+            /// room for 1 additional supplies
+
+            /// total supplies could exceed supply cap as interest accrues, need to handle this edge case
+            /// going to subtract 2 from supply cap to account for rounding errors
+            if (totalSupplies + 2 >= supplyCap) {
+                return 0;
+            }
+
+            return supplyCap - totalSupplies - 2;
         }
 
         return type(uint256).max;
     }
 
+    /// @notice maximum amount of underlying tokens that can be withdrawn
+    /// @param owner The address that owns the shares
     function maxWithdraw(address owner) public view override returns (uint256) {
         uint256 cash = mToken.getCash();
         uint256 assetsBalance = convertToAssets(balanceOf[owner]);
         return cash < assetsBalance ? cash : assetsBalance;
     }
 
+    /// @notice maximum amount of shares that can be withdrawn
+    /// @param owner The address that owns the shares
     function maxRedeem(address owner) public view override returns (uint256) {
         uint256 cash = mToken.getCash();
         uint256 cashInShares = convertToShares(cash);

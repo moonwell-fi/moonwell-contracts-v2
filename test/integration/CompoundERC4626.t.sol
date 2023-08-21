@@ -5,9 +5,11 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
+import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
+import {LibCompound} from "@protocol/4626/LibCompound.sol";
 import {mipb01 as mip} from "@test/proposals/mips/mip-b01/mip-b01.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {CompoundERC4626} from "@protocol/4626/CompoundERC4626.sol";
@@ -15,6 +17,7 @@ import {Compound4626Deploy} from "@protocol/4626/4626Deploy.sol";
 import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
 
 contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
+    using LibCompound for MErc20;
     address constant rewardRecipient = address(10_000_000);
     Addresses addresses;
     TestProposals proposals;
@@ -56,7 +59,6 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
 
     function testSetup() public {
         assertEq(address(vault.asset()), address(underlying));
-        assertEq(address(vault.well()), addresses.getAddress("WELL"));
         assertEq(
             address(vault.mToken()),
             addresses.getAddress("MOONWELL_USDC")
@@ -67,8 +69,8 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         );
         assertEq(vault.rewardRecipient(), rewardRecipient);
 
-        console.log("name: ", vault.name());
-        console.log("symbol: ", vault.symbol());
+        assertEq(vault.name(), "ERC4626-Wrapped Moonwell USDbC");
+        assertEq(vault.symbol(), "wmUSDbC");
     }
 
     function testFailDepositWithNotEnoughApproval() public {
@@ -99,6 +101,30 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
 
     function testSucceedRedeemWithCorrectShareAmount() public {
         uint256 mintAmount = 1_000_000e6;
+        deal(address(underlying), address(this), mintAmount);
+        underlying.approve(address(vault), mintAmount);
+
+        vault.deposit(mintAmount, address(this));
+
+        vault.redeem(mintAmount, address(this), address(this));
+
+        assertApproxEqRel(
+            underlying.balanceOf(address(this)),
+            mintAmount,
+            0.0000001e18, /// small rounding down in protocol's favor and no interest accrued
+            "underlying balance"
+        );
+    }
+
+    function testMintSucceedRedeemWithCorrectShareAmount() public {
+        MErc20 mToken = MErc20(addresses.getAddress("MOONWELL_USDC"));
+
+        uint256 currentExchangeRate = mToken.viewExchangeRate();
+        uint256 totalSupply = MToken(address(mToken)).totalSupply();
+        uint256 totalSupplies = (totalSupply * currentExchangeRate) / 1e18; /// exchange rate is scaled up by 1e18, so needs to be divided off to get accurate total supply
+
+        uint256 mintAmount = vault.maxDeposit(address(0));
+
         deal(address(underlying), address(this), mintAmount);
         underlying.approve(address(vault), mintAmount);
 

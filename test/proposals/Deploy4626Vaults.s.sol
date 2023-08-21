@@ -54,7 +54,6 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
                 addresses.getAddress("USDC_VAULT")
             );
             assertEq(address(vault.asset()), addresses.getAddress("USDC"));
-            assertEq(address(vault.well()), well);
             assertEq(address(vault.mToken()), addresses.getAddress("MOONWELL_USDC"));
             assertEq(address(vault.comptroller()), unitroller);
             assertEq(vault.rewardRecipient(), rewardRecipient);
@@ -66,7 +65,6 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
                 addresses.getAddress("WETH_VAULT")
             );
             assertEq(address(vault.asset()), addresses.getAddress("WETH"));
-            assertEq(address(vault.well()), well);
             assertEq(address(vault.mToken()), addresses.getAddress("MOONWELL_WETH"));
             assertEq(address(vault.comptroller()), unitroller);
             assertEq(vault.rewardRecipient(), rewardRecipient);
@@ -78,7 +76,6 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
                 addresses.getAddress("cbETH_VAULT")
             );
             assertEq(address(vault.asset()), addresses.getAddress("cbETH"));
-            assertEq(address(vault.well()), well);
             assertEq(address(vault.mToken()), addresses.getAddress("MOONWELL_cbETH"));
             assertEq(address(vault.comptroller()), unitroller);
             assertEq(vault.rewardRecipient(), rewardRecipient);

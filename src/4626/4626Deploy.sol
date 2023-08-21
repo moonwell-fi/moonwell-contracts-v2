@@ -12,7 +12,6 @@ contract Compound4626Deploy {
         /// deploy the ERC20 wrapper for USDC
         CompoundERC4626 usdcVault = new CompoundERC4626(
             ERC20(addresses.getAddress("USDC")),
-            ERC20(addresses.getAddress("WELL")),
             MErc20(addresses.getAddress("MOONWELL_USDC")),
             rewardReceiver,
             IComptroller(addresses.getAddress("UNITROLLER"))
@@ -20,7 +19,6 @@ contract Compound4626Deploy {
 
         CompoundERC4626 wethVault = new CompoundERC4626(
             ERC20(addresses.getAddress("WETH")),
-            ERC20(addresses.getAddress("WELL")),
             MErc20(addresses.getAddress("MOONWELL_WETH")),
             rewardReceiver,
             IComptroller(addresses.getAddress("UNITROLLER"))
@@ -28,7 +26,6 @@ contract Compound4626Deploy {
 
         CompoundERC4626 cbethVault = new CompoundERC4626(
             ERC20(addresses.getAddress("cbETH")),
-            ERC20(addresses.getAddress("WELL")),
             MErc20(addresses.getAddress("MOONWELL_cbETH")),
             rewardReceiver,
             IComptroller(addresses.getAddress("UNITROLLER"))
