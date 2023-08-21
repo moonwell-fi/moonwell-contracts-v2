@@ -266,7 +266,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "MWETH_IMPLEMENTATION",
             84531,
-            0x588648BA0bAA43d340f34B756E974BD06eBDA73a
+            0x30d3740d8d15004E3D14be74E97Fc4BA189C6400
         );
         _addAddress(
             "WETH_UNWRAPPER",
