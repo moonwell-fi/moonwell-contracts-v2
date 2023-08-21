@@ -256,7 +256,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "WETH_ROUTER",
             84531,
-            0x3b995646420BcfE8395bA9F44251415126f7BD7A
+            0xafDc287BfB6CdD12972EE25e8C4c84e9F2bc2345
         );
         _addAddress(
             "CHAINLINK_ORACLE",
@@ -266,12 +266,12 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "MWETH_IMPLEMENTATION",
             84531,
-            0x7c8599bE1f71b8eAF9bAD1B1e9D5F8676C1C1958
+            0x30d3740d8d15004E3D14be74E97Fc4BA189C6400
         );
         _addAddress(
             "WETH_UNWRAPPER",
             84531,
-            0x59847ac7E204144c097483D763AaC2a11CD4cd9F
+            0xb65604ae9b9250c1973441A03f9Ec7ECF09aaC7e
         );
 
         /// -----------------------------------------------
