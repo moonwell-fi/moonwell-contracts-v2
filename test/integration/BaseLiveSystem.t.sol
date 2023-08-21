@@ -14,7 +14,7 @@ import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {mip01 as mip} from "@test/proposals/mips/mip01.sol";
+import {mipb02 as mip} from "@test/proposals/mips/mip-b02/mip-b02.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
@@ -65,8 +65,8 @@ contract LiveSystemBaseTest is Test, Configs {
             address(proposals.proposals(0))
         ).getCTokenConfigurations(block.chainid);
 
-        assertEq(configs.length, 3); /// 5 configs on base goerli
-        assertEq(mTokenConfigs.length, 3); /// 5 mTokens on base goerli
+        assertEq(configs.length, 3); /// 3 starting configs on base
+        assertEq(mTokenConfigs.length, 0); /// 0 mTokens on base
     }
 
     function testOraclesReturnCorrectValues() public {
@@ -571,26 +571,6 @@ contract LiveSystemBaseTest is Test, Configs {
         assertEq(address(assets[2]), addresses.getAddress("MOONWELL_cbETH"));
     }
 
-    function _getMaxSupplyAmount(address mToken) internal returns (uint256) {
-        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
-
-        uint256 totalCash = MToken(mToken).getCash();
-        uint256 totalBorrows = MToken(mToken).totalBorrows();
-        uint256 totalReserves = MToken(mToken).totalReserves();
-
-        // totalSupplies = totalCash + totalBorrows - totalReserves
-        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
-
-        return supplyCap - totalSupplies - 1_000e6;
-    }
-
-    function _getMaxBorrowAmount(address mToken) internal returns (uint256) {
-        uint256 borrowCap = comptroller.borrowCaps(address(mToken));
-        uint256 totalBorrows = MToken(mToken).totalBorrows();
-
-        return borrowCap - totalBorrows - 1;
-    }
-
     function testAddCloseToMaxLiquidity() public {
         testAddLiquidityMultipleAssets();
 
@@ -623,23 +603,16 @@ contract LiveSystemBaseTest is Test, Configs {
         assertEq(shortfall, 0, "Incorrect shortfall");
     }
 
-    function _addLiquidity(address market, uint256 amount) private {
-        address underlying = MErc20(market).underlying();
-        deal(underlying, address(this), amount);
-        IERC20(underlying).approve(market, amount);
-        assertEq(MErc20(market).mint(amount), 0);
-    }
-
     function testMaxBorrowWeth() public returns (uint256) {
         testAddCloseToMaxLiquidity();
 
         uint256 borrowAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_WETH")
         );
-
         address mweth = addresses.getAddress("MOONWELL_WETH");
+
         {
-            (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+            (uint256 err, , uint256 shortfall) = comptroller
                 .getAccountLiquidity(address(this));
 
             assertEq(0, err);
@@ -650,7 +623,7 @@ contract LiveSystemBaseTest is Test, Configs {
         assertEq(address(this).balance, borrowAmount);
 
         {
-            (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+            (uint256 err, , uint256 shortfall) = comptroller
                 .getAccountLiquidity(address(this));
 
             assertEq(0, err);
@@ -663,7 +636,9 @@ contract LiveSystemBaseTest is Test, Configs {
     function testMaxBorrowcbEth() public {
         testAddCloseToMaxLiquidity();
 
-        uint256 borrowAmount = 1_499e18;
+        uint256 borrowAmount = _getMaxSupplyAmount(
+            addresses.getAddress("MOONWELL_cbETH")
+        );
         address mcbeth = addresses.getAddress("MOONWELL_cbETH");
 
         assertEq(MErc20(mcbeth).borrow(borrowAmount), 0);
@@ -676,10 +651,12 @@ contract LiveSystemBaseTest is Test, Configs {
     function testMaxBorrowUsdc() public {
         testAddCloseToMaxLiquidity();
 
-        address mcbeth = addresses.getAddress("MOONWELL_USDC");
-        uint256 borrowAmount = _getMaxBorrowAmount(mcbeth);
+        uint256 borrowAmount = _getMaxSupplyAmount(
+            addresses.getAddress("MOONWELL_USDC")
+        );
+        address musdc = addresses.getAddress("MOONWELL_USDC");
 
-        assertEq(MErc20(mcbeth).borrow(borrowAmount), 0);
+        assertEq(MErc20(musdc).borrow(borrowAmount), 0);
         assertEq(
             IERC20(addresses.getAddress("USDC")).balanceOf(address(this)),
             borrowAmount
@@ -732,6 +709,37 @@ contract LiveSystemBaseTest is Test, Configs {
             1e15, /// tiny gain due to rounding down in protocol's favor
             "incorrect mToken weth value after redeem"
         );
+    }
+
+    function _addLiquidity(address market, uint256 amount) private {
+        address underlying = MErc20(market).underlying();
+        deal(underlying, address(this), amount);
+        IERC20(underlying).approve(market, amount);
+        assertEq(MErc20(market).mint(amount), 0);
+    }
+
+    function _getMaxBorrowAmount(
+        address mToken
+    ) internal view returns (uint256) {
+        uint256 borrowCap = comptroller.borrowCaps(address(mToken));
+        uint256 totalBorrows = MToken(mToken).totalBorrows();
+
+        return borrowCap - totalBorrows - 1;
+    }
+
+    function _getMaxSupplyAmount(
+        address mToken
+    ) internal view returns (uint256) {
+        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
+
+        uint256 totalCash = MToken(mToken).getCash();
+        uint256 totalBorrows = MToken(mToken).totalBorrows();
+        uint256 totalReserves = MToken(mToken).totalReserves();
+
+        // totalSupplies = totalCash + totalBorrows - totalReserves
+        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+
+        return supplyCap - totalSupplies - 1_000e6;
     }
 
     receive() external payable {}

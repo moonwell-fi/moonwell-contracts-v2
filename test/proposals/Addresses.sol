@@ -333,6 +333,12 @@ contract Addresses is Test, ChainIds {
         );
 
         _addAddress(
+            "DAI",
+            baseChainId,
+            0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb
+        );
+
+        _addAddress(
             "cbETH",
             baseChainId,
             0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22
@@ -348,6 +354,12 @@ contract Addresses is Test, ChainIds {
             "ETH_ORACLE",
             baseChainId,
             0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70
+        );
+
+        _addAddress(
+            "DAI_ORACLE",
+            baseChainId,
+            0x591e79239a7d679378eC8c847e5038150364C78F
         );
 
         _addAddress( /// UNUSED for now since are not deploying a wstETH market
@@ -447,7 +459,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_WETH",
             8453,
-            0x14994008E5b7547d2dFE9dEcBb47456cEA217176
+            0x4393277B02ef3cA293990A772B7160a8c76F2443
         );
         _addAddress(
             "MOONWELL_WETH",
@@ -478,6 +490,11 @@ contract Addresses is Test, ChainIds {
             "WETH_UNWRAPPER",
             8453,
             0x1382cFf3CeE10D283DccA55A30496187759e4cAf
+        );
+        _addAddress(
+            "MWETH_IMPLEMENTATION",
+            8453,
+            0x599D4a1538d686814eE11b331EACBBa166D7C41a
         );
     }
 

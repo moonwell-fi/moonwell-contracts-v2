@@ -7,8 +7,8 @@ import {Addresses} from "@test/proposals/Addresses.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 
-import {mip00} from "@test/proposals/mips/mip00.sol";
-import {mip01} from "@test/proposals/mips/mip01.sol";
+import {mipb00} from "@test/proposals/mips/mip-b00/mip-b00.sol";
+import {mipb01} from "@test/proposals/mips/mip-b01/mip-b01.sol";
 
 /*
 How to use:
@@ -47,14 +47,15 @@ contract TestProposals is Test {
         DEBUG = vm.envOr("DEBUG", true);
         DO_DEPLOY = vm.envOr("DO_DEPLOY", true);
         DO_AFTER_DEPLOY = vm.envOr("DO_AFTER_DEPLOY", true);
+        DO_AFTER_DEPLOY_SETUP = vm.envOr("DO_AFTER_DEPLOY_SETUP", true);
         DO_BUILD = vm.envOr("DO_BUILD", true);
         DO_RUN = vm.envOr("DO_RUN", true);
         DO_TEARDOWN = vm.envOr("DO_TEARDOWN", true);
         DO_VALIDATE = vm.envOr("DO_VALIDATE", true);
+
         addresses = new Addresses();
 
-        // proposals.push(Proposal(address(new mip00())));
-        // proposals.push(Proposal(address(new mip01())));
+        // proposals.push(Proposal(address(new mipb01())));
         nProposals = proposals.length;
     }
 
@@ -73,6 +74,12 @@ contract TestProposals is Test {
         DEBUG = value;
         for (uint256 i = 0; i < proposals.length; i++) {
             proposals[i].setDebug(value);
+        }
+    }
+
+    function printProposalActionSteps() public view {
+        for (uint256 i = 0; i < proposals.length; i++) {
+            proposals[i].printProposalActionSteps();
         }
     }
 

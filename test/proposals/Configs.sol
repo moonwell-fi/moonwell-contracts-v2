@@ -66,6 +66,23 @@ contract Configs is Test {
         );
 
         for (uint256 i = 0; i < decodedJson.length; i++) {
+
+            require(
+                decodedJson[i].collateralFactor <= 0.95e18,
+                "collateral factor absurdly high, are you sure you want to proceed?"
+            );
+
+            /// possible to set supply caps and not borrow caps,
+            /// but not set borrow caps and not set supply caps
+            if (decodedJson[i].supplyCap != 0) {
+                require(
+                    decodedJson[i].supplyCap > decodedJson[i].borrowCap,
+                    "borrow cap gte supply cap, are you sure you want to proceed?"
+                );
+            } else if (decodedJson[i].borrowCap != 0) {
+                revert("borrow cap must be set with a supply cap");
+            }
+
             cTokenConfigurations[_baseChainId].push(decodedJson[i]);
         }
 

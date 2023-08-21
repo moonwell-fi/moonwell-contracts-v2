@@ -28,8 +28,8 @@ import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/Mul
 import {JumpRateModel, InterestRateModel} from "@protocol/IRModels/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
-contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
-    string public constant name = "MIP00";
+contract mipb00 is Proposal, CrossChainProposal, ChainIds, Configs {
+    string public constant name = "MIP-B00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
     uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
@@ -75,7 +75,7 @@ contract mip00 is Proposal, CrossChainProposal, ChainIds, Configs {
 
             require(
                 addresses.getAddress("WORMHOLE_CORE") != address(0),
-                "MIP00: WORMHOLE_CORE not set"
+                "mipb00: WORMHOLE_CORE not set"
             );
 
             /// this will be the governor for all the contracts

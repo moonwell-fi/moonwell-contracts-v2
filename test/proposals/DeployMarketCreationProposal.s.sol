@@ -5,28 +5,29 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {mipb02 as mip} from "@test/proposals/mips/mip-b02/mip-b02.sol";
+import {mip0x as mip} from "@test/proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
 
 /*
 How to use:
-forge script test/proposals/DeployProposal.s.sol:DeployProposal \
+forge script test/proposals/DeployMarketCreationProposal.s.sol:DeployMarketCreationProposal \
     -vvvv \
-    --rpc-url $ETH_RPC_URL \
+    --rpc-url base \
     --broadcast
 Remove --broadcast if you want to try locally first, without paying any gas.
 
 to verify after deploy:
   forge verify-contract --etherscan-api-key $BASESCAN_API_KEY \ 
-        <deployed contract address> src/MWethDelegate.sol:MWethDelegate
+        <deployed contract address> src/MErc20Delegator.sol:MErc20Delegator
         --chain 8453
 
 */
 
-contract DeployProposal is Script, mip {
+contract DeployMarketCreationProposal is Script, mip {
     uint256 public PRIVATE_KEY;
     bool public DO_DEPLOY;
     bool public DO_AFTERDEPLOY;
     bool public DO_TEARDOWN;
+    Addresses addresses;
 
     function setUp() public {
         // Default behavior: do debug prints
@@ -42,19 +43,21 @@ contract DeployProposal is Script, mip {
         DO_AFTERDEPLOY = vm.envOr("DO_AFTERDEPLOY", true);
         // Default behavior: don't do teardown
         DO_TEARDOWN = vm.envOr("DO_TEARDOWN", false);
+
+        addresses = new Addresses();
+        addresses.resetRecordingAddresses();
     }
 
     function run() public {
-        Addresses addresses = new Addresses();
-        addresses.resetRecordingAddresses();
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
         console.log("deployerAddress: ", deployerAddress);
 
         vm.startBroadcast(PRIVATE_KEY);
-        if (DO_DEPLOY) deploy(addresses, deployerAddress);
-        if (DO_AFTERDEPLOY) afterDeploy(addresses, deployerAddress);
-        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
+
+        deploy(addresses, deployerAddress);
+        afterDeploy(addresses, deployerAddress);
+
         vm.stopBroadcast();
 
         if (DO_DEPLOY) {
@@ -69,7 +72,7 @@ contract DeployProposal is Script, mip {
             console.log();
 
             for (uint256 i = 0; i < recordedNames.length; i++) {
-                console.log('_addAddress("%s",',recordedNames[i]);
+                console.log('_addAddress("%s",', recordedNames[i]);
                 console.log(block.chainid);
                 console.log(", ");
                 console.log(recordedAddresses[i]);

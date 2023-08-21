@@ -53,4 +53,8 @@ interface IProposal {
     // deployed by your proposal, you might want to add a post-proposal
     // test file instead.
     function validate(Addresses, address) external;
+
+    /// print out proposal steps one by one
+    /// print proposal description
+    function printProposalActionSteps() external view;
 }

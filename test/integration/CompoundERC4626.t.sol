@@ -8,7 +8,7 @@ import "@forge-std/Test.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {mip01 as mip} from "@test/proposals/mips/mip01.sol";
+import {mipb01 as mip} from "@test/proposals/mips/mip-b01/mip-b01.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 import {CompoundERC4626} from "@protocol/4626/CompoundERC4626.sol";
 import {Compound4626Deploy} from "@protocol/4626/4626Deploy.sol";

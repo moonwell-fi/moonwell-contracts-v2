@@ -10,7 +10,7 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {mip00 as mip} from "@test/proposals/mips/mip00.sol";
+import {mipb01 as mip} from "@test/proposals/mips/mip-b01/mip-b01.sol";
 import {TestProposals} from "@test/proposals/TestProposals.sol";
 
 contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
@@ -36,17 +36,17 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
 
         proposals = new TestProposals(mips);
         proposals.setUp();
-        addresses = proposals.addresses();
         proposals.testProposals(
             false,
             false,
             false,
-            true,
+            false,
             true,
             true,
             false,
-            false
-        ); /// only setup after deploy, build, and run, do not validate
+            true
+        ); /// only build, run and validate
+        addresses = proposals.addresses();
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mUsdc = MErc20(addresses.getAddress("MOONWELL_USDC"));
         mWeth = MErc20(addresses.getAddress("MOONWELL_WETH"));
@@ -139,7 +139,7 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
     function testBorrowingOverBorrowCapFailsUsdc() public {
         uint256 usdcMintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_USDC")
-        );
+        ) - 1_000e6;
         uint256 borrowAmount = 33_000_000e6;
         address underlying = address(mUsdc.underlying());
 
@@ -157,7 +157,9 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
         mUsdc.borrow(borrowAmount);
     }
 
-    function _getMaxSupplyAmount(address mToken) internal returns (uint256) {
+    function _getMaxSupplyAmount(
+        address mToken
+    ) internal view returns (uint256) {
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         uint256 totalCash = MToken(mToken).getCash();
@@ -170,7 +172,9 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
         return supplyCap - totalSupplies - 1;
     }
 
-    function _getMaxBorrowAmount(address mToken) internal returns (uint256) {
+    function _getMaxBorrowAmount(
+        address mToken
+    ) internal view returns (uint256) {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = MToken(mToken).totalBorrows();
 

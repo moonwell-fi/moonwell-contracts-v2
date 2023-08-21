@@ -1,12 +1,9 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
-
 import "@forge-std/Test.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
-import {MErc20} from "@protocol/MErc20.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
@@ -15,13 +12,20 @@ import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {MWethDelegate} from "@protocol/MWethDelegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
-import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
 
-contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
-    string public constant name = "MIP01";
+contract mipb02 is Proposal, CrossChainProposal, ChainIds, Configs {
+    string public constant name = "MIP-b02";
+    uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
+    uint256 public constant SCALE = 1e18;
 
     constructor() {
-        _setNonce(3);
+        _setNonce(2);
+
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile("./test/proposals/mips/mip-b02/MIP-B02.md")
+        );
+
+        _setProposalDescription(proposalDescription);
     }
 
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers
@@ -61,6 +65,8 @@ contract mip01 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function teardown(Addresses addresses, address) public pure {}
 
+    /// @notice assert that the new interest rate model is set correctly
+    /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public {
         assertTrue(
             addresses.getAddress("MOONWELL_WETH") != address(0),

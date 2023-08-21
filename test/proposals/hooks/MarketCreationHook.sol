@@ -27,7 +27,7 @@ contract MarketCreationHook {
     /// @notice array of created mTokens in proposal
     address[] public createdMTokens;
 
-    address public comptroller;
+    address private comptroller;
 
     constructor() {
         functionDetectors[detector] = true;
@@ -64,19 +64,17 @@ contract MarketCreationHook {
 
                 /// --------------- ARGUMENT VERIFICATION ---------------
 
-                (, address mtoken) = abi.decode(
-                    proposal[i].arguments,
-                    (bytes4, address)
-                );
+                address mtoken = extractAddress(proposal[i].arguments);
+
                 address secondMToken = proposal[i + 3].target;
-                (, address approvalMToken, uint256 tokenAmount) = abi.decode(
-                    proposal[i + 2].arguments,
-                    (bytes4, address, uint256)
+
+                address approvalMToken = extractAddress(
+                    proposal[i + 2].arguments
                 );
-                (, uint256 mintAmount) = abi.decode(
-                    proposal[i + 3].arguments,
-                    (bytes4, uint256)
-                );
+
+                uint256 tokenAmount = getTokenAmount(proposal[i + 2].arguments);
+
+                uint256 mintAmount = getMintAmount(proposal[i + 3].arguments);
 
                 require(mintAmount != 0, "mint amount must be greater than 0");
                 require(
@@ -116,6 +114,53 @@ contract MarketCreationHook {
                 "mToken not minted and burned"
             );
         }
+    }
+
+    function getTokenAmount(
+        bytes memory input
+    ) public pure returns (uint256 result) {
+        require(input.length == 68, "invalid length, input must be 68 bytes");
+
+        /// first 32 bytes of a dynamic byte array is just the length of the array
+        /// next 4 bytes are function selector
+        /// next 32 bytes are address, final 32 bytes are uint256 amount
+        bytes32 rawBytes;
+        assembly {
+            let dataPointer := add(add(input, 0x40), 0x04) // Adjust for dynamic array and skip the function selector
+            rawBytes := mload(dataPointer) // Load 32 bytes
+        }
+
+        result = uint256(rawBytes);
+    }
+
+    function getMintAmount(
+        bytes memory input
+    ) public pure returns (uint256 result) {
+        require(input.length == 36, "invalid length, input must be 36 bytes");
+
+        /// first 32 bytes of a dynamic byte array is just the length of the array
+        /// next 4 bytes are function selector
+        /// final 32 bytes are uint256 amount
+        bytes32 rawBytes;
+        assembly {
+            let dataPointer := add(add(input, 0x20), 0x04) // Adjust for dynamic array and skip the function selector
+            rawBytes := mload(dataPointer) // Load 32 bytes
+        }
+
+        result = uint256(rawBytes);
+    }
+
+    function extractAddress(
+        bytes memory input
+    ) public pure returns (address result) {
+        /// first 32 bytes of a dynamic byte array is just the length of the array
+        bytes32 rawBytes;
+        assembly {
+            let dataPointer := add(add(input, 0x20), 0x04) // Adjust for dynamic array and skip the function selector
+            rawBytes := mload(dataPointer) // Load 32 bytes
+        }
+
+        result = address(uint160(uint256(rawBytes)));
     }
 
     /// @notice function to grab the first 4 bytes of calldata payload
