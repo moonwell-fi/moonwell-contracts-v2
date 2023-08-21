@@ -77,7 +77,7 @@ contract TestProposals is Test {
         }
     }
 
-    function printProposalActionSteps() public {
+    function printProposalActionSteps() public view {
         for (uint256 i = 0; i < proposals.length; i++) {
             proposals[i].printProposalActionSteps();
         }
