@@ -114,8 +114,12 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
     }
 
     function testBorrowingOverBorrowCapFailsWeth() public {
-        uint256 mintAmount = 10_000e18;
-        uint256 borrowAmount = 6_500e18;
+        uint256 mintAmount = _getMaxSupplyAmount(
+            addresses.getAddress("MOONWELL_WETH")
+        );
+        uint256 borrowAmount = _getMaxBorrowAmount(
+            addresses.getAddress("MOONWELL_WETH")
+        );
         address underlying = address(mWeth.underlying());
 
         deal(underlying, address(this), mintAmount);
@@ -129,18 +133,20 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
         comptroller.enterMarkets(mToken);
 
         vm.expectRevert("market borrow cap reached");
-        mWeth.borrow(borrowAmount);
+        mWeth.borrow(borrowAmount + 1e18);
     }
 
     function testBorrowingOverBorrowCapFailsUsdc() public {
-        uint256 mintAmount = 39_000_000e6;
+        uint256 usdcMintAmount = _getMaxSupplyAmount(
+            addresses.getAddress("MOONWELL_USDC")
+        ) - 1_000e6;
         uint256 borrowAmount = 33_000_000e6;
         address underlying = address(mUsdc.underlying());
 
-        deal(underlying, address(this), mintAmount);
+        deal(underlying, address(this), usdcMintAmount);
 
-        IERC20(underlying).approve(address(mUsdc), mintAmount);
-        mUsdc.mint(mintAmount);
+        IERC20(underlying).approve(address(mUsdc), usdcMintAmount);
+        mUsdc.mint(usdcMintAmount);
 
         address[] memory mToken = new address[](1);
         mToken[0] = address(mUsdc);
@@ -149,5 +155,25 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
 
         vm.expectRevert("market borrow cap reached");
         mUsdc.borrow(borrowAmount);
+    }
+
+    function _getMaxSupplyAmount(address mToken) internal view returns (uint256) {
+        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
+
+        uint256 totalCash = MToken(mToken).getCash();
+        uint256 totalBorrows = MToken(mToken).totalBorrows();
+        uint256 totalReserves = MToken(mToken).totalReserves();
+
+        // totalSupplies = totalCash + totalBorrows - totalReserves
+        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+
+        return supplyCap - totalSupplies - 1;
+    }
+
+    function _getMaxBorrowAmount(address mToken) internal view returns (uint256) {
+        uint256 borrowCap = comptroller.borrowCaps(address(mToken));
+        uint256 totalBorrows = MToken(mToken).totalBorrows();
+
+        return borrowCap - totalBorrows - 1;
     }
 }
