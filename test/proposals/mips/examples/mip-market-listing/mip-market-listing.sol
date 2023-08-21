@@ -63,42 +63,66 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
 
         _setProposalDescription(proposalDescription);
 
-        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken configs
+        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
+        delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
-        string memory mtokensPath = vm.envString("MTOKENS_PATH");
-        /// MTOKENS_PATH="./test/proposals/mips/examples/mip-market-listing/MTokens.json"
-        string memory fileContents = vm.readFile(mtokensPath);
-        bytes memory rawJson = vm.parseJson(fileContents);
+        {
+            string memory mtokensPath = vm.envString("MTOKENS_PATH");
+            /// MTOKENS_PATH="./test/proposals/mips/examples/mip-market-listing/MTokens.json"
+            string memory fileContents = vm.readFile(mtokensPath);
+            bytes memory rawJson = vm.parseJson(fileContents);
 
-        CTokenConfiguration[] memory decodedJson = abi.decode(
-            rawJson,
-            (CTokenConfiguration[])
-        );
-
-        for (uint256 i = 0; i < decodedJson.length; i++) {
-            require(
-                decodedJson[i].collateralFactor <= 0.95e18,
-                "collateral factor absurdly high, are you sure you want to proceed?"
+            CTokenConfiguration[] memory decodedJson = abi.decode(
+                rawJson,
+                (CTokenConfiguration[])
             );
 
-            /// possible to set supply caps and not borrow caps,
-            /// but not set borrow caps and not set supply caps
-            if (decodedJson[i].supplyCap != 0) {
+            for (uint256 i = 0; i < decodedJson.length; i++) {
                 require(
-                    decodedJson[i].supplyCap > decodedJson[i].borrowCap,
-                    "borrow cap gte supply cap, are you sure you want to proceed?"
+                    decodedJson[i].collateralFactor <= 0.95e18,
+                    "collateral factor absurdly high, are you sure you want to proceed?"
                 );
-            } else if (decodedJson[i].borrowCap != 0) {
-                revert("borrow cap must be set with a supply cap");
-            }
 
-            cTokenConfigurations[block.chainid].push(decodedJson[i]);
+                /// possible to set supply caps and not borrow caps,
+                /// but not set borrow caps and not set supply caps
+                if (decodedJson[i].supplyCap != 0) {
+                    require(
+                        decodedJson[i].supplyCap > decodedJson[i].borrowCap,
+                        "borrow cap gte supply cap, are you sure you want to proceed?"
+                    );
+                } else if (decodedJson[i].borrowCap != 0) {
+                    revert("borrow cap must be set with a supply cap");
+                }
+
+                cTokenConfigurations[block.chainid].push(decodedJson[i]);
+            }
         }
 
+        {
+            string memory mtokensPath = vm.envString("EMISSION_PATH");
+            /// EMISSION_PATH="./test/proposals/mips/examples/mip-market-listing/RewardStreams.json"
+            string memory fileContents = vm.readFile(mtokensPath);
+            bytes memory rawJson = vm.parseJson(fileContents);
+            EmissionConfig[] memory decodedEmissions = abi.decode(
+                rawJson,
+                (EmissionConfig[])
+            );
+
+            for (uint256 i = 0; i < decodedEmissions.length; i++) {
+                emissions[block.chainid].push(decodedEmissions[i]);
+            }
+        }
+
+        console.log("\n\n------------ LOAD STATS ------------");
         console.log(
-            "loaded in %d MToken configs",
+            "Loaded %d MToken configs",
             cTokenConfigurations[block.chainid].length
         );
+        console.log(
+            "Loaded %d reward configs",
+            emissions[block.chainid].length
+        );
+        console.log("\n\n");
     }
 
     /// @notice no contracts are deployed in this proposal
@@ -211,6 +235,7 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
                 address tokenAddress = addresses.getAddress(
                     config.tokenAddressName
                 );
+
                 deal(
                     tokenAddress,
                     addresses.getAddress("TEMPORAL_GOVERNOR"),
@@ -324,6 +349,35 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
                         config.collateralFactor
                     ),
                     "Set Collateral Factor for MToken market in comptroller"
+                );
+            }
+        }
+
+        /// -------------- EMISSION CONFIGURATION --------------
+
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
+            block.chainid
+        );
+        MultiRewardDistributor mrd = MultiRewardDistributor(
+            addresses.getAddress("MRD_PROXY")
+        );
+
+        unchecked {
+            for (uint256 i = 0; i < emissionConfig.length; i++) {
+                EmissionConfig memory config = emissionConfig[i];
+
+                _pushCrossChainAction(
+                    address(mrd),
+                    abi.encodeWithSignature(
+                        "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
+                        MToken(addresses.getAddress(config.mToken)),
+                        addresses.getAddress(config.owner),
+                        config.emissionToken,
+                        config.supplyEmissionPerSec,
+                        config.borrowEmissionsPerSec,
+                        config.endTime
+                    ),
+                    "Add emission config for MToken market in MultiRewardDistributor"
                 );
             }
         }
@@ -479,6 +533,43 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
                             1e18
                     );
                     assertEq(jrm.kink(), config.jrm.kink);
+                }
+            }
+        }
+
+        {
+            EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
+                block.chainid
+            );
+            MultiRewardDistributor distributor = MultiRewardDistributor(
+                addresses.getAddress("MRD_PROXY")
+            );
+
+            unchecked {
+                for (uint256 i = 0; i < emissionConfig.length; i++) {
+                    EmissionConfig memory config = emissionConfig[i];
+                    MultiRewardDistributorCommon.MarketConfig
+                        memory marketConfig = distributor.getConfigForMarket(
+                            MToken(addresses.getAddress(config.mToken)),
+                            config.emissionToken
+                        );
+
+                    assertEq(
+                        marketConfig.owner,
+                        addresses.getAddress(config.owner)
+                    );
+                    assertEq(marketConfig.emissionToken, config.emissionToken);
+                    assertEq(marketConfig.endTime, config.endTime);
+                    assertEq(
+                        marketConfig.supplyEmissionsPerSec,
+                        config.supplyEmissionPerSec
+                    );
+                    assertEq(
+                        marketConfig.borrowEmissionsPerSec,
+                        config.borrowEmissionsPerSec
+                    );
+                    assertEq(marketConfig.supplyGlobalIndex, 1e36);
+                    assertEq(marketConfig.borrowGlobalIndex, 1e36);
                 }
             }
         }

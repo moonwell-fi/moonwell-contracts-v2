@@ -4,6 +4,7 @@ This document explains how to add new markets to Moonwell from end to end, lever
 
 ## 1. Setup
 
+### MTokens
 Go to `mainnetMTokensExample.json` to see what an example mToken JSON configuration looks like. Then, copy and paste that structure into [`MTokens.json`](./test/proposals/mips/examples/mip-market-listing/MTokens.json) in the `test/proposals/mips/examples/mip-market-listing` folder, replacing all of the values with the correct values for those markets. Initial mint amount, collateral factor, should be set to the correct values and replaced with the actual values the market should have once deployed.
 ```
         "initialMintAmount": 1e12,
@@ -41,9 +42,18 @@ Go to `mainnetMTokensExample.json` to see what an example mToken JSON configurat
 - `jumpMultiplierPerYear` rate multiplier as a percentage, scaled by `1e18` after kink is hit.
 - `kink` the point on the utilization curve after which the interest rate spikes using `jumpMultiplierPerYear` as a percentage, scaled by `1e18`
 
+If there are no MTokens being added, the file is still needed, but it should contain an empty array.
+
+### RewardStreams
+Go to `mainnetRewardStreams.json` to see what an example reward JSON configuration looks like. Then, copy and paste that structure into [`RewardStreams.json`](./test/proposals/mips/examples/mip-market-listing/RewardStreams.json) in the `test/proposals/mips/examples/mip-market-listing` folder, replacing all of the values with the correct values for those markets.
+
+If there are no reward streams, the file is still needed, but it should contain an empty array.
+
 ## 2. Proposal Description
 
 Once the proposal description has been created, copy and paste it into [`MarketListingDescription.md`](./test/proposals/mips/examples/mip-market-listing/MarketListingDescription.md), deleting all previous data from this file.
+
+
 
 ## 3. Environment Variables
 Once both the `MarketListingDescription.md` and `MTokens.json` file have the necessary contents, environment variables must be set for the script to read in their path. In the example folder, run these commands:
@@ -51,7 +61,9 @@ Once both the `MarketListingDescription.md` and `MTokens.json` file have the nec
 ```
 export LISTING_PATH="./test/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
 export MTOKENS_PATH="./test/proposals/mips/examples/mip-market-listing/MTokens.json"
+export EMISSION_PATH="./test/proposals/mips/examples/mip-market-listing/RewardStreams.json"
 ```
+
 If any errors show up relating to not being able to read in a file, double check the environment variables and make sure the paths are correct.
 
 ## 4. Deployment

@@ -43,6 +43,8 @@ contract PrintNewMarketAddCalldataTest is Test, ChainIds {
                 sendingChainIdToReceivingChainId[block.chainid]
             ) /// get moonbase wormhole address so proposal will work
         );
+
+        proposals.printProposalActionSteps();
     }
 
     function testPrintNewMarketCalldataAlreadyDeployedMToken() public {

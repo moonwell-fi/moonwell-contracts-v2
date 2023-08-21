@@ -47,10 +47,12 @@ contract TestProposals is Test {
         DEBUG = vm.envOr("DEBUG", true);
         DO_DEPLOY = vm.envOr("DO_DEPLOY", true);
         DO_AFTER_DEPLOY = vm.envOr("DO_AFTER_DEPLOY", true);
+        DO_AFTER_DEPLOY_SETUP = vm.envOr("DO_AFTER_DEPLOY_SETUP", true);
         DO_BUILD = vm.envOr("DO_BUILD", true);
         DO_RUN = vm.envOr("DO_RUN", true);
         DO_TEARDOWN = vm.envOr("DO_TEARDOWN", true);
         DO_VALIDATE = vm.envOr("DO_VALIDATE", true);
+
         addresses = new Addresses();
 
         // proposals.push(Proposal(address(new mipb01())));
@@ -72,6 +74,12 @@ contract TestProposals is Test {
         DEBUG = value;
         for (uint256 i = 0; i < proposals.length; i++) {
             proposals[i].setDebug(value);
+        }
+    }
+
+    function printProposalActionSteps() public {
+        for (uint256 i = 0; i < proposals.length; i++) {
+            proposals[i].printProposalActionSteps();
         }
     }
 
