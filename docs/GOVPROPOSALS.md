@@ -42,6 +42,10 @@ add the following flags to deploy and verify against the base network:
 
 ```forge script test/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify```
 
+##### Debugging
+
+If running the script is failing, the first thing you should do is double check that your environment variables are set correctly. If they aren't, the script will fail. Other areas to investigate are the output log of the failure as that can inform you of what went wrong.
+
 ### MIP00
 
 In order to configure the system before go live on Base, we need to run a proposal to set the initial parameters. This proposal is MIP00. It is a cross chain proposal that sets the initial parameters for the system. It is run on Base, and then the system is deployed to the other networks. The proposal is then run on the other networks to set the parameters for those networks.
