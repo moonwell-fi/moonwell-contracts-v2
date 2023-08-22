@@ -172,6 +172,7 @@ contract Addresses is Test, ChainIds {
             84531,
             0xBE812Ed32135929038B436f594D0835a97fFc12e
         );
+        _addAddress("DAI", 84531, 0x7C08fA49328491a520Cf696AafAd95b083BE8361);
         _addAddress(
             "cbETH_ORACLE",
             84531,
