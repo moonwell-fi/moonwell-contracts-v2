@@ -17,7 +17,6 @@ import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainPropos
 /// how to generate calldata: 
 /// first set up environment variables:
 /*
-export DEPLOY=false
 export DO_DEPLOY=false
 export DO_AFTER_DEPLOY=false
 export DO_AFTER_DEPLOY_SETUP=false

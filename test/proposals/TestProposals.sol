@@ -18,7 +18,6 @@ forge test --fork-url $ETH_RPC_URL --match-contract TestProposals -vvv
 Or, from another Solidity file (for post-proposal integration testing):
     TestProposals proposals = new TestProposals();
     proposals.setUp();
-    proposals.setDebug(false); // don't console.log
     proposals.testProposals();
     Addresses addresses = proposals.addresses();
 */
@@ -69,13 +68,6 @@ contract TestProposals is Test {
             temporalGovernor,
             wormholeCore
         );
-    }
-
-    function setDebug(bool value) public {
-        DEBUG = value;
-        for (uint256 i = 0; i < proposals.length; i++) {
-            proposals[i].setDebug(value);
-        }
     }
 
     function printProposalActionSteps() public {

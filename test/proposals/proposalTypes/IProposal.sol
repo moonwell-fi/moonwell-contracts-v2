@@ -6,10 +6,6 @@ interface IProposal {
     // Proposal name, e.g. "ZIP16"
     function name() external view returns (string memory);
 
-    // Used to explicitly enable or disable debug logs from
-    // another solidity file that calls this proposal.
-    function setDebug(bool) external;
-
     // Deploy contracts and add them to list of addresses
     function deploy(Addresses, address) external;
 

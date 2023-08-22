@@ -24,6 +24,7 @@ to verify after deploy:
 
 contract DeployMarketCreationProposal is Script, mip {
     uint256 public PRIVATE_KEY;
+    bool public DEBUG;
     bool public DO_DEPLOY;
     bool public DO_AFTERDEPLOY;
     bool public DO_TEARDOWN;
