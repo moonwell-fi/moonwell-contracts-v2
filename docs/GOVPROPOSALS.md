@@ -22,9 +22,25 @@ Example proposal MIP01 can be found, which creates reward streams for the system
 
 ### Generating Calldata for an Existing Proposal
 
-To generate calldata for an existing proposal that is already pushed onto the proposals array at the 0th index in `TestProposals.sol`, run the following command:
+#### Environment Variables
+First, set the environment variables for which actions you want to be run during this proposal. The following environment variables are available:
+- **DO_DEPLOY** - Whether or not to deploy the system. Defaults to true.
+- **DO_AFTER_DEPLOY** - Whether or not to run the after deploy script. Defaults to true.
+- **DO_AFTER_DEPLOY_SETUP** - Whether or not to run the after deploy setup script. Defaults to true.
+- **DO_BUILD** - Whether or not to build the calldata for the proposal. Defaults to true.
+- **DO_RUN** - Whether or not to simulate the execution of the proposal. Defaults to true.
+- **DO_TEARDOWN** - Whether or not to run the teardown script. Defaults to true.
+- **DO_VALIDATE** - Whether or not to run validation checks after all previous steps have been run. Defaults to true.
 
-```forge test -vvv --match-test testQueueAndPublishMessage --fork-url network_name|network_url```
+Set the environment variables to true or false depending on which steps you want to run.
+
+To generate calldata for an existing proposal, run the following command, where the proposal is the proposal you want to generate calldata for, and the network is the network you want to generate calldata for.
+
+```forge script test/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv```
+
+add the following flags to deploy and verify against the base network:
+
+```forge script test/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify```
 
 ### MIP00
 
