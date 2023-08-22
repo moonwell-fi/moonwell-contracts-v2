@@ -20,7 +20,7 @@ contract MockCToken is MockERC20 {
     uint256 private constant EXCHANGE_RATE_SCALE = 1e18;
     uint256 public effectiveExchangeRate = 2;
 
-    mapping (address => uint256) public borrowBalanceRepaid;
+    mapping(address => uint256) public borrowBalanceRepaid;
 
     constructor(IERC20 _token, bool _isCEther) {
         token = _token;
@@ -66,11 +66,20 @@ contract MockCToken is MockERC20 {
         return error ? 1 : 0;
     }
 
-    function repayBorrowBehalf(address borrower, uint256 amt) external returns (uint256) {
+    function repayBorrowBehalf(
+        address borrower,
+        uint256 amt
+    ) external returns (uint256) {
         token.transferFrom(msg.sender, address(this), amt);
         borrowBalanceRepaid[borrower] += amt;
 
         return error ? 1 : 0;
+    }
+
+    function borrowBalanceCurrent(
+        address account
+    ) external view returns (uint256) {
+        return 1000000000000000000;
     }
 
     function exchangeRateStored() external view returns (uint256) {

@@ -91,32 +91,6 @@ contract WETHRouterUnitTest is Test {
         assertEq(address(this).balance, 0);
     }
 
-    function testRouterRedeemSucceeds() public {
-        testRouterDepositMints();
-        mToken.approve(address(router), type(uint256).max);
-        acceptEth = true;
-        router.redeem(mToken.balanceOf(address(this)), address(this));
-        assertEq(mToken.balanceOf(address(this)), 0);
-        assertEq(weth.balanceOf(address(router)), 0);
-        assertEq(address(this).balance, 1 ether);
-    }
-
-    function testRouterRedeemFailsNoApproval() public {
-        testRouterDepositMints();
-        uint256 mTokenBalance = mToken.balanceOf(address(this));
-        vm.expectRevert("SafeERC20: ERC20 operation did not succeed");
-        router.redeem(mTokenBalance, address(this));
-    }
-
-    function testRouterRedeemFailsAcceptEthFalse() public {
-        testRouterDepositMints();
-        mToken.approve(address(router), type(uint256).max);
-        acceptEth = false;
-        uint256 redeemAmount = mToken.balanceOf(address(this));
-        vm.expectRevert("WETHRouter: ETH transfer failed");
-        router.redeem(redeemAmount, address(this));
-    }
-
     function testMintFailsTokens() public {
         MockCToken cToken = new MockCToken(IERC20(address(weth)), false);
         cToken.setError(true);
@@ -128,30 +102,43 @@ contract WETHRouterUnitTest is Test {
         router.mint{value: 1 ether}(address(this));
     }
 
-    function testRedeemFailsTokens() public {
-        MockCToken cToken = new MockCToken(IERC20(address(weth)), false);
-        router = new WETHRouter(WETH9(address(weth)), MErc20(address(cToken)));
-
-        vm.deal(address(this), 1 ether);
-        router.mint{value: 1 ether}(address(this));
-        cToken.approve(address(router), type(uint256).max); /// max approve router to spend cToken
-
-        cToken.setError(true);
-
-        uint256 cTokenBalance = cToken.balanceOf(address(this));
-        vm.expectRevert("WETHRouter: redeem failed");
-        router.redeem(cTokenBalance, address(this));
-    }
-
     function testRepayBorrowBehalfSucceeds() public {
         MockCToken cToken = new MockCToken(IERC20(address(weth)), false);
         router = new WETHRouter(WETH9(address(weth)), MErc20(address(cToken)));
+        acceptEth = true;
 
         vm.deal(address(this), 1 ether);
 
         router.repayBorrowBehalf{value: 1 ether}(address(this));
 
         assertEq(address(this).balance, 0, "this contract balance should be 0");
+        assertEq(
+            weth.balanceOf(address(router)),
+            0,
+            "router weth balance should be 0"
+        );
+        assertEq(
+            weth.balanceOf(address(cToken)),
+            1 ether,
+            "mToken weth balance should be 1 ether"
+        );
+        assertEq(
+            cToken.borrowBalanceRepaid(address(this)),
+            1 ether,
+            "borrow balance repaid should be 1 ether"
+        );
+    }
+
+    function testRepayBorrowBehalfTooMuchEthSucceeds() public {
+        MockCToken cToken = new MockCToken(IERC20(address(weth)), false);
+        router = new WETHRouter(WETH9(address(weth)), MErc20(address(cToken)));
+        acceptEth = true;
+
+        vm.deal(address(this), 10 ether);
+
+        router.repayBorrowBehalf{value: 1 ether}(address(this));
+
+        assertEq(address(this).balance, 9 ether, "this contract balance should be 9");
         assertEq(
             weth.balanceOf(address(router)),
             0,
