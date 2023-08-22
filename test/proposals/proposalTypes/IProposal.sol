@@ -17,7 +17,7 @@ interface IProposal {
     // together, e.g. if you deployed Core and Volt contracts,
     // you could link them in this step by calling core.setVolt(volt).
     function afterDeploy(Addresses, address) external;
-        
+
     // After deploying, do setup for a testnet,
     // e.g. if you deployed a contract that needs funds
     // for a governance proposal, deal them funds

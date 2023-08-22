@@ -13,6 +13,22 @@ import {MWethDelegate} from "@protocol/MWethDelegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 
+
+/// how to generate calldata: 
+/// first set up environment variables:
+/*
+export DEPLOY=false
+export DO_DEPLOY=false
+export DO_AFTER_DEPLOY=false
+export DO_AFTER_DEPLOY_SETUP=false
+export DO_BUILD=true
+export DO_RUN=true
+export DO_TEARDOWN=false
+export DO_VALIDATE=true
+*/
+
+/// forge script test/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv
+
 contract mipb02 is Proposal, CrossChainProposal, ChainIds, Configs {
     string public constant name = "MIP-b02";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
@@ -29,16 +45,16 @@ contract mipb02 is Proposal, CrossChainProposal, ChainIds, Configs {
     }
 
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers
-    function deploy(Addresses addresses, address) public {
+    function deploy(Addresses addresses, address) public override {
         MWethDelegate mWethLogic = new MWethDelegate();
         addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic));
     }
 
-    function afterDeploy(Addresses addresses, address) public {}
+    function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public {}
+    function afterDeploySetup(Addresses addresses) public override {}
 
-    function build(Addresses addresses) public {
+    function build(Addresses addresses) public override {
         /// point weth mToken to new logic contract
         _pushCrossChainAction(
             addresses.getAddress("MOONWELL_WETH"),
@@ -52,7 +68,7 @@ contract mipb02 is Proposal, CrossChainProposal, ChainIds, Configs {
         );
     }
 
-    function run(Addresses addresses, address) public {
+    function run(Addresses addresses, address) public override {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
@@ -63,11 +79,11 @@ contract mipb02 is Proposal, CrossChainProposal, ChainIds, Configs {
         );
     }
 
-    function teardown(Addresses addresses, address) public pure {}
+    function teardown(Addresses addresses, address) public pure override {}
 
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
-    function validate(Addresses addresses, address) public {
+    function validate(Addresses addresses, address) public override {
         assertTrue(
             addresses.getAddress("MOONWELL_WETH") != address(0),
             "MOONWELL_WETH not set"

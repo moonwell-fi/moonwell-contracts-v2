@@ -24,13 +24,13 @@ contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
         _setNonce(2);
     }
 
-    function deploy(Addresses addresses, address) public {}
+    function deploy(Addresses addresses, address) public override {}
 
-    function afterDeploy(Addresses addresses, address) public {}
+    function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public {}
+    function afterDeploySetup(Addresses addresses) public override {}
 
-    function build(Addresses addresses) public {
+    function build(Addresses addresses) public override {
         /// -------------- EMISSION CONFIGURATION --------------
 
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
@@ -59,7 +59,7 @@ contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public {
+    function run(Addresses addresses, address) public override {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
@@ -70,12 +70,12 @@ contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
         );
     }
 
-    function teardown(Addresses addresses, address) public pure {}
+    function teardown(Addresses addresses, address) public pure override {}
 
     /// @notice assert that all the configurations are correctly set
     /// @dev this function is called after the proposal is executed to
     /// validate that all state transitions worked correctly
-    function validate(Addresses addresses, address) public {
+    function validate(Addresses addresses, address) public override {
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
             block.chainid
         );

@@ -3,8 +3,9 @@ pragma solidity 0.8.19;
 import {console} from "@forge-std/console.sol";
 import {Test} from "@forge-std/Test.sol";
 
-import {Addresses} from "@test/proposals/Addresses.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
+import {Addresses} from "@test/proposals/Addresses.sol";
+import {IProposal} from "@test/proposals/proposalTypes/IProposal.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 
 import {mipb00} from "@test/proposals/mips/mip-b00/mip-b00.sol";
@@ -103,7 +104,7 @@ contract TestProposals is Test {
 
         postProposalVmSnapshots = new uint256[](proposals.length);
         for (uint256 i = 0; i < proposals.length; i++) {
-            string memory name = proposals[i].name();
+            string memory name = IProposal(address(proposals[i])).name();
 
             // Deploy step
             if (deploy) {

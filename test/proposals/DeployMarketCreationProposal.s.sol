@@ -48,36 +48,36 @@ contract DeployMarketCreationProposal is Script, mip {
         addresses.resetRecordingAddresses();
     }
 
-    function run() public {
-        address deployerAddress = vm.addr(PRIVATE_KEY);
+    // function run() public {
+    //     address deployerAddress = vm.addr(PRIVATE_KEY);
 
-        console.log("deployerAddress: ", deployerAddress);
+    //     console.log("deployerAddress: ", deployerAddress);
 
-        vm.startBroadcast(PRIVATE_KEY);
+    //     vm.startBroadcast(PRIVATE_KEY);
 
-        deploy(addresses, deployerAddress);
-        afterDeploy(addresses, deployerAddress);
+    //     deploy(addresses, deployerAddress);
+    //     afterDeploy(addresses, deployerAddress);
 
-        vm.stopBroadcast();
+    //     vm.stopBroadcast();
 
-        if (DO_DEPLOY) {
-            (
-                string[] memory recordedNames,
-                address[] memory recordedAddresses
-            ) = addresses.getRecordedAddresses();
-            for (uint256 i = 0; i < recordedNames.length; i++) {
-                console.log("Deployed", recordedAddresses[i], recordedNames[i]);
-            }
+    //     if (DO_DEPLOY) {
+    //         (
+    //             string[] memory recordedNames,
+    //             address[] memory recordedAddresses
+    //         ) = addresses.getRecordedAddresses();
+    //         for (uint256 i = 0; i < recordedNames.length; i++) {
+    //             console.log("Deployed", recordedAddresses[i], recordedNames[i]);
+    //         }
 
-            console.log();
+    //         console.log();
 
-            for (uint256 i = 0; i < recordedNames.length; i++) {
-                console.log('_addAddress("%s",', recordedNames[i]);
-                console.log(block.chainid);
-                console.log(", ");
-                console.log(recordedAddresses[i]);
-                console.log(");");
-            }
-        }
-    }
+    //         for (uint256 i = 0; i < recordedNames.length; i++) {
+    //             console.log('_addAddress("%s",', recordedNames[i]);
+    //             console.log(block.chainid);
+    //             console.log(", ");
+    //             console.log(recordedAddresses[i]);
+    //             console.log(");");
+    //         }
+    //     }
+    // }
 }

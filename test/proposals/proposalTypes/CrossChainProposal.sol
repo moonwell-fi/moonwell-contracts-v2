@@ -177,7 +177,7 @@ abstract contract CrossChainProposal is MultisigProposal, MarketCreationHook {
         emit log_bytes(artemisPayload);
     }
 
-    function printProposalActionSteps() public {
+    function printProposalActionSteps() public override {
         console.log(
             "\n\nProposal Description:\n\n%s",
             string(PROPOSAL_DESCRIPTION)
