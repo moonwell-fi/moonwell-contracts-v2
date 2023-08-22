@@ -467,7 +467,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "WETH_ROUTER",
             8453,
-            0x41F2B791694faFe23a77bC97BcF5d68aE4fbCdC9
+            0xDAfeCCcCD549067D924c232872cafd81be7AD0D4
         );
         _addAddress(
             "CHAINLINK_ORACLE",
