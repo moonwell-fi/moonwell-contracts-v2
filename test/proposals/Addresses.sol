@@ -296,6 +296,11 @@ contract Addresses is Test, ChainIds {
             84531,
             0xAC15714c08986DACC0379193e22382736796496f
         );
+        _addAddress(
+            "DAI_ORACLE",
+            84531,
+            0x440bD1535a02243d72E0fEED45B137efcC98bF7e
+        );
 
         /// GOERLI BASE
 
