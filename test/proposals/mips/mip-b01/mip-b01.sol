@@ -11,13 +11,9 @@ import {Addresses} from "@test/proposals/Addresses.sol";
 import {JumpRateModel} from "@protocol/IRModels/JumpRateModel.sol";
 import {TimelockProposal} from "@test/proposals/proposalTypes/TimelockProposal.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
 
-/// This MIP sets the reward speeds for different markets in the MultiRewardDistributor
-/// contract. It is intended to be used as a template for future MIPs that need to set reward speeds.
-/// The first step is to open `mainnetRewardStreams.json` and add the reward streams for the
-/// different mTokens. Then generate calldata by adding MIP01 to the TestProposals file.
+/// This MIP sets the IRM for an MToken contract.
+/// It is intended to be used as a template for future MIPs that need to set IRM's.
 contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
     string public constant name = "MIP-b01";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
@@ -25,6 +21,7 @@ contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     constructor() {
         _setNonce(2);
+        _setProposalDescription("./test/proposals/mips/mip-b01/MIP-B01.md");
     }
 
     function deploy(Addresses addresses, address) public {}

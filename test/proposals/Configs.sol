@@ -66,32 +66,21 @@ contract Configs is Test {
         );
 
         for (uint256 i = 0; i < decodedJson.length; i++) {
-            console.log("\n ------ MToken Configuration ------");
-            console.log("addressesString:", decodedJson[i].addressesString);
-            console.log("supplyCap:", decodedJson[i].supplyCap);
-            console.log("borrowCap:", decodedJson[i].borrowCap);
-            console.log("collateralFactor:", decodedJson[i].collateralFactor);
-            console.log("initialMintAmount:", decodedJson[i].initialMintAmount);
-            console.log("name:", decodedJson[i].name);
-            console.log("priceFeedName:", decodedJson[i].priceFeedName);
-            console.log("reserveFactor:", decodedJson[i].reserveFactor);
-            console.log("seizeShare:", decodedJson[i].seizeShare);
-            console.log("supplyCap:", decodedJson[i].supplyCap);
-            console.log("symbol:", decodedJson[i].symbol);
-            console.log("tokenAddressName:", decodedJson[i].tokenAddressName);
-            console.log(
-                "jrm.baseRatePerYear:",
-                decodedJson[i].jrm.baseRatePerYear
+            require(
+                decodedJson[i].collateralFactor <= 0.95e18,
+                "collateral factor absurdly high, are you sure you want to proceed?"
             );
-            console.log(
-                "jrm.multiplierPerYear:",
-                decodedJson[i].jrm.multiplierPerYear
-            );
-            console.log(
-                "jrm.jumpMultiplierPerYear:",
-                decodedJson[i].jrm.jumpMultiplierPerYear
-            );
-            console.log("jrm.kink:", decodedJson[i].jrm.kink);
+
+            /// possible to set supply caps and not borrow caps,
+            /// but not set borrow caps and not set supply caps
+            if (decodedJson[i].supplyCap != 0) {
+                require(
+                    decodedJson[i].supplyCap > decodedJson[i].borrowCap,
+                    "borrow cap gte supply cap, are you sure you want to proceed?"
+                );
+            } else if (decodedJson[i].borrowCap != 0) {
+                revert("borrow cap must be set with a supply cap");
+            }
 
             cTokenConfigurations[_baseChainId].push(decodedJson[i]);
         }
@@ -106,20 +95,6 @@ contract Configs is Test {
         );
 
         for (uint256 i = 0; i < decodedEmissions.length; i++) {
-            console.log("\n ------ Emission Configuration ------");
-            console.log(
-                "borrowEmissionsPerSec:",
-                decodedEmissions[i].borrowEmissionsPerSec
-            );
-            console.log("emissionToken:", decodedEmissions[i].emissionToken);
-            console.log("endTime:", decodedEmissions[i].endTime);
-            console.log("mToken:", decodedEmissions[i].mToken);
-            console.log("owner:", decodedEmissions[i].owner);
-            console.log(
-                "supplyEmissionPerSec:",
-                decodedEmissions[i].supplyEmissionPerSec
-            );
-
             emissions[_baseChainId].push(decodedEmissions[i]);
         }
     }
