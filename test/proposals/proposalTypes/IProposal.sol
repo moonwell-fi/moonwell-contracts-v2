@@ -13,9 +13,7 @@ interface IProposal {
     // Deploy contracts and add them to list of addresses
     function deploy(Addresses, address) external;
 
-    // After deploying, call initializers and link contracts
-    // together, e.g. if you deployed Core and Volt contracts,
-    // you could link them in this step by calling core.setVolt(volt).
+    // After deploying, call initializers and link contracts together
     function afterDeploy(Addresses, address) external;
 
     // After deploying, do setup for a testnet,
