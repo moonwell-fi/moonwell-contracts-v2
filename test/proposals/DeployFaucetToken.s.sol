@@ -39,7 +39,7 @@ contract DeployFaucetToken is Script {
     function run() public {
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
-        console.log("deploying from address: %d", deployerAddress);
+        console.log("deploying from address: %s", deployerAddress);
 
         vm.startBroadcast(PRIVATE_KEY);
         FaucetTokenWithPermit token = new FaucetTokenWithPermit(
@@ -49,7 +49,7 @@ contract DeployFaucetToken is Script {
             symbol
         );
 
-        console.log("successfully deployed FaucetToken: %d", address(token));
+        console.log("successfully deployed FaucetToken: %s", address(token));
 
         console.log("name: %s", name);
         console.log("symbol: %s", symbol);
