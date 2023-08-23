@@ -36,7 +36,7 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         proposals = new TestProposals(mips);
         proposals.setUp();
         proposals.testProposals(
-            true,
+            false,
             true,
             false,
             false,
@@ -118,11 +118,6 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
 
     function testMintSucceedRedeemWithCorrectShareAmount() public {
         MErc20 mToken = MErc20(addresses.getAddress("MOONWELL_USDC"));
-
-        uint256 currentExchangeRate = mToken.viewExchangeRate();
-        uint256 totalSupply = MToken(address(mToken)).totalSupply();
-        uint256 totalSupplies = (totalSupply * currentExchangeRate) / 1e18; /// exchange rate is scaled up by 1e18, so needs to be divided off to get accurate total supply
-
         uint256 mintAmount = vault.maxDeposit(address(0));
 
         deal(address(underlying), address(this), mintAmount);
@@ -157,6 +152,66 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         assertGt(well.balanceOf(rewardRecipient), 0);
     }
 
+    function testWithdrawWithZeroCashFails() public {
+        testMaxMintDepositSucceedsMaxMintZero();
+        deal(address(underlying), addresses.getAddress("MOONWELL_USDC"), 0);
+
+        uint256 withdrawAmount = vault.balanceOf(address(this));
+
+        vm.expectRevert(
+            abi.encodeWithSignature(
+                "CompoundERC4626__CompoundError(uint256)",
+                9
+            )
+        );
+        vault.withdraw(withdrawAmount, address(this), address(this));
+    }
+
+    function testRewardAmountEqZeroClaimRewards() public {
+        testRewardsAccrueAndSentToRecipient();
+
+        uint256 rewardBalance = well.balanceOf(rewardRecipient);
+        vault.claimRewards();
+
+        assertEq(rewardBalance, well.balanceOf(rewardRecipient));
+    }
+
+    function testSweepSucceeds() public {
+        uint256 mintAmount = 100e6;
+        deal(address(underlying), address(vault), mintAmount);
+
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(underlying);
+
+        vault.sweepRewards(tokens);
+
+        assertEq(usdc.balanceOf(vault.rewardRecipient()), mintAmount);
+    }
+
+    function testMintGuardianPausedMaxMintReturnsZero() public {
+        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        comptroller._setMintPaused(
+            MToken(addresses.getAddress("MOONWELL_USDC")),
+            true
+        );
+        vm.stopPrank();
+
+        assertEq(vault.maxMint(address(this)), 0);
+    }
+
+    function testSetMarketSupplyCaps() public {
+        uint256[] memory supplyCaps = new uint256[](1);
+        supplyCaps[0] = 0;
+
+        MToken[] memory mTokens = new MToken[](1);
+        mTokens[0] = MToken(addresses.getAddress("MOONWELL_USDC"));
+
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        comptroller._setMarketSupplyCaps(mTokens, supplyCaps);
+
+        assertEq(vault.maxMint(address(0)), type(uint256).max);
+    }
+
     function testMaxMint() public {
         uint256 maxMint = vault.maxMint(address(this));
         uint256 borrowCap = comptroller.borrowCaps(
@@ -166,6 +221,36 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         assertGt(maxMint, 0);
         assertGt(maxMint, 10_000_000e6);
         assertLt(maxMint, borrowCap);
+    }
+
+    function testMaxMintDepositSucceedsMaxMintZero() public {
+        uint256 maxMint = vault.maxMint(address(this));
+        uint256 borrowCap = comptroller.borrowCaps(
+            addresses.getAddress("MOONWELL_USDC")
+        );
+
+        assertGt(maxMint, 0);
+        assertGt(maxMint, 10_000_000e6);
+        assertLt(maxMint, borrowCap);
+
+        deal(address(underlying), address(this), maxMint);
+
+        underlying.approve(address(vault), maxMint);
+        vault.deposit(maxMint, address(this));
+
+        assertEq(vault.maxMint(address(this)), 0); /// nothing left to mint
+        assertApproxEqRel(
+            vault.maxWithdraw(address(this)),
+            maxMint,
+            0.0000001e18
+        );
+    }
+
+    function testMaxRedeem() public {
+        testMaxMintDepositSucceedsMaxMintZero();
+
+        uint256 maxRedeem = vault.maxRedeem(address(this));
+        assertEq(maxRedeem, vault.balanceOf(address(this)));
     }
 
     function testFailWithdrawWithNoUnderlyingAmount() public {

@@ -47,7 +47,6 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
         deployVaults(addresses, rewardRecipient);
 
         address unitroller = addresses.getAddress("UNITROLLER");
-        address well = addresses.getAddress("WELL");
 
         {
             CompoundERC4626 vault = CompoundERC4626(
