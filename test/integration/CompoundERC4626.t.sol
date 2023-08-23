@@ -117,7 +117,6 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
     }
 
     function testMintSucceedRedeemWithCorrectShareAmount() public {
-        MErc20 mToken = MErc20(addresses.getAddress("MOONWELL_USDC"));
         uint256 mintAmount = vault.maxDeposit(address(0));
 
         deal(address(underlying), address(this), mintAmount);

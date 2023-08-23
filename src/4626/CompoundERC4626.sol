@@ -75,7 +75,7 @@ contract CompoundERC4626 is ERC4626 {
     /// -----------------------------------------------------------------------
 
     /// @notice Claims liquidity mining rewards from Compound and sends it to rewardRecipient
-    function claimRewards() public {
+    function claimRewards() external {
         address[] memory holders = new address[](1);
         holders[0] = address(this);
 
@@ -181,8 +181,8 @@ contract CompoundERC4626 is ERC4626 {
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
         if (supplyCap != 0) {
             uint256 currentExchangeRate = mToken.viewExchangeRate();
-            uint256 totalSupply = MToken(address(mToken)).totalSupply();
-            uint256 totalSupplies = (totalSupply * currentExchangeRate) / 1e18; /// exchange rate is scaled up by 1e18, so needs to be divided off to get accurate total supply
+            uint256 _totalSupply = MToken(address(mToken)).totalSupply();
+            uint256 totalSupplies = (_totalSupply * currentExchangeRate) / 1e18; /// exchange rate is scaled up by 1e18, so needs to be divided off to get accurate total supply
     
             // uint256 totalCash = MToken(address(mToken)).getCash();
             // uint256 totalBorrows = MToken(address(mToken)).totalBorrows();
