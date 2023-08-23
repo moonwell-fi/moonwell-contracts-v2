@@ -296,6 +296,16 @@ contract Addresses is Test, ChainIds {
             84531,
             0xAC15714c08986DACC0379193e22382736796496f
         );
+        _addAddress(
+            "stETHETH_ORACLE",
+            84531,
+            0x3a52fB70713032B182F351829573a318a4f8E4E6
+        );
+        _addAddress(
+            "cbETHETH_ORACLE",
+            84531,
+            0x45E62c1D07365c46631a4F2032c0e630CCA91c55
+        );
 
         /// GOERLI BASE
 
