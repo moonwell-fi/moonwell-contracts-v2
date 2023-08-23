@@ -10,8 +10,6 @@ import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
 import {TimelockProposal} from "@test/proposals/proposalTypes/TimelockProposal.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
 import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
 
 /// This MIP sets the price feeds for wstETH and cbETH.
@@ -80,14 +78,15 @@ contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
         address cbETHFeed = addresses.getAddress("cbETHETH_ORACLE");
 
         unchecked {
-            ChainlinkOracle chainlinkOracle = ChainLinkOracle(
-                addresses.getAddress("CHAINLINK_ORACLE")
+            ChainlinkOracle chainlinkOracle = ChainlinkOracle(
+                chainlinkOracleAddress
             );
                 
             assertEq(
                 chainlinkOracle.getFeed("wstETH"),
                 wstETHFeed
             );
+
             assertEq(
                 chainlinkOracle.getFeed("cbETH"),
                 cbETHFeed
