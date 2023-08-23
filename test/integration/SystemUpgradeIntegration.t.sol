@@ -27,7 +27,6 @@ contract SystemUpgradeLiveSystemBaseTest is Test, Configs {
 
         TestProposals proposals = new TestProposals(mips);
         proposals.setUp();
-        proposals.setDebug(false);
         proposals.testProposals(
             false,
             true,

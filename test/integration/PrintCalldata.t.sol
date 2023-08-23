@@ -51,5 +51,7 @@ contract PrintCalldataTest is Test, ChainIds {
                 sendingChainIdToReceivingChainId[block.chainid]
             ) /// get moonbase wormhole address so proposal will work
         );
+
+        proposals.printProposalActionSteps(); /// pretty print proposal action steps
     }
 }
