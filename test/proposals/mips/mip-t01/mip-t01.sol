@@ -77,20 +77,18 @@ contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
         address wstETHFeed = addresses.getAddress("stETHETH_ORACLE");
         address cbETHFeed = addresses.getAddress("cbETHETH_ORACLE");
 
-        unchecked {
-            ChainlinkOracle chainlinkOracle = ChainlinkOracle(
-                chainlinkOracleAddress
-            );
-                
-            assertEq(
-                chainlinkOracle.getFeed("wstETH"),
-                address(wstETHFeed)
-            );
+        ChainlinkOracle chainlinkOracle = ChainlinkOracle(
+            chainlinkOracleAddress
+        );
+            
+        assertEq(
+            chainlinkOracle.getFeed("wstETH"),
+            address(wstETHFeed)
+        );
 
-            assertEq(
-                chainlinkOracle.getFeed("cbETH"),
-                address(cbETHFeed)
-            );
-        }
+        assertEq(
+            chainlinkOracle.getFeed("cbETH"),
+            address(cbETHFeed)
+        );
     }
 }
