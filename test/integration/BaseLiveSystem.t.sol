@@ -250,8 +250,6 @@ contract LiveSystemBaseTest is Test, Configs {
         (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
             .getAccountLiquidity(address(this));
 
-        console.log("liquidity: ", liquidity);
-
         assertEq(err, 0, "Error getting account liquidity");
         assertApproxEqRel(
             liquidity,
@@ -297,8 +295,6 @@ contract LiveSystemBaseTest is Test, Configs {
 
         (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
             .getAccountLiquidity(address(this));
-
-        console.log("liquidity: ", liquidity);
 
         assertEq(err, 0, "Error getting account liquidity");
         assertGt(liquidity, mintAmount * 1200, "liquidity incorrect");
@@ -614,11 +610,11 @@ contract LiveSystemBaseTest is Test, Configs {
             addresses.getAddress("MOONWELL_WETH")
         );
         address mweth = addresses.getAddress("MOONWELL_WETH");
+
         {
-            (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+            (uint256 err, , uint256 shortfall) = comptroller
                 .getAccountLiquidity(address(this));
 
-            console.log("liquidity before max borrowing eth", liquidity);
             assertEq(0, err);
             assertEq(0, shortfall);
         }
@@ -627,10 +623,9 @@ contract LiveSystemBaseTest is Test, Configs {
         assertEq(address(this).balance, borrowAmount);
 
         {
-            (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+            (uint256 err, , uint256 shortfall) = comptroller
                 .getAccountLiquidity(address(this));
 
-            console.log("liquidity after max borrowing eth", liquidity);
             assertEq(0, err);
             assertEq(0, shortfall);
         }
@@ -670,7 +665,6 @@ contract LiveSystemBaseTest is Test, Configs {
 
     function testRepayBorrowBehalfWethRouter() public {
         uint256 borrowAmount = testMaxBorrowWeth();
-
         address mweth = addresses.getAddress("MOONWELL_WETH");
 
         router = new WETHRouter(
