@@ -136,9 +136,13 @@ contract WETHRouterUnitTest is Test {
 
         vm.deal(address(this), 10 ether);
 
-        router.repayBorrowBehalf{value: 1 ether}(address(this));
+        router.repayBorrowBehalf{value: 10 ether}(address(this));
 
-        assertEq(address(this).balance, 9 ether, "this contract balance should be 9");
+        assertEq(
+            address(this).balance,
+            9 ether,
+            "this contract balance should be 9"
+        );
         assertEq(
             weth.balanceOf(address(router)),
             0,
@@ -153,6 +157,40 @@ contract WETHRouterUnitTest is Test {
             cToken.borrowBalanceRepaid(address(this)),
             1 ether,
             "borrow balance repaid should be 1 ether"
+        );
+    }
+
+    function testRepayBorrowBehalfTooMuchEthSucceedsRepayFails() public {
+        MockCToken cToken = new MockCToken(IERC20(address(weth)), false);
+        router = new WETHRouter(WETH9(address(weth)), MErc20(address(cToken)));
+        cToken.setError(true);
+        acceptEth = true;
+
+        vm.deal(address(this), 10 ether);
+
+        vm.expectRevert("WETHRouter: repay borrow behalf failed");
+        router.repayBorrowBehalf{value: 10 ether}(address(this));
+
+        assertEq(
+            address(this).balance,
+            10 ether,
+            "this contract balance should be 10"
+        );
+    }
+
+    function testRepayBorrowBehalfTooMuchEthRepayFails() public {
+        MockCToken cToken = new MockCToken(IERC20(address(weth)), false);
+        router = new WETHRouter(WETH9(address(weth)), MErc20(address(cToken)));
+
+        vm.deal(address(this), 10 ether);
+
+        vm.expectRevert("WETHRouter: ETH transfer failed");
+        router.repayBorrowBehalf{value: 10 ether}(address(this));
+
+        assertEq(
+            address(this).balance,
+            10 ether,
+            "this contract balance should be 10"
         );
     }
 
@@ -174,7 +212,11 @@ contract WETHRouterUnitTest is Test {
         (bool success, ) = address(router).call{value: 1 ether}("");
         success; /// shhhhh apparently this call succeeds but reverts? go figure
 
-        assertEq(address(this).balance, 1 ether, "incorrect test contract eth value");
+        assertEq(
+            address(this).balance,
+            1 ether,
+            "incorrect test contract eth value"
+        );
         assertEq(address(router).balance, 0, "incorrect router eth value");
     }
 

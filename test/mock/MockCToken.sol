@@ -76,9 +76,7 @@ contract MockCToken is MockERC20 {
         return error ? 1 : 0;
     }
 
-    function borrowBalanceCurrent(
-        address account
-    ) external view returns (uint256) {
+    function borrowBalanceCurrent(address) external pure returns (uint256) {
         return 1000000000000000000;
     }
 
