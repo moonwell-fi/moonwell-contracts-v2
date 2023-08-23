@@ -3,8 +3,9 @@ pragma solidity 0.8.19;
 import {console} from "@forge-std/console.sol";
 import {Test} from "@forge-std/Test.sol";
 
-import {Addresses} from "@test/proposals/Addresses.sol";
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
+import {Addresses} from "@test/proposals/Addresses.sol";
+import {IProposal} from "@test/proposals/proposalTypes/IProposal.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 
 import {mipb00} from "@test/proposals/mips/mip-b00/mip-b00.sol";
@@ -17,7 +18,6 @@ forge test --fork-url $ETH_RPC_URL --match-contract TestProposals -vvv
 Or, from another Solidity file (for post-proposal integration testing):
     TestProposals proposals = new TestProposals();
     proposals.setUp();
-    proposals.setDebug(false); // don't console.log
     proposals.testProposals();
     Addresses addresses = proposals.addresses();
 */
@@ -70,14 +70,7 @@ contract TestProposals is Test {
         );
     }
 
-    function setDebug(bool value) public {
-        DEBUG = value;
-        for (uint256 i = 0; i < proposals.length; i++) {
-            proposals[i].setDebug(value);
-        }
-    }
-
-    function printProposalActionSteps() public view {
+    function printProposalActionSteps() public {
         for (uint256 i = 0; i < proposals.length; i++) {
             proposals[i].printProposalActionSteps();
         }
@@ -103,7 +96,7 @@ contract TestProposals is Test {
 
         postProposalVmSnapshots = new uint256[](proposals.length);
         for (uint256 i = 0; i < proposals.length; i++) {
-            string memory name = proposals[i].name();
+            string memory name = IProposal(address(proposals[i])).name();
 
             // Deploy step
             if (deploy) {

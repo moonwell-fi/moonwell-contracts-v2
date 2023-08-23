@@ -26,7 +26,6 @@ contract SystemUpgradeUnitTest is Test {
 
         TestProposals proposals = new TestProposals(mips);
         proposals.setUp();
-        proposals.setDebug(false);
         proposals.testProposals(
             true,
             true,

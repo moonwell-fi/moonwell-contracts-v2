@@ -126,7 +126,7 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
     }
 
     /// @notice no contracts are deployed in this proposal
-    function deploy(Addresses addresses, address deployer) public {
+    function deploy(Addresses addresses, address deployer) public override {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
@@ -201,7 +201,7 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
         }
     }
 
-    function afterDeploy(Addresses addresses, address) public {
+    function afterDeploy(Addresses addresses, address) public override {
         address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
@@ -224,7 +224,7 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
         }
     }
 
-    function afterDeploySetup(Addresses addresses) public {
+    function afterDeploySetup(Addresses addresses) public override {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
@@ -247,7 +247,7 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
 
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
 
-    function build(Addresses addresses) public {
+    function build(Addresses addresses) public override {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
@@ -383,7 +383,7 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public {
+    function run(Addresses addresses, address) public override {
         printCalldata(addresses);
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
@@ -398,9 +398,9 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
         );
     }
 
-    function teardown(Addresses addresses, address) public pure {}
+    function teardown(Addresses addresses, address) public pure override {}
 
-    function validate(Addresses addresses, address) public {
+    function validate(Addresses addresses, address) public override {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         address governor = addresses.getAddress("TEMPORAL_GOVERNOR");

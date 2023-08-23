@@ -7,7 +7,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import "@forge-std/Test.sol";
 
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
-import {mipb01} from "@test/proposals/mips/mip-b01/mip-b01.sol";
+import {mipb02} from "@test/proposals/mips/mip-b02/mip-b02.sol";
 import {Configs} from "@test/proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@test/proposals/Addresses.sol";
@@ -21,7 +21,7 @@ contract PrintCalldataTest is Test, ChainIds {
     Addresses addresses;
 
     function setUp() public {
-        mipb01 mip = new mipb01();
+        mipb02 mip = new mipb02();
         address[] memory mips = new address[](1);
         mips[0] = address(mip);
 
@@ -33,7 +33,7 @@ contract PrintCalldataTest is Test, ChainIds {
     function testPrintCalldata() public {
         proposals.testProposals(
             true,
-            true,
+            false,
             true,
             true,
             true,
@@ -51,5 +51,7 @@ contract PrintCalldataTest is Test, ChainIds {
                 sendingChainIdToReceivingChainId[block.chainid]
             ) /// get moonbase wormhole address so proposal will work
         );
+
+        proposals.printProposalActionSteps(); /// pretty print proposal action steps
     }
 }

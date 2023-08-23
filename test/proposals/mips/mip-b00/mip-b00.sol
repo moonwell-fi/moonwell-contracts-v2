@@ -59,7 +59,7 @@ contract mipb00 is Proposal, CrossChainProposal, ChainIds, Configs {
     /// @notice the deployer should have both USDC, WETH and any other assets that will be started as
     /// listed to be able to deploy on base. This allows the deployer to be able to initialize the
     /// markets with a balance to avoid exploits
-    function deploy(Addresses addresses, address deployer) public {
+    function deploy(Addresses addresses, address deployer) public override {
         /// ------- TemporalGovernor -------
 
         console.log(
@@ -237,7 +237,7 @@ contract mipb00 is Proposal, CrossChainProposal, ChainIds, Configs {
         addresses.addAddress("CHAINLINK_ORACLE", address(oracle));
     }
 
-    function afterDeploy(Addresses addresses, address) public {
+    function afterDeploy(Addresses addresses, address) public override {
         {
             ProxyAdmin proxyAdmin = ProxyAdmin(
                 addresses.getAddress("MRD_PROXY_ADMIN")
@@ -369,7 +369,7 @@ contract mipb00 is Proposal, CrossChainProposal, ChainIds, Configs {
         }
     }
 
-    function afterDeploySetup(Addresses addresses) public {
+    function afterDeploySetup(Addresses addresses) public override {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
@@ -389,7 +389,7 @@ contract mipb00 is Proposal, CrossChainProposal, ChainIds, Configs {
         }
     }
 
-    function build(Addresses addresses) public {
+    function build(Addresses addresses) public override {
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
         /// Unitroller configuration
@@ -466,7 +466,7 @@ contract mipb00 is Proposal, CrossChainProposal, ChainIds, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public {
+    function run(Addresses addresses, address) public override {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
@@ -477,9 +477,9 @@ contract mipb00 is Proposal, CrossChainProposal, ChainIds, Configs {
         );
     }
 
-    function teardown(Addresses addresses, address) public pure {}
+    function teardown(Addresses addresses, address) public pure override {}
 
-    function validate(Addresses addresses, address) public {
+    function validate(Addresses addresses, address) public override {
         TemporalGovernor governor = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );

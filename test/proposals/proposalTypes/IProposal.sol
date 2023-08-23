@@ -6,18 +6,12 @@ interface IProposal {
     // Proposal name, e.g. "ZIP16"
     function name() external view returns (string memory);
 
-    // Used to explicitly enable or disable debug logs from
-    // another solidity file that calls this proposal.
-    function setDebug(bool) external;
-
     // Deploy contracts and add them to list of addresses
     function deploy(Addresses, address) external;
 
-    // After deploying, call initializers and link contracts
-    // together, e.g. if you deployed Core and Volt contracts,
-    // you could link them in this step by calling core.setVolt(volt).
+    // After deploying, call initializers and link contracts together
     function afterDeploy(Addresses, address) external;
-        
+
     // After deploying, do setup for a testnet,
     // e.g. if you deployed a contract that needs funds
     // for a governance proposal, deal them funds
@@ -56,5 +50,5 @@ interface IProposal {
 
     /// print out proposal steps one by one
     /// print proposal description
-    function printProposalActionSteps() external view;
+    function printProposalActionSteps() external;
 }

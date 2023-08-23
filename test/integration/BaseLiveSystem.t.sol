@@ -41,7 +41,7 @@ contract LiveSystemBaseTest is Test, Configs {
         addresses = proposals.addresses();
         proposals.testProposals(
             false,
-            true,
+            false,
             false,
             false,
             true,
