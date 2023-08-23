@@ -23,7 +23,6 @@ contract CalldataExecute is Test, Configs {
         // Run all pending proposals before doing e2e tests
         TestProposals proposals = new TestProposals(mips);
         proposals.setUp();
-        proposals.setDebug(false);
         addresses = proposals.addresses();
     }
 

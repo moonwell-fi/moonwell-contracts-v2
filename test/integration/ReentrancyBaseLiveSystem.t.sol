@@ -36,7 +36,7 @@ contract ReentrancyLiveSystemBaseTest is
         addresses = proposals.addresses();
         proposals.testProposals(
             false,
-            true,
+            false,
             false,
             false,
             true,

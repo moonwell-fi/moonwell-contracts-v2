@@ -5,7 +5,6 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
 import {Addresses} from "@test/proposals/Addresses.sol";
-import {mipb00 as mip} from "@test/proposals/mips/mip-b00/mip-b00.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
@@ -20,7 +19,7 @@ forge script test/proposals/DeployWETHRouter.s.sol:DeployWETHRouter \
 Remove --broadcast if you want to try locally first, without paying any gas.
 */
 
-contract DeployWETHRouter is Script, mip {
+contract DeployWETHRouter is Script {
     uint256 public PRIVATE_KEY;
     Addresses addresses;
 
