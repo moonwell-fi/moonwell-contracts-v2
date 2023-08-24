@@ -82,12 +82,12 @@ contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
         );
             
         assertEq(
-            chainlinkOracle.getFeed("wstETH"),
+            address(chainlinkOracle.getFeed("wstETH")),
             address(wstETHFeed)
         );
 
         assertEq(
-            chainlinkOracle.getFeed("cbETH"),
+            address(chainlinkOracle.getFeed("cbETH")),
             address(cbETHFeed)
         );
     }
