@@ -51,7 +51,7 @@ contract PrintNewMarketAddCalldataTest is Test, ChainIds {
         proposals.testProposals(
             true,
             false,
-            false,
+            true,
             true,
             true,
             true,

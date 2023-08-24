@@ -250,8 +250,6 @@ contract LiveSystemBaseTest is Test, Configs {
         (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
             .getAccountLiquidity(address(this));
 
-        console.log("liquidity: ", liquidity);
-
         assertEq(err, 0, "Error getting account liquidity");
         assertApproxEqRel(
             liquidity,
@@ -297,8 +295,6 @@ contract LiveSystemBaseTest is Test, Configs {
 
         (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
             .getAccountLiquidity(address(this));
-
-        console.log("liquidity: ", liquidity);
 
         assertEq(err, 0, "Error getting account liquidity");
         assertGt(liquidity, mintAmount * 1200, "liquidity incorrect");
@@ -614,11 +610,11 @@ contract LiveSystemBaseTest is Test, Configs {
             addresses.getAddress("MOONWELL_WETH")
         );
         address mweth = addresses.getAddress("MOONWELL_WETH");
+
         {
-            (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+            (uint256 err, , uint256 shortfall) = comptroller
                 .getAccountLiquidity(address(this));
 
-            console.log("liquidity before max borrowing eth", liquidity);
             assertEq(0, err);
             assertEq(0, shortfall);
         }
@@ -627,10 +623,9 @@ contract LiveSystemBaseTest is Test, Configs {
         assertEq(address(this).balance, borrowAmount);
 
         {
-            (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+            (uint256 err, , uint256 shortfall) = comptroller
                 .getAccountLiquidity(address(this));
 
-            console.log("liquidity after max borrowing eth", liquidity);
             assertEq(0, err);
             assertEq(0, shortfall);
         }
@@ -670,7 +665,6 @@ contract LiveSystemBaseTest is Test, Configs {
 
     function testRepayBorrowBehalfWethRouter() public {
         uint256 borrowAmount = testMaxBorrowWeth();
-
         address mweth = addresses.getAddress("MOONWELL_WETH");
 
         router = new WETHRouter(
@@ -683,6 +677,24 @@ contract LiveSystemBaseTest is Test, Configs {
         router.repayBorrowBehalf{value: borrowAmount}(address(this));
 
         assertEq(MErc20(mweth).borrowBalanceStored(address(this)), 0); /// fully repaid
+    }
+
+    function testRepayMoreThanBorrowBalanceWethRouter() public {
+        uint256 borrowRepayAmount = testMaxBorrowWeth() * 2;
+
+        address mweth = addresses.getAddress("MOONWELL_WETH");
+
+        router = new WETHRouter(
+            WETH9(addresses.getAddress("WETH")),
+            MErc20(addresses.getAddress("MOONWELL_WETH"))
+        );
+
+        vm.deal(address(this), borrowRepayAmount);
+
+        router.repayBorrowBehalf{value: borrowRepayAmount}(address(this));
+
+        assertEq(MErc20(mweth).borrowBalanceStored(address(this)), 0); /// fully repaid
+        assertEq(address(this).balance, borrowRepayAmount / 2); /// excess eth returned
     }
 
     function testMintWithRouter() public {
@@ -724,14 +736,18 @@ contract LiveSystemBaseTest is Test, Configs {
         assertEq(MErc20(market).mint(amount), 0);
     }
 
-    function _getMaxBorrowAmount(address mToken) internal view returns (uint256) {
+    function _getMaxBorrowAmount(
+        address mToken
+    ) internal view returns (uint256) {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = MToken(mToken).totalBorrows();
 
         return borrowCap - totalBorrows - 1;
     }
 
-    function _getMaxSupplyAmount(address mToken) internal view returns (uint256) {
+    function _getMaxSupplyAmount(
+        address mToken
+    ) internal view returns (uint256) {
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         uint256 totalCash = MToken(mToken).getCash();
