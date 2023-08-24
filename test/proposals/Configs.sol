@@ -66,6 +66,7 @@ contract Configs is Test {
         );
 
         for (uint256 i = 0; i < decodedJson.length; i++) {
+
             require(
                 decodedJson[i].collateralFactor <= 0.95e18,
                 "collateral factor absurdly high, are you sure you want to proceed?"

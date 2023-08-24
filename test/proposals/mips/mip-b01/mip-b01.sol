@@ -24,13 +24,13 @@ contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
         _setProposalDescription("./test/proposals/mips/mip-b01/MIP-B01.md");
     }
 
-    function deploy(Addresses addresses, address) public {}
+    function deploy(Addresses addresses, address) public override {}
 
-    function afterDeploy(Addresses addresses, address) public {}
+    function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public {}
+    function afterDeploySetup(Addresses addresses) public override {}
 
-    function build(Addresses addresses) public {
+    function build(Addresses addresses) public override {
         _pushCrossChainAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
@@ -41,7 +41,7 @@ contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
         );
     }
 
-    function run(Addresses addresses, address) public {
+    function run(Addresses addresses, address) public override {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
@@ -52,11 +52,11 @@ contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
         );
     }
 
-    function teardown(Addresses addresses, address) public pure {}
+    function teardown(Addresses addresses, address) public pure override {}
 
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
-    function validate(Addresses addresses, address) public {
+    function validate(Addresses addresses, address) public override {
         JumpRateModel jrm = JumpRateModel(
             addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH")
         );

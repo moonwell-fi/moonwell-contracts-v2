@@ -6,6 +6,8 @@ import {ITimelockController} from "@test/proposals/proposalTypes/ITimelockContro
 import {Proposal} from "@test/proposals/proposalTypes/Proposal.sol";
 
 abstract contract TimelockProposal is Proposal {
+    bool private DEBUG;
+
     struct TimelockAction {
         address target;
         uint256 value;
@@ -14,6 +16,11 @@ abstract contract TimelockProposal is Proposal {
     }
 
     TimelockAction[] public actions;
+
+    /// @notice set the debug flag
+    function setDebug(bool debug) public {
+        DEBUG = debug;
+    } 
 
     /// @notice push an action to the Timelock proposal
     function _pushTimelockAction(uint256 value, address target, bytes memory data, string memory description) internal {
