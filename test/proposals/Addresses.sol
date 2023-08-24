@@ -173,6 +173,17 @@ contract Addresses is Test, ChainIds {
             84531,
             0x3A4c72391FA1e474663ffB43bbA5c851014c0065
         );
+        _addAddress("DAI", 84531, 0x7C08fA49328491a520Cf696AafAd95b083BE8361);
+        _addAddress(
+            "cbETH_ORACLE",
+            84531,
+            0x45E62c1D07365c46631a4F2032c0e630CCA91c55
+        );
+        _addAddress(
+            "wstETH_ORACLE",
+            84531,
+            0x3a52fB70713032B182F351829573a318a4f8E4E6
+        );
         _addAddress(
             "MULTI_REWARD_DISTRIBUTOR",
             84531,
@@ -256,7 +267,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "WETH_ROUTER",
             84531,
-            0xafDc287BfB6CdD12972EE25e8C4c84e9F2bc2345
+            0x0396D41A53a75be8f296353D1ffE72538bE646f5
         );
         _addAddress(
             "CHAINLINK_ORACLE",
@@ -305,6 +316,11 @@ contract Addresses is Test, ChainIds {
             "cbETHETH_ORACLE",
             84531,
             0x45E62c1D07365c46631a4F2032c0e630CCA91c55
+        );
+        _addAddress(
+            "DAI_ORACLE",
+            84531,
+            0x440bD1535a02243d72E0fEED45B137efcC98bF7e
         );
 
         /// GOERLI BASE
@@ -462,6 +478,16 @@ contract Addresses is Test, ChainIds {
             0x1603178b26C3bc2cd321e9A64644ab62643d138B
         );
         _addAddress(
+            "MOONWELL_DAI",
+            8453,
+            0x73b06D8d18De422E269645eaCe15400DE7462417
+        );
+        _addAddress(
+            "JUMP_RATE_IRM_MOONWELL_DAI",
+            8453,
+            0xbc93DdFAE192926BE036c6A6Dd544a0e250Ab97D
+        );
+        _addAddress(
             "MOONWELL_USDC",
             8453,
             0x703843C3379b52F9FF486c9f5892218d2a065cC8
@@ -489,7 +515,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "WETH_ROUTER",
             8453,
-            0xDAfeCCcCD549067D924c232872cafd81be7AD0D4
+            0x70778cfcFC475c7eA0f24cC625Baf6EaE475D0c9
         );
         _addAddress(
             "CHAINLINK_ORACLE",

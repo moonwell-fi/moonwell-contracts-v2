@@ -112,6 +112,7 @@ contract ReentrancyLiveSystemBaseTest is
 
         vm.expectEmit(true, true, true, true, address(comptroller));
         /// cannot reenter and borrow
+
         emit Failure(
             uint256(Error.NONZERO_BORROW_BALANCE),
             uint256(FailureInfo.EXIT_MARKET_BALANCE_OWED),

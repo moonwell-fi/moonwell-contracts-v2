@@ -62,19 +62,6 @@ contract mipb00 is Proposal, CrossChainProposal, ChainIds, Configs {
     function deploy(Addresses addresses, address deployer) public override {
         /// ------- TemporalGovernor -------
 
-        console.log(
-            "deploying governor with wormhole chain id: ",
-            chainIdToWormHoleId[block.chainid],
-            " as owner"
-        );
-        console.log(
-            "governor owner: ",
-            addresses.getAddress(
-                "MOONBEAM_TIMELOCK",
-                sendingChainIdToReceivingChainId[block.chainid]
-            )
-        );
-
         localInit(addresses);
 
         {

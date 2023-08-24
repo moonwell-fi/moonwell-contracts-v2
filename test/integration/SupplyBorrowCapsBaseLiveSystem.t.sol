@@ -157,7 +157,9 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
         mUsdc.borrow(borrowAmount);
     }
 
-    function _getMaxSupplyAmount(address mToken) internal view returns (uint256) {
+    function _getMaxSupplyAmount(
+        address mToken
+    ) internal view returns (uint256) {
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         uint256 totalCash = MToken(mToken).getCash();
@@ -170,7 +172,9 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
         return supplyCap - totalSupplies - 1;
     }
 
-    function _getMaxBorrowAmount(address mToken) internal view returns (uint256) {
+    function _getMaxBorrowAmount(
+        address mToken
+    ) internal view returns (uint256) {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = MToken(mToken).totalBorrows();
 

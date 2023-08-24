@@ -39,38 +39,33 @@ contract WETHRouter {
         );
     }
 
-    /// @notice Redeem mToken for ETH
-    /// @param mTokenRedeemAmount The amount of mToken to redeem
-    /// @param recipient The address to receive the ETH
-    function redeem(uint256 mTokenRedeemAmount, address recipient) external {
-        IERC20(address(mToken)).safeTransferFrom(
-            msg.sender,
-            address(this),
-            mTokenRedeemAmount
-        );
-
-        require(
-            mToken.redeem(mTokenRedeemAmount) == 0,
-            "WETHRouter: redeem failed"
-        );
-
-        weth.withdraw(weth.balanceOf(address(this)));
-
-        (bool success, ) = payable(recipient).call{
-            value: address(this).balance
-        }("");
-        require(success, "WETHRouter: ETH transfer failed");
-    }
-
-    /// @notice repay borrow using raw ETH
+    /// @notice repay borrow using raw ETH with the most up to date borrow balance
+    /// @dev all excess ETH will be returned to the sender
     /// @param borrower to repay on behalf of
-    function repayBorrowBehalf(address borrower) external payable {
-        weth.deposit{value: msg.value}();
+    function repayBorrowBehalf(address borrower) public payable {
+        uint256 received = msg.value;
+        uint256 borrows = mToken.borrowBalanceCurrent(borrower);
 
-        require(
-            mToken.repayBorrowBehalf(borrower, msg.value) == 0,
-            "WETHRouter: repay borrow behalf failed"
-        );
+        if (received > borrows) {
+            weth.deposit{value: borrows}();
+
+            require(
+                mToken.repayBorrowBehalf(borrower, borrows) == 0,
+                "WETHRouter: repay borrow behalf failed"
+            );
+            
+            (bool success, ) = msg.sender.call{value: address(this).balance}(
+                ""
+            );
+            require(success, "WETHRouter: ETH transfer failed");
+        } else {
+            weth.deposit{value: received}();
+            
+            require(
+                mToken.repayBorrowBehalf(borrower, received) == 0,
+                "WETHRouter: repay borrow behalf failed"
+            );
+        }
     }
 
     receive() external payable {
