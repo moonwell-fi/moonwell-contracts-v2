@@ -14,10 +14,16 @@ import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
 
 /// This MIP sets the price feeds for wstETH and cbETH.
 contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
-    string public constant name = "MIPT01";
+    string public constant name = "mip-t01";
 
     constructor() {
         _setNonce(2);
+        string memory descriptionPath = string(abi.encodePacked("test/proposals/mips/", name, "/", name, ".md"));
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile(descriptionPath)
+        );
+
+        _setProposalDescription(proposalDescription);
     }
 
     function deploy(Addresses addresses, address) public override {}
@@ -33,7 +39,6 @@ contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
         address wstETHFeed = addresses.getAddress("stETHETH_ORACLE");
         address cbETHFeed = addresses.getAddress("cbETHETH_ORACLE");
 
-        unchecked {
             _pushCrossChainAction(
                 chainlinkOracle,
                 abi.encodeWithSignature(
@@ -53,7 +58,6 @@ contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
                 ),
                 "Temporal governor sets feed on cbETH market"
             );
-        }
     }
 
     function run(Addresses addresses, address) public override {
