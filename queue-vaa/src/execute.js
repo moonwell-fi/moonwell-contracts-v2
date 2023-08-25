@@ -98,7 +98,7 @@ Removed ${network}-${sequence} from the KV store.`
         return true;
       }
     } catch (error) {
-      console.log(`Failed to execute sequence ${sequence}`);
+      console.log(`Failed to execute sequence ${sequence}, error message: ${error}`);
       console.log(`Removing sequence ${sequence} from KV store...`);
       await kvStore.del(`${network}-${sequence}`);
       notificationClient.send({

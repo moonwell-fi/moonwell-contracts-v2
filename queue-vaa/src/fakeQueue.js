@@ -4,8 +4,8 @@ exports.handler = async function(credentials, context) {
   const kvStore = new KeyValueStoreClient(credentials);
   const { notificationClient } = context;
 
-  const network='moonbeam'; // Change to 'moonbase' for Base Goerli
-  const sequence='1'; // Change to the sequence you want to insert
+  const network='moonbase'; // Change to 'moonbase' for Base Goerli
+  const sequence='35'; // Change to the sequence you want to insert
   const timestamp = 1692616508; // Change to the timestamp you want to insert
 
   console.log(`Inserting a queued VAA key/value on ${network}...`);
