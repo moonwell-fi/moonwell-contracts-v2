@@ -13,8 +13,7 @@ import {MWethDelegate} from "@protocol/MWethDelegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
 
-
-/// how to generate calldata: 
+/// how to generate calldata:
 /// first set up environment variables:
 /*
 export DO_DEPLOY=false
@@ -71,10 +70,13 @@ contract mipb02 is Proposal, CrossChainProposal, ChainIds, Configs {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
-    function printCalldata(Addresses addresses) public {
+    function printCalldata(Addresses addresses) public override {
         printActions(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress("WORMHOLE_CORE")
+            addresses.getAddress(
+                "WORMHOLE_CORE",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
         );
     }
 

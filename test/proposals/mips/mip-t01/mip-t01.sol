@@ -14,10 +14,18 @@ import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
 
 /// This MIP sets the price feeds for wstETH and cbETH.
 contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
-    string public constant name = "MIPT01";
+    string public constant name = "mip-t01";
 
     constructor() {
         _setNonce(2);
+        string memory descriptionPath = string(
+            abi.encodePacked("test/proposals/mips/", name, "/", name, ".md")
+        );
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile(descriptionPath)
+        );
+
+        _setProposalDescription(proposalDescription);
     }
 
     function deploy(Addresses addresses, address) public override {}
@@ -58,10 +66,13 @@ contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
-    function printCalldata(Addresses addresses) public {
+    function printCalldata(Addresses addresses) public override {
         printActions(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress("WORMHOLE_CORE")
+            addresses.getAddress(
+                "WORMHOLE_CORE",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
         );
     }
 
