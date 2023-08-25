@@ -173,7 +173,7 @@ contract Addresses is Test, ChainIds {
             84531,
             0x3A4c72391FA1e474663ffB43bbA5c851014c0065
         );
-        _addAddress("DAI", 84531, 0x7C08fA49328491a520Cf696AafAd95b083BE8361);
+        _addAddress("DAI", 84531, 0x098d2cF3bc642668a28E5633ED15Ca3166D2802d);
         _addAddress(
             "cbETH_ORACLE",
             84531,
@@ -263,6 +263,16 @@ contract Addresses is Test, ChainIds {
             "MOONWELL_wstETH",
             84531,
             0x1DCc89000AE6EAF18bD855098d3670E820A8d0c4
+        );
+        _addAddress(
+            "JUMP_RATE_IRM_MOONWELL_DAI",
+            84531,
+            0x1B1340afB59315C648f45E2E8850C79ac71ad530
+        );
+        _addAddress(
+            "MOONWELL_DAI",
+            84531,
+            0x1d1e13e0974E8a065C1DE7EbB1E3A1cbE88FC58a
         );
         _addAddress(
             "WETH_ROUTER",

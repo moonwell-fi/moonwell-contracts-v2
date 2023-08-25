@@ -30,8 +30,8 @@ contract DeployFaucetToken is Script {
             "MOONWELL_DEPLOY_PK",
             77814517325470205911140941194401928579557062014761831930645393041380819009408
         );
-        symbol = string(vm.envOr("SYMBOL", bytes("FAUCET")));
-        name = string(vm.envOr("NAME", bytes("Faucet Token")));
+        symbol = string(vm.envOr("SYMBOL", bytes("DAI")));
+        name = string(vm.envOr("NAME", bytes("DAI Faucet Token")));
         initialMintAmount = vm.envOr("INITIAL_MINT_AMOUNT", uint256(100_000_000e18));
         decimals = uint8(vm.envOr("DECIMALS", uint8(18)));
     }
