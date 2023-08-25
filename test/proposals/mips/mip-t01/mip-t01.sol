@@ -18,7 +18,9 @@ contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     constructor() {
         _setNonce(2);
-        string memory descriptionPath = string(abi.encodePacked("test/proposals/mips/", name, "/", name, ".md"));
+        string memory descriptionPath = string(
+            abi.encodePacked("test/proposals/mips/", name, "/", name, ".md")
+        );
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(descriptionPath)
         );
@@ -39,35 +41,38 @@ contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
         address wstETHFeed = addresses.getAddress("stETHETH_ORACLE");
         address cbETHFeed = addresses.getAddress("cbETHETH_ORACLE");
 
-            _pushCrossChainAction(
-                chainlinkOracle,
-                abi.encodeWithSignature(
-                    "setFeed(string,address)",
-                    "wstETH",
-                    wstETHFeed
-                ),
-                "Temporal governor sets feed on wstETH market"
-            );
+        _pushCrossChainAction(
+            chainlinkOracle,
+            abi.encodeWithSignature(
+                "setFeed(string,address)",
+                "wstETH",
+                wstETHFeed
+            ),
+            "Temporal governor sets feed on wstETH market"
+        );
 
-            _pushCrossChainAction(
-                chainlinkOracle,
-                abi.encodeWithSignature(
-                    "setFeed(string,address)",
-                    "cbETH",
-                    cbETHFeed
-                ),
-                "Temporal governor sets feed on cbETH market"
-            );
+        _pushCrossChainAction(
+            chainlinkOracle,
+            abi.encodeWithSignature(
+                "setFeed(string,address)",
+                "cbETH",
+                cbETHFeed
+            ),
+            "Temporal governor sets feed on cbETH market"
+        );
     }
 
     function run(Addresses addresses, address) public override {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
-    function printCalldata(Addresses addresses) public {
+    function printCalldata(Addresses addresses) public override {
         printActions(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress("WORMHOLE_CORE")
+            addresses.getAddress(
+                "WORMHOLE_CORE",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
         );
     }
 
@@ -77,22 +82,21 @@ contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
     /// @dev this function is called after the proposal is executed to
     /// validate that all state transitions worked correctly
     function validate(Addresses addresses, address) public override {
-        address chainlinkOracleAddress = addresses.getAddress("CHAINLINK_ORACLE");
+        address chainlinkOracleAddress = addresses.getAddress(
+            "CHAINLINK_ORACLE"
+        );
         address wstETHFeed = addresses.getAddress("stETHETH_ORACLE");
         address cbETHFeed = addresses.getAddress("cbETHETH_ORACLE");
 
         ChainlinkOracle chainlinkOracle = ChainlinkOracle(
             chainlinkOracleAddress
         );
-            
+
         assertEq(
             address(chainlinkOracle.getFeed("wstETH")),
             address(wstETHFeed)
         );
 
-        assertEq(
-            address(chainlinkOracle.getFeed("cbETH")),
-            address(cbETHFeed)
-        );
+        assertEq(address(chainlinkOracle.getFeed("cbETH")), address(cbETHFeed));
     }
 }
