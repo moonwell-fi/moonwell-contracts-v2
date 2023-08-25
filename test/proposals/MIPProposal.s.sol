@@ -24,7 +24,7 @@ to verify after deploy:
 abstract contract MIPProposal is Script {
     uint256 private PRIVATE_KEY;
     Addresses private addresses;
-    
+
     bool private DEBUG;
     bool private DO_DEPLOY;
     bool private DO_AFTER_DEPLOY;
@@ -70,7 +70,11 @@ abstract contract MIPProposal is Script {
         if (DO_RUN) run(addresses, deployerAddress);
         if (DO_TEARDOWN) teardown(addresses, deployerAddress);
         if (DO_VALIDATE) validate(addresses, deployerAddress);
-        if (DO_PRINT) printProposalActionSteps();
+        /// todo print out actual proposal calldata
+        if (DO_PRINT) {
+            printCalldata(addresses);
+            printProposalActionSteps();
+        }
 
         if (DO_DEPLOY) {
             (
@@ -102,6 +106,8 @@ abstract contract MIPProposal is Script {
     function build(Addresses) public virtual;
 
     function run(Addresses, address) public virtual;
+
+    function printCalldata(Addresses addresses) public virtual;
 
     function teardown(Addresses, address) public virtual;
 

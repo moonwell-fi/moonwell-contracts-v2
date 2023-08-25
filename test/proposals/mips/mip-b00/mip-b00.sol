@@ -457,10 +457,13 @@ contract mipb00 is Proposal, CrossChainProposal, ChainIds, Configs {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
-    function printCalldata(Addresses addresses) public {
+    function printCalldata(Addresses addresses) public override {
         printActions(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress("WORMHOLE_CORE")
+            addresses.getAddress(
+                "WORMHOLE_CORE",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
         );
     }
 

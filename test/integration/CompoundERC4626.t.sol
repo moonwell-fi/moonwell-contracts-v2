@@ -175,15 +175,32 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         assertEq(rewardBalance, well.balanceOf(rewardRecipient));
     }
 
-    function testSweepSucceeds() public {
+    function testSweepFailsNotRewardRecipient() public {
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(underlying);
+
+        vm.expectRevert("CompoundERC4626: forbidden");
+        vault.sweepRewards(tokens);
+    }
+
+    function testSweepFailsMToken() public {
+        address[] memory tokens = new address[](1);
+        tokens[0] = addresses.getAddress("MOONWELL_USDC");
+
+        vm.expectRevert("CompoundERC4626: cannot sweep mToken");
+        vm.prank(rewardRecipient);
+        vault.sweepRewards(tokens);
+    }
+
+    function testSweepSucceedsAsRewardRecipient() public {
         uint256 mintAmount = 100e6;
         deal(address(underlying), address(vault), mintAmount);
 
         address[] memory tokens = new address[](1);
         tokens[0] = address(underlying);
 
+        vm.prank(rewardRecipient);
         vault.sweepRewards(tokens);
-
         assertEq(usdc.balanceOf(vault.rewardRecipient()), mintAmount);
     }
 
