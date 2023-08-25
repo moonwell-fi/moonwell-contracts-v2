@@ -115,10 +115,14 @@ contract CompoundERC4626 is ERC4626 {
     /// the tokens were swept into the vault.
     /// @param tokens The list of tokens to sweep
     function sweepRewards(address[] calldata tokens) external {
+        require(msg.sender == rewardRecipient, "CompoundERC4626: forbidden");
         for (uint256 i = 0; i < tokens.length; i++) {
+            require(tokens[i] != address(mToken), "CompoundERC4626: cannot sweep mToken");
+
             ERC20 token = ERC20(tokens[i]);
             uint256 amount = token.balanceOf(address(this));
             token.safeTransfer(rewardRecipient, amount);
+
             emit ClaimRewards(amount, address(token));
         }
     }
