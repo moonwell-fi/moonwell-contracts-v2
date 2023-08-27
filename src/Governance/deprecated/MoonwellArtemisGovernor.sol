@@ -126,7 +126,7 @@ contract MoonwellArtemisGovernor {
 
     /// @notice The address of the Break Glass Guardian
     /// This address can opt to call '_executeBreakGlass*' which will execute an operation to return governance to
-    /// the governance return addres in the event a bug is found in governnce.
+    /// the governance return address in the event a bug is found in governance.
     address public breakGlassGuardian;
 
     /// @notice An address that can set the governance return address.
