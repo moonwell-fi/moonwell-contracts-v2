@@ -14,7 +14,7 @@ const parseArtifacts = async () => {
       path.join(path.resolve('../artifacts/foundry/'), contractFolder)
     )
     for (const contract of contractJson) {
-      if (contract.indexOf('.json') >= 0) {
+      if (contract.indexOf('.json') >= 0 && contractFolder.indexOf('.t.') == -1) {
         const json = fs.readFileSync(
           path.join(
             path.resolve('../artifacts/foundry/'),
@@ -36,7 +36,12 @@ const parseArtifacts = async () => {
             let encoded_signature =
               web3.eth.abi.encodeFunctionSignature(signatureRaw)
 
-            signatures[encoded_signature.substring(2)] = signature
+            signatures[encoded_signature.substring(2)] = {
+              signature,
+              name: func.name,
+              inputs: func.inputs.map(i => `${i.type} ${i.name}`),
+              contract: contract.replace('.json', '')
+            }
           }
         }
       }
