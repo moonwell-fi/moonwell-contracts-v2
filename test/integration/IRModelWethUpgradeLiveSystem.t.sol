@@ -75,4 +75,6 @@ contract IRModelWethUpgradeLiveSystemBaseTest is Test, Configs {
 
         assertEq(mWeth.borrow(borrowAmount), 0);
     }
+
+    fallback() external payable {}
 }
