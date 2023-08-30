@@ -423,6 +423,12 @@ contract Addresses is Test, ChainIds {
         );
 
         _addAddress(
+            "DAI_EMISSIONS_ADMIN",
+            baseChainId,
+            0xD791292655A1d382FcC1a6Cb9171476cf91F2caa
+        );
+
+        _addAddress(
             "PAUSE_GUARDIAN",
             baseChainId,
             0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38
