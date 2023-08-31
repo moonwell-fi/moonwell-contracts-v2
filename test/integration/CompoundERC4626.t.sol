@@ -18,7 +18,10 @@ import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
 
 contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
     using LibCompound for MErc20;
-    address constant rewardRecipient = address(10_000_000);
+    address constant vault4626Owner = address(10_000_000);
+    address constant rewardHandler = address(10_000_001);
+    address constant rewardHandler2 = address(10_000_002);
+
     Addresses addresses;
     TestProposals proposals;
 
@@ -51,8 +54,9 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         well = ERC20(addresses.getAddress("WELL"));
         underlying = usdc;
 
-        addresses.addAddress("REWARDS_RECEIVER", rewardRecipient);
-        deployVaults(addresses, rewardRecipient);
+        addresses.addAddress("4626_OWNER", vault4626Owner);
+        addresses.addAddress("REWARD_HANDLER", rewardHandler);
+        deployVaults(addresses, vault4626Owner, rewardHandler);
 
         vault = CompoundERC4626(addresses.getAddress("USDC_VAULT"));
     }
@@ -67,7 +71,8 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
             address(vault.comptroller()),
             addresses.getAddress("UNITROLLER")
         );
-        assertEq(vault.rewardRecipient(), rewardRecipient);
+        assertEq(vault.owner(), vault4626Owner);
+        assertEq(vault.rewardHandler(), rewardHandler);
 
         assertEq(vault.name(), "ERC4626-Wrapped Moonwell USDbC");
         assertEq(vault.symbol(), "wmUSDbC");
@@ -134,7 +139,7 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         );
     }
 
-    function testRewardsAccrueAndSentToRecipient() public {
+    function testRewardsAccrueAndKeptInVault() public {
         uint256 mintAmount = 10_000_000e6;
 
         deal(address(underlying), address(this), mintAmount);
@@ -142,13 +147,52 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
 
         underlying.approve(address(vault), mintAmount);
 
-        assertEq(well.balanceOf(rewardRecipient), 0);
+        assertEq(well.balanceOf(address(vault)), 0);
 
         vault.deposit(mintAmount, address(this));
         vm.warp(block.timestamp + 1 weeks);
 
         vault.claimRewards();
-        assertGt(well.balanceOf(rewardRecipient), 0);
+        assertGt(well.balanceOf(address(vault)), 0); // reward tokens remain in vault
+        assertEq(well.balanceOf(rewardHandler), 0); // reward handler did not receive tokens
+        assertGt(well.allowance(address(vault), rewardHandler), 0); // vault approved allowance for reward handler
+    }
+
+    function testOwnerCanSetRewardHandler() public {
+        vm.prank(vault4626Owner);
+        vault.setRewardHandler(rewardHandler2);
+        assertEq(vault.rewardHandler(), rewardHandler2);
+    }
+
+    function testNonOwnerCannotSetRewardHandler() public {
+        vm.prank(rewardHandler2);
+        vm.expectRevert();
+        vault.setRewardHandler(rewardHandler2);
+        assertEq(vault.rewardHandler(), rewardHandler);
+    }
+
+    function testOwnerCanRevokeAllowances() public {
+        testRewardsAccrueAndKeptInVault();
+
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(well);
+
+        assertGt(well.allowance(address(vault), rewardHandler), 0);
+        vm.prank(vault4626Owner);
+        vault.revokeAllowances(tokens, rewardHandler);
+        assertEq(well.allowance(address(vault), rewardHandler), 0);
+    }
+
+    function testNonOwnerCannotRevokeAllowances() public {
+        testRewardsAccrueAndKeptInVault();
+
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(well);
+
+        vm.prank(rewardHandler2);
+        vm.expectRevert();
+        vault.revokeAllowances(tokens, rewardHandler);
+        assertGt(well.allowance(address(vault), rewardHandler), 0);
     }
 
     function testWithdrawWithZeroCashFails() public {
@@ -167,17 +211,17 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
     }
 
     function testRewardAmountEqZeroClaimRewards() public {
-        testRewardsAccrueAndSentToRecipient();
+        testRewardsAccrueAndKeptInVault();
 
-        uint256 rewardBalance = well.balanceOf(rewardRecipient);
+        uint256 rewardBalance = well.balanceOf(address(vault));
         vault.claimRewards();
 
-        assertEq(rewardBalance, well.balanceOf(rewardRecipient));
+        assertEq(rewardBalance, well.balanceOf(address(vault)));
     }
 
     function testSweepFailsNotRewardRecipient() public {
         address[] memory tokens = new address[](1);
-        tokens[0] = address(underlying);
+        tokens[0] = address(well);
 
         vm.expectRevert("CompoundERC4626: forbidden");
         vault.sweepRewards(tokens);
@@ -188,20 +232,22 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         tokens[0] = addresses.getAddress("MOONWELL_USDC");
 
         vm.expectRevert("CompoundERC4626: cannot sweep mToken");
-        vm.prank(rewardRecipient);
+        vm.prank(rewardHandler);
         vault.sweepRewards(tokens);
     }
 
-    function testSweepSucceedsAsRewardRecipient() public {
+    function testSweepSucceedsAsRewardHandler() public {
         uint256 mintAmount = 100e6;
-        deal(address(underlying), address(vault), mintAmount);
+        deal(address(well), address(vault), mintAmount);
 
         address[] memory tokens = new address[](1);
-        tokens[0] = address(underlying);
+        tokens[0] = address(well);
 
-        vm.prank(rewardRecipient);
+        vm.prank(rewardHandler);
         vault.sweepRewards(tokens);
-        assertEq(usdc.balanceOf(vault.rewardRecipient()), mintAmount);
+        assertEq(well.balanceOf(vault.rewardHandler()), mintAmount);
+        assertEq(well.balanceOf(address(vault)), 0);
+        assertEq(well.allowance(address(vault), rewardHandler), 0);
     }
 
     function testMintGuardianPausedMaxMintReturnsZero() public {

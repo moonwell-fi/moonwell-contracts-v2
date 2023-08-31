@@ -43,7 +43,8 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
 
     function run() public {
         address deployerAddress = vm.addr(PRIVATE_KEY);
-        address rewardRecipient = addresses.getAddress("REWARDS_RECEIVER");
+        address vault4626Owner = addresses.getAddress("4626_OWNER");
+        address rewardHandler = addresses.getAddress("REWARD_HANDLER");
 
         console.log("deployer address: %s", deployerAddress);
 
@@ -67,7 +68,7 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
 
         vm.startBroadcast(PRIVATE_KEY);
 
-        deployVaults(addresses, rewardRecipient);
+        deployVaults(addresses, vault4626Owner, rewardHandler);
 
         address unitroller = addresses.getAddress("UNITROLLER");
 
@@ -81,7 +82,7 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
                 addresses.getAddress("MOONWELL_USDC")
             );
             assertEq(address(vault.comptroller()), unitroller);
-            assertEq(vault.rewardRecipient(), rewardRecipient);
+            assertEq(vault.rewardHandler(), rewardHandler);
 
             console.log("deployed USDC vault: ", address(vault));
 
@@ -100,7 +101,7 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
                 addresses.getAddress("MOONWELL_WETH")
             );
             assertEq(address(vault.comptroller()), unitroller);
-            assertEq(vault.rewardRecipient(), rewardRecipient);
+            assertEq(vault.rewardHandler(), rewardHandler);
 
             console.log("deployed WETH vault: ", address(vault));
 
@@ -119,7 +120,7 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
                 addresses.getAddress("MOONWELL_cbETH")
             );
             assertEq(address(vault.comptroller()), unitroller);
-            assertEq(vault.rewardRecipient(), rewardRecipient);
+            assertEq(vault.rewardHandler(), rewardHandler);
 
             console.log("deployed cbETH vault: ", address(vault));
 

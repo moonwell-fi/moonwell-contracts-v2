@@ -4,13 +4,13 @@ pragma solidity 0.8.19;
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {ERC4626} from "solmate/mixins/ERC4626.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {LibCompound} from "@protocol/4626/LibCompound.sol";
 import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
 import {MultiRewardDistributor, MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title CompoundERC4626
 /// @author zefram.eth
@@ -28,6 +28,7 @@ contract CompoundERC4626 is ERC4626, Ownable {
     /// -----------------------------------------------------------------------
 
     event ClaimRewards(uint256 amount, address token);
+    event SweepRewards(uint256 amount, address token);
     event RewardHandlerUpdate(address newRewardHandler);
 
     /// -----------------------------------------------------------------------
@@ -43,8 +44,7 @@ contract CompoundERC4626 is ERC4626, Ownable {
     /// -----------------------------------------------------------------------
 
     uint256 internal constant NO_ERROR = 0;
-    uint256 internal constant MAX_INT = 2**256 - 1;
-
+    uint256 internal constant MAX_INT = 2 ** 256 - 1;
 
     /// -----------------------------------------------------------------------
     /// Immutable params
@@ -77,57 +77,89 @@ contract CompoundERC4626 is ERC4626, Ownable {
     }
 
     /// -----------------------------------------------------------------------
+    /// Compound liquidity mining
+    /// -----------------------------------------------------------------------
+
+    /// @notice Claims liquidity mining rewards from Compound and sends it to rewardRecipient
+    function claimRewards() external {
+        address[] memory holders = new address[](1);
+        holders[0] = address(this);
+
+        MToken[] memory mTokens = new MToken[](1);
+        mTokens[0] = MToken(address(mToken));
+
+        comptroller.claimReward(holders, mTokens, false, true);
+
+        MultiRewardDistributor mrd = comptroller.rewardDistributor();
+
+        if (address(mrd) != address(0)) {
+            MultiRewardDistributorCommon.MarketConfig[] memory configs = mrd
+                .getAllMarketConfigs(MToken(address(mToken)));
+
+            unchecked {
+                for (uint256 i = 0; i < configs.length; i++) {
+                    ERC20 emissionToken = ERC20(configs[i].emissionToken);
+                    uint256 amount = emissionToken.balanceOf(address(this));
+
+                    if (amount != 0) {
+                        require(
+                            address(emissionToken) != address(mToken),
+                            "CompoundERC4626: cannot approve allowance on mToken"
+                        );
+
+                        emissionToken.approve(
+                            rewardHandler,
+                            emissionToken.allowance(
+                                address(this),
+                                rewardHandler
+                            ) + amount
+                        );
+                        emit ClaimRewards(amount, address(emissionToken));
+                    }
+                }
+            }
+        }
+    }
+
+    /// @notice Claims liquidity mining rewards from Compound and sends it to rewardRecipient
+    /// used for edgecase where reward distribution is not yet configured or was removed
+    /// the tokens were swept into the vault.
+    /// @param tokens The list of tokens to sweep
+    function sweepRewards(address[] calldata tokens) external {
+        require(msg.sender == rewardHandler, "CompoundERC4626: forbidden");
+        for (uint256 i = 0; i < tokens.length; i++) {
+            require(
+                tokens[i] != address(mToken),
+                "CompoundERC4626: cannot sweep mToken"
+            );
+
+            ERC20 token = ERC20(tokens[i]);
+            uint256 amount = token.balanceOf(address(this));
+            token.safeTransfer(rewardHandler, amount);
+            token.approve(rewardHandler, 0);
+
+            emit SweepRewards(amount, address(token));
+        }
+    }
+
+    /// -----------------------------------------------------------------------
     /// ERC4626 admin
     /// -----------------------------------------------------------------------
-    
+
     /// @notice Ideally, revoke any allowances before updating reward handler
-    function setRewardHandler(address rewardHandler_) onlyOwner {
-        rewardHandler = rewardHandler_
+    function setRewardHandler(address rewardHandler_) public onlyOwner {
+        rewardHandler = rewardHandler_;
         emit RewardHandlerUpdate(rewardHandler);
     }
 
-    function revokeRewardHandlerAllowances(address[] calldata tokens) onlyOwner {
-        require(rewardHandler != address(0), "No reward handler set")
-
+    function revokeAllowances(
+        address[] calldata tokens,
+        address spender
+    ) public onlyOwner {
         unchecked {
             for (uint256 i = 0; i < tokens.length; i++) {
                 ERC20 token = ERC20(tokens[i]);
-                token.approve(rewardHandler, 0); // revoke allowances
-            }
-        }
-    }
-
-    function enableRewardHandlerAllowances(address[] calldata tokens) onlyOwner {
-        require(rewardHandler != address(0), "No reward handler set")
-        unchecked {
-            for (uint256 i = 0; i < tokens.length; i++) {
-                require(
-                    tokens[i] != address(mToken),
-                    "CompoundERC4626: cannot give allowance for mToken"
-                );
-                ERC20 token = ERC20(tokens[i]);
-                token.approve(rewardHandler, MAX_INT); // infinite allowance
-            }
-        }
-    }
-
-    function enableRewardHandlerAllowancesFromMRD() onlyOwner {
-        require(rewardHandler != address(0), "No reward handler set")
-
-        MultiRewardDistributor mrd = comptroller.rewardDistributor();
-        require(address(mrd) != address(0), "No MRD set")
-
-        MultiRewardDistributorCommon.MarketConfig[] memory configs = mrd
-            .getAllMarketConfigs(MToken(address(mToken)));
-
-        unchecked {
-            for (uint256 i = 0; i < configs.length; i++) {
-                require(
-                    tokens[i] != address(mToken),
-                    "CompoundERC4626: cannot give allowance for mToken"
-                );
-                ERC20 token = ERC20(configs[i].emissionToken);
-                token.approve(rewardHandler, MAX_INT); // infinite allowance
+                token.approve(spender, 0); // revoke allowances
             }
         }
     }
