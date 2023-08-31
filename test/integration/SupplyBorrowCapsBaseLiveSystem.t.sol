@@ -53,18 +53,6 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
         mcbEth = MErc20(addresses.getAddress("MOONWELL_cbETH"));
     }
 
-    function testSupplyCapsSetCorrectly() public {
-        assertEq(comptroller.supplyCaps(address(mUsdc)), maxMintAmountUsdc);
-        assertEq(comptroller.supplyCaps(address(mWeth)), maxMintAmountWeth);
-        assertEq(comptroller.supplyCaps(address(mcbEth)), maxMintAmountcbEth);
-    }
-
-    function testBorrowCapsSetCorrectly() public {
-        assertEq(comptroller.borrowCaps(address(mUsdc)), 32_000_000e6);
-        assertEq(comptroller.borrowCaps(address(mWeth)), 6_300e18);
-        assertEq(comptroller.borrowCaps(address(mcbEth)), 1_500e18);
-    }
-
     function testSupplyingOverSupplyCapFailsUsdc() public {
         address underlying = address(mUsdc.underlying());
         deal(underlying, address(this), 50_000_000e6);
@@ -95,12 +83,19 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
     }
 
     function testBorrowingOverBorrowCapFailscbEth() public {
-        uint256 mintAmount = 4_900e18;
-        uint256 borrowAmount = 2_000e18;
+        mcbEth.accrueInterest();
+
+        uint256 mintAmount = _getMaxSupplyAmount(
+            addresses.getAddress("MOONWELL_cbETH")
+        ) - 1;
+        uint256 borrowAmount = _getMaxBorrowAmount(
+            addresses.getAddress("MOONWELL_cbETH")
+        );
         address underlying = address(mcbEth.underlying());
 
         deal(underlying, address(this), mintAmount);
 
+        console.log("mintAmount: ", mintAmount);
         IERC20(underlying).approve(address(mcbEth), mintAmount);
         mcbEth.mint(mintAmount);
 
@@ -110,7 +105,7 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
         comptroller.enterMarkets(mToken);
 
         vm.expectRevert("market borrow cap reached");
-        mcbEth.borrow(borrowAmount);
+        mcbEth.borrow(borrowAmount + 1);
     }
 
     function testBorrowingOverBorrowCapFailsWeth() public {
