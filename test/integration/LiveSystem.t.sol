@@ -75,19 +75,19 @@ contract LiveSystemTest is Test {
 
     function testEmissionsAdminCanChangeRewardStream() public {
         address emissionsAdmin = addresses.getAddress("EMISSIONS_ADMIN");
-        MToken musdc = MToken(addresses.getAddress("MOONWELL_USDC"));
+        MToken mUSDbC = MToken(addresses.getAddress("MOONWELL_USDBC"));
 
         vm.prank(emissionsAdmin);
-        mrd._updateOwner(musdc, address(well), emissionsAdmin);
+        mrd._updateOwner(mUSDbC, address(well), emissionsAdmin);
 
         vm.prank(emissionsAdmin);
-        mrd._updateBorrowSpeed(musdc, address(well), 1e18);
+        mrd._updateBorrowSpeed(mUSDbC, address(well), 1e18);
     }
 
     function testUpdateEmissionConfigSupplyUsdcSuccess() public {
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         mrd._updateSupplySpeed(
-            MToken(addresses.getAddress("MOONWELL_USDC")), /// reward mUSDC
+            MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
             well, /// rewards paid in WELL
             1e18 /// pay 1 well per second in rewards
         );
@@ -101,7 +101,7 @@ contract LiveSystemTest is Test {
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
                 addresses.getAddress("WELL")
             );
 
@@ -116,7 +116,7 @@ contract LiveSystemTest is Test {
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
         vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
         mrd._updateBorrowSpeed(
-            MToken(addresses.getAddress("MOONWELL_USDC")), /// reward mUSDC
+            MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
             well, /// rewards paid in WELL
             1e18 /// pay 1 well per second in rewards to borrowers
         );
@@ -130,7 +130,7 @@ contract LiveSystemTest is Test {
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
                 addresses.getAddress("WELL")
             );
 
@@ -148,7 +148,7 @@ contract LiveSystemTest is Test {
 
         IERC20 token = IERC20(addresses.getAddress("USDC"));
         MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_USDC"))
+            payable(addresses.getAddress("MOONWELL_USDBC"))
         );
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
@@ -171,7 +171,7 @@ contract LiveSystemTest is Test {
 
         IERC20 token = IERC20(addresses.getAddress("USDC"));
         MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_USDC"))
+            payable(addresses.getAddress("MOONWELL_USDBC"))
         );
 
         address[] memory mTokens = new address[](1);
@@ -206,13 +206,13 @@ contract LiveSystemTest is Test {
         );
 
         address[] memory mTokens = new address[](1);
-        mTokens[0] = addresses.getAddress("MOONWELL_USDC");
+        mTokens[0] = addresses.getAddress("MOONWELL_USDBC");
 
         comptroller.enterMarkets(mTokens);
         assertTrue(
             comptroller.checkMembership(
                 sender,
-                MToken(addresses.getAddress("MOONWELL_USDC"))
+                MToken(addresses.getAddress("MOONWELL_USDBC"))
             )
         ); /// ensure sender and mToken is in market
 
@@ -242,7 +242,7 @@ contract LiveSystemTest is Test {
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
                 address(this)
             );
 
@@ -272,7 +272,7 @@ contract LiveSystemTest is Test {
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
                 address(this)
             );
 
@@ -303,7 +303,7 @@ contract LiveSystemTest is Test {
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
                 address(this)
             );
 
@@ -337,7 +337,7 @@ contract LiveSystemTest is Test {
 
         vm.warp(block.timestamp + toWarp);
 
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
 
         /// borrower is now underwater on loan
         deal(
@@ -375,7 +375,7 @@ contract LiveSystemTest is Test {
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
                 address(this)
             );
 

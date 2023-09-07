@@ -17,7 +17,7 @@ contract IRModelWethUpgradeLiveSystemBaseTest is Test, Configs {
     Comptroller comptroller;
     TestProposals proposals;
     Addresses addresses;
-    MErc20 mUsdc;
+    MErc20 mUSDbC;
     MErc20 mWeth;
     MErc20 mcbEth;
 
@@ -40,7 +40,7 @@ contract IRModelWethUpgradeLiveSystemBaseTest is Test, Configs {
             true
         ); /// only setup after deploy, build, and run, do not validate
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
-        mUsdc = MErc20(addresses.getAddress("MOONWELL_USDC"));
+        mUSDbC = MErc20(addresses.getAddress("MOONWELL_USDBC"));
         mWeth = MErc20(addresses.getAddress("MOONWELL_WETH"));
         mcbEth = MErc20(addresses.getAddress("MOONWELL_cbETH"));
     }

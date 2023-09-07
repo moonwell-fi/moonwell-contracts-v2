@@ -104,19 +104,19 @@ contract LiveSystemBaseTest is Test, Configs {
 
     function testEmissionsAdminCanChangeRewardStream() public {
         address emissionsAdmin = addresses.getAddress("DAI_EMISSIONS_ADMIN");
-        MToken musdc = MToken(addresses.getAddress("MOONWELL_USDC"));
+        MToken mUSDbC = MToken(addresses.getAddress("MOONWELL_USDBC"));
 
         vm.prank(emissionsAdmin);
-        mrd._updateOwner(musdc, address(well), emissionsAdmin);
+        mrd._updateOwner(mUSDbC, address(well), emissionsAdmin);
 
         vm.prank(emissionsAdmin);
-        mrd._updateBorrowSpeed(musdc, address(well), 1e18);
+        mrd._updateBorrowSpeed(mUSDbC, address(well), 1e18);
     }
 
     function testUpdateEmissionConfigSupplyUsdcSuccess() public {
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         mrd._updateSupplySpeed(
-            MToken(addresses.getAddress("MOONWELL_USDC")), /// reward mUSDC
+            MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
             well, /// rewards paid in WELL
             1e18 /// pay 1 well per second in rewards
         );
@@ -130,7 +130,7 @@ contract LiveSystemBaseTest is Test, Configs {
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
                 addresses.getAddress("WELL")
             );
 
@@ -147,7 +147,7 @@ contract LiveSystemBaseTest is Test, Configs {
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
         vm.startPrank(addresses.getAddress("DAI_EMISSIONS_ADMIN"));
         mrd._updateBorrowSpeed(
-            MToken(addresses.getAddress("MOONWELL_USDC")), /// reward mUSDC
+            MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
             well, /// rewards paid in WELL
             1e18 /// pay 1 well per second in rewards to borrowers
         );
@@ -161,7 +161,7 @@ contract LiveSystemBaseTest is Test, Configs {
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
                 addresses.getAddress("WELL")
             );
 
@@ -222,7 +222,7 @@ contract LiveSystemBaseTest is Test, Configs {
 
         IERC20 token = IERC20(addresses.getAddress("USDC"));
         MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_USDC"))
+            payable(addresses.getAddress("MOONWELL_USDBC"))
         );
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
@@ -243,7 +243,7 @@ contract LiveSystemBaseTest is Test, Configs {
         assertTrue(
             comptroller.checkMembership(
                 sender,
-                MToken(addresses.getAddress("MOONWELL_USDC"))
+                MToken(addresses.getAddress("MOONWELL_USDBC"))
             )
         ); /// ensure sender and mToken is in market
 
@@ -311,7 +311,7 @@ contract LiveSystemBaseTest is Test, Configs {
 
         IERC20 token = IERC20(addresses.getAddress("USDC"));
         MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_USDC"))
+            payable(addresses.getAddress("MOONWELL_USDBC"))
         );
 
         address[] memory mTokens = new address[](1);
@@ -345,13 +345,13 @@ contract LiveSystemBaseTest is Test, Configs {
         );
 
         address[] memory mTokens = new address[](1);
-        mTokens[0] = addresses.getAddress("MOONWELL_USDC");
+        mTokens[0] = addresses.getAddress("MOONWELL_USDBC");
 
         comptroller.enterMarkets(mTokens);
         assertTrue(
             comptroller.checkMembership(
                 sender,
-                MToken(addresses.getAddress("MOONWELL_USDC"))
+                MToken(addresses.getAddress("MOONWELL_USDBC"))
             )
         ); /// ensure sender and mToken is in market
 
@@ -385,7 +385,7 @@ contract LiveSystemBaseTest is Test, Configs {
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
                 address(this)
             );
 
@@ -413,7 +413,7 @@ contract LiveSystemBaseTest is Test, Configs {
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
                 address(this)
             );
 
@@ -443,7 +443,7 @@ contract LiveSystemBaseTest is Test, Configs {
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
                 address(this)
             );
 
@@ -474,7 +474,7 @@ contract LiveSystemBaseTest is Test, Configs {
 
         vm.warp(block.timestamp + toWarp);
 
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
 
         /// borrower is now underwater on loan
         deal(
@@ -512,7 +512,7 @@ contract LiveSystemBaseTest is Test, Configs {
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
                 address(this)
             );
 
@@ -555,7 +555,7 @@ contract LiveSystemBaseTest is Test, Configs {
         testMintMWethMTokenSucceeds();
 
         address[] memory mTokens = new address[](3);
-        mTokens[0] = addresses.getAddress("MOONWELL_USDC");
+        mTokens[0] = addresses.getAddress("MOONWELL_USDBC");
         mTokens[1] = addresses.getAddress("MOONWELL_WETH");
         mTokens[2] = addresses.getAddress("MOONWELL_cbETH");
 
@@ -566,7 +566,7 @@ contract LiveSystemBaseTest is Test, Configs {
 
         MToken[] memory assets = comptroller.getAssetsIn(address(this));
 
-        assertEq(address(assets[0]), addresses.getAddress("MOONWELL_USDC"));
+        assertEq(address(assets[0]), addresses.getAddress("MOONWELL_USDBC"));
         assertEq(address(assets[1]), addresses.getAddress("MOONWELL_WETH"));
         assertEq(address(assets[2]), addresses.getAddress("MOONWELL_cbETH"));
     }
@@ -575,7 +575,7 @@ contract LiveSystemBaseTest is Test, Configs {
         testAddLiquidityMultipleAssets();
 
         uint256 usdcMintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_USDC")
+            addresses.getAddress("MOONWELL_USDBC")
         );
         uint256 wethMintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_WETH")
@@ -584,7 +584,7 @@ contract LiveSystemBaseTest is Test, Configs {
             addresses.getAddress("MOONWELL_cbETH")
         ) - 100e18;
 
-        _addLiquidity(addresses.getAddress("MOONWELL_USDC"), usdcMintAmount);
+        _addLiquidity(addresses.getAddress("MOONWELL_USDBC"), usdcMintAmount);
         _addLiquidity(addresses.getAddress("MOONWELL_WETH"), wethMintAmount);
         _addLiquidity(addresses.getAddress("MOONWELL_cbETH"), cbEthMintAmount);
 
@@ -652,11 +652,11 @@ contract LiveSystemBaseTest is Test, Configs {
         testAddCloseToMaxLiquidity();
 
         uint256 borrowAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_USDC")
+            addresses.getAddress("MOONWELL_USDBC")
         );
-        address musdc = addresses.getAddress("MOONWELL_USDC");
+        address mUSDbC = addresses.getAddress("MOONWELL_USDBC");
 
-        assertEq(MErc20(musdc).borrow(borrowAmount), 0);
+        assertEq(MErc20(mUSDbC).borrow(borrowAmount), 0);
         assertEq(
             IERC20(addresses.getAddress("USDC")).balanceOf(address(this)),
             borrowAmount

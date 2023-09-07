@@ -9,8 +9,8 @@
         "priceFeedName": "USDC_ORACLE",
         "tokenAddressName": "USDC",
         "name": "Moonwell USDC",
-        "symbol": "mUSDC",
-        "addressesString": "MOONWELL_USDC",
+        "symbol": "mUSDbC",
+        "addressesString": "MOONWELL_USDBC",
         "jrm": {
             "baseRatePerYear": 0,
             "multiplierPerYear": 0.05e18,

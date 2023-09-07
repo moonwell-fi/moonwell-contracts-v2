@@ -235,8 +235,8 @@ contract Configs is Test {
                     priceFeedName: "USDC_ORACLE",
                     tokenAddressName: "USDC",
                     name: "Moonwell USDC",
-                    symbol: "mUSDC",
-                    addressesString: "MOONWELL_USDC",
+                    symbol: "mUSDbC",
+                    addressesString: "MOONWELL_USDBC",
                     jrm: jrmConfig
                 });
 
@@ -303,8 +303,8 @@ contract Configs is Test {
                     priceFeedName: "USDC_ORACLE",
                     tokenAddressName: "USDC",
                     name: "Moonwell USDC",
-                    symbol: "mUSDC",
-                    addressesString: "MOONWELL_USDC",
+                    symbol: "mUSDbC",
+                    addressesString: "MOONWELL_USDBC",
                     jrm: jrmConfigUSDC
                 });
 
