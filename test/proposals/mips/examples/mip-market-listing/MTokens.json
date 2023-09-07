@@ -1,16 +1,16 @@
 [
     {
-        "addressesString": "MOONWELL_USDBC",
-        "supplyCap": 6000000e18,
+        "addressesString": "MOONWELL_USDC",
+        "supplyCap": 10000000e18,
         "borrowCap": 5000000e18,
         "collateralFactor": 0.8e18,
         "initialMintAmount": 1e12,
-        "name": "Moonwell DAI",
-        "priceFeedName": "DAI_ORACLE",
+        "name": "Moonwell USDC",
+        "priceFeedName": "USDC_ORACLE",
         "reserveFactor": 0.15e18,
         "seizeShare": 0.03e18,
-        "symbol": "mDAI",
-        "tokenAddressName": "DAI",
+        "symbol": "mUSDC",
+        "tokenAddressName": "USDC",
         "jrm": {
             "baseRatePerYear": 0,
             "jumpMultiplierPerYear": 2.5e18,

@@ -1,51 +1,60 @@
-# MIP-B03 Onboard DAI as collateral
-## Summary
-We propose onboarding DAI as a collateral asset on Moonwell’s Base deployment. Due to the market demand and rapid increase in DAI liquidity on Base we think it appropriate to list the asset as collateral.
+# Moonwell Base - Onboard native USDC as collateral
 
-## Recommendation
-We propose launching DAI as collateral with the following parameters:
+## Summary
+
+Following up on the [launch of native Base USDC on September 5th](https://www.circle.com/blog/usdc-now-available-natively-on-base), we propose onboarding USDC as a collateral asset on Moonwell’s Base deployment.
+
+Due to the market demand and rapid increase in USDC liquidity on Base, we think it appropriate to list the asset as collateral.
+
+## Recommendations
+
+We propose launching USDC as collateral with the following parameters:
+
 |Asset|CF|Supply cap|Borrow cap|IRM|Oracle|Protocol seize share|
 | --- | --- | --- | --- | --- | --- | --- |
-|[DAI](https://basescan.org/token/0x50c5725949a6f0c72e6c4a641f24049a917db0cb)|0.8|6M|5M|Stable|[Chainlink DAI / USD](https://basescan.org/address/0x591e79239a7d679378eC8c847e5038150364C78F)|30%|
+|[USDC](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)|0.8|10M|5M|[Stable](https://basescan.org/address/0x1603178b26c3bc2cd321e9a64644ab62643d138b)|[Chainlink USDC / USD](https://basescan.org/address/0x7e860098F58bBFC8648a4311b374B1D669a2bc6B)|30%|
 
-We propose to set DAI’s interest rate curve parameters to the stable IRM configuration. 
+![|557x345](https://i.imgur.com/lD7PfNI.png)
 
-|Stable IRM Parameter|Value|
-| --- | --- |
-|Base rate|0|
-|Multiplier|0.05|
-|Kink|0.8|
-|Jump multiplier|2.5|
-|Reserve factor|0.15|
-
-|Utilization|Borrow rate|
-| --- | --- |
-|Base utilization (0%)|0%|
-|Kink utilization (80%)|4%|
-|Max utilization (100%)|56%|
+|Utilization|Borrow rate|Supply rate|
+| --- | --- | --- |
+|Base utilization (0%)|0%|0%|
+|Kink utilization (80%)|4%|2.4%|
+|Max utilization (100%)|56%|40.5%|
 
 ## Analysis
-KPIs for Dai on Base, with USDbC as comparison (as of August 15 2023)
 
-|Asset|Circulating supply (Base)|Circulating supply (all chains)|Bridge|-5% liquidity depth (to ETH)|
-| --- | --- | --- | --- | --- |
-|DAI|15M|4B|Base (Native)|$384k| |USDbC|52M|26B|Base (Native)|$1.33M|
+KPIs for native USDC on Base, with DAI and USDbC as comparison (as of Sept 6 2023).
 
-Given the significant difference in on-chain liquidity of DAI vs USDbC, we recommend scaling the supply and borrow caps for DAI to around ⅛ of those of USDbC.
+|Asset|Total supply (Base)|Circulating supply (Base)|Circulating supply (all chains)|Bridge|-5% liquidity depth (to ETH)|
+| --- | --- | --- | --- | --- | --- |
+|USDC|152M|50M|26B|-|$1.2M|
+|USDbC|121M|121M|26B|Base|$1.35M|
+|DAI|24M|23.7M|3.9B|Base|$1M|
+
+DEX liquidity for USDC is currently highly concentrated in [Curve 4pool](https://curve.fi/#/base/pools/factory-v2-1/swap). The pool currently holds over 90% of USDC DEX liquidity on Base. Furthermore, [top 10 LPs on Curve 4pool hold ~60% of the liquidity](https://basescan.org/token/tokenholderchart/0x79edc58c471acf2244b8f93d6f425fd06a439407).
+
+![|624x508, 80%](https://i.imgur.com/Zfppx6V.png)
+
+
+![image|690x464, 80%](https://i.imgur.com/k5YuRly.png)
+
+Given these observations, we propose initializing the USDC market with conservative supply and borrow caps as a preventive measure. Caps may be adjusted shortly after launching the market once more pools are bootstrapped with substantial liquidity. Note that the [Cap Guardian role](https://forum.moonwell.fi/t/gauntlets-initial-recommendations-for-moonwell-on-base/536#enable-gauntlet-as-supply-borrow-cap-guardian-6) allows adjusting the caps without being subject to standard 3-day voting period + timelock.
+
+Here are the proposed caps for USDC, along with current caps for other stable markets as a matter of comparison.
 
 |Market|Supply cap|Borrow cap|
 | --- | --- | --- |
-|DAI|6M|5M|
+|USDC (proposed)|10M|5M|
 |USDbC|40M|32M|
+|DAI|10M|5M|
 
 ## Deployment
-We strongly recommend collateral factors to be set at 0 during deployment to mitigate the risk of someone exploiting a known Compound v2 issue (see [Hundred Finance exploit](https://www.comp.xyz/t/hundred-finance-exploit-and-compound-v2/4266)). Steps for safe deployment as proposed by Hexagate are the following:
+
+We also strongly recommend collateral factors to be set at 0 during deployment to mitigate the risk of someone exploiting a known Compound v2 issue (see [Hundred Finance exploit](https://www.comp.xyz/t/hundred-finance-exploit-and-compound-v2/4266)).
+
+Steps for safe deployment as proposed by Hexagate are the following:
 
 * Initialize markets using 0 as collateral factor (no borrowing possible).
 * Burn a small amount of collateral token supply for each market.
 * Set collateral factors for each market as specified
-## References
-#### DAI → USDbC Liquidity profile ![image|690x349](https://i.imgur.io/e6TCd9G_d.webp?maxwidth=640&shape=thumb&fidelity=medium) ![image|690x342](https://i.imgur.io/ATJiNz3_d.webp?maxwidth=640&shape=thumb&fidelity=medium) 
-#### USDbC → DAI Liquidity profile ![image|690x358](https://i.imgur.io/5Y0u7HC_d.webp?maxwidth=640&shape=thumb&fidelity=medium) ![image|690x351](https://i.imgur.io/z4VpxiC_d.webp?maxwidth=640&shape=thumb&fidelity=medium) 
-#### DAI → WETH Liquidity profile ![image|690x349](https://i.imgur.io/rYUZDNw_d.webp?maxwidth=640&shape=thumb&fidelity=medium) ![image|690x349](https://i.imgur.io/9pjr0cy_d.webp?maxwidth=640&shape=thumb&fidelity=medium) 
-#### WETH → DAI Liquidity profile ![image|690x361](https://i.imgur.io/WR9Xd6v_d.webp?maxwidth=640&shape=thumb&fidelity=medium) ![image|690x353](https://i.imgur.io/sjvI1dB_d.webp?maxwidth=640&shape=thumb&fidelity=medium)
