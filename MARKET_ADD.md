@@ -70,7 +70,7 @@ If any errors show up relating to not being able to read in a file, double check
 To deploy these new markets, run `DeployMarketCreationProposal.s.sol` using command:
 
 ```
-forge script test/proposals/DeployMarketCreationProposal.s.sol:DeployMarketCreationProposal \
+forge script test/proposals/mips/examples/mip-market-listing/mip-market-listing.sol:mip0x \
     -vvvv \
     --rpc-url base \
     --broadcast
