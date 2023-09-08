@@ -357,6 +357,12 @@ contract Addresses is Test, ChainIds {
         );
 
         _addAddress(
+            "USDC",
+            baseChainId,
+            0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+        );
+
+        _addAddress(
             "WETH",
             baseChainId,
             0x4200000000000000000000000000000000000006
