@@ -6,7 +6,7 @@
         "seizeShare": 0.03e18,
         "supplyCap": 40000000e6,
         "borrowCap": 32000000e6,
-        "priceFeedName": "USDBC_ORACLE",
+        "priceFeedName": "USDC_ORACLE",
         "tokenAddressName": "USDBC",
         "name": "Moonwell USDBC",
         "symbol": "mUSDbC",

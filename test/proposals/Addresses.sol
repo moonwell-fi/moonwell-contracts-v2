@@ -303,7 +303,7 @@ contract Addresses is Test, ChainIds {
 
         /// ORACLES
         _addAddress(
-            "USDBC_ORACLE",
+            "USDC_ORACLE",
             84531,
             0xb85765935B4d9Ab6f841c9a00690Da5F34368bc0
         );
@@ -381,7 +381,7 @@ contract Addresses is Test, ChainIds {
         );
 
         _addAddress(
-            "USDBC_ORACLE",
+            "USDC_ORACLE",
             baseChainId,
             0x7e860098F58bBFC8648a4311b374B1D669a2bc6B
         );

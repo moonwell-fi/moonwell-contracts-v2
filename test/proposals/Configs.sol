@@ -214,7 +214,7 @@ contract Configs is Test {
                 );
 
                 addresses.addAddress("USDBC", address(token));
-                addresses.addAddress("USDBC_ORACLE", address(usdcOracle));
+                addresses.addAddress("USDC_ORACLE", address(usdcOracle));
                 addresses.addAddress("ETH_ORACLE", address(ethOracle));
 
                 JumpRateModelConfiguration
@@ -232,7 +232,7 @@ contract Configs is Test {
                     seizeShare: 2.8e16, //2.8%,
                     supplyCap: 10_000_000e6,
                     borrowCap: 10_000_000e6,
-                    priceFeedName: "USDBC_ORACLE",
+                    priceFeedName: "USDC_ORACLE",
                     tokenAddressName: "USDBC",
                     name: "Moonwell USDBC",
                     symbol: "mUSDbC",
@@ -300,7 +300,7 @@ contract Configs is Test {
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
                     supplyCap: 40_000_000e6, // $40m per Gauntlet recommendation
                     borrowCap: 32_000_000e6, // $32m per Gauntlet recommendation
-                    priceFeedName: "USDBC_ORACLE",
+                    priceFeedName: "USDC_ORACLE",
                     tokenAddressName: "USDBC",
                     name: "Moonwell USDBC",
                     symbol: "mUSDbC",
