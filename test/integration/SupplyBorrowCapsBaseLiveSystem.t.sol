@@ -17,7 +17,7 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
     Comptroller comptroller;
     TestProposals proposals;
     Addresses addresses;
-    MErc20 mUsdc;
+    MErc20 mUSDbC;
     MErc20 mWeth;
     MErc20 mcbEth;
 
@@ -48,18 +48,18 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
         ); /// only build, run and validate
         addresses = proposals.addresses();
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
-        mUsdc = MErc20(addresses.getAddress("MOONWELL_USDC"));
+        mUSDbC = MErc20(addresses.getAddress("MOONWELL_USDBC"));
         mWeth = MErc20(addresses.getAddress("MOONWELL_WETH"));
         mcbEth = MErc20(addresses.getAddress("MOONWELL_cbETH"));
     }
 
     function testSupplyingOverSupplyCapFailsUsdc() public {
-        address underlying = address(mUsdc.underlying());
+        address underlying = address(mUSDbC.underlying());
         deal(underlying, address(this), 50_000_000e6);
 
-        IERC20(underlying).approve(address(mUsdc), 50_000_000e6);
+        IERC20(underlying).approve(address(mUSDbC), 50_000_000e6);
         vm.expectRevert("market supply cap reached");
-        mUsdc.mint(50_000_000e6);
+        mUSDbC.mint(50_000_000e6);
     }
 
     function testSupplyingOverSupplyCapFailsWeth() public {
@@ -133,23 +133,23 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
 
     function testBorrowingOverBorrowCapFailsUsdc() public {
         uint256 usdcMintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_USDC")
+            addresses.getAddress("MOONWELL_USDBC")
         ) - 1_000e6;
         uint256 borrowAmount = 33_000_000e6;
-        address underlying = address(mUsdc.underlying());
+        address underlying = address(mUSDbC.underlying());
 
         deal(underlying, address(this), usdcMintAmount);
 
-        IERC20(underlying).approve(address(mUsdc), usdcMintAmount);
-        mUsdc.mint(usdcMintAmount);
+        IERC20(underlying).approve(address(mUSDbC), usdcMintAmount);
+        mUSDbC.mint(usdcMintAmount);
 
         address[] memory mToken = new address[](1);
-        mToken[0] = address(mUsdc);
+        mToken[0] = address(mUSDbC);
 
         comptroller.enterMarkets(mToken);
 
         vm.expectRevert("market borrow cap reached");
-        mUsdc.borrow(borrowAmount);
+        mUSDbC.borrow(borrowAmount);
     }
 
     function _getMaxSupplyAmount(

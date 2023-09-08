@@ -78,7 +78,7 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
             assertEq(address(vault.asset()), addresses.getAddress("USDC"));
             assertEq(
                 address(vault.mToken()),
-                addresses.getAddress("MOONWELL_USDC")
+                addresses.getAddress("MOONWELL_USDBC")
             );
             assertEq(address(vault.comptroller()), unitroller);
             assertEq(vault.rewardRecipient(), rewardRecipient);

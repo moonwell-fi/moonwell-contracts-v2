@@ -12,7 +12,7 @@ contract Compound4626Deploy {
         /// deploy the ERC20 wrapper for USDC
         CompoundERC4626 usdcVault = new CompoundERC4626(
             ERC20(addresses.getAddress("USDC")),
-            MErc20(addresses.getAddress("MOONWELL_USDC")),
+            MErc20(addresses.getAddress("MOONWELL_USDBC")),
             rewardReceiver,
             IComptroller(addresses.getAddress("UNITROLLER"))
         );

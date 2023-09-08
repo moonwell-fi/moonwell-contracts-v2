@@ -1,6 +1,6 @@
 [
     {
-        "addressesString": "MOONWELL_DAI",
+        "addressesString": "MOONWELL_USDBC",
         "supplyCap": 6000000e18,
         "borrowCap": 5000000e18,
         "collateralFactor": 0.8e18,
