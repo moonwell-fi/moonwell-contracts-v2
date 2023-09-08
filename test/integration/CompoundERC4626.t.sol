@@ -230,24 +230,24 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
 
     function testMaxMint() public {
         uint256 maxMint = vault.maxMint(address(this));
-        uint256 borrowCap = comptroller.borrowCaps(
+        uint256 supplyCap = comptroller.supplyCaps(
             addresses.getAddress("MOONWELL_USDBC")
         );
 
         assertGt(maxMint, 0);
         assertGt(maxMint, 10_000_000e6);
-        assertLt(maxMint, borrowCap);
+        assertLt(maxMint, supplyCap);
     }
 
     function testMaxMintDepositSucceedsMaxMintZero() public {
         uint256 maxMint = vault.maxMint(address(this));
-        uint256 borrowCap = comptroller.borrowCaps(
+        uint256 supplyCap = comptroller.supplyCaps(
             addresses.getAddress("MOONWELL_USDBC")
         );
 
         assertGt(maxMint, 0);
         assertGt(maxMint, 10_000_000e6);
-        assertLt(maxMint, borrowCap);
+        assertLt(maxMint, supplyCap);
 
         deal(address(underlying), address(this), maxMint);
 
