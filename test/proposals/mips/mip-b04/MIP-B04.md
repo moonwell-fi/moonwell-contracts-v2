@@ -1,4 +1,4 @@
-# Moonwell Base - Onboard native USDC as collateral
+# MIP-B04 - Onboard native USDC as collateral
 
 ## Summary
 
