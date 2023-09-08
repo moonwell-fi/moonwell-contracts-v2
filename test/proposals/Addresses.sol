@@ -542,6 +542,16 @@ contract Addresses is Test, ChainIds {
             8453,
             0x599D4a1538d686814eE11b331EACBBa166D7C41a
         );
+        _addAddress(
+            "JUMP_RATE_IRM_MOONWELL_USDC",
+            8453,
+            0x96bf78707aB3A6c5AaADBF1DC27fDBe38aF66dE5
+        );
+        _addAddress(
+            "MOONWELL_USDC",
+            8453,
+            0x2f903De0e30852F413a7cCEAe9CA45a66010BC6c
+        );
     }
 
     /// @notice add an address for a specific chainId
