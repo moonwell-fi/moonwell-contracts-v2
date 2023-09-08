@@ -56,7 +56,7 @@ contract mipb00 is Proposal, CrossChainProposal, ChainIds, Configs {
         address unitroller;
     }
 
-    /// @notice the deployer should have both USDC, WETH and any other assets that will be started as
+    /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
     /// listed to be able to deploy on base. This allows the deployer to be able to initialize the
     /// markets with a balance to avoid exploits
     function deploy(Addresses addresses, address deployer) public override {

@@ -47,14 +47,14 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         ); /// only setup after deploy, build, and run, do not validate
         addresses = proposals.addresses();
         comptroller = IComptroller(addresses.getAddress("UNITROLLER"));
-        usdc = ERC20(addresses.getAddress("USDC"));
+        usdc = ERC20(addresses.getAddress("USDBC"));
         well = ERC20(addresses.getAddress("WELL"));
         underlying = usdc;
 
         addresses.addAddress("REWARDS_RECEIVER", rewardRecipient);
         deployVaults(addresses, rewardRecipient);
 
-        vault = CompoundERC4626(addresses.getAddress("USDC_VAULT"));
+        vault = CompoundERC4626(addresses.getAddress("USDBC_VAULT"));
     }
 
     function testSetup() public {

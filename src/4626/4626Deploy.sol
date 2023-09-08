@@ -9,9 +9,9 @@ import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
 
 contract Compound4626Deploy {
     function deployVaults(Addresses addresses, address rewardReceiver) public {
-        /// deploy the ERC20 wrapper for USDC
+        /// deploy the ERC20 wrapper for USDBC
         CompoundERC4626 usdcVault = new CompoundERC4626(
-            ERC20(addresses.getAddress("USDC")),
+            ERC20(addresses.getAddress("USDBC")),
             MErc20(addresses.getAddress("MOONWELL_USDBC")),
             rewardReceiver,
             IComptroller(addresses.getAddress("UNITROLLER"))
@@ -31,7 +31,7 @@ contract Compound4626Deploy {
             IComptroller(addresses.getAddress("UNITROLLER"))
         );
 
-        addresses.addAddress("USDC_VAULT", address(usdcVault));
+        addresses.addAddress("USDBC_VAULT", address(usdcVault));
         addresses.addAddress("WETH_VAULT", address(wethVault));
         addresses.addAddress("cbETH_VAULT", address(cbethVault));
     }

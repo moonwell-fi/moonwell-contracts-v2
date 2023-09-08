@@ -117,11 +117,11 @@ contract Configs is Test {
                 FaucetTokenWithPermit token = new FaucetTokenWithPermit(
                     1e18,
                     "USD Coin",
-                    6, /// USDC is 6 decimals
-                    "USDC"
+                    6, /// USDBC is 6 decimals
+                    "USDBC"
                 );
 
-                addresses.addAddress("USDC", address(token));
+                addresses.addAddress("USDBC", address(token));
 
                 token.allocateTo(
                     addresses.getAddress("TEMPORAL_GOVERNOR"),
@@ -190,7 +190,7 @@ contract Configs is Test {
         if (block.chainid == localChainId) {
             console.log("\n----- deploying locally -----\n");
 
-            /// cToken config for WETH, WBTC and USDC on local
+            /// cToken config for WETH, WBTC and USDBC on local
 
             {
                 MockChainlinkOracle usdcOracle = new MockChainlinkOracle(
@@ -205,7 +205,7 @@ contract Configs is Test {
                     1e18,
                     "USD Coin",
                     6, /// 6 decimals
-                    "USDC"
+                    "USDBC"
                 );
 
                 token.allocateTo(
@@ -213,8 +213,8 @@ contract Configs is Test {
                     initialMintAmount
                 );
 
-                addresses.addAddress("USDC", address(token));
-                addresses.addAddress("USDC_ORACLE", address(usdcOracle));
+                addresses.addAddress("USDBC", address(token));
+                addresses.addAddress("USDBC_ORACLE", address(usdcOracle));
                 addresses.addAddress("ETH_ORACLE", address(ethOracle));
 
                 JumpRateModelConfiguration
@@ -226,15 +226,15 @@ contract Configs is Test {
                     );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
-                    initialMintAmount: 1e6, /// supply 1 USDC
+                    initialMintAmount: 1e6, /// supply 1 USDBC
                     collateralFactor: 0.9e18,
                     reserveFactor: 0.1e18,
                     seizeShare: 2.8e16, //2.8%,
                     supplyCap: 10_000_000e6,
                     borrowCap: 10_000_000e6,
-                    priceFeedName: "USDC_ORACLE",
-                    tokenAddressName: "USDC",
-                    name: "Moonwell USDC",
+                    priceFeedName: "USDBC_ORACLE",
+                    tokenAddressName: "USDBC",
+                    name: "Moonwell USDBC",
                     symbol: "mUSDbC",
                     addressesString: "MOONWELL_USDBC",
                     jrm: jrmConfig
@@ -283,10 +283,10 @@ contract Configs is Test {
         if (block.chainid == _baseGoerliChainId) {
             console.log("\n----- deploying on base goerli -----\n");
 
-            /// cToken config for WETH, WBTC, USDC, cbETH, and wstETH on base goerli testnet
+            /// cToken config for WETH, WBTC, USDBC, cbETH, and wstETH on base goerli testnet
             {
                 JumpRateModelConfiguration
-                    memory jrmConfigUSDC = JumpRateModelConfiguration(
+                    memory jrmConfigUSDBC = JumpRateModelConfiguration(
                         0.00e18, // 0 Base per Gauntlet recommendation
                         0.15e18, // 0.15 Multiplier per Gauntlet recommendation
                         3e18, // 3 Jump Multiplier per Gauntlet recommendation
@@ -300,12 +300,12 @@ contract Configs is Test {
                     seizeShare: 0.03e18, // 3% per Gauntlet recommendation
                     supplyCap: 40_000_000e6, // $40m per Gauntlet recommendation
                     borrowCap: 32_000_000e6, // $32m per Gauntlet recommendation
-                    priceFeedName: "USDC_ORACLE",
-                    tokenAddressName: "USDC",
-                    name: "Moonwell USDC",
+                    priceFeedName: "USDBC_ORACLE",
+                    tokenAddressName: "USDBC",
+                    name: "Moonwell USDBC",
                     symbol: "mUSDbC",
                     addressesString: "MOONWELL_USDBC",
-                    jrm: jrmConfigUSDC
+                    jrm: jrmConfigUSDBC
                 });
 
                 cTokenConfigurations[_baseGoerliChainId].push(config);
@@ -504,7 +504,7 @@ contract Configs is Test {
                 if (block.chainid == localChainId) {
                     /// set supply speed to be 0 and borrow reward speeds to 1
 
-                    /// pay USDC Emissions for depositing ETH locally
+                    /// pay USDBC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({
                         mToken: mTokenConfigs[i].addressesString,
                         owner: "EMISSIONS_ADMIN",
@@ -518,7 +518,7 @@ contract Configs is Test {
                 }
 
                 if (block.chainid == _baseGoerliChainId) {
-                    /// pay USDC Emissions for depositing ETH locally
+                    /// pay USDBC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({
                         mToken: mTokenConfigs[i].addressesString,
                         owner: "EMISSIONS_ADMIN",

@@ -6,7 +6,7 @@ In order to create a market, you must first have a market creator account. This 
 
 1. Set REWARDS_RECEIVER to the address you want to receive rewards in Addresses.sol on the network you're deploying on.
 2. Fund the deployer with the following token amounts:
-- 1 USDC
+- 1 USDBC
 - 0.000001 weth
 - 0.000001 cbeth
 - 0.000001 dai

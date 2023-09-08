@@ -1,6 +1,6 @@
 # MultiRewardDistributor
 
-The MultiRewardDistributor contract is responsible for distributing rewards to users for interacting with the protocol. The logic for this contract was inspired by the flywheel logic in the Comptroller. The MultiRewardDistributor allows for distributions of multiple token types per MToken. This means that a user could mint as an example mUSDbC, and then receive rewards in WELL, USDC and WETH.
+The MultiRewardDistributor contract is responsible for distributing rewards to users for interacting with the protocol. The logic for this contract was inspired by the flywheel logic in the Comptroller. The MultiRewardDistributor allows for distributions of multiple token types per MToken. This means that a user could mint as an example mUSDbC, and then receive rewards in WELL, USDBC and WETH.
 
 
 ## Upgradability
