@@ -4,7 +4,7 @@
         "supplyCap": 10000000e18,
         "borrowCap": 5000000e18,
         "collateralFactor": 0.8e18,
-        "initialMintAmount": 1e12,
+        "initialMintAmount": 1e6,
         "name": "Moonwell USDC",
         "priceFeedName": "USDC_ORACLE",
         "reserveFactor": 0.15e18,
