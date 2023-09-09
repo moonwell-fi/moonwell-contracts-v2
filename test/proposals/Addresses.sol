@@ -425,12 +425,6 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "EMISSIONS_ADMIN",
             baseChainId,
-            0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa
-        );
-
-        _addAddress(
-            "DAI_EMISSIONS_ADMIN",
-            baseChainId,
             0xD791292655A1d382FcC1a6Cb9171476cf91F2caa
         );
 
