@@ -51,7 +51,7 @@ Go to `mainnetMTokensExample.json` to see what an example mToken JSON configurat
 If there are no MTokens being added, the file is still needed, but it should contain an empty array.
 
 ### RewardStreams
-Go to `mainnetRewardStreams.json` to see what an example reward JSON configuration looks like. Then, the file [`RewardStreams.json`](./test/proposals/mips/examples/mip-market-listing/RewardStreams.json) in the `test/proposals/mips/examples/mip-market-listing` folder into the new `mip-bxx` folder, replacing all of the values with the correct values for those markets.
+Go to `mainnetRewardStreams.json` to see what an example reward JSON configuration looks like. Copy the file [`RewardStreams.json`](./test/proposals/mips/examples/mip-market-listing/RewardStreams.json) in the `test/proposals/mips/examples/mip-market-listing` folder into the new `mip-bxx` folder, replacing all of the values with the correct values for those markets.
 
 If there are no reward streams, the file is still needed, but it should contain an empty array.
 
