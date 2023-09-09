@@ -220,7 +220,7 @@ contract LiveSystemBaseTest is Test, Configs {
         address sender = address(this);
         uint256 mintAmount = 100e6;
 
-        IERC20 token = IERC20(addresses.getAddress("USDC"));
+        IERC20 token = IERC20(addresses.getAddress("USDBC"));
         MErc20Delegator mToken = MErc20Delegator(
             payable(addresses.getAddress("MOONWELL_USDBC"))
         );
@@ -309,7 +309,7 @@ contract LiveSystemBaseTest is Test, Configs {
         address sender = address(this);
         uint256 borrowAmount = 50e6;
 
-        IERC20 token = IERC20(addresses.getAddress("USDC"));
+        IERC20 token = IERC20(addresses.getAddress("USDBC"));
         MErc20Delegator mToken = MErc20Delegator(
             payable(addresses.getAddress("MOONWELL_USDBC"))
         );
@@ -497,9 +497,9 @@ contract LiveSystemBaseTest is Test, Configs {
 
         uint256 repayAmt = 50e6;
         address liquidator = address(100_000_000);
-        IERC20 usdc = IERC20(addresses.getAddress("USDC"));
+        IERC20 usdc = IERC20(addresses.getAddress("USDBC"));
 
-        deal(addresses.getAddress("USDC"), liquidator, repayAmt);
+        deal(addresses.getAddress("USDBC"), liquidator, repayAmt);
         vm.prank(liquidator);
         usdc.approve(address(mToken), repayAmt);
 
@@ -658,7 +658,7 @@ contract LiveSystemBaseTest is Test, Configs {
 
         assertEq(MErc20(mUSDbC).borrow(borrowAmount), 0);
         assertEq(
-            IERC20(addresses.getAddress("USDC")).balanceOf(address(this)),
+            IERC20(addresses.getAddress("USDBC")).balanceOf(address(this)),
             borrowAmount
         );
     }

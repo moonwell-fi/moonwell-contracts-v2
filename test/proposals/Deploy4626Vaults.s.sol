@@ -25,7 +25,7 @@ Remove `--broadcast --etherscan-api-key base --verify` if you want to try locall
 
 contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
     uint256 public PRIVATE_KEY;
-    uint256 public constant INITIAL_MINT_AMOUNT_USDC = 1e6;
+    uint256 public constant INITIAL_MINT_AMOUNT_USDBC = 1e6;
     uint256 public constant INITIAL_MINT_AMOUNT_WETH = 1e12;
     uint256 public constant INITIAL_MINT_AMOUNT_CBETH = 1e12;
 
@@ -49,9 +49,9 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
 
         if (vm.envBool("MOONWELL_DEPLOY_MINT")) {
             deal(
-                addresses.getAddress("USDC"),
+                addresses.getAddress("USDBC"),
                 deployerAddress,
-                INITIAL_MINT_AMOUNT_USDC
+                INITIAL_MINT_AMOUNT_USDBC
             );
             deal(
                 addresses.getAddress("WETH"),
@@ -73,9 +73,9 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
 
         {
             CompoundERC4626 vault = CompoundERC4626(
-                addresses.getAddress("USDC_VAULT")
+                addresses.getAddress("USDBC_VAULT")
             );
-            assertEq(address(vault.asset()), addresses.getAddress("USDC"));
+            assertEq(address(vault.asset()), addresses.getAddress("USDBC"));
             assertEq(
                 address(vault.mToken()),
                 addresses.getAddress("MOONWELL_USDBC")
@@ -83,11 +83,11 @@ contract Deploy4626Vaults is Script, Compound4626Deploy, Test {
             assertEq(address(vault.comptroller()), unitroller);
             assertEq(vault.rewardRecipient(), rewardRecipient);
 
-            console.log("deployed USDC vault: ", address(vault));
+            console.log("deployed USDBC vault: ", address(vault));
 
-            ERC20 usdc = ERC20(addresses.getAddress("USDC"));
-            usdc.approve(address(vault), INITIAL_MINT_AMOUNT_USDC);
-            vault.deposit(INITIAL_MINT_AMOUNT_USDC, deployerAddress);
+            ERC20 usdc = ERC20(addresses.getAddress("USDBC"));
+            usdc.approve(address(vault), INITIAL_MINT_AMOUNT_USDBC);
+            vault.deposit(INITIAL_MINT_AMOUNT_USDBC, deployerAddress);
         }
 
         {

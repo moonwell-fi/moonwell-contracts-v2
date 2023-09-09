@@ -7,8 +7,8 @@
         "supplyCap": 40000000e6,
         "borrowCap": 32000000e6,
         "priceFeedName": "USDC_ORACLE",
-        "tokenAddressName": "USDC",
-        "name": "Moonwell USDC",
+        "tokenAddressName": "USDBC",
+        "name": "Moonwell USDBC",
         "symbol": "mUSDbC",
         "addressesString": "MOONWELL_USDBC",
         "jrm": {

@@ -165,7 +165,7 @@ contract Addresses is Test, ChainIds {
             84531,
             0xBaA4916ACD2d3Db77278A377f1b49A6E1127d6e6
         );
-        _addAddress("USDC", 84531, 0x64487F97E95266a291514574fFe640A4AC45Bcce);
+        _addAddress("USDBC", 84531, 0x64487F97E95266a291514574fFe640A4AC45Bcce);
         _addAddress("WBTC", 84531, 0xde1a381cAa4189D39c363985d9969D7D206970Bd);
         _addAddress("cbETH", 84531, 0x74a9f643b2DeA9829b5f2194A7f8d3440D8932F0);
         _addAddress(
@@ -351,7 +351,7 @@ contract Addresses is Test, ChainIds {
         );
 
         _addAddress(
-            "USDC",
+            "USDBC",
             baseChainId,
             0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA
         );
