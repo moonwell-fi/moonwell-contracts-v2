@@ -103,7 +103,7 @@ contract LiveSystemBaseTest is Test, Configs {
     }
 
     function testEmissionsAdminCanChangeRewardStream() public {
-        address emissionsAdmin = addresses.getAddress("DAI_EMISSIONS_ADMIN");
+        address emissionsAdmin = addresses.getAddress("EMISSIONS_ADMIN");
         MToken mUSDbC = MToken(addresses.getAddress("MOONWELL_USDBC"));
 
         vm.prank(emissionsAdmin);
@@ -138,14 +138,14 @@ contract LiveSystemBaseTest is Test, Configs {
             block.chainid
         );
 
-        assertEq(config.owner, addresses.getAddress("DAI_EMISSIONS_ADMIN"));
+        assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.supplyEmissionsPerSec, 1e18);
         assertEq(config.endTime, emissionConfig[0].endTime);
     }
 
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
-        vm.startPrank(addresses.getAddress("DAI_EMISSIONS_ADMIN"));
+        vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
         mrd._updateBorrowSpeed(
             MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
             well, /// rewards paid in WELL
@@ -169,7 +169,7 @@ contract LiveSystemBaseTest is Test, Configs {
             block.chainid
         );
 
-        assertEq(config.owner, addresses.getAddress("DAI_EMISSIONS_ADMIN"));
+        assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.borrowEmissionsPerSec, 1e18);
         assertEq(config.endTime, emissionConfig[0].endTime);
