@@ -1,8 +1,8 @@
 [
     {
         "addressesString": "MOONWELL_USDC",
-        "supplyCap": 10000000e18,
-        "borrowCap": 5000000e18,
+        "supplyCap": 10000000e6,
+        "borrowCap": 5000000e6,
         "collateralFactor": 0.8e18,
         "initialMintAmount": 1e6,
         "name": "Moonwell USDC",
