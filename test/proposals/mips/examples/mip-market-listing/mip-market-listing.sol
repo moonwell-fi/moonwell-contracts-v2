@@ -17,6 +17,7 @@ import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/Oracles/PriceOracle.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
+import {EIP20Interface} from "@protocol/EIP20Interface.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
@@ -137,6 +138,8 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
             for (uint256 i = 0; i < cTokenConfigsLength; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
+                _validateCaps(addresses, config);
+
                 /// ----- Jump Rate IRM -------
                 {
                     address irModel = address(
@@ -217,9 +220,15 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
                     MToken(addresses.getAddress(config.addressesString))
                 );
 
-                mTokens[i]._setReserveFactor(config.reserveFactor);
-                mTokens[i]._setProtocolSeizeShare(config.seizeShare);
-                mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+                _validateCaps(addresses, config); /// validate supply and borrow caps
+
+                /// defaults to true, then if you need to replicate a proposal and generate
+                /// calldata, set this to false as an env var, then run the proposal
+                if (vm.envOr("DO_AFTER_DEPLOY_MTOKEN_BROADCAST", true)) {
+                    mTokens[i]._setReserveFactor(config.reserveFactor);
+                    mTokens[i]._setProtocolSeizeShare(config.seizeShare);
+                    mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+                }
             }
         }
     }
@@ -570,6 +579,47 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
                     );
                     assertEq(marketConfig.supplyGlobalIndex, 1e36);
                     assertEq(marketConfig.borrowGlobalIndex, 1e36);
+                }
+            }
+        }
+    }
+
+    /// helper function to validate supply and borrow caps
+    function _validateCaps(
+        Addresses addresses,
+        Configs.CTokenConfiguration memory config
+    ) private {
+        {
+            if (config.supplyCap != 0 || config.borrowCap != 0) {
+                uint8 decimals = EIP20Interface(
+                    addresses.getAddress(config.tokenAddressName)
+                ).decimals();
+
+                /// override defaults to false, dev can set to true to override these checks
+
+                if (
+                    config.supplyCap != 0 &&
+                    !vm.envOr("OVERRIDE_SUPPLY_CAP", false)
+                ) {
+                    /// strip off all the decimals
+                    uint256 adjustedSupplyCap = config.supplyCap /
+                        (10 ** decimals);
+                    require(
+                        adjustedSupplyCap < 120_000_000,
+                        "supply cap suspiciously high, if this is the right supply cap, set OVERRIDE_SUPPLY_CAP environment variable to true"
+                    );
+                }
+
+                if (
+                    config.borrowCap != 0 &&
+                    !vm.envOr("OVERRIDE_BORROW_CAP", false)
+                ) {
+                    uint256 adjustedBorrowCap = config.borrowCap /
+                        (10 ** decimals);
+                    require(
+                        adjustedBorrowCap < 120_000_000,
+                        "borrow cap suspiciously high, if this is the right borrow cap, set OVERRIDE_BORROW_CAP environment variable to true"
+                    );
                 }
             }
         }
