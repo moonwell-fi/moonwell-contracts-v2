@@ -68,6 +68,8 @@ export MTOKENS_PATH="./test/proposals/mips/mip-bxx/MTokens.json"
 export EMISSION_PATH="./test/proposals/mips/mip-bxx/RewardStreams.json"
 ```
 
+If deploying and generating calldata for the first time, environment variable `DO_AFTER_DEPLOY_MTOKEN_BROADCAST` should be set to true. After doing deploy and setting the addresses in `Addresses.sol`, this variable should be set to false. This variable is used to determine whether or not to broadcast the after deploy transactions that configure the MToken, which are not needed after the tokens are deployed.
+
 If any errors show up relating to not being able to read in a file, double check the environment variables and make sure the paths are correct.
 
 ## 4. Deployment
@@ -102,3 +104,20 @@ Once the calldata is sent, wait for the proposal to finish the voting period, th
 To test the changes introduced by creating these market(s) and ensure the system solvency, modify the [PostProposalCheck](./test/integration/PostProposalCheck.sol) to add the newMarketDeploy mip to the array of mips tested. This can be done by uncommenting the line that adds it to the `mips` address array, and lengthening the array to support 2 active proposals, or if only doing this as a single proposal, write to mips array at index 0 and comment out the other line adds the incorrect MIP.
 
 After PostProposalCheck is modified, the view the [HundredFinanceExploit](./test/unit/HundredFinanceExploit.t.sol) example file, and replicate the structure where the PostProposalCheck contract is imported and inherited, then write the necessary tests for these newly added markets, ensuring supplying, borrowing, repaying all work.
+
+## 7. Safety Checks
+
+This framework is designed to ensure that the system is safe and that the parameters look to be correct. In the market-listing solidity file, there are checks that the parameters are within sane values. There are checks around the supply and borrow cap, and if these values are set to 0, no checks will run, however, if these values are non zero, the checks will ensure that the supply and borrow cap are not set to values that are too high. If the value of a supply or borrow cap exceed 120m tokens adjusted for decimals, then a warning will fire when running the script and the script will not continue. If these values are correct, you can override the warnings by setting: 
+
+```
+export OVERRIDE_SUPPLY_CAP=true
+export OVERRIDE_BORROW_CAP=true
+```
+
+If you set these variables to true, make sure to set them back to false after running the proposal to ensure no errors are missed in the future.
+
+If the borrow cap is not equal to 0, and there is no supply cap, this is invalid for a governance proposal and the creation of the proposal will revert with an appropriate message.
+
+If the supply cap is set, but the borrow cap is greater than or equal to the supply cap, this is invalid for a governance proposal and the creation of the proposal will revert with an appropriate message.
+
+If the collateral factor of a market is set to greater than 95%, then the creation of the proposal will revert with an appropriate message as it is assumed that no collateral will ever have a collateral factor higher than 95%.
