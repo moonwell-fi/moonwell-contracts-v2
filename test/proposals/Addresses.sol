@@ -357,6 +357,12 @@ contract Addresses is Test, ChainIds {
         );
 
         _addAddress(
+            "USDC",
+            baseChainId,
+            0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+        );
+
+        _addAddress(
             "WETH",
             baseChainId,
             0x4200000000000000000000000000000000000006
@@ -418,12 +424,6 @@ contract Addresses is Test, ChainIds {
 
         _addAddress(
             "EMISSIONS_ADMIN",
-            baseChainId,
-            0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa
-        );
-
-        _addAddress(
-            "DAI_EMISSIONS_ADMIN",
             baseChainId,
             0xD791292655A1d382FcC1a6Cb9171476cf91F2caa
         );
@@ -507,6 +507,16 @@ contract Addresses is Test, ChainIds {
             "MOONWELL_USDBC",
             8453,
             0x703843C3379b52F9FF486c9f5892218d2a065cC8
+        );
+        _addAddress(
+            "JUMP_RATE_IRM_MOONWELL_USDC",
+            8453,
+            0x93AEE5b2431991eB96869057e98B0a7e9262cDEb
+        );
+        _addAddress(
+            "MOONWELL_USDC",
+            8453,
+            0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22
         );
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_WETH",

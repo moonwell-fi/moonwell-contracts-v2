@@ -1,0 +1,10 @@
+[
+    {
+        "borrowEmissionsPerSec": 1,
+        "emissionToken": "0xFF8adeC2221f9f4D8dfbAFa6B9a297d17603493D",
+        "endTime": 1696629600,
+        "mToken": "MOONWELL_USDC",
+        "owner": "EMISSIONS_ADMIN",
+        "supplyEmissionPerSec": 0
+    }
+]
