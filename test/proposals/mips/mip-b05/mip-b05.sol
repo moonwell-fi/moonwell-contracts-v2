@@ -27,7 +27,10 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     constructor() {
         _setNonce(5);
-        _setProposalDescription("./test/proposals/mips/mip-b05/MIP-B05.md");
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile("./test/proposals/mips/mip-b05/MIP-B05.md")
+        );
+        _setProposalDescription(proposalDescription);
     }
 
     function _validateJRM(address jrmAddress, address tokenAddress, IRParams memory params)

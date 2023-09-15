@@ -1,4 +1,4 @@
-# MIP-B05 Gauntlet Base Risk Recommendations
+# MIP-B05 Base Risk Recommendations
 
 # Simple Summary
 
