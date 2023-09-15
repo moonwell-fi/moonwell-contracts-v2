@@ -501,7 +501,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_DAI",
             8453,
-            0xbc93DdFAE192926BE036c6A6Dd544a0e250Ab97D
+            0x33DeAc0861FD6a9235b86172AA939E79085c6f52
         );
         _addAddress(
             "MOONWELL_USDBC",
@@ -521,7 +521,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_WETH",
             8453,
-            0x4393277B02ef3cA293990A772B7160a8c76F2443
+            0x6bcE15B789e537f3abA3C60CB183F0E8737f05eC
         );
         _addAddress(
             "MOONWELL_WETH",
