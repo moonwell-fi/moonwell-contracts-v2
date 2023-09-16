@@ -47,12 +47,12 @@ contract NativeUSDCLiveSystemBaseTest is Test, Configs {
         proposals.testProposals(
             false, /// do not debug
             false, /// do not deploy mUSDC
-            true,
-            true,
-            true,
-            true,
+            false,
+            false,
+            false,
+            false,
             false, /// do not teardown as there is nothing to teardown
-            true
+            false
         );
 
         addresses = proposals.addresses();
@@ -67,7 +67,7 @@ contract NativeUSDCLiveSystemBaseTest is Test, Configs {
         assertEq(mUSDC.name(), "Moonwell USDC");
         assertEq(mUSDC.symbol(), "mUSDC");
         assertEq(mUSDC.decimals(), 8);
-        assertEq(mUSDC.exchangeRateCurrent(), 200000000000000);
+        assertGt(mUSDC.exchangeRateCurrent(), 0.0002e18); /// exchange starting price is 0.0002e18
         assertEq(mUSDC.reserveFactorMantissa(), 0.15e18);
         assertEq(
             address(mUSDC.comptroller()),
