@@ -68,6 +68,14 @@ export MTOKENS_PATH="./test/proposals/mips/mip-bxx/MTokens.json"
 export EMISSION_PATH="./test/proposals/mips/mip-bxx/RewardStreams.json"
 ```
 
+Set the `BASE_RPC_URL` environment variable to the RPC URL of base. This can be done using the public RPC endpoint.
+
+```
+BASE_RPC_URL="https://mainnet.base.org"
+```
+
+Or by setting to a private RPC endpoint if the public end point is not working.
+
 If deploying and generating calldata for the first time, environment variable `DO_AFTER_DEPLOY_MTOKEN_BROADCAST` should be set to true. After doing deploy and setting the addresses in `Addresses.sol`, this variable should be set to false. This variable is used to determine whether or not to broadcast the after deploy transactions that configure the MToken, which are not needed after the tokens are deployed.
 
 If any errors show up relating to not being able to read in a file, double check the environment variables and make sure the paths are correct.
