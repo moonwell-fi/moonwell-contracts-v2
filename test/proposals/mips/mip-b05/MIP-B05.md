@@ -3,7 +3,6 @@
 # Simple Summary
 
 ### Risk Parameters
-
 A proposal to adjust 5 risk parameters:
 
 | Risk Parameter          | Current Value | Recommended Value |
@@ -15,9 +14,9 @@ A proposal to adjust 5 risk parameters:
 
 ### IR Parameters
 
-A proposal to adjust 3 IR parameters for 2 assets:
+A proposal to adjust 3 IR parameters for 4 assets:
 
-| DAI IR Parameters   | Current | Recommended |
+| DAI/USDC/USDbC IR Parameters   | Current | Recommended |
 | --------------- | ------- | ----------- |
 | BASE            | 0       | 0           |
 | Kink            | 0.8     | 0.8         |
@@ -26,7 +25,6 @@ A proposal to adjust 3 IR parameters for 2 assets:
 
 
 Gauntlet recommends to increase the kink to 80% and Jump Multiplier to 4.8 for the WETH IR curve to improve capital efficency of WETH: 
-
 | WETH IR Parameters   | Current | Recommended |
 | --------------- | ------- | ----------- |
 | BASE            | 0.01       | 0.01           |

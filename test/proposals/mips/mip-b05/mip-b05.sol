@@ -163,6 +163,13 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
 
+        IRParams memory previousStablecoinIRParams = IRParams({
+            baseRatePerTimestamp: 0,
+            kink: 0.8e18,
+            multiplierPerTimestamp: 0.05e18,
+            jumpMultiplierPerTimestamp: 2.5e18
+        });
+
         // =========== DAI IR Update ============
 
         // Check Preconditions
@@ -170,12 +177,7 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
         _validateJRM(
             daiPreviousJumpRateModelAddress,
             addresses.getAddress("MOONWELL_DAI"),
-            IRParams({
-                baseRatePerTimestamp: 0,
-                kink: 0.8e18,
-                multiplierPerTimestamp: 0.05e18,
-                jumpMultiplierPerTimestamp: 2.5e18
-            })
+            previousStablecoinIRParams
         );
 
         // Add update action
@@ -186,6 +188,46 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
                 addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI")
             ),
             "Set interest rate model for Moonwell DAI to updated rate model"
+        );
+
+        // =========== USDC IR Update ============
+
+        // Check Preconditions
+        address usdcPreviousJumpRateModelAddress = 0x93AEE5b2431991eB96869057e98B0a7e9262cDEb;
+        _validateJRM(
+            usdcPreviousJumpRateModelAddress,
+            addresses.getAddress("MOONWELL_USDC"),
+            previousStablecoinIRParams
+        );
+
+        // Add update action
+        _pushCrossChainAction(
+            addresses.getAddress("MOONWELL_USDC"),
+            abi.encodeWithSignature(
+                "_setInterestRateModel(address)",
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC")
+            ),
+            "Set interest rate model for Moonwell USDC to updated rate model"
+        );
+
+        // =========== USDbC IR Update ============
+
+        // Check Preconditions
+        address usdbcPreviousJumpRateModelAddress = 0x1603178b26C3bc2cd321e9A64644ab62643d138B;
+        _validateJRM(
+            usdbcPreviousJumpRateModelAddress,
+            addresses.getAddress("MOONWELL_USDBC"),
+            previousStablecoinIRParams
+        );
+
+        // Add update action
+        _pushCrossChainAction(
+            addresses.getAddress("MOONWELL_USDBC"),
+            abi.encodeWithSignature(
+                "_setInterestRateModel(address)",
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDBC")
+            ),
+            "Set interest rate model for Moonwell USDbC to updated rate model"
         );
     }
 
@@ -228,17 +270,35 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
             })
         );
 
+        IRParams memory stablecoinIRParams = IRParams({
+            baseRatePerTimestamp: 0,
+            kink: 0.8e18,
+            multiplierPerTimestamp: 0.045e18,
+            jumpMultiplierPerTimestamp: 2.5e18
+        });
+
         // =========== DAI IR Update ============
 
         _validateJRM(
             addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI"),
             addresses.getAddress("MOONWELL_DAI"),
-            IRParams({
-                baseRatePerTimestamp: 0,
-                kink: 0.8e18,
-                multiplierPerTimestamp: 0.045e18,
-                jumpMultiplierPerTimestamp: 2.5e18
-            })
+            stablecoinIRParams
+        );
+
+        // =========== USDC IR Update ============
+
+        _validateJRM(
+            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC"),
+            addresses.getAddress("MOONWELL_USDC"),
+            stablecoinIRParams
+        );
+
+        // =========== USDbC IR Update ============
+
+        _validateJRM(
+            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDBC"),
+            addresses.getAddress("MOONWELL_USDBC"),
+            stablecoinIRParams
         );
     }
 }
