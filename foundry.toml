@@ -16,7 +16,7 @@ moonbase = "https://rpc.api.moonbase.moonbeam.network"
 ethereum = "https://rpc.ankr.com/eth"
 optimism = "https://endpoints.omniatech.io/v1/op/mainnet/public"
 avalanche = "https://rpc.ankr.com/avalanche"
-base = "https://mainnet.base.org"
+base = "${BASE_RPC_URL}"
 baseGoerli = "https://goerli.base.org"
 local = "http://127.0.0.1:8545"
 
