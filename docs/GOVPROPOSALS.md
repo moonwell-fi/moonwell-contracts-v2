@@ -34,6 +34,16 @@ First, set the environment variables for which actions you want to be run during
 
 Set the environment variables to true or false depending on which steps you want to run.
 
+If deploying or running against base mainnet, the following environment variable needs to be set:
+
+- **BASE_RPC_URL** environment variable to the RPC URL of base. This can be done using the public RPC endpoint.
+
+```
+BASE_RPC_URL="https://mainnet.base.org"
+```
+
+Or by setting it to a private RPC endpoint if the public end point is not working.
+
 To generate calldata for an existing proposal, run the following command, where the proposal is the proposal you want to generate calldata for, and the network is the network you want to generate calldata for.
 
 ```forge script test/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv```
