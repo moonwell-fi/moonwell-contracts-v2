@@ -18,6 +18,15 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 
+    uint256 public constant ETH_PREVIOUS_CF = 0.75e18;
+    uint256 public constant ETH_NEW_CF = 0.78e18;
+
+    uint256 public constant cbETH_PREVIOUS_CF = 0.73e18;
+    uint256 public constant cbETH_NEW_CF = 0.75e18;
+
+    uint256 public constant DAI_PREVIOUS_CF = 0.8e18;
+    uint256 public constant DAI_NEW_CF = 0.82e18;
+
     struct IRParams {
         uint256 kink;
         uint256 baseRatePerTimestamp;
@@ -26,7 +35,6 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
     }
 
     constructor() {
-        _setNonce(5);
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile("./test/proposals/mips/mip-b05/MIP-B05.md")
         );
@@ -72,7 +80,9 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         Comptroller unitroller = Comptroller(unitrollerAddress);
 
-        (bool _listed, uint256 collateralFactorMantissa) = unitroller.markets(tokenAddress);
+        (bool listed, uint256 collateralFactorMantissa) = unitroller.markets(tokenAddress);
+
+        assertTrue(listed);
 
         assertEq(
             collateralFactorMantissa,
@@ -93,7 +103,7 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
         // =========== ETH CF Update ============
 
         // Check Preconditions
-        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), 0.75e18);
+        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), ETH_PREVIOUS_CF);
 
         // Add update action
         _pushCrossChainAction(
@@ -101,7 +111,7 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
                 addresses.getAddress("MOONWELL_WETH"),
-                0.78e18
+                ETH_NEW_CF
             ),
             "Set collateral factor for ETH"
         );
@@ -109,7 +119,7 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
         // =========== cbETH CF Update ============
 
         // Check Preconditions
-        _validateCF(addresses, addresses.getAddress("MOONWELL_cbETH"), 0.73e18);
+        _validateCF(addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_PREVIOUS_CF);
 
         // Add update action
         _pushCrossChainAction(
@@ -117,7 +127,7 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
                 addresses.getAddress("MOONWELL_cbETH"),
-                0.75e18
+                cbETH_NEW_CF
             ),
             "Set collateral factor for cbETH"
         );
@@ -125,7 +135,7 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
         // =========== DAI CF Update ============
 
         // Check Preconditions
-        _validateCF(addresses, addresses.getAddress("MOONWELL_DAI"), 0.8e18);
+        _validateCF(addresses, addresses.getAddress("MOONWELL_DAI"), DAI_PREVIOUS_CF);
 
         // Add update action
         _pushCrossChainAction(
@@ -133,7 +143,7 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
                 addresses.getAddress("MOONWELL_DAI"),
-                0.82e18
+                DAI_NEW_CF
             ),
             "Set collateral factor for DAI"
         );
@@ -248,13 +258,13 @@ contract mipb05 is Proposal, CrossChainProposal, ChainIds, Configs {
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public override {
         // ======== ETH CF Update =========
-        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), 0.78e18);
+        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), ETH_NEW_CF);
 
         // ======== cbETH CF Update =========
-        _validateCF(addresses, addresses.getAddress("MOONWELL_cbETH"), 0.75e18);
+        _validateCF(addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF);
 
         // ======== DAI CF Update =========
-        _validateCF(addresses, addresses.getAddress("MOONWELL_DAI"), 0.82e18);
+        _validateCF(addresses, addresses.getAddress("MOONWELL_DAI"), DAI_NEW_CF);
 
 
         // =========== WETH IR Update ============
