@@ -1,0 +1,10 @@
+name: Foundry unit tests
+
+jobs:
+  build_scripts:
+    runs-on: ubuntu-latest
+    - uses: ./.github/actions/action
+
+    steps:
+      - name: Unit Test Contracts
+        run: forge test -vvv --match-contract UnitTest

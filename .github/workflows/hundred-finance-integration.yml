@@ -1,0 +1,10 @@
+name: Foundry hundred finance integration tests
+
+jobs:
+  build_scripts:
+    runs-on: ubuntu-latest
+    - uses: ./.github/actions/action
+
+    steps:
+      - name: Integration Test Hundred Finance Exploit Fails
+        run: forge test --match-contract HundredFinanceExploitTest --fork-url baseGoerli -vvv

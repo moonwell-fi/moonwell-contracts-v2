@@ -1,0 +1,11 @@
+name: Foundry base integration tests
+
+jobs:
+  build_scripts:
+    runs-on: ubuntu-latest
+    - uses: ./.github/actions/action
+
+    steps:
+      - name: Integration Tests Base Mainnet
+        run: forge test --match-contract LiveSystemBaseTest --fork-url base -vvv
+

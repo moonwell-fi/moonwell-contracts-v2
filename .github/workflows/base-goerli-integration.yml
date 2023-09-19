@@ -1,0 +1,10 @@
+name: Foundry base goerli integration tests
+
+jobs:
+  build_scripts:
+    runs-on: ubuntu-latest
+    - uses: ./.github/actions/action
+
+    steps:
+      - name: Unit Test Deploy and Configure Contracts
+        run: forge test --match-contract LiveSystemTest --fork-url baseGoerli
