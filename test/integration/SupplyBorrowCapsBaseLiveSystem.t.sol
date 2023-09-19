@@ -40,7 +40,7 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
             false,
             false,
             false,
-            false,
+            true,
             true,
             true,
             false,

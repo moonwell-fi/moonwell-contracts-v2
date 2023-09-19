@@ -47,7 +47,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds {
             true,
             true,
             false,
-            false,
+            true,
             true,
             true,
             false,
