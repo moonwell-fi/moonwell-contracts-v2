@@ -7,4 +7,4 @@ jobs:
 
     steps:
       - name: Unit Test Contracts
-        run: forge test -vvv --match-contract UnitTest
+        run: time forge test -vvv --match-contract UnitTest

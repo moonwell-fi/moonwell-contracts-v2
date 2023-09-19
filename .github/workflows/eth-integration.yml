@@ -7,17 +7,17 @@ jobs:
 
     steps:
       - name: Integration Test Contracts
-        run: forge test --match-contract IntegrationTest --fork-url $ETH_RPC_URL
+        run: time forge test --match-contract IntegrationTest --fork-url $ETH_RPC_URL
 
       - name: Arbitrum Integration Test Contracts
-        run: forge test --match-contract ArbitrumTest --fork-url $ARB_RPC_URL
+        run: time forge test --match-contract ArbitrumTest --fork-url $ARB_RPC_URL
 
       - name: Unit Test Deploy and Configure Contracts
-        run: forge test --match-contract LiveSystemTest --fork-url baseGoerli
+        run: time forge test --match-contract LiveSystemTest --fork-url baseGoerli
 
       - name: Integration Test Hundred Finance Exploit Fails
-        run: forge test --match-contract HundredFinanceExploitTest --fork-url baseGoerli -vvv
+        run: time forge test --match-contract HundredFinanceExploitTest --fork-url baseGoerli -vvv
 
       - name: Integration Tests Base Mainnet
-        run: forge test --match-contract LiveSystemBaseTest --fork-url base -vvv
+        run: time forge test --match-contract LiveSystemBaseTest --fork-url base -vvv
 

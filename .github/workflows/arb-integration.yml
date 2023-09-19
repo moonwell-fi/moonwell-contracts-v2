@@ -7,4 +7,4 @@ jobs:
 
     steps:
       - name: Arbitrum Integration Test Contracts
-        run: forge test --match-contract ArbitrumTest --fork-url $ARB_RPC_URL
+        run: time forge test --match-contract ArbitrumTest --fork-url $ARB_RPC_URL

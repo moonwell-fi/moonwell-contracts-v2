@@ -7,4 +7,4 @@ jobs:
 
     steps:
       - name: Integration Test Hundred Finance Exploit Fails
-        run: forge test --match-contract HundredFinanceExploitTest --fork-url baseGoerli -vvv
+        run: time forge test --match-contract HundredFinanceExploitTest --fork-url baseGoerli -vvv

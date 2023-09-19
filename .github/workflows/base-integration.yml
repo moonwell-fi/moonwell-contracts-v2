@@ -7,5 +7,5 @@ jobs:
 
     steps:
       - name: Integration Tests Base Mainnet
-        run: forge test --match-contract LiveSystemBaseTest --fork-url base -vvv
+        run: time forge test --match-contract LiveSystemBaseTest --fork-url base -vvv
 

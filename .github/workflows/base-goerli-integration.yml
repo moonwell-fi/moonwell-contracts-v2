@@ -7,4 +7,4 @@ jobs:
 
     steps:
       - name: Unit Test Deploy and Configure Contracts
-        run: forge test --match-contract LiveSystemTest --fork-url baseGoerli
+        run: time forge test --match-contract LiveSystemTest --fork-url baseGoerli
