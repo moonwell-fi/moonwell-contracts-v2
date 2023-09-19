@@ -16,7 +16,7 @@ import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellA
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
 /// then switch back to moonbeam to run the test with the generated calldata
-contract CrossChainPublishMessageUnitTest is Test, ChainIds {
+contract CrossChainPublishMessageTest is Test, ChainIds {
     MoonwellArtemisGovernor governor;
     IWormhole wormhole;
     TestProposals proposals;
@@ -25,8 +25,11 @@ contract CrossChainPublishMessageUnitTest is Test, ChainIds {
     Well well;
     bytes artemisQueuePayload;
 
+    string public constant BASE_RPC_ENV_NAME = "BASE_RPC_URL";
+    string public constant DEFAULT_BASE_RPC_URL = "https://mainnet.base.org";
+
     uint256 public baseForkId =
-        vm.createFork("https://developer-access-mainnet.base.org");
+        vm.createFork(vm.envOr(BASE_RPC_ENV_NAME, DEFAULT_BASE_RPC_URL));
 
     uint256 public moonbeamForkId =
         vm.createFork("https://rpc.api.moonbeam.network");

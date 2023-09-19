@@ -1,0 +1,29 @@
+name: Foundry eth integration tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
+  BASESCAN_API_KEY: ${{secrets.BASESCAN_API_KEY}}
+  ETHERSCAN_API_KEY: ${{secrets.ETHERSCAN_API_KEY}}
+
+jobs:
+  run-eth-mainnet-tests:
+    name: eth-mainnet-integration-tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Integration Test Contracts
+        run: time forge test --match-contract IntegrationTest --fork-url $ETH_RPC_URL
