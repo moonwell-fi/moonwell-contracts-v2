@@ -21,7 +21,7 @@ jobs:
           submodules: recursive
 
       - name: Setup Environment
-        uses: ./.github/actions/action
+        uses: ./.github/actions/action.yml
 
       - name: Integration Test Contracts
         run: time forge test --match-contract IntegrationTest --fork-url $ETH_RPC_URL

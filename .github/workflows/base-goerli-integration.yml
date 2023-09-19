@@ -24,7 +24,7 @@ jobs:
           submodules: recursive
 
       - name: Setup Environment
-        uses: ./.github/actions/action
+        uses: ./.github/actions/action.yml
 
       - name: Unit Test Deploy and Configure Contracts
         run: time forge test --match-contract LiveSystemTest --fork-url baseGoerli

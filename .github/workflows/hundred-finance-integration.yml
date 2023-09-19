@@ -21,7 +21,7 @@ jobs:
           submodules: recursive
 
       - name: Setup Environment
-        uses: ./.github/actions/action
+        uses: ./.github/actions/action.yml
 
       - name: Integration Test Hundred Finance Exploit Fails
         run: time forge test --match-contract HundredFinanceExploitTest --fork-url baseGoerli -vvv
