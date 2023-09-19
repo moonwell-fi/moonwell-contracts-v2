@@ -16,7 +16,7 @@ import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellA
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
 /// then switch back to moonbeam to run the test with the generated calldata
-contract CrossChainPublishMessageUnitTest is Test, ChainIds {
+contract CrossChainPublishMessageTest is Test, ChainIds {
     MoonwellArtemisGovernor governor;
     IWormhole wormhole;
     TestProposals proposals;
