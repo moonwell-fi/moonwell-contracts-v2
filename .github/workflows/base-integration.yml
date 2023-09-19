@@ -1,11 +1,28 @@
 name: Foundry base integration tests
 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+
 jobs:
-  build_scripts:
+  run-arb-tests:
+    name: arb-integration-tests
     runs-on: ubuntu-latest
-    - uses: ./.github/actions/action
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions/action
+
       - name: Integration Tests Base Mainnet
         run: time forge test --match-contract LiveSystemBaseTest --fork-url base -vvv
 

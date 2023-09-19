@@ -1,10 +1,30 @@
 name: Foundry base goerli integration tests
 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
+  ARB_RPC_URL: ${{secrets.ARB_RPC_URL}}
+  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+  BASE_GOERLI_RPC_URL: ${{secrets.BASE_GOERLI_RPC_URL}}
+
 jobs:
-  build_scripts:
+  run-arb-tests:
+    name: arb-integration-tests
     runs-on: ubuntu-latest
-    - uses: ./.github/actions/action
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions/action
+
       - name: Unit Test Deploy and Configure Contracts
         run: time forge test --match-contract LiveSystemTest --fork-url baseGoerli

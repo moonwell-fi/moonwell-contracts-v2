@@ -1,10 +1,27 @@
 name: Foundry hundred finance integration tests
 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  BASE_GOERLI_RPC_URL: ${{secrets.BASE_GOERLI_RPC_URL}}
+
 jobs:
-  build_scripts:
+  hundred-finance-tests:
+    name: hundred-finance-integration-tests
     runs-on: ubuntu-latest
-    - uses: ./.github/actions/action
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions/action
+
       - name: Integration Test Hundred Finance Exploit Fails
         run: time forge test --match-contract HundredFinanceExploitTest --fork-url baseGoerli -vvv

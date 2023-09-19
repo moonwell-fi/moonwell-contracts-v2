@@ -1,10 +1,27 @@
-name: Foundry eth integration tests
+name: Foundry arb integration tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  ARB_RPC_URL: ${{secrets.ARB_RPC_URL}}
 
 jobs:
-  build_scripts:
+  run-arb-tests:
+    name: arb-integration-tests
     runs-on: ubuntu-latest
-    - uses: ./.github/actions/action
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions/action
+
       - name: Arbitrum Integration Test Contracts
         run: time forge test --match-contract ArbitrumTest --fork-url $ARB_RPC_URL

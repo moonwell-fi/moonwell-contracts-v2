@@ -1,15 +1,27 @@
 name: Foundry cross chain publish governance message integration tests
 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+
 jobs:
-  run-cross-chain-publish-tests:
-    name: run-cross-chain-publish
+  run-base-tests:
+    name: base-integration-tests
     runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
-          with:
-            submodules: recursive
 
-        - uses: ./.github/actions/action
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
 
-        - name: Integration Test Cross Chain Publish Message
-          run: time forge test --match-contract CrossChainPublishMessageTest -vvv
+      - name: Setup Environment
+        uses: ./.github/actions/action
+
+      - name: Integration Test Cross Chain Publish Message
+        run: time forge test --match-contract CrossChainPublishMessageTest -vvv
