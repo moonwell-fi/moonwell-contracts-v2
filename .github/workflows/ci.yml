@@ -9,6 +9,8 @@ on:
 env:
   ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
   ARB_RPC_URL: ${{secrets.ARB_RPC_URL}}
+  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+  BASE_GOERLI_RPC_URL: ${{secrets.BASE_GOERLI_RPC_URL}}
   MOONRIVER_API_KEY: ${{secrets.MOONRIVER_API_KEY}}
   MOONBEAM_API_KEY: ${{secrets.MOONBEAM_API_KEY}}
   ETHERSCAN_API_KEY: ${{secrets.ETHERSCAN_API_KEY}}
