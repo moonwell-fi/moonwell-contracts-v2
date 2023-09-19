@@ -6,9 +6,9 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@test/proposals/Addresses.sol";
-import {mipb00 as mip} from "@test/proposals/mips/mip-b00/mip-b00.sol";
-import {TestProposals} from "@test/proposals/TestProposals.sol";
+import {Addresses} from "@proposals/Addresses.sol";
+import {mipb00 as mip} from "@proposals/mips/mip-b00/mip-b00.sol";
+import {TestProposals} from "@proposals/TestProposals.sol";
 
 contract SystemUpgradeUnitTest is Test {
     bytes32 public constant _IMPLEMENTATION_SLOT =

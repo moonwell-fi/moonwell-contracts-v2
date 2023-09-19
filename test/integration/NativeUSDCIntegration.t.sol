@@ -7,11 +7,11 @@ import "@forge-std/Test.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@test/proposals/Configs.sol";
-import {Addresses} from "@test/proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {mip0x as mip} from "@test/proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
-import {TestProposals} from "@test/proposals/TestProposals.sol";
+import {mip0x as mip} from "@proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
+import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
@@ -24,11 +24,11 @@ contract NativeUSDCLiveSystemBaseTest is Test, Configs {
     MErc20 mUSDC;
 
     function setUp() public {
-        vm.setEnv("LISTING_PATH", "./test/proposals/mips/mip-b04/MIP-B04.md");
-        vm.setEnv("MTOKENS_PATH", "./test/proposals/mips/mip-b04/MTokens.json");
+        vm.setEnv("LISTING_PATH", "./proposals/mips/mip-b04/MIP-B04.md");
+        vm.setEnv("MTOKENS_PATH", "./proposals/mips/mip-b04/MTokens.json");
         vm.setEnv(
             "EMISSION_PATH",
-            "./test/proposals/mips/mip-b04/RewardStreams.json"
+            "./proposals/mips/mip-b04/RewardStreams.json"
         );
 
         /// do not broadcast these transactions: in after deploy

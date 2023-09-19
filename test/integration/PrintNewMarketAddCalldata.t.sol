@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Configs} from "@test/proposals/Configs.sol";
+import {Configs} from "@proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Addresses} from "@test/proposals/Addresses.sol";
-import {mip0x as mip} from "@test/proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
-import {TestProposals} from "@test/proposals/TestProposals.sol";
+import {Addresses} from "@proposals/Addresses.sol";
+import {mip0x as mip} from "@proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
+import {TestProposals} from "@proposals/TestProposals.sol";
 
 contract PrintNewMarketAddCalldataTest is Test, ChainIds {
     TestProposals proposals;
