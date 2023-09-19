@@ -1,0 +1,10 @@
+name: Foundry cross chain publish governance message integration tests
+
+jobs:
+  build_scripts:
+    runs-on: ubuntu-latest
+    - uses: ./.github/actions/action
+
+    steps:
+      - name: Integration Test Hundred Finance Exploit Fails
+        run: time forge test --match-contract CrossChainPublishMessageTest -vvv
