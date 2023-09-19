@@ -8,6 +8,7 @@ on:
 
 env:
   ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
+  BASESCAN_API_KEY: ${{secrets.BASESCAN_API_KEY}}
 
 jobs:
   run-eth-mainnet-tests:

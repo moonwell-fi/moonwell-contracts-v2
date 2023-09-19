@@ -8,10 +8,11 @@ on:
 
 env:
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+  BASESCAN_API_KEY: ${{secrets.BASESCAN_API_KEY}}
 
 jobs:
-  run-arb-tests:
-    name: arb-integration-tests
+  run-base-tests:
+    name: base-integration-tests
     runs-on: ubuntu-latest
 
     steps:
