@@ -9,6 +9,7 @@ on:
 env:
   ARB_RPC_URL: ${{secrets.ARB_RPC_URL}}
   BASESCAN_API_KEY: ${{secrets.BASESCAN_API_KEY}}
+  ETHERSCAN_API_KEY: ${{secrets.ETHERSCAN_API_KEY}}
 
 jobs:
   run-arb-tests:
