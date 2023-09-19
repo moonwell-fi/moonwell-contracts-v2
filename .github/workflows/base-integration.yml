@@ -8,6 +8,7 @@ on:
 
 env:
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+  ETHERSCAN_API_KEY: ${{secrets.ETHERSCAN_API_KEY}}
   BASESCAN_API_KEY: ${{secrets.BASESCAN_API_KEY}}
 
 jobs:
