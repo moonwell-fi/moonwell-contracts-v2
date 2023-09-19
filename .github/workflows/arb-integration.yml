@@ -21,7 +21,7 @@ jobs:
           submodules: recursive
 
       - name: Setup Environment
-        uses: ./.github/actions/action.yml
+        uses: ./.github/actions
 
       - name: Arbitrum Integration Test Contracts
         run: time forge test --match-contract ArbitrumTest --fork-url $ARB_RPC_URL

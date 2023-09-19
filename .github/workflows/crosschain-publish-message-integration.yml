@@ -21,7 +21,7 @@ jobs:
           submodules: recursive
 
       - name: Setup Environment
-        uses: ./.github/actions/action.yml
+        uses: ./.github/actions
 
       - name: Integration Test Cross Chain Publish Message
         run: time forge test --match-contract CrossChainPublishMessageTest -vvv
