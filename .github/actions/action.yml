@@ -16,22 +16,24 @@ env:
   ETHERSCAN_API_KEY: ${{secrets.ETHERSCAN_API_KEY}}
   BASESCAN_API_KEY: ${{secrets.BASESCAN_API_KEY}}
 
-jobs:
-  build_scripts:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
+runs:
+  using: composite
+  steps:
+    build_scripts:
+      runs-on: ubuntu-latest
+      steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
 
-      - name: Clean Contracts
-        run: forge clean
+    - name: Clean Contracts
+      run: forge clean
 
-      - name: Compile Contracts
-        run: forge build
+    - name: Compile Contracts
+      run: forge build
