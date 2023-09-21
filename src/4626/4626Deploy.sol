@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
-import {Addresses} from "@test/proposals/Addresses.sol";
+import {Addresses} from "@proposals/Addresses.sol";
 import {CompoundERC4626} from "@protocol/4626/CompoundERC4626.sol";
 import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
 

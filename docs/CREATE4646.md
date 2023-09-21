@@ -14,7 +14,7 @@ In order to create a market, you must first have a market creator account. This 
 3. Set REWARDS_RECEIVER to the address you want to receive rewards in Addresses.sol
 4. Run the following command to deploy and initialize the markets:
 ```
-forge script test/proposals/Deploy4626Vaults.s.sol:Deploy4626Vaults \
+forge script proposals/Deploy4626Vaults.s.sol:Deploy4626Vaults \
     -vvvv \
     --rpc-url base \
     --broadcast --etherscan-api-key base --verify
