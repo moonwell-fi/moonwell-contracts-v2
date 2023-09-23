@@ -55,11 +55,22 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
 
     constructor() {
         /// for example, should be set to
-        /// LISTING_PATH="./proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
-        string memory descriptionPath = vm.envString("LISTING_PATH");
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile(descriptionPath)
+        /// LISTING_PATH="./proposals/mips/mip/mip-b06"
+        string memory mipPath = vm.envString("MIP_PATH");
+        console.log("mipPath: ", mipPath);
+        console.log(
+            "mipPath md: ",
+            string(abi.encodePacked(mipPath, "/MarketListingDescription.md"))
         );
+
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile(
+                string(
+                    abi.encodePacked(mipPath, "/MarketListingDescription.md")
+                )
+            )
+        );
+        console.log("1: ");
 
         _setProposalDescription(proposalDescription);
 
@@ -67,9 +78,10 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
         {
-            string memory mtokensPath = vm.envString("MTOKENS_PATH");
-            /// MTOKENS_PATH="./proposals/mips/examples/mip-market-listing/MTokens.json"
-            string memory fileContents = vm.readFile(mtokensPath);
+            string memory fileContents = vm.readFile(
+                string(abi.encodePacked(mipPath, "/MTokens.json"))
+            );
+            console.log("2: ");
             bytes memory rawJson = vm.parseJson(fileContents);
 
             CTokenConfiguration[] memory decodedJson = abi.decode(
@@ -83,25 +95,30 @@ contract mip0x is Proposal, CrossChainProposal, ChainIds, Configs {
                     "collateral factor absurdly high, are you sure you want to proceed?"
                 );
 
-                /// possible to set supply caps and not borrow caps,
-                /// but not set borrow caps and not set supply caps
-                if (decodedJson[i].supplyCap != 0) {
-                    require(
-                        decodedJson[i].supplyCap > decodedJson[i].borrowCap,
-                        "borrow cap gte supply cap, are you sure you want to proceed?"
-                    );
-                } else if (decodedJson[i].borrowCap != 0) {
-                    revert("borrow cap must be set with a supply cap");
-                }
+                require(
+                    decodedJson[i].supplyCap != 0,
+                    "each mToken must have a supply cap"
+                );
+
+                require(
+                    decodedJson[i].borrowCap != 0,
+                    "each mToken must have a borrow cap"
+                );
+
+                require(
+                    decodedJson[i].supplyCap > decodedJson[i].borrowCap,
+                    "borrow cap cannot be gte supply cap"
+                );
 
                 cTokenConfigurations[block.chainid].push(decodedJson[i]);
             }
         }
+        console.log("3");
 
         {
-            string memory mtokensPath = vm.envString("EMISSION_PATH");
-            /// EMISSION_PATH="./proposals/mips/examples/mip-market-listing/RewardStreams.json"
-            string memory fileContents = vm.readFile(mtokensPath);
+            string memory fileContents = vm.readFile(
+                string(abi.encodePacked(mipPath, "/RewardStreams.json"))
+            );
             bytes memory rawJson = vm.parseJson(fileContents);
             EmissionConfig[] memory decodedEmissions = abi.decode(
                 rawJson,
