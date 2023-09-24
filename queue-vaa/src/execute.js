@@ -47,10 +47,19 @@ class MoonwellEvent {
     console.log("Sent Discord message!");
   }
 
-  discordMessagePayload(color, text, txURL, networkName, sequence, timestamp, details) {
+  discordMessagePayload(color, resultText, txURL, networkName, sequence, timestamp) {
     const friendlyNetworkName =
       networkName === 'moonbase' ? 'Base Goerli'
         : 'Base'
+    const mipNumber = sequence - 1;
+    let mipString = '';
+    if (mipNumber < 10) {
+      mipString = `MIP-B0${mipNumber}`;
+    } else {
+      mipString = `MIP-B${mipNumber}`;
+    }
+    const text = `${resultText.slice(0, 1).toUpperCase()}${resultText.slice(1)} ${mipString} on ${friendlyNetworkName}`;
+    const details = `Governance proposal ${mipString} ${resultText} on the ${friendlyNetworkName} network.`;
     const baseFields = [
       {
         "name": "Network",
@@ -58,15 +67,15 @@ class MoonwellEvent {
         "inline": true
       },
       {
-        "name": "Sequence ID",
-        "value": sequence,
+        "name": "Proposal",
+        "value": mipString,
         "inline": true
       }
     ];
 
     if ((timestamp) && (timestamp > 0)) {
       baseFields.push({
-        "name": "Will be executed at",
+        "name": "Executed at",
         "value": `<t:${timestamp}>`,
         "inline": true
       });
@@ -184,12 +193,11 @@ Removed ${network}-${sequence} from the KV store.`
         const moonwellEvent = new MoonwellEvent();
         const discordPayload = moonwellEvent.discordMessagePayload(
           0x42B24E, // Green (Go color in Moonwell Guide)
-          `Successfully executed cross-chain proposal...`,
+          `successfully executed`,
           blockExplorer + tx.hash,
           network,
           sequence,
-          timestamp,
-          `The governance proposal associated with cross-chain message sequence ${sequence} successfully executed on the ${network} network.`
+          expiryTimestamp
         );
         await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
         return true;
@@ -207,12 +215,11 @@ Removed ${network}-${sequence} from the KV store.`
       const moonwellEvent = new MoonwellEvent();
       const discordPayload = moonwellEvent.discordMessagePayload(
         0xE83938, // Red (Caution color in Moonwell Guide)
-        `Execution of cross-chain proposal failed...`,
-        blockExplorer + tx.hash,
+        `failed to execute`,
+        "https://moonwell.fi/governance",
         network,
         sequence,
-        timestamp,
-        `The governance proposal associated with cross-chain message sequence ${sequence} failed to execute on the ${network} network.`
+        expiryTimestamp
       );
       await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
       return true;
