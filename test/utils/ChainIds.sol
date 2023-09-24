@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-abstract contract ChainIds {
+contract ChainIds {
     /// ------------ BASE ------------
 
     uint256 public constant baseChainId = 8453;
