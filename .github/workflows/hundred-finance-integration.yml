@@ -1,10 +1,6 @@
 name: Foundry hundred finance integration tests
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [push, pull_request]
 
 env:
   BASE_GOERLI_RPC_URL: ${{secrets.BASE_GOERLI_RPC_URL}}

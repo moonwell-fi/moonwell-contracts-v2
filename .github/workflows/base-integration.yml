@@ -1,10 +1,6 @@
 name: Foundry base integration tests
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [push, pull_request]
 
 env:
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
