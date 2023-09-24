@@ -1,6 +1,6 @@
 name: Foundry base goerli integration tests
 
-on: [push, pull_request]
+on: [pull_request]
 
 env:
   ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
