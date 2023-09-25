@@ -1,6 +1,8 @@
-# MIP-B05 Base Risk Recommendations
+# MIP-B05 Base Risk Recommendations Resubmission
 
 # Simple Summary
+
+The original proposal was approved but contained an error that prevented successful execution on Base. This issue has been corrected in this resubmission.
 
 ### Risk Parameters
 A proposal to adjust 5 risk parameters:
