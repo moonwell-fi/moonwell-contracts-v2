@@ -5,7 +5,6 @@ import "@forge-std/Test.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel} from "@protocol/IRModels/JumpRateModel.sol";
@@ -14,7 +13,7 @@ import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.so
 
 /// This MIP sets the IRM for an MToken contract.
 /// It is intended to be used as a template for future MIPs that need to set IRM's.
-contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
+contract mipb01 is Proposal, CrossChainProposal, Configs {
     string public constant name = "MIP-b01";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
@@ -42,13 +41,6 @@ contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function run(Addresses addresses, address) public override {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    }
-
-    function printCalldata(Addresses addresses) public override {
-        printActions(
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress("WORMHOLE_CORE")
-        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}

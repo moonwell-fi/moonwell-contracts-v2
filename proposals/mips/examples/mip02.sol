@@ -8,7 +8,6 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
@@ -23,7 +22,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 /// It reads in the configuration from Config.sol, which reads in the mainnetMTokens.json file and deploys the MTokens specified in that file.
 /// @dev be sure to include all necessary underlying and price feed addresses in the Addresses.sol contract for the network
 /// the MTokens are being deployed to.
-contract mip02 is Proposal, CrossChainProposal, ChainIds, Configs {
+contract mip02 is Proposal, CrossChainProposal, Configs {
     string public constant name = "MIP02";
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
 
@@ -278,16 +277,6 @@ contract mip02 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function run(Addresses addresses, address) public override {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    }
-
-    function printCalldata(Addresses addresses) public override {
-        printActions(
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress(
-                "WORMHOLE_CORE",
-                sendingChainIdToReceivingChainId[block.chainid]
-            )
-        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}

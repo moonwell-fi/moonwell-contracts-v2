@@ -10,7 +10,7 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {LibCompound} from "@protocol/4626/LibCompound.sol";
-import {mipb01 as mip} from "@proposals/mips/mip-b01/mip-b01.sol";
+import {mipb05 as mip} from "@proposals/mips/mip-b05/mip-b05.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {CompoundERC4626} from "@protocol/4626/CompoundERC4626.sol";
 import {Compound4626Deploy} from "@protocol/4626/4626Deploy.sol";
