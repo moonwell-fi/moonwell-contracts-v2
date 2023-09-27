@@ -36,6 +36,9 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
 
         vault = CompoundERC4626(addresses.getAddress("USDBC_VAULT"));
         comptroller = IComptroller(addresses.getAddress("UNITROLLER"));
+        underlying = ERC20(addresses.getAddress("USDBC"));
+        usdc = ERC20(addresses.getAddress("USDBC"));
+        well = ERC20(addresses.getAddress("WELL"));
     }
 
     function testSetup() public {
