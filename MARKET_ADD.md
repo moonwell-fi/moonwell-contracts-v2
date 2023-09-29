@@ -76,6 +76,12 @@ BASE_RPC_URL="https://mainnet.base.org"
 
 Or by setting to a private RPC endpoint if the public end point is not working.
 
+To get local tests running a chainfork with the new proposal type, set the `PROPOSAL_ARTIFACT_PATH` to the path of the proposal artifact. For example, if the proposal artifact is located at `artifacts/foundry/mip-b05.sol/mipb05.json`, the environment variable should be set to:
+
+```export PROPOSAL_ARTIFACT_PATH=artifacts/foundry/mip-b05.sol/mipb05.json```
+
+Once this has been set, then integration tests can be created which ensure the proposal is working as expected.
+
 If deploying and generating calldata for the first time, environment variable `DO_AFTER_DEPLOY_MTOKEN_BROADCAST` should be set to true. After doing deploy and setting the addresses in `Addresses.sol`, this variable should be set to false. This variable is used to determine whether or not to broadcast the after deploy transactions that configure the MToken, which are not needed after the tokens are deployed.
 
 If any errors show up relating to not being able to read in a file, double check the environment variables and make sure the paths are correct.
