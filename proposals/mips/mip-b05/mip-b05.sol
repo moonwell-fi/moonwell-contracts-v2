@@ -101,9 +101,6 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
 
         // =========== ETH CF Update ============
 
-        // Check Preconditions
-        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), ETH_PREVIOUS_CF);
-
         // Add update action
         _pushCrossChainAction(
             unitrollerAddress,
@@ -116,9 +113,6 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
         );
 
         // =========== cbETH CF Update ============
-
-        // Check Preconditions
-        _validateCF(addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_PREVIOUS_CF);
 
         // Add update action
         _pushCrossChainAction(
@@ -133,9 +127,6 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
 
         // =========== DAI CF Update ============
 
-        // Check Preconditions
-        _validateCF(addresses, addresses.getAddress("MOONWELL_DAI"), DAI_PREVIOUS_CF);
-
         // Add update action
         _pushCrossChainAction(
             unitrollerAddress,
@@ -148,19 +139,6 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
         );
 
         // =========== WETH IR Update ============
-
-        // Check Preconditions
-        address wethPreviousJumpRateModelAddress = 0x4393277B02ef3cA293990A772B7160a8c76F2443;
-        _validateJRM(
-            wethPreviousJumpRateModelAddress,
-            addresses.getAddress("MOONWELL_WETH"),
-            IRParams({
-                baseRatePerTimestamp: 0.01e18,
-                kink: 0.75e18,
-                multiplierPerTimestamp: 0.04e18,
-                jumpMultiplierPerTimestamp: 3.8e18
-            })
-        );
 
         // Add update action
         _pushCrossChainAction(
@@ -181,14 +159,6 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
 
         // =========== DAI IR Update ============
 
-        // Check Preconditions
-        address daiPreviousJumpRateModelAddress = 0xbc93DdFAE192926BE036c6A6Dd544a0e250Ab97D;
-        _validateJRM(
-            daiPreviousJumpRateModelAddress,
-            addresses.getAddress("MOONWELL_DAI"),
-            previousStablecoinIRParams
-        );
-
         // Add update action
         _pushCrossChainAction(
             addresses.getAddress("MOONWELL_DAI"),
@@ -201,14 +171,6 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
 
         // =========== USDC IR Update ============
 
-        // Check Preconditions
-        address usdcPreviousJumpRateModelAddress = 0x93AEE5b2431991eB96869057e98B0a7e9262cDEb;
-        _validateJRM(
-            usdcPreviousJumpRateModelAddress,
-            addresses.getAddress("MOONWELL_USDC"),
-            previousStablecoinIRParams
-        );
-
         // Add update action
         _pushCrossChainAction(
             addresses.getAddress("MOONWELL_USDC"),
@@ -220,14 +182,6 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
         );
 
         // =========== USDbC IR Update ============
-
-        // Check Preconditions
-        address usdbcPreviousJumpRateModelAddress = 0x1603178b26C3bc2cd321e9A64644ab62643d138B;
-        _validateJRM(
-            usdbcPreviousJumpRateModelAddress,
-            addresses.getAddress("MOONWELL_USDBC"),
-            previousStablecoinIRParams
-        );
 
         // Add update action
         _pushCrossChainAction(
