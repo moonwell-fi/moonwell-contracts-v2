@@ -115,7 +115,6 @@ contract NativeUSDCLiveSystemBaseTest is Test, Configs {
         mUSDC.borrow(borrowAmount);
     }
 
-
     function testMintMTokenSucceeds() public {
         address sender = address(this);
         uint256 mintAmount = 100e6;
@@ -162,7 +161,6 @@ contract NativeUSDCLiveSystemBaseTest is Test, Configs {
         comptroller.exitMarket(address(mToken));
     }
 
-
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
         vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
         mrd._updateBorrowSpeed(
@@ -194,6 +192,45 @@ contract NativeUSDCLiveSystemBaseTest is Test, Configs {
         assertEq(config.endTime, emissionConfig[0].endTime);
     }
 
+    function testDonationAttackFails(uint128 amount) public {
+        address weth = addresses.getAddress("WETH");
+        /// mint some small amt of tokens
+        uint256 mintAmount = _getMaxSupplyAmount(
+            addresses.getAddress("MOONWELL_WETH")
+        ) / 1000;
+        deal(weth, address(this), mintAmount * 2 + amount);
+
+        IERC20(weth).approve(
+            addresses.getAddress("MOONWELL_WETH"),
+            type(uint256).max
+        );
+
+        MErc20 mWeth = MErc20(addresses.getAddress("MOONWELL_WETH"));
+
+        assertEq(mWeth.mint(mintAmount), 0);
+
+        address[] memory mTokens = new address[](1);
+        mTokens[0] = address(mWeth);
+
+        comptroller.enterMarkets(mTokens);
+
+        assertEq(mWeth.borrow(mintAmount / 3), 0);
+
+        deal(weth, address(this), amount);
+
+        assertEq(mWeth._addReserves(amount), 0);
+
+        assertEq(mWeth.accrueInterest(), 0);
+
+        assertTrue(mWeth.exchangeRateStored() > 1e6, "exchange rate sanity check"); /// doesn't revert
+
+        deal(weth, address(this), mWeth.borrowBalanceCurrent(address(this)));
+
+        assertEq(mWeth.repayBorrow(mWeth.borrowBalanceCurrent(address(this))), 0, "repay check");
+
+        assertEq(mWeth.redeem(mWeth.balanceOf(address(this))), 0, "redeem sanity check");
+    }
+
     function _getMaxSupplyAmount(
         address mToken
     ) internal view returns (uint256) {
@@ -217,4 +254,6 @@ contract NativeUSDCLiveSystemBaseTest is Test, Configs {
 
         return borrowCap - totalBorrows - 1;
     }
+
+    fallback() external payable {}
 }
