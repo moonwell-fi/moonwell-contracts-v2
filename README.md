@@ -15,5 +15,5 @@ Basic development workflow:
 - use `forge test --match-contract IntegrationTest --fork-url $ETH_RPC_URL` to run the integration tests
 - use `forge test --match-contract ArbitrumTest --fork-url $ARB_RPC_URL` to run the ChainlinkCompositeOracle tests
 - use `forge test --match-contract LiveSystemTest --fork-url baseGoerli` to run the base goerli live system tests
-- use `forge script test/proposals/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url $ETH_RPC_URL` to do a dry run of the deployment script
+- use `forge script proposals/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url $ETH_RPC_URL` to do a dry run of the deployment script
 

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
@@ -10,45 +8,30 @@ import "@forge-std/Test.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@test/proposals/Configs.sol";
-import {Addresses} from "@test/proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {Addresses} from "@proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {mipb02 as mip} from "@test/proposals/mips/mip-b02/mip-b02.sol";
-import {TestProposals} from "@test/proposals/TestProposals.sol";
+import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
 
-contract LiveSystemBaseTest is Test, Configs {
+contract LiveSystemBaseTest is PostProposalCheck, Configs {
     MultiRewardDistributor mrd;
     Comptroller comptroller;
-    TestProposals proposals;
-    Addresses addresses;
     WETHRouter router;
     ChainlinkOracle oracle;
     WETH9 weth;
     address public well;
 
-    function setUp() public {
-        address[] memory mips = new address[](1);
-        mips[0] = address(new mip());
+    function setUp() public override {
+        super.setUp();
 
-        proposals = new TestProposals(mips);
-        proposals.setUp();
-        addresses = proposals.addresses();
-        proposals.testProposals(
-            false,
-            false,
-            false,
-            false,
-            true,
-            true,
-            false,
-            false
-        ); /// only setup after deploy, build, and run, do not validate
+
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         well = addresses.getAddress("WELL");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));

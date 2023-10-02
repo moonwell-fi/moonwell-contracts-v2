@@ -8,10 +8,9 @@ import "@forge-std/Test.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
-import {Addresses} from "@test/proposals/Addresses.sol";
+import {Addresses} from "@proposals/Addresses.sol";
 import {LibCompound} from "@protocol/4626/LibCompound.sol";
-import {mipb05 as mip} from "@test/proposals/mips/mip-b05/mip-b05.sol";
-import {TestProposals} from "@test/proposals/TestProposals.sol";
+import {TestProposals} from "@proposals/TestProposals.sol";
 import {CompoundERC4626} from "@protocol/4626/CompoundERC4626.sol";
 import {Compound4626Deploy} from "@protocol/4626/4626Deploy.sol";
 import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
@@ -30,31 +29,16 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
     CompoundERC4626 public vault;
 
     function setUp() public {
-        address[] memory mips = new address[](1);
-        mips[0] = address(new mip());
-
-        proposals = new TestProposals(mips);
-        proposals.setUp();
-        proposals.testProposals(
-            false,
-            true,
-            false,
-            false,
-            true,
-            true,
-            false,
-            true
-        ); /// only setup after deploy, build, and run, do not validate
-        addresses = proposals.addresses();
-        comptroller = IComptroller(addresses.getAddress("UNITROLLER"));
-        usdc = ERC20(addresses.getAddress("USDBC"));
-        well = ERC20(addresses.getAddress("WELL"));
-        underlying = usdc;
+        addresses = new Addresses();
 
         addresses.addAddress("REWARDS_RECEIVER", rewardRecipient);
         deployVaults(addresses, rewardRecipient);
 
         vault = CompoundERC4626(addresses.getAddress("USDBC_VAULT"));
+        comptroller = IComptroller(addresses.getAddress("UNITROLLER"));
+        underlying = ERC20(addresses.getAddress("USDBC"));
+        usdc = ERC20(addresses.getAddress("USDBC"));
+        well = ERC20(addresses.getAddress("WELL"));
     }
 
     function testSetup() public {
