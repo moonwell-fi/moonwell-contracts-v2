@@ -11,7 +11,6 @@ import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/Governance/IWormhole.sol";
@@ -28,7 +27,7 @@ import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/Mul
 import {JumpRateModel, InterestRateModel} from "@protocol/IRModels/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
-contract mipb00 is Proposal, CrossChainProposal, ChainIds, Configs {
+contract mipb00 is Proposal, CrossChainProposal, Configs {
     string public constant name = "MIP-B00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
     uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
@@ -451,16 +450,6 @@ contract mipb00 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function run(Addresses addresses, address) public override {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    }
-
-    function printCalldata(Addresses addresses) public override {
-        printActions(
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress(
-                "WORMHOLE_CORE",
-                sendingChainIdToReceivingChainId[block.chainid]
-            )
-        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}

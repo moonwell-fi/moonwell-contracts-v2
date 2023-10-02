@@ -5,7 +5,6 @@ import "@forge-std/Test.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {TimelockProposal} from "@proposals/proposalTypes/TimelockProposal.sol";
@@ -17,7 +16,7 @@ import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/Mul
 /// contract. It is intended to be used as a template for future MIPs that need to set reward speeds.
 /// The first step is to open `mainnetRewardStreams.json` and add the reward streams for the
 /// different mTokens. Then generate calldata by adding MIP01 to the TestProposals file.
-contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
+contract mipb01 is Proposal, CrossChainProposal, Configs {
     string public constant name = "MIP01";
 
     function deploy(Addresses addresses, address) public override {}
@@ -57,16 +56,6 @@ contract mipb01 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function run(Addresses addresses, address) public override {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    }
-
-    function printCalldata(Addresses addresses) public override {
-        printActions(
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress(
-                "WORMHOLE_CORE",
-                sendingChainIdToReceivingChainId[block.chainid]
-            )
-        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}

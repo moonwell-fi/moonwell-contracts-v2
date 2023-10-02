@@ -5,7 +5,6 @@ import "@forge-std/Test.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {TimelockProposal} from "@proposals/proposalTypes/TimelockProposal.sol";
@@ -13,7 +12,7 @@ import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.so
 import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
 
 /// This MIP sets the price feeds for wstETH and cbETH.
-contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
+contract mipt01 is Proposal, CrossChainProposal, Configs {
     string public constant name = "mip-t01";
 
     constructor() {
@@ -64,16 +63,6 @@ contract mipt01 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function run(Addresses addresses, address) public override {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    }
-
-    function printCalldata(Addresses addresses) public override {
-        printActions(
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress(
-                "WORMHOLE_CORE",
-                sendingChainIdToReceivingChainId[block.chainid]
-            )
-        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}

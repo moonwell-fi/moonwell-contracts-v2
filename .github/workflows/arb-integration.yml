@@ -1,10 +1,6 @@
 name: Foundry arb integration tests
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [pull_request]
 
 env:
   ARB_RPC_URL: ${{secrets.ARB_RPC_URL}}

@@ -128,7 +128,7 @@ contract CompoundERC4626 is ERC4626 {
     }
 
     /// -----------------------------------------------------------------------
-    /// ERC4626 overrides
+    /// ERC4626 override
     /// -----------------------------------------------------------------------
 
     function totalAssets() public view virtual override returns (uint256) {

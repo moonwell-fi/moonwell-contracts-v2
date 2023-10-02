@@ -47,7 +47,16 @@ class MoonwellEvent {
     console.log("Sent Discord message!");
   }
 
-  discordMessagePayload(color, text, txURL, networkName, sequence, timestamp, details) {
+  discordMessagePayload(color, txURL, networkName, sequence, timestamp) {
+    const mipNumber = sequence - 1;
+    let mipString = '';
+    if (mipNumber < 10) {
+      mipString = `MIP-B0${mipNumber}`;
+    } else {
+      mipString = `MIP-B${mipNumber}`;
+    }
+    const text = `Scheduled cross-chain execution of ${mipString} on ${networkName}`;
+    const details = `Upon successful completion of ${mipString}, it should be automatically executed on the ${networkName} network exactly 24 hours from now.`
     const baseFields = [
       {
         "name": "Network",
@@ -55,8 +64,8 @@ class MoonwellEvent {
         "inline": true
       },
       {
-        "name": "Sequence ID",
-        "value": sequence,
+        "name": "Proposal",
+        "value": mipString,
         "inline": true
       }
     ];
@@ -135,7 +144,7 @@ const fetchVAA = async (sequence, retries = 5, delay = 2000) => {
   throw new Error("Failed to fetch VAA after multiple retries");
 }
 
-async function storeVAA(event, sequence) {
+async function storeVAA(event, sequence, timestamp) {
   console.log('Storing sequence in KV store...');
   const kvStore = new KeyValueStoreClient(event);
   let value = await kvStore.get(network);
@@ -147,9 +156,6 @@ async function storeVAA(event, sequence) {
   }
   await kvStore.put(network, value);
   console.log(`Updated KV store value for ${network}: ${value}`);
-  let timestamp = Math.floor(Date.now() / 1000);
-  // On testnet, there is no 24 hour timelock
-  timestamp += 60 * 60 * 24 // 24 hours
   await kvStore.put(`${network}-${sequence}`, timestamp.toString());
   console.log(`Stored ${network}-${sequence} with expiry ${timestamp}`);
 }
@@ -176,25 +182,26 @@ exports.handler = async function(event, context) {
   const contract = new ethers.Contract(tgAddress, temporalGovernorABI, signer);
   const tx = await contract.queueProposal(vaa);
   console.log(`Called queueProposal in ${tx.hash}`);
-  await storeVAA(event, sequence);
+  let timestamp = Math.floor(Date.now() / 1000);
+  // On testnet, there is no 24 hour timelock
+  timestamp += 60 * 60 * 24 // 24 hours
+  await storeVAA(event, sequence, timestamp);
   notificationClient.send({
     channelAlias: 'Parameter Changes to Slack',
     subject: `Inserted queued VAA ${sequence} on ${network}`,
-    message: `Inserted a queued key/value at future timestamp ${timestamp}, stored sequence value ${value} for ${network}`
+    message: `Inserted a queued key/value at future timestamp ${timestamp} for ${network}`
   });
-  const { GOVBOT_WEBHOOK } = credentials.secrets;
+  const { GOVBOT_WEBHOOK } = event.secrets;
   const moonwellEvent = new MoonwellEvent();
   const friendlyNetworkName = 
-    networkName === 'moonbase' ? 'Base Goerli'
+    network === 'moonbase' ? 'Base Goerli'
     : 'Base'
   const discordPayload = moonwellEvent.discordMessagePayload(
     0x00ff00,
-    `Scheduled cross-chain execution of sequence ${sequence} on ${network}`,
     blockExplorer + tx.hash,
     friendlyNetworkName,
     sequence,
-    timestamp,
-    `Upon successful completion of a governance proposal, it should be automatically executed on the ${friendlyNetworkName} network exactly 24 hours from now.`
+    timestamp
   );
   await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
   return { tx: tx.hash };

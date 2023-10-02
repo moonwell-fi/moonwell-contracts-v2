@@ -2,14 +2,16 @@ pragma solidity 0.8.19;
 
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
+import {Addresses} from "@proposals/Addresses.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+import {ChainIds} from "@test/utils/ChainIds.sol";
 
 import "@forge-std/Test.sol";
 
 import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
-abstract contract CrossChainProposal is MultisigProposal, MarketCreationHook {
+abstract contract CrossChainProposal is MultisigProposal, MarketCreationHook, ChainIds {
     uint32 private constant nonce = 0; /// nonce for wormhole, unused by Temporal Governor
 
     /// instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
@@ -189,5 +191,15 @@ abstract contract CrossChainProposal is MultisigProposal, MarketCreationHook {
 
             console.log("\n");
         }
+    }
+
+    function printCalldata(Addresses addresses) public override {
+        printActions(
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
+            addresses.getAddress(
+                "WORMHOLE_CORE",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
+        );
     }
 }

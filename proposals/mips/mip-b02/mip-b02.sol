@@ -5,7 +5,6 @@ import "@forge-std/Test.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
@@ -27,7 +26,7 @@ export DO_VALIDATE=true
 
 /// forge script proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv
 
-contract mipb02 is Proposal, CrossChainProposal, ChainIds, Configs {
+contract mipb02 is Proposal, CrossChainProposal, Configs {
     string public constant name = "MIP-b02";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
@@ -66,16 +65,6 @@ contract mipb02 is Proposal, CrossChainProposal, ChainIds, Configs {
 
     function run(Addresses addresses, address) public override {
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    }
-
-    function printCalldata(Addresses addresses) public override {
-        printActions(
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress(
-                "WORMHOLE_CORE",
-                sendingChainIdToReceivingChainId[block.chainid]
-            )
-        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}
