@@ -1,10 +1,6 @@
 name: Foundry unit tests
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [pull_request]
 
 jobs:
   unit-tests:
@@ -19,6 +15,9 @@ jobs:
 
       - name: Setup Environment
         uses: ./.github/actions
+
+      - name: Set PROPOSAL_ARTIFACT_PATH environment variable
+        run: bash ./.github/helper/set-env-var.sh
 
       - name: Unit Test Contracts
         run: time forge test -vvv --match-contract UnitTest

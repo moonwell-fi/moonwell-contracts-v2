@@ -5,40 +5,23 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {mipb01} from "@test/proposals/mips/mip-b01/mip-b01.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@test/proposals/Configs.sol";
-import {Addresses} from "@test/proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {TestProposals} from "@test/proposals/TestProposals.sol";
+import {TestProposals} from "@proposals/TestProposals.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
-contract IRModelWethUpgradeLiveSystemBaseTest is Test, Configs {
+contract IRModelWethUpgradeLiveSystemBaseTest is PostProposalCheck, Configs {
     Comptroller comptroller;
-    TestProposals proposals;
-    Addresses addresses;
     MErc20 mUSDbC;
     MErc20 mWeth;
     MErc20 mcbEth;
 
-    function setUp() public {
-        mipb01 mip = new mipb01();
-        address[] memory mips = new address[](1);
-        mips[0] = address(mip);
+    function setUp() public override {
+        super.setUp();
 
-        proposals = new TestProposals(mips);
-        proposals.setUp();
-        addresses = proposals.addresses();
-        proposals.testProposals(
-            false,
-            false,
-            false,
-            true,
-            true,
-            true,
-            false,
-            true
-        ); /// only setup after deploy, build, and run, do not validate
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mUSDbC = MErc20(addresses.getAddress("MOONWELL_USDBC"));
         mWeth = MErc20(addresses.getAddress("MOONWELL_WETH"));

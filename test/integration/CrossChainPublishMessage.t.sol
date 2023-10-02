@@ -6,11 +6,11 @@ import "@forge-std/Test.sol";
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
-import {Addresses} from "@test/proposals/Addresses.sol";
+import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/Governance/IWormhole.sol";
-import {mipb01 as mip} from "@test/proposals/mips/mip-b01/mip-b01.sol";
-import {TestProposals} from "@test/proposals/TestProposals.sol";
-import {CrossChainProposal} from "@test/proposals/proposalTypes/CrossChainProposal.sol";
+import {mipb05 as mip} from "@proposals/mips/mip-b05/mip-b05.sol";
+import {TestProposals} from "@proposals/TestProposals.sol";
+import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
 /// @notice run this on a chainforked moonbeam node.
@@ -47,7 +47,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds {
             true,
             true,
             false,
-            false,
+            true,
             true,
             true,
             false,

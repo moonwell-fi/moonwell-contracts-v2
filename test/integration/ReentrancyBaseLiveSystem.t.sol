@@ -7,12 +7,12 @@ import "@forge-std/Test.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@test/proposals/Configs.sol";
-import {Addresses} from "@test/proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {Addresses} from "@proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {mipb02 as mip} from "@test/proposals/mips/mip-b02/mip-b02.sol";
-import {TestProposals} from "@test/proposals/TestProposals.sol";
+import {mipb02 as mip} from "@proposals/mips/mip-b02/mip-b02.sol";
+import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MaliciousBorrower} from "@test/mock/MaliciousBorrower.sol";
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";

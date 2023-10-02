@@ -5,20 +5,22 @@ The proposal simulation framework is a way to test the governance system. It run
 
 View the `IProposal` file, it defines the interface for a Moonwell Improvement Proposal.
 
-Make a new file, MIPXX in the same folder as MIP00. Fill in everything the proposal should do in each step. Be sure to use the CrossChainProposal and not any other proposal type for proposals happening on Base.
+Make a new folder under the `proposals/mips/` directory named `mip-bXX`, create file `mip-bxx.sol` in the same folder that was just created. Fill in everything the proposal should do in each step. Be sure to use the CrossChainProposal and not any other proposal type for proposals happening on Base.
 
-See example code in mip01 where the executor is TEMPORAL_GOVERNOR. While simulating a cross chain gov proposal, TEMPORAL_GOVERNOR must be the executor. In validate, it should validate all state changes that occurred during the gov proposal checking that all parameters are properly set.
+Import the TestProposals file into a new file, and create tests to ensure the system operates normally after the governance proposal. These tests should follow the same pattern as found in `LiveSystemTest` and `SystemUpgradeUnitTest`
 
-Then in TestProposals file, copy the same pattern used for MIP00, but remove MIP00 and replace it with MIPXX and push any other proposals that need to be run sequentially.
+Now set the environment variable to your new proposal, and run the integration tests. They will now validate the state change after your proposal passes.
 
-Then import the TestProposals file into a new file, and create tests to ensure the system operates normally after the governance proposal. These tests should follow the same pattern as found in `LiveSystemTest` and `SystemUpgradeUnitTest`
+```export PROPOSAL_ARTIFACT_PATH=artifacts/foundry/mip-b05.sol/mipb05.json```
 
 Run the tests with the fork test.
 
-```forge test --match-contract your_contract_name --fork-url base```
+```forge test --match-contract LiveSystemBaseTest --fork-url base -vvv```
 
-Example proposal MIP01 can be found, which creates reward streams for the system on base.
+Example proposal MIPB-01, can be found, which creates reward streams for the system on base.
 
+## Nonce
+Please note: the nonce field set in [CrossChainProposal.sol](./../proposals/proposalTypes/CrossChainProposal.sol) is completely extraneous as this field is not used in the Temporal Governor when it processes cross chain messages. There is no need to set this field in any cross chain proposal.
 
 ### Generating Calldata for an Existing Proposal
 
@@ -31,6 +33,7 @@ First, set the environment variables for which actions you want to be run during
 - **DO_RUN** - Whether or not to simulate the execution of the proposal. Defaults to true.
 - **DO_TEARDOWN** - Whether or not to run the teardown script. Defaults to true.
 - **DO_VALIDATE** - Whether or not to run validation checks after all previous steps have been run. Defaults to true.
+- **PROPOSAL_ARTIFACT_PATH** - Path to the artifact of the governance proposal you would like to run.
 
 Set the environment variables to true or false depending on which steps you want to run.
 
@@ -46,20 +49,12 @@ Or by setting it to a private RPC endpoint if the public end point is not workin
 
 To generate calldata for an existing proposal, run the following command, where the proposal is the proposal you want to generate calldata for, and the network is the network you want to generate calldata for.
 
-```forge script test/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv```
+```forge script proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv```
 
 add the following flags to deploy and verify against the base network:
 
-```forge script test/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify```
+```forge script proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify```
 
 ##### Debugging
 
 If running the script is failing, the first thing you should do is double check that your environment variables are set correctly. If they aren't, the script will fail. Other areas to investigate are the output log of the failure as that can inform you of what went wrong.
-
-### MIP00
-
-In order to configure the system before go live on Base, we need to run a proposal to set the initial parameters. This proposal is MIP00. It is a cross chain proposal that sets the initial parameters for the system. It is run on Base, and then the system is deployed to the other networks. The proposal is then run on the other networks to set the parameters for those networks.
-
-Currently, there are mock values in the `mainnetMTokens.json` file that are used to set the initial parameters. These values are not final, and will be updated by Guantlet before go live.
-
-Additionally, the Pause Guardian, Borrow Supply Guardian, and other parameters like the chainlink oracles, and underlying tokens must be set in the `Addresses.sol` before the proposal is run.
