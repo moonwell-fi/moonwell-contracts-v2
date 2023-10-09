@@ -491,7 +491,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_USDBC",
             8453,
-            0x33DeAc0861FD6a9235b86172AA939E79085c6f52
+            0x492dcEF1fc5253413fC5576B9522840a1A774DCe
         );
         _addAddress(
             "MOONWELL_DAI",
@@ -501,7 +501,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_DAI",
             8453,
-            0x33DeAc0861FD6a9235b86172AA939E79085c6f52
+            0x492dcEF1fc5253413fC5576B9522840a1A774DCe
         );
         _addAddress(
             "MOONWELL_USDBC",
@@ -511,7 +511,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_USDC",
             8453,
-            0x33DeAc0861FD6a9235b86172AA939E79085c6f52
+            0x492dcEF1fc5253413fC5576B9522840a1A774DCe
         );
         _addAddress(
             "MOONWELL_USDC",
@@ -521,7 +521,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_WETH",
             8453,
-            0x6bcE15B789e537f3abA3C60CB183F0E8737f05eC
+            0x142DCAEC322aAA25141B2597bf348487aDBd596d
         );
         _addAddress(
             "MOONWELL_WETH",
@@ -531,7 +531,7 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_cbETH",
             8453,
-            0x523262439bAa43C9f722339879a15e1E05FB6696
+            0x78Fe5d0427E669ba9F964C3495fF381a805a0487
         );
         _addAddress(
             "MOONWELL_cbETH",
