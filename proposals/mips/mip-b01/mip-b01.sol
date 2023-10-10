@@ -40,11 +40,6 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
     }
-
-    function run(Addresses addresses, address) public override {
-        _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    }
-
     function teardown(Addresses addresses, address) public pure override {}
 
     /// @notice assert that the new interest rate model is set correctly
