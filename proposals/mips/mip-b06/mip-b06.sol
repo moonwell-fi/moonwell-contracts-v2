@@ -238,10 +238,6 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
 
     }
 
-    function run(Addresses addresses, address) public override {
-        _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    }
-
     function teardown(Addresses addresses, address) public pure override {}
 
     /// @notice assert that the new interest rate model is set correctly
