@@ -19,7 +19,7 @@ contract RecoveryDeploymentLiveSystemBaseTest is Configs, RecoveryDeploy {
     /// @notice foundation multisig address
     address foundationMultisig;
 
-    function _setUp() private {
+    function setUp() public {
         vm.deal(deployer, 1);
         vm.startPrank(deployer);
 
@@ -33,12 +33,10 @@ contract RecoveryDeploymentLiveSystemBaseTest is Configs, RecoveryDeploy {
     }
 
     function testVerifyDeploy() public {
-        _setUp();
         verifyDeploy(recover);
     }
 
     function testPullFunds() public {
-        _setUp();
         uint256 recoveryBalance = address(recover).balance;
         uint256 multisigStartingBalance = foundationMultisig.balance;
 
