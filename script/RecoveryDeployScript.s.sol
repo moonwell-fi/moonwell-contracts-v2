@@ -9,6 +9,14 @@ import {Recovery} from "@protocol/Recovery.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {RecoveryDeploy} from "@test/utils/RecoveryDeploy.sol";
 
+/*
+ to simulate:
+    forge script script/RecoveryDeployScript.s.sol:RecoveryDeployScript \
+     \ -vvvvv --rpc-url base --with-gas-price 500000
+ to run:
+    forge script script/RecoveryDeployScript.s.sol:RecoveryDeployScript \
+     \ -vvvvv --rpc-url base --with-gas-price 500000 --broadcast
+*/
 contract RecoveryDeployScript is Script, Test, RecoveryDeploy {
     /// @notice addresses contract
     Addresses addresses;
