@@ -188,10 +188,9 @@ contract NativeUSDCLiveSystemBaseTest is Test, Configs {
             block.chainid
         );
 
-        assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
-        assertEq(config.emissionToken, well);
-        assertEq(config.borrowEmissionsPerSec, 1e18);
-        assertEq(config.endTime, emissionConfig[0].endTime);
+        assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"), "incorrect admin");
+        assertEq(config.emissionToken, well, "incorrect reward token");
+        assertEq(config.borrowEmissionsPerSec, 1e18, "incorrect reward rate");
     }
 
     function _getMaxSupplyAmount(

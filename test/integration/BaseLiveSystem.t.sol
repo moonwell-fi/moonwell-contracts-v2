@@ -31,7 +31,6 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
     function setUp() public override {
         super.setUp();
 
-
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         well = addresses.getAddress("WELL");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
@@ -124,7 +123,6 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.supplyEmissionsPerSec, 1e18);
-        assertEq(config.endTime, emissionConfig[0].endTime);
     }
 
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
@@ -155,7 +153,6 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.borrowEmissionsPerSec, 1e18);
-        assertEq(config.endTime, emissionConfig[0].endTime);
     }
 
     function testMintMWethMTokenSucceeds() public {

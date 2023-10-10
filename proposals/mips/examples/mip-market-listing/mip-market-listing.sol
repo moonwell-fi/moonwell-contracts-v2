@@ -14,6 +14,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/Governance/IWormhole.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {MIPProposal} from "@proposals/MIPProposal.s.sol";
 import {PriceOracle} from "@protocol/Oracles/PriceOracle.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
@@ -390,7 +391,7 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public override {
+    function run(Addresses addresses, address) public override(CrossChainProposal, MIPProposal) {
         printCalldata(addresses);
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
