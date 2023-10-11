@@ -54,10 +54,6 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public override {
-        _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    }
-
     function teardown(Addresses addresses, address) public pure override {}
 
     /// @notice assert that all the configurations are correctly set
