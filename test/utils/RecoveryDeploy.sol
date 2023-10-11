@@ -45,9 +45,9 @@ contract RecoveryDeploy is Test {
     function mainnetDeployScript(address owner) public returns (Recovery) {
         /// 1901 tx's to get to the right nonce
         for (uint256 i = 0; i < 1901; i++) {
-            (bool success, ) = address(0).call{value: 0}("");
+            (bool success, ) = address(owner).call{value: 1}("");
             success;
-            vm.getNonce(owner);
+            console.log(vm.getNonce(owner));
         }
 
         Recovery recover = deploy(owner);

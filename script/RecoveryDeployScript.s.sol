@@ -39,9 +39,12 @@ contract RecoveryDeployScript is Script, Test, RecoveryDeploy {
             "FOUNDATION_MULTISIG"
         );
 
-        vm.startBroadcast(deployer);
+        address deployerAddress = vm.addr(PRIVATE_KEY);
+
+        vm.startBroadcast(PRIVATE_KEY);
+
         /// send all 1901 tx's, then deploy
-        recovery = mainnetDeployAndVerifyScript(deployer);
+        recovery = mainnetDeployAndVerifyScript(deployerAddress);
 
         uint256 recoveryBalance = address(recovery).balance;
         uint256 multisigStartingBalance = foundationMultisig.balance;
@@ -50,10 +53,10 @@ contract RecoveryDeployScript is Script, Test, RecoveryDeploy {
         vm.stopBroadcast();
 
         /// should have sent 1902 transactions
-        assertEq(vm.getNonce(deployer), 1903, "incorrect nonce");
+        assertEq(vm.getNonce(deployerAddress), 1903, "incorrect nonce");
         assertEq(
             recoveryBalance,
-            multisigStartingBalance,
+            foundationMultisig.balance - multisigStartingBalance,
             "recovery balance not given to foundation multisig"
         );
         assertEq(address(recovery).balance, 0, "recovery balance not 0");
