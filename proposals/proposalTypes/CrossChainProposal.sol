@@ -11,7 +11,11 @@ import "@forge-std/Test.sol";
 import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
-abstract contract CrossChainProposal is MultisigProposal, MarketCreationHook, ChainIds {
+abstract contract CrossChainProposal is
+    MultisigProposal,
+    MarketCreationHook,
+    ChainIds
+{
     uint32 private constant nonce = 0; /// nonce for wormhole, unused by Temporal Governor
 
     /// instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
@@ -201,5 +205,9 @@ abstract contract CrossChainProposal is MultisigProposal, MarketCreationHook, Ch
                 sendingChainIdToReceivingChainId[block.chainid]
             )
         );
+    }
+
+    function run(Addresses addresses, address) public virtual override {
+        _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 }
