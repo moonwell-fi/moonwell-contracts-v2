@@ -1,0 +1,1 @@
+# MIP-B07 USDC Emission Configuration
