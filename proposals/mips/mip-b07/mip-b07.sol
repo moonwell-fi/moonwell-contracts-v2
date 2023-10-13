@@ -64,8 +64,8 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
                     mrd,
                     abi.encodeWithSignature(
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
-                        config.mToken,
-                        config.owner,
+                        addresses.getAddress(config.mToken),
+                        addresses.getAddress(config.owner),
                         config.emissionToken,
                         config.supplyEmissionPerSec,
                         config.borrowEmissionsPerSec,
