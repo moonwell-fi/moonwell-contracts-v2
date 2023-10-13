@@ -71,7 +71,7 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
                         config.borrowEmissionsPerSec,
                         config.endTime
                     ),
-                    "Temporal governor accepts admin on Unitroller"
+                    config.mToken
                 );
             }
         }
