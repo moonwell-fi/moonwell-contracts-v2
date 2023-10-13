@@ -558,6 +558,12 @@ contract Addresses is Test, ChainIds {
             8453,
             0x599D4a1538d686814eE11b331EACBBa166D7C41a
         );
+
+        _addAddress(
+            "FOUNDATION_MULTISIG",
+            baseChainId,
+            0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa
+        );
     }
 
     /// @notice add an address for a specific chainId
