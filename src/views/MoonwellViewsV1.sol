@@ -7,10 +7,12 @@ import {MToken} from "@protocol/MToken.sol";
 import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
 
 /**
- * @title Moonwell's Views Contract for V1 deployment (pre Basechain deployment)
+ * @title Moonwell Views Contract for V1 deployment (pre Basechain deployment)
  * @author Moonwell
  */
 contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
+    uint224 public constant initialIndexConstant = 1e36;
+
     function getSupplyCaps(address) public pure override returns (uint) {
         return 0;
     }
@@ -42,6 +44,113 @@ contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
         return _result;
     }
 
+    function getRewardSupplyIndex(
+        ComptrollerInterfaceV1 comptroller,
+        uint8 rewardType,
+        address mToken
+    )
+        public
+        view
+        returns (ComptrollerInterfaceV1.RewardMarketState memory _result)
+    {
+        require(rewardType <= 1, "rewardType is invalid");
+        ComptrollerInterfaceV1.RewardMarketState
+            memory supplyState = comptroller.rewardSupplyState(
+                rewardType,
+                mToken
+            );
+        uint supplySpeed = comptroller.supplyRewardSpeeds(rewardType, mToken);
+        uint blockTimestamp = block.timestamp;
+        uint deltaTimestamps = sub_(
+            blockTimestamp,
+            uint(supplyState.timestamp)
+        );
+        if (deltaTimestamps > 0 && supplySpeed > 0) {
+            uint supplyTokens = MToken(mToken).totalSupply();
+            uint wellAccrued = mul_(deltaTimestamps, supplySpeed);
+            Double memory ratio = supplyTokens > 0
+                ? fraction(wellAccrued, supplyTokens)
+                : Double({mantissa: 0});
+            Double memory index = add_(
+                Double({mantissa: supplyState.index}),
+                ratio
+            );
+            _result = ComptrollerInterfaceV1.RewardMarketState({
+                index: safe224(index.mantissa, "new index exceeds 224 bits"),
+                timestamp: safe32(
+                    blockTimestamp,
+                    "block timestamp exceeds 32 bits"
+                )
+            });
+        } else if (deltaTimestamps > 0) {
+            _result = ComptrollerInterfaceV1.RewardMarketState({
+                index: safe224(supplyState.index, "new index exceeds 224 bits"),
+                timestamp: safe32(
+                    blockTimestamp,
+                    "block timestamp exceeds 32 bits"
+                )
+            });
+        }
+    }
+
+    function getRewardBorrowIndex(
+        ComptrollerInterfaceV1 comptroller,
+        uint8 rewardType,
+        address mToken
+    )
+        public
+        view
+        returns (ComptrollerInterfaceV1.RewardMarketState memory _result)
+    {
+        require(rewardType <= 1, "rewardType is invalid");
+
+        Exp memory marketBorrowIndex = Exp({
+            mantissa: MToken(mToken).borrowIndex()
+        });
+
+        ComptrollerInterfaceV1.RewardMarketState
+            memory borrowState = comptroller.rewardBorrowState(
+                rewardType,
+                mToken
+            );
+        uint borrowSpeed = comptroller.borrowRewardSpeeds(rewardType, mToken);
+        uint blockTimestamp = block.timestamp;
+        uint deltaTimestamps = sub_(
+            blockTimestamp,
+            uint(borrowState.timestamp)
+        );
+
+        if (deltaTimestamps > 0 && borrowSpeed > 0) {
+            uint borrowAmount = div_(
+                MToken(mToken).totalBorrows(),
+                marketBorrowIndex
+            );
+            uint wellAccrued = mul_(deltaTimestamps, borrowSpeed);
+            Double memory ratio = borrowAmount > 0
+                ? fraction(wellAccrued, borrowAmount)
+                : Double({mantissa: 0});
+            Double memory index = add_(
+                Double({mantissa: borrowState.index}),
+                ratio
+            );
+            _result = ComptrollerInterfaceV1.RewardMarketState({
+                index: safe224(index.mantissa, "new index exceeds 224 bits"),
+                timestamp: safe32(
+                    blockTimestamp,
+                    "block timestamp exceeds 32 bits"
+                )
+            });
+        } else if (deltaTimestamps > 0) {
+            _result = ComptrollerInterfaceV1.RewardMarketState({
+                index: safe224(borrowState.index, "new index exceeds 224 bits"),
+                timestamp: safe32(
+                    blockTimestamp,
+                    "block timestamp exceeds 32 bits"
+                )
+            });
+        }
+    }
+
     function getSupplierReward(
         ComptrollerInterfaceV1 comptroller,
         uint8 rewardType,
@@ -51,10 +160,12 @@ contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
         require(rewardType <= 1, "rewardType is invalid");
 
         ComptrollerInterfaceV1.RewardMarketState
-            memory supplyState = comptroller.rewardSupplyState(
+            memory supplyState = getRewardSupplyIndex(
+                comptroller,
                 rewardType,
                 address(mToken)
             );
+
         Double memory supplyIndex = Double({mantissa: supplyState.index});
         Double memory supplierIndex = Double({
             mantissa: comptroller.rewardSupplierIndex(
@@ -65,18 +176,13 @@ contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
         });
 
         if (supplierIndex.mantissa == 0 && supplyIndex.mantissa > 0) {
-            supplierIndex.mantissa = 1e36;
+            supplierIndex.mantissa = initialIndexConstant;
         }
 
         Double memory deltaIndex = sub_(supplyIndex, supplierIndex);
         uint supplierTokens = mToken.balanceOf(supplier);
-        uint supplierDelta = mul_(supplierTokens, deltaIndex);
-        uint supplierAccrued = add_(
-            comptroller.rewardAccrued(rewardType, supplier),
-            supplierDelta
-        );
-
-        return supplierAccrued;
+        uint supplierDelta = mul_(supplierTokens, deltaIndex);    
+        return supplierDelta;
     }
 
     function getBorrowerReward(
@@ -90,7 +196,8 @@ contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
         Exp memory marketBorrowIndex = Exp({mantissa: mToken.borrowIndex()});
 
         ComptrollerInterfaceV1.RewardMarketState
-            memory borrowState = comptroller.rewardBorrowState(
+            memory borrowState = getRewardBorrowIndex(
+                comptroller,
                 rewardType,
                 address(mToken)
             );
@@ -111,12 +218,7 @@ contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
                 marketBorrowIndex
             );
             uint borrowerDelta = mul_(borrowerAmount, deltaIndex);
-            uint borrowerAccrued = add_(
-                comptroller.rewardAccrued(rewardType, borrower),
-                borrowerDelta
-            );
-
-            return borrowerAccrued;
+            return borrowerDelta;
         }
         return 0;
     }
@@ -132,43 +234,57 @@ contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
         );
 
         Rewards[] memory _result = new Rewards[](_mTokens.length * 2);
+        uint _currIndex;
+        bool _distributedAccrued = false;
 
-        for (uint i = 0; i < _mTokens.length * 2; i += 2) {
-            MToken mToken = _mTokens[i > 0 ? i - 1 : 0];
+        for (uint i = 0; i < _mTokens.length; i++) {
+            MToken mToken = _mTokens[i];
 
-            _result[i].market = address(mToken);
-            _result[i].rewardToken = address(comptrollerV1.wellAddress());
+            _result[_currIndex].market = address(mToken);
+            _result[_currIndex].rewardToken = address(
+                comptrollerV1.wellAddress()
+            );
 
-            _result[i + 1].market = address(mToken);
-            _result[i + 1].rewardToken = address(0);
+            _result[_currIndex + 1].market = address(mToken);
+            _result[_currIndex + 1].rewardToken = address(0);
 
             if (comptrollerV1.markets(address(mToken)).isListed) {
-                _result[i].supplyRewardsAmount = getSupplierReward(
+                _result[_currIndex].supplyRewardsAmount = getSupplierReward(
                     comptrollerV1,
                     0,
                     mToken,
                     _user
                 );
-                _result[i].borrowRewardsAmount = getBorrowerReward(
+                _result[_currIndex].borrowRewardsAmount = getBorrowerReward(
                     comptrollerV1,
                     0,
                     mToken,
                     _user
                 );
 
-                _result[i + 1].supplyRewardsAmount = getSupplierReward(
+                _result[_currIndex + 1].supplyRewardsAmount = getSupplierReward(
                     comptrollerV1,
                     1,
                     mToken,
                     _user
                 );
-                _result[i + 1].borrowRewardsAmount = getBorrowerReward(
+                _result[_currIndex + 1].borrowRewardsAmount = getBorrowerReward(
                     comptrollerV1,
                     1,
                     mToken,
                     _user
                 );
+
+                if (_distributedAccrued == false) {
+                    _result[_currIndex].supplyRewardsAmount += comptrollerV1
+                        .rewardAccrued(0, _user);
+                    _result[_currIndex + 1].supplyRewardsAmount += comptrollerV1
+                        .rewardAccrued(1, _user);
+                    _distributedAccrued = true;
+                }
             }
+
+            _currIndex += 2;
         }
 
         return _result;

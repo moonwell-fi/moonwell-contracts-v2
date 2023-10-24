@@ -28,6 +28,9 @@ contract MoonwellViewsV1Test is Test {
 
     address public constant user = 0xd7854FC91f16a58D67EC3644981160B6ca9C41B8;
 
+    mapping(address => uint) public userTotalRewards;
+    address[] public userRewardTokens;
+
     function setUp() public {
         viewsContract = new MoonwellViewsV1();
 
@@ -104,16 +107,24 @@ contract MoonwellViewsV1Test is Test {
         MoonwellViewsV1.Rewards[] memory _rewards = viewsContract
             .getUserRewards(user);
 
-        console.log("_Rewards length %s", _rewards.length);
-        // Loop through markets and underlying tokens
         for (uint index = 0; index < _rewards.length; index++) {
-            console.log(
-                "_reward %s %s %s",
-                _rewards[index].rewardToken,
-                _rewards[index].supplyRewardsAmount,
-                _rewards[index].borrowRewardsAmount
-            );
+            bool exists = userTotalRewards[_rewards[index].rewardToken] > 0;
+            userTotalRewards[_rewards[index].rewardToken] =
+                userTotalRewards[_rewards[index].rewardToken] +
+                (_rewards[index].supplyRewardsAmount +
+                    _rewards[index].borrowRewardsAmount);
+
+            if (!exists) {
+                userRewardTokens.push(_rewards[index].rewardToken);
+            }
         }
-        assertEq(_rewards.length, 2);
+        assertEq(
+            userTotalRewards[0x511aB53F793683763E5a8829738301368a2411E3],
+            11526274217013010874
+        );
+        assertEq(
+            userTotalRewards[0x0000000000000000000000000000000000000000],
+            575610171267701893
+        );
     }
 }

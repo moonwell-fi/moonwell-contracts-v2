@@ -67,6 +67,29 @@ contract Addresses is Test, ChainIds {
             0x511aB53F793683763E5a8829738301368a2411E3
         );
 
+        _addAddress(
+            "TOKENSALE",
+            moonBeamChainId,
+            0x933fCDf708481c57E9FD82f6BAA084f42e98B60e
+        );
+
+        _addAddress(
+            "STWELL",
+            moonBeamChainId,
+            0x8568A675384d761f36eC269D695d6Ce4423cfaB1
+        );
+
+        _addAddress(
+            "UNITROLLER",
+            moonBeamChainId,
+            0x8E00D5e02E65A19337Cdba98bbA9F84d4186a180
+        );
+
+        _addAddress(
+            "MGLIMMER",
+            moonBeamChainId,
+            0x091608f4e4a15335145be0A279483C0f8E4c7955
+        );
         /// MOON BASE
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",

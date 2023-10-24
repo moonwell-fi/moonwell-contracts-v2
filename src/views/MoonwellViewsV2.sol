@@ -7,7 +7,7 @@ import {IMultiRewardDistributor} from "@protocol/MultiRewardDistributor/IMultiRe
 import {MToken} from "@protocol/MToken.sol";
 
 /**
- * @title Moonwell's Views Contract for V1 deployment (pre Basechain deployment)
+ * @title Moonwells Views Contract for V1 deployment (pre Basechain deployment)
  * @author Moonwell
  */
 contract MoonwellViewsV2 is BaseMoonwellViews {

@@ -12,7 +12,7 @@ import {IERC20} from "@protocol/Governance/IERC20.sol";
 import {MErc20Interface} from "@protocol/MTokenInterfaces.sol";
 
 /**
- * @title Moonwell's Views Contract
+ * @title Moonwell Views Contract
  * @author Moonwell
  */
 contract BaseMoonwellViews is Initializable {
@@ -93,14 +93,14 @@ contract BaseMoonwellViews is Initializable {
         // Sanity check the params
         require(
             _comptroller != address(0),
-            "Comptroller can't be the 0 address!"
+            "Comptroller cant be the 0 address!"
         );
 
         comptroller = Comptroller(payable(_comptroller));
 
         require(
             comptroller.isComptroller(),
-            "Can't bind to something that's not a comptroller!"
+            "Cant bind to something thats not a comptroller!"
         );
 
         tokenSaleDistributor = TokenSaleDistributorInterfaceV1(
