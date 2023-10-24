@@ -6,19 +6,30 @@ import {MoonwellViewsV2} from "@protocol/views/MoonwellViewsV2.sol";
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract MoonwellViewsV2Test is Test {
-   MoonwellViewsV2 public viewsContract;
+    MoonwellViewsV2 public viewsContract;
 
     address public constant proxyAdmin = address(1337);
-    
+
     address public constant comptroller =
         0xfBb21d0380beE3312B33c4353c8936a0F13EF26C;
+
+    address public constant tokenSaleDistributor = address(0);
+
+    address public constant safetyModule = address(0);
+
+    address public constant governanceToken = address(0);
+
+    address public constant user = 0xd7854FC91f16a58D67EC3644981160B6ca9C41B8;
 
     function setUp() public {
         viewsContract = new MoonwellViewsV2();
 
-         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address)",
-            address(comptroller)
+        bytes memory initdata = abi.encodeWithSignature(
+            "initialize(address,address,address,address)",
+            address(comptroller),
+            address(tokenSaleDistributor),
+            address(safetyModule),
+            address(governanceToken)
         );
 
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
@@ -26,7 +37,7 @@ contract MoonwellViewsV2Test is Test {
             proxyAdmin,
             initdata
         );
-        
+
         /// wire proxy up
         viewsContract = MoonwellViewsV2(address(proxy));
         vm.rollFork(5349000);
@@ -38,9 +49,45 @@ contract MoonwellViewsV2Test is Test {
     }
 
     function testMarketsSize() public {
-        MoonwellViewsV2.Market[] memory _markets = viewsContract.getAllMarketsInfo();
+        MoonwellViewsV2.Market[] memory _markets = viewsContract
+            .getAllMarketsInfo();
 
         console.log("markets length %s", _markets.length);
         assertEq(_markets.length, 5);
     }
+
+    function testUserBalances() public {
+        MoonwellViewsV2.Balances[] memory _balances = viewsContract
+            .getUserBalances(user);
+
+        console.log("_balances length %s", _balances.length);
+        // Loop through markets and underlying tokens
+        for (uint index = 0; index < _balances.length; index++) {
+            console.log(
+                "_balance %s %s",
+                _balances[index].amount,
+                _balances[index].token
+            );
+        }
+        assertEq(_balances.length, 11);
+    }
+
+
+    function testUserRewards() public {
+        MoonwellViewsV2.Rewards[] memory _rewards = viewsContract
+            .getUserRewards(user);
+
+        console.log("_Rewards length %s", _rewards.length);
+        // Loop through markets and underlying tokens
+        for (uint index = 0; index < _rewards.length; index++) {
+            console.log(
+                "_reward %s %s %s",
+                _rewards[index].rewardToken,
+                _rewards[index].supplyRewardsAmount,
+                _rewards[index].borrowRewardsAmount
+            );
+        }
+        assertEq(_rewards.length, 2);
+    }
+
 }

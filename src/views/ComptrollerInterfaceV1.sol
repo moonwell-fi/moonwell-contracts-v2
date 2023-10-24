@@ -1,39 +1,63 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-abstract contract ComptrollerInterfaceV1 {
-
+interface ComptrollerInterfaceV1 {
     struct RewardMarketState {
         /// @notice The market's last updated rewardBorrowIndex or rewardSupplyIndex
         uint224 index;
-
         /// @notice The block timestamp the index was last updated at
         uint32 timestamp;
     }
 
-    /// @notice The portion of supply reward rate that each market currently receives
-    mapping(uint8 => mapping(address => uint)) public supplyRewardSpeeds;
+    function supplyRewardSpeeds(
+        uint8 reward,
+        address market
+    ) external view returns (uint);
 
-    /// @notice The portion of borrow reward rate that each market currently receives
-    mapping(uint8 => mapping(address => uint)) public borrowRewardSpeeds;
+    function borrowRewardSpeeds(
+        uint8 reward,
+        address market
+    ) external view returns (uint);
 
-    /// @notice The WELL/GLMR market supply state for each market
-    mapping(uint8 => mapping(address => RewardMarketState)) public rewardSupplyState;
+    function rewardSupplyState(
+        uint8 reward,
+        address market
+    ) external view returns (RewardMarketState memory);
 
-    /// @notice The WELL/GLMR market borrow state for each market
-    mapping(uint8 =>mapping(address => RewardMarketState)) public rewardBorrowState;
+    function rewardBorrowState(
+        uint8 reward,
+        address market
+    ) external view returns (RewardMarketState memory);
 
-    /// @notice The WELL/GLMR borrow index for each market for each supplier as of the last time they accrued reward
-    mapping(uint8 => mapping(address => mapping(address => uint))) public rewardSupplierIndex;
+    function rewardSupplierIndex(
+        uint8 reward,
+        address market,
+        address user
+    ) external view returns (uint);
 
-    /// @notice The WELL/GLMR borrow index for each market for each borrower as of the last time they accrued reward
-    mapping(uint8 => mapping(address => mapping(address => uint))) public rewardBorrowerIndex;
+    function rewardBorrowerIndex(
+        uint8 reward,
+        address market,
+        address user
+    ) external view returns (uint);
 
-    /// @notice The WELL/GLMR accrued but not yet transferred to each user
-    mapping(uint8 => mapping(address => uint)) public rewardAccrued;
+    function rewardAccrued(
+        uint8 reward,
+        address user
+    ) external view returns (uint);
 
-    /// @notice WELL token contract address
-    address public wellAddress;
+    function wellAddress() external view returns (address);
 
+    struct Market {
+        /// @notice Whether or not this market is listed
+        bool isListed;
+        /**
+         * @notice Multiplier representing the most one can borrow against their collateral in this market.
+         *  For instance, 0.9 to allow borrowing 90% of collateral value.
+         *  Must be between 0 and 1, and stored as a mantissa.
+         */
+        uint collateralFactorMantissa;
+    }
 
+    function markets(address market) external view returns (Market memory);
 }
