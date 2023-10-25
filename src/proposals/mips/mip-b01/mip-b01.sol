@@ -20,7 +20,7 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
 
     constructor() {
         _setProposalDescription(
-            bytes(vm.readFile("./proposals/mips/mip-b01/MIP-B01.md"))
+            bytes(vm.readFile("./src/proposals/mips/mip-b01/MIP-B01.md"))
         );
     }
 

@@ -7,6 +7,9 @@ import {CreateCode} from "@proposals/utils/CreateCode.sol";
 contract CreationCodeUnitTest is CreateCode {
     function testDeployCode() public {
         string memory path = getPath(); /// load path from env
+        if (bytes(path).length == 0) {
+            path = "artifacts/foundry/mip-b07.sol/mipb07.json";
+        }
         bytes memory code = getCode(path); /// load creation bytecode into memory
 
         address deployedAddress = deployCode(code);

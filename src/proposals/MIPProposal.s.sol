@@ -37,9 +37,8 @@ abstract contract MIPProposal is Script {
 
     constructor() {
         // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = vm.envOr(
-            "ETH_PRIVATE_KEY",
-            77814517325470205911140941194401928579557062014761831930645393041380819009408
+        PRIVATE_KEY = uint256(
+            vm.envOr("ETH_PRIVATE_KEY", bytes32(type(uint256).max))
         );
 
         DEBUG = vm.envOr("DEBUG", true);
