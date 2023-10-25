@@ -18,7 +18,13 @@ contract PostProposalCheck is CreateCode {
         string memory path = getPath();
         // Run all pending proposals before doing e2e tests
         address[] memory mips = new address[](1);
-        if (path.hasChar(",")) {
+
+        if (keccak256(bytes(path)) == '""' || bytes(path).length == 0) {
+            /// empty string on both mac and unix
+            address[] memory mips = new address[](0);
+
+            proposals = new TestProposals(mips);
+        } else if (path.hasChar(",")) {
             string[] memory mipPaths = path.split(",");
             if (mipPaths.length < 2) {
                 revert(
@@ -34,15 +40,9 @@ contract PostProposalCheck is CreateCode {
                 mips[i] = deployCode(code);
             }
             proposals = new TestProposals(mips);
-        } else if (bytes(path).length != 0) {
+        } else {
             bytes memory code = getCode(path);
             mips[0] = deployCode(code);
-            proposals = new TestProposals(mips);
-        }
-
-        if (bytes(path).length == 0) {
-            address[] memory mips = new address[](0);
-
             proposals = new TestProposals(mips);
         }
 
