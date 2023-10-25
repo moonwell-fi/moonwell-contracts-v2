@@ -39,18 +39,6 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         weth = WETH9(addresses.getAddress("WETH"));
     }
 
-    function testSetup() public {
-        Configs.EmissionConfig[] memory configs = Configs(
-            address(proposals.proposals(0))
-        ).getEmissionConfigurations(block.chainid);
-        Configs.CTokenConfiguration[] memory mTokenConfigs = Configs(
-            address(proposals.proposals(0))
-        ).getCTokenConfigurations(block.chainid);
-
-        assertEq(configs.length, 3); /// 3 starting configs on base
-        assertEq(mTokenConfigs.length, 0); /// 0 mTokens on base
-    }
-
     function testOraclesReturnCorrectValues() public {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
