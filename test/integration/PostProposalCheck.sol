@@ -21,7 +21,9 @@ contract PostProposalCheck is CreateCode {
         if (path.hasChar(",")) {
             string[] memory mipPaths = path.split(",");
             if (mipPaths.length < 2) {
-                revert("Invalid path(s) provided. If you want to deploy a single mip, do not use a comma.");
+                revert(
+                    "Invalid path(s) provided. If you want to deploy a single mip, do not use a comma."
+                );
             }
 
             /// guzzle all of the memory, quadratic cost, but we don't care
@@ -31,12 +33,19 @@ contract PostProposalCheck is CreateCode {
 
                 mips[i] = deployCode(code);
             }
-        } else {
+            proposals = new TestProposals(mips);
+        } else if (bytes(path).length != 0) {
             bytes memory code = getCode(path);
             mips[0] = deployCode(code);
+            proposals = new TestProposals(mips);
         }
 
-        proposals = new TestProposals(mips);
+        if (bytes(path).length == 0) {
+            address[] memory mips = new address[](0);
+
+            proposals = new TestProposals(mips);
+        }
+
         proposals.setUp();
         proposals.testProposals(
             false, /// do not log debug output
@@ -48,6 +57,7 @@ contract PostProposalCheck is CreateCode {
             true,
             true
         );
+
         addresses = proposals.addresses();
     }
 }
