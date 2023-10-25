@@ -36,7 +36,7 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
 
         {
             string memory mtokensPath = vm.envString("EMISSION_PATH");
-            /// EMISSION_PATH="./proposals/mips/examples/mip-market-listing/RewardStreams.json"
+            /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
             EmissionConfig[] memory decodedEmissions = abi.decode(

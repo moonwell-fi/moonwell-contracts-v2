@@ -56,7 +56,7 @@ contract Configs is Test {
 
     constructor() {
         string memory fileContents = vm.readFile(
-            "./proposals/mainnetMTokens.json"
+            "./src/proposals/mainnetMTokens.json"
         );
         bytes memory rawJson = vm.parseJson(fileContents);
 
@@ -87,7 +87,7 @@ contract Configs is Test {
         }
 
         fileContents = vm.readFile(
-            "./proposals/mainnetRewardStreams.json"
+            "./src/proposals/mainnetRewardStreams.json"
         );
         rawJson = vm.parseJson(fileContents);
         EmissionConfig[] memory decodedEmissions = abi.decode(

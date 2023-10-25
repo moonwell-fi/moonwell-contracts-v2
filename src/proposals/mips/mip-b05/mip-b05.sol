@@ -12,16 +12,19 @@ import {TimelockProposal} from "@proposals/proposalTypes/TimelockProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 
-contract mipb06 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "MIP-b06";
+contract mipb05 is Proposal, CrossChainProposal, Configs {
+    string public constant name = "MIP-b05";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 
-    uint256 public constant USDC_PREVIOUS_CF = 0.8e18;
-    uint256 public constant USDC_NEW_CF = 0.82e18;
+    uint256 public constant ETH_PREVIOUS_CF = 0.75e18;
+    uint256 public constant ETH_NEW_CF = 0.78e18;
 
-    uint256 public constant WETH_PREVIOUS_CF = 0.78e18;
-    uint256 public constant WETH_NEW_CF = 0.8e18;
+    uint256 public constant cbETH_PREVIOUS_CF = 0.73e18;
+    uint256 public constant cbETH_NEW_CF = 0.75e18;
+
+    uint256 public constant DAI_PREVIOUS_CF = 0.8e18;
+    uint256 public constant DAI_NEW_CF = 0.82e18;
 
     struct IRParams {
         uint256 kink;
@@ -32,7 +35,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./proposals/mips/mip-b06/MIP-B06.md")
+            vm.readFile("./src/proposals/mips/mip-b05/MIP-B05.md")
         );
         _setProposalDescription(proposalDescription);
     }
@@ -89,65 +92,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
 
     function deploy(Addresses addresses, address) public override {}
 
-    function afterDeploy(Addresses addresses, address) public override {
-        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), WETH_PREVIOUS_CF);
-        _validateCF(addresses, addresses.getAddress("MOONWELL_USDC"), USDC_PREVIOUS_CF);
-
-        address previousWETHJRM = 0x6bcE15B789e537f3abA3C60CB183F0E8737f05eC;
-        address previousStablesJRM = 0x33DeAc0861FD6a9235b86172AA939E79085c6f52;
-        address previouscbETHJRM = 0x523262439bAa43C9f722339879a15e1E05FB6696;
-
-        IRParams memory previousWETHIRParams = IRParams({
-            baseRatePerTimestamp: 0.01e18,
-            kink: 0.8e18,
-            multiplierPerTimestamp: 0.04e18,
-            jumpMultiplierPerTimestamp: 4.8e18
-        });
-
-        _validateJRM(
-            previousWETHJRM,
-            addresses.getAddress("MOONWELL_WETH"),
-            previousWETHIRParams
-        );
-
-        IRParams memory previousStableIRParams = IRParams({
-            baseRatePerTimestamp: 0,
-            kink: 0.8e18,
-            multiplierPerTimestamp: 0.045e18,
-            jumpMultiplierPerTimestamp: 2.5e18
-        });
-
-        _validateJRM(
-            previousStablesJRM,
-            addresses.getAddress("MOONWELL_DAI"),
-            previousStableIRParams
-        );
-
-        _validateJRM(
-            previousStablesJRM,
-            addresses.getAddress("MOONWELL_USDC"),
-            previousStableIRParams
-        );
-
-        _validateJRM(
-            previousStablesJRM,
-            addresses.getAddress("MOONWELL_USDBC"),
-            previousStableIRParams
-        );
-
-        IRParams memory previouscbETHIRParams = IRParams({
-            baseRatePerTimestamp: 0.01e18,
-            kink: 0.45e18,
-            multiplierPerTimestamp: 0.2e18,
-            jumpMultiplierPerTimestamp: 3.0e18
-        });
-
-        _validateJRM(
-            previouscbETHJRM,
-            addresses.getAddress("MOONWELL_cbETH"),
-            previouscbETHIRParams
-        );
-    }
+    function afterDeploy(Addresses addresses, address) public override {}
 
     function afterDeploySetup(Addresses addresses) public override {}
 
@@ -162,22 +107,35 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
                 addresses.getAddress("MOONWELL_WETH"),
-                WETH_NEW_CF
+                ETH_NEW_CF
             ),
             "Set collateral factor for ETH"
         );
 
-        // =========== USDC CF Update ============
+        // =========== cbETH CF Update ============
 
         // Add update action
         _pushCrossChainAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_USDC"),
-                USDC_NEW_CF
+                addresses.getAddress("MOONWELL_cbETH"),
+                cbETH_NEW_CF
             ),
-            "Set collateral factor for USDC"
+            "Set collateral factor for cbETH"
+        );
+
+        // =========== DAI CF Update ============
+
+        // Add update action
+        _pushCrossChainAction(
+            unitrollerAddress,
+            abi.encodeWithSignature(
+                "_setCollateralFactor(address,uint256)",
+                addresses.getAddress("MOONWELL_DAI"),
+                DAI_NEW_CF
+            ),
+            "Set collateral factor for DAI"
         );
 
         // =========== WETH IR Update ============
@@ -192,7 +150,14 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
 
-        // =========== USDC/DAI/USDbC IR Update ============
+        IRParams memory previousStablecoinIRParams = IRParams({
+            baseRatePerTimestamp: 0,
+            kink: 0.8e18,
+            multiplierPerTimestamp: 0.05e18,
+            jumpMultiplierPerTimestamp: 2.5e18
+        });
+
+        // =========== DAI IR Update ============
 
         // Add update action
         _pushCrossChainAction(
@@ -204,6 +169,8 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             "Set interest rate model for Moonwell DAI to updated rate model"
         );
 
+        // =========== USDC IR Update ============
+
         // Add update action
         _pushCrossChainAction(
             addresses.getAddress("MOONWELL_USDC"),
@@ -214,6 +181,8 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
 
+        // =========== USDbC IR Update ============
+
         // Add update action
         _pushCrossChainAction(
             addresses.getAddress("MOONWELL_USDBC"),
@@ -223,19 +192,6 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             ),
             "Set interest rate model for Moonwell USDbC to updated rate model"
         );
-
-        // =========== cbETH IR Update ============
-
-        // Add update action
-        _pushCrossChainAction(
-            addresses.getAddress("MOONWELL_cbETH"),
-            abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_cbETH")
-            ),
-            "Set interest rate model for Moonwell cbETH to updated rate model"
-        );
-
     }
 
     function teardown(Addresses addresses, address) public pure override {}
@@ -243,11 +199,14 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public override {
-        // ======== WETH CF Update =========
-        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), WETH_NEW_CF);
+        // ======== ETH CF Update =========
+        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), ETH_NEW_CF);
 
-        // ======== USDC CF Update =========
-        _validateCF(addresses, addresses.getAddress("MOONWELL_USDC"), USDC_NEW_CF);
+        // ======== cbETH CF Update =========
+        _validateCF(addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF);
+
+        // ======== DAI CF Update =========
+        _validateCF(addresses, addresses.getAddress("MOONWELL_DAI"), DAI_NEW_CF);
 
 
         // =========== WETH IR Update ============
@@ -258,19 +217,19 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             IRParams({
                 baseRatePerTimestamp: 0.01e18,
                 kink: 0.8e18,
-                multiplierPerTimestamp: 0.037e18,
+                multiplierPerTimestamp: 0.04e18,
                 jumpMultiplierPerTimestamp: 4.8e18
             })
         );
-
-        // =========== USDC/DAI/USDbC IR Update ============
 
         IRParams memory stablecoinIRParams = IRParams({
             baseRatePerTimestamp: 0,
             kink: 0.8e18,
             multiplierPerTimestamp: 0.045e18,
-            jumpMultiplierPerTimestamp: 8.6e18
+            jumpMultiplierPerTimestamp: 2.5e18
         });
+
+        // =========== DAI IR Update ============
 
         _validateJRM(
             addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI"),
@@ -278,29 +237,20 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             stablecoinIRParams
         );
 
+        // =========== USDC IR Update ============
+
         _validateJRM(
             addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC"),
             addresses.getAddress("MOONWELL_USDC"),
             stablecoinIRParams
         );
 
+        // =========== USDbC IR Update ============
+
         _validateJRM(
             addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDBC"),
             addresses.getAddress("MOONWELL_USDBC"),
             stablecoinIRParams
-        );
-
-        // =========== cbETH IR Update ============
-
-        _validateJRM(
-            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_cbETH"),
-            addresses.getAddress("MOONWELL_cbETH"),
-            IRParams({
-                baseRatePerTimestamp: 0,
-                kink: 0.45e18,
-                multiplierPerTimestamp: 0.07e18,
-                jumpMultiplierPerTimestamp: 3.15e18
-            })
         );
     }
 }

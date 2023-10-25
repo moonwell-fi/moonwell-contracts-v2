@@ -8,10 +8,10 @@ This document explains how to add new markets to Moonwell from end to end, lever
 
 All MIPS should be placed in the `proposals/mips/mip-bxx` folder, where bxx is the next available MIP number. If the next available MIP number is 4, then the folder should be named `mip-b04`. You should copy all of the existing files from the `proposals/mips/examples/mip-market-listing` folder into the new `mip-bxx` folder as a starting point. The only 3 files that are required are `MIP-Bxx.md`, `MTokens.json`, and `RewardStreams.json`. The `MIP-Bxx.md` file is the proposal description, the `MTokens.json` file is the configuration for the MTokens being added, and the `RewardStreams.json` file is the configuration for the reward streams being added.
 
-Please also copy the [`mip-market-listing.sol`](./proposals/mips/examples/mip-market-listing/mip-market-listing.sol) file into the new `mip-bxx` folder and rename it to `mip-bxx.sol`. This file is the Solidity script that will deploy the new markets and generate the calldata for the governance proposal. Even though you won't be executing it from this path, it's good to keep it as a reference to the version of code used to deploy the market.
+Please also copy the [`mip-market-listing.sol`](./src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol) file into the new `mip-bxx` folder and rename it to `mip-bxx.sol`. This file is the Solidity script that will deploy the new markets and generate the calldata for the governance proposal. Even though you won't be executing it from this path, it's good to keep it as a reference to the version of code used to deploy the market.
 
 ### MTokens
-Go to `mainnetMTokensExample.json` to see what an example mToken JSON configuration looks like. Copy the file [`MTokens.json`](./proposals/mips/examples/mip-market-listing/MTokens.json) in the `proposals/mips/examples/mip-market-listing` folder to a new `mip-bxx` folder, replacing all of the values with the correct values for those markets. Initial mint amount, collateral factor, should be set to the correct values and replaced with the actual values the market should have once deployed.
+Go to `mainnetMTokensExample.json` to see what an example mToken JSON configuration looks like. Copy the file [`MTokens.json`](./src/proposals/mips/examples/mip-market-listing/MTokens.json) in the `proposals/mips/examples/mip-market-listing` folder to a new `mip-bxx` folder, replacing all of the values with the correct values for those markets. Initial mint amount, collateral factor, should be set to the correct values and replaced with the actual values the market should have once deployed.
 ```
         "initialMintAmount": 1e12,
         "collateralFactor": 0.75e18,
@@ -51,7 +51,7 @@ Go to `mainnetMTokensExample.json` to see what an example mToken JSON configurat
 If there are no MTokens being added, the file is still needed, but it should contain an empty array.
 
 ### RewardStreams
-Go to `mainnetRewardStreams.json` to see what an example reward JSON configuration looks like. Copy the file [`RewardStreams.json`](./proposals/mips/examples/mip-market-listing/RewardStreams.json) in the `proposals/mips/examples/mip-market-listing` folder into the new `mip-bxx` folder, replacing all of the values with the correct values for those markets.
+Go to `mainnetRewardStreams.json` to see what an example reward JSON configuration looks like. Copy the file [`RewardStreams.json`](./src/proposals/mips/examples/mip-market-listing/RewardStreams.json) in the `proposals/mips/examples/mip-market-listing` folder into the new `mip-bxx` folder, replacing all of the values with the correct values for those markets.
 
 If there are no reward streams, the file is still needed, but it should contain an empty array.
 
@@ -63,9 +63,9 @@ Once the proposal description has been created, copy and paste it into a file na
 Once both the `MIP-Bxx.md`, `MTokens.json`, and `RewardStreams.json` files have the necessary contents, environment variables must be set for the script to read in their path. Export the following environment variables pointing to the correct paths:
 
 ```
-export LISTING_PATH="./proposals/mips/mip-bxx/MIP-Bxx.md"
-export MTOKENS_PATH="./proposals/mips/mip-bxx/MTokens.json"
-export EMISSION_PATH="./proposals/mips/mip-bxx/RewardStreams.json"
+export LISTING_PATH="./src/proposals/mips/mip-bxx/MIP-Bxx.md"
+export MTOKENS_PATH="./src/proposals/mips/mip-bxx/MTokens.json"
+export EMISSION_PATH="./src/proposals/mips/mip-bxx/RewardStreams.json"
 ```
 
 Set the `BASE_RPC_URL` environment variable to the RPC URL of base. This can be done using the public RPC endpoint.
@@ -87,7 +87,7 @@ If deploying and generating calldata for the first time, environment variable `D
 If any errors show up relating to not being able to read in a file, double check the environment variables and make sure the paths are correct.
 
 ## 4. Deployment
-To deploy these new markets, run [`mip-market-listing.sol`](./proposals/mips/examples/mip-market-listing/mip-market-listing.sol) using command:
+To deploy these new markets, run [`mip-market-listing.sol`](./src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol) using command:
 
 ```
 forge script proposals/mips/examples/mip-market-listing/mip-market-listing.sol:mip0x \
