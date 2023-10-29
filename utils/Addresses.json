@@ -1,0 +1,422 @@
+[
+    {
+        "name": "EMISSIONS_ADMIN",
+        "chainId": 84531,
+        "addr": "0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa"
+    },
+    {
+        "name": "WELL",
+        "chainId": 1284,
+        "addr": "0x511aB53F793683763E5a8829738301368a2411E3"
+    },
+    {
+        "name": "WETH",
+        "chainId": 84531,
+        "addr": "0x4200000000000000000000000000000000000006"
+    },
+    {
+        "name": "MOONBEAM_TIMELOCK",
+        "chainId": 1284,
+        "addr": "0x3a9249d70dCb4A4E9ef4f3AF99a3A130452ec19B"
+    },
+    {
+        "name": "WORMHOLE_CORE",
+        "chainId": 11155111,
+        "addr": "0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78"
+    },
+    {
+        "name": "PAUSE_GUARDIAN",
+        "chainId": 84531,
+        "addr": "0xc191A4db4E05e478778eDB6a201cb7F13A257C23"
+    },
+    {
+        "name": "PAUSE_GUARDIAN",
+        "chainId": 1287,
+        "addr": "0xc191A4db4E05e478778eDB6a201cb7F13A257C23"
+    },
+    {
+        "name": "TEMPORAL_GOVERNOR",
+        "chainId": 84531,
+        "addr": "0xBaA4916ACD2d3Db77278A377f1b49A6E1127d6e6"
+    },
+    {
+        "name": "USDBC",
+        "chainId": 84531,
+        "addr": "0x64487F97E95266a291514574fFe640A4AC45Bcce"
+    },
+    {
+        "name": "WBTC",
+        "chainId": 84531,
+        "addr": "0xde1a381cAa4189D39c363985d9969D7D206970Bd"
+    },
+    {
+        "name": "cbETH",
+        "chainId": 84531,
+        "addr": "0x74a9f643b2DeA9829b5f2194A7f8d3440D8932F0"
+    },
+    {
+        "name": "wstETH",
+        "chainId": 84531,
+        "addr": "0x3A4c72391FA1e474663ffB43bbA5c851014c0065"
+    },
+    {
+        "name": "DAI",
+        "chainId": 84531,
+        "addr": "0x098d2cF3bc642668a28E5633ED15Ca3166D2802d"
+    },
+    {
+        "name": "cbETH_ORACLE",
+        "chainId": 84531,
+        "addr": "0x45E62c1D07365c46631a4F2032c0e630CCA91c55"
+    },
+    {
+        "name": "wstETH_ORACLE",
+        "chainId": 84531,
+        "addr": "0x3a52fB70713032B182F351829573a318a4f8E4E6"
+    },
+    {
+        "name": "MULTI_REWARD_DISTRIBUTOR",
+        "chainId": 84531,
+        "addr": "0x73EC07c3E67011aa13A70A7466f1aEB0215293f4"
+    },
+    {
+        "name": "COMPTROLLER",
+        "chainId": 84531,
+        "addr": "0x9091D61Cf1897EBa311D4012aEe9027666C59311"
+    },
+    {
+        "name": "UNITROLLER",
+        "chainId": 84531,
+        "addr": "0xD73f191a50D4BFb5301AE0dF27F5164332df4618"
+    },
+    {
+        "name": "MRD_PROXY",
+        "chainId": 84531,
+        "addr": "0x92ad0cEf7E4f89480ab65b9B9F666327E175702f"
+    },
+    {
+        "name": "MRD_PROXY_ADMIN",
+        "chainId": 84531,
+        "addr": "0x7ae93E19639c77a3815d47729DE413346C361FF0"
+    },
+    {
+        "name": "MTOKEN_IMPLEMENTATION",
+        "chainId": 84531,
+        "addr": "0x8DDc78645E18CDb4b6fcE65777642ef4fFdC6115"
+    },
+    {
+        "name": "JUMP_RATE_IRM_MOONWELL_USDBC",
+        "chainId": 84531,
+        "addr": "0x4696f537Ad80ef53D314624AD502f9d82397357e"
+    },
+    {
+        "name": "MOONWELL_USDBC",
+        "chainId": 84531,
+        "addr": "0x765741AB1937d85D4758e004Ef906A5E18839EFe"
+    },
+    {
+        "name": "JUMP_RATE_IRM_MOONWELL_WETH",
+        "chainId": 84531,
+        "addr": "0xd14ab729d48E92C25AC6D18F8D8182d850f485be"
+    },
+    {
+        "name": "MOONWELL_WETH",
+        "chainId": 84531,
+        "addr": "0xdd702A5B463adB3b8AfddDB77B88DFaca8B2D3Ca"
+    },
+    {
+        "name": "JUMP_RATE_IRM_MOONWELL_WBTC",
+        "chainId": 84531,
+        "addr": "0x9B9929848845269C08160873346f490e6F45e2C7"
+    },
+    {
+        "name": "MOONWELL_WBTC",
+        "chainId": 84531,
+        "addr": "0xe94362a857df3Fc87E80A8b26e16e3C97C861a98"
+    },
+    {
+        "name": "JUMP_RATE_IRM_MOONWELL_cbETH",
+        "chainId": 84531,
+        "addr": "0xd86078e8802098A744F7c27D36304d905A1C2F02"
+    },
+    {
+        "name": "MOONWELL_cbETH",
+        "chainId": 84531,
+        "addr": "0x5E31c5753598A6618A4D1bb2d35f63fBa757c9e3"
+    },
+    {
+        "name": "JUMP_RATE_IRM_MOONWELL_wstETH",
+        "chainId": 84531,
+        "addr": "0xf96cB4716EC5012c3Ea8c8b71eD79c1be68a8f44"
+    },
+    {
+        "name": "MOONWELL_wstETH",
+        "chainId": 84531,
+        "addr": "0x1DCc89000AE6EAF18bD855098d3670E820A8d0c4"
+    },
+    {
+        "name": "JUMP_RATE_IRM_MOONWELL_DAI",
+        "chainId": 84531,
+        "addr": "0x1B1340afB59315C648f45E2E8850C79ac71ad530"
+    },
+    {
+        "name": "MOONWELL_DAI",
+        "chainId": 84531,
+        "addr": "0x1d1e13e0974E8a065C1DE7EbB1E3A1cbE88FC58a"
+    },
+    {
+        "name": "WETH_ROUTER",
+        "chainId": 84531,
+        "addr": "0x0396D41A53a75be8f296353D1ffE72538bE646f5"
+    },
+    {
+        "name": "CHAINLINK_ORACLE",
+        "chainId": 84531,
+        "addr": "0x037fd3c408086E900c71Ca33abF67eC33288eA8c"
+    },
+    {
+        "name": "MWETH_IMPLEMENTATION",
+        "chainId": 84531,
+        "addr": "0x30d3740d8d15004E3D14be74E97Fc4BA189C6400"
+    },
+    {
+        "name": "WETH_UNWRAPPER",
+        "chainId": 84531,
+        "addr": "0xb65604ae9b9250c1973441A03f9Ec7ECF09aaC7e"
+    },
+    {
+        "name": "USDC_ORACLE",
+        "chainId": 84531,
+        "addr": "0xb85765935B4d9Ab6f841c9a00690Da5F34368bc0"
+    },
+    {
+        "name": "ETH_ORACLE",
+        "chainId": 84531,
+        "addr": "0xcD2A119bD1F7DF95d706DE6F2057fDD45A0503E2"
+    },
+    {
+        "name": "WBTC_ORACLE",
+        "chainId": 84531,
+        "addr": "0xAC15714c08986DACC0379193e22382736796496f"
+    },
+    {
+        "name": "stETHETH_ORACLE",
+        "chainId": 84531,
+        "addr": "0x3a52fB70713032B182F351829573a318a4f8E4E6"
+    },
+    {
+        "name": "cbETHETH_ORACLE",
+        "chainId": 84531,
+        "addr": "0x45E62c1D07365c46631a4F2032c0e630CCA91c55"
+    },
+    {
+        "name": "DAI_ORACLE",
+        "chainId": 84531,
+        "addr": "0x440bD1535a02243d72E0fEED45B137efcC98bF7e"
+    },
+    {
+        "name": "MOONBEAM_TIMELOCK",
+        "chainId": 84531,
+        "addr": "0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A"
+    },
+    {
+        "name": "WORMHOLE_CORE",
+        "chainId": 8453,
+        "addr": "0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6"
+    },
+    {
+        "name": "USDBC",
+        "chainId": 8453,
+        "addr": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA"
+    },
+    {
+        "name": "USDC",
+        "chainId": 8453,
+        "addr": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    },
+    {
+        "name": "WETH",
+        "chainId": 8453,
+        "addr": "0x4200000000000000000000000000000000000006"
+    },
+    {
+        "name": "WELL",
+        "chainId": 8453,
+        "addr": "0xFF8adeC2221f9f4D8dfbAFa6B9a297d17603493D"
+    },
+    {
+        "name": "DAI",
+        "chainId": 8453,
+        "addr": "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb"
+    },
+    {
+        "name": "cbETH",
+        "chainId": 8453,
+        "addr": "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22"
+    },
+    {
+        "name": "USDC_ORACLE",
+        "chainId": 8453,
+        "addr": "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B"
+    },
+    {
+        "name": "ETH_ORACLE",
+        "chainId": 8453,
+        "addr": "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70"
+    },
+    {
+        "name": "DAI_ORACLE",
+        "chainId": 8453,
+        "addr": "0x591e79239a7d679378eC8c847e5038150364C78F"
+    },
+    {
+        "name": "wstETHstETH_ORACLE",
+        "chainId": 8453,
+        "addr": "0xB88BAc61a4Ca37C43a3725912B1f472c9A5bc061"
+    },
+    {
+        "name": "stETHETH_ORACLE",
+        "chainId": 8453,
+        "addr": "0xf586d0728a47229e747d824a939000Cf21dEF5A0"
+    },
+    {
+        "name": "cbETHETH_ORACLE",
+        "chainId": 8453,
+        "addr": "0x806b4Ac04501c29769051e42783cF04dCE41440b"
+    },
+    {
+        "name": "EMISSIONS_ADMIN",
+        "chainId": 8453,
+        "addr": "0xD791292655A1d382FcC1a6Cb9171476cf91F2caa"
+    },
+    {
+        "name": "PAUSE_GUARDIAN",
+        "chainId": 8453,
+        "addr": "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38"
+    },
+    {
+        "name": "TEMPORAL_GOVERNOR_GUARDIAN",
+        "chainId": 8453,
+        "addr": "0x446342AF4F3bCD374276891C6bb3411bf2F8779E"
+    },
+    {
+        "name": "BORROW_SUPPLY_GUARDIAN",
+        "chainId": 8453,
+        "addr": "0x35b3314EA652899154BbfE937E3cCC2775ba712e"
+    },
+    {
+        "name": "TEMPORAL_GOVERNOR",
+        "chainId": 8453,
+        "addr": "0x8b621804a7637b781e2BbD58e256a591F2dF7d51"
+    },
+    {
+        "name": "cbETH_ORACLE",
+        "chainId": 8453,
+        "addr": "0xB0Ba0C5D7DA4ec400C1C3E5ef2485134F89918C5"
+    },
+    {
+        "name": "MULTI_REWARD_DISTRIBUTOR",
+        "chainId": 8453,
+        "addr": "0xdC649f4fa047a3C98e8705E85B8b1BafCbCFef0f"
+    },
+    {
+        "name": "COMPTROLLER",
+        "chainId": 8453,
+        "addr": "0x73D8A3bF62aACa6690791E57EBaEE4e1d875d8Fe"
+    },
+    {
+        "name": "UNITROLLER",
+        "chainId": 8453,
+        "addr": "0xfBb21d0380beE3312B33c4353c8936a0F13EF26C"
+    },
+    {
+        "name": "MRD_PROXY",
+        "chainId": 8453,
+        "addr": "0xe9005b078701e2A0948D2EaC43010D35870Ad9d2"
+    },
+    {
+        "name": "MRD_PROXY_ADMIN",
+        "chainId": 8453,
+        "addr": "0x8D7d2230A2d195F023588eDd13dBAd56dd69770F"
+    },
+    {
+        "name": "MTOKEN_IMPLEMENTATION",
+        "chainId": 8453,
+        "addr": "0x1FADFF493529C3Fcc7EE04F1f15D19816ddA45B7"
+    },
+    {
+        "name": "JUMP_RATE_IRM_MOONWELL_USDBC",
+        "chainId": 8453,
+        "addr": "0x492dcEF1fc5253413fC5576B9522840a1A774DCe"
+    },
+    {
+        "name": "MOONWELL_DAI",
+        "chainId": 8453,
+        "addr": "0x73b06D8d18De422E269645eaCe15400DE7462417"
+    },
+    {
+        "name": "JUMP_RATE_IRM_MOONWELL_DAI",
+        "chainId": 8453,
+        "addr": "0x492dcEF1fc5253413fC5576B9522840a1A774DCe"
+    },
+    {
+        "name": "MOONWELL_USDBC",
+        "chainId": 8453,
+        "addr": "0x703843C3379b52F9FF486c9f5892218d2a065cC8"
+    },
+    {
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC",
+        "chainId": 8453,
+        "addr": "0x492dcEF1fc5253413fC5576B9522840a1A774DCe"
+    },
+    {
+        "name": "MOONWELL_USDC",
+        "chainId": 8453,
+        "addr": "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22"
+    },
+    {
+        "name": "JUMP_RATE_IRM_MOONWELL_WETH",
+        "chainId": 8453,
+        "addr": "0x142DCAEC322aAA25141B2597bf348487aDBd596d"
+    },
+    {
+        "name": "MOONWELL_WETH",
+        "chainId": 8453,
+        "addr": "0x628ff693426583D9a7FB391E54366292F509D457"
+    },
+    {
+        "name": "JUMP_RATE_IRM_MOONWELL_cbETH",
+        "chainId": 8453,
+        "addr": "0x78Fe5d0427E669ba9F964C3495fF381a805a0487"
+    },
+    {
+        "name": "MOONWELL_cbETH",
+        "chainId": 8453,
+        "addr": "0x3bf93770f2d4a794c3d9EBEfBAeBAE2a8f09A5E5"
+    },
+    {
+        "name": "WETH_ROUTER",
+        "chainId": 8453,
+        "addr": "0x70778cfcFC475c7eA0f24cC625Baf6EaE475D0c9"
+    },
+    {
+        "name": "CHAINLINK_ORACLE",
+        "chainId": 8453,
+        "addr": "0xEC942bE8A8114bFD0396A5052c36027f2cA6a9d0"
+    },
+    {
+        "name": "WETH_UNWRAPPER",
+        "chainId": 8453,
+        "addr": "0x1382cFf3CeE10D283DccA55A30496187759e4cAf"
+    },
+    {
+        "name": "MWETH_IMPLEMENTATION",
+        "chainId": 8453,
+        "addr": "0x599D4a1538d686814eE11b331EACBBa166D7C41a"
+    },
+    {
+        "name": "FOUNDATION_MULTISIG",
+        "chainId": 8453,
+        "addr": "0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa"
+    }
+]
