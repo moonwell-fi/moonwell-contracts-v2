@@ -28,7 +28,8 @@ contract IRModelWethUpgradeLiveSystemBaseTest is PostProposalCheck, Configs {
         mcbEth = MErc20(addresses.getAddress("MOONWELL_cbETH"));
     }
 
-    function testInterestAccruedInProposal() public {
+    function testInterestAccruedUpdatesAccrualTime() public {
+        testAccrueInterest();
         assertEq(mWeth.accrualBlockTimestamp(), block.timestamp);
     }
 

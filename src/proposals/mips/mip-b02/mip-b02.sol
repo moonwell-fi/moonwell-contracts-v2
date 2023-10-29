@@ -33,7 +33,7 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./proposals/mips/mip-b02/MIP-B02.md")
+            vm.readFile("./src/proposals/mips/mip-b02/MIP-B02.md")
         );
 
         _setProposalDescription(proposalDescription);
