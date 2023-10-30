@@ -50,6 +50,17 @@ Or by setting it to a private RPC endpoint if the public end point is not workin
 
 To generate calldata for an existing proposal, run the following command, where the proposal is the proposal you want to generate calldata for, and the network is the network you want to generate calldata for.
 
+env setup to build and run without any other steps:
+```bash
+export DO_DEPLOY=false
+export DO_AFTER_DEPLOY=false
+export DO_AFTER_DEPLOY_SETUP=false
+export DO_
+export DO_BUILD=true
+export DO_RUN=true  
+export DO_VALIDATE=false
+```
+
 ```forge script proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv```
 
 add the following flags to deploy and verify against the base network:
