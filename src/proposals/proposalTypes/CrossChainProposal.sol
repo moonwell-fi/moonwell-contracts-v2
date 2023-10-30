@@ -61,6 +61,10 @@ abstract contract CrossChainProposal is
         _verifyMTokensPostRun();
     }
 
+    /// @notice return arrays of all items in the proposal that the
+    /// temporal governor will receive
+    /// all items are in the same order as the proposal
+    /// the length of each array is the same as the number of actions in the proposal
     function getTargetsPayloadsValues()
         public
         view
@@ -97,29 +101,51 @@ abstract contract CrossChainProposal is
         return (targets, values, payloads);
     }
 
+    /// @notice get the calldata that the timelock on moonbeam will execute in order to publish the cross chain proposal
+    /// @param temporalGovernor address of the cross chain governor executing the calls
     function getTemporalGovCalldata(
         address temporalGovernor
-    ) public view returns (bytes memory) {
+    ) public view returns (bytes memory timelockCalldata) {
         (
             address[] memory targets,
             uint256[] memory values,
             bytes[] memory payloads
         ) = getTargetsPayloadsValues();
 
-        /// TODO verify calldata size is under wormhole max message size limit
-        return
-            abi.encodeWithSignature(
-                "publishMessage(uint32,bytes,uint8)",
-                nonce,
-                abi.encode(temporalGovernor, targets, values, payloads),
-                consistencyLevel
-            );
+        require(
+            temporalGovernor != address(0),
+            "getTemporalGovCalldata: Invalid temporal governor"
+        );
+
+        timelockCalldata = abi.encodeWithSignature(
+            "publishMessage(uint32,bytes,uint8)",
+            nonce,
+            abi.encode(temporalGovernor, targets, values, payloads),
+            consistencyLevel
+        );
+
+        require(
+            timelockCalldata.length <= 10_000,
+            "getTemporalGovCalldata: Timelock publish message calldata max size of 10kb exceeded"
+        );
     }
 
+    /// @notice get the calldata for the Artemis Governor to propose the cross chain proposal on Moonbeam
+    /// @param temporalGovernor address of the cross chain governor executing the calls
+    /// @param wormholeCore address of the wormhole core contract
     function getArtemisGovernorCalldata(
         address temporalGovernor,
         address wormholeCore
     ) public view returns (bytes memory) {
+        require(
+            temporalGovernor != address(0),
+            "getArtemisGovernorCalldata: Invalid temporal governor"
+        );
+        require(
+            wormholeCore != address(0),
+            "getArtemisGovernorCalldata: Invalid womrholecore"
+        );
+
         bytes memory temporalGovCalldata = getTemporalGovCalldata(
             temporalGovernor
         );
@@ -148,10 +174,14 @@ abstract contract CrossChainProposal is
         return artemisPayload;
     }
 
+    /// @notice print the actions that will be executed by the proposal
+    /// @param temporalGovernor address of the cross chain governor executing the calls
+    /// @param wormholeCore address of the wormhole core contract
     function printActions(
         address temporalGovernor,
         address wormholeCore
     ) public {
+        /// if temporal governor is address 0, catch in this function call
         bytes memory temporalGovCalldata = getTemporalGovCalldata(
             temporalGovernor
         );
@@ -169,6 +199,7 @@ abstract contract CrossChainProposal is
         console.log("wormhole publish governance calldata");
         emit log_bytes(wormholeTemporalGovPayload);
 
+        /// if wormhole core is address 0, catch in this function call
         bytes memory artemisPayload = getArtemisGovernorCalldata(
             temporalGovernor,
             wormholeCore
