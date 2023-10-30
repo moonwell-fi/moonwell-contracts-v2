@@ -1,0 +1,26 @@
+{
+    "title": "Allocate tokens to otc escrow",
+    "commands": [
+        {
+            "target": "{WELL}",
+            "values": "0",
+            "method": "allocateTokens(address,uint256)",
+            "arguments": [
+                "{FOUNDATION_MULTISIG}",
+                "2598000000000000000000000"
+            ],
+            "description": "Allocate WELL to FOUNDATION MULTISIG"
+        },
+        {
+            "target": "{WELL}",
+            "values": "0",
+            "method": "transfer(address,uint256)",
+            "arguments": [
+                "{TEMPORAL_GOVERNOR_GUARDIAN}",
+                "1000000000000000000"
+            ],
+            "description": "Allocate 1 WELL to TEMPORAL_GOVERNOR_GUARDIAN"
+        }
+    ]
+}
+
