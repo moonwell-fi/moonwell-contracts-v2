@@ -36,12 +36,14 @@ contract Addresses is Test {
     constructor() {
         chainId = block.chainid;
 
-        bytes memory addressesData = abi.encodePacked(
-            vm.readFile(addressesPath)
+        string memory addressesData = string(
+            abi.encodePacked(vm.readFile(addressesPath))
         );
 
+        bytes memory parsedJson = vm.parseJson(addressesData);
+
         SavedAddresses[] memory savedAddresses = abi.decode(
-            addressesData,
+            parsedJson,
             (SavedAddresses[])
         );
 
