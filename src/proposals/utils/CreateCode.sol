@@ -6,8 +6,8 @@ import "@forge-std/Test.sol";
 /// based on the path to the proposal artifact
 contract CreateCode is Test {
     /// @notice returns the path to the proposal artifact based on the environment variable
-    function getPath() public view returns (string memory) {
-        return vm.envString("PROPOSAL_ARTIFACT_PATH");
+    function getPath() public returns (string memory) {
+        return vm.envOr("PROPOSAL_ARTIFACT_PATH", string(""));
     }
 
     /// @notice returns the creation bytecode of the contract based on the path
