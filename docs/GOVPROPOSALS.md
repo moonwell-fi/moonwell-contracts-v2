@@ -34,6 +34,7 @@ First, set the environment variables for which actions you want to be run during
 - **DO_TEARDOWN** - Whether or not to run the teardown script. Defaults to true.
 - **DO_VALIDATE** - Whether or not to run validation checks after all previous steps have been run. Defaults to true.
 - **PROPOSAL_ARTIFACT_PATH** - Path to the artifact of the governance proposal you would like to run.
+- **DO_AFTER_DEPLOY_MTOKEN_BROADCAST** - Whether or not to do the after deploy mtoken broadcast. Defaults to true. Only used when using the [`mip-market-listing.sol`](./src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol) proposal.
 
 Set the environment variables to true or false depending on which steps you want to run.
 
