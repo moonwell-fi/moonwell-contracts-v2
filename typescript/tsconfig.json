@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "target": "ES2015",
+        "moduleResolution": "node",
+        "module": "commonjs",
+        "resolveJsonModule": true,
+        "esModuleInterop": true
+    },
+    "include": [
+        "./**/*.ts"
+    ]
+}
