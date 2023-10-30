@@ -37,9 +37,11 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
         _setProposalDescription(proposalDescription);
     }
 
-    function _validateJRM(address jrmAddress, address tokenAddress, IRParams memory params)
-        internal
-    {
+    function _validateJRM(
+        address jrmAddress,
+        address tokenAddress,
+        IRParams memory params
+    ) internal {
         JumpRateModel jrm = JumpRateModel(jrmAddress);
         assertEq(
             address(MToken(tokenAddress).interestRateModel()),
@@ -72,11 +74,17 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
         );
     }
 
-    function _validateCF(Addresses addresses, address tokenAddress, uint256 collateralFactor) internal {
+    function _validateCF(
+        Addresses addresses,
+        address tokenAddress,
+        uint256 collateralFactor
+    ) internal {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         Comptroller unitroller = Comptroller(unitrollerAddress);
 
-        (bool listed, uint256 collateralFactorMantissa) = unitroller.markets(tokenAddress);
+        (bool listed, uint256 collateralFactorMantissa) = unitroller.markets(
+            tokenAddress
+        );
 
         assertTrue(listed);
 
@@ -89,65 +97,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
 
     function deploy(Addresses addresses, address) public override {}
 
-    function afterDeploy(Addresses addresses, address) public override {
-        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), WETH_PREVIOUS_CF);
-        _validateCF(addresses, addresses.getAddress("MOONWELL_USDC"), USDC_PREVIOUS_CF);
-
-        address previousWETHJRM = 0x6bcE15B789e537f3abA3C60CB183F0E8737f05eC;
-        address previousStablesJRM = 0x33DeAc0861FD6a9235b86172AA939E79085c6f52;
-        address previouscbETHJRM = 0x523262439bAa43C9f722339879a15e1E05FB6696;
-
-        IRParams memory previousWETHIRParams = IRParams({
-            baseRatePerTimestamp: 0.01e18,
-            kink: 0.8e18,
-            multiplierPerTimestamp: 0.04e18,
-            jumpMultiplierPerTimestamp: 4.8e18
-        });
-
-        _validateJRM(
-            previousWETHJRM,
-            addresses.getAddress("MOONWELL_WETH"),
-            previousWETHIRParams
-        );
-
-        IRParams memory previousStableIRParams = IRParams({
-            baseRatePerTimestamp: 0,
-            kink: 0.8e18,
-            multiplierPerTimestamp: 0.045e18,
-            jumpMultiplierPerTimestamp: 2.5e18
-        });
-
-        _validateJRM(
-            previousStablesJRM,
-            addresses.getAddress("MOONWELL_DAI"),
-            previousStableIRParams
-        );
-
-        _validateJRM(
-            previousStablesJRM,
-            addresses.getAddress("MOONWELL_USDC"),
-            previousStableIRParams
-        );
-
-        _validateJRM(
-            previousStablesJRM,
-            addresses.getAddress("MOONWELL_USDBC"),
-            previousStableIRParams
-        );
-
-        IRParams memory previouscbETHIRParams = IRParams({
-            baseRatePerTimestamp: 0.01e18,
-            kink: 0.45e18,
-            multiplierPerTimestamp: 0.2e18,
-            jumpMultiplierPerTimestamp: 3.0e18
-        });
-
-        _validateJRM(
-            previouscbETHJRM,
-            addresses.getAddress("MOONWELL_cbETH"),
-            previouscbETHIRParams
-        );
-    }
+    function afterDeploy(Addresses addresses, address) public override {}
 
     function afterDeploySetup(Addresses addresses) public override {}
 
@@ -235,7 +185,6 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             ),
             "Set interest rate model for Moonwell cbETH to updated rate model"
         );
-
     }
 
     function teardown(Addresses addresses, address) public pure override {}
@@ -244,11 +193,18 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public override {
         // ======== WETH CF Update =========
-        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), WETH_NEW_CF);
+        _validateCF(
+            addresses,
+            addresses.getAddress("MOONWELL_WETH"),
+            WETH_NEW_CF
+        );
 
         // ======== USDC CF Update =========
-        _validateCF(addresses, addresses.getAddress("MOONWELL_USDC"), USDC_NEW_CF);
-
+        _validateCF(
+            addresses,
+            addresses.getAddress("MOONWELL_USDC"),
+            USDC_NEW_CF
+        );
 
         // =========== WETH IR Update ============
 
