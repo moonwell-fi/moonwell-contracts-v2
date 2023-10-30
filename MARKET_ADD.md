@@ -37,11 +37,11 @@ Go to `mainnetMTokensExample.json` to see what an example mToken JSON configurat
 - `seizeShare` percentage of seized collateral that goes to protocol reserves when a liquidation occurs, scaled up by `1e18`.
 - `supplyCap` cap of amount of assets that can be supplied for a given market.
 - `borrowCap` cap of amount of assets that can be borrowed for a given market.
-- `priceFeedName` name of the chainlink aggregator address in `Addresses.sol`. **Note user must add the address to Addresses.sol on the proper network pre-deployment in order for the price feed to be set correctly**
-- `tokenAddressName` name of the underlying token address name for the new market, set in `Addresses.sol`. **Note user must add the underlying token address to Addresses.sol on the proper network pre-deployment in order for the MToken's underlying address to be set correctly**
+- `priceFeedName` name of the chainlink aggregator address in `Addresses.json`. **Note user must add the address to Addresses.json on the proper network pre-deployment in order for the price feed to be set correctly**
+- `tokenAddressName` name of the underlying token address name for the new market, set in `Addresses.json`. **Note user must add the underlying token address to Addresses.json on the proper network pre-deployment in order for the MToken's underlying address to be set correctly**
 - `name` name of the Moonwell MToken. Prefixed with `Moonwell`.
 - `symbol` symbol of the Moonwell MToken. Prefixed with `m`.
-- `addressesString` name of the address string set in `Addresses.sol`.
+- `addressesString` name of the address string set in `Addresses.json`.
 - `jrm` parameters for the configuration of a JumpRateModel for each MToken.
 - `baseRatePerYear` cost to borrow per year as a percentage, scaled by `1e18`.
 - `multiplierPerYear` multiplier on the base rate, which creates the curve of the rate before kink is hit, as a percentage, scaled by `1e18`.
@@ -82,7 +82,7 @@ To get local tests running a chainfork with the new proposal type, set the `PROP
 
 Once this has been set, then integration tests can be created which ensure the proposal is working as expected.
 
-If deploying and generating calldata for the first time, environment variable `DO_AFTER_DEPLOY_MTOKEN_BROADCAST` should be set to true. After doing deploy and setting the addresses in `Addresses.sol`, this variable should be set to false. This variable is used to determine whether or not to broadcast the after deploy transactions that configure the MToken, which are not needed after the tokens are deployed.
+If deploying and generating calldata for the first time, environment variable `DO_AFTER_DEPLOY_MTOKEN_BROADCAST` should be set to true. After doing deploy and setting the addresses in `Addresses.json`, this variable should be set to false. This variable is used to determine whether or not to broadcast the after deploy transactions that configure the MToken, which are not needed after the tokens are deployed.
 
 If any errors show up relating to not being able to read in a file, double check the environment variables and make sure the paths are correct.
 
@@ -96,18 +96,22 @@ forge script proposals/mips/examples/mip-market-listing/mip-market-listing.sol:m
     --broadcast
 ```
 
-Once the contracts are deployed, copy and paste the `_addAddress()` commands the deployment script outputted into the `Addresses.sol` file under the proper network section. Now, save these changes and proceed to the next step.
+Once the contracts are deployed, copy and paste the JSON the deployment script outputted into the `Addresses.json` file. Now, save these changes and proceed to the next step. DO NOT DELETE EXISTING JSON, JUST ADD TO IT.
 
 ## 5. Governance Proposal
-Now that the contracts are deployed, it's time to generate the calldata. If the contracts have not been deployed and added to Addresses.sol yet, generate this calldata by running:
-```
-forge test --match-test testPrintNewMarketCalldataDeployMToken -vvv --fork-url base
-```
+Now that the contracts are deployed, it's time to generate the calldata. If the contracts have not been deployed and added to Addresses.json yet, go back to previous steps and do that first:
 
-otherwise, generate the calldata by running:
+then, generate the calldata by running:
+
 ```
 forge test --match-test testPrintNewMarketCalldataAlreadyDeployedMToken -vvv --fork-url base
 ```
+
+If you encounter errors, ensure the environment variables are set correctly and the paths are correct.
+
+Environment variable `DO_AFTER_DEPLOY_MTOKEN_BROADCAST` should be set to false as this step should only be used to generate calldata. This variable is used to determine whether or not to broadcast the after deploy transactions that configure the MToken, which are not needed after the tokens are deployed as that should have been done in the deployment step.
+
+Recommend referring to the GOVPROPOSALS.md file in the root of the repo for more information on how to generate calldata and deploy contracts. Then run the forge script command with the proper environment variables after the contracts have been deployed and addresses added to Addresses.json. Using this output, double check the calldata generated by the test is correct by comparing it to the calldata generated by running the commands in the [GOVPROPOSALS.md](./docs/GOVPROPOSALS.md) file.
 
 Then, scroll up to get the calldata to propose these changes to the DAO. After section "artemis governor queue governance calldata", copy and paste the calldata and send the calldata to the governance contract on moonbase by going to metamask and submitting a transaction to the ArtemisGovernor contract with the calldata the raw hex copied.
 
