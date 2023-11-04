@@ -8,7 +8,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 
 /*
 How to use:
-forge script proposals/MIPProposal.s.sol:DeployProposal \
+forge script src/proposals/MIPProposal.s.sol:DeployProposal \
     -vvvv \
     --rpc-url $ETH_RPC_URL \
     --broadcast
