@@ -564,6 +564,37 @@ contract Addresses is Test, ChainIds {
             baseChainId,
             0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa
         );
+
+        /// chainlink eth oracles
+        _addAddress(
+            "CHAINLINK_ETH_USD",
+            baseChainId,
+            0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70
+        );
+
+        _addAddress(
+            "CHAINLINK_STETH_ETH",
+            baseChainId,
+            0xf586d0728a47229e747d824a939000Cf21dEF5A0
+        );
+
+        _addAddress(
+            "CHAINLINK_WSTETH_STETH",
+            baseChainId,
+            0xB88BAc61a4Ca37C43a3725912B1f472c9A5bc061
+        );
+
+        _addAddress(
+            "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE",
+            baseChainId,
+            0xa5A5892bCfca4642c6bD789Ca75f27774309Dcb7
+        );
+
+        _addAddress(
+            "wstETH",
+            baseChainId,
+            0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452
+        );
     }
 
     /// @notice add an address for a specific chainId
