@@ -67,7 +67,7 @@ library StringUtils {
     function split(
         string memory str,
         bytes1 delimiter
-    ) public view returns (string[] memory) {
+    ) public pure returns (string[] memory) {
         uint256 stringCount = countWords(str, delimiter);
 
         string[] memory splitStrings = new string[](stringCount);
