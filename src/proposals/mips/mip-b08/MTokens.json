@@ -1,8 +1,8 @@
 [
     {
         "addressesString": "MOONWELL_wstETH",
-        "supplyCap": 1000e18,
-        "borrowCap": 500e18,
+        "supplyCap": 0.1e18,
+        "borrowCap": 0.05e18,
         "collateralFactor": 0.75e18,
         "initialMintAmount": 1e12,
         "name": "Moonwell Wrapped Lido Staked Ether",
