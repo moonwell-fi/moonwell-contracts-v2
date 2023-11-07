@@ -56,7 +56,7 @@ contract mipb08 is Proposal, CrossChainProposal, Configs {
     constructor() {
         /// for example, should be set to
         /// LISTING_PATH="./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
-        string memory descriptionPath = "./src/proposals/mips/mip-b08/MarketListingDescription.md";
+        string memory descriptionPath = "./src/proposals/mips/mip-b08/MIP-B08.md";
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(descriptionPath)
         );
