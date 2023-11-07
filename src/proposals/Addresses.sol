@@ -595,6 +595,18 @@ contract Addresses is Test, ChainIds {
             baseChainId,
             0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452
         );
+
+        /// Moonwell Wrapped Staked Ether
+        _addAddress(
+            "JUMP_RATE_IRM_MOONWELL_wstETH",
+            8453,
+            0x1007100Ffc1aC1e63813Fb983bb3D3a8DF1CC193
+        );
+        _addAddress(
+            "MOONWELL_wstETH",
+            8453,
+            0x627Fe393Bc6EdDA28e99AE648fD6fF362514304b
+        );
     }
 
     /// @notice add an address for a specific chainId
