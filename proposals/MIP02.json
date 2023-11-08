@@ -1,0 +1,15 @@
+{
+    "commands": [
+        {
+            "target": "{MOONWELL_WETH}",
+            "values": "0",
+            "method": "_setImplementation(address,bool,bytes)",
+            "arguments": [
+                "{MWETH_IMPLEMENTATION}",
+                true,
+                ""
+            ],
+            "description": "Point Moonwell WETH to new logic contract"
+        }
+    ]
+}
