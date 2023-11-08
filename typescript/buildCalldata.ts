@@ -100,17 +100,11 @@ function buildTemporalGovCalldata(): string {
 
         /// arguments are either strings or numbers
         const args = command.arguments.map((arg: string) => {
-            // console.log(arg);
-            // console.log(typeof arg);
-
             return isNumerical(arg) ?
                 (new BigNumber(arg)).toString() : /// if number, convert to BigNumber to prevent overflow errors and then cast to string,
                 /// abiEncode will take care of turning string to an actual int
                 replaceVariablesWithAddress(arg); /// if string, replace address variables with actual addresses, if no replacement, just use string
         }); /// intepret arguments as strings, and replace variables with addresses
-
-        // console.log("target: ", target);
-        // console.log("args: ", args);
 
         /// expected that values is 0
         if (target === undefined) {
@@ -138,5 +132,3 @@ function buildTemporalGovCalldata(): string {
 }
 
 process.stdout.write(buildTemporalGovCalldata());
-// console.log(buildTemporalGovCalldata());
-// console.log(`proposal bytes: ${base64ToHex(buildTemporalGovCalldata())}`);
