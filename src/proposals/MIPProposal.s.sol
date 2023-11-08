@@ -54,7 +54,7 @@ abstract contract MIPProposal is Script {
         addresses = new Addresses();
     }
 
-    function run() public {
+    function run() public virtual {
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
         console.log("deployerAddress: ", deployerAddress);
