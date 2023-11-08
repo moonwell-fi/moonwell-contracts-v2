@@ -61,11 +61,11 @@ export DO_RUN=true
 export DO_VALIDATE=false
 ```
 
-```forge script proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv```
+```forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv```
 
 add the following flags to deploy and verify against the base network:
 
-```forge script proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify```
+```forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify```
 
 ##### Debugging
 
