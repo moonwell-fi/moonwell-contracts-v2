@@ -24,7 +24,7 @@ export DO_TEARDOWN=false
 export DO_VALIDATE=true
 */
 
-/// forge script proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv
+/// forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv
 
 contract mipb02 is Proposal, CrossChainProposal, Configs {
     string public constant name = "MIP-b02";
