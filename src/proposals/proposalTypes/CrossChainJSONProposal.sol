@@ -28,22 +28,30 @@ contract CrossChainJSONProposal is CrossChainProposal {
         _setProposalDescription(proposalDescription);
     }
 
-    function run() public override {
-        /// @notice this proposal type doesn't work with contract deployments. Contracts
-        /// must be deployed first, and then this proposal type can be used to call functions on those contracts
-        /// 1. run buildCalldata.ts using ffi
+    function deploy(Addresses, address) public virtual override {}
 
+    /// 1. run buildCalldata.ts using ffi
+    /// 2. copy the temporal gov calldata and use it to build the proposal
+    /// 3. simulate the proposal being executed by the temporal governor
+    /// 3.5 simulate proposing on moonbeam, voting for the proposal, and executing the proposal
+    /// ensure the proposal succeeded by ensuring event emission in the Wormhole Core contract on Moonbeam
+    /// 4. run proposal validation steps
+
+    function afterDeploy(Addresses, address) public virtual override {}
+
+    function afterDeploySetup(Addresses) public virtual override {}
+
+    function build(Addresses) public virtual override {
         string[] memory commands = new string[](3);
 
         /// note to future self, ffi absolutely flips out if you try to set env vars
         commands[0] = "npx";
         commands[1] = "ts-node";
-        commands[2] = "typescript/buildCalldata.js";
+        commands[2] = "typescript/buildCalldata.ts";
 
         bytes memory result = vm.ffi(commands);
 
-        console.log("result before decoding %d", result.length);
-        console.log("result: ", string(result));
+        console.log("result: ");
         emit log_bytes(result);
 
         (
@@ -66,11 +74,14 @@ contract CrossChainJSONProposal is CrossChainProposal {
         console.log("temporal governor: %s\n", temporalGov);
 
         for (uint256 i = 0; i < values.length; i++) {
-            console.log("%d).\ntarget: ", i, targets[i]);
-            console.log("values: ", values[i]);
-            console.log("payload: ");
+            // console.log("%d).\ntarget: ", i, targets[i]);
+            // console.log("values: ", values[i]);
+            // console.log("payload: ");
+            // emit log_bytes(calldatas[i]);
 
-            emit log_bytes(calldatas[i]);
+            require(values[i] == 0, "value must be 0 for cross chain proposal");
+
+            _pushCrossChainAction(targets[i], calldatas[i], "");
         }
 
         bytes memory temporalGovCalldata = getTemporalGovCalldata(
@@ -89,23 +100,7 @@ contract CrossChainJSONProposal is CrossChainProposal {
         /// confirmed that the calldata matches solidity generated calldata
         console.log("artemis gov calldata: ");
         emit log_bytes(artemisCalldata);
-
-        /// turn to string and then do conversion of string to bytes
-        /// https://ethereum.stackexchange.com/questions/9607/convert-string-to-bytes32
-        /// 2. copy the temporal gov calldata and use it to build the proposal
-        /// 3. simulate the proposal being executed by the temporal governor
-        /// 3.5 simulate proposing on moonbeam, voting for the proposal, and executing the proposal
-        /// ensure the proposal succeeded by ensuring event emission in the Wormhole Core contract on Moonbeam
-        /// 4. run proposal validation steps
     }
-
-    function afterDeploy(Addresses, address) public virtual override {}
-
-    function afterDeploySetup(Addresses) public virtual override {}
-
-    function build(Addresses) public virtual override {}
-
-    function deploy(Addresses, address) public virtual override {}
 
     function teardown(Addresses, address) public virtual override {}
 
