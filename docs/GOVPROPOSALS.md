@@ -55,10 +55,11 @@ env setup to build and run without any other steps:
 export DO_DEPLOY=false
 export DO_AFTER_DEPLOY=false
 export DO_AFTER_DEPLOY_SETUP=false
-export DO_
 export DO_BUILD=true
-export DO_RUN=true  
+export DO_RUN=true
+export DO_TEARDOWN=true
 export DO_VALIDATE=false
+export DO_PRINT=true
 ```
 
 ```forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv```
