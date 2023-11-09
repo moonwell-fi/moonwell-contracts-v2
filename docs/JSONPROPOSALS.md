@@ -5,6 +5,31 @@ The proposal simulation framework is a way to test the governance system. It run
 
 View the files located in the [proposals](proposals/) folder, these files define how to structure a Moonwell Improvement Proposal in JSON.
 
+Starting out with the simplest proposal, mip-b02, let's analyze the structure to understand how to create a new proposal.
+
+The proposal object has a commands object, this commands object is an array of commands. A command is an object with a `target`, `values` which should always be set to 0, `method` which is the function signature of the method to call on the target, `arguments` which are the arguments to pass to the method, and the `description`, which is unused, but is important for readability and debugging.
+
+```bash
+{
+    "commands": [
+        {
+            "target": "{MOONWELL_WETH}",
+            "values": "0",
+            "method": "_setImplementation(address,bool,bytes)",
+            "arguments": [
+                "{MWETH_IMPLEMENTATION}",
+                true,
+                ""
+            ],
+            "description": "Point Moonwell WETH to new logic contract"
+        }
+    ]
+}
+```
+
+### Variables
+Variables are allowed in this structure, and get replaced when the JSON structure is turned to raw calldata by the `buildCalldata` program. Variables are denoted by starting the string with `{` and ending the string with `}`. The target should be a variable, though this is not enforced, and a raw address can be passed. Variables are replaced with an address found by searching the `Addresses.json` file for a key that matches the variable name. If no key is found, building the proposal will fail loudly as something has gone wrong.
+
 Make a new file in the [`proposals/`](proposals/) folder named `MIPBXX.json`. Fill in everything the proposal should do in each step. Keep in mind, new contract deployments should be done in the `deploy` step, but doing this deployment requires creating a new Solidity file by copying the file from [CrossChainJSONProposal.sol](src/proposals/proposalTypes/CrossChainJSONProposal.sol), creating a new MIP folder in the [src/proposals/mips](src/proposals/mips) folder, and adding the copied file to that folder. Then, you'll need to make modifications to the `deploy` section and actually deploy the new contracts. See [mip-b03](src/proposals/mips/mip-b03/mip-b03.sol) for an example of the deploy section.
 
 Integration tests will only run with the new proposal a new file was created in [src/proposals/mips](src/proposals/mips) folder. They will now validate the state change after your proposal passes.
