@@ -572,6 +572,7 @@ contract Addresses is Test, ChainIds {
             0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70
         );
 
+        /// chainlink stETH oracles
         _addAddress(
             "CHAINLINK_STETH_ETH",
             baseChainId,
@@ -585,15 +586,34 @@ contract Addresses is Test, ChainIds {
         );
 
         _addAddress(
+            "CHAINLINK_RETH_ETH",
+            baseChainId,
+            0xf397bF97280B488cA19ee3093E81C0a77F02e9a5
+        );
+
+        _addAddress(
             "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE",
             baseChainId,
             0xa5A5892bCfca4642c6bD789Ca75f27774309Dcb7
+        );
+
+        /// composite oracle
+        _addAddress(
+            "CHAINLINK_RETH_ETH_COMPOSITE_ORACLE",
+            baseChainId,
+            0x106c7f4f7f0F1B1B5973dD7b89CF3ac46420945F 
         );
 
         _addAddress(
             "wstETH",
             baseChainId,
             0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452
+        );
+
+        _addAddress(
+            "rETH",
+            baseChainId,
+            0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c
         );
 
         /// Moonwell Wrapped Staked Ether
