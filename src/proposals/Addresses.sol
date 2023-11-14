@@ -585,6 +585,8 @@ contract Addresses is Test, ChainIds {
             0xB88BAc61a4Ca37C43a3725912B1f472c9A5bc061
         );
 
+        /// https://docs.chain.link/data-feeds/price-feeds/addresses?network=base&page=1&search=reth
+        /// https://basescan.org/address/0xf397bF97280B488cA19ee3093E81C0a77F02e9a5
         _addAddress(
             "CHAINLINK_RETH_ETH",
             baseChainId,
@@ -596,8 +598,9 @@ contract Addresses is Test, ChainIds {
             baseChainId,
             0xa5A5892bCfca4642c6bD789Ca75f27774309Dcb7
         );
-
+        
         /// composite oracle
+        /// https://basescan.org/address/0xa5A5892bCfca4642c6bD789Ca75f27774309Dcb7#code
         _addAddress(
             "CHAINLINK_RETH_ETH_COMPOSITE_ORACLE",
             baseChainId,

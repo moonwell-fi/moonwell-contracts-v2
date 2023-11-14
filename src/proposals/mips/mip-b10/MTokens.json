@@ -1,9 +1,9 @@
 [
     {
         "addressesString": "MOONWELL_rETH",
-        "supplyCap": 0.1e18,
-        "borrowCap": 0.05e18,
-        "collateralFactor": 0.75e18,
+        "supplyCap": 100e18,
+        "borrowCap": 50e18,
+        "collateralFactor": 0.76e18,
         "initialMintAmount": 1e12,
         "name": "Moonwell Rocket Ether",
         "priceFeedName": "CHAINLINK_RETH_ETH_COMPOSITE_ORACLE",
