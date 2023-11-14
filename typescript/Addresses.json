@@ -300,11 +300,6 @@
         "name": "DAI_ORACLE"
     },
     {
-        "addr": "0xB88BAc61a4Ca37C43a3725912B1f472c9A5bc061",
-        "chainId": 8453,
-        "name": "wstETHstETH_ORACLE"
-    },
-    {
         "addr": "0xf586d0728a47229e747d824a939000Cf21dEF5A0",
         "chainId": 8453,
         "name": "stETHETH_ORACLE"
@@ -448,5 +443,40 @@
         "addr": "0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa",
         "chainId": 8453,
         "name": "FOUNDATION_MULTISIG"
+    },
+    {
+        "addr": "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70",
+        "chainId": 8453,
+        "name": "CHAINLINK_ETH_USD"
+    },
+    {
+        "addr": "0xf586d0728a47229e747d824a939000Cf21dEF5A0",
+        "chainId": 8453,
+        "name": "CHAINLINK_STETH_ETH"
+    },
+    {
+        "addr": "0xB88BAc61a4Ca37C43a3725912B1f472c9A5bc061",
+        "chainId": 8453,
+        "name": "CHAINLINK_WSTETH_STETH"
+    },
+    {
+        "addr": "0xa5A5892bCfca4642c6bD789Ca75f27774309Dcb7",
+        "chainId": 8453,
+        "name": "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE"
+    },
+    {
+        "addr": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
+        "chainId": 8453,
+        "name": "wstETH"
+    },
+    {
+        "addr": "0x1007100Ffc1aC1e63813Fb983bb3D3a8DF1CC193",
+        "chainId": 8453,
+        "name": "JUMP_RATE_IRM_MOONWELL_wstETH"
+    },
+    {
+        "addr": "0x627Fe393Bc6EdDA28e99AE648fD6fF362514304b",
+        "chainId": 8453,
+        "name": "MOONWELL_wstETH"
     }
 ]

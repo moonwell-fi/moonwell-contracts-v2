@@ -36,6 +36,40 @@ First, set the environment variables for which actions you want to be run during
 - **PROPOSAL_ARTIFACT_PATH** - Path to the artifact of the governance proposal you would like to run.
 - **DO_AFTER_DEPLOY_MTOKEN_BROADCAST** - Whether or not to do the after deploy mtoken broadcast. Defaults to true. Only used when using the [`mip-market-listing.sol`](./src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol) proposal.
 
+
+#### Sample Environment Variables For Deploying and Building Calldata for a Market Listing Proposal
+```
+export DO_DEPLOY=true
+export DO_AFTER_DEPLOY=true
+export DO_AFTER_DEPLOY_SETUP=true
+export DO_BUILD=true
+export DO_RUN=false
+export DO_TEARDOWN=false
+export DO_VALIDATE=false
+```
+
+For a proposal where a new market is being listed:
+
+```
+export DO_AFTER_DEPLOY_MTOKEN_BROADCAST=true
+export OVERRIDE_SUPPLY_CAP=false
+export OVERRIDE_BORROW_CAP=false
+```
+
+For a market listing proposal where the contracts have already been deployed:
+
+```
+export DO_DEPLOY=false
+export DO_AFTER_DEPLOY=true
+export DO_AFTER_DEPLOY_SETUP=true
+export DO_BUILD=true
+export DO_RUN=true
+export DO_TEARDOWN=true
+export DO_VALIDATE=true
+export DO_AFTER_DEPLOY_MTOKEN_BROADCAST=false
+
+```
+
 Set the environment variables to true or false depending on which steps you want to run.
 
 If deploying or running against base mainnet, the following environment variable needs to be set:
@@ -66,7 +100,7 @@ export DO_PRINT=true
 
 add the following flags to deploy and verify against the base network:
 
-```forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify```
+```forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify --slow```
 
 ##### Debugging
 
