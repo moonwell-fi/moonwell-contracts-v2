@@ -635,12 +635,12 @@ contract Addresses is Test, ChainIds {
         _addAddress(
             "JUMP_RATE_IRM_MOONWELL_rETH",
             8453,
-            0x36bd01e31834a1ea271f0a135e92517a6320b511
+            0x36BD01e31834A1ea271F0A135e92517a6320B511
         );
         _addAddress(
             "MOONWELL_rETH",
             8453,
-            0xcb1dacd30638ae38f2b94ea64f066045b7d45f44
+            0xCB1DaCd30638ae38F2B94eA64F066045B7D45f44
         );
     }
 
