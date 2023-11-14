@@ -90,7 +90,7 @@ If any errors show up relating to not being able to read in a file, double check
 To deploy these new markets, run [`mip-market-listing.sol`](./src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol) using command:
 
 ```
-forge script proposals/mips/examples/mip-market-listing/mip-market-listing.sol:mip0x \
+forge script src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol:mip0x \
     -vvvv \
     --rpc-url base \
     --broadcast

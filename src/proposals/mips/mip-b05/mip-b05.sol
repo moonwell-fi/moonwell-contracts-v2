@@ -150,13 +150,6 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
 
-        IRParams memory previousStablecoinIRParams = IRParams({
-            baseRatePerTimestamp: 0,
-            kink: 0.8e18,
-            multiplierPerTimestamp: 0.05e18,
-            jumpMultiplierPerTimestamp: 2.5e18
-        });
-
         // =========== DAI IR Update ============
 
         // Add update action

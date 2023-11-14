@@ -15,7 +15,7 @@ import {JumpRateModel} from "@protocol/IRModels/JumpRateModel.sol";
 
 /*
 How to use:
-forge script proposals/DeployJRM.s.sol:DeployJRM \
+forge script src/proposals/DeployJRM.s.sol:DeployJRM \
     -vvvv \
     --rpc-url base \
     --broadcast

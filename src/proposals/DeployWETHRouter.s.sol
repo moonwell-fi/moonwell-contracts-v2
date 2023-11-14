@@ -12,7 +12,7 @@ import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 
 /*
 How to use:
-forge script proposals/DeployWETHRouter.s.sol:DeployWETHRouter \
+forge script src/proposals/DeployWETHRouter.s.sol:DeployWETHRouter \
     -vvvv \
     --rpc-url base \
     --broadcast

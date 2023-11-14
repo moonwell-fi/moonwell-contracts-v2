@@ -13,7 +13,7 @@ import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
 
 /*
 How to use:
-forge script proposals/DeployWethUnwrapper.s.sol:DeployWethUnwrapper \
+forge script src/proposals/DeployWethUnwrapper.s.sol:DeployWethUnwrapper \
     -vvvv \
     --rpc-url base \
     --broadcast

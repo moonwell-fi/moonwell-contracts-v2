@@ -105,13 +105,43 @@ abstract contract CrossChainProposal is
     /// @param temporalGovernor address of the cross chain governor executing the calls
     function getTemporalGovCalldata(
         address temporalGovernor
-    ) public view returns (bytes memory timelockCalldata) {
+    ) public returns (bytes memory timelockCalldata) {
         (
             address[] memory targets,
             uint256[] memory values,
             bytes[] memory payloads
         ) = getTargetsPayloadsValues();
 
+        require(
+            temporalGovernor != address(0),
+            "getTemporalGovCalldata: Invalid temporal governor"
+        );
+
+        timelockCalldata = abi.encodeWithSignature(
+            "publishMessage(uint32,bytes,uint8)",
+            nonce,
+            abi.encode(temporalGovernor, targets, values, payloads),
+            consistencyLevel
+        );
+
+        console.log(
+            "\ncalldata for execution on temporal gov: abi.encode(temporalGovernor, targets, values, payloads)"
+        );
+        emit log_bytes(abi.encode(temporalGovernor, targets, values, payloads));
+        console.log("");
+
+        require(
+            timelockCalldata.length <= 10_000,
+            "getTemporalGovCalldata: Timelock publish message calldata max size of 10kb exceeded"
+        );
+    }
+
+    function getTemporalGovCalldata(
+        address temporalGovernor,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory payloads
+    ) public returns (bytes memory timelockCalldata) {
         require(
             temporalGovernor != address(0),
             "getTemporalGovCalldata: Invalid temporal governor"
@@ -136,7 +166,7 @@ abstract contract CrossChainProposal is
     function getArtemisGovernorCalldata(
         address temporalGovernor,
         address wormholeCore
-    ) public view returns (bytes memory) {
+    ) public returns (bytes memory) {
         require(
             temporalGovernor != address(0),
             "getArtemisGovernorCalldata: Invalid temporal governor"
@@ -148,6 +178,28 @@ abstract contract CrossChainProposal is
 
         bytes memory temporalGovCalldata = getTemporalGovCalldata(
             temporalGovernor
+        );
+
+        return
+            getArtemisGovernorCalldata(
+                temporalGovernor,
+                wormholeCore,
+                temporalGovCalldata
+            );
+    }
+
+    function getArtemisGovernorCalldata(
+        address temporalGovernor,
+        address wormholeCore,
+        bytes memory temporalGovCalldata
+    ) public returns (bytes memory) {
+        require(
+            temporalGovernor != address(0),
+            "getArtemisGovernorCalldata: Invalid temporal governor"
+        );
+        require(
+            wormholeCore != address(0),
+            "getArtemisGovernorCalldata: Invalid womrholecore"
         );
 
         address[] memory targets = new address[](1);
@@ -221,7 +273,11 @@ abstract contract CrossChainProposal is
 
         for (uint256 i = 0; i < actions.length; i++) {
             console.log("%d). %s", i + 1, actions[i].description);
-            console.log("target: %s\npayload", actions[i].target);
+            console.log(
+                "target: %s\nvalue: %d\npayload",
+                actions[i].target,
+                actions[i].value
+            );
             emit log_bytes(actions[i].arguments);
 
             console.log("\n");
