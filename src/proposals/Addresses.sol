@@ -630,6 +630,18 @@ contract Addresses is Test, ChainIds {
             8453,
             0x627Fe393Bc6EdDA28e99AE648fD6fF362514304b
         );
+
+        /// Moonwell Rocket Pool Ether
+        _addAddress(
+            "JUMP_RATE_IRM_MOONWELL_rETH",
+            8453,
+            0x36bd01e31834a1ea271f0a135e92517a6320b511
+        );
+        _addAddress(
+            "MOONWELL_rETH",
+            8453,
+            0xcb1dacd30638ae38f2b94ea64f066045b7d45f44
+        );
     }
 
     /// @notice add an address for a specific chainId
