@@ -1,0 +1,21 @@
+[
+    {
+        "addressesString": "MOONWELL_wstETH",
+        "supplyCap": 0.1e18,
+        "borrowCap": 0.05e18,
+        "collateralFactor": 0.75e18,
+        "initialMintAmount": 1e12,
+        "name": "Moonwell Wrapped Lido Staked Ether",
+        "priceFeedName": "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE",
+        "reserveFactor": 0.25e18,
+        "seizeShare": 0.03e18,
+        "symbol": "mwstETH",
+        "tokenAddressName": "wstETH",
+        "jrm": {
+            "baseRatePerYear": 0,
+            "jumpMultiplierPerYear": 3.15e18,
+            "kink": 0.45e18,
+            "multiplierPerYear": 0.07e18
+        }
+    }
+]

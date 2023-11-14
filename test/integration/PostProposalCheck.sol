@@ -21,7 +21,7 @@ contract PostProposalCheck is CreateCode {
 
         if (keccak256(bytes(path)) == '""' || bytes(path).length == 0) {
             /// empty string on both mac and unix
-            address[] memory mips = new address[](0);
+            mips = new address[](0);
 
             proposals = new TestProposals(mips);
         } else if (path.hasChar(",")) {
