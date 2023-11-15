@@ -13,38 +13,32 @@ contract MintLimits {
     /// @notice rate limit for each bridge contract
     mapping(address => RateLimitMidPoint) public rateLimits;
 
-    struct RateLimitMidPoint {
+    /// @notice struct for initializing rate limit
+    struct RateLimitMidPointInfo {
         uint112 bufferCap;
         uint128 rateLimitPerSecond;
         address rateLimited;
     }
 
-    /// @notice RateLimitedV2 constructor
-    /// @param _maxRateLimitPerSecond maximum rate limit per second that governance can set
-    /// @param _rateLimitPerSecond starting rate limit per second
-    /// @param _bufferCap cap on buffer size for this rate limited instance
-    constructor(
-        RateLimitMidPoint[] memory _rateLimits
-    ) {
+    /// TODO make initializer
+    /// @notice Mint Limits constructor
+    /// @param _rateLimits cap on buffer size for this rate limited instance
+    constructor(RateLimitMidPointInfo[] memory _rateLimits) {
         for (uint256 i = 0; i < _rateLimits.length; i++) {
-            RateLimitMidPoint memory rateLimit = _rateLimits[i];
+            RateLimitMidPointInfo memory rateLimit = _rateLimits[i];
             require(
-                rateLimit.rateLimitPerSecond <= MAX_RATE_LIMIT_PER_SECOND
+                rateLimit.rateLimitPerSecond <= MAX_RATE_LIMIT_PER_SECOND,
                 "MintLimits: rateLimitPerSecond too high"
             );
-            rateLimits[rateLimit.rateLimited].bufferCap = rateLimit.bufferCap;
-            rateLimits[rateLimit.rateLimited].lastBufferUsedTime = uint32(block.timestamp);
-            rateLimits[rateLimit.rateLimited].bufferStored = uint112(_bufferCap / 2); /// manually set this as first call to setBufferCap sets it to 0
-            rateLimits[rateLimit.rateLimited].midPoint = uint112(_bufferCap / 2);
-    
-            require(
-                _rateLimitPerSecond <= MAX_RATE_LIMIT_PER_SECOND
-                "MintLimits: rateLimitPerSecond too high"
-            );
-            rateLimits[from].setRateLimitPerSecond(_rateLimitPerSecond);
-        }
 
-        MAX_RATE_LIMIT_PER_SECOND = _maxRateLimitPerSecond;
+            rateLimits[rateLimit.rateLimited] = RateLimitMidPoint({
+                bufferCap: rateLimit.bufferCap,
+                lastBufferUsedTime: uint32(block.timestamp),
+                bufferStored: uint112(rateLimit.bufferCap / 2),
+                midPoint: uint112(rateLimit.bufferCap / 2),
+                rateLimitPerSecond: rateLimit.rateLimitPerSecond
+            });
+        }
     }
 
     /// @notice the amount of action used before hitting limit

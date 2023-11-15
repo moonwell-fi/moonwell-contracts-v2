@@ -1,21 +1,19 @@
 pragma solidity 0.8.19;
 
 import {ERC20VotesUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
-import {Time} from "@openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/types/Time.sol";
 
 import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 
-contract xWELL is IXERC20, ERC20VotesUpgradeable, MintLimits {
+/// TODO make concrete implementation
+abstract contract xWELL is IXERC20, ERC20VotesUpgradeable, MintLimits {
     /// --------------------------------------------------------
     /// --------------------------------------------------------
     /// -------------------- clock override --------------------
     /// --------------------------------------------------------
     /// --------------------------------------------------------
-
-    /// @notice override clock from VotesUpgradeable to use timestamp instead of block number
     function clock() public view override returns (uint48) {
-        return Time.timestamp();
+        return uint48(block.timestamp);
     }
 
     /**
@@ -24,10 +22,8 @@ contract xWELL is IXERC20, ERC20VotesUpgradeable, MintLimits {
      */
     // solhint-disable-next-line func-name-mixedcase
     function CLOCK_MODE() public view override returns (string memory) {
-        // Check that the clock was not modified
-        if (clock() != Time.timestamp()) {
-            revert ERC6372InconsistentClock();
-        }
+        // Check that the clock is correctly modified
+        require(clock() == uint48(block.timestamp), "Incorrect clock");
 
         return "mode=timestamp";
     }
@@ -78,7 +74,7 @@ contract xWELL is IXERC20, ERC20VotesUpgradeable, MintLimits {
         address _bridge
     ) external view returns (uint256 _limit) {
         /// buffer <= bufferCap, so this can never revert, just return 0
-        return bufferCap(_minter) - buffer(_minter);
+        return bufferCap(_bridge) - buffer(_bridge);
     }
 
     /**
@@ -109,6 +105,8 @@ contract xWELL is IXERC20, ERC20VotesUpgradeable, MintLimits {
             _replenishBuffer(msg.sender, _amount);
         }
 
-        _burn(user, _amount);
+        //// TODO deplete bridge => user spending allowance
+
+        _burn(_user, _amount);
     }
 }
