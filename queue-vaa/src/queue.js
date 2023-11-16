@@ -184,7 +184,7 @@ exports.handler = async function(event, context) {
   console.log(`Called queueProposal in ${tx.hash}`);
   let timestamp = Math.floor(Date.now() / 1000);
   // On testnet, there is no 24 hour timelock
-  timestamp += 60 * 60 * 24 // 24 hours
+  timestamp += 60 * 60 * 24 + 60 // 24 hours + 1 minute for buffer
   await storeVAA(event, sequence, timestamp);
   notificationClient.send({
     channelAlias: 'Parameter Changes to Slack',
