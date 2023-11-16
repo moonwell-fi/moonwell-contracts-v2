@@ -10,10 +10,6 @@ import {ConfigurablePause} from "@protocol/xWELL/ConfigurablePause.sol";
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 import {MintLimits, RateLimitMidPointInfo} from "@protocol/xWELL/MintLimits.sol";
 
-/// pause specification:
-/// - starts unpaused
-/// - pauser can pause, but only for a configurable amount of time
-
 /// @notice TODO set the lockbox address bufferCap to uint112 max in deployment script for Moonbeam
 contract xWELL is
     IXERC20,
@@ -212,5 +208,19 @@ contract xWELL is
         super._mint(to, amount);
 
         require(totalSupply() <= MAX_SUPPLY, "xWELL: max supply exceeded");
+    }
+
+    /// @notice hook to stop users from transferring tokens to the xWELL contract
+    /// @param from the address to transfer from
+    /// @param to the address to transfer to
+    /// @param amount the amount to transfer
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
+        super._beforeTokenTransfer(from, to, amount);
+
+        require(to != address(this), "xWELL: cannot transfer to token contract");
     }
 }
