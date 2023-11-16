@@ -189,6 +189,9 @@ contract xWELL is
     }
 
     /// @notice grant new pause guardian
+    /// @dev should only be called when unpaused, otherwise the
+    /// contract can be paused again
+    /// @param newPauseGuardian the new pause guardian
     function grantNewPauseGuardian(
         address newPauseGuardian
     ) external onlyOwner {
