@@ -6,7 +6,7 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
-import {MintLimits, RateLimitMidPointInfo} from "@protocol/xWELL/MintLimits.sol";
+import {RateLimitMidPointInfo} from "@protocol/xWELL/MintLimits.sol";
 
 contract xWELLDeploy {
     /// @notice for base deployment
