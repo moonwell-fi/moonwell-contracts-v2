@@ -1,9 +1,18 @@
 pragma solidity 0.8.19;
 
+import {Initializable} from "@openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+
 import {RateLimitedMidpointLibrary} from "@zelt/src/lib/RateLimitedMidpointLibrary.sol";
 import {RateLimitMidPoint, RateLimitMidpointCommonLibrary} from "@zelt/src/lib/RateLimitMidpointCommonLibrary.sol";
 
-contract MintLimits {
+/// @notice struct for initializing rate limit
+struct RateLimitMidPointInfo {
+    uint112 bufferCap;
+    uint128 rateLimitPerSecond;
+    address rateLimited;
+}
+
+contract MintLimits is Initializable {
     using RateLimitMidpointCommonLibrary for RateLimitMidPoint;
     using RateLimitedMidpointLibrary for RateLimitMidPoint;
 
@@ -13,17 +22,11 @@ contract MintLimits {
     /// @notice rate limit for each bridge contract
     mapping(address => RateLimitMidPoint) public rateLimits;
 
-    /// @notice struct for initializing rate limit
-    struct RateLimitMidPointInfo {
-        uint112 bufferCap;
-        uint128 rateLimitPerSecond;
-        address rateLimited;
-    }
-
-    /// TODO make initializer
-    /// @notice Mint Limits constructor
+    /// @notice Mint Limits initializer function, conform to OZ initializer naming convention
     /// @param _rateLimits cap on buffer size for this rate limited instance
-    constructor(RateLimitMidPointInfo[] memory _rateLimits) {
+    function __Mint_Limits(
+        RateLimitMidPointInfo[] memory _rateLimits
+    ) internal onlyInitializing {
         for (uint256 i = 0; i < _rateLimits.length; i++) {
             RateLimitMidPointInfo memory rateLimit = _rateLimits[i];
             require(
@@ -58,12 +61,14 @@ contract MintLimits {
     /// If buffer is <= amount, revert
     /// @param amount to decrease buffer by
     function _depleteBuffer(address from, uint256 amount) internal {
+        require(amount != 0, "MintLimits: deplete amount cannot be 0");
         rateLimits[from].depleteBuffer(amount);
     }
 
     /// @notice function to replenish buffer
     /// @param amount to increase buffer by if under buffer cap
     function _replenishBuffer(address from, uint256 amount) internal {
+        require(amount != 0, "MintLimits: replenish amount cannot be 0");
         rateLimits[from].replenishBuffer(amount);
     }
 
