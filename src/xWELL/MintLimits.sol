@@ -50,10 +50,14 @@ contract MintLimits is Initializable {
         return rateLimits[from].buffer();
     }
 
-    /// @notice the amount of action used before hitting limit
-    /// @dev replenishes at rateLimitPerSecond per second up to bufferCap
+    /// @notice the cap of the buffer for this address
     function bufferCap(address from) public view returns (uint256) {
         return rateLimits[from].bufferCap;
+    }
+
+    /// @notice the amount the buffer replenishes towards the midpoint per second
+    function rateLimitPerSecond(address from) public view returns (uint256) {
+        return rateLimits[from].rateLimitPerSecond;
     }
 
     /// @notice the method that enforces the rate limit.
