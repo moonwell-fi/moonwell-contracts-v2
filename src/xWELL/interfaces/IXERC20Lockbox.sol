@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.4 <0.9.0;
+pragma solidity 0.8.19;
 
 interface IXERC20Lockbox {
   /**
@@ -13,24 +12,6 @@ interface IXERC20Lockbox {
    */
 
   event Withdraw(address _sender, uint256 _amount);
-
-  /**
-   * @notice Reverts when a user tries to deposit native tokens on a non-native lockbox
-   */
-
-  error IXERC20Lockbox_NotNative();
-
-  /**
-   * @notice Reverts when a user tries to deposit non-native tokens on a native lockbox
-   */
-
-  error IXERC20Lockbox_Native();
-
-  /**
-   * @notice Reverts when a user tries to withdraw and the call fails
-   */
-
-  error IXERC20Lockbox_WithdrawFailed();
 
   /**
    * @notice Deposit ERC20 tokens into the lockbox
@@ -48,14 +29,6 @@ interface IXERC20Lockbox {
    */
 
   function depositTo(address _user, uint256 _amount) external;
-
-  /**
-   * @notice Deposit the native asset into the lockbox, and send the XERC20 to a user
-   *
-   * @param _user The user to send the XERC20 to
-   */
-
-  function depositNativeTo(address _user) external payable;
 
   /**
    * @notice Withdraw ERC20 tokens from the lockbox
