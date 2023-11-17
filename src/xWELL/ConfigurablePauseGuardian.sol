@@ -24,13 +24,21 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
     );
 
     /// @notice kick the guardian, can only kick while the contracts are not paused
-    /// removes the guardian, and resets the pauseUsed flag to false
+    /// removes the guardian, sets pause time to 0, and resets the pauseUsed flag to false
     function kickGuardian() public whenNotPaused {
         require(
             pauseStartTime != 0,
             "ConfigurablePauseGuardian: did not pause, so cannot kick"
         );
 
+        _resetPauseState();
+    }
+
+    /// @notice helper function that:
+    /// 1). kicks the current guardian
+    /// 2). sets pauseUsed to false
+    /// 3). unpauses the contracts by setting pause time to 0
+    function _resetPauseState() private {
         address previousPauseGuardian = pauseGuardian;
 
         pauseGuardian = address(0); /// remove the pause guardian
@@ -64,8 +72,10 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
             "ConfigurablePauseGuardian: only pause guardian"
         );
 
-        _endPause(); /// unpause the contracts
-        kickGuardian(); /// kick the guardian
+        /// kick the guardian
+        /// set pauseUsed to false
+        /// unpause the contracts by setting pause time to 0
+        _resetPauseState();
 
         emit Unpaused(msg.sender);
     }
