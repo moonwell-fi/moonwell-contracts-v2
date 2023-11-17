@@ -18,8 +18,7 @@ contract MintLimits {
     }
 
     /// @notice maximum rate limit per second governance can set for this contract
-    /// TODO verify this is a reasonable number with team
-    uint256 public constant MAX_RATE_LIMIT_PER_SECOND = 10_000_000 * 1e18;
+    uint256 public constant MAX_RATE_LIMIT_PER_SECOND = 10_000 * 1e18;
 
     /// @notice rate limit for each bridge contract
     mapping(address => RateLimitMidPoint) public rateLimits;
