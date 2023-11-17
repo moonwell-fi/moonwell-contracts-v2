@@ -23,20 +23,6 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
         address indexed newPauseGuardian
     );
 
-    /// @notice initializer function for the ConfigurablePauseGuardian contract
-    /// @param newPauseDuration the new pause duration
-    /// @param newPauseGuardian the new pause guardian
-    function __ConfigurablePauseGuardian_init(
-        uint128 newPauseDuration,
-        address newPauseGuardian
-    ) internal onlyInitializing {
-        __ConfigurablePause_init(newPauseDuration);
-
-        pauseGuardian = newPauseGuardian;
-
-        emit PauseGuardianUpdated(address(0), newPauseGuardian);
-    }
-
     /// @notice kick the guardian, can only kick while the contracts are not paused
     /// removes the guardian, and resets the pauseUsed flag to false
     function kickGuardian() public whenNotPaused {
