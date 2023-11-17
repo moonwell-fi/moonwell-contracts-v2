@@ -6,9 +6,9 @@ import {Initializable} from "@openzeppelin-contracts-upgradeable/contracts/proxy
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
 import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
+import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {ConfigurablePause} from "@protocol/xWELL/ConfigurablePause.sol";
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
-import {MintLimits, RateLimitMidPointInfo} from "@protocol/xWELL/MintLimits.sol";
 
 /// @notice TODO set the lockbox address bufferCap to uint112 max in deployment script for Moonbeam
 contract xWELL is
@@ -38,14 +38,18 @@ contract xWELL is
         string memory tokenName,
         string memory tokenSymbol,
         address tokenOwner,
-        RateLimitMidPointInfo[] memory newRateLimits,
+        MintLimits.RateLimitMidPointInfo[] memory newRateLimits,
         uint128 newPauseDuration,
         address newPauseGuardian
     ) external initializer {
         __ERC20_init(tokenName, tokenSymbol);
         __Ownable_init();
-        __Mint_Limits(newRateLimits);
-        __ConfigurablePauseGuardian_init(newPauseDuration, newPauseGuardian);
+        _addLimits(newRateLimits);
+
+        /// pausing
+        __Pausable_init(); /// not really needed, but seems like good form
+        _grantGuardian(newPauseGuardian); /// set the pause guardian
+        _updatePauseDuration(newPauseDuration);
 
         transferOwnership(tokenOwner);
     }
@@ -161,6 +165,7 @@ contract xWELL is
     //// ------------------------------------------------------------
     //// ------------------------------------------------------------
 
+    /// @dev can only be called if the bridge already has a buffer cap
     /// @notice conform to the xERC20 setLimits interface
     /// @param bridge the bridge we are setting the limits of
     /// @param newBufferCap the new buffer cap, uint112 max for unlimited
@@ -169,11 +174,23 @@ contract xWELL is
         uint256 newBufferCap,
         uint256
     ) external onlyOwner {
+        setBufferCap(bridge, newBufferCap);
+    }
+
+    /// @dev can only be called if the bridge already has a buffer cap
+    /// @notice conform to the xERC20 setLimits interface
+    /// @param bridge the bridge we are setting the limits of
+    /// @param newBufferCap the new buffer cap, uint112 max for unlimited
+    function setBufferCap(
+        address bridge,
+        uint256 newBufferCap
+    ) public onlyOwner {
         _setBufferCap(bridge, newBufferCap.toUint112());
 
         emit BridgeLimitsSet(newBufferCap, newBufferCap, bridge);
     }
 
+    /// @dev can only be called if the bridge already has a buffer cap
     /// @notice set rate limit per second for a bridge
     /// @param bridge the bridge we are setting the limits of
     /// @param newRateLimitPerSecond the new rate limit per second
@@ -188,10 +205,40 @@ contract xWELL is
     /// @dev should only be called when unpaused, otherwise the
     /// contract can be paused again
     /// @param newPauseGuardian the new pause guardian
-    function grantNewPauseGuardian(
-        address newPauseGuardian
-    ) external onlyOwner {
+    function grantPauseGuardian(address newPauseGuardian) external onlyOwner {
         _grantGuardian(newPauseGuardian);
+    }
+
+    /// @notice add a new bridge to the currently active bridges
+    /// @param newBridge the bridge to add
+    function addBridge(
+        RateLimitMidPointInfo memory newBridge
+    ) external onlyOwner {
+        _addLimit(newBridge);
+    }
+
+    /// @notice add new bridges to the currently active bridges
+    /// @param newBridges the bridges to add
+    function addBridges(
+        RateLimitMidPointInfo[] memory newBridges
+    ) external onlyOwner {
+        _addLimits(newBridges);
+    }
+
+    /// @notice remove a bridge from the currently active bridges
+    /// deleting its buffer stored, buffer cap, mid point and last
+    /// buffer used time
+    /// @param bridge the bridge to remove
+    function removeBridge(address bridge) external onlyOwner {
+        _removeLimit(bridge);
+    }
+
+    /// @notice remove a set of bridges from the currently active bridges
+    /// deleting its buffer stored, buffer cap, mid point and last
+    /// buffer used time
+    /// @param bridges the bridges to remove
+    function removeBridges(address[] memory bridges) external onlyOwner {
+        _removeLimits(bridges);
     }
 
     //// ------------------------------------------------------------
@@ -221,6 +268,9 @@ contract xWELL is
     ) internal override {
         super._beforeTokenTransfer(from, to, amount);
 
-        require(to != address(this), "xWELL: cannot transfer to token contract");
+        require(
+            to != address(this),
+            "xWELL: cannot transfer to token contract"
+        );
     }
 }
