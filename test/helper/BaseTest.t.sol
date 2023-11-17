@@ -8,9 +8,9 @@ import "@forge-std/Test.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
+import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
-import {RateLimitMidPointInfo} from "@protocol/xWELL/MintLimits.sol";
 
 contract BaseTest is xWELLDeploy, Test {
     /// @notice addresses contract, stores all addresses
@@ -65,7 +65,7 @@ contract BaseTest is xWELLDeploy, Test {
                 xwellName,
                 xwellSymbol,
                 owner,
-                new RateLimitMidPointInfo[](0),
+                new MintLimits.RateLimitMidPointInfo[](0),
                 pauseDuration,
                 pauseGuardian
             );
