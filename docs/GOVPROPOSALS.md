@@ -34,6 +34,7 @@ First, set the environment variables for which actions you want to be run during
 - **DO_TEARDOWN** - Whether or not to run the teardown script. Defaults to true.
 - **DO_VALIDATE** - Whether or not to run validation checks after all previous steps have been run. Defaults to true.
 - **PROPOSAL_ARTIFACT_PATH** - Path to the artifact of the governance proposal you would like to run.
+- **DO_AFTER_DEPLOY_MTOKEN_BROADCAST** - Whether or not to do the after deploy mtoken broadcast. Defaults to true. Only used when using the [`mip-market-listing.sol`](./src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol) proposal.
 
 
 #### Sample Environment Variables For Deploying and Building Calldata for a Market Listing Proposal
@@ -83,11 +84,23 @@ Or by setting it to a private RPC endpoint if the public end point is not workin
 
 To generate calldata for an existing proposal, run the following command, where the proposal is the proposal you want to generate calldata for, and the network is the network you want to generate calldata for.
 
-```forge script proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv```
+env setup to build and run without any other steps:
+```bash
+export DO_DEPLOY=false
+export DO_AFTER_DEPLOY=false
+export DO_AFTER_DEPLOY_SETUP=false
+export DO_BUILD=true
+export DO_RUN=true
+export DO_TEARDOWN=true
+export DO_VALIDATE=false
+export DO_PRINT=true
+```
+
+```forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv```
 
 add the following flags to deploy and verify against the base network:
 
-```forge script proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify --slow```
+```forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify --slow```
 
 ##### Debugging
 

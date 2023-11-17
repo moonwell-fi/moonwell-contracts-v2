@@ -15,7 +15,7 @@ import {Compound4626Deploy} from "@protocol/4626/4626Deploy.sol";
 How to use:
 1. set REWARDS_RECEIVER to the address you want to receive rewards in Addresses.sol
 2. run:
-forge script proposals/Deploy4626Vaults.s.sol:Deploy4626Vaults \
+forge script src/proposals/Deploy4626Vaults.s.sol:Deploy4626Vaults \
     -vvvv \
     --rpc-url base \
     --broadcast --etherscan-api-key base --verify

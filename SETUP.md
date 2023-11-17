@@ -4,22 +4,22 @@ set your env vars:
 
 `ETH_PRIVATE_KEY, DO_DEPLOY, and DO_AFTERDEPLOY to true`
 
-if deploying on base goerli, go to Addresses.sol and delete everything after this line
+if deploying on base goerli, go to Addresses.json and delete everything after this line
 ```        /// ---------- base goerli deployment ----------```
 and before this line`
 ```                /// -----------------------------------------------```
 
 then to deploy the entire system on base goerli:
 
-```forge script proposals/DeployProposal.s.sol:DeployProposal -vvv --rpc-url baseGoerli --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key baseGoerli --verify```
+```forge script src/proposals/DeployProposal.s.sol:DeployProposal -vvv --rpc-url baseGoerli --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key baseGoerli --verify```
 
 Substitute out the rpc-url for the chain to deploy on if the destination is not base goerli.
 
-If deploying on mainnet, double check that `mainnetMTokens.json` and `mainnetRewardStreams.json` in the `proposals/` folder are correctly filled out. Then, double check that in `Addresses.sol`, all the oracles, tokens and guardians are correctly set. If no reward streams will be created, ensure the rewards json file is an empty array. Triple check that the addresses for the system are correct in `Addresses.sol`, then deploy to base mainnet:
+If deploying on mainnet, double check that `mainnetMTokens.json` and `mainnetRewardStreams.json` in the `proposals/` folder are correctly filled out. Then, double check that in `Addresses.json`, all the oracles, tokens and guardians are correctly set. If no reward streams will be created, ensure the rewards json file is an empty array. Triple check that the addresses for the system are correct in `Addresses.json`, then deploy to base mainnet:
 
-```forge script proposals/DeployProposal.s.sol:DeployProposal -vvv --rpc-url base --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key base --verify```
+```forge script src/proposals/DeployProposal.s.sol:DeployProposal -vvv --rpc-url base --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key base --verify```
 
-Once contracts are deployed, add generated _addAddress function calls into the Addresses.sol constructor.
+Once contracts are deployed, add generated address json into the Addresses.json file.
 
 Create the calldata to submit on the proposing chain, for testnet fork base goerli:
 
