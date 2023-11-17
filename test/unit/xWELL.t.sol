@@ -4,6 +4,11 @@ import "@forge-std/Test.sol";
 
 import "@test/helper/BaseTest.t.sol";
 
+/// TODO:
+///    - failing add limits
+///    - failing remove limits
+///    - pause specific tests
+
 contract xWELLUnitTest is BaseTest {
     function testSetup() public {
         assertEq(xwellProxy.name(), xwellName, "incorrect name");
@@ -77,7 +82,7 @@ contract xWELLUnitTest is BaseTest {
             xwellName,
             xwellSymbol,
             owner,
-            new RateLimitMidPointInfo[](0), /// empty array as it will fail anyway
+            new MintLimits.RateLimitMidPointInfo[](0), /// empty array as it will fail anyway
             pauseDuration,
             pauseGuardian
         );
@@ -258,5 +263,243 @@ contract xWELLUnitTest is BaseTest {
             mintAmount,
             "incorrect mint amount to xwell balance"
         );
+    }
+
+    /// ACL
+
+    function testGrantGuardianNonOwnerReverts() public {
+        testPendingOwnerAccepts();
+        vm.expectRevert("Ownable: caller is not the owner");
+        xwellProxy.grantPauseGuardian(address(0));
+    }
+
+    function testSetBufferCapLimitsNonOwnerReverts() public {
+        testPendingOwnerAccepts();
+        vm.expectRevert("Ownable: caller is not the owner");
+        xwellProxy.setLimits(address(0), 0, 0);
+    }
+
+    function testSetBufferCapNonOwnerReverts() public {
+        testPendingOwnerAccepts();
+        vm.expectRevert("Ownable: caller is not the owner");
+        xwellProxy.setBufferCap(address(0), 0);
+    }
+
+    function testSetRateLimitPerSecondNonOwnerReverts() public {
+        testPendingOwnerAccepts();
+        vm.expectRevert("Ownable: caller is not the owner");
+        xwellProxy.setRateLimitPerSecond(address(0), 0);
+    }
+
+    function testAddBridgeNonOwnerReverts() public {
+        testPendingOwnerAccepts();
+        vm.expectRevert("Ownable: caller is not the owner");
+        xwellProxy.addBridge(
+            MintLimits.RateLimitMidPointInfo({
+                bridge: address(0),
+                rateLimitPerSecond: 0,
+                bufferCap: 0
+            })
+        );
+    }
+
+    function testAddBridgesNonOwnerReverts() public {
+        testPendingOwnerAccepts();
+        vm.expectRevert("Ownable: caller is not the owner");
+        xwellProxy.addBridges(new MintLimits.RateLimitMidPointInfo[](0));
+    }
+
+    function testRemoveBridgeNonOwnerReverts() public {
+        testPendingOwnerAccepts();
+        vm.expectRevert("Ownable: caller is not the owner");
+        xwellProxy.removeBridge(address(0));
+    }
+
+    function testRemoveBridgesNonOwnerReverts() public {
+        testPendingOwnerAccepts();
+        vm.expectRevert("Ownable: caller is not the owner");
+        xwellProxy.removeBridges(new address[](0));
+    }
+
+    function testGrantGuardianOwnerSucceeds(address newPauseGuardian) public {
+        xwellProxy.grantPauseGuardian(newPauseGuardian);
+        assertEq(
+            xwellProxy.pauseGuardian(),
+            newPauseGuardian,
+            "incorrect pause guardian"
+        );
+    }
+
+    function testSetBufferCapLimitsOwnerSucceeds(uint112 bufferCap) public {
+        bufferCap = uint112(_bound(bufferCap, 1, type(uint112).max));
+
+        xwellProxy.setLimits(address(xerc20Lockbox), bufferCap, 0);
+        assertEq(
+            xwellProxy.bufferCap(address(xerc20Lockbox)),
+            bufferCap,
+            "incorrect buffer cap"
+        );
+    }
+
+    function testSetBufferCapOwnerSucceeds(uint112 bufferCap) public {
+        bufferCap = uint112(_bound(bufferCap, 1, type(uint112).max));
+
+        xwellProxy.setBufferCap(address(xerc20Lockbox), bufferCap);
+        assertEq(
+            xwellProxy.bufferCap(address(xerc20Lockbox)),
+            bufferCap,
+            "incorrect buffer cap"
+        );
+    }
+
+    function testSetRateLimitPerSecondOwnerSucceeds(
+        uint128 newRateLimitPerSecond
+    ) public {
+        newRateLimitPerSecond = uint128(
+            _bound(
+                newRateLimitPerSecond,
+                1,
+                xwellProxy.MAX_RATE_LIMIT_PER_SECOND()
+            )
+        );
+        xwellProxy.setRateLimitPerSecond(
+            address(xerc20Lockbox),
+            newRateLimitPerSecond
+        );
+
+        assertEq(
+            xwellProxy.rateLimitPerSecond(address(xerc20Lockbox)),
+            newRateLimitPerSecond,
+            "incorrect rate limit per second"
+        );
+    }
+
+    /// add a new bridge and rate limit
+    function testAddNewBridgeOwnerSucceeds(
+        address bridge,
+        uint128 newRateLimitPerSecond,
+        uint112 newBufferCap
+    ) public {
+        xwellProxy.removeBridge(address(xerc20Lockbox));
+
+        newRateLimitPerSecond = uint128(
+            _bound(
+                newRateLimitPerSecond,
+                1,
+                xwellProxy.MAX_RATE_LIMIT_PER_SECOND()
+            )
+        );
+        newBufferCap = uint112(_bound(newBufferCap, 1, type(uint112).max));
+
+        MintLimits.RateLimitMidPointInfo memory newBridge = MintLimits
+            .RateLimitMidPointInfo({
+                bridge: bridge,
+                bufferCap: newBufferCap,
+                rateLimitPerSecond: newRateLimitPerSecond
+            });
+
+        xwellProxy.addBridge(newBridge);
+
+        assertEq(
+            xwellProxy.rateLimitPerSecond(bridge),
+            newRateLimitPerSecond,
+            "incorrect rate limit per second"
+        );
+
+        assertEq(
+            xwellProxy.bufferCap(bridge),
+            newBufferCap,
+            "incorrect buffer cap"
+        );
+    }
+
+    function testAddNewBridgeWithExistingLimitFails() public {
+        address newBridge = address(0x1111777777);
+        uint128 rateLimitPerSecond = 10_000 * 1e18;
+        uint112 bufferCap = 20_000_000 * 1e18;
+
+        testAddNewBridgeOwnerSucceeds(newBridge, rateLimitPerSecond, bufferCap);
+
+        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits
+            .RateLimitMidPointInfo({
+                bridge: newBridge,
+                bufferCap: bufferCap,
+                rateLimitPerSecond: rateLimitPerSecond
+            });
+
+        vm.expectRevert("MintLimits: rate limit already exists");
+        xwellProxy.addBridge(bridge);
+    }
+
+    function testAddNewBridgeOverMaxRateLimitPerSecondFails() public {
+        address newBridge = address(0x1111777777);
+        uint112 bufferCap = 20_000_000 * 1e18;
+
+        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits
+            .RateLimitMidPointInfo({
+                bridge: newBridge,
+                bufferCap: bufferCap,
+                rateLimitPerSecond: uint128(
+                    xwellProxy.MAX_RATE_LIMIT_PER_SECOND() + 1
+                )
+            });
+
+        vm.expectRevert("MintLimits: rateLimitPerSecond too high");
+        xwellProxy.addBridge(bridge);
+    }
+
+    function testAddNewBridgeInvalidAddressFails() public {
+        address newBridge = address(0);
+        uint128 rateLimitPerSecond = 10_000 * 1e18;
+        uint112 bufferCap = 20_000_000 * 1e18;
+
+        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits
+            .RateLimitMidPointInfo({
+                bridge: newBridge,
+                bufferCap: bufferCap,
+                rateLimitPerSecond: rateLimitPerSecond
+            });
+
+        vm.expectRevert("MintLimits: invalid bridge address");
+        xwellProxy.addBridge(bridge);
+    }
+
+    function testAddNewBridgeBufferCapZeroFails() public {
+        uint112 bufferCap = 0;
+        address newBridge = address(100);
+        uint128 rateLimitPerSecond = 10_000 * 1e18;
+
+        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits
+            .RateLimitMidPointInfo({
+                bridge: newBridge,
+                bufferCap: bufferCap,
+                rateLimitPerSecond: rateLimitPerSecond
+            });
+
+        vm.expectRevert("MintLimits: bufferCap cannot be 0");
+        xwellProxy.addBridge(bridge);
+    }
+
+    function testSetRateLimitOnNonExistentBridgeFails(
+        uint128 newRateLimitPerSecond
+    ) public {
+        newRateLimitPerSecond = uint128(
+            _bound(
+                newRateLimitPerSecond,
+                1,
+                xwellProxy.MAX_RATE_LIMIT_PER_SECOND()
+            )
+        );
+
+        vm.expectRevert("MintLimits: non-existent rate limit");
+        xwellProxy.setRateLimitPerSecond(address(0), newRateLimitPerSecond);
+    }
+
+    function testSetBufferCapOnNonExistentBridgeFails(
+        uint112 newBufferCap
+    ) public {
+        newBufferCap = uint112(_bound(newBufferCap, 1, type(uint112).max));
+        vm.expectRevert("MintLimits: non-existent rate limit");
+        xwellProxy.setBufferCap(address(0), newBufferCap);
     }
 }
