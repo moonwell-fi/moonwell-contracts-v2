@@ -26,14 +26,6 @@ contract ConfigurablePause is PausableUpgradeable {
         uint256 indexed newPauseDuration
     );
 
-    function __ConfigurablePause_init(
-        uint128 newPauseDuration
-    ) internal onlyInitializing {
-        __Pausable_init();
-
-        pauseDuration = newPauseDuration;
-    }
-
     /// @notice return the current pause status
     /// if pauseStartTime is 0, contract is not paused
     /// if pauseStartTime is not 0, contract could be paused in the pauseDuration window
