@@ -8,7 +8,7 @@ xERC20 enforces a global rate limit per second on each bridge, meaning all bridg
 
 ### Guardians
 
-The xWELL token has a guardian system that allows for the token to be paused, which disables all bridging functionality. The guardian address is meant to be a multisig contract that requires a quorum of guardians to approve a transaction before it can be executed. The guardian system is meant to be used as a failsafe in case of a bridge compromise or other emergency. Once the guardian pauses the contract, then the pause timer starts. The pause duration is specified in the initializer of the xWELL token, and once the pause duration has passed, the contract automatically unpauses itself.
+The xWELL token has a guardian system that allows for the token to be paused, which disables all bridging functionality. The guardian address is meant to be a multisig contract that requires a quorum of guardians to approve a transaction before it can be executed. The guardian system is meant to be used as a failsafe in case of a bridge compromise or other emergency. Once the guardian pauses the contract, then the pause timer starts. The pause duration is specified in the initializer of the xWELL token, and once the pause duration has passed, the contract automatically unpauses itself. Only the mint and burn functions of the token are disabled while the contract is paused.
 
 The owner can change the pause duration, even while the contract is paused. This allows the owner to extend the pause duration if needed during an emergency situation.
 
