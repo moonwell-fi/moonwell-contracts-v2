@@ -5,8 +5,8 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Addresses} from "@proposals/Addresses.sol";
+import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
-import {RateLimitMidPointInfo} from "@protocol/xWELL/MintLimits.sol";
 
 contract xWELLDeploy {
     /// @notice for base deployment
@@ -20,7 +20,7 @@ contract xWELLDeploy {
         string memory tokenName,
         string memory tokenSymbol,
         address tokenOwner,
-        RateLimitMidPointInfo[] memory newRateLimits,
+        MintLimits.RateLimitMidPointInfo[] memory newRateLimits,
         uint128 newPauseDuration,
         address newPauseGuardian
     )
@@ -73,7 +73,7 @@ contract xWELLDeploy {
         string memory tokenName,
         string memory tokenSymbol,
         address tokenOwner,
-        RateLimitMidPointInfo[] memory newRateLimits,
+        MintLimits.RateLimitMidPointInfo[] memory newRateLimits,
         uint128 newPauseDuration,
         address newPauseGuardian
     )
@@ -104,18 +104,18 @@ contract xWELLDeploy {
             addresses.getAddress("WELL")
         );
 
-        RateLimitMidPointInfo[]
-            memory _newRateLimits = new RateLimitMidPointInfo[](
+        MintLimits.RateLimitMidPointInfo[]
+            memory _newRateLimits = new MintLimits.RateLimitMidPointInfo[](
                 newRateLimits.length + 1
             );
         for (uint256 i = 0; i < newRateLimits.length; i++) {
             _newRateLimits[i] = newRateLimits[i];
         }
 
-        _newRateLimits[_newRateLimits.length - 1] = RateLimitMidPointInfo({
+        _newRateLimits[_newRateLimits.length - 1] = MintLimits.RateLimitMidPointInfo({
             bufferCap: type(uint112).max, /// max buffer cap, lock box can infinite mint up to max supply
             rateLimitPerSecond: 0, /// no rate limit
-            rateLimited: lockbox
+            bridge: lockbox
         });
 
         xWELL(xwellProxy).initialize(
