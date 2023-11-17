@@ -103,10 +103,14 @@ contract Comptroller is ComptrollerV2Storage, ComptrollerInterface, ComptrollerE
         uint len = mTokens.length;
 
         uint[] memory results = new uint[](len);
-        for (uint i = 0; i < len; i++) {
+        for (uint i; i < len;) {
             MToken mToken = MToken(mTokens[i]);
 
             results[i] = uint(addToMarketInternal(mToken, msg.sender));
+
+            unchecked {
+                ++i;
+            }
         }
 
         return results;
@@ -183,10 +187,13 @@ contract Comptroller is ComptrollerV2Storage, ComptrollerInterface, ComptrollerE
         MToken[] memory userAssetList = accountAssets[msg.sender];
         uint len = userAssetList.length;
         uint assetIndex = len;
-        for (uint i = 0; i < len; i++) {
+        for (uint i; i < len;) {
             if (userAssetList[i] == mToken) {
                 assetIndex = i;
                 break;
+            }
+            unchecked {
+                ++i;
             }
         }
 
@@ -571,7 +578,7 @@ contract Comptroller is ComptrollerV2Storage, ComptrollerInterface, ComptrollerE
 
         // For each asset the account is in
         MToken[] memory assets = accountAssets[account];
-        for (uint i = 0; i < assets.length; i++) {
+        for (uint i; i < assets.length;) {
             MToken asset = assets[i];
 
             // Read the balances and exchange rate from the mToken
@@ -607,6 +614,10 @@ contract Comptroller is ComptrollerV2Storage, ComptrollerInterface, ComptrollerE
                 // borrow effect
                 // sumBorrowPlusEffects += oraclePrice * borrowAmount
                 vars.sumBorrowPlusEffects = mul_ScalarTruncateAddUInt(vars.oraclePrice, borrowAmount, vars.sumBorrowPlusEffects);
+            }
+
+            unchecked {
+                ++i;
             }
         }
 
@@ -792,8 +803,11 @@ contract Comptroller is ComptrollerV2Storage, ComptrollerInterface, ComptrollerE
     }
 
     function _addMarketInternal(address mToken) internal {
-        for (uint i = 0; i < allMarkets.length; i ++) {
+        for (uint i; i < allMarkets.length;) {
             require(allMarkets[i] != MToken(mToken), "market already added");
+            unchecked {
+                ++i;
+            }
         }
         allMarkets.push(MToken(mToken));
     }
@@ -812,9 +826,13 @@ contract Comptroller is ComptrollerV2Storage, ComptrollerInterface, ComptrollerE
 
         require(numMarkets != 0 && numMarkets == numBorrowCaps, "invalid input");
 
-        for(uint i = 0; i < numMarkets; i++) {
+        for(uint i; i < numMarkets;) {
             borrowCaps[address(mTokens[i])] = newBorrowCaps[i];
             emit NewBorrowCap(mTokens[i], newBorrowCaps[i]);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -849,9 +867,12 @@ contract Comptroller is ComptrollerV2Storage, ComptrollerInterface, ComptrollerE
 
         require(numMarkets != 0 && numMarkets == numSupplyCaps, "invalid input");
 
-        for(uint i = 0; i < numMarkets; i++) {
+        for(uint i; i < numMarkets;) {
             supplyCaps[address(mTokens[i])] = newSupplyCaps[i];
             emit NewSupplyCap(mTokens[i], newSupplyCaps[i]);
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -1028,7 +1049,7 @@ contract Comptroller is ComptrollerV2Storage, ComptrollerInterface, ComptrollerE
     function claimReward(address[] memory holders, MToken[] memory mTokens, bool borrowers, bool suppliers) public {
         require(address(rewardDistributor) != address(0), "No reward distributor configured!");
 
-        for (uint i = 0; i < mTokens.length; i++) {
+        for (uint i; i < mTokens.length;) {
 
             // Safety check that the supplied mTokens are active/listed
             MToken mToken = mTokens[i];
@@ -1048,6 +1069,9 @@ contract Comptroller is ComptrollerV2Storage, ComptrollerInterface, ComptrollerE
                 for (uint holderIndex = 0; holderIndex < holders.length; holderIndex++) {
                     rewardDistributor.disburseBorrowerRewards(mToken, holders[holderIndex], true);
                 }
+            }
+            unchecked {
+                ++i;
             }
         }
     }
