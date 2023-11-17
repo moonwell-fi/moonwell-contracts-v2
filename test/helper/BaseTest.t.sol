@@ -46,7 +46,7 @@ contract BaseTest is xWELLDeploy, Test {
     /// @notice duration of the pause
     uint128 public pauseDuration = 10 days;
 
-    function setUp() public {
+    function setUp() public virtual {
         addresses = new Addresses();
         if (addresses.getAddress("WELL") == address(0)) {
             well = new MockERC20();
