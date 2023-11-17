@@ -23,6 +23,9 @@ contract xWELL is
     /// @notice maximum supply is 5 billion tokens if all WELL holders migrate to xWELL
     uint256 public constant MAX_SUPPLY = 5_000_000_000 * 1e18;
 
+    /// @notice the maximum time the token can be paused for
+    uint256 public constant MAX_PAUSE_DURATION = 30 days;
+
     /// @notice logic contract cannot be initialized
     constructor() {
         _disableInitializers();
@@ -42,6 +45,10 @@ contract xWELL is
         uint128 newPauseDuration,
         address newPauseGuardian
     ) external initializer {
+        require(
+            newPauseDuration <= MAX_PAUSE_DURATION,
+            "xWELL: pause duration too long"
+        );
         __ERC20_init(tokenName, tokenSymbol);
         __Ownable_init();
         _addLimits(newRateLimits);
@@ -207,6 +214,19 @@ contract xWELL is
     /// @param newPauseGuardian the new pause guardian
     function grantPauseGuardian(address newPauseGuardian) external onlyOwner {
         _grantGuardian(newPauseGuardian);
+    }
+
+    /// @notice update the pause duration
+    /// can be called while the contract is paused, extending the pause duration
+    /// this should only happen during an emergency where more time is needed
+    /// before an upgrade.
+    /// @param newPauseDuration the new pause duration
+    function setPauseDuration(uint128 newPauseDuration) external onlyOwner {
+        require(
+            newPauseDuration <= MAX_PAUSE_DURATION,
+            "xWELL: pause duration too long"
+        );
+        _updatePauseDuration(newPauseDuration);
     }
 
     /// @notice add a new bridge to the currently active bridges
