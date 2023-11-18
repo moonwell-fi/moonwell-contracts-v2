@@ -4,28 +4,10 @@ interface IXERC20 {
     /**
      * @notice Emits when a limit is set
      *
-     * @param _mintingLimit The updated minting limit we are setting to the bridge
-     * @param _burningLimit The updated burning limit we are setting to the bridge
-     * @param _bridge The address of the bridge we are setting the limit too
+     * @param bridge The address of the bridge we are setting the limit too
+     * @param bufferCap The updated buffer cap for the bridge
      */
-    event BridgeLimitsSet(
-        uint256 _mintingLimit,
-        uint256 _burningLimit,
-        address indexed _bridge
-    );
-
-    /**
-     * @notice Updates the limits of any bridge
-     * @dev Can only be called by the owner
-     * @param _mintingLimit The updated minting limit we are setting to the bridge
-     * @param _burningLimit The updated burning limit we are setting to the bridge
-     * @param _bridge The address of the bridge we are setting the limits too
-     */
-    function setLimits(
-        address _bridge,
-        uint256 _mintingLimit,
-        uint256 _burningLimit
-    ) external;
+    event BridgeLimitsSet(address indexed bridge, uint256 bufferCap);
 
     /**
      * @notice Returns the max limit of a minter
