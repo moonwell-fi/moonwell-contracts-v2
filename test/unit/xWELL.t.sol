@@ -675,15 +675,30 @@ contract xWELLUnitTest is BaseTest {
         );
     }
 
+    function testCannotRemoveNonExistentBridge() public {
+        vm.expectRevert("MintLimits: cannot remove non-existent rate limit");
+        xwellProxy.removeBridge(address(0));
+    }
+
+    function testCannotRemoveNonExistentBridges() public {
+        vm.expectRevert("MintLimits: cannot remove non-existent rate limit");
+        xwellProxy.removeBridges(new address[](2));
+    }
+
     function testRemoveBridgesOwnerSucceeds() public {
-        address[] memory bridges = new address[](2);
-        bridges[0] = address(xerc20Lockbox);
-        bridges[1] = address(10000);
+        address[] memory bridges = new address[](1);
+        bridges[0] = address(10000);
+        bridges[1] = address(100000);
 
         testAddNewBridgeOwnerSucceeds(
+            bridges[0],
+            10_000e18,
+            xwellProxy.minBufferCap() + 1
+        );
+        testAddNewBridgeOwnerSucceeds(
             bridges[1],
-            xwellProxy.minBufferCap(),
-            10_000e18
+            10_000e18,
+            xwellProxy.minBufferCap() + 1
         );
 
         xwellProxy.removeBridges(bridges);
