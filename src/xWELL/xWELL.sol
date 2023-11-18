@@ -26,6 +26,9 @@ contract xWELL is
     /// @notice maximum supply is 5 billion tokens if all WELL holders migrate to xWELL
     uint128 public constant MAX_RATE_LIMIT_PER_SECOND = 5_000_000_000 * 1e18;
 
+    /// @notice minimum buffer cap
+    uint112 public constant MIN_BUFFER_CAP = 1_000 * 1e18;
+
     /// @notice the maximum time the token can be paused for
     uint256 public constant MAX_PAUSE_DURATION = 30 days;
 
@@ -108,6 +111,10 @@ contract xWELL is
     /// @notice the maximum rate limit per second
     function maxRateLimitPerSecond() public pure override returns (uint128) {
         return MAX_RATE_LIMIT_PER_SECOND;
+    }
+
+    function minBufferCap() public pure override returns (uint112) {
+        return MIN_BUFFER_CAP;
     }
 
     ///  ------------------------------------------------------------
