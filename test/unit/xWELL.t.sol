@@ -686,7 +686,7 @@ contract xWELLUnitTest is BaseTest {
     }
 
     function testRemoveBridgesOwnerSucceeds() public {
-        address[] memory bridges = new address[](1);
+        address[] memory bridges = new address[](2);
         bridges[0] = address(10000);
         bridges[1] = address(100000);
 
