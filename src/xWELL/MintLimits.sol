@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 import {RateLimitedMidpointLibrary} from "@zelt/src/lib/RateLimitedMidpointLibrary.sol";
 import {RateLimitMidPoint, RateLimitMidpointCommonLibrary} from "@zelt/src/lib/RateLimitMidpointCommonLibrary.sol";
 
-contract MintLimits {
+abstract contract MintLimits {
     using RateLimitMidpointCommonLibrary for RateLimitMidPoint;
     using RateLimitedMidpointLibrary for RateLimitMidPoint;
 
@@ -16,9 +16,6 @@ contract MintLimits {
         /// @notice the bridge address
         address bridge;
     }
-
-    /// @notice maximum rate limit per second governance can set for this contract
-    uint256 public constant MAX_RATE_LIMIT_PER_SECOND = 10_000 * 1e18;
 
     /// @notice rate limit for each bridge contract
     mapping(address => RateLimitMidPoint) public rateLimits;
@@ -94,7 +91,7 @@ contract MintLimits {
         uint128 newRateLimitPerSecond
     ) internal {
         require(
-            newRateLimitPerSecond <= MAX_RATE_LIMIT_PER_SECOND,
+            newRateLimitPerSecond <= maxRateLimitPerSecond(),
             "MintLimits: rateLimitPerSecond too high"
         );
         require(
@@ -147,7 +144,7 @@ contract MintLimits {
     /// @param rateLimit cap on buffer size for this rate limited instance
     function _addLimit(RateLimitMidPointInfo memory rateLimit) internal {
         require(
-            rateLimit.rateLimitPerSecond <= MAX_RATE_LIMIT_PER_SECOND,
+            rateLimit.rateLimitPerSecond <= maxRateLimitPerSecond(),
             "MintLimits: rateLimitPerSecond too high"
         );
         require(
@@ -192,4 +189,15 @@ contract MintLimits {
 
         emit ConfigurationChanged(bridge, 0, 0);
     }
+
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+    //// ---------------------- Virtual Function --------------------
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+
+    /// @notice the maximum rate limit per second allowed in any bridge
+    /// must be overridden by child contract
+    function maxRateLimitPerSecond() public pure virtual returns (uint128);
+
 }
