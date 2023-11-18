@@ -192,6 +192,11 @@ abstract contract MintLimits {
     /// @notice remove a bridge from the rate limit mapping, deleting all data
     /// @param bridge the bridge address to remove
     function _removeLimit(address bridge) internal {
+        require(
+            rateLimits[bridge].bufferCap != 0,
+            "MintLimits: cannot remove non-existent rate limit"
+        );
+
         delete rateLimits[bridge];
 
         emit ConfigurationChanged(bridge, 0, 0);
