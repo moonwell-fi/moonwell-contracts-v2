@@ -118,7 +118,7 @@ contract xWELLUnitTest is BaseTest {
     function testTransferToTokenContractFails() public {
         testLockboxCanMint(1);
 
-        vm.expectRevert("xWELL: cannot transfer to token contract");
+        vm.expectRevert("xERC20: cannot transfer to token contract");
         xwellProxy.transfer(address(xwellProxy), 1);
     }
 
@@ -126,7 +126,7 @@ contract xWELLUnitTest is BaseTest {
         uint256 maxSupply = xwellProxy.MAX_SUPPLY();
 
         vm.prank(address(xerc20Lockbox));
-        vm.expectRevert("xWELL: max supply exceeded");
+        vm.expectRevert("xERC20: max supply exceeded");
         xwellProxy.mint(address(xerc20Lockbox), maxSupply + 1);
     }
 
@@ -306,12 +306,6 @@ contract xWELLUnitTest is BaseTest {
         xwellProxy.setPauseDuration(0);
     }
 
-    function testSetBufferCapLimitsNonOwnerReverts() public {
-        testPendingOwnerAccepts();
-        vm.expectRevert("Ownable: caller is not the owner");
-        xwellProxy.setLimits(address(0), 0, 0);
-    }
-
     function testSetBufferCapNonOwnerReverts() public {
         testPendingOwnerAccepts();
         vm.expectRevert("Ownable: caller is not the owner");
@@ -378,17 +372,6 @@ contract xWELLUnitTest is BaseTest {
         vm.expectRevert("xWELL: pause duration too long");
 
         xwellProxy.setPauseDuration(newDuration);
-    }
-
-    function testSetBufferCapLimitsOwnerSucceeds(uint112 bufferCap) public {
-        bufferCap = uint112(_bound(bufferCap, 1, type(uint112).max));
-
-        xwellProxy.setLimits(address(xerc20Lockbox), bufferCap, 0);
-        assertEq(
-            xwellProxy.bufferCap(address(xerc20Lockbox)),
-            bufferCap,
-            "incorrect buffer cap"
-        );
     }
 
     function testSetBufferCapOwnerSucceeds(uint112 bufferCap) public {
