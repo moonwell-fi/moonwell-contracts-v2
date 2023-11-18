@@ -16,14 +16,15 @@ contract ConfigurablePause is PausableUpgradeable {
     uint128 public pauseDuration;
 
     /// @notice event emitted when pause start time is updated
-    event PauseTimeUpdated(
-        uint256 indexed newPauseStartTime,
-        uint256 indexed newPauseDuration
-    );
+    /// @param newPauseStartTime new pause start time
+    event PauseTimeUpdated(uint256 indexed newPauseStartTime);
 
+    /// @notice event emitted when pause duration is updated
+    /// @param oldPauseDuration old pause duration
+    /// @param newPauseDuration new pause duration
     event PauseDurationUpdated(
-        uint256 indexed newPauseStartTime,
-        uint256 indexed newPauseDuration
+        uint256 oldPauseDuration,
+        uint256 newPauseDuration
     );
 
     /// @notice return the current pause status
@@ -42,14 +43,15 @@ contract ConfigurablePause is PausableUpgradeable {
     }
 
     function _updatePauseDuration(uint128 newPauseDuration) internal virtual {
+        uint256 oldPauseDuration = pauseDuration;
         pauseDuration = newPauseDuration;
 
-        emit PauseDurationUpdated(block.timestamp, pauseDuration);
+        emit PauseDurationUpdated(oldPauseDuration, pauseDuration);
     }
 
     function _setPauseTime(uint128 newPauseStartTime) internal {
         pauseStartTime = newPauseStartTime;
 
-        emit PauseTimeUpdated(newPauseStartTime, pauseDuration);
+        emit PauseTimeUpdated(newPauseStartTime);
     }
 }
