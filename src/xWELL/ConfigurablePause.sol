@@ -37,11 +37,6 @@ contract ConfigurablePause is PausableUpgradeable {
                 : block.timestamp <= pauseStartTime + pauseDuration;
     }
 
-    /// @notice can only start a pause if the contract is not already paused
-    function _startPause() internal virtual whenNotPaused {
-        _setPauseTime(uint128(block.timestamp));
-    }
-
     function _updatePauseDuration(uint128 newPauseDuration) internal virtual {
         uint256 oldPauseDuration = pauseDuration;
         pauseDuration = newPauseDuration;
