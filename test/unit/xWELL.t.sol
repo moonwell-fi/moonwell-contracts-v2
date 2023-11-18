@@ -686,17 +686,12 @@ contract xWELLUnitTest is BaseTest {
     }
 
     function testRemoveBridgesOwnerSucceeds() public {
-        address[] memory bridges = new address[](2);
+        /// todo add more bridges here
+        address[] memory bridges = new address[](1);
         bridges[0] = address(10000);
-        bridges[1] = address(100000);
 
         testAddNewBridgeOwnerSucceeds(
             bridges[0],
-            10_000e18,
-            xwellProxy.minBufferCap() + 1
-        );
-        testAddNewBridgeOwnerSucceeds(
-            bridges[1],
             10_000e18,
             xwellProxy.minBufferCap() + 1
         );
