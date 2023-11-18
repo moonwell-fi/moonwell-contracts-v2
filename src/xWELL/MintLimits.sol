@@ -47,7 +47,7 @@ abstract contract MintLimits {
     function bufferCap(address from) public view returns (uint256) {
         return rateLimits[from].bufferCap;
     }
-    
+
     /// @notice the amount the buffer replenishes towards the midpoint per second
     /// @param from address to get rate limit for
     function rateLimitPerSecond(address from) public view returns (uint256) {
@@ -119,6 +119,10 @@ abstract contract MintLimits {
             rateLimits[from].bufferCap != 0,
             "MintLimits: non-existent rate limit"
         );
+        require(
+            newBufferCap > minBufferCap(),
+            "MintLimits: buffer cap below min"
+        );
 
         rateLimits[from].setBufferCap(newBufferCap);
 
@@ -155,7 +159,10 @@ abstract contract MintLimits {
             rateLimits[rateLimit.bridge].bufferCap == 0,
             "MintLimits: rate limit already exists"
         );
-        require(rateLimit.bufferCap != 0, "MintLimits: bufferCap cannot be 0");
+        require(
+            rateLimit.bufferCap > minBufferCap(),
+            "MintLimits: buffer cap below min"
+        );
 
         rateLimits[rateLimit.bridge] = RateLimitMidPoint({
             bufferCap: rateLimit.bufferCap,
@@ -200,4 +207,7 @@ abstract contract MintLimits {
     /// must be overridden by child contract
     function maxRateLimitPerSecond() public pure virtual returns (uint128);
 
+    /// @notice the minimum buffer cap, non inclusive
+    /// must be overridden by child contract
+    function minBufferCap() public pure virtual returns (uint112);
 }
