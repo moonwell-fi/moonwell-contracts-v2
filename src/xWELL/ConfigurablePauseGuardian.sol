@@ -5,29 +5,28 @@ import {PausableUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts
 import {ConfigurablePause} from "@protocol/xWELL/ConfigurablePause.sol";
 
 contract ConfigurablePauseGuardian is ConfigurablePause {
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-    /// ------------------ SINGLE STORAGE SLOT ------------------
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-
     /// @notice address of the pause guardian
     address public pauseGuardian;
 
-    /// @notice whether or not the guardian has paused
-    bool public pauseUsed;
-
     /// @notice emitted when the pause guardian is updated
+    /// @param oldPauseGuardian old pause guardian
+    /// @param newPauseGuardian new pause guardian
     event PauseGuardianUpdated(
         address indexed oldPauseGuardian,
         address indexed newPauseGuardian
     );
 
+    /// @notice returns whether the pause has been used by the pause guardian
+    /// if pauseStartTime is 0, contract pause is not used, if non zero, it is used
+    function pauseUsed() public view returns (bool) {
+        return pauseStartTime != 0;
+    }
+
     /// @notice kick the guardian, can only kick while the contracts are not paused
     /// removes the guardian, sets pause time to 0, and resets the pauseUsed flag to false
     function kickGuardian() public whenNotPaused {
         require(
-            pauseStartTime != 0,
+            pauseUsed(),
             "ConfigurablePauseGuardian: did not pause, so cannot kick"
         );
 
@@ -42,7 +41,6 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
         address previousPauseGuardian = pauseGuardian;
 
         pauseGuardian = address(0); /// remove the pause guardian
-        pauseUsed = false; /// reset pauseUsed to false
 
         _setPauseTime(0); /// fully unpause, set pauseStartTime to 0
 
@@ -56,10 +54,13 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
             msg.sender == pauseGuardian,
             "ConfigurablePauseGuardian: only pause guardian"
         );
-        require(!pauseUsed, "ConfigurablePauseGuardian: pause already used");
+        require(
+            !pauseUsed(),
+            "ConfigurablePauseGuardian: pause already used"
+        );
 
-        pauseUsed = true;
-        _startPause();
+        /// pause, set pauseStartTime to current block timestamp
+        _setPauseTime(uint128(block.timestamp));
 
         emit Paused(msg.sender);
     }
@@ -80,14 +81,17 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
         emit Unpaused(msg.sender);
     }
 
+    /// @dev when a new guardian is granted, the contract is automatically unpaused
     /// @notice grant pause guardian role to a new address
     /// this should be done after the previous pause guardian has been kicked,
     /// however there are no checks on this as only the owner will call this function
     /// and the owner is assumed to be non-malicious
     function _grantGuardian(address newPauseGuardian) internal {
         address previousPauseGuardian = newPauseGuardian;
-        pauseUsed = false;
         pauseGuardian = newPauseGuardian;
+
+        /// if a new guardian is granted, the contract is automatically unpaused
+        _setPauseTime(0);
 
         emit PauseGuardianUpdated(previousPauseGuardian, newPauseGuardian);
     }
