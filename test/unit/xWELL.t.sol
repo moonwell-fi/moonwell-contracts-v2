@@ -535,6 +535,40 @@ contract xWELLUnitTest is BaseTest {
         xwellProxy.addBridge(bridge);
     }
 
+    function testAddNewBridgeWithBufferBelowMinFails() public {
+        address newBridge = address(0x1111777777);
+        uint128 rateLimitPerSecond = uint128(
+            xwellProxy.MAX_RATE_LIMIT_PER_SECOND()
+        );
+        uint112 bufferCap = xwellProxy.MIN_BUFFER_CAP();
+
+        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits
+            .RateLimitMidPointInfo({
+                bridge: newBridge,
+                bufferCap: bufferCap,
+                rateLimitPerSecond: rateLimitPerSecond
+            });
+
+        vm.expectRevert("MintLimits: buffer cap below min");
+        xwellProxy.addBridge(bridge);
+    }
+
+    function testSetBridgeBufferBelowMinFails() public {
+        address newBridge = address(0x1111777777);
+        uint128 rateLimitPerSecond = uint128(
+            xwellProxy.MAX_RATE_LIMIT_PER_SECOND()
+        );
+        uint112 bufferCap = xwellProxy.MIN_BUFFER_CAP();
+        testAddNewBridgeOwnerSucceeds(
+            newBridge,
+            rateLimitPerSecond,
+            bufferCap + 1
+        );
+
+        vm.expectRevert("MintLimits: buffer cap below min");
+        xwellProxy.setBufferCap(newBridge, bufferCap);
+    }
+
     function testAddNewBridgeOverMaxRateLimitPerSecondFails() public {
         address newBridge = address(0x1111777777);
         uint112 bufferCap = 20_000_000 * 1e18;
