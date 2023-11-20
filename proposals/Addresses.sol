@@ -61,6 +61,8 @@ contract Addresses is Test, ChainIds {
             moonBeamChainId,
             0xfc4DFB17101A12C5CEc5eeDd8E92B5b16557666d /// TODO add correct guantlet msig
         );
+
+        //Moonbeam
         _addAddress(
             "WELL",
             moonBeamChainId,
@@ -90,6 +92,53 @@ contract Addresses is Test, ChainIds {
             moonBeamChainId,
             0x091608f4e4a15335145be0A279483C0f8E4c7955
         );
+
+        _addAddress(
+            "WELL_LP",
+            moonBeamChainId,
+            0xb536c1F9A157B263B70A9a35705168ACC0271742
+        );
+
+
+
+
+        // Moonriver
+        _addAddress(
+            "WELL",
+            moonRiverChainId,
+            0xBb8d88bcD9749636BC4D2bE22aaC4Bb3B01A58F1
+        );
+
+        _addAddress(
+            "TOKENSALE",
+            moonRiverChainId,
+            address(0)
+        );
+
+        _addAddress(
+            "STWELL",
+            moonRiverChainId,
+            0xCd76e63f3AbFA864c53b4B98F57c1aA6539FDa3a
+        );
+
+        _addAddress(
+            "UNITROLLER",
+            moonRiverChainId,
+            0x0b7a0EAA884849c6Af7a129e899536dDDcA4905E
+        );
+
+        _addAddress(
+            "MGLIMMER",
+            moonRiverChainId,
+            0x6a1A771C7826596652daDC9145fEAaE62b1cd07f
+        );
+
+        _addAddress(
+            "WELL_LP",
+            moonRiverChainId,
+            0xE6Bfc609A2e58530310D6964ccdd236fc93b4ADB
+        );
+
         /// MOON BASE
         _addAddress(
             "BORROW_SUPPLY_GUARDIAN",

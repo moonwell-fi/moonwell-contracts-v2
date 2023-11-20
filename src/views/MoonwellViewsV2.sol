@@ -11,9 +11,9 @@ import {MToken} from "@protocol/MToken.sol";
  * @author Moonwell
  */
 contract MoonwellViewsV2 is BaseMoonwellViews {
-    function getSupplyCaps(
+    function _getSupplyCaps(
         address _market
-    ) public view override returns (uint) {
+    ) internal view override returns (uint) {
         return comptroller.supplyCaps(_market);
     }
 

@@ -8,24 +8,25 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@forge-std/Test.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
-import {MoonwellViewsV1} from "@protocol/views/MoonwellViewsV1.sol";
+import {MoonwellViewsV2} from "@protocol/views/MoonwellViewsV2.sol";
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 /*
 How to use:
 1. run:
-forge script proposals/DeployMoonwellViewsV1.s.sol:DeployMoonwellViewsV1 \
+forge script proposals/DeployMoonwellViewsV2.s.sol:DeployMoonwellViewsV2 \
     -vvvv \
     --rpc-url moonbeam \
-    --broadcast --etherscan-api-key base --verify
-Remove `--broadcast --etherscan-api-key base --verify` if you want to try locally
+    --broadcast --etherscan-api-key moonbeam --verify
+Remove `--broadcast --etherscan-api-key moonbeam --verify` if you want to try locally
  first, without paying any gas.
 */
 
-contract DeployMoonwellViewsV1 is Script, Test {
+contract DeployMoonwellViewsV2 is Script, Test {
     uint256 public PRIVATE_KEY;
 
-    Addresses addresses;
+    Addresses public addresses;
 
     function setUp() public {
         addresses = new Addresses();
@@ -45,31 +46,38 @@ contract DeployMoonwellViewsV1 is Script, Test {
         vm.startBroadcast(PRIVATE_KEY);
 
         address unitroller = addresses.getAddress("UNITROLLER");
-        address tokenSaleDistributor = addresses.getAddress("TOKENSALE");
-        address safetyModule = addresses.getAddress("STWELL");
-        address governanceToken = addresses.getAddress("WELL");
-        address nativeMarket = addresses.getAddress("MGLIMMER");
+        address tokenSaleDistributor = address(0);
+        address safetyModule = address(0);
+        address governanceToken = address(0);
+        address nativeMarket = address(0);
+        address governanceTokenLP = address(0);
 
-        MoonwellViewsV1 viewsContract = new MoonwellViewsV1();
+        MoonwellViewsV2 viewsContract = new MoonwellViewsV2();
 
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address,address,address,address)",
+            "initialize(address,address,address,address,address,address)",
             unitroller,
             tokenSaleDistributor,
             safetyModule,
             governanceToken,
-            nativeMarket
+            nativeMarket,
+            governanceTokenLP
         );
+
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
 
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(viewsContract),
-            deployerAddress,
+            address(proxyAdmin),
             initdata
         );
 
+        console.log("viewsContract address: %s", address(viewsContract));
+        console.log("proxy admin address: %s", address(proxyAdmin));
+        console.log("proxy address: %s", address(proxy));
 
-        addresses.addAddress("VIEWS_IMPL", address(viewsContract));
-        addresses.addAddress("VIEWS_PROXY", address(proxy));
+        // addresses.addAddress("VIEWS_IMPL", address(viewsContract));
+        // addresses.addAddress("VIEWS_PROXY", address(proxy));
 
         vm.stopBroadcast();
     }

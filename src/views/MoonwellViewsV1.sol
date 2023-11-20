@@ -11,9 +11,9 @@ import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
  * @author Moonwell
  */
 contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
-    uint224 public constant initialIndexConstant = 1e36;
+    uint224 constant _INITIAL_INDEX = 1e36;
 
-    function getSupplyCaps(address) public pure override returns (uint) {
+    function _getSupplyCaps(address) internal pure override returns (uint) {
         return 0;
     }
 
@@ -44,12 +44,12 @@ contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
         return _result;
     }
 
-    function getRewardSupplyIndex(
+    function _getRewardSupplyIndex(
         ComptrollerInterfaceV1 comptroller,
         uint8 rewardType,
         address mToken
     )
-        public
+        internal
         view
         returns (ComptrollerInterfaceV1.RewardMarketState memory _result)
     {
@@ -93,12 +93,12 @@ contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
         }
     }
 
-    function getRewardBorrowIndex(
+    function _getRewardBorrowIndex(
         ComptrollerInterfaceV1 comptroller,
         uint8 rewardType,
         address mToken
     )
-        public
+        internal
         view
         returns (ComptrollerInterfaceV1.RewardMarketState memory _result)
     {
@@ -151,16 +151,16 @@ contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
         }
     }
 
-    function getSupplierReward(
+    function _getSupplierReward(
         ComptrollerInterfaceV1 comptroller,
         uint8 rewardType,
         MToken mToken,
         address supplier
-    ) public view returns (uint256) {
+    ) internal view returns (uint256) {
         require(rewardType <= 1, "rewardType is invalid");
 
         ComptrollerInterfaceV1.RewardMarketState
-            memory supplyState = getRewardSupplyIndex(
+            memory supplyState = _getRewardSupplyIndex(
                 comptroller,
                 rewardType,
                 address(mToken)
@@ -176,27 +176,27 @@ contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
         });
 
         if (supplierIndex.mantissa == 0 && supplyIndex.mantissa > 0) {
-            supplierIndex.mantissa = initialIndexConstant;
+            supplierIndex.mantissa = _INITIAL_INDEX;
         }
 
         Double memory deltaIndex = sub_(supplyIndex, supplierIndex);
         uint supplierTokens = mToken.balanceOf(supplier);
-        uint supplierDelta = mul_(supplierTokens, deltaIndex);    
+        uint supplierDelta = mul_(supplierTokens, deltaIndex);
         return supplierDelta;
     }
 
-    function getBorrowerReward(
+    function _getBorrowerReward(
         ComptrollerInterfaceV1 comptroller,
         uint8 rewardType,
         MToken mToken,
         address borrower
-    ) public view returns (uint) {
+    ) internal view returns (uint) {
         require(rewardType <= 1, "rewardType is invalid");
 
         Exp memory marketBorrowIndex = Exp({mantissa: mToken.borrowIndex()});
 
         ComptrollerInterfaceV1.RewardMarketState
-            memory borrowState = getRewardBorrowIndex(
+            memory borrowState = _getRewardBorrowIndex(
                 comptroller,
                 rewardType,
                 address(mToken)
@@ -249,26 +249,28 @@ contract MoonwellViewsV1 is BaseMoonwellViews, ExponentialNoError {
             _result[_currIndex + 1].rewardToken = address(0);
 
             if (comptrollerV1.markets(address(mToken)).isListed) {
-                _result[_currIndex].supplyRewardsAmount = getSupplierReward(
+                _result[_currIndex].supplyRewardsAmount = _getSupplierReward(
                     comptrollerV1,
                     0,
                     mToken,
                     _user
                 );
-                _result[_currIndex].borrowRewardsAmount = getBorrowerReward(
+                _result[_currIndex].borrowRewardsAmount = _getBorrowerReward(
                     comptrollerV1,
                     0,
                     mToken,
                     _user
                 );
 
-                _result[_currIndex + 1].supplyRewardsAmount = getSupplierReward(
+                _result[_currIndex + 1]
+                    .supplyRewardsAmount = _getSupplierReward(
                     comptrollerV1,
                     1,
                     mToken,
                     _user
                 );
-                _result[_currIndex + 1].borrowRewardsAmount = getBorrowerReward(
+                _result[_currIndex + 1]
+                    .borrowRewardsAmount = _getBorrowerReward(
                     comptrollerV1,
                     1,
                     mToken,

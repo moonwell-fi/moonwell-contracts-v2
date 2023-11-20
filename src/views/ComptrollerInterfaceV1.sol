@@ -60,4 +60,8 @@ interface ComptrollerInterfaceV1 {
     }
 
     function markets(address market) external view returns (Market memory);
+
+    function transferGuardianPaused() external view returns (bool);
+
+    function seizeGuardianPaused() external view returns (bool);
 }

@@ -2,6 +2,12 @@
 pragma solidity 0.8.19;
 
 interface SafetyModuleInterfaceV1 {
+    struct AssetData {
+        uint128 emissionPerSecond;
+        uint128 lastUpdateTimestamp;
+        uint256 index;
+    }
+
     function getPriorVotes(
         address account,
         uint blockNumber
@@ -26,11 +32,17 @@ interface SafetyModuleInterfaceV1 {
         address staker
     ) external view returns (uint);
 
+    function totalSupply() external view returns (uint);
+
     function STAKED_TOKEN() external view returns (address);
 
     function REWARD_TOKEN() external view returns (address);
 
     function COOLDOWN_SECONDS() external view returns (uint);
 
+    function DISTRIBUTION_END() external view returns (uint);
+
     function UNSTAKE_WINDOW() external view returns (uint);
+
+    function assets(address) external view returns (AssetData memory);
 }

@@ -10,12 +10,23 @@ import {SafetyModuleInterfaceV1} from "@protocol/views/SafetyModuleInterfaceV1.s
 import {Well} from "@protocol/Governance/Well.sol";
 import {IERC20} from "@protocol/Governance/IERC20.sol";
 import {MErc20Interface} from "@protocol/MTokenInterfaces.sol";
+import {UniswapV2PairInterface} from "@protocol/views/UniswapV2PairInterface.sol";
 
 /**
  * @title Moonwell Views Contract
  * @author Moonwell
  */
 contract BaseMoonwellViews is Initializable {
+    struct StakingInfo {
+        uint cooldown;
+        uint unstakeWindow;
+        uint distributionEnd;
+        uint totalSupply;
+        uint emissionPerSecond;
+        uint lastUpdateTimestamp;
+        uint index;
+    }
+
     struct MarketIncentives {
         address token;
         uint supplyIncentivesPerSec;
@@ -23,6 +34,7 @@ contract BaseMoonwellViews is Initializable {
     }
 
     struct Market {
+        address market;
         bool isListed;
         uint borrowCap;
         uint supplyCap;
@@ -43,12 +55,18 @@ contract BaseMoonwellViews is Initializable {
     }
 
     struct Votes {
+        uint delegatedVotingPower;
         uint votingPower;
         address delegates;
     }
 
     struct Balances {
         uint amount;
+        address token;
+    }
+
+    struct Memberships {
+        bool membership;
         address token;
     }
 
@@ -71,11 +89,17 @@ contract BaseMoonwellViews is Initializable {
         uint totalStaked;
     }
 
+    struct ProtocolInfo {
+        bool seizePaused;
+        bool transferPaused;
+    }
+
     Comptroller public comptroller;
-    TokenSaleDistributorInterfaceV1 public tokenSaleDistributor;
-    SafetyModuleInterfaceV1 public safetyModule;
-    Well public governanceToken;
-    address public nativeMarket;
+    TokenSaleDistributorInterfaceV1 private _tokenSaleDistributor;
+    SafetyModuleInterfaceV1 private _safetyModule;
+    Well private _governanceToken;
+    UniswapV2PairInterface private _governanceTokenLP;
+    address private _nativeMarket;
 
     /// construct the logic contract and initialize so that the initialize function is uncallable
     /// from the implementation and only callable from the proxy
@@ -85,10 +109,11 @@ contract BaseMoonwellViews is Initializable {
 
     function initialize(
         address _comptroller,
-        address _tokenSaleDistributor,
-        address _safetyModule,
-        address _governanceToken,
-        address _nativeMarket
+        address tokenSaleDistributor,
+        address safetyModule,
+        address governanceToken,
+        address nativeMarket,
+        address governanceTokenLP
     ) external initializer {
         // Sanity check the params
         require(
@@ -103,19 +128,20 @@ contract BaseMoonwellViews is Initializable {
             "Cant bind to something thats not a comptroller!"
         );
 
-        tokenSaleDistributor = TokenSaleDistributorInterfaceV1(
-            address(_tokenSaleDistributor)
+        _tokenSaleDistributor = TokenSaleDistributorInterfaceV1(
+            address(tokenSaleDistributor)
         );
 
-        safetyModule = SafetyModuleInterfaceV1(address(_safetyModule));
-        governanceToken = Well(address(_governanceToken));
-        nativeMarket = _nativeMarket;
+        _safetyModule = SafetyModuleInterfaceV1(address(safetyModule));
+        _governanceToken = Well(address(governanceToken));
+        _nativeMarket = nativeMarket;
+        _governanceTokenLP = UniswapV2PairInterface(governanceTokenLP);
     }
 
     /// @notice Virtual function to get the user accrued and pendings rewards, must be overriden depending on the version of the deployment
-    function getSupplyCaps(
+    function _getSupplyCaps(
         address _market
-    ) public view virtual returns (uint) {}
+    ) internal view virtual returns (uint) {}
 
     /// @notice A view to get a specific market info
     function getMarketInfo(
@@ -128,8 +154,9 @@ contract BaseMoonwellViews is Initializable {
         );
 
         if (_isListed) {
+            _result.market = address(_mToken);
             _result.borrowCap = comptroller.borrowCaps(address(_mToken));
-            _result.supplyCap = getSupplyCaps(address(_mToken));
+            _result.supplyCap = _getSupplyCaps(address(_mToken));
             _result.collateralFactor = _collateralFactor;
             _result.isListed = _isListed;
 
@@ -183,6 +210,27 @@ contract BaseMoonwellViews is Initializable {
         return _result;
     }
 
+    /// @notice A view to get all info from the staking module
+    function getStakingInfo()
+        external
+        view
+        returns (StakingInfo memory _result)
+    {
+        if (address(_safetyModule) != address(0)) {
+            _result.cooldown = _safetyModule.COOLDOWN_SECONDS();
+            _result.unstakeWindow = _safetyModule.UNSTAKE_WINDOW();
+            _result.distributionEnd = _safetyModule.DISTRIBUTION_END();
+            _result.totalSupply = _safetyModule.totalSupply();
+
+            SafetyModuleInterfaceV1.AssetData memory asset = _safetyModule
+                .assets(address(_safetyModule));
+            _result.emissionPerSecond = asset.emissionPerSecond;
+            _result.lastUpdateTimestamp = asset.lastUpdateTimestamp;
+            _result.index = asset.index;
+        }
+        return _result;
+    }
+
     /// @notice Virtual function to get market incentives, must be overrided overriden on the version of the deployment
     function getMarketIncentives(
         MToken market
@@ -192,12 +240,16 @@ contract BaseMoonwellViews is Initializable {
     function getUserStakingVotingPower(
         address _user
     ) public view virtual returns (Votes memory _result) {
-        if (address(safetyModule) != address(0)) {
-            uint _priorVotes = safetyModule.getPriorVotes(
+        if (address(_safetyModule) != address(0)) {
+            uint _priorVotes = _safetyModule.getPriorVotes(
                 _user,
                 block.number - 1
             );
-            _result = Votes(_priorVotes, address(0));
+            _result = Votes(
+                _priorVotes,
+                _safetyModule.balanceOf(_user),
+                address(0)
+            );
         }
     }
 
@@ -205,16 +257,17 @@ contract BaseMoonwellViews is Initializable {
     function getUserClaimsVotingPower(
         address _user
     ) public view virtual returns (Votes memory _result) {
-        if (address(tokenSaleDistributor) != address(0)) {
-            uint _priorVotes = tokenSaleDistributor.getPriorVotes(
+        if (address(_tokenSaleDistributor) != address(0)) {
+            uint _priorVotes = _tokenSaleDistributor.getPriorVotes(
                 _user,
                 block.number - 1
             );
-            uint _totalAllocated = tokenSaleDistributor.totalAllocated(_user);
-            uint _totalClaimed = tokenSaleDistributor.totalClaimed(_user);
-            address _delegates = tokenSaleDistributor.delegates(_user);
+            uint _totalAllocated = _tokenSaleDistributor.totalAllocated(_user);
+            uint _totalClaimed = _tokenSaleDistributor.totalClaimed(_user);
+            address _delegates = _tokenSaleDistributor.delegates(_user);
             _result = Votes(
-                _priorVotes + (_totalAllocated - _totalClaimed),
+                _priorVotes,
+                (_totalAllocated - _totalClaimed),
                 _delegates
             );
         }
@@ -224,13 +277,17 @@ contract BaseMoonwellViews is Initializable {
     function getUserTokensVotingPower(
         address _user
     ) public view virtual returns (Votes memory _result) {
-        if (address(governanceToken) != address(0)) {
-            uint _priorVotes = governanceToken.getPriorVotes(
+        if (address(_governanceToken) != address(0)) {
+            uint _priorVotes = _governanceToken.getPriorVotes(
                 _user,
                 block.number - 1
             );
-            address _delegates = governanceToken.delegates(_user);
-            _result = Votes(_priorVotes, _delegates);
+            address _delegates = _governanceToken.delegates(_user);
+            _result = Votes(
+                _priorVotes,
+                _governanceToken.balanceOf(_user),
+                _delegates
+            );
         }
     }
 
@@ -276,15 +333,15 @@ contract BaseMoonwellViews is Initializable {
         uint _resultSize = (_mTokens.length * 2) + 1;
         uint _currIndex;
 
-        if (address(governanceToken) != address(0)) {
+        if (address(_governanceToken) != address(0)) {
             _resultSize++;
         }
 
         address[] memory _tokens = new address[](_resultSize);
 
         // Gov token balance
-        if (address(governanceToken) != address(0)) {
-            _tokens[_currIndex] = address(governanceToken);
+        if (address(_governanceToken) != address(0)) {
+            _tokens[_currIndex] = address(_governanceToken);
             _currIndex++;
         }
 
@@ -298,7 +355,7 @@ contract BaseMoonwellViews is Initializable {
         for (uint index = 0; index < _mTokens.length; index++) {
             MToken mToken = _mTokens[index];
             address underlyingToken = address(0);
-            if (address(mToken) != nativeMarket) {
+            if (address(mToken) != _nativeMarket) {
                 underlyingToken = address(
                     MErc20Interface(address(mToken)).underlying()
                 );
@@ -311,19 +368,100 @@ contract BaseMoonwellViews is Initializable {
         return getTokensBalances(_tokens, _user);
     }
 
+    /// @notice View function to get the user borrowed balances from mTokens
+    function getUserBorrowsBalances(
+        address _user
+    ) public view returns (Balances[] memory) {
+        MToken[] memory _mTokens = comptroller.getAllMarkets();
+
+        Balances[] memory _result = new Balances[](_mTokens.length);
+
+        for (uint index = 0; index < _mTokens.length; index++) {
+            MToken mToken = _mTokens[index];
+            _result[index] = Balances(
+                mToken.borrowBalanceStored(_user),
+                address(mToken)
+            );
+        }
+
+        return _result;
+    }
+
+    /// @notice View function to get the markets where the user entered (to compute in the collateral factor)
+    function getUserMarketsMemberships(
+        address _user
+    ) public view returns (Memberships[] memory) {
+        MToken[] memory _mTokens = comptroller.getAllMarkets();
+
+        Memberships[] memory _result = new Memberships[](_mTokens.length);
+
+        for (uint index = 0; index < _mTokens.length; index++) {
+            MToken mToken = _mTokens[index];
+            _result[index] = Memberships(
+                comptroller.checkMembership(_user, mToken),
+                address(mToken)
+            );
+        }
+
+        return _result;
+    }
+
     /// @notice Virtual function to get the user accrued and pendings rewards, must be overriden depending on the version of the deployment
     function getUserRewards(
         address _user
     ) public view virtual returns (Rewards[] memory) {}
 
-    /// @notice Virtual function to get the user accrued and pendings rewards, must be overriden depending on the version of the deployment
+    /// @notice Virtual function to get the user staking info
     function getUserStakingInfo(
         address _user
     ) public view returns (UserStakingInfo memory _result) {
-        if (address(safetyModule) != address(0)) {
-            _result.pendingRewards = safetyModule.getTotalRewardsBalance(_user);
-            _result.cooldown = safetyModule.stakersCooldowns(_user);
-            _result.totalStaked = safetyModule.balanceOf(_user);
+        if (address(_safetyModule) != address(0)) {
+            _result.pendingRewards = _safetyModule.getTotalRewardsBalance(
+                _user
+            );
+            _result.cooldown = _safetyModule.stakersCooldowns(_user);
+            _result.totalStaked = _safetyModule.balanceOf(_user);
+        }
+    }
+
+    /// @notice Function to get the protocol info
+    function getProtocolInfo()
+        public
+        view
+        returns (ProtocolInfo memory _result)
+    {
+        _result.transferPaused = comptroller.transferGuardianPaused();
+        _result.seizePaused = comptroller.seizeGuardianPaused();
+    }
+
+    /// @notice Function to get native token price
+    function getNativeTokenPrice() public view returns (uint _result) {
+        if (address(_nativeMarket) != address(0)) {
+            _result = comptroller.oracle().getUnderlyingPrice(
+                MToken(_nativeMarket)
+            );
+        }
+    }
+
+    /// @notice Function to get the governance token price
+    function getGovernanceTokenPrice() public view returns (uint _result) {
+        if (
+            address(_governanceTokenLP) != address(0) &&
+            address(_nativeMarket) != address(0)
+        ) {
+            (uint reserves0, uint reserves1, ) = _governanceTokenLP
+                .getReserves();
+            address token0 = _governanceTokenLP.token0();
+
+            uint _nativeReserve = token0 == address(_governanceToken)
+                ? reserves1
+                : reserves0;
+            uint _tokenReserve = token0 == address(_governanceToken)
+                ? reserves0
+                : reserves1;
+
+            //This works coz governance token AND native token  18 decimals, but might not be the case at some point
+            _result = (_nativeReserve * getNativeTokenPrice()) / _tokenReserve;
         }
     }
 }
