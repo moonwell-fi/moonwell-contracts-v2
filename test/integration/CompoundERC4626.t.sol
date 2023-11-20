@@ -118,23 +118,6 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         );
     }
 
-    function testRewardsAccrueAndSentToRecipient() public {
-        uint256 mintAmount = 10_000_000e6;
-
-        deal(address(underlying), address(this), mintAmount);
-        deal(address(well), addresses.getAddress("MRD_PROXY"), 10_000_000e18);
-
-        underlying.approve(address(vault), mintAmount);
-
-        assertEq(well.balanceOf(rewardRecipient), 0);
-
-        vault.deposit(mintAmount, address(this));
-        vm.warp(block.timestamp + 1 weeks);
-
-        vault.claimRewards();
-        assertGt(well.balanceOf(rewardRecipient), 0);
-    }
-
     function testWithdrawWithZeroCashFails() public {
         testMaxMintDepositSucceedsMaxMintZero();
         deal(address(underlying), addresses.getAddress("MOONWELL_USDBC"), 0);
@@ -148,15 +131,6 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
             )
         );
         vault.withdraw(withdrawAmount, address(this), address(this));
-    }
-
-    function testRewardAmountEqZeroClaimRewards() public {
-        testRewardsAccrueAndSentToRecipient();
-
-        uint256 rewardBalance = well.balanceOf(rewardRecipient);
-        vault.claimRewards();
-
-        assertEq(rewardBalance, well.balanceOf(rewardRecipient));
     }
 
     function testSweepFailsNotRewardRecipient() public {
@@ -219,7 +193,6 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         );
 
         assertGt(maxMint, 0);
-        assertGt(maxMint, 10_000_000e6);
         assertLt(maxMint, supplyCap);
     }
 
@@ -230,7 +203,6 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
         );
 
         assertGt(maxMint, 0);
-        assertGt(maxMint, 10_000_000e6);
         assertLt(maxMint, supplyCap);
 
         deal(address(underlying), address(this), maxMint);

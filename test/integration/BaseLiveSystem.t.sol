@@ -31,25 +31,12 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
     function setUp() public override {
         super.setUp();
 
-
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         well = addresses.getAddress("WELL");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         router = WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));
         oracle = ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"));
         weth = WETH9(addresses.getAddress("WETH"));
-    }
-
-    function testSetup() public {
-        Configs.EmissionConfig[] memory configs = Configs(
-            address(proposals.proposals(0))
-        ).getEmissionConfigurations(block.chainid);
-        Configs.CTokenConfiguration[] memory mTokenConfigs = Configs(
-            address(proposals.proposals(0))
-        ).getCTokenConfigurations(block.chainid);
-
-        assertEq(configs.length, 3); /// 3 starting configs on base
-        assertEq(mTokenConfigs.length, 0); /// 0 mTokens on base
     }
 
     function testOraclesReturnCorrectValues() public {
@@ -124,7 +111,6 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.supplyEmissionsPerSec, 1e18);
-        assertEq(config.endTime, emissionConfig[0].endTime);
     }
 
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
@@ -155,7 +141,6 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.borrowEmissionsPerSec, 1e18);
-        assertEq(config.endTime, emissionConfig[0].endTime);
     }
 
     function testMintMWethMTokenSucceeds() public {

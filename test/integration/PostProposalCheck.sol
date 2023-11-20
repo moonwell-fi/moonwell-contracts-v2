@@ -18,11 +18,20 @@ contract PostProposalCheck is CreateCode {
         string memory path = getPath();
         // Run all pending proposals before doing e2e tests
         address[] memory mips = new address[](1);
-        if (path.hasChar(",")) {
+
+        if (keccak256(bytes(path)) == '""' || bytes(path).length == 0) {
+            /// empty string on both mac and unix, no proposals to run
+            mips = new address[](0);
+
+            proposals = new TestProposals(mips);
+        } else if (path.hasChar(",")) {
             string[] memory mipPaths = path.split(",");
             if (mipPaths.length < 2) {
-                revert("Invalid path(s) provided. If you want to deploy a single mip, do not use a comma.");
+                revert(
+                    "Invalid path(s) provided. If you want to deploy a single mip, do not use a comma."
+                );
             }
+            mips = new address[](mipPaths.length); /// expand mips size if multiple mips
 
             /// guzzle all of the memory, quadratic cost, but we don't care
             for (uint256 i = 0; i < mipPaths.length; i++) {
@@ -31,12 +40,13 @@ contract PostProposalCheck is CreateCode {
 
                 mips[i] = deployCode(code);
             }
+            proposals = new TestProposals(mips);
         } else {
             bytes memory code = getCode(path);
             mips[0] = deployCode(code);
+            proposals = new TestProposals(mips);
         }
 
-        proposals = new TestProposals(mips);
         proposals.setUp();
         proposals.testProposals(
             false, /// do not log debug output
@@ -48,6 +58,7 @@ contract PostProposalCheck is CreateCode {
             true,
             true
         );
+
         addresses = proposals.addresses();
     }
 }

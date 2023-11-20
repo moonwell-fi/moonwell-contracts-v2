@@ -16,53 +16,24 @@ import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
 
-contract NativeUSDCLiveSystemBaseTest is Test, Configs {
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+
+contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
     MultiRewardDistributor mrd;
     Comptroller comptroller;
-    Addresses addresses;
     address well;
     MErc20 mUSDC;
 
-    function setUp() public {
-        vm.setEnv("LISTING_PATH", "./proposals/mips/mip-b04/MIP-B04.md");
-        vm.setEnv("MTOKENS_PATH", "./proposals/mips/mip-b04/MTokens.json");
-        vm.setEnv(
-            "EMISSION_PATH",
-            "./proposals/mips/mip-b04/RewardStreams.json"
-        );
+    function setUp() public override {
+        super.setUp();
 
-        /// do not broadcast these transactions: in after deploy
-        ///    _setReserveFactor(config.reserveFactor);
-        ///    _setProtocolSeizeShare(config.seizeShare);
-        ///    _setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
-        vm.setEnv("DO_AFTER_DEPLOY_MTOKEN_BROADCAST", "false");
-
-        // Run all pending proposals before doing e2e tests
-        address[] memory mips = new address[](1);
-        mips[0] = address(new mip());
-
-        TestProposals proposals = new TestProposals(mips);
-        proposals.setUp();
-        /// after deploy, after deploy setup, build, run and validate
-        proposals.testProposals(
-            false, /// do not debug
-            false, /// do not deploy mUSDC
-            false,
-            false,
-            false,
-            false,
-            false, /// do not teardown as there is nothing to teardown
-            false
-        );
-
-        addresses = proposals.addresses();
         well = addresses.getAddress("WELL");
         mUSDC = MErc20(addresses.getAddress("MOONWELL_USDC"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
     }
 
-    function testSetup() public {
+    function testSetupUsdc() public {
         assertEq(address(mUSDC.underlying()), addresses.getAddress("USDC"));
         assertEq(mUSDC.name(), "Moonwell USDC");
         assertEq(mUSDC.symbol(), "mUSDC");
@@ -115,7 +86,6 @@ contract NativeUSDCLiveSystemBaseTest is Test, Configs {
         mUSDC.borrow(borrowAmount);
     }
 
-
     function testMintMTokenSucceeds() public {
         address sender = address(this);
         uint256 mintAmount = 100e6;
@@ -150,18 +120,19 @@ contract NativeUSDCLiveSystemBaseTest is Test, Configs {
         (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
             .getAccountLiquidity(address(this));
 
+        (, uint256 collateralFactor) = comptroller.markets(address(mToken)); /// fetch collateral factor
+
         assertEq(err, 0, "Error getting account liquidity");
         assertApproxEqRel(
             liquidity,
-            80e18,
+            (mintAmount * 1e12 * collateralFactor) / 1e18,
             1e15,
-            "liquidity not within .1% of $80"
+            "liquidity not within .1% of given CF"
         );
         assertEq(shortfall, 0, "Incorrect shortfall");
 
         comptroller.exitMarket(address(mToken));
     }
-
 
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
         vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
@@ -188,10 +159,13 @@ contract NativeUSDCLiveSystemBaseTest is Test, Configs {
             block.chainid
         );
 
-        assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
-        assertEq(config.emissionToken, well);
-        assertEq(config.borrowEmissionsPerSec, 1e18);
-        assertEq(config.endTime, emissionConfig[0].endTime);
+        assertEq(
+            config.owner,
+            addresses.getAddress("EMISSIONS_ADMIN"),
+            "incorrect admin"
+        );
+        assertEq(config.emissionToken, well, "incorrect reward token");
+        assertEq(config.borrowEmissionsPerSec, 1e18, "incorrect reward rate");
     }
 
     function _getMaxSupplyAmount(

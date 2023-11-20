@@ -2,4 +2,5 @@
 @openzeppelin/=lib/openzeppelin-contracts/
 @protocol=src/
 @test=test/
-@proposals=proposals/
+@proposals=src/proposals/
+@utils/=utils/

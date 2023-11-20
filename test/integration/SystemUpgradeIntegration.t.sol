@@ -8,37 +8,15 @@ import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {mipb01 as mip} from "@proposals/mips/mip-b01/mip-b01.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
-contract SystemUpgradeLiveSystemBaseTest is Test, Configs {
+contract SystemUpgradeLiveSystemBaseTest is PostProposalCheck, Configs {
     bytes32 public constant _IMPLEMENTATION_SLOT =
         0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     bytes32 public constant _ADMIN_SLOT =
         0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-
-    Addresses addresses;
-
-    function setUp() public {
-        // Run all pending proposals before doing e2e tests
-        address[] memory mips = new address[](1);
-        mips[0] = address(new mip());
-
-        TestProposals proposals = new TestProposals(mips);
-        proposals.setUp();
-        proposals.testProposals(
-            false,
-            true,
-            false,
-            false,
-            false,
-            false,
-            false,
-            false
-        );
-        addresses = proposals.addresses();
-    }
 
     function testSystemUpgradeAsTemporalGovernorSucceeds() public {
         address newProxyImplementation = address(this);
