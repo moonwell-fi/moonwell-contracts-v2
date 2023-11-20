@@ -72,12 +72,9 @@ contract DeployMoonwellViewsV1 is Script, Test {
             initdata
         );
 
-        console.log("viewsContract address: %s", address(viewsContract));
-        console.log("proxy admin address: %s", address(proxyAdmin));
-        console.log("proxy address: %s", address(proxy));
-
-        // addresses.addAddress("VIEWS_IMPL", address(viewsContract));
-        // addresses.addAddress("VIEWS_PROXY", address(proxy));
+        console.log("MoonwellViewsV1: %s", address(viewsContract));
+        console.log("ProxyAdmin: %s", address(proxyAdmin));
+        console.log("TransparentUpgradeableProxy: %s", address(proxy));
 
         vm.stopBroadcast();
     }
