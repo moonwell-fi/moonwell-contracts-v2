@@ -59,16 +59,6 @@ contract MoonwellViewsV2Test is Test {
     function testUserBalances() public {
         MoonwellViewsV2.Balances[] memory _balances = viewsContract
             .getUserBalances(user);
-
-        console.log("_balances length %s", _balances.length);
-        // Loop through markets and underlying tokens
-        for (uint index = 0; index < _balances.length; index++) {
-            console.log(
-                "_balance %s %s",
-                _balances[index].amount,
-                _balances[index].token
-            );
-        }
         assertEq(_balances.length, 11);
     }
 
@@ -77,16 +67,6 @@ contract MoonwellViewsV2Test is Test {
         MoonwellViewsV2.Rewards[] memory _rewards = viewsContract
             .getUserRewards(user);
 
-        console.log("_Rewards length %s", _rewards.length);
-        // Loop through markets and underlying tokens
-        for (uint index = 0; index < _rewards.length; index++) {
-            console.log(
-                "_reward %s %s %s",
-                _rewards[index].rewardToken,
-                _rewards[index].supplyRewardsAmount,
-                _rewards[index].borrowRewardsAmount
-            );
-        }
         assertEq(_rewards.length, 2);
     }
 

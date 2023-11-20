@@ -87,22 +87,6 @@ contract MoonwellViewsV1Test is Test {
         assertEq(_stakingInfo.totalStaked, 1000000000000000000);
     }
 
-    // function testUserBalances() public {
-    //     MoonwellViewsV1.Balances[] memory _balances = viewsContract
-    //         .getUserBalances(user);
-
-    //     console.log("_balances length %s", _balances.length);
-    //     // Loop through markets and underlying tokens
-    //     for (uint index = 0; index < _balances.length; index++) {
-    //         console.log(
-    //             "_balance %s %s",
-    //             _balances[index].amount,
-    //             _balances[index].token
-    //         );
-    //     }
-    //     assertEq(_balances.length, 11);
-    // }
-
     function testUserRewards() public {
         MoonwellViewsV1.Rewards[] memory _rewards = viewsContract
             .getUserRewards(user);
