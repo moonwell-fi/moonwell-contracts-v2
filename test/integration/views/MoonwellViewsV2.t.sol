@@ -4,32 +4,42 @@ import "@forge-std/Test.sol";
 
 import {MoonwellViewsV2} from "@protocol/views/MoonwellViewsV2.sol";
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {Addresses} from "@proposals/Addresses.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
-contract MoonwellViewsV2Test is Test {
+contract MoonwellViewsV2Test is Test, PostProposalCheck {
     MoonwellViewsV2 public viewsContract;
 
-    address public constant proxyAdmin = address(1337);
+    address public user = 0xd7854FC91f16a58D67EC3644981160B6ca9C41B8;
+    address public proxyAdmin = address(1337);
 
-    address public constant comptroller =
-        0xfBb21d0380beE3312B33c4353c8936a0F13EF26C;
+    address public comptroller;
+    address public tokenSaleDistributor;
+    address public safetyModule;
+    address public governanceToken;
+    address public nativeMarket;
+    address public governanceTokenLP;
 
-    address public constant tokenSaleDistributor = address(0);
+    function setUp() public override {
+        super.setUp();
 
-    address public constant safetyModule = address(0);
+        comptroller = addresses.getAddress("UNITROLLER");
+        tokenSaleDistributor = addresses.getAddress("TOKENSALE");
+        safetyModule = addresses.getAddress("STWELL");
+        governanceToken = addresses.getAddress("WELL");
+        nativeMarket = addresses.getAddress("MGLIMMER");
+        governanceTokenLP = addresses.getAddress("WELL_LP");
 
-    address public constant governanceToken = address(0);
-
-    address public constant user = 0xd7854FC91f16a58D67EC3644981160B6ca9C41B8;
-
-    function setUp() public {
         viewsContract = new MoonwellViewsV2();
 
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address,address,address)",
-            address(comptroller),
-            address(tokenSaleDistributor),
-            address(safetyModule),
-            address(governanceToken)
+            "initialize(address,address,address,address,address,address)",
+            comptroller,
+            tokenSaleDistributor,
+            safetyModule,
+            governanceToken,
+            nativeMarket,
+            governanceTokenLP
         );
 
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
@@ -51,8 +61,6 @@ contract MoonwellViewsV2Test is Test {
     function testMarketsSize() public {
         MoonwellViewsV2.Market[] memory _markets = viewsContract
             .getAllMarketsInfo();
-
-        console.log("markets length %s", _markets.length);
         assertEq(_markets.length, 5);
     }
 
@@ -62,12 +70,10 @@ contract MoonwellViewsV2Test is Test {
         assertEq(_balances.length, 11);
     }
 
-
     function testUserRewards() public {
         MoonwellViewsV2.Rewards[] memory _rewards = viewsContract
             .getUserRewards(user);
 
         assertEq(_rewards.length, 2);
     }
-
 }

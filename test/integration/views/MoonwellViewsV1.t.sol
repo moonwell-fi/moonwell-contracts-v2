@@ -5,42 +5,45 @@ import "@forge-std/Test.sol";
 import {MoonwellViewsV1} from "@protocol/views/MoonwellViewsV1.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {Addresses} from "@proposals/Addresses.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
-contract MoonwellViewsV1Test is Test {
+contract MoonwellViewsV1Test is Test, PostProposalCheck {
     MoonwellViewsV1 public viewsContract;
 
-    address public constant proxyAdmin = address(1337);
+    address public user = 0xd7854FC91f16a58D67EC3644981160B6ca9C41B8;
+    address public proxyAdmin = address(1337);
 
-    address public constant comptroller =
-        0x8E00D5e02E65A19337Cdba98bbA9F84d4186a180;
-
-    address public constant tokenSaleDistributor =
-        address(0x933fCDf708481c57E9FD82f6BAA084f42e98B60e);
-
-    address public constant safetyModule =
-        address(0x8568A675384d761f36eC269D695d6Ce4423cfaB1);
-
-    address public constant governanceToken =
-        address(0x511aB53F793683763E5a8829738301368a2411E3);
-
-    address public constant nativeMarket =
-        0x091608f4e4a15335145be0A279483C0f8E4c7955;
-
-    address public constant user = 0xd7854FC91f16a58D67EC3644981160B6ca9C41B8;
+    address public comptroller;
+    address public tokenSaleDistributor;
+    address public safetyModule;
+    address public governanceToken;
+    address public nativeMarket;
+    address public governanceTokenLP;
 
     mapping(address => uint) public userTotalRewards;
     address[] public userRewardTokens;
 
-    function setUp() public {
+    function setUp() public override {
+        super.setUp();
+
+        comptroller = addresses.getAddress("UNITROLLER");
+        tokenSaleDistributor = addresses.getAddress("TOKENSALE");
+        safetyModule = addresses.getAddress("STWELL");
+        governanceToken = addresses.getAddress("WELL");
+        nativeMarket = addresses.getAddress("MGLIMMER");
+        governanceTokenLP = addresses.getAddress("WELL_LP");
+
         viewsContract = new MoonwellViewsV1();
 
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address,address,address,address)",
-            address(comptroller),
-            address(tokenSaleDistributor),
-            address(safetyModule),
-            address(governanceToken),
-            address(nativeMarket)
+            "initialize(address,address,address,address,address,address)",
+            comptroller,
+            tokenSaleDistributor,
+            safetyModule,
+            governanceToken,
+            nativeMarket,
+            governanceTokenLP
         );
 
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
