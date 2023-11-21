@@ -13,7 +13,7 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {IWormhole} from "@protocol/Governance/IWormhole.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/Oracles/PriceOracle.sol";
