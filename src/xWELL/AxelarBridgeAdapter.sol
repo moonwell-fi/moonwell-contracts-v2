@@ -4,11 +4,10 @@ import {xERC20BridgeAdapter} from "@protocol/xWELL/xERC20BridgeAdapter.sol";
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
+import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 import {IAxelarGateway} from "@protocol/xWELL/axelar-interfaces/IAxelarGateway.sol";
 import {IAxelarGasService} from "@protocol/xWELL/axelar-interfaces/IAxelarGasService.sol";
 import {AddressToString, StringToAddress} from "@protocol/xWELL/axelar-interfaces/AddressString.sol";
-
-import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 
 /// @notice Axelar Token Bridge adapter for XERC20 tokens
 /// @dev the access control model for this contract is to deploy
@@ -18,6 +17,12 @@ contract AxelarBridge is xERC20BridgeAdapter {
     using SafeERC20 for IERC20;
     using StringToAddress for string;
     using AddressToString for address;
+
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+    //// ------------------- State Variables ------------------------
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
 
     /// @notice reference to the axelar gateway contract
     IAxelarGateway public gateway;
@@ -36,6 +41,28 @@ contract AxelarBridge is xERC20BridgeAdapter {
     /// TODO add setter functions for this mappping
     mapping(string => mapping(address => bool)) public isApproved;
 
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+    //// ----------------------- Structs ----------------------------
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+
+    /// @notice configuration from chainid to axelarid and vice versa
+    struct ChainIds {
+        /// @notice native chain id
+        uint256 chainid;
+        /// @notice corresponding axelar chain id
+        string axelarid;
+    }
+
+    /// @notice configuration for a trusted bridge contract on an external chain
+    struct ChainConfig {
+        /// @notice bridge on external chain
+        address adapter;
+        /// @notice axelar id of external chain
+        string axelarid;
+    }
+
     /// --------------------------------------------------------
     /// --------------------------------------------------------
     /// ------------------------ Events ------------------------
@@ -47,6 +74,22 @@ contract AxelarBridge is xERC20BridgeAdapter {
     /// @param axelarId axelar chain id
     event AxelarIdSet(uint256 indexed chainId, string indexed axelarId);
 
+    /// @notice emitted when a new chain id is set
+    /// @param bridge address approved
+    /// @param axelarId axelar chain id
+    /// @param approval whether or not the bridge address is approved
+    event AxelarBridgeApprovalUpdated(
+        address indexed bridge,
+        string indexed axelarId,
+        bool approval
+    );
+
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ---------------------- Initialize ----------------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+
     /// @notice Initialize the bridge
     /// @param newxerc20 xERC20 token address
     /// @param newOwner contract owner address
@@ -54,13 +97,33 @@ contract AxelarBridge is xERC20BridgeAdapter {
         address newxerc20,
         address newOwner,
         address axelarGateway,
-        address axelarGasService
+        address axelarGasService,
+        ChainIds[] memory chainIds,
+        ChainConfig[] memory configs
     ) public initializer {
-        super.initialize(newxerc20, newOwner);
+        /// transfer ownership
+        _transferOwnership(newOwner);
+
+        /// set token
+        _setxERC20(newxerc20);
 
         gateway = IAxelarGateway(axelarGateway);
         gasService = IAxelarGasService(axelarGasService);
+
+        for (uint256 i; i < chainIds.length; ++i) {
+            _addChainId(chainIds[i]);
+        }
+
+        for (uint256 i = 0; i < configs.length; i++) {
+            _addExternalSender(configs[i]);
+        }
     }
+
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ------------------ View Only Functions -----------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
 
     /// @notice use the axelar sdk to fetch the estimated cost of bridging tokens
     /// https://docs.axelar.dev/dev/reference/pricing#callcontract-general-message-passing
@@ -71,6 +134,114 @@ contract AxelarBridge is xERC20BridgeAdapter {
     ) external pure override returns (uint256 gasCost) {
         return 0;
     }
+
+    /// @notice return whether the axelar chain id is valid and configured in this contract
+    function validAxelarChainid(
+        string memory axelarid
+    ) public view returns (bool) {
+        return axelarIdToChainId[axelarid] != 0;
+    }
+
+    /// @notice return whether the chain id is valid and configured in this contract
+    function validChainId(uint256 chainid) public view returns (bool) {
+        return bytes(chainIdToAxelarId[chainid]).length != 0;
+    }
+
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+    //// --------------------- Admin Functions ----------------------
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+
+    /// @notice add a new group of chain ids to the mapping.
+    /// callable only by the owner
+    /// @param chainIds the chain ids to add
+    function addChainIds(ChainIds[] calldata chainIds) external onlyOwner {
+        for (uint256 i; i < chainIds.length; ++i) {
+            _addChainId(chainIds[i]);
+        }
+    }
+
+    /// @notice remove a group of chain ids from the mapping.
+    /// callable only by the owner
+    /// @param chainIds the chain ids to remove
+    function removeChainIds(ChainIds[] calldata chainIds) external onlyOwner {
+        for (uint256 i; i < chainIds.length; ++i) {
+            _removeChainId(chainIds[i]);
+        }
+    }
+
+    /// @notice add approved external bridge address on a different chain
+    /// @param configs of bridges and chainids to add
+    function addApprovedExternalChainSenders(
+        ChainConfig[] memory configs
+    ) external onlyOwner {
+        for (uint256 i = 0; i < configs.length; i++) {
+            _addExternalSender(configs[i]);
+        }
+    }
+
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+    //// -------------- Internal Helper Functions -------------------
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+
+    function _addExternalSender(ChainConfig memory config) private {
+        require(
+            !isApproved[config.axelarid][config.adapter],
+            "AxelarBridge: config already approved"
+        );
+        require(
+            /// valid axelarId
+            validAxelarChainid(config.axelarid),
+            "AxelarBridge: invalid axelar id"
+        );
+
+        isApproved[config.axelarid][config.adapter] = true;
+    }
+
+    /// @notice helper function to add a new chain id to the mapping.
+    /// @param chainids the chain id configuration to add
+    function _addChainId(ChainIds memory chainids) private {
+        require(
+            !validChainId(chainids.chainid),
+            "AxelarBridge: existing axelarId config"
+        );
+        require(
+            !validAxelarChainid(chainids.axelarid),
+            "AxelarBridge: existing chainid config"
+        );
+
+        chainIdToAxelarId[chainids.chainid] = chainids.axelarid;
+        axelarIdToChainId[chainids.axelarid] = chainids.chainid;
+
+        emit AxelarIdSet(chainids.chainid, chainids.axelarid);
+    }
+
+    /// @notice helper function to add a new chain id to the mapping.
+    /// @param chainids the chain id configuration to add
+    function _removeChainId(ChainIds memory chainids) private {
+        require(
+            validChainId(chainids.chainid),
+            "AxelarBridge: non-existent axelarId config"
+        );
+        require(
+            validAxelarChainid(chainids.axelarid),
+            "AxelarBridge: non-existent chainid config"
+        );
+
+        delete chainIdToAxelarId[chainids.chainid];
+        delete axelarIdToChainId[chainids.axelarid];
+
+        emit AxelarIdSet(chainids.chainid, chainids.axelarid);
+    }
+
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+    //// ------------- Internal Override Functions ------------------
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
 
     /// @notice bridge tokens from this chain to the dstChain
     /// @param user address burning tokens and funding the cross chain call
@@ -112,31 +283,11 @@ contract AxelarBridge is xERC20BridgeAdapter {
         emit BridgedOut(dstChainId, user, to, amount);
     }
 
-    /// @notice configuration from chainid to axelarid and vice versa
-    struct ChainIds {
-        /// @notice native chain id
-        uint256 chainid;
-        /// @notice corresponding axelar chain id
-        string axelarid;
-    }
-
-    /// @notice add a new group of chain ids to the mapping.
-    /// callable only by the owner
-    /// @param chainIds the chain ids to add
-    function addChainIds(ChainIds[] calldata chainIds) external onlyOwner {
-        for (uint256 i; i < chainIds.length; ++i) {
-            _addChainId(chainIds[i]);
-        }
-    }
-
-    /// @notice helper function to add a new chain id to the mapping.
-    /// @param chainids the chain id configuration to add
-    function _addChainId(ChainIds memory chainids) private {
-        chainIdToAxelarId[chainids.chainid] = chainids.axelarid;
-        axelarIdToChainId[chainids.axelarid] = chainids.chainid;
-
-        emit AxelarIdSet(chainids.chainid, chainids.axelarid);
-    }
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
+    //// -------------------- Mint Function -------------------------
+    //// ------------------------------------------------------------
+    //// ------------------------------------------------------------
 
     /// @notice execute a bridge in using the axelar gateway
     /// @param commandId the command id
