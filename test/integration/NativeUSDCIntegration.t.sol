@@ -155,10 +155,6 @@ contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
                 addresses.getAddress("WELL")
             );
 
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
-
         assertEq(
             config.owner,
             addresses.getAddress("EMISSIONS_ADMIN"),
