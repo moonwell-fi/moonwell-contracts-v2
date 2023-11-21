@@ -11,10 +11,18 @@ import {MockERC20} from "@test/mock/MockERC20.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 
 contract BaseTest is xWELLDeploy, Test {
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
+
+    /// @notice reference to the wormhole bridge adapter
+    WormholeBridgeAdapter public wormholeBridgeAdapter;
+
+    /// @notice reference to the wormhole bridge adapter
+    WormholeBridgeAdapter public wormholeBridgeAdapterProxy;
 
     /// @notice lockbox contract
     XERC20Lockbox public xerc20Lockbox;
@@ -43,8 +51,20 @@ contract BaseTest is xWELLDeploy, Test {
     /// @notice pause guardian of the token
     address public pauseGuardian = address(1111111111);
 
+    /// @notice wormhole relayer of the WormholeBridgeAdapter
+    address public wormholeRelayer = address(2222222222);
+
     /// @notice duration of the pause
     uint128 public pauseDuration = 10 days;
+
+    /// @notice external chain buffer cap
+    uint112 public externalChainBufferCap = 100_000_000 * 1e18;
+
+    /// @notice external chain rate limit per second
+    uint112 public externalChainRateLimitPerSecond = 1_000 * 1e18;
+
+    /// @notice wormhole chainid for base chain
+    uint16 public chainId = 30;
 
     function setUp() public virtual {
         addresses = new Addresses();
@@ -55,31 +75,69 @@ contract BaseTest is xWELLDeploy, Test {
             well = MockERC20(addresses.getAddress("WELL"));
         }
 
-        (
-            address xwellLogicAddress,
-            address xwellProxyAddress,
-            address proxyAdminAddress,
-            address lockboxAddress
-        ) = deployXWellAndLockBox(
-                addresses,
-                xwellName,
-                xwellSymbol,
-                owner,
-                new MintLimits.RateLimitMidPointInfo[](0),
-                pauseDuration,
-                pauseGuardian
+        {
+            (
+                address xwellLogicAddress,
+                address xwellProxyAddress,
+                address proxyAdminAddress,
+                address wormholeAdapterLogic,
+                address wormholeAdapterProxy,
+                address lockboxAddress
+            ) = deployMoonbeamSystem(address(well));
+
+            xwellProxy = xWELL(xwellProxyAddress);
+            xwellLogic = xWELL(xwellLogicAddress);
+            proxyAdmin = ProxyAdmin(proxyAdminAddress);
+            xerc20Lockbox = XERC20Lockbox(lockboxAddress);
+            wormholeBridgeAdapter = WormholeBridgeAdapter(wormholeAdapterLogic);
+            wormholeBridgeAdapterProxy = WormholeBridgeAdapter(
+                wormholeAdapterProxy
             );
 
-        xwellProxy = xWELL(xwellProxyAddress);
-        xwellLogic = xWELL(xwellLogicAddress);
-        proxyAdmin = ProxyAdmin(proxyAdminAddress);
-        xerc20Lockbox = XERC20Lockbox(lockboxAddress);
+            vm.label(xwellLogicAddress, "xWELL Logic");
+            vm.label(xwellProxyAddress, "xWELL Proxy");
+            vm.label(proxyAdminAddress, "Proxy Admin");
+            vm.label(lockboxAddress, "Lockbox");
+            vm.label(pauseGuardian, "Pause Guardian");
+            vm.label(owner, "Owner");
+            vm.label(pauseGuardian, "Pause Guardian");
+            vm.label(address(wormholeAdapterLogic), "WormholeAdapterLogic");
+            vm.label(
+                address(wormholeBridgeAdapterProxy),
+                "WormholeAdapterProxy"
+            );
+        }
 
-        vm.label(xwellLogicAddress, "xWELL Logic");
-        vm.label(xwellProxyAddress, "xWELL Proxy");
-        vm.label(proxyAdminAddress, "Proxy Admin");
-        vm.label(lockboxAddress, "Lockbox");
-        vm.label(pauseGuardian, "Pause Guardian");
-        vm.label(owner, "Owner");
+        MintLimits.RateLimitMidPointInfo[]
+            memory newRateLimits = new MintLimits.RateLimitMidPointInfo[](2);
+
+        /// lock box limit
+        newRateLimits[0].bufferCap = type(uint112).max;
+        newRateLimits[0].bridge = address(xerc20Lockbox);
+        newRateLimits[0].rateLimitPerSecond = 0;
+
+        /// wormhole limit
+        newRateLimits[1].bufferCap = externalChainBufferCap;
+        newRateLimits[1].bridge = address(wormholeBridgeAdapterProxy);
+        newRateLimits[1].rateLimitPerSecond = externalChainRateLimitPerSecond;
+
+        /// give wormhole bridge adapter and lock box a rate limit
+        initializeXWell(
+            address(xwellProxy),
+            xwellName,
+            xwellSymbol,
+            owner,
+            newRateLimits,
+            pauseDuration,
+            pauseGuardian
+        );
+
+        initializeWormholeAdapter(
+            address(wormholeBridgeAdapterProxy),
+            address(xwellProxy),
+            owner,
+            wormholeRelayer,
+            chainId
+        );
     }
 }
