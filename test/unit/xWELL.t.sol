@@ -7,7 +7,6 @@ import "@test/helper/BaseTest.t.sol";
 /// TODO:
 ///    - failing add limits
 ///    - failing remove limits
-///    - pause specific tests
 ///    - test voting power
 
 contract xWELLUnitTest is BaseTest {
@@ -819,5 +818,45 @@ contract xWELLUnitTest is BaseTest {
         vm.prank(bridge);
         vm.expectRevert("MintLimits: replenish amount cannot be 0");
         xwellProxy.burn(address(this), 0);
+    }
+
+    function testMintFailsWhenPaused() public {
+        vm.prank(pauseGuardian);
+        xwellProxy.pause();
+        assertTrue(xwellProxy.paused());
+
+        vm.prank(address(xerc20Lockbox));
+        vm.expectRevert("Pausable: paused");
+        xwellProxy.mint(address(xerc20Lockbox), 1);
+    }
+
+    function testMintSucceedsAfterPauseDuration() public {
+        testMintFailsWhenPaused();
+
+        vm.warp(xwellProxy.pauseDuration() + block.timestamp + 1);
+
+        assertFalse(xwellProxy.paused());
+        testLockboxCanMint(0); /// let function choose amount to mint at random        
+    }
+
+    function testBurnFailsWhenPaused() public {
+        vm.prank(pauseGuardian);
+        xwellProxy.pause();
+        assertTrue(xwellProxy.paused());
+
+        vm.prank(address(xerc20Lockbox));
+        vm.expectRevert("Pausable: paused");
+        xwellProxy.burn(address(xerc20Lockbox), 1);
+    }
+
+    function tesBurnSucceedsAfterPauseDuration() public {
+        testBurnFailsWhenPaused();
+
+        vm.warp(xwellProxy.pauseDuration() + block.timestamp + 1);
+
+        assertFalse(xwellProxy.paused());
+
+        /// mint, then burn after pause is up
+        testLockBoxCanBurn(0); /// let function choose amount to burn at random
     }
 }
