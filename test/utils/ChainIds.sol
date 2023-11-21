@@ -12,6 +12,8 @@ contract ChainIds {
 
     /// ------------ MOONBEAM ------------
 
+    uint256 public constant moonRiverChainId = 1285;
+
     uint256 public constant moonBeamChainId = 1284;
     uint16 public constant moonBeamWormholeChainId = 16;
 
