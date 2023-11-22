@@ -90,16 +90,6 @@ abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
         emit BridgedIn(chainId, user, amount);
     }
 
-    /// @notice Estimate bridge cost
-    /// @param dstChainId Destination chain id
-    /// @param amount Amount of xERC20 to bridge out
-    /// @param to Address to receive funds on destination chain
-    function bridgeCost(
-        uint256 dstChainId,
-        uint256 amount,
-        address to
-    ) external view virtual returns (uint256 gasCost);
-
     /// @notice bridge tokens from this chain to the dstChain
     /// @param user address burning tokens and funding the cross chain call
     /// @param dstChainId destination chain id

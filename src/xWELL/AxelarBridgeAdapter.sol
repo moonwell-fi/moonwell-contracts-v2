@@ -125,16 +125,6 @@ contract AxelarBridge is xERC20BridgeAdapter {
     /// --------------------------------------------------------
     /// --------------------------------------------------------
 
-    /// @notice use the axelar sdk to fetch the estimated cost of bridging tokens
-    /// https://docs.axelar.dev/dev/reference/pricing#callcontract-general-message-passing
-    function bridgeCost(
-        uint256,
-        uint256,
-        address
-    ) external pure override returns (uint256 gasCost) {
-        return 0;
-    }
-
     /// @notice return whether the axelar chain id is valid and configured in this contract
     function validAxelarChainid(
         string memory axelarid

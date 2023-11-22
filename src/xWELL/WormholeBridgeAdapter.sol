@@ -78,13 +78,11 @@ contract WormholeBridgeAdapter is
     /// @param newGasLimit new gas limit
     event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
 
-
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
     /// ---------------------- INITIALIZE -----------------------
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
-
 
     /// @notice Initialize the Wormhole bridge
     /// @param newxerc20 xERC20 token address
@@ -174,18 +172,6 @@ contract WormholeBridgeAdapter is
             0,
             gasLimit
         );
-    }
-
-    /// @notice Estimate bridge cost to bridge out to a destination chain
-    /// backwards compatible with the xERC20BridgeAdapter getter interface
-    /// @param dstChainId Destination chain id
-    /// all other params are ignored
-    function bridgeCost(
-        uint256 dstChainId,
-        uint256,
-        address
-    ) external view override returns (uint256) {
-        return bridgeCost(dstChainId.toUint16());
     }
 
     /// --------------------------------------------------------
