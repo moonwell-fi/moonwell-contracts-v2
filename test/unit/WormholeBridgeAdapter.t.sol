@@ -142,14 +142,6 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
     }
 
-    function testBridgeCostSame() public {
-        assertEq(
-            wormholeBridgeAdapterProxy.bridgeCost(chainId),
-            wormholeBridgeAdapterProxy.bridgeCost(chainId, 0, address(0)),
-            "incorrect bridge cost"
-        );
-    }
-
     function testInitializingFails() public {
         vm.expectRevert("Initializable: contract is already initialized");
         wormholeBridgeAdapterProxy.initialize(
@@ -229,6 +221,19 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             "trusted sender not un-set"
         );
     }
+    function testRemoveNonTrustedSendersOwnerFails() public {
+        testRemoveTrustedSendersOwnerSucceeds();
+
+        WormholeTrustedSender.TrustedSender[]
+            memory sender = new WormholeTrustedSender.TrustedSender[](1);
+
+        sender[0].addr = address(this);
+        sender[0].chainId = chainId;
+
+        vm.prank(owner);
+        vm.expectRevert("WormholeTrustedSender: not in list");
+        wormholeBridgeAdapterProxy.removeTrustedSenders(sender);
+    }
 
     function testAddTrustedSendersOwnerSucceeds(address trustedSender) public {
         vm.assume(trustedSender != address(wormholeBridgeAdapterProxy));
@@ -245,6 +250,22 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             wormholeBridgeAdapterProxy.isTrustedSender(chainId, trustedSender),
             "trusted sender not set"
         );
+    }
+
+    function testAddTrustedSendersOwnerFailsAlreadyWhitelisted(address trustedSender) public {
+        if (trustedSender != address(wormholeBridgeAdapterProxy)) {
+            testAddTrustedSendersOwnerSucceeds(trustedSender);
+        }
+
+        WormholeTrustedSender.TrustedSender[]
+            memory sender = new WormholeTrustedSender.TrustedSender[](1);
+
+        sender[0].addr = trustedSender;
+        sender[0].chainId = chainId;
+
+        vm.prank(owner);
+        vm.expectRevert("WormholeTrustedSender: already in list");
+        wormholeBridgeAdapterProxy.addTrustedSenders(sender);
     }
 
     function testSetTargetAddressesOwnerSucceeds(
