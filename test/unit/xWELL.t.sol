@@ -476,6 +476,7 @@ contract xWELLUnitTest is BaseTest {
         uint112 newBufferCap
     ) public {
         xwellProxy.removeBridge(address(xerc20Lockbox));
+        xwellProxy.removeBridge(address(wormholeBridgeAdapterProxy));
 
         newRateLimitPerSecond = uint128(
             _bound(
