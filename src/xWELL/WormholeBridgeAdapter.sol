@@ -171,7 +171,7 @@ contract WormholeBridgeAdapter is
         uint256 dstChainId,
         uint256,
         address
-    ) public view override returns (uint256) {
+    ) external view override returns (uint256) {
         return bridgeCost(dstChainId.toUint16());
     }
 
