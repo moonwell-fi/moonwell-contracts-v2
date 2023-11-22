@@ -130,18 +130,17 @@ contract xWELLDeploy {
         );
     }
 
-    /// @notice well token address on Moonbeam
-    function deployMoonbeamSystem(
-        address wellAddress
-    )
+    /// @notice deploy a system on base
+    /// this includes the xWELL token, the proxy, the proxy admin, and the wormhole adapter
+    /// but does not include the xWELL lockbox as there is no native WELL token on base
+    function deployBaseSystem()
         public
         returns (
             address xwellLogic,
             address xwellProxy,
             address proxyAdmin,
             address wormholeAdapterLogic,
-            address wormholeAdapter,
-            address lockbox
+            address wormholeAdapter
         )
     {
         /// deploy the ERC20 wrapper for USDBC
@@ -163,7 +162,29 @@ contract xWELLDeploy {
                 ""
             )
         );
+    }
 
+    /// @notice well token address on Moonbeam
+    function deployMoonbeamSystem(
+        address wellAddress
+    )
+        public
+        returns (
+            address xwellLogic,
+            address xwellProxy,
+            address proxyAdmin,
+            address wormholeAdapterLogic,
+            address wormholeAdapter,
+            address lockbox
+        )
+    {
+        (
+            xwellLogic,
+            xwellProxy,
+            proxyAdmin,
+            wormholeAdapterLogic,
+            wormholeAdapter
+        ) = deployBaseSystem();
         /// lockbox is deployed at the end so that xWELL and wormhole adapter can have the same addresses on all chains.
         lockbox = deployLockBox(
             xwellProxy, /// proxy is actually the xWELL token contract
