@@ -142,6 +142,14 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
     }
 
+    function testBridgeCostSame() public {
+        assertEq(
+            wormholeBridgeAdapterProxy.bridgeCost(chainId),
+            wormholeBridgeAdapterProxy.bridgeCost(chainId, 0, address(0)),
+            "incorrect bridge cost"
+        );
+    }
+
     function testInitializingFails() public {
         vm.expectRevert("Initializable: contract is already initialized");
         wormholeBridgeAdapterProxy.initialize(
@@ -396,29 +404,35 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             to
         );
     }
-    
+
     /// not enough approvals
     function testBridgeOutFailsNoApproval() public {
         vm.expectRevert("ERC20: insufficient allowance");
-        wormholeBridgeAdapterProxy.bridge{value: 0}(
-            chainId,
-            amount,
-            to
-        );
+        wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
     }
+
     /// not enough balance
     function testBridgeOutFailsNotEnoughBalance() public {
         deal(address(xwellProxy), address(this), amount - 1);
         xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
 
         vm.expectRevert("ERC20: burn amount exceeds balance");
-        wormholeBridgeAdapterProxy.bridge{value: 0}(
-            chainId,
-            amount,
-            to
-        );
+        wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
     }
+
     /// not enough rate limit
+    function testBridgeOutFailsNotEnoughBuffer() public {
+        amount = externalChainBufferCap / 2;
+        to = address(this);
+        
+        testReceiveWormholeMessageSucceeds(bytes32(uint256(1)));
+
+        amount = externalChainBufferCap;
+        xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
+
+        vm.expectRevert("RateLimited: buffer cap overflow");
+        wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount + 1, to);
+    }
 
     /// @notice Wormhole addresses are denominated in 32 byte chunks. Converting the address to a bytes20
     /// then to a bytes32 *left* aligns it, so we right shift to get the proper data
