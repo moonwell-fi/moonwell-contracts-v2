@@ -12,7 +12,6 @@ import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 
 /// @notice Wormhole xERC20 Token Bridge adapter
-/// TODO change this model to trusted sender addresses, and explicitly rather than implicitly check.
 contract WormholeBridgeAdapter is
     IWormholeReceiver,
     xERC20BridgeAdapter,
@@ -34,7 +33,7 @@ contract WormholeBridgeAdapter is
     uint96 public gasLimit = 300_000;
 
     /// @notice address of the wormhole relayer cannot be changed by owner
-    /// because the relayer contract is a proxy
+    /// because the relayer contract is a proxy and should never change its address
     IWormholeRelayer public wormholeRelayer;
 
     /// ---------------------------------------------------------
@@ -49,6 +48,12 @@ contract WormholeBridgeAdapter is
     /// @notice chain id of the target chain to address for bridging
     /// starts off mapped to itself, but can be changed by governance
     mapping(uint16 => address) public targetAddress;
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+    /// ------------------------ EVENTS -------------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
 
     /// @notice chain id of the target chain to address for bridging
     /// @param dstChainId source chain id tokens were bridged from
@@ -72,6 +77,14 @@ contract WormholeBridgeAdapter is
     /// @param oldGasLimit old gas limit
     /// @param newGasLimit new gas limit
     event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
+
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+    /// ---------------------- INITIALIZE -----------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
 
     /// @notice Initialize the Wormhole bridge
     /// @param newxerc20 xERC20 token address
