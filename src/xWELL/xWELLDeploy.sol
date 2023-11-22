@@ -226,8 +226,6 @@ contract xWELLDeploy {
         );
     }
 
-    //// TODO add deployment script for xWELL and lockbox with wormhole adapter
-
     /// @notice deploy lock box, for use on base only
     /// @param xwell The xWELL token address
     /// @param well The WELL token address
