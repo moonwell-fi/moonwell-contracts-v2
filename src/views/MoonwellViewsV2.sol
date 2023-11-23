@@ -107,6 +107,7 @@ contract MoonwellViewsV2 is BaseMoonwellViews {
                         _amounts.supplySide,
                         _amounts.borrowSide
                     );
+                    _indexHelper++;
                 }
             }
         }

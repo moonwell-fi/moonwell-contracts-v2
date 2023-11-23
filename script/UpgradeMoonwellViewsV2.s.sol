@@ -14,10 +14,10 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 
 /*
 to run:
-forge script script/DeployMoonwellViewsV2.s.sol:DeployMoonwellViewsV2 -vvvv --rpc-url {rpc}  --broadcast --etherscan-api-key {key}
+forge script script/UpgradeMoonwellViewsV2.s.sol:UpgradeMoonwellViewsV2 -vvvv --rpc-url {rpc}  --broadcast --etherscan-api-key {key}
 */
 
-contract DeployMoonwellViewsV2 is Script, Test {
+contract UpgradeMoonwellViewsV2 is Script, Test {
     uint256 public PRIVATE_KEY;
 
     Addresses public addresses;
@@ -33,35 +33,19 @@ contract DeployMoonwellViewsV2 is Script, Test {
     }
 
     function run() public {
-        address deployerAddress = vm.addr(PRIVATE_KEY);
-
         vm.startBroadcast(PRIVATE_KEY);
-
-        address unitroller = addresses.getAddress("UNITROLLER");
-        address tokenSaleDistributor = address(0);
-        address safetyModule = address(0);
-        address governanceToken = address(0);
-        address nativeMarket = address(0);
-        address governanceTokenLP = address(0);
 
         MoonwellViewsV2 viewsContract = new MoonwellViewsV2();
 
-        bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address,address,address,address,address)",
-            unitroller,
-            tokenSaleDistributor,
-            safetyModule,
-            governanceToken,
-            nativeMarket,
-            governanceTokenLP
+        ProxyAdmin proxyAdmin = ProxyAdmin(
+            addresses.getAddress("MOONWELL_VIEWS_PROXY_ADMIN")
         );
 
-        ProxyAdmin proxyAdmin = new ProxyAdmin();
-
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(viewsContract),
-            address(proxyAdmin),
-            initdata
+        proxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(
+                addresses.getAddress("MOONWELL_VIEWS_PROXY")
+            ),
+            address(viewsContract)
         );
 
         vm.stopBroadcast();
