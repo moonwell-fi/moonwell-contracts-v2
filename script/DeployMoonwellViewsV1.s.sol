@@ -13,14 +13,8 @@ import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openze
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 /*
-How to use:
-1. run:
-forge script proposals/DeployMoonwellViewsV1.s.sol:DeployMoonwellViewsV1 \
-    -vvvv \
-    --rpc-url moonbeam \
-    --broadcast --etherscan-api-key moonbeam --verify
-Remove `--broadcast --etherscan-api-key moonbeam --verify` if you want to try locally
- first, without paying any gas.
+to run:
+forge script script/DeployMoonwellViewsV1.s.sol:DeployMoonwellViewsV1 -vvvv --rpc-url {rpc}  --broadcast --etherscan-api-key {key}
 */
 
 contract DeployMoonwellViewsV1 is Script, Test {
@@ -40,8 +34,6 @@ contract DeployMoonwellViewsV1 is Script, Test {
 
     function run() public {
         address deployerAddress = vm.addr(PRIVATE_KEY);
-
-        console.log("deployer address: %s", deployerAddress);
 
         vm.startBroadcast(PRIVATE_KEY);
 
@@ -71,10 +63,6 @@ contract DeployMoonwellViewsV1 is Script, Test {
             address(proxyAdmin),
             initdata
         );
-
-        console.log("MoonwellViewsV1: %s", address(viewsContract));
-        console.log("ProxyAdmin: %s", address(proxyAdmin));
-        console.log("TransparentUpgradeableProxy: %s", address(proxy));
 
         vm.stopBroadcast();
     }
