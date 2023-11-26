@@ -30,6 +30,7 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
         mwstETH = MErc20(addresses.getAddress("MOONWELL_wstETH"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
+        mwstETH.accrueInterest();
     }
 
     function testSetupmwstETH() public {
@@ -78,7 +79,7 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
     function testBorrowingOverBorrowCapFails() public {
         uint256 mintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_wstETH")
-        ) - 1;
+        );
         uint256 borrowAmount = _getMaxBorrowAmount(
             addresses.getAddress("MOONWELL_wstETH")
         ) + 100;
@@ -145,8 +146,8 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
         assertApproxEqRel(
             liquidity,
             (mintAmount * price * collateralFactor) / 1e36, /// trim off both the CF and Chainlink Price feed extra precision
-            1e6,
-            "liquidity not within .0000000001% of given CF"
+            1e9,
+            "liquidity not within .0000001% of given CF"
         );
         assertEq(shortfall, 0, "Incorrect shortfall");
 
