@@ -57,7 +57,8 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
     constructor() {
         /// for example, should be set to
         /// LISTING_PATH="./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
-        string memory descriptionPath = "./src/proposals/mips/mip-b10/MIP-B10.md";
+        string
+            memory descriptionPath = "./src/proposals/mips/mip-b10/MIP-B10.md";
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(descriptionPath)
         );
@@ -68,7 +69,8 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
         {
-            string memory mtokensPath = "./src/proposals/mips/mip-b10/MTokens.json";
+            string
+                memory mtokensPath = "./src/proposals/mips/mip-b10/MTokens.json";
             /// MTOKENS_PATH="./src/proposals/mips/examples/mip-market-listing/MTokens.json"
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
@@ -100,7 +102,8 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
         }
 
         {
-            string memory mtokensPath = "./src/proposals/mips/mip-b10/RewardStreams.json";
+            string
+                memory mtokensPath = "./src/proposals/mips/mip-b10/RewardStreams.json";
             /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
@@ -110,6 +113,10 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
             );
 
             for (uint256 i = 0; i < decodedEmissions.length; i++) {
+                require(
+                    decodedEmissions[i].borrowEmissionsPerSec != 0,
+                    "borrow speed must be gte 1"
+                );
                 emissions[block.chainid].push(decodedEmissions[i]);
             }
         }
@@ -392,7 +399,10 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public override(CrossChainProposal, MIPProposal) {
+    function run(
+        Addresses addresses,
+        address
+    ) public override(CrossChainProposal, MIPProposal) {
         printCalldata(addresses);
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
