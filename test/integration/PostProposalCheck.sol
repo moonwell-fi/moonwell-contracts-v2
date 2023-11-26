@@ -20,7 +20,7 @@ contract PostProposalCheck is CreateCode {
         address[] memory mips = new address[](1);
 
         if (keccak256(bytes(path)) == '""' || bytes(path).length == 0) {
-            /// empty string on both mac and unix
+            /// empty string on both mac and unix, no proposals to run
             mips = new address[](0);
 
             proposals = new TestProposals(mips);
@@ -31,6 +31,7 @@ contract PostProposalCheck is CreateCode {
                     "Invalid path(s) provided. If you want to deploy a single mip, do not use a comma."
                 );
             }
+            mips = new address[](mipPaths.length); /// expand mips size if multiple mips
 
             /// guzzle all of the memory, quadratic cost, but we don't care
             for (uint256 i = 0; i < mipPaths.length; i++) {

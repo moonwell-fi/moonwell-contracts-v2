@@ -105,6 +105,14 @@ dist
 # TernJS port file
 .tern-port
 
+.devcontainer
+
 artifacts/
 
 broadcast/
+
+typescript/node_modules/
+
+typescript/package-lock.json
+
+typescript/yarn.lock
