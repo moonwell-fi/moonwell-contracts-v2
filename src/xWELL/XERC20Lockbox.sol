@@ -1,7 +1,6 @@
 pragma solidity 0.8.19;
 
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
@@ -12,7 +11,6 @@ import {IXERC20Lockbox} from "@protocol/xWELL/interfaces/IXERC20Lockbox.sol";
 ///   xERC20 token can only have total supply lte WELL ERC20 token balance of this contract
 contract XERC20Lockbox is IXERC20Lockbox {
     using SafeERC20 for IERC20;
-    using SafeCast for uint256;
 
     /// @notice The XERC20 token of this contract
     IXERC20 public immutable XERC20;
