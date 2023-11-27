@@ -19,7 +19,6 @@ contract xWELLUnitTest is BaseTest {
             uint256 chainId,
             address verifyingContract,
             bytes32 salt,
-            uint256[] memory extensions
         ) = xwellProxy.eip712Domain();
         assertEq(fields, hex"0f", "incorrect fields");
         assertEq(version, "1", "incorrect version");
