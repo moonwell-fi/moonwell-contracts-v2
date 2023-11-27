@@ -11,6 +11,22 @@ import "@test/helper/BaseTest.t.sol";
 
 contract xWELLUnitTest is BaseTest {
     function testSetup() public {
+        assertTrue(xwellProxy.DOMAIN_SEPARATOR() != bytes32(0), "domain separator not set");
+        (
+            bytes1 fields,
+            string memory name,
+            string memory version,
+            uint256 chainId,
+            address verifyingContract,
+            bytes32 salt,
+            uint256[] memory extensions
+        ) = xwellProxy.eip712Domain();
+        assertEq(fields, hex"0f", "incorrect fields");
+        assertEq(version, "1", "incorrect version");
+        assertEq(chainId, block.chainid, "incorrect chain id");
+        assertEq(salt, bytes32(0), "incorrect salt");
+        assertEq(verifyingContract, address(xwellProxy), "incorrect verifying contract");
+        assertEq(name, xwellName, "incorrect name from eip712Domain()");
         assertEq(xwellProxy.name(), xwellName, "incorrect name");
         assertEq(xwellProxy.symbol(), xwellSymbol, "incorrect symbol");
         assertEq(xwellProxy.totalSupply(), 0, "incorrect total supply");
