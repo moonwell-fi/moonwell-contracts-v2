@@ -23,6 +23,8 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
     }
 
     /// @notice kick the guardian, can only kick while the contracts are not paused
+    /// only callably if a pause guardian pauses, then fails to unpause before
+    /// the pauseDuration lapses
     /// removes the guardian, sets pause time to 0, and resets the pauseUsed flag to false
     function kickGuardian() public whenNotPaused {
         require(
