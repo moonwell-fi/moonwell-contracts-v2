@@ -56,6 +56,8 @@ contract xWELL is
             "xWELL: pause duration too long"
         );
         __ERC20_init(tokenName, tokenSymbol);
+        __ERC20Permit_init(tokenName);
+
         __Ownable_init();
         _addLimits(newRateLimits);
 
