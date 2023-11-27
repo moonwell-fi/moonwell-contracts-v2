@@ -4,6 +4,11 @@ import {PausableUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts
 
 import {ConfigurablePause} from "@protocol/xWELL/ConfigurablePause.sol";
 
+/// @notice possible states for this contract to be in:
+///     1. paused, pauseStartTime != 0, guardian != address(0)
+///     2. unpaused, pauseStartTime == 0, guardian == address(0)
+///     3. unpaused, pauseStartTime <= block.timestamp - pauseDuration, guardian != address(0)
+///     4. unpaused after kick, pauseStartTime == 0, guardian == address(0)
 contract ConfigurablePauseGuardian is ConfigurablePause {
     /// @notice address of the pause guardian
     address public pauseGuardian;
