@@ -1,0 +1,21 @@
+[
+    {
+        "addressesString": "MOONWELL_rETH",
+        "supplyCap": 100e18,
+        "borrowCap": 50e18,
+        "collateralFactor": 0.76e18,
+        "initialMintAmount": 1e12,
+        "name": "Moonwell Rocket Ether",
+        "priceFeedName": "CHAINLINK_RETH_ETH_COMPOSITE_ORACLE",
+        "reserveFactor": 0.25e18,
+        "seizeShare": 0.03e18,
+        "symbol": "mrETH",
+        "tokenAddressName": "rETH",
+        "jrm": {
+            "baseRatePerYear": 0,
+            "jumpMultiplierPerYear": 3.15e18,
+            "kink": 0.45e18,
+            "multiplierPerYear": 0.07e18
+        }
+    }
+]

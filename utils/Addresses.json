@@ -588,5 +588,30 @@
         "addr": "0xFf0731337F615aC5403cb243623283BC04cDe121",
         "chainId": 84531,
         "name": "MOONWELL_VIEWS_PROXY"
+    },
+    {
+        "addr": "0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c",
+        "chainId": 8453,
+        "name": "rETH"
+    },
+    {
+        "addr": "0xf397bF97280B488cA19ee3093E81C0a77F02e9a5",
+        "chainId": 8453,
+        "name": "CHAINLINK_RETH_ETH"
+    },
+    {
+        "addr": "0x106c7f4f7f0F1B1B5973dD7b89CF3ac46420945F",
+        "chainId": 8453,
+        "name": "CHAINLINK_RETH_ETH_COMPOSITE_ORACLE"
+    },
+    {
+        "addr": "0x36BD01e31834A1ea271F0A135e92517a6320B511",
+        "chainId": 8453,
+        "name": "JUMP_RATE_IRM_MOONWELL_rETH"
+    },
+    {
+        "addr": "0xCB1DaCd30638ae38F2B94eA64F066045B7D45f44",
+        "chainId": 8453,
+        "name": "MOONWELL_rETH"
     }
 ]
