@@ -140,4 +140,130 @@ contract BaseTest is xWELLDeploy, Test {
             chainId
         );
     }
+
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ----------- Internal testing helper functions ----------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+
+    function _lockboxCanBurn(uint112 burnAmount) internal {
+        uint256 startingTotalSupply = xwellProxy.totalSupply();
+        uint256 startingWellBalance = well.balanceOf(address(this));
+        uint256 startingXwellBalance = xwellProxy.balanceOf(address(this));
+
+        xwellProxy.approve(address(xerc20Lockbox), burnAmount);
+        xerc20Lockbox.withdraw(burnAmount);
+
+        uint256 endingTotalSupply = xwellProxy.totalSupply();
+        uint256 endingWellBalance = well.balanceOf(address(this));
+        uint256 endingXwellBalance = xwellProxy.balanceOf(address(this));
+
+        assertEq(
+            startingTotalSupply - endingTotalSupply,
+            burnAmount,
+            "incorrect burn amount to totalSupply"
+        );
+        assertEq(
+            endingWellBalance - startingWellBalance,
+            burnAmount,
+            "incorrect burn amount to well balance"
+        );
+        assertEq(
+            startingXwellBalance - endingXwellBalance,
+            burnAmount,
+            "incorrect burn amount to xwell balance"
+        );
+    }
+
+    function _lockboxCanBurnTo(address to, uint112 burnAmount) internal {
+        uint256 startingTotalSupply = xwellProxy.totalSupply();
+        uint256 startingWellBalance = well.balanceOf(to);
+        uint256 startingXwellBalance = xwellProxy.balanceOf(address(this));
+
+        xwellProxy.approve(address(xerc20Lockbox), burnAmount);
+        xerc20Lockbox.withdrawTo(to, burnAmount);
+
+        uint256 endingTotalSupply = xwellProxy.totalSupply();
+        uint256 endingWellBalance = well.balanceOf(to);
+        uint256 endingXwellBalance = xwellProxy.balanceOf(address(this));
+
+        assertEq(
+            startingTotalSupply - endingTotalSupply,
+            burnAmount,
+            "incorrect burn amount to totalSupply"
+        );
+        assertEq(
+            endingWellBalance - startingWellBalance,
+            burnAmount,
+            "incorrect burn amount to well balance"
+        );
+        assertEq(
+            startingXwellBalance - endingXwellBalance,
+            burnAmount,
+            "incorrect burn amount to xwell balance"
+        );
+    }
+
+    function _lockboxCanMint(uint112 mintAmount) internal {
+        well.mint(address(this), mintAmount);
+        well.approve(address(xerc20Lockbox), mintAmount);
+
+        uint256 startingTotalSupply = xwellProxy.totalSupply();
+        uint256 startingWellBalance = well.balanceOf(address(this));
+        uint256 startingXwellBalance = xwellProxy.balanceOf(address(this));
+
+        xerc20Lockbox.deposit(mintAmount);
+
+        uint256 endingTotalSupply = xwellProxy.totalSupply();
+        uint256 endingWellBalance = well.balanceOf(address(this));
+        uint256 endingXwellBalance = xwellProxy.balanceOf(address(this));
+
+        assertEq(
+            endingTotalSupply - startingTotalSupply,
+            mintAmount,
+            "incorrect mint amount to totalSupply"
+        );
+        assertEq(
+            startingWellBalance - endingWellBalance,
+            mintAmount,
+            "incorrect mint amount to well balance"
+        );
+        assertEq(
+            endingXwellBalance - startingXwellBalance,
+            mintAmount,
+            "incorrect mint amount to xwell balance"
+        );
+    }
+
+    function _lockboxCanMintTo(address to, uint112 mintAmount) internal {
+        well.mint(address(this), mintAmount);
+        well.approve(address(xerc20Lockbox), mintAmount);
+
+        uint256 startingTotalSupply = xwellProxy.totalSupply();
+        uint256 startingWellBalance = well.balanceOf(address(this));
+        uint256 startingXwellBalance = xwellProxy.balanceOf(to);
+
+        xerc20Lockbox.depositTo(to, mintAmount);
+
+        uint256 endingTotalSupply = xwellProxy.totalSupply();
+        uint256 endingWellBalance = well.balanceOf(address(this));
+        uint256 endingXwellBalance = xwellProxy.balanceOf(to);
+
+        assertEq(
+            endingTotalSupply - startingTotalSupply,
+            mintAmount,
+            "incorrect mint amount to totalSupply"
+        );
+        assertEq(
+            startingWellBalance - endingWellBalance,
+            mintAmount,
+            "incorrect mint amount to well balance"
+        );
+        assertEq(
+            endingXwellBalance - startingXwellBalance,
+            mintAmount,
+            "incorrect mint amount to xwell balance"
+        );
+    }
 }
