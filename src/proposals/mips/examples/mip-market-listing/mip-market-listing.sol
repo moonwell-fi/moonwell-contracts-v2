@@ -410,16 +410,16 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
-                /// TODO validate borrow cap is always lte 90% of supply cap
                 uint256 borrowCap = comptroller.borrowCaps(
                     addresses.getAddress(config.addressesString)
                 );
                 uint256 supplyCap = comptroller.supplyCaps(
                     addresses.getAddress(config.addressesString)
                 );
-
+                
                 uint256 maxBorrowCap = (supplyCap * 10) / 9;
-
+                
+                /// validate borrow cap is always lte 90% of supply cap
                 assertTrue(
                     borrowCap <= maxBorrowCap,
                     "borrow cap exceeds max borrow"
