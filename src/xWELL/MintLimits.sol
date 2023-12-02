@@ -54,6 +54,12 @@ abstract contract MintLimits {
         return rateLimits[from].rateLimitPerSecond;
     }
 
+    /// @notice the buffer replenishes towards the midpoint
+    /// @param from address to get the midpoint for
+    function midPoint(address from) public view returns (uint256) {
+        return rateLimits[from].midPoint;
+    }
+
     //// ------------------------------------------------------------
     //// ------------------------------------------------------------
     //// -------------- Internal Helper Functions -------------------
