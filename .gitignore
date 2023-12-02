@@ -114,3 +114,5 @@ typescript/node_modules/
 typescript/package-lock.json
 
 typescript/yarn.lock
+
+.certora_internal/
