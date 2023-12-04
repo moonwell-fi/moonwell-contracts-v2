@@ -12,6 +12,7 @@ methods {
     function transferFrom(address,address,uint256) external returns (bool)           ;
     function paused()                              external returns (bool)           ;
     function buffer(address)                       external returns (uint256)        ;
+    function getPastTotalSupply(uint256)           external returns (uint256)        ;
     function delegates(address)                    external returns (address) envfree;
     function bufferCap(address)                    external returns (uint256) envfree;
     function midPoint(address)                     external returns (uint256) envfree;
