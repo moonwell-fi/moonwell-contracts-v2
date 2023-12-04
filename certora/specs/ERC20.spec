@@ -61,9 +61,55 @@ ghost mathint sumBalances {
     );
 }
 
+
 /// @title A ghost to mirror the balances, needed for `sumBalances`
 ghost mapping(address => uint256) balanceOfMirror {
     init_state axiom forall address a. balanceOfMirror[a] == 0;
+}
+
+/// @title A ghost to mirror the totalSupply in ERC20Upgradeable, needed for checking the total supply
+ghost mapping(uint256 => uint256) totalSupplyVotesMirror {
+    init_state axiom forall uint256 a. totalSupplyVotesMirror[a] == 0;
+}
+
+ghost uint256 totalSupplyVotesLastUpdateTime {
+    init_state axiom totalSupplyVotesLastUpdateTime == 0;
+}
+
+ghost mathint totalSupplyVotesWriteCount {
+    init_state axiom totalSupplyVotesWriteCount == 0;
+}
+
+ghost mathint totalSupplyStandardWriteCount {
+    init_state axiom totalSupplyStandardWriteCount == 0;
+}
+
+/// @notice a ghost to mirror the totalSupply in the ERC20 token contract,
+/// needed for checking the total supply
+ghost mathint totalSupplyStandardMirror {
+    init_state axiom totalSupplyStandardMirror == 0;
+    axiom sumBalances <= totalSupplyStandardMirror;
+
+    axiom forall address a. forall address b. forall address c. (
+        a != b && a != c && b != c => 
+        totalSupplyStandardMirror >= balanceOfMirror[a] + balanceOfMirror[b] + balanceOfMirror[c]
+    );
+}
+
+/// @title The hook for writing to total supply checkpoints
+hook Sstore _totalSupply uint256 newTotalSupply (uint256 oldTotalSupply) STORAGE
+{
+    totalSupplyStandardWriteCount = totalSupplyStandardWriteCount + 1;
+    totalSupplyStandardMirror = newTotalSupply;
+}
+
+/// @title The hook for writing to total supply checkpoints for votes
+/// only grab the last 224 bits of the total supply
+hook Sstore _totalSupplyCheckpoints[INDEX uint256 timestamp].(offset 4) uint224 newTotalSupply (uint224 oldTotalSupply) STORAGE
+{
+    totalSupplyVotesWriteCount = totalSupplyVotesWriteCount + 1;
+    totalSupplyVotesLastUpdateTime = timestamp;
+    totalSupplyVotesMirror[timestamp] = newTotalSupply;
 }
 
 // Because `balance` has a uint256 type, any balance addition in CVL1 behaved as a `require_uint256()` casting,
@@ -86,6 +132,12 @@ hook Sstore _balances[KEY address user] uint256 new_balance (uint256 old_balance
 /// @title Formally prove that `balanceOfMirror` mirrors `balanceOf`
 invariant mirrorIsTrue(address a)
     balanceOfMirror[a] == balanceOf(a);
+
+invariant totalSupplyVotesMirrorMatchesCurrentTotalSupplyMirror()
+    totalSupplyVotesLastUpdateTime > 0 => to_mathint(totalSupplyVotesMirror[totalSupplyVotesLastUpdateTime]) == totalSupplyStandardMirror;
+
+invariant totalSupplyUpdatesInSync()
+    totalSupplyVotesWriteCount == totalSupplyStandardWriteCount;
 
 invariant balanceOfLteUint224Max(address a)
     balanceOf(a) <= balanceMax() {
@@ -406,7 +458,7 @@ invariant totalSupplyLteUint224Max()
 /// hmmm, I wish I could pull the totalSupply this block directly from the token contract
 /// TODO: fix this once I get the ghost figured out
 /// seems like I need to make a mapping and global ghost variable to track the total supply
-/// stored in the ERC20Votes contract
+/// stored in the ERC20Votes contract https://docs.certora.com/en/latest/docs/confluence/map/ghosts.html
 invariant getPastTotalSupplyEqTotalSupply(env e)
     getPastTotalSupply(e, assert_uint256(e.block.timestamp - 1)) == totalSupply() {
         preserved {
@@ -430,6 +482,26 @@ invariant zeroAddressNoBalance()
 */
 invariant wellAddressNoBalance()
     balanceOf(xWELLAddress()) == 0;
+
+rule userCanDelegateBalance(env e, address to) {
+    address from = e.msg.sender;
+    require to != 0 && from != 0; /// moving votes to address 0 does not register
+    require(delegates(from) != to); /// not already delegated to the target address
+    requireInvariant mirrorIsTrue(from);
+    requireInvariant mirrorIsTrue(to);
+    requireInvariant doubleDelegateIsGreaterOrEqual(from, to);
+    requireInvariant corretCheckpoints(from);
+    requireInvariant corretCheckpoints(to);
+
+    mathint startingVotes = to_mathint(getVotes(to));
+    mathint fromBalance = to_mathint(balanceOf(from));
+
+    delegate(e, to);
+
+    mathint endingVotes = to_mathint(getVotes(to));
+
+    assert fromBalance != 0 => endingVotes == startingVotes + fromBalance, "balance not delegated";
+}
 
 /*
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -525,13 +597,8 @@ rule mint(env e, uint256 amount, address to, address other) {
     require(e.block.timestamp <= timestampMax());
 
     /// other must be different than to and from
-    require(to != e.msg.sender && to != other);
+    // require(to != e.msg.sender && to != other);
     requireInvariant delegateIsGreaterOrEqualBalanceIndividual(to);
-
-    /// avoid overflow in total Supply checkpoints
-    // require to_mathint(amount) + to_mathint(totalSupply()) <= to_mathint(balanceMax());
-    /// TODO move to ghost for tracking checkpointed total supply in ERC20
-    require getPastTotalSupply(e, assert_uint256(e.block.timestamp - 1)) == totalSupply();
 
     // cache state
     uint256 toBalanceBefore    = balanceOf(to);
@@ -540,26 +607,14 @@ rule mint(env e, uint256 amount, address to, address other) {
     uint256 totalSupplyBefore  = totalSupply();
 
     // run transaction
-    mint@withrevert(e, to, amount);
+    mint(e, to, amount);
 
-    // check outcome
-    if (lastReverted) {
-        assert to == 0 || 
-        totalSupplyBefore + amount > max_uint256 ||
-        paused(e) ||
-        to == xWELLAddress() ||
-        amount == 0 ||
-        amount > buffer(e, e.msg.sender) ||
-        to_mathint(amount) + to_mathint(totalSupply()) > to_mathint(maxSupply()) || /// exceed max supply
-        to_mathint(amount) + to_mathint(toBalanceBefore) > to_mathint(balanceMax()); /// exceed max balance
-    } else {
-        // updates balance and totalSupply
-        assert to_mathint(balanceOf(to)) == toBalanceBefore   + amount;
-        assert to_mathint(totalSupply()) == totalSupplyBefore + amount;
+    // updates balance and totalSupply
+    assert to_mathint(balanceOf(to)) == toBalanceBefore   + amount;
+    assert to_mathint(totalSupply()) == totalSupplyBefore + amount;
 
-        // no other balance is modified
-        assert balanceOf(other) != otherBalanceBefore => other == to;
-    }
+    // no other balance is modified
+    assert balanceOf(other) != otherBalanceBefore => other == to;
 }
 
 /*
@@ -570,7 +625,7 @@ rule mint(env e, uint256 amount, address to, address other) {
 rule burn(env e) {
     requireInvariant totalSupplyIsSumOfBalances();
     require nonpayable(e);
-    require(e.block.timestamp <= timestampMax());
+    require(e.block.timestamp <= timestampMax()); /// timestamp sanity check
     require(bufferCap(e.msg.sender) >= buffer(e, e.msg.sender));
     require(to_mathint(midPoint(e.msg.sender)) == to_mathint(bufferCap(e.msg.sender)) / 2);
     require(e.msg.sender != 0); /// filter out zero address
@@ -588,23 +643,14 @@ rule burn(env e) {
     require(amount != 0);
 
     // run transaction
-    burn@withrevert(e, from, amount);
+    burn(e, from, amount);
 
-    // check outcome
-    if (lastReverted) {
-        assert from == 0 ||
-        fromBalanceBefore < amount ||
-        paused(e) ||
-        to_mathint(amount) > to_mathint(buffer(e, e.msg.sender)) ||
-        to_mathint(amount) > to_mathint(bufferCap(e, e.msg.sender) - buffer(e, e.msg.sender));
-    } else {
-        // updates balance and totalSupply
-        assert to_mathint(balanceOf(from)) == fromBalanceBefore   - amount;
-        assert to_mathint(totalSupply())   == totalSupplyBefore - amount;
+    // updates balance and totalSupply
+    assert to_mathint(balanceOf(from)) == fromBalanceBefore   - amount;
+    assert to_mathint(totalSupply())   == totalSupplyBefore - amount;
 
-        // no other balance is modified
-        assert balanceOf(other) != otherBalanceBefore => other == from;
-    }
+    // no other balance is modified
+    assert balanceOf(other) != otherBalanceBefore => other == from;
 }
 
 /*
