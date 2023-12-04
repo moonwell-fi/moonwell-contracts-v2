@@ -105,11 +105,11 @@ hook Sstore _totalSupply uint256 newTotalSupply (uint256 oldTotalSupply) STORAGE
 
 /// @title The hook for writing to total supply checkpoints for votes
 /// only grab the last 224 bits of the total supply
-hook Sstore _totalSupplyCheckpoints[INDEX uint256 timestamp].(offset 4) uint224 newTotalSupply (uint224 oldTotalSupply) STORAGE
+hook Sstore _totalSupplyCheckpoints[INDEX uint256 timestamp].(offset 0) uint256 newTotalSupply (uint256 oldTotalSupply) STORAGE
 {
     totalSupplyVotesWriteCount = totalSupplyVotesWriteCount + 1;
-    totalSupplyVotesLastUpdateTime = timestamp;
-    totalSupplyVotesMirror[timestamp] = newTotalSupply;
+    totalSupplyVotesLastUpdateTime = newTotalSupply & 0xFFFFFFFF;
+    totalSupplyVotesMirror[timestamp] = newTotalSupply & balanceMax();
 }
 
 // Because `balance` has a uint256 type, any balance addition in CVL1 behaved as a `require_uint256()` casting,
