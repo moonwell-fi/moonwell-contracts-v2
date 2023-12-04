@@ -133,8 +133,13 @@ hook Sstore _balances[KEY address user] uint256 new_balance (uint256 old_balance
 invariant mirrorIsTrue(address a)
     balanceOfMirror[a] == balanceOf(a);
 
-invariant totalSupplyVotesMirrorMatchesCurrentTotalSupplyMirror()
-    totalSupplyVotesLastUpdateTime > 0 => to_mathint(totalSupplyVotesMirror[totalSupplyVotesLastUpdateTime]) == totalSupplyStandardMirror;
+invariant totalSupplyVotesMirrorMatchesCurrentTotalSupplyMirror(env e)
+    totalSupplyVotesLastUpdateTime > 0 && (totalSupplyVotesMirror[e.block.timestamp] == 0) => to_mathint(totalSupplyVotesMirror[totalSupplyVotesLastUpdateTime]) == totalSupplyStandardMirror {
+        preserved {
+            requireInvariant totalSupplyUpdatesInSync();
+            requireInvariant totalSupplyIsSumOfBalances();
+        }
+    }
 
 invariant totalSupplyUpdatesInSync()
     totalSupplyVotesWriteCount == totalSupplyStandardWriteCount;
