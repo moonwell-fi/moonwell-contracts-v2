@@ -106,7 +106,6 @@ invariant balanceOfLteUint224Max(address a)
 invariant totalSupplyIsSumOfBalances()
     to_mathint(totalSupply()) == sumBalances;
 
-
 /*
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Invariant: totalSupply is less than or equal to the max total supply                                                │
@@ -329,8 +328,6 @@ invariant doubleDelegateIsGreaterOrEqual(address a, address b)
     ((b != 0) && (a != 0) && (a != b) &&
     
     /// delegateIsGreaterOrEqual(a, b);
-    // (((delegates(a) == b)) => to_mathint(getVotes(b)) >= balanceOf(a)) && 
-    // (((delegates(b) == a)) => to_mathint(getVotes(a)) >= balanceOf(b)) &&
     /// if a is delegated to b, and b is delegated to b, then b should have at least as many votes as a
     
     ((delegates(a) == b) && (delegates(b) == b)) => to_mathint(getVotes(b)) >= balanceOf(a) + balanceOf(b) &&
@@ -367,9 +364,9 @@ invariant checkPointsLtTimestampMax(address a)
 */
 invariant userVotesLteTotalSupply(address user)
     getVotes(user) <= totalSupply() {
-        preserved {
+        preserved burn(address to, uint256 amount) with (env e) {
             requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant mirrorIsTrue(user);
+            requireInvariant mirrorIsTrue(to);
         }
     }
 
@@ -396,6 +393,27 @@ invariant addressZeroCannotDelegate()
 */
 invariant maxSupplyEqMAXSUPPLY()
     maxSupply() == MAX_SUPPLY();
+
+/// no state changes you could ever make that would put the total supply above the max supply
+invariant totalSupplyLteUint224Max()
+    totalSupply() <= balanceMax() {
+        preserved burn(address to, uint256 amount) with (env e) {
+            requireInvariant totalSupplyIsSumOfBalances();
+            requireInvariant mirrorIsTrue(to);
+        }
+    }
+
+/// hmmm, I wish I could pull the totalSupply this block directly from the token contract
+/// TODO: fix this once I get the ghost figured out
+/// seems like I need to make a mapping and global ghost variable to track the total supply
+/// stored in the ERC20Votes contract
+invariant getPastTotalSupplyEqTotalSupply(env e)
+    getPastTotalSupply(e, assert_uint256(e.block.timestamp - 1)) == totalSupply() {
+        preserved {
+            requireInvariant totalSupplyIsSumOfBalances();
+            requireInvariant mirrorIsTrue(e.msg.sender);
+        }
+    }
 
 /*
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -508,6 +526,12 @@ rule mint(env e, uint256 amount, address to, address other) {
 
     /// other must be different than to and from
     require(to != e.msg.sender && to != other);
+    requireInvariant delegateIsGreaterOrEqualBalanceIndividual(to);
+
+    /// avoid overflow in total Supply checkpoints
+    // require to_mathint(amount) + to_mathint(totalSupply()) <= to_mathint(balanceMax());
+    /// TODO move to ghost for tracking checkpointed total supply in ERC20
+    require getPastTotalSupply(e, assert_uint256(e.block.timestamp - 1)) == totalSupply();
 
     // cache state
     uint256 toBalanceBefore    = balanceOf(to);
@@ -604,15 +628,21 @@ rule transfer(env e) {
     requireInvariant balanceOfLteUint224Max(holder);
     requireInvariant balanceOfLteUint224Max(recipient);
 
+    requireInvariant delegateIsGreaterOrEqualBalanceIndividual(holder);
+    requireInvariant delegateIsGreaterOrEqualBalanceIndividual(recipient);
 
     // cache state
-    uint256 holderBalanceBefore    = balanceOf(holder);
-    uint256 recipientVotesBefore   = getVotes(recipient);
-    uint256 recipientBalanceBefore = balanceOf(recipient);
-    uint256 otherBalanceBefore     = balanceOf(other);
+    uint256 holderBalanceBefore          = balanceOf(holder);
+    uint256 recipientVotesBefore         = getVotes(recipient);
+    uint256 recipientDelegateVotesBefore = getVotes(delegates(recipient));
+    uint256 recipientBalanceBefore       = balanceOf(recipient);
+    uint256 otherBalanceBefore           = balanceOf(other);
 
     // run transaction
     transfer@withrevert(e, recipient, amount);
+
+    /// if holder delegated their votes, ensure the delegatee's vote counts are greater than
+    /// or equal to the holder's balances
 
     // check outcome
     if (lastReverted) {
@@ -621,7 +651,7 @@ rule transfer(env e) {
         amount > holderBalanceBefore || /// fails when holder has not enough balance to transfer
         recipient == xWELLAddress() || /// fails when transfering to xWELL
         to_mathint(recipientBalanceBefore) + to_mathint(amount) > to_mathint(balanceMax()) || /// balance max failure
-        recipientVotesBefore + amount > to_mathint(balanceMax()); /// votes max failure overflow -> safecast to 224 failure
+        recipientDelegateVotesBefore + amount > to_mathint(balanceMax()); /// votes max failure overflow -> safecast to 224 failure
     } else {
         // balances of holder and recipient are updated
         assert to_mathint(balanceOf(holder))    == holderBalanceBefore    - (holder == recipient ? 0 : amount);
@@ -640,24 +670,40 @@ rule transfer(env e) {
 rule transferFrom(env e, address holder, address recipient, address other, uint256 amount) {
     address spender = e.msg.sender;
 
+    requireInvariant mirrorIsTrue(holder);
+    requireInvariant mirrorIsTrue(recipient);
+
     requireInvariant totalSupplyIsSumOfBalances();
     require nonpayable(e);
     require(e.block.timestamp <= timestampMax());
     require(other != recipient && other != holder && other != spender);
 
+    requireInvariant delegateIsGreaterOrEqualBalanceIndividual(holder);
+    requireInvariant delegateIsGreaterOrEqualBalanceIndividual(recipient);
+
+    /// if holder delegated their votes, ensure the delegatee's vote counts are greater than
+    /// or equal to the holder's balances
 
     // cache state
-    uint256 allowanceBefore        = allowance(holder, spender);
-    uint256 holderBalanceBefore    = balanceOf(holder);
-    uint256 recipientBalanceBefore = balanceOf(recipient);
-    uint256 otherBalanceBefore     = balanceOf(other);
+    uint256 allowanceBefore              = allowance(holder, spender);
+    uint256 holderBalanceBefore          = balanceOf(holder);
+    uint256 recipientBalanceBefore       = balanceOf(recipient);
+    uint256 otherBalanceBefore           = balanceOf(other);
+    uint256 recipientDelegateVotesBefore = getVotes(delegates(recipient));
 
     // run transaction
     transferFrom@withrevert(e, holder, recipient, amount);
 
     // check outcome
     if (lastReverted) {
-        assert holder == 0 || recipient == 0 || spender == 0 || amount > holderBalanceBefore || amount > allowanceBefore || recipient == xWELLAddress();
+        assert holder == 0 ||
+        recipient == 0 ||
+        spender == 0 ||
+        amount > holderBalanceBefore ||
+        amount > allowanceBefore ||
+        recipient == xWELLAddress() ||
+        to_mathint(recipientDelegateVotesBefore) + to_mathint(amount) > to_mathint(balanceMax()) ||
+        to_mathint(recipientBalanceBefore) + to_mathint(amount) > to_mathint(balanceMax());
     } else {
         // allowance is valid & updated
         assert allowanceBefore            >= amount;
