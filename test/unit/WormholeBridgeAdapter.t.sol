@@ -142,6 +142,21 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
     }
 
+    function testAllTrustedSendersTrusted() public {
+        bytes32[] memory trustedSenders = wormholeBridgeAdapterProxy
+            .allTrustedSenders(chainId);
+        
+        for (uint256 i = 0; i < trustedSenders.length; i++) {
+            assertTrue(
+                wormholeBridgeAdapterProxy.isTrustedSender(
+                    chainId,
+                    trustedSenders[i]
+                ),
+                "trusted sender not trusted"
+            );
+        }
+    }
+
     function testInitializingFails() public {
         vm.expectRevert("Initializable: contract is already initialized");
         wormholeBridgeAdapterProxy.initialize(
@@ -221,6 +236,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             "trusted sender not un-set"
         );
     }
+
     function testRemoveNonTrustedSendersOwnerFails() public {
         testRemoveTrustedSendersOwnerSucceeds();
 
@@ -252,7 +268,9 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
     }
 
-    function testAddTrustedSendersOwnerFailsAlreadyWhitelisted(address trustedSender) public {
+    function testAddTrustedSendersOwnerFailsAlreadyWhitelisted(
+        address trustedSender
+    ) public {
         if (trustedSender != address(wormholeBridgeAdapterProxy)) {
             testAddTrustedSendersOwnerSucceeds(trustedSender);
         }
@@ -445,7 +463,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     function testBridgeOutFailsNotEnoughBuffer() public {
         amount = externalChainBufferCap / 2;
         to = address(this);
-        
+
         testReceiveWormholeMessageSucceeds(bytes32(uint256(1)));
 
         amount = externalChainBufferCap;
@@ -453,6 +471,28 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
 
         vm.expectRevert("RateLimited: buffer cap overflow");
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount + 1, to);
+    }
+
+    function testBridgeOutSucceeds() public {
+        amount = externalChainBufferCap / 2;
+        to = address(this);
+
+        testReceiveWormholeMessageSucceeds(bytes32(uint256(1)));
+
+        amount = externalChainBufferCap;
+
+        _lockboxCanMintTo(address(this), uint112(amount));
+        xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
+
+        vm.expectEmit(
+            true,
+            true,
+            true,
+            true,
+            address(wormholeBridgeAdapterProxy)
+        );
+        emit TokensSent(chainId, to, amount);
+        wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
     }
 
     /// @notice Wormhole addresses are denominated in 32 byte chunks. Converting the address to a bytes20

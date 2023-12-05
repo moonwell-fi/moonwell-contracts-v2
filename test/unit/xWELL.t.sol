@@ -11,7 +11,10 @@ import "@test/helper/BaseTest.t.sol";
 
 contract xWELLUnitTest is BaseTest {
     function testSetup() public {
-        assertTrue(xwellProxy.DOMAIN_SEPARATOR() != bytes32(0), "domain separator not set");
+        assertTrue(
+            xwellProxy.DOMAIN_SEPARATOR() != bytes32(0),
+            "domain separator not set"
+        );
         (
             bytes1 fields,
             string memory name,
@@ -19,12 +22,17 @@ contract xWELLUnitTest is BaseTest {
             uint256 chainId,
             address verifyingContract,
             bytes32 salt,
+
         ) = xwellProxy.eip712Domain();
         assertEq(fields, hex"0f", "incorrect fields");
         assertEq(version, "1", "incorrect version");
         assertEq(chainId, block.chainid, "incorrect chain id");
         assertEq(salt, bytes32(0), "incorrect salt");
-        assertEq(verifyingContract, address(xwellProxy), "incorrect verifying contract");
+        assertEq(
+            verifyingContract,
+            address(xwellProxy),
+            "incorrect verifying contract"
+        );
         assertEq(name, xwellName, "incorrect name from eip712Domain()");
         assertEq(xwellProxy.name(), xwellName, "incorrect name");
         assertEq(xwellProxy.symbol(), xwellSymbol, "incorrect symbol");
@@ -77,6 +85,11 @@ contract xWELLUnitTest is BaseTest {
             0,
             "incorrect lockbox rate limit per second"
         );
+        assertEq(
+            xwellProxy.maxPauseDuration(),
+            xwellProxy.MAX_PAUSE_DURATION(),
+            "incorrect max pause duration"
+        );
 
         /// PROXY OWNERSHIP
 
@@ -103,6 +116,27 @@ contract xWELLUnitTest is BaseTest {
         );
         assertFalse(xwellProxy.paused(), "incorrectly paused");
         assertFalse(xwellProxy.pauseUsed(), "pause should not be used");
+    }
+
+    function testInitializationFailsPauseDurationGtMax() public {
+        uint256 maxPauseDuration = xwellProxy.MAX_PAUSE_DURATION();
+
+        bytes memory initData = abi.encodeWithSignature(
+            "initialize(string,string,address,(uint112,uint128,address)[],uint128,address)",
+            xwellName,
+            xwellSymbol,
+            owner,
+            new MintLimits.RateLimitMidPointInfo[](0), /// empty array as it will fail anyway
+            uint128(maxPauseDuration + 1),
+            pauseGuardian
+        );
+
+        vm.expectRevert("xWELL: pause duration too long");
+        new TransparentUpgradeableProxy(
+            address(xwellLogic),
+            address(proxyAdmin),
+            initData
+        );
     }
 
     function testPendingOwnerAccepts() public {
@@ -373,6 +407,9 @@ contract xWELLUnitTest is BaseTest {
         xwellProxy.removeBridge(address(xerc20Lockbox));
         xwellProxy.removeBridge(address(wormholeBridgeAdapterProxy));
 
+        bridge = address(
+            uint160(_bound(uint256(uint160(bridge)), 1, type(uint160).max))
+        );
         newRateLimitPerSecond = uint128(
             _bound(
                 newRateLimitPerSecond,
@@ -732,7 +769,7 @@ contract xWELLUnitTest is BaseTest {
         vm.warp(xwellProxy.pauseDuration() + block.timestamp + 1);
 
         assertFalse(xwellProxy.paused());
-        testLockboxCanMint(0); /// let function choose amount to mint at random        
+        testLockboxCanMint(0); /// let function choose amount to mint at random
     }
 
     function testBurnFailsWhenPaused() public {
@@ -754,5 +791,39 @@ contract xWELLUnitTest is BaseTest {
 
         /// mint, then burn after pause is up
         testLockBoxCanBurn(0); /// let function choose amount to burn at random
+    }
+
+    function testIncreaseAllowance(uint256 amount) public {
+        uint256 startingAllowance = xwellProxy.allowance(
+            address(this),
+            address(xerc20Lockbox)
+        );
+
+        xwellProxy.increaseAllowance(address(xerc20Lockbox), amount);
+
+        assertEq(
+            xwellProxy.allowance(address(this), address(xerc20Lockbox)),
+            startingAllowance + amount,
+            "incorrect allowance"
+        );
+    }
+
+    function testDecreaseAllowance(uint256 amount) public {
+        testIncreaseAllowance(amount);
+
+        amount /= 2;
+
+        uint256 startingAllowance = xwellProxy.allowance(
+            address(this),
+            address(xerc20Lockbox)
+        );
+
+        xwellProxy.decreaseAllowance(address(xerc20Lockbox), amount);
+
+        assertEq(
+            xwellProxy.allowance(address(this), address(xerc20Lockbox)),
+            startingAllowance - amount,
+            "incorrect allowance"
+        );
     }
 }
