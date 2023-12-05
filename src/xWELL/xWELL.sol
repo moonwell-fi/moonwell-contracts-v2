@@ -66,7 +66,7 @@ contract xWELL is
         _grantGuardian(newPauseGuardian); /// set the pause guardian
         _updatePauseDuration(newPauseDuration);
 
-        transferOwnership(tokenOwner);
+        _transferOwnership(tokenOwner); /// directly set the new owner without waiting for pending owner to accept
     }
 
     /// --------------------------------------------------------
