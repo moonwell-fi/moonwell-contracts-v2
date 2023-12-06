@@ -20,9 +20,19 @@
         "name": "ARTEMIS_GOVERNOR"
     },
     {
+        "addr": "0xb0eE65140C89a24Db5931D7DDF2c2a7c6f1d9f5B",
+        "chainId": 1284,
+        "name": "MOONBEAM_PROXY_ADMIN"
+    },
+    {
         "addr": "0x511aB53F793683763E5a8829738301368a2411E3",
         "chainId": 1284,
         "name": "WELL"
+    },
+    {
+        "addr": "0x82Aa6030973B61AcED7c978ee0e73A83136b02a9",
+        "chainId": 1284,
+        "name": "MOONBEAM_PAUSE_GUARDIAN_MULTISIG"
     },
     {
         "addr": "0x4200000000000000000000000000000000000006",
