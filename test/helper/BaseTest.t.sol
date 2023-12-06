@@ -83,7 +83,7 @@ contract BaseTest is xWELLDeploy, Test {
                 address wormholeAdapterLogic,
                 address wormholeAdapterProxy,
                 address lockboxAddress
-            ) = deployMoonbeamSystem(address(well));
+            ) = deployMoonbeamSystem(address(well), address(0));
 
             xwellProxy = xWELL(xwellProxyAddress);
             xwellLogic = xWELL(xwellLogicAddress);
