@@ -10,6 +10,14 @@ import "@test/helper/BaseTest.t.sol";
 ///    - test voting power
 
 contract xWELLUnitTest is BaseTest {
+
+    function setUp() public override {
+        super.setUp();
+        vm.prank(owner);
+        xwellProxy.transferOwnership(address(this));
+        xwellProxy.acceptOwnership();
+    }
+
     function testSetup() public {
         assertTrue(
             xwellProxy.DOMAIN_SEPARATOR() != bytes32(0),
@@ -38,7 +46,7 @@ contract xWELLUnitTest is BaseTest {
         assertEq(xwellProxy.symbol(), xwellSymbol, "incorrect symbol");
         assertEq(xwellProxy.totalSupply(), 0, "incorrect total supply");
         assertEq(xwellProxy.owner(), address(this), "incorrect owner");
-        assertEq(xwellProxy.pendingOwner(), owner, "incorrect pending owner");
+        assertEq(xwellProxy.pendingOwner(), address(0), "incorrect pending owner");
         assertEq(
             xwellProxy.CLOCK_MODE(),
             "mode=timestamp",
@@ -140,6 +148,8 @@ contract xWELLUnitTest is BaseTest {
     }
 
     function testPendingOwnerAccepts() public {
+        xwellProxy.transferOwnership(owner);
+
         vm.prank(owner);
         xwellProxy.acceptOwnership();
 
