@@ -34,14 +34,14 @@ Halborn has been engaged to audit the entire xWELL token. The audit will be comp
 ### Base
 
 - **xWELL proxy admin**: MultiRewardDistributor Proxy Admin - Responsible for upgrading the xWELL token and other contracts as needed.
-- **xWELL proxy admin owner**: Temporal Governor - Responsible for changing the owner of the proxy admin as needed.
+- **xWELL proxy admin owner**: Temporal Governor - Responsible for changing the owner of the proxy admin and upgrading contracts as needed.
 - **xWELL admin**: Temporal Governor - Responsible for setting rate limits and other parameters of the xWELL token. Can add and remove bridges as needed.
 - **xWELL pause guardian**: Base Pause Guardian - Responsible for pausing the xWELL mint and burn functionality in the event of an emergency.
 
 ### Moonbeam
 
 - **xWELL proxy admin**: stkWELL Proxy Admin - Responsible for upgrading the xWELL token and other contracts as needed.
-- **xWELL proxy admin owner**: Artemis Timelock - Responsible for changing the owner of the proxy admin as needed.
+- **xWELL proxy admin owner**: Artemis Timelock - Responsible for changing the owner of the proxy admin and upgrading contracts as needed.
 - **xWELL admin**: Artemis Timelock - Responsible for setting rate limits and other parameters of the xWELL token. Can add and remove bridges as needed.
 - **xWELL pause guardian**: Moonbeam Pause Guardian Multisig - Responsible for pausing the xWELL mint and burn functionality in the event of an emergency. Pausing on Moonbeam will also pause the lockbox contract as it will no longer be able to mint or burn.
 
