@@ -109,6 +109,7 @@ contract xWELLDeploy {
             memory _newRateLimits = new MintLimits.RateLimitMidPointInfo[](
                 newRateLimits.length + 1
             );
+
         for (uint256 i = 0; i < newRateLimits.length; i++) {
             _newRateLimits[i] = newRateLimits[i];
         }
@@ -133,7 +134,10 @@ contract xWELLDeploy {
     /// @notice deploy a system on base
     /// this includes the xWELL token, the proxy, the proxy admin, and the wormhole adapter
     /// but does not include the xWELL lockbox as there is no native WELL token on base
-    function deployBaseSystem()
+    /// @param existingProxyAdmin The proxy admin to use, if any
+    function deployBaseSystem(
+        address existingProxyAdmin
+    )
         public
         returns (
             address xwellLogic,
@@ -148,7 +152,11 @@ contract xWELLDeploy {
 
         wormholeAdapterLogic = address(new WormholeBridgeAdapter());
 
-        proxyAdmin = address(new ProxyAdmin());
+        if (existingProxyAdmin == address(0)) {
+            proxyAdmin = address(new ProxyAdmin());
+        } else {
+            proxyAdmin = existingProxyAdmin;
+        }
 
         /// do not initialize the proxy, that is the final step
         xwellProxy = address(
@@ -166,7 +174,8 @@ contract xWELLDeploy {
 
     /// @notice well token address on Moonbeam
     function deployMoonbeamSystem(
-        address wellAddress
+        address wellAddress,
+        address existingProxyAdmin
     )
         public
         returns (
@@ -184,7 +193,7 @@ contract xWELLDeploy {
             proxyAdmin,
             wormholeAdapterLogic,
             wormholeAdapter
-        ) = deployBaseSystem();
+        ) = deployBaseSystem(existingProxyAdmin);
         /// lockbox is deployed at the end so that xWELL and wormhole adapter can have the same addresses on all chains.
         lockbox = deployLockBox(
             xwellProxy, /// proxy is actually the xWELL token contract
