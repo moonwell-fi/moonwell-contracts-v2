@@ -68,14 +68,17 @@ contract Addresses is Test {
         uint256 _chainId,
         address addr
     ) private {
+        require(
+            _addresses[name][_chainId] == address(0),
+            "Addresses: duplicate address"
+        );
         _addresses[name][_chainId] = addr;
         vm.label(addr, name);
     }
 
     /// @notice add an address for the current chainId
     function _addAddress(string memory name, address addr) private {
-        _addresses[name][chainId] = addr;
-        vm.label(addr, name);
+        _addAddress(name, chainId, addr);
     }
 
     /// @notice get an address for the current chainId
@@ -94,6 +97,17 @@ contract Addresses is Test {
     /// @notice add an address for the current chainId
     function addAddress(string memory name, address addr) public {
         _addAddress(name, addr);
+
+        recordedAddresses.push(RecordedAddress({name: name, addr: addr}));
+    }
+
+    /// @notice add an address for the current chainId
+    function addAddress(
+        string memory name,
+        address addr,
+        uint256 _chainId
+    ) public {
+        _addAddress(name, _chainId, addr);
 
         recordedAddresses.push(RecordedAddress({name: name, addr: addr}));
     }
