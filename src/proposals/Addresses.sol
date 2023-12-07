@@ -70,7 +70,7 @@ contract Addresses is Test {
     ) private {
         require(
             _addresses[name][_chainId] == address(0),
-            "Addresses: duplicate address"
+            string(abi.encodePacked("Addresses: duplicate address: ", name))
         );
         _addresses[name][_chainId] = addr;
         vm.label(addr, name);
