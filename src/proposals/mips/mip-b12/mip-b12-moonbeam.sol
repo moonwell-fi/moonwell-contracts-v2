@@ -46,7 +46,7 @@ contract mipb12Moonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
 
-    function deploy(Addresses addresses, address deployer) public override {
+    function deploy(Addresses addresses, address) public override {
         /// --------------------------------------------------
         /// --------------------------------------------------
         /// ---------------- MOONBEAM NETWORK ----------------
@@ -170,15 +170,24 @@ contract mipb12Moonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
             address wormholeBridgeAdapterProxy = addresses.getAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_PROXY"
             );
-            address wormholeBridgeAdapterLogic = addresses.getAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
-            );
-            address xwellLogic = addresses.getAddress("xWELL_LOGIC");
             address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
             address pauseGuardian = addresses.getAddress(
                 "MOONBEAM_PAUSE_GUARDIAN_MULTISIG"
             );
             address lockbox = addresses.getAddress("xWELL_LOCKBOX");
+
+            assertEq(
+                xWELL(wormholeBridgeAdapterProxy).owner(),
+                artemisTimelock,
+                "wormhole bridge adapter owner is incorrect"
+            );
+            assertEq(
+                address(
+                    WormholeBridgeAdapter(wormholeBridgeAdapterProxy).wormholeRelayer()
+                ),
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+                "wormhole bridge adapter relayer is incorrect"
+            );
 
             assertEq(
                 xWELL(moonbeamxWellProxy).rateLimitPerSecond(
