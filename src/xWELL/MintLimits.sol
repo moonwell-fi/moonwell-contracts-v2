@@ -18,7 +18,7 @@ abstract contract MintLimits {
     }
 
     /// @notice rate limit for each bridge contract
-    mapping(address => RateLimitMidPoint) private _rateLimits;
+    mapping(address => RateLimitMidPoint) public rateLimits;
 
     /// @notice emitted when a rate limit is added or removed
     /// @param bridge the bridge address
@@ -36,26 +36,22 @@ abstract contract MintLimits {
     //// ------------------------------------------------------------
     //// ------------------------------------------------------------
 
-    function rateLimits(address from) public view returns (RateLimitMidPoint memory) {
-        return _rateLimits[from];
-    }
-
     /// @notice the amount of action used before hitting limit
     /// @dev replenishes at rateLimitPerSecond per second up to bufferCap
     function buffer(address from) public view returns (uint256) {
-        return _rateLimits[from].buffer();
+        return rateLimits[from].buffer();
     }
 
     /// @notice the cap of the buffer for this address
     /// @param from address to get buffer cap for
     function bufferCap(address from) public view returns (uint256) {
-        return _rateLimits[from].bufferCap;
+        return rateLimits[from].bufferCap;
     }
 
     /// @notice the amount the buffer replenishes towards the midpoint per second
     /// @param from address to get rate limit for
     function rateLimitPerSecond(address from) public view returns (uint256) {
-        return _rateLimits[from].rateLimitPerSecond;
+        return rateLimits[from].rateLimitPerSecond;
     }
 
     //// ------------------------------------------------------------
@@ -72,7 +68,7 @@ abstract contract MintLimits {
     /// @param amount to decrease buffer by
     function _depleteBuffer(address from, uint256 amount) internal {
         require(amount != 0, "MintLimits: deplete amount cannot be 0");
-        _rateLimits[from].depleteBuffer(amount);
+        rateLimits[from].depleteBuffer(amount);
     }
 
     /// @notice function to replenish buffer
@@ -80,7 +76,7 @@ abstract contract MintLimits {
     /// @param amount to increase buffer by if under buffer cap
     function _replenishBuffer(address from, uint256 amount) internal {
         require(amount != 0, "MintLimits: replenish amount cannot be 0");
-        _rateLimits[from].replenishBuffer(amount);
+        rateLimits[from].replenishBuffer(amount);
     }
 
     //// -------------- Modifying Existing Limits -------------------
@@ -99,15 +95,15 @@ abstract contract MintLimits {
             "MintLimits: rateLimitPerSecond too high"
         );
         require(
-            _rateLimits[from].bufferCap != 0,
+            rateLimits[from].bufferCap != 0,
             "MintLimits: non-existent rate limit"
         );
 
-        _rateLimits[from].setRateLimitPerSecond(newRateLimitPerSecond);
+        rateLimits[from].setRateLimitPerSecond(newRateLimitPerSecond);
 
         emit ConfigurationChanged(
             from,
-            _rateLimits[from].bufferCap,
+            rateLimits[from].bufferCap,
             newRateLimitPerSecond
         );
     }
@@ -120,7 +116,7 @@ abstract contract MintLimits {
     function _setBufferCap(address from, uint112 newBufferCap) internal {
         require(newBufferCap != 0, "MintLimits: bufferCap cannot be 0");
         require(
-            _rateLimits[from].bufferCap != 0,
+            rateLimits[from].bufferCap != 0,
             "MintLimits: non-existent rate limit"
         );
         require(
@@ -128,23 +124,23 @@ abstract contract MintLimits {
             "MintLimits: buffer cap below min"
         );
 
-        _rateLimits[from].setBufferCap(newBufferCap);
+        rateLimits[from].setBufferCap(newBufferCap);
 
         emit ConfigurationChanged(
             from,
             newBufferCap,
-            _rateLimits[from].rateLimitPerSecond
+            rateLimits[from].rateLimitPerSecond
         );
     }
 
     //// -------------- Adding Limits -------------------
 
     /// @notice Mint Limits bulk add function
-    /// @param rateLimitsToAdd cap on buffer size for this rate limited instance
+    /// @param _rateLimits cap on buffer size for this rate limited instance
     /// contains the rate limit per second, buffer cap and bridge address
-    function _addLimits(RateLimitMidPointInfo[] memory rateLimitsToAdd) internal {
-        for (uint256 i = 0; i < rateLimitsToAdd.length; i++) {
-            _addLimit(rateLimitsToAdd[i]);
+    function _addLimits(RateLimitMidPointInfo[] memory _rateLimits) internal {
+        for (uint256 i = 0; i < _rateLimits.length; i++) {
+            _addLimit(_rateLimits[i]);
         }
     }
 
@@ -160,7 +156,7 @@ abstract contract MintLimits {
             "MintLimits: invalid bridge address"
         );
         require(
-            _rateLimits[rateLimit.bridge].bufferCap == 0,
+            rateLimits[rateLimit.bridge].bufferCap == 0,
             "MintLimits: rate limit already exists"
         );
         require(
@@ -168,7 +164,7 @@ abstract contract MintLimits {
             "MintLimits: buffer cap below min"
         );
 
-        _rateLimits[rateLimit.bridge] = RateLimitMidPoint({
+        rateLimits[rateLimit.bridge] = RateLimitMidPoint({
             bufferCap: rateLimit.bufferCap,
             lastBufferUsedTime: uint32(block.timestamp),
             bufferStored: uint112(rateLimit.bufferCap / 2),
@@ -197,11 +193,11 @@ abstract contract MintLimits {
     /// @param bridge the bridge address to remove
     function _removeLimit(address bridge) internal {
         require(
-            _rateLimits[bridge].bufferCap != 0,
+            rateLimits[bridge].bufferCap != 0,
             "MintLimits: cannot remove non-existent rate limit"
         );
 
-        delete _rateLimits[bridge];
+        delete rateLimits[bridge];
 
         emit ConfigurationChanged(bridge, 0, 0);
     }
