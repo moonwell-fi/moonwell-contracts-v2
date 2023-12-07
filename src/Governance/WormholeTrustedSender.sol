@@ -5,15 +5,18 @@ import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/Enu
 
 import {IWormholeTrustedSender} from "@protocol/Governance/IWormholeTrustedSender.sol";
 
+/// @notice A contract that manages Wormhole trusted senders
+/// Used to allow only certain trusted senders on external chains
+/// to pass messages to this contract.
 contract WormholeTrustedSender is IWormholeTrustedSender {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    /// ------------- EVENTS -------------
+    /// ------------- EVENT -------------
 
     /// @notice Emitted when a trusted sender is updated
     event TrustedSenderUpdated(uint16 chainId, address addr, bool added);
 
-    /// ----------- MAPPING -----------
+    /// ------------- MAPPING -----------
 
     /// @notice Map of chain id => trusted sender
     mapping(uint16 => EnumerableSet.Bytes32Set) private trustedSenders;
