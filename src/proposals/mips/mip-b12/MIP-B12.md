@@ -69,3 +69,11 @@ Once the moonbeam system has been deployed, add all the newly deployed addresses
 After all the addresses are added to the addresses.json file, do a manual test run going back and forth between base and moonbeam to ensure that the system is working correctly. Ensure that the rate limits are set correctly, and that the bridge and lockbox is working correctly.
 
 Manually inspect the trusted senders and system rate limits, and ensure that they are set correctly. Once the system has been manually tested and the addresses.json file has been updated, create a PR to the main repository, ensuring all contributor guidelines have been followed.
+
+## Invariant Tests
+
+To run the invariant tests for xWELL, run the following command:
+
+```
+forge test --match-path test/invariant/xWELLInvariant.t.sol
+```

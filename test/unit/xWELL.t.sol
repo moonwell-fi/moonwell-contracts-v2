@@ -4,11 +4,6 @@ import "@forge-std/Test.sol";
 
 import "@test/helper/BaseTest.t.sol";
 
-/// TODO:
-///    - failing add limits
-///    - failing remove limits
-///    - test voting power
-
 contract xWELLUnitTest is BaseTest {
 
     function setUp() public override {
@@ -50,12 +45,17 @@ contract xWELLUnitTest is BaseTest {
         assertEq(
             xwellProxy.CLOCK_MODE(),
             "mode=timestamp",
-            "incorrect pending owner"
+            "incorrect clock mode"
+        );
+        assertEq(
+            xwellProxy.clock(),
+            block.timestamp,
+            "incorrect timestamp"
         );
         assertEq(
             xwellProxy.MAX_SUPPLY(),
             5_000_000_000 * 1e18,
-            "incorrect pending owner"
+            "incorrect max supply"
         );
         assertEq(
             xwellProxy.bufferCap(address(xerc20Lockbox)),

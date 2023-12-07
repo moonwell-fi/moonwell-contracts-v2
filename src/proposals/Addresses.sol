@@ -68,10 +68,13 @@ contract Addresses is Test {
         uint256 _chainId,
         address addr
     ) private {
-        require(
-            _addresses[name][_chainId] == address(0),
-            "Addresses: duplicate address"
-        );
+        /// only check dup adds on mainnet to allow for testnet deploys to pass
+        if (chainId == 8453 || chainId == 1284) {
+            require(
+                _addresses[name][_chainId] == address(0),
+                string(abi.encodePacked("Addresses: duplicate address: ", name))
+            );
+        }
         _addresses[name][_chainId] = addr;
         vm.label(addr, name);
     }

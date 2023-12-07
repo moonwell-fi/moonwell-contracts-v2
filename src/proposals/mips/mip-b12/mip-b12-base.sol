@@ -39,7 +39,7 @@ contract mipb12Base is Proposal, CrossChainProposal, Configs, xWELLDeploy {
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
 
-    function deploy(Addresses addresses, address deployer) public override {
+    function deploy(Addresses addresses, address) public override {
         /// --------------------------------------------------
         /// --------------------------------------------------
         /// ------------------ BASE NETWORK ------------------
@@ -140,9 +140,20 @@ contract mipb12Base is Proposal, CrossChainProposal, Configs, xWELLDeploy {
             );
             address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
             address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
-            address relayer = addresses.getAddress("WORMHOLE_BRIDGE_RELAYER");
             address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
+            assertEq(
+                xWELL(wormholeAdapter).owner(),
+                temporalGov,
+                "wormhole bridge adapter owner is incorrect"
+            );
+            assertEq(
+                address(
+                    WormholeBridgeAdapter(wormholeAdapter).wormholeRelayer()
+                ),
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+                "wormhole bridge adapter relayer is incorrect"
+            );
             assertEq(
                 xWELL(basexWellProxy).owner(),
                 temporalGov,
