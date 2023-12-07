@@ -90,7 +90,7 @@ contract xWELLOwnerHandler is Test {
     /// rate limit changes
     function setRateLimitPerSecond(bool limiter, uint128 rateLimit) external {
         rateLimit = uint128(
-            _bound(rateLimit, 0, xwell.maxRateLimitPerSecond())
+            _bound(rateLimit, 0, type(uint128).max)
         );
 
         address toLimit = limiter == true ? address(this) : address(xwell);
@@ -112,8 +112,8 @@ contract xWELLOwnerHandler is Test {
     /// transfers
 
     function transfer(uint8 _to, uint8 _from, uint112 amount) external {
-        address to = users[(bound(_to, 0, users.length - 1))];
-        address from = users[(bound(_from, 0, users.length - 1))];
+        address to = users[(_bound(_to, 0, users.length - 1))];
+        address from = users[(_bound(_from, 0, users.length - 1))];
 
         amount = uint112(_bound(amount, 1, userBalances[from]));
 
@@ -132,9 +132,9 @@ contract xWELLOwnerHandler is Test {
         uint8 _owner,
         uint112 amount
     ) external {
-        address to = users[(bound(_to, 0, users.length - 1))];
-        address from = users[(bound(_from, 0, users.length - 1))];
-        address owner = users[(bound(_owner, 0, users.length - 1))];
+        address to = users[(_bound(_to, 0, users.length - 1))];
+        address from = users[(_bound(_from, 0, users.length - 1))];
+        address owner = users[(_bound(_owner, 0, users.length - 1))];
 
         amount = uint112(_bound(amount, 1, userBalances[owner]));
 
@@ -154,8 +154,8 @@ contract xWELLOwnerHandler is Test {
 
     /// delegate - reverts only if from has delegated to to
     function delegate(uint8 to, uint8 from) external {
-        address delegator = users[(bound(from, 0, users.length - 1))];
-        address delegatee = users[(bound(to, 0, users.length - 1))];
+        address delegator = users[(_bound(from, 0, users.length - 1))];
+        address delegatee = users[(_bound(to, 0, users.length - 1))];
 
         /// do a check if the delegator has already delegated, if so, remove them
         address existingDelegated = xwell.delegates(delegator);
@@ -177,7 +177,7 @@ contract xWELLOwnerHandler is Test {
 
     /// undelegate
     function undelegate(uint8 from) external {
-        address delegator = users[(bound(from, 0, users.length - 1))];
+        address delegator = users[(_bound(from, 0, users.length - 1))];
         address delegatee = xwell.delegates(delegator);
 
         require(
@@ -193,7 +193,7 @@ contract xWELLOwnerHandler is Test {
     /// depositTo
 
     function depositTo(uint8 _to, uint112 amount) external {
-        address to = users[(bound(_to, 0, users.length - 1))];
+        address to = users[(_bound(_to, 0, users.length - 1))];
 
         /// at minimum mint 1 xWELL
         amount = uint112(
@@ -214,7 +214,7 @@ contract xWELLOwnerHandler is Test {
     /// withdrawTo
 
     function withdrawTo(uint8 _to, uint112 amount) external {
-        address to = users[(bound(_to, 0, users.length - 1))];
+        address to = users[(_bound(_to, 0, users.length - 1))];
 
         uint256 amtCeiling = xwell.balanceOf(to) >
             well.balanceOf(address(xerc20Lockbox))
@@ -241,7 +241,7 @@ contract xWELLOwnerHandler is Test {
             _bound(amount, 1, xwell.maxSupply() - xwell.totalSupply())
         );
 
-        address to = users[(bound(user, 0, users.length - 1))];
+        address to = users[(_bound(user, 0, users.length - 1))];
 
         xwell.mint(to, amount);
 
@@ -255,7 +255,7 @@ contract xWELLOwnerHandler is Test {
     /// burning
     /// @notice should not revert, but can if a user has no balance
     function burnFromUser(uint224 amount, uint8 user) external {
-        address to = users[(bound(user, 0, users.length - 1))];
+        address to = users[(_bound(user, 0, users.length - 1))];
 
         amount = uint224(_bound(amount, 1, xwell.balanceOf(address(to))));
 

@@ -62,7 +62,6 @@ contract xWELLInvariant is BaseTest {
         ///  - setRateLimitPerSecond
         ///  - warp
 
-
         bytes4[] memory selectors = new bytes4[](11);
 
         selectors[0] = handler.transfer.selector;
@@ -135,22 +134,20 @@ contract xWELLInvariant is BaseTest {
 
     function invariant_bufferStoredLteBufferCap() public {
         {
-            RateLimitMidPoint memory limit = xwellProxy.rateLimits(
-                address(handler)
-            );
+            (, uint112 bufferCap, , uint112 bufferStored, ) = xwellProxy
+                .rateLimits(address(handler));
 
             assertTrue(
-                limit.bufferStored <= limit.bufferCap,
+                bufferStored <= bufferCap,
                 "handler buffer stored gt buffer cap"
             );
         }
         {
-            RateLimitMidPoint memory limit = xwellProxy.rateLimits(
-                address(xerc20Lockbox)
-            );
+            (, uint112 bufferCap, , uint112 bufferStored, ) = xwellProxy
+                .rateLimits(address(xerc20Lockbox));
 
             assertTrue(
-                limit.bufferStored <= limit.bufferCap,
+                bufferStored <= bufferCap,
                 "lockbox buffer stored gt buffer cap"
             );
         }
@@ -158,23 +155,44 @@ contract xWELLInvariant is BaseTest {
 
     function invariant_bufferLteBufferCap() public {
         {
-            RateLimitMidPoint memory limit = xwellProxy.rateLimits(
-                address(handler)
-            );
+            (, uint112 bufferCap, , , ) = xwellProxy
+                .rateLimits(address(handler));
 
             assertTrue(
-                xwellProxy.buffer(address(handler)) <= limit.bufferCap,
+                xwellProxy.buffer(address(handler)) <= bufferCap,
                 "handler buffer gt buffer cap"
             );
         }
         {
-            RateLimitMidPoint memory limit = xwellProxy.rateLimits(
+            (, uint112 bufferCap, , , ) = xwellProxy
+                .rateLimits(address(xerc20Lockbox));
+
+            assertTrue(
+                xwellProxy.buffer(address(xerc20Lockbox)) <= bufferCap,
+                "xerc20Lockbox buffer gt buffer cap"
+            );
+        }
+    }
+
+    function invariant_rateLimitPerSecondLteRLPSMax() public {
+        {
+            (uint128 rateLimitPerSecond, , , , ) = xwellProxy.rateLimits(
+                address(handler)
+            );
+
+            assertTrue(
+                rateLimitPerSecond <= xwellProxy.maxRateLimitPerSecond(),
+                "handler rate limit per second gt max rate limit per second"
+            );
+        }
+        {
+            (uint128 rateLimitPerSecond, , , , ) = xwellProxy.rateLimits(
                 address(xerc20Lockbox)
             );
 
             assertTrue(
-                xwellProxy.buffer(address(xerc20Lockbox)) <= limit.bufferCap,
-                "xerc20Lockbox buffer gt buffer cap"
+                rateLimitPerSecond <= xwellProxy.maxRateLimitPerSecond(),
+                "xerc20Lockbox rate limit per second gt max rate limit per second"
             );
         }
     }
