@@ -183,10 +183,16 @@ contract mipb12Moonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
             );
             assertEq(
                 address(
-                    WormholeBridgeAdapter(wormholeBridgeAdapterProxy).wormholeRelayer()
+                    WormholeBridgeAdapter(wormholeBridgeAdapterProxy)
+                        .wormholeRelayer()
                 ),
                 addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
                 "wormhole bridge adapter relayer is incorrect"
+            );
+            assertEq(
+                WormholeBridgeAdapter(wormholeBridgeAdapterProxy).gasLimit(),
+                300_000,
+                "wormhole bridge adapter gas limit is incorrect"
             );
 
             assertEq(
@@ -202,11 +208,6 @@ contract mipb12Moonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
                 lockBoxRateLimitPerSecond,
                 "lockBoxRateLimitPerSecond is incorrect"
             );
-            // assertEq(
-            //     xWELL(basexWellProxy).midPoint(wormholeBridgeAdapterProxy),
-            //     bufferCap / 2,
-            //     "midpoint is incorrect"
-            // );
             /// ensure correct buffer cap
             assertEq(
                 xWELL(moonbeamxWellProxy).bufferCap(wormholeBridgeAdapterProxy),

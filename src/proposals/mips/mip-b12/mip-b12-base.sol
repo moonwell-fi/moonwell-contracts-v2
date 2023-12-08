@@ -155,6 +155,11 @@ contract mipb12Base is Proposal, CrossChainProposal, Configs, xWELLDeploy {
                 "wormhole bridge adapter relayer is incorrect"
             );
             assertEq(
+                WormholeBridgeAdapter(wormholeAdapter).gasLimit(),
+                300_000,
+                "wormhole bridge adapter gas limit is incorrect"
+            );
+            assertEq(
                 xWELL(basexWellProxy).owner(),
                 temporalGov,
                 "temporal gov address is incorrect"
