@@ -490,13 +490,13 @@
         "name": "MOONWELL_wstETH"
     },
     {
-        "addr": "0x231Ca706096427Bd674bFaec28B34d8fCa26E2A1",
+        "addr": "0x706f82e9bb5b0813501714ab5974216704980e31",
         "chainId": 8453,
-        "name": "WORMHOLE_RELAYER"
+        "name": "WORMHOLE_BRIDGE_RELAYER"
     },
     {
         "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
         "chainId": 1284,
-        "name": "WORMHOLE_RELAYER"
+        "name": "WORMHOLE_BRIDGE_RELAYER"
     }
 ]
