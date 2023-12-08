@@ -105,6 +105,8 @@ contract WormholeBridgeAdapter is
         /// @dev the external chain contracts MUST HAVE THE SAME ADDRESS on the external chain
         targetAddress[targetChain] = address(this);
         _addTrustedSender(address(this), targetChain);
+
+        gasLimit = 300_000; /// @dev default starting gas limit for relayer 
     }
 
     /// --------------------------------------------------------
