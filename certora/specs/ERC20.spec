@@ -149,7 +149,7 @@ invariant totalSupplyLteMax()
 /// do not consider case where number of checkpoints is uintMax() as it will overflow, and calls to getVotes will fail
 /// because it will look up at index 0, when it should look up uint256 max
 
-invariant corretCheckpoints(address a) 
+invariant correctCheckpoints(address a) 
     to_mathint(numCheckpoints(a)) <= to_mathint(timestampMax()) {
         preserved {
             requireInvariant totalSupplyIsSumOfBalances();
@@ -178,8 +178,8 @@ invariant doubleDelegateIsGreaterOrEqual(env e, address a, address b)
                 (delegates(a) == b) => getVotes(b) >= balanceOf(a) &&
                 (delegates(b) == a) => getVotes(a) >= balanceOf(b)
             );
-            requireInvariant corretCheckpoints(a);
-            requireInvariant corretCheckpoints(b);
+            requireInvariant correctCheckpoints(a);
+            requireInvariant correctCheckpoints(b);
             requireInvariant totalSupplyIsSumOfBalances();
             require getVotes(a) <= totalSupply();
             require getVotes(b) <= totalSupply();
@@ -248,8 +248,8 @@ rule userCanDelegateBalance(env e, address to) {
     requireInvariant mirrorIsTrue(from);
     requireInvariant mirrorIsTrue(to);
     requireInvariant doubleDelegateIsGreaterOrEqual(e, from, to);
-    requireInvariant corretCheckpoints(from);
-    requireInvariant corretCheckpoints(to);
+    requireInvariant correctCheckpoints(from);
+    requireInvariant correctCheckpoints(to);
 
     mathint startingVotes = to_mathint(getVotes(to));
     mathint fromBalance = to_mathint(balanceOf(from));
