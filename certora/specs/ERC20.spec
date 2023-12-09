@@ -67,10 +67,6 @@ ghost mapping(address => uint256) balanceOfMirror {
     init_state axiom forall address a. balanceOfMirror[a] == 0;
 }
 
-ghost uint256 totalSupplyVotesLastUpdateTime {
-    init_state axiom totalSupplyVotesLastUpdateTime == 0;
-}
-
 /// @notice a ghost to mirror the totalSupply in the ERC20 token contract,
 /// needed for checking the total supply
 ghost mathint totalSupplyStandardMirror {
