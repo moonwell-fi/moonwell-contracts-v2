@@ -67,21 +67,8 @@ ghost mapping(address => uint256) balanceOfMirror {
     init_state axiom forall address a. balanceOfMirror[a] == 0;
 }
 
-/// @title A ghost to mirror the totalSupply in ERC20Upgradeable, needed for checking the total supply
-ghost mapping(uint256 => uint256) totalSupplyVotesMirror {
-    init_state axiom forall uint256 a. totalSupplyVotesMirror[a] == 0;
-}
-
 ghost uint256 totalSupplyVotesLastUpdateTime {
     init_state axiom totalSupplyVotesLastUpdateTime == 0;
-}
-
-ghost mathint totalSupplyVotesWriteCount {
-    init_state axiom totalSupplyVotesWriteCount == 0;
-}
-
-ghost mathint totalSupplyStandardWriteCount {
-    init_state axiom totalSupplyStandardWriteCount == 0;
 }
 
 /// @notice a ghost to mirror the totalSupply in the ERC20 token contract,
@@ -99,17 +86,7 @@ ghost mathint totalSupplyStandardMirror {
 /// @title The hook for writing to total supply checkpoints
 hook Sstore _totalSupply uint256 newTotalSupply (uint256 oldTotalSupply) STORAGE
 {
-    totalSupplyStandardWriteCount = totalSupplyStandardWriteCount + 1;
     totalSupplyStandardMirror = newTotalSupply;
-}
-
-/// @title The hook for writing to total supply checkpoints for votes
-/// only grab the last 224 bits of the total supply
-hook Sstore _totalSupplyCheckpoints[INDEX uint256 timestamp].(offset 0) uint256 newTotalSupply (uint256 oldTotalSupply) STORAGE
-{
-    totalSupplyVotesWriteCount = totalSupplyVotesWriteCount + 1;
-    totalSupplyVotesLastUpdateTime = newTotalSupply & 0xFFFFFFFF;
-    totalSupplyVotesMirror[timestamp] = newTotalSupply & balanceMax();
 }
 
 // Because `balance` has a uint256 type, any balance addition in CVL1 behaved as a `require_uint256()` casting,
@@ -133,16 +110,12 @@ hook Sstore _balances[KEY address user] uint256 new_balance (uint256 old_balance
 invariant mirrorIsTrue(address a)
     balanceOfMirror[a] == balanceOf(a);
 
-invariant totalSupplyVotesMirrorMatchesCurrentTotalSupplyMirror(env e)
-    totalSupplyVotesLastUpdateTime > 0 && (totalSupplyVotesMirror[e.block.timestamp] == 0) => to_mathint(totalSupplyVotesMirror[totalSupplyVotesLastUpdateTime]) == totalSupplyStandardMirror {
+invariant sumBalancesEqTotalSupplyMirror()
+    sumBalances == totalSupplyStandardMirror {
         preserved {
-            requireInvariant totalSupplyUpdatesInSync();
             requireInvariant totalSupplyIsSumOfBalances();
         }
     }
-
-invariant totalSupplyUpdatesInSync()
-    totalSupplyVotesWriteCount == totalSupplyStandardWriteCount;
 
 invariant balanceOfLteUint224Max(address a)
     balanceOf(a) <= balanceMax() {
@@ -175,204 +148,15 @@ invariant totalSupplyLteMax()
         }
     }
 
-invariant delegateIsGreaterOrEqualBalanceIndividual(address a)
-    a != 0 && delegates(a) != 0 => getVotes(delegates(a)) >= balanceOf(a) {
-        preserved {
-            requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant userVotesLteTotalSupply(a);
-            requireInvariant mirrorIsTrue(a);
-            requireInvariant addressZeroCannotDelegate();
-            requireInvariant corretCheckpoints(a);
-        }
-    }
-
 /// - user A delegating to user B => user B voting power >= balanceOf user A
 /// do not consider case where b is address 0
 /// do not consider case where number of checkpoints is uintMax() as it will overflow, and calls to getVotes will fail
 /// because it will look up at index 0, when it should look up uint256 max
-invariant delegateIsGreaterOrEqual(address a, address b)
-    ((b != 0 && a != 0) &&
-    (delegates(a) == b) => getVotes(b) >= balanceOf(a) &&
-    (delegates(b) == a) => getVotes(a) >= balanceOf(b)) {
-        preserved {
-            requireInvariant doubleDelegateIsGreaterOrEqual(a, b);
-            requireInvariant doubleDelegateIsGreaterOrEqual(b, a);
-            requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant userVotesLteTotalSupply(a);
-            requireInvariant userVotesLteTotalSupply(b); /// might not need this
-            requireInvariant mirrorIsTrue(a);
-            requireInvariant mirrorIsTrue(b);
-            requireInvariant addressZeroCannotDelegate();
-
-            requireInvariant corretCheckpoints(a);
-            requireInvariant corretCheckpoints(b);
-
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(a);
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(b);
-        }
-        preserved mint(address to, uint256 amount) with (env e) {
-            requireInvariant doubleDelegateIsGreaterOrEqual(a, b);
-            requireInvariant doubleDelegateIsGreaterOrEqual(b, a);
-
-            requireInvariant doubleDelegateIsGreaterOrEqual(to, e.msg.sender);
-            requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, to);
-
-            requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, delegates(e.msg.sender));
-            requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, delegates(to));
-
-            requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant userVotesLteTotalSupply(a);
-            requireInvariant userVotesLteTotalSupply(b); /// might not need this
-            requireInvariant userVotesLteTotalSupply(to);
-            requireInvariant userVotesLteTotalSupply(e.msg.sender);
-
-            requireInvariant mirrorIsTrue(a);
-            requireInvariant mirrorIsTrue(b);
-            requireInvariant mirrorIsTrue(to);
-            requireInvariant mirrorIsTrue(e.msg.sender); /// might not need this
-
-            requireInvariant addressZeroCannotDelegate();
-
-            requireInvariant corretCheckpoints(a);
-            requireInvariant corretCheckpoints(b);
-            requireInvariant corretCheckpoints(e.msg.sender);
-        }
-        preserved burn(address to, uint256 amount) with (env e) {
-            requireInvariant doubleDelegateIsGreaterOrEqual(a, b);
-            requireInvariant doubleDelegateIsGreaterOrEqual(b, a);
-
-            // requireInvariant doubleDelegateIsGreaterOrEqual(to, e.msg.sender);
-            // requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, to);
-
-            // requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, delegates(e.msg.sender));
-            // requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, delegates(to));
-            // requireInvariant doubleDelegateIsGreaterOrEqual(delegates(to), e.msg.sender);
-            requireInvariant doubleDelegateIsGreaterOrEqual(to, delegates(to));
-            requireInvariant doubleDelegateIsGreaterOrEqual(delegates(to), to);
-
-            requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant userVotesLteTotalSupply(a);
-            requireInvariant userVotesLteTotalSupply(b); /// might not need this
-            requireInvariant userVotesLteTotalSupply(to);
-            requireInvariant userVotesLteTotalSupply(e.msg.sender);
-
-            requireInvariant mirrorIsTrue(a);
-            requireInvariant mirrorIsTrue(b);
-            requireInvariant mirrorIsTrue(to);
-            requireInvariant mirrorIsTrue(e.msg.sender); /// might not need this
-
-            requireInvariant addressZeroCannotDelegate();
-
-            requireInvariant corretCheckpoints(a);
-            requireInvariant corretCheckpoints(b);
-            requireInvariant corretCheckpoints(e.msg.sender);
-        }
-        preserved transfer(address to, uint256 amount) with (env e) {
-            requireInvariant doubleDelegateIsGreaterOrEqual(a, b);
-            requireInvariant doubleDelegateIsGreaterOrEqual(b, a);
-
-            requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, b);
-            requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, a);
-
-            requireInvariant doubleDelegateIsGreaterOrEqual(to, e.msg.sender);
-            requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, to);
-
-            requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, delegates(e.msg.sender));
-            requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, delegates(to));
-
-            requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant userVotesLteTotalSupply(a);
-            requireInvariant userVotesLteTotalSupply(b); /// might not need this
-            requireInvariant userVotesLteTotalSupply(to);
-            requireInvariant userVotesLteTotalSupply(e.msg.sender);
-
-            requireInvariant mirrorIsTrue(a);
-            requireInvariant mirrorIsTrue(b);
-            requireInvariant mirrorIsTrue(to);
-            requireInvariant mirrorIsTrue(e.msg.sender); /// might not need this
-
-            requireInvariant addressZeroCannotDelegate();
-
-            requireInvariant corretCheckpoints(to);
-            requireInvariant corretCheckpoints(e.msg.sender);
-
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(a);
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(b);
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(to);
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(e.msg.sender);
-        }
-        preserved transferFrom(address from, address to, uint256 amount) with (env e) {
-            requireInvariant doubleDelegateIsGreaterOrEqual(from, to);
-            requireInvariant doubleDelegateIsGreaterOrEqual(to, from);
-
-            requireInvariant doubleDelegateIsGreaterOrEqual(delegates(from), delegates(to));
-            requireInvariant doubleDelegateIsGreaterOrEqual(delegates(to), delegates(from));
-
-            requireInvariant doubleDelegateIsGreaterOrEqual(delegates(from), delegates(to));
-            requireInvariant doubleDelegateIsGreaterOrEqual(delegates(from), delegates(to));
-
-            requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant userVotesLteTotalSupply(to);
-            requireInvariant userVotesLteTotalSupply(from);
-
-            requireInvariant mirrorIsTrue(to);
-            requireInvariant mirrorIsTrue(from);
-
-            requireInvariant addressZeroCannotDelegate();
-
-            requireInvariant corretCheckpoints(to);
-            requireInvariant corretCheckpoints(from);
-
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(a);
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(b);
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(to);
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(from);
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(e.msg.sender);
-        }
-        preserved delegate(address to) with (env e) {
-            requireInvariant doubleDelegateIsGreaterOrEqual(a, b);
-            requireInvariant doubleDelegateIsGreaterOrEqual(b, a);
-
-            requireInvariant doubleDelegateIsGreaterOrEqual(to, e.msg.sender);
-            requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, to);
-
-            requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, delegates(e.msg.sender));
-            requireInvariant doubleDelegateIsGreaterOrEqual(e.msg.sender, delegates(to));
-
-            requireInvariant delegateIsGreaterOrEqual(a, b);
-            requireInvariant delegateIsGreaterOrEqual(e.msg.sender, to);
-            requireInvariant delegateIsGreaterOrEqual(e.msg.sender, a);
-            requireInvariant delegateIsGreaterOrEqual(e.msg.sender, b);
-
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(a);
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(b);
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(to);
-            requireInvariant delegateIsGreaterOrEqualBalanceIndividual(e.msg.sender);
-
-            requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant userVotesLteTotalSupply(a);
-            requireInvariant userVotesLteTotalSupply(b); /// might not need this
-            requireInvariant userVotesLteTotalSupply(to);
-            requireInvariant userVotesLteTotalSupply(e.msg.sender);
-
-            requireInvariant mirrorIsTrue(a);
-            requireInvariant mirrorIsTrue(b);
-            requireInvariant mirrorIsTrue(to);
-            requireInvariant mirrorIsTrue(e.msg.sender); /// might not need this
-
-            requireInvariant addressZeroCannotDelegate();
-            requireInvariant zeroAddressNoBalance();
-
-            requireInvariant corretCheckpoints(to);
-            requireInvariant corretCheckpoints(e.msg.sender);
-        }
-    }
 
 invariant corretCheckpoints(address a) 
     to_mathint(numCheckpoints(a)) <= to_mathint(timestampMax()) {
         preserved {
             requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant userVotesLteTotalSupply(a);
             requireInvariant mirrorIsTrue(a);
             requireInvariant addressZeroCannotDelegate();
             require(to_mathint(numCheckpoints(a)) <= to_mathint(timestampMax() - 1));
@@ -381,10 +165,9 @@ invariant corretCheckpoints(address a)
 
 /// do not consider case where number of checkpoints is uintMax() as it will overflow, and calls to getVotes will fail
 /// because it will look up at index 0, when it should look up uint256 max
-invariant doubleDelegateIsGreaterOrEqual(address a, address b)
+invariant doubleDelegateIsGreaterOrEqual(env e, address a, address b)
     ((b != 0) && (a != 0) && (a != b) &&
     
-    /// delegateIsGreaterOrEqual(a, b);
     /// if a is delegated to b, and b is delegated to b, then b should have at least as many votes as a
     
     ((delegates(a) == b) && (delegates(b) == b)) => to_mathint(getVotes(b)) >= balanceOf(a) + balanceOf(b) &&
@@ -395,18 +178,20 @@ invariant doubleDelegateIsGreaterOrEqual(address a, address b)
 
      {
         preserved {
+            require ((b != 0 && a != 0 && a != b) &&
+                (delegates(a) == b) => getVotes(b) >= balanceOf(a) &&
+                (delegates(b) == a) => getVotes(a) >= balanceOf(b)
+            );
             requireInvariant corretCheckpoints(a);
             requireInvariant corretCheckpoints(b);
-            requireInvariant delegateIsGreaterOrEqual(a, b);
-            requireInvariant delegateIsGreaterOrEqual(b, a);
             requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant userVotesLteTotalSupply(a);
+            require getVotes(a) <= totalSupply();
+            require getVotes(b) <= totalSupply();
             requireInvariant mirrorIsTrue(a);
             requireInvariant mirrorIsTrue(b);
             requireInvariant addressZeroCannotDelegate();
         }
     }
-
 
 invariant checkPointsLtTimestampMax(address a)
     to_mathint(numCheckpoints(a)) <= to_mathint(timestampMax()) {
@@ -419,22 +204,6 @@ invariant checkPointsLtTimestampMax(address a)
 │ Invariant: userVotes is less than or equal to the max total supply                                                  │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 */
-invariant userVotesLteTotalSupply(address user)
-    getVotes(user) <= totalSupply() {
-        preserved burn(address to, uint256 amount) with (env e) {
-            requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant mirrorIsTrue(to);
-        }
-    }
-
-invariant twoUserVotesLteTotalSupply(address usera, address userb)
-    to_mathint(getVotes(usera)) + to_mathint(getVotes(userb)) <= to_mathint(totalSupply()) {
-        preserved {
-            requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant mirrorIsTrue(usera);
-            requireInvariant mirrorIsTrue(userb);
-        }
-    }
 
 invariant addressZeroCannotDelegate()
     delegates(0) == 0 {
@@ -460,18 +229,6 @@ invariant totalSupplyLteUint224Max()
         }
     }
 
-/// hmmm, I wish I could pull the totalSupply this block directly from the token contract
-/// TODO: fix this once I get the ghost figured out
-/// seems like I need to make a mapping and global ghost variable to track the total supply
-/// stored in the ERC20Votes contract https://docs.certora.com/en/latest/docs/confluence/map/ghosts.html
-invariant getPastTotalSupplyEqTotalSupply(env e)
-    getPastTotalSupply(e, assert_uint256(e.block.timestamp - 1)) == totalSupply() {
-        preserved {
-            requireInvariant totalSupplyIsSumOfBalances();
-            requireInvariant mirrorIsTrue(e.msg.sender);
-        }
-    }
-
 /*
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Invariant: balance of address(0) is 0                                                                               │
@@ -494,7 +251,7 @@ rule userCanDelegateBalance(env e, address to) {
     require(delegates(from) != to); /// not already delegated to the target address
     requireInvariant mirrorIsTrue(from);
     requireInvariant mirrorIsTrue(to);
-    requireInvariant doubleDelegateIsGreaterOrEqual(from, to);
+    requireInvariant doubleDelegateIsGreaterOrEqual(e, from, to);
     requireInvariant corretCheckpoints(from);
     requireInvariant corretCheckpoints(to);
 
@@ -602,12 +359,12 @@ rule mint(env e, uint256 amount, address to, address other) {
     require(e.block.timestamp <= timestampMax());
 
     /// other must be different than to and from
-    // require(to != e.msg.sender && to != other);
-    requireInvariant delegateIsGreaterOrEqualBalanceIndividual(to);
+    requireInvariant mirrorIsTrue(to);
+    requireInvariant mirrorIsTrue(e.msg.sender);
+    require (delegates(to) != 0 => getVotes(delegates(to)) >= balanceOf(to));
 
     // cache state
     uint256 toBalanceBefore    = balanceOf(to);
-    uint256 toVotesBefore      = getVotes(to);
     uint256 otherBalanceBefore = balanceOf(other);
     uint256 totalSupplyBefore  = totalSupply();
 
@@ -679,8 +436,8 @@ rule transfer(env e) {
     requireInvariant balanceOfLteUint224Max(holder);
     requireInvariant balanceOfLteUint224Max(recipient);
 
-    requireInvariant delegateIsGreaterOrEqualBalanceIndividual(holder);
-    requireInvariant delegateIsGreaterOrEqualBalanceIndividual(recipient);
+    require delegates(holder) != 0 => getVotes(delegates(holder)) >= balanceOf(holder);
+    require delegates(recipient) != 0 => getVotes(delegates(recipient)) >= balanceOf(recipient);
 
     // cache state
     uint256 holderBalanceBefore          = balanceOf(holder);
@@ -729,8 +486,8 @@ rule transferFrom(env e, address holder, address recipient, address other, uint2
     require(e.block.timestamp <= timestampMax());
     require(other != recipient && other != holder && other != spender);
 
-    requireInvariant delegateIsGreaterOrEqualBalanceIndividual(holder);
-    requireInvariant delegateIsGreaterOrEqualBalanceIndividual(recipient);
+    require delegates(holder) != 0 => getVotes(delegates(holder)) >= balanceOf(holder);
+    require delegates(recipient) != 0 => getVotes(delegates(recipient)) >= balanceOf(recipient);
 
     /// if holder delegated their votes, ensure the delegatee's vote counts are greater than
     /// or equal to the holder's balances
