@@ -15,7 +15,6 @@ methods {
     function getPastTotalSupply(uint256)           external returns (uint256)        ;
     function delegates(address)                    external returns (address) envfree;
     function bufferCap(address)                    external returns (uint256) envfree;
-    function midPoint(address)                     external returns (uint256) envfree;
     function getVotes(address)                     external returns (uint256) envfree;
     function numCheckpoints(address)               external returns (uint32)  envfree;
 }
