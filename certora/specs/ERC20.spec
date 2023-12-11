@@ -35,7 +35,7 @@ function balanceMax() returns uint256 {
 ///    - `totalSupply` <= `maxSupply`
 ///    - `delegated voting power` <= `votingPower`
 ///    - user A delegating to user B => user B voting power >= user A voting power
-///    - `votingPower` <= balanceOf single delegator ==> unfortunately cannot reason about this
+///    - `votingPower` <= balanceOf single delegator
 ///    - number of checkpoints == total number of times transfer has been called by a user, and
 ///    how many times a user has received tokens + the amount of times that mint/burn has been
 ///    called to or for them.
@@ -243,11 +243,13 @@ rule userCanDelegateBalance(env e, address to) {
     address from = e.msg.sender;
     require to != 0 && from != 0; /// moving votes to address 0 does not register
     require(delegates(from) != to); /// not already delegated to the target address
+
     requireInvariant mirrorIsTrue(from);
     requireInvariant mirrorIsTrue(to);
-    requireInvariant doubleDelegateIsGreaterOrEqual(e, from, to);
+
     requireInvariant correctCheckpoints(from);
     requireInvariant correctCheckpoints(to);
+    requireInvariant doubleDelegateIsGreaterOrEqual(e, from, to);
 
     mathint startingVotes = to_mathint(getVotes(to));
     mathint fromBalance = to_mathint(balanceOf(from));
@@ -378,35 +380,27 @@ rule mint(env e, uint256 amount, address to, address other) {
 │ Rules: burn behavior and side effects                                                                               │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 */
-rule burn(env e) {
+rule burn(env e, address from, address other, uint256 amount) {
     requireInvariant totalSupplyIsSumOfBalances();
-    require nonpayable(e);
-    require(e.block.timestamp <= timestampMax()); /// timestamp sanity check
-    require(bufferCap(e.msg.sender) >= buffer(e, e.msg.sender));
-    require(to_mathint(midPoint(e.msg.sender)) == to_mathint(bufferCap(e.msg.sender)) / 2);
-    require(e.msg.sender != 0); /// filter out zero address
-
-    address from;
-    address other;
-    uint256 amount;
 
     // cache state
     uint256 fromBalanceBefore  = balanceOf(from);
     uint256 otherBalanceBefore = balanceOf(other);
     uint256 totalSupplyBefore  = totalSupply();
+    uint256 bufferBefore       = buffer(e, e.msg.sender);
 
-    require(allowance(from, e.msg.sender) >= amount);
-    require(amount != 0);
+    require (fromBalanceBefore <= totalSupplyBefore);
 
     // run transaction
     burn(e, from, amount);
 
     // updates balance and totalSupply
-    assert to_mathint(balanceOf(from)) == fromBalanceBefore   - amount;
-    assert to_mathint(totalSupply())   == totalSupplyBefore - amount;
+    assert to_mathint(buffer(e, e.msg.sender)) == bufferBefore + amount, "incorrect buffer";
+    assert to_mathint(balanceOf(from))         == fromBalanceBefore   - amount, "incorrect balanceOf";
+    assert to_mathint(totalSupply())           == totalSupplyBefore - amount, "incorrect totalSupply";
 
     // no other balance is modified
-    assert balanceOf(other) != otherBalanceBefore => other == from;
+    assert balanceOf(other) != otherBalanceBefore => other == from, "incorrect other balance";
 }
 
 /*
