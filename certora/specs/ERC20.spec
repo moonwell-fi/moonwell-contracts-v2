@@ -148,7 +148,6 @@ invariant totalSupplyLteMax()
 /// do not consider case where b is address 0
 /// do not consider case where number of checkpoints is uintMax() as it will overflow, and calls to getVotes will fail
 /// because it will look up at index 0, when it should look up uint256 max
-
 invariant correctCheckpoints(address a) 
     to_mathint(numCheckpoints(a)) <= to_mathint(timestampMax()) {
         preserved {
@@ -165,7 +164,6 @@ invariant doubleDelegateIsGreaterOrEqual(env e, address a, address b)
     ((b != 0) && (a != 0) && (a != b) &&
     
     /// if a is delegated to b, and b is delegated to b, then b should have at least as many votes as a
-    
     ((delegates(a) == b) && (delegates(b) == b)) => to_mathint(getVotes(b)) >= balanceOf(a) + balanceOf(b) &&
     /// both delegated to a, then the delegate (a) should have sum of votes of both delegators balance at minimum
     ((delegates(a) == a) && (delegates(b) == a)) => to_mathint(getVotes(a)) >= balanceOf(a) + balanceOf(b) &&
@@ -602,4 +600,47 @@ rule permit(env e) {
         assert nonces(account1)              != otherNonceBefore     => account1 == holder;
         assert allowance(account2, account3) != otherAllowanceBefore => (account2 == holder && account3 == spender);
     }
+}
+
+/*
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Rule: allowance +- behavior                                                                                         │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+*/
+rule increaseAllowance(env e, address spender, uint256 amount) {
+    address holder = e.msg.sender;
+    address otherHolder;
+    address otherSpender;
+
+    require(otherHolder != holder);
+
+    // cache state
+    uint256 allowanceBefore = allowance(holder, spender);
+    uint256 otherAllowanceBefore = allowance(otherHolder, otherSpender);
+
+    // run transaction
+    increaseAllowance(e, spender, amount);
+
+    // allowance is updated
+    assert to_mathint(allowance(holder, spender)) == to_mathint(allowanceBefore + amount), "incorrect allowance";
+    assert otherAllowanceBefore == allowance(otherHolder, otherSpender), "incorrect allowance for other holder/spender";
+}
+
+rule decreaseAllowance(env e, address spender, uint256 amount) {
+    address holder = e.msg.sender;
+    address otherHolder;
+    address otherSpender;
+
+    require(otherHolder != holder);
+
+    // cache state
+    uint256 allowanceBefore = allowance(holder, spender);
+    uint256 otherAllowanceBefore = allowance(otherHolder, otherSpender);
+
+    // run transaction
+    decreaseAllowance(e, spender, amount);
+
+    // allowance is updated
+    assert to_mathint(allowance(holder, spender)) == to_mathint(allowanceBefore - amount), "incorrect allowance";
+    assert otherAllowanceBefore == allowance(otherHolder, otherSpender), "incorrect allowance for other holder/spender";
 }
