@@ -9,9 +9,15 @@ import {Addresses} from "@proposals/Addresses.sol";
 
 /*
  to simulate:
+  base:
     forge script script/GetNonce.s.sol:GetNonce \
      \ -vvvvv --rpc-url base --with-gas-price 500000
- to run:
+
+  moonbeam:
+     forge script script/GetNonce.s.sol:GetNonce \
+     \ -vvvvv --rpc-url moonbeam --with-gas-price 500000
+
+  to run:
     forge script script/GetNonce.s.sol:GetNonce \
      \ -vvvvv --rpc-url base --with-gas-price 500000 --broadcast
 */

@@ -37,15 +37,15 @@ contract WellDeployerNonceIncrement is Script, Test {
 
         vm.startBroadcast(PRIVATE_KEY);
 
-        /// send all 427 tx's
-        for (uint256 i = 0; i < 427; i++) {
+        /// send all 2 tx's
+        for (uint256 i = 0; i < 2; i++) {
             (bool success, ) = address(deployerAddress).call{value: 1}("");
             success;
             // console.log(vm.getNonce(deployerAddress));
         }
         vm.stopBroadcast();
 
-        /// should have sent 439 transactions, leaving nonce at 440
-        assertEq(vm.getNonce(deployerAddress), 440, "incorrect nonce");
+        /// should have sent 455 transactions, leaving nonce at 440
+        assertEq(vm.getNonce(deployerAddress), 455, "incorrect nonce");
     }
 }
