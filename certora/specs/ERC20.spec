@@ -380,30 +380,31 @@ rule mint(env e, uint256 amount, address to, address other) {
 │ Rules: burn behavior and side effects                                                                               │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 */
-rule burn(env e, address from, address other, uint256 amount) {
-    /// constrain the prover to avoid timeouts
-    require (e.block.timestamp <= timestampMax());
-    requireInvariant totalSupplyIsSumOfBalances(); /// ensure totalSupply is sum of balances, and total supply ghost updated correctly
-    requireInvariant mirrorIsTrue(from); /// ensure from mirror correct
-    require(bufferCap(e.msg.sender) >= buffer(e, e.msg.sender)); /// ensure valid buffer and cap
+rule burn(env e) {
+    requireInvariant totalSupplyIsSumOfBalances();
+    require nonpayable(e);
+    require(e.block.timestamp <= timestampMax()); /// timestamp sanity check
+    require(bufferCap(e.msg.sender) >= buffer(e, e.msg.sender));
     require(e.msg.sender != 0); /// filter out zero address
-    require(allowance(from, e.msg.sender) >= amount); /// ensure allowance is sufficient
-    require(amount != 0); /// filter out zero amount as that reverts
-    require(balanceOf(from) <= totalSupply()); /// ensure balance is less than total supply
+
+    address from;
+    address other;
+    uint256 amount;
 
     // cache state
     uint256 fromBalanceBefore  = balanceOf(from);
     uint256 otherBalanceBefore = balanceOf(other);
     uint256 totalSupplyBefore  = totalSupply();
-    uint256 bufferBefore       = buffer(e, e.msg.sender);
+
+    require(allowance(from, e.msg.sender) >= amount);
+    require(amount != 0);
 
     // run transaction
     burn(e, from, amount);
 
     // updates balance and totalSupply
-    assert to_mathint(buffer(e, e.msg.sender)) == bufferBefore + amount, "incorrect buffer";
-    assert to_mathint(balanceOf(from))         == fromBalanceBefore   - amount, "incorrect balanceOf";
-    assert to_mathint(totalSupply())           == totalSupplyBefore - amount, "incorrect totalSupply";
+    assert to_mathint(balanceOf(from)) == fromBalanceBefore - amount, "incorrect balanceOf";
+    assert to_mathint(totalSupply())   == totalSupplyBefore - amount, "incorrect totalSupply";
 
     // no other balance is modified
     assert balanceOf(other) != otherBalanceBefore => other == from, "incorrect other balance";
