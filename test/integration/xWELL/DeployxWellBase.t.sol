@@ -27,14 +27,46 @@ contract DeployxWellBaseTest is mipb12Base {
     /// @notice amount of well to mint
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
+    uint16 public constant wormholeMoonbeamChainid =
+        uint16(moonBeamWormholeChainId);
+
     function setUp() public {
         addresses = new Addresses();
-
-        deploy(addresses, address(0));
 
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
         wormholeAdapter = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+    }
+
+    function testValidate() public {
+        validate(addresses, address(0));
+    }
+
+    function testSetup() public {
+        address externalChainAddress = wormholeAdapter.targetAddress(
+            wormholeMoonbeamChainid
+        );
+        assertEq(
+            externalChainAddress,
+            address(wormholeAdapter),
+            "incorrect target address config"
+        );
+        bytes32[] memory externalAddresses = wormholeAdapter.allTrustedSenders(
+            wormholeMoonbeamChainid
+        );
+        assertEq(externalAddresses.length, 1, "incorrect trusted senders");
+        assertEq(
+            externalAddresses[0],
+            wormholeAdapter.addressToBytes(address(wormholeAdapter)),
+            "incorrect actual trusted senders"
+        );
+        assertTrue(
+            wormholeAdapter.isTrustedSender(
+                uint16(wormholeMoonbeamChainid),
+                address(wormholeAdapter)
+            ),
+            "self on moonbeam not trusted sender"
         );
     }
 
@@ -45,9 +77,7 @@ contract DeployxWellBaseTest is mipb12Base {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = chainIdToWormHoleId[
-            sendingChainIdToReceivingChainId[block.chainid]
-        ];
+        uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
 
         console.log("block chain id: ", block.chainid);
         console.log(
@@ -92,9 +122,7 @@ contract DeployxWellBaseTest is mipb12Base {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = chainIdToWormHoleId[
-            sendingChainIdToReceivingChainId[block.chainid]
-        ];
+        uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
 
         bytes memory payload = abi.encode(user, mintAmount);
         bytes32 sender = wormholeAdapter.addressToBytes(

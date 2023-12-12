@@ -34,10 +34,10 @@ contract DeployxWellMoonbeamTest is mipb12Moonbeam {
     /// @notice amount of well to mint
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
+    uint16 public constant wormholeBaseChainid = uint16(baseWormholeChainId);
+
     function setUp() public {
         addresses = new Addresses();
-
-        deploy(addresses, address(0));
 
         well = ERC20(addresses.getAddress("WELL"));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
@@ -47,6 +47,37 @@ contract DeployxWellMoonbeamTest is mipb12Moonbeam {
         );
 
         deal(address(well), user, startingWellAmount);
+    }
+
+    function testValidate() public {
+        validate(addresses, address(0));
+    }
+
+    function testSetup() public {
+        address externalChainAddress = wormholeAdapter.targetAddress(
+            wormholeBaseChainid
+        );
+        assertEq(
+            externalChainAddress,
+            address(wormholeAdapter),
+            "incorrect target address config"
+        );
+        bytes32[] memory externalAddresses = wormholeAdapter.allTrustedSenders(
+            wormholeBaseChainid
+        );
+        assertEq(externalAddresses.length, 1, "incorrect trusted senders");
+        assertEq(
+            externalAddresses[0],
+            wormholeAdapter.addressToBytes(address(wormholeAdapter)),
+            "incorrect actual trusted senders"
+        );
+        assertTrue(
+            wormholeAdapter.isTrustedSender(
+                uint16(wormholeBaseChainid),
+                address(wormholeAdapter)
+            ),
+            "self on moonbeam not trusted sender"
+        );
     }
 
     function testMintViaLockbox(
@@ -124,9 +155,7 @@ contract DeployxWellMoonbeamTest is mipb12Moonbeam {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = chainIdToWormHoleId[
-            sendingChainIdToReceivingChainId[block.chainid]
-        ];
+        uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
         uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
         vm.deal(user, cost);
@@ -164,10 +193,7 @@ contract DeployxWellMoonbeamTest is mipb12Moonbeam {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = chainIdToWormHoleId[
-            sendingChainIdToReceivingChainId[block.chainid]
-        ];
-
+        uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
         bytes memory payload = abi.encode(user, mintAmount);
         bytes32 sender = wormholeAdapter.addressToBytes(
             address(wormholeAdapter)
