@@ -381,15 +381,21 @@ rule mint(env e, uint256 amount, address to, address other) {
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 */
 rule burn(env e, address from, address other, uint256 amount) {
-    requireInvariant totalSupplyIsSumOfBalances();
+    /// constrain the prover to avoid timeouts
+    require (e.block.timestamp <= timestampMax());
+    requireInvariant totalSupplyIsSumOfBalances(); /// ensure totalSupply is sum of balances, and total supply ghost updated correctly
+    requireInvariant mirrorIsTrue(from); /// ensure from mirror correct
+    require(bufferCap(e.msg.sender) >= buffer(e, e.msg.sender)); /// ensure valid buffer and cap
+    require(e.msg.sender != 0); /// filter out zero address
+    require(allowance(from, e.msg.sender) >= amount); /// ensure allowance is sufficient
+    require(amount != 0); /// filter out zero amount as that reverts
+    require(balanceOf(from) <= totalSupply()); /// ensure balance is less than total supply
 
     // cache state
     uint256 fromBalanceBefore  = balanceOf(from);
     uint256 otherBalanceBefore = balanceOf(other);
     uint256 totalSupplyBefore  = totalSupply();
     uint256 bufferBefore       = buffer(e, e.msg.sender);
-
-    require (fromBalanceBefore <= totalSupplyBefore);
 
     // run transaction
     burn(e, from, amount);
