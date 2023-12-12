@@ -7,7 +7,7 @@ import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {IWormhole} from "@protocol/Governance/IWormhole.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {StringUtils} from "@proposals/utils/StringUtils.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
@@ -172,9 +172,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             vm.selectFork(moonbeamForkId);
             testMintSelf();
             vm.prank(voter);
-            (bool success, bytes memory errorString) = address(governor).call(
-                artemisQueuePayload
-            );
+            (bool success, ) = address(governor).call(artemisQueuePayload);
 
             require(success, "proposing gov proposal on moonbeam failed");
 

@@ -104,10 +104,6 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
                 addresses.getAddress("WELL")
             );
 
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
-
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.supplyEmissionsPerSec, 1e18);
@@ -133,10 +129,6 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
                 MToken(addresses.getAddress("MOONWELL_USDBC")),
                 addresses.getAddress("WELL")
             );
-
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);

@@ -4,28 +4,58 @@ import "@forge-std/Test.sol";
 
 import "@test/helper/BaseTest.t.sol";
 
-/// TODO:
-///    - failing add limits
-///    - failing remove limits
-///    - pause specific tests
-///    - test voting power
-
 contract xWELLUnitTest is BaseTest {
+
+    function setUp() public override {
+        super.setUp();
+        vm.prank(owner);
+        xwellProxy.transferOwnership(address(this));
+        xwellProxy.acceptOwnership();
+    }
+
     function testSetup() public {
+        assertTrue(
+            xwellProxy.DOMAIN_SEPARATOR() != bytes32(0),
+            "domain separator not set"
+        );
+        (
+            bytes1 fields,
+            string memory name,
+            string memory version,
+            uint256 chainId,
+            address verifyingContract,
+            bytes32 salt,
+
+        ) = xwellProxy.eip712Domain();
+        assertEq(fields, hex"0f", "incorrect fields");
+        assertEq(version, "1", "incorrect version");
+        assertEq(chainId, block.chainid, "incorrect chain id");
+        assertEq(salt, bytes32(0), "incorrect salt");
+        assertEq(
+            verifyingContract,
+            address(xwellProxy),
+            "incorrect verifying contract"
+        );
+        assertEq(name, xwellName, "incorrect name from eip712Domain()");
         assertEq(xwellProxy.name(), xwellName, "incorrect name");
         assertEq(xwellProxy.symbol(), xwellSymbol, "incorrect symbol");
         assertEq(xwellProxy.totalSupply(), 0, "incorrect total supply");
         assertEq(xwellProxy.owner(), address(this), "incorrect owner");
-        assertEq(xwellProxy.pendingOwner(), owner, "incorrect pending owner");
+        assertEq(xwellProxy.pendingOwner(), address(0), "incorrect pending owner");
         assertEq(
             xwellProxy.CLOCK_MODE(),
             "mode=timestamp",
-            "incorrect pending owner"
+            "incorrect clock mode"
+        );
+        assertEq(
+            xwellProxy.clock(),
+            block.timestamp,
+            "incorrect timestamp"
         );
         assertEq(
             xwellProxy.MAX_SUPPLY(),
             5_000_000_000 * 1e18,
-            "incorrect pending owner"
+            "incorrect max supply"
         );
         assertEq(
             xwellProxy.bufferCap(address(xerc20Lockbox)),
@@ -63,6 +93,11 @@ contract xWELLUnitTest is BaseTest {
             0,
             "incorrect lockbox rate limit per second"
         );
+        assertEq(
+            xwellProxy.maxPauseDuration(),
+            xwellProxy.MAX_PAUSE_DURATION(),
+            "incorrect max pause duration"
+        );
 
         /// PROXY OWNERSHIP
 
@@ -91,7 +126,30 @@ contract xWELLUnitTest is BaseTest {
         assertFalse(xwellProxy.pauseUsed(), "pause should not be used");
     }
 
+    function testInitializationFailsPauseDurationGtMax() public {
+        uint256 maxPauseDuration = xwellProxy.MAX_PAUSE_DURATION();
+
+        bytes memory initData = abi.encodeWithSignature(
+            "initialize(string,string,address,(uint112,uint128,address)[],uint128,address)",
+            xwellName,
+            xwellSymbol,
+            owner,
+            new MintLimits.RateLimitMidPointInfo[](0), /// empty array as it will fail anyway
+            uint128(maxPauseDuration + 1),
+            pauseGuardian
+        );
+
+        vm.expectRevert("xWELL: pause duration too long");
+        new TransparentUpgradeableProxy(
+            address(xwellLogic),
+            address(proxyAdmin),
+            initData
+        );
+    }
+
     function testPendingOwnerAccepts() public {
+        xwellProxy.transferOwnership(owner);
+
         vm.prank(owner);
         xwellProxy.acceptOwnership();
 
@@ -170,126 +228,6 @@ contract xWELLUnitTest is BaseTest {
         _lockboxCanBurn(mintAmount);
 
         assertEq(xwellProxy.totalSupply(), 0, "incorrect total supply");
-    }
-
-    function _lockboxCanBurn(uint112 burnAmount) private {
-        uint256 startingTotalSupply = xwellProxy.totalSupply();
-        uint256 startingWellBalance = well.balanceOf(address(this));
-        uint256 startingXwellBalance = xwellProxy.balanceOf(address(this));
-
-        xwellProxy.approve(address(xerc20Lockbox), burnAmount);
-        xerc20Lockbox.withdraw(burnAmount);
-
-        uint256 endingTotalSupply = xwellProxy.totalSupply();
-        uint256 endingWellBalance = well.balanceOf(address(this));
-        uint256 endingXwellBalance = xwellProxy.balanceOf(address(this));
-
-        assertEq(
-            startingTotalSupply - endingTotalSupply,
-            burnAmount,
-            "incorrect burn amount to totalSupply"
-        );
-        assertEq(
-            endingWellBalance - startingWellBalance,
-            burnAmount,
-            "incorrect burn amount to well balance"
-        );
-        assertEq(
-            startingXwellBalance - endingXwellBalance,
-            burnAmount,
-            "incorrect burn amount to xwell balance"
-        );
-    }
-
-    function _lockboxCanBurnTo(address to, uint112 burnAmount) private {
-        uint256 startingTotalSupply = xwellProxy.totalSupply();
-        uint256 startingWellBalance = well.balanceOf(to);
-        uint256 startingXwellBalance = xwellProxy.balanceOf(address(this));
-
-        xwellProxy.approve(address(xerc20Lockbox), burnAmount);
-        xerc20Lockbox.withdrawTo(to, burnAmount);
-
-        uint256 endingTotalSupply = xwellProxy.totalSupply();
-        uint256 endingWellBalance = well.balanceOf(to);
-        uint256 endingXwellBalance = xwellProxy.balanceOf(address(this));
-
-        assertEq(
-            startingTotalSupply - endingTotalSupply,
-            burnAmount,
-            "incorrect burn amount to totalSupply"
-        );
-        assertEq(
-            endingWellBalance - startingWellBalance,
-            burnAmount,
-            "incorrect burn amount to well balance"
-        );
-        assertEq(
-            startingXwellBalance - endingXwellBalance,
-            burnAmount,
-            "incorrect burn amount to xwell balance"
-        );
-    }
-
-    function _lockboxCanMint(uint112 mintAmount) private {
-        well.mint(address(this), mintAmount);
-        well.approve(address(xerc20Lockbox), mintAmount);
-
-        uint256 startingTotalSupply = xwellProxy.totalSupply();
-        uint256 startingWellBalance = well.balanceOf(address(this));
-        uint256 startingXwellBalance = xwellProxy.balanceOf(address(this));
-
-        xerc20Lockbox.deposit(mintAmount);
-
-        uint256 endingTotalSupply = xwellProxy.totalSupply();
-        uint256 endingWellBalance = well.balanceOf(address(this));
-        uint256 endingXwellBalance = xwellProxy.balanceOf(address(this));
-
-        assertEq(
-            endingTotalSupply - startingTotalSupply,
-            mintAmount,
-            "incorrect mint amount to totalSupply"
-        );
-        assertEq(
-            startingWellBalance - endingWellBalance,
-            mintAmount,
-            "incorrect mint amount to well balance"
-        );
-        assertEq(
-            endingXwellBalance - startingXwellBalance,
-            mintAmount,
-            "incorrect mint amount to xwell balance"
-        );
-    }
-
-    function _lockboxCanMintTo(address to, uint112 mintAmount) private {
-        well.mint(address(this), mintAmount);
-        well.approve(address(xerc20Lockbox), mintAmount);
-
-        uint256 startingTotalSupply = xwellProxy.totalSupply();
-        uint256 startingWellBalance = well.balanceOf(address(this));
-        uint256 startingXwellBalance = xwellProxy.balanceOf(to);
-
-        xerc20Lockbox.depositTo(to, mintAmount);
-
-        uint256 endingTotalSupply = xwellProxy.totalSupply();
-        uint256 endingWellBalance = well.balanceOf(address(this));
-        uint256 endingXwellBalance = xwellProxy.balanceOf(to);
-
-        assertEq(
-            endingTotalSupply - startingTotalSupply,
-            mintAmount,
-            "incorrect mint amount to totalSupply"
-        );
-        assertEq(
-            startingWellBalance - endingWellBalance,
-            mintAmount,
-            "incorrect mint amount to well balance"
-        );
-        assertEq(
-            endingXwellBalance - startingXwellBalance,
-            mintAmount,
-            "incorrect mint amount to xwell balance"
-        );
     }
 
     /// ACL
@@ -477,7 +415,11 @@ contract xWELLUnitTest is BaseTest {
         uint112 newBufferCap
     ) public {
         xwellProxy.removeBridge(address(xerc20Lockbox));
+        xwellProxy.removeBridge(address(wormholeBridgeAdapterProxy));
 
+        bridge = address(
+            uint160(_bound(uint256(uint160(bridge)), 1, type(uint160).max))
+        );
         newRateLimitPerSecond = uint128(
             _bound(
                 newRateLimitPerSecond,
@@ -819,5 +761,79 @@ contract xWELLUnitTest is BaseTest {
         vm.prank(bridge);
         vm.expectRevert("MintLimits: replenish amount cannot be 0");
         xwellProxy.burn(address(this), 0);
+    }
+
+    function testMintFailsWhenPaused() public {
+        vm.prank(pauseGuardian);
+        xwellProxy.pause();
+        assertTrue(xwellProxy.paused());
+
+        vm.prank(address(xerc20Lockbox));
+        vm.expectRevert("Pausable: paused");
+        xwellProxy.mint(address(xerc20Lockbox), 1);
+    }
+
+    function testMintSucceedsAfterPauseDuration() public {
+        testMintFailsWhenPaused();
+
+        vm.warp(xwellProxy.pauseDuration() + block.timestamp + 1);
+
+        assertFalse(xwellProxy.paused());
+        testLockboxCanMint(0); /// let function choose amount to mint at random
+    }
+
+    function testBurnFailsWhenPaused() public {
+        vm.prank(pauseGuardian);
+        xwellProxy.pause();
+        assertTrue(xwellProxy.paused());
+
+        vm.prank(address(xerc20Lockbox));
+        vm.expectRevert("Pausable: paused");
+        xwellProxy.burn(address(xerc20Lockbox), 1);
+    }
+
+    function tesBurnSucceedsAfterPauseDuration() public {
+        testBurnFailsWhenPaused();
+
+        vm.warp(xwellProxy.pauseDuration() + block.timestamp + 1);
+
+        assertFalse(xwellProxy.paused());
+
+        /// mint, then burn after pause is up
+        testLockBoxCanBurn(0); /// let function choose amount to burn at random
+    }
+
+    function testIncreaseAllowance(uint256 amount) public {
+        uint256 startingAllowance = xwellProxy.allowance(
+            address(this),
+            address(xerc20Lockbox)
+        );
+
+        xwellProxy.increaseAllowance(address(xerc20Lockbox), amount);
+
+        assertEq(
+            xwellProxy.allowance(address(this), address(xerc20Lockbox)),
+            startingAllowance + amount,
+            "incorrect allowance"
+        );
+    }
+
+    function testDecreaseAllowance(uint256 amount) public {
+        testIncreaseAllowance(amount);
+
+        amount /= 2;
+
+        uint256 startingAllowance = xwellProxy.allowance(
+            address(this),
+            address(xerc20Lockbox)
+        );
+
+        xwellProxy.decreaseAllowance(address(xerc20Lockbox), amount);
+
+        assertEq(
+            xwellProxy.allowance(address(this), address(xerc20Lockbox)),
+            startingAllowance - amount,
+            "incorrect allowance"
+        );
     }
 }

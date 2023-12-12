@@ -7,6 +7,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 
 contract xWELLDeploy {
     /// @notice for base deployment
@@ -108,15 +109,17 @@ contract xWELLDeploy {
             memory _newRateLimits = new MintLimits.RateLimitMidPointInfo[](
                 newRateLimits.length + 1
             );
+
         for (uint256 i = 0; i < newRateLimits.length; i++) {
             _newRateLimits[i] = newRateLimits[i];
         }
 
-        _newRateLimits[_newRateLimits.length - 1] = MintLimits.RateLimitMidPointInfo({
-            bufferCap: type(uint112).max, /// max buffer cap, lock box can infinite mint up to max supply
-            rateLimitPerSecond: 0, /// no rate limit
-            bridge: lockbox
-        });
+        _newRateLimits[_newRateLimits.length - 1] = MintLimits
+            .RateLimitMidPointInfo({
+                bufferCap: type(uint112).max, /// max buffer cap, lock box can infinite mint up to max supply
+                rateLimitPerSecond: 0, /// no rate limit
+                bridge: lockbox
+            });
 
         xWELL(xwellProxy).initialize(
             tokenName,
@@ -125,6 +128,110 @@ contract xWELLDeploy {
             _newRateLimits,
             newPauseDuration,
             newPauseGuardian
+        );
+    }
+
+    /// @notice deploy a system on base
+    /// this includes the xWELL token, the proxy, the proxy admin, and the wormhole adapter
+    /// but does not include the xWELL lockbox as there is no native WELL token on base
+    /// @param existingProxyAdmin The proxy admin to use, if any
+    function deployBaseSystem(
+        address existingProxyAdmin
+    )
+        public
+        returns (
+            address xwellLogic,
+            address xwellProxy,
+            address proxyAdmin,
+            address wormholeAdapterLogic,
+            address wormholeAdapter
+        )
+    {
+        /// deploy the ERC20 wrapper for USDBC
+        xwellLogic = address(new xWELL());
+
+        wormholeAdapterLogic = address(new WormholeBridgeAdapter());
+
+        if (existingProxyAdmin == address(0)) {
+            proxyAdmin = address(new ProxyAdmin());
+        } else {
+            proxyAdmin = existingProxyAdmin;
+        }
+
+        /// do not initialize the proxy, that is the final step
+        xwellProxy = address(
+            new TransparentUpgradeableProxy(xwellLogic, proxyAdmin, "")
+        );
+
+        wormholeAdapter = address(
+            new TransparentUpgradeableProxy(
+                wormholeAdapterLogic,
+                proxyAdmin,
+                ""
+            )
+        );
+    }
+
+    /// @notice well token address on Moonbeam
+    function deployMoonbeamSystem(
+        address wellAddress,
+        address existingProxyAdmin
+    )
+        public
+        returns (
+            address xwellLogic,
+            address xwellProxy,
+            address proxyAdmin,
+            address wormholeAdapterLogic,
+            address wormholeAdapter,
+            address lockbox
+        )
+    {
+        (
+            xwellLogic,
+            xwellProxy,
+            proxyAdmin,
+            wormholeAdapterLogic,
+            wormholeAdapter
+        ) = deployBaseSystem(existingProxyAdmin);
+        /// lockbox is deployed at the end so that xWELL and wormhole adapter can have the same addresses on all chains.
+        lockbox = deployLockBox(
+            xwellProxy, /// proxy is actually the xWELL token contract
+            wellAddress
+        );
+    }
+
+    function initializeXWell(
+        address xwellProxy,
+        string memory tokenName,
+        string memory tokenSymbol,
+        address tokenOwner,
+        MintLimits.RateLimitMidPointInfo[] memory newRateLimits,
+        uint128 newPauseDuration,
+        address newPauseGuardian
+    ) public {
+        xWELL(xwellProxy).initialize(
+            tokenName,
+            tokenSymbol,
+            tokenOwner,
+            newRateLimits,
+            newPauseDuration,
+            newPauseGuardian
+        );
+    }
+
+    function initializeWormholeAdapter(
+        address wormholeAdapter,
+        address xwellProxy,
+        address tokenOwner,
+        address wormholeRelayerAddress,
+        uint16 chainId
+    ) public {
+        WormholeBridgeAdapter(wormholeAdapter).initialize(
+            xwellProxy,
+            tokenOwner,
+            wormholeRelayerAddress,
+            chainId
         );
     }
 

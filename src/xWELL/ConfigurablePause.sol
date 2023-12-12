@@ -2,6 +2,14 @@ pragma solidity 0.8.19;
 
 import {PausableUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
 
+/// @notice pause contract that has a duration for each pause period.
+/// This contract has a pause duration and a pause start time.
+/// Invariants:
+///  - When the pause start time is non zero, the contract is able to return paused as true.
+///  - Once the block timestamp is greater than the pause start time + pause duration, the
+///  contract is automatically unpaused.
+///  - Block timestamp gte pause start time && block timestamp lte pause start time + pause
+///  duration, then the contract is paused
 contract ConfigurablePause is PausableUpgradeable {
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -37,6 +45,10 @@ contract ConfigurablePause is PausableUpgradeable {
                 : block.timestamp <= pauseStartTime + pauseDuration;
     }
 
+    /// ------------- INTERNAL HELPERS -------------
+
+    /// @notice helper function to update the pause duration once the contract is paused
+    /// @param newPauseDuration new pause duration
     function _updatePauseDuration(uint128 newPauseDuration) internal virtual {
         uint256 oldPauseDuration = pauseDuration;
         pauseDuration = newPauseDuration;
@@ -44,6 +56,8 @@ contract ConfigurablePause is PausableUpgradeable {
         emit PauseDurationUpdated(oldPauseDuration, pauseDuration);
     }
 
+    /// @notice helper function to update the pause start time. used to pause the contract
+    /// @param newPauseStartTime new pause start time
     function _setPauseTime(uint128 newPauseStartTime) internal {
         pauseStartTime = newPauseStartTime;
 

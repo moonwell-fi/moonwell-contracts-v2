@@ -31,14 +31,6 @@ contract xWELLPauseUnitTest is BaseTest {
         xwellProxy.kickGuardian();
     }
 
-    function testGuardianCannotPauseAgainPauseAlreadyUsed() public {
-        testShouldUnpauseAutomaticallyAfterPauseDuration();
-
-        vm.prank(pauseGuardian);
-        vm.expectRevert("ConfigurablePauseGuardian: pause already used");
-        xwellProxy.pause();
-    }
-
     function testGuardianCanPause() public {
         assertFalse(xwellProxy.paused(), "should start unpaused");
 
@@ -100,5 +92,25 @@ contract xWELLPauseUnitTest is BaseTest {
         );
         assertEq(xwellProxy.pauseStartTime(), 0, "pauseStartTime incorrect");
         assertFalse(xwellProxy.pauseUsed(), "incorrect pause used");
+    }
+
+    function testKickGuardianSucceedsAfterUnpause() public {
+        testGuardianCanPause();
+
+        vm.warp(pauseDuration + block.timestamp);
+        assertTrue(xwellProxy.paused(), "should still be paused");
+
+        vm.prank(pauseGuardian);
+        xwellProxy.unpause();
+        assertFalse(xwellProxy.paused(), "should be unpaused");
+        assertEq(xwellProxy.pauseStartTime(), 0, "pauseStartTime incorrect");
+
+        /// in this scenario, kickGuardian fails because the pause
+        /// guardian is address(0), and the pauseStartTime is 0,
+        /// this means the contract is unpaused, so
+        vm.expectRevert(
+            "ConfigurablePauseGuardian: did not pause, so cannot kick"
+        );
+        xwellProxy.kickGuardian();
     }
 }

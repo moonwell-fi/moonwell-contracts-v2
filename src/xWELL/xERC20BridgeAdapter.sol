@@ -6,26 +6,12 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 
-/// @notice Abstract xERC20 Adapter Contract
+/// @notice Abstract Upgradeable xERC20 Adapter Contract
 abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice address of the xERC20 token
     IXERC20 public xERC20;
-
-    /// @notice nonce of failed bridge transactions
-    uint256 public nonce;
-
-    /// @notice information on a failed bridge transaction
-    /// can be used to replay the transaction and recover xERC20
-    struct Error {
-        uint256 chainId;
-        address user;
-        uint256 amount;
-    }
-
-    /// @notice mapping of error events for retry.
-    mapping(uint256 => Error) public errors;
 
     /// --------------------------------------------------------
     /// --------------------------------------------------------
@@ -55,38 +41,14 @@ abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
         uint256 amount
     );
 
-    /// @notice emitted when a bridge error occurs
-    /// @param errorId id of the error
-    /// @param user user who bridged out tokens
-    /// @param amount of tokens bridged out
-    /// @param timestamp of the error
-    event BridgeError(
-        uint256 indexed errorId,
-        address indexed user,
-        uint256 amount,
-        uint256 indexed timestamp
-    );
-
     /// @notice ensure logic contract is unusable
     constructor() {
         _disableInitializers();
     }
 
-    /// @notice Initialize the bridge
-    /// @param newxerc20 xERC20 token address
-    /// @param newOwner contract owner address
-    function initialize(
-        address newxerc20,
-        address newOwner
-    ) public virtual initializer {
-        __Ownable_init();
-        xERC20 = IXERC20(newxerc20);
-        _transferOwnership(newOwner);
-    }
-
-    /// @notice Bridge Out Funds
+    /// @notice Bridge Out Funds to an external chain
     /// @param dstChainId Destination chain id
-    /// @param amount Amount of BIFI to bridge out
+    /// @param amount Amount of xERC20 to bridge out
     /// @param to Address to receive funds on destination chain
     function bridge(
         uint256 dstChainId,
@@ -96,6 +58,12 @@ abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
         _bridgeOut(msg.sender, dstChainId, amount, to);
 
         emit BridgedOut(dstChainId, msg.sender, to, amount);
+    }
+
+    /// @notice set the xERC20 token
+    /// @param newxerc20 address of the xERC20 token
+    function _setxERC20(address newxerc20) internal {
+        xERC20 = IXERC20(newxerc20);
     }
 
     /// @notice Bridge out funds from the chain from the given user
@@ -117,39 +85,10 @@ abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
         address user,
         uint256 amount
     ) internal virtual {
-        try xERC20.mint(user, amount) {
-            emit BridgedIn(chainId, user, amount);
-        } catch {
-            uint256 _nonce = nonce++;
-            errors[_nonce] = Error(chainId, user, amount);
+        xERC20.mint(user, amount);
 
-            emit BridgeError(_nonce, user, amount, block.timestamp);
-        }
+        emit BridgedIn(chainId, user, amount);
     }
-
-    /// @notice Retry a failed bridge in
-    /// @param errorId Id of error to retry
-    function retry(uint256 errorId) external {
-        Error memory userError = errors[errorId];
-        delete errors[errorId];
-
-        require(
-            userError.user != address(0),
-            "AxelarBridgeAdapter: no error found"
-        );
-
-        _bridgeIn(userError.chainId, userError.user, userError.amount);
-    }
-
-    /// @notice Estimate bridge cost
-    /// @param dstChainId Destination chain id
-    /// @param amount Amount of BIFI to bridge out
-    /// @param to Address to receive funds on destination chain
-    function bridgeCost(
-        uint256 dstChainId,
-        uint256 amount,
-        address to
-    ) external view virtual returns (uint256 gasCost);
 
     /// @notice bridge tokens from this chain to the dstChain
     /// @param user address burning tokens and funding the cross chain call

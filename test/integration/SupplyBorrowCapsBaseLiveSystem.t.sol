@@ -10,13 +10,11 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {mipb06 as mip} from "@proposals/mips/mip-b06/mip-b06.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
-contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
+contract SupplyBorrowCapsLiveSystemBaseTest is PostProposalCheck, Configs {
     Comptroller comptroller;
-    TestProposals proposals;
-    Addresses addresses;
     MErc20 mUSDbC;
     MErc20 mWeth;
     MErc20 mcbEth;
@@ -30,23 +28,9 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
     /// @notice max mint amt for cbEth market
     uint256 public constant maxMintAmountcbEth = 5_000e18;
 
-    function setUp() public {
-        address[] memory mips = new address[](1);
-        mips[0] = address(new mip());
-
-        proposals = new TestProposals(mips);
-        proposals.setUp();
-        proposals.testProposals(
-            false,
-            false,
-            false,
-            true,
-            true,
-            true,
-            false,
-            true
-        ); /// only build, run and validate
-        addresses = proposals.addresses();
+    function setUp() public override {
+        super.setUp();
+       
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mUSDbC = MErc20(addresses.getAddress("MOONWELL_USDBC"));
         mWeth = MErc20(addresses.getAddress("MOONWELL_WETH"));
@@ -95,7 +79,6 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
 
         deal(underlying, address(this), mintAmount);
 
-        console.log("mintAmount: ", mintAmount);
         IERC20(underlying).approve(address(mcbEth), mintAmount);
         mcbEth.mint(mintAmount);
 
@@ -111,7 +94,7 @@ contract SupplyBorrowCapsLiveSystemBaseTest is Test, Configs {
     function testBorrowingOverBorrowCapFailsWeth() public {
         uint256 mintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_WETH")
-        );
+        ) - 1e18;
         uint256 borrowAmount = _getMaxBorrowAmount(
             addresses.getAddress("MOONWELL_WETH")
         );

@@ -5,7 +5,7 @@ import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/Enu
 import {Pausable} from "@openzeppelin-contracts/contracts/security/Pausable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
-import {IWormhole} from "@protocol/Governance/IWormhole.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 
 import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
 

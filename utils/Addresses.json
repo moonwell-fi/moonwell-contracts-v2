@@ -20,9 +20,19 @@
         "name": "ARTEMIS_GOVERNOR"
     },
     {
+        "addr": "0xb0eE65140C89a24Db5931D7DDF2c2a7c6f1d9f5B",
+        "chainId": 1284,
+        "name": "MOONBEAM_PROXY_ADMIN"
+    },
+    {
         "addr": "0x511aB53F793683763E5a8829738301368a2411E3",
         "chainId": 1284,
         "name": "WELL"
+    },
+    {
+        "addr": "0x82Aa6030973B61AcED7c978ee0e73A83136b02a9",
+        "chainId": 1284,
+        "name": "MOONBEAM_PAUSE_GUARDIAN_MULTISIG"
     },
     {
         "addr": "0x4200000000000000000000000000000000000006",
@@ -478,5 +488,15 @@
         "addr": "0x627Fe393Bc6EdDA28e99AE648fD6fF362514304b",
         "chainId": 8453,
         "name": "MOONWELL_wstETH"
+    },
+    {
+        "addr": "0x706f82e9bb5b0813501714ab5974216704980e31",
+        "chainId": 8453,
+        "name": "WORMHOLE_BRIDGE_RELAYER"
+    },
+    {
+        "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
+        "chainId": 1284,
+        "name": "WORMHOLE_BRIDGE_RELAYER"
     }
 ]

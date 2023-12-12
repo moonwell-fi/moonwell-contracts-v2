@@ -2,6 +2,12 @@
 
 The xWELL token is an xERC20 compatible token that is meant to be used as a cross chain fungible token. It relies on trusted bridge contracts that are given a rate limit in the MintLimits class. Each bridge has a different rate limit to prevent infinite mints when a single bridge is compromised. A lockbox contract is used on the source chain to allow migration of existing WELL holders over to the new WELL token.
 
+## Frontend Integration
+
+In order to allow token holders to seamlessly use the bridge, the frontend will need to understand the following flows for end users when moving between chains. To go from chain A to chain B, a user must first approve the wormhole or relevant bridge adapter contract the ability to spend their xWELL. Once approved, the user can then call the bridge adapter's `bridge(uint256 dstChainId,uint256 amount,address to)` function. The destination chain id should be the wormhole chainId of the destination chain. The amount should be the amount of xWELL the user wants to bridge. The to address should be the address of the receiving user on the destination chain. The bridge adapter will then transfer the xWELL from the user to the bridge contract, and then the bridge contract will mint the same amount of xWELL on the destination chain. The user will then be able to use the xWELL on the destination chain.
+
+To find out the required amount of gas to be spent to ensure a transaction is successful, the frontend can call the `bridgeCost(uint16 dstChainId)` function on the bridge adapter. This function takes only the destination wormhole chain id the parameter, and returns the maximum amount of gas that should be spent to ensure the transaction is successful. The frontend can then use this value to set the amount native asset to pay for the transaction. This amount of native tokens should be sent in the call to bridge.
+
 ## xWELL Token xERC20 Differences
 
 xERC20 enforces a global rate limit per second on each bridge, meaning all bridge's buffers refill at the same speed once depleted. The xWELL implementation allows each bridge to have a different rate limit, allowing for more flexibility in the bridge setup. The xWELL implementation also allows for a bridge to be disabled, preventing any further minting from that bridge. This is useful if a bridge is compromised and needs to be disabled.
