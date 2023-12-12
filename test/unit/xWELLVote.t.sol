@@ -192,4 +192,51 @@ contract xWELLVoteUnitTest is BaseTest {
             "Timelock pending admin not set correctly"
         );
     }
+
+    function testDelegateReceivesAdditionalVotesAfterMint() public {
+        uint112 quorum = uint112(governor.quorumVotes());
+
+        _lockboxCanMint(quorum);
+
+        uint256 delegateTime = block.timestamp;
+        xwellProxy.delegate(address(this));
+
+        vm.warp(block.timestamp + 1); /// avoid future lookup error
+
+        assertEq(
+            xwellProxy.getPastVotes(address(this), delegateTime),
+            quorum,
+            "Incorrect past votes"
+        );
+        assertEq(
+            xwellProxy.getVotes(address(this)),
+            quorum,
+            "Incorrect current votes"
+        );
+
+        uint256 additionalMint = 100_000 * 1e18;
+
+        _lockboxCanMint(uint112(additionalMint));
+
+        assertEq(
+            xwellProxy.getVotes(address(this)),
+            xwellProxy.balanceOf(address(this)),
+            "Incorrect current votes"
+        );
+
+        vm.warp(block.timestamp + 1); /// avoid future lookup error
+
+        delegateTime++;
+
+        assertEq(
+            xwellProxy.getPastVotes(address(this), delegateTime),
+            quorum + additionalMint,
+            "Incorrect past votes"
+        );
+        assertEq(
+            xwellProxy.getPastVotes(address(this), delegateTime),
+            xwellProxy.balanceOf(address(this)),
+            "Incorrect past votes when compared to balance"
+        );
+    }
 }
