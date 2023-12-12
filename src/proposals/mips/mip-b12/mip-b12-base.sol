@@ -83,11 +83,7 @@ contract mipb12Base is Proposal, CrossChainProposal, Configs, xWELLDeploy {
                 xwellProxy,
                 temporalGov,
                 relayer,
-                uint16(
-                    chainIdToWormHoleId[
-                        sendingChainIdToReceivingChainId[block.chainid]
-                    ]
-                )
+                uint16(chainIdToWormHoleId[block.chainid])
             );
 
             addresses.addAddress(
@@ -201,11 +197,7 @@ contract mipb12Base is Proposal, CrossChainProposal, Configs, xWELLDeploy {
             );
             assertTrue(
                 WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
-                    uint16(
-                        chainIdToWormHoleId[
-                            sendingChainIdToReceivingChainId[block.chainid]
-                        ]
-                    ),
+                    uint16(chainIdToWormHoleId[block.chainid]),
                     wormholeAdapter
                 ),
                 "trusted sender not trusted"

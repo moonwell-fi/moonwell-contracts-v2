@@ -55,7 +55,9 @@ contract mipb12Moonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
 
         {
             /// stkWELL proxy admin
-            address existingProxyAdmin = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
+            address existingProxyAdmin = addresses.getAddress(
+                "MOONBEAM_PROXY_ADMIN"
+            );
 
             /// pause guardian on moonbeam
             address pauseGuardian = addresses.getAddress(
@@ -116,11 +118,7 @@ contract mipb12Moonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
                 xwellProxy,
                 artemisTimelock,
                 relayer,
-                uint16(
-                    chainIdToWormHoleId[
-                        sendingChainIdToReceivingChainId[block.chainid]
-                    ]
-                )
+                uint16(chainIdToWormHoleId[block.chainid])
             );
 
             /// add to moonbeam addresses
@@ -222,11 +220,7 @@ contract mipb12Moonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
             assertTrue(
                 WormholeBridgeAdapter(wormholeBridgeAdapterProxy)
                     .isTrustedSender(
-                        uint16(
-                            chainIdToWormHoleId[
-                                sendingChainIdToReceivingChainId[block.chainid]
-                            ]
-                        ),
+                        uint16(chainIdToWormHoleId[block.chainid]),
                         wormholeBridgeAdapterProxy
                     ),
                 "trusted sender not trusted"
