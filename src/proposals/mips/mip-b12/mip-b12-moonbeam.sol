@@ -55,7 +55,7 @@ contract mipb12Moonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
 
         {
             /// stkWELL proxy admin
-            address existingProxyAdmin = addresses.getAddress("PROXY_ADMIN");
+            address existingProxyAdmin = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
 
             /// pause guardian on moonbeam
             address pauseGuardian = addresses.getAddress(
