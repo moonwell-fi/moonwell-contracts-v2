@@ -7,6 +7,7 @@ abstract contract MultisigProposal is Proposal {
         address target;
         uint256 value;
         bytes arguments;
+        /// for human description
         string description;
     }
 
