@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
@@ -17,7 +17,7 @@ import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/Mul
 
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
-contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
+contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
     MultiRewardDistributor mrd;
     Comptroller comptroller;
     address well;
@@ -27,16 +27,16 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
         super.setUp();
 
         well = addresses.getAddress("WELL");
-        mwstETH = MErc20(addresses.getAddress("MOONWELL_wstETH"));
+        mwstETH = MErc20(addresses.getAddress("MOONWELL_rETH"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         mwstETH.accrueInterest();
     }
 
     function testSetupmwstETH() public {
-        assertEq(address(mwstETH.underlying()), addresses.getAddress("wstETH"));
-        assertEq(mwstETH.name(), "Moonwell Wrapped Lido Staked Ether");
-        assertEq(mwstETH.symbol(), "mwstETH");
+        assertEq(address(mwstETH.underlying()), addresses.getAddress("rETH"));
+        assertEq(mwstETH.name(), "Moonwell Rocket Ether");
+        assertEq(mwstETH.symbol(), "mrETH");
         assertEq(mwstETH.decimals(), 8);
         assertGt(
             mwstETH.exchangeRateCurrent(),
@@ -66,7 +66,7 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
 
     function testSupplyingOverSupplyCapFails() public {
         uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_wstETH")
+            addresses.getAddress("MOONWELL_rETH")
         ) + 1;
         address underlying = address(mwstETH.underlying());
         deal(underlying, address(this), mintAmount);
@@ -78,10 +78,10 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
 
     function testBorrowingOverBorrowCapFails() public {
         uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_wstETH")
-        ) - 1e18;
+            addresses.getAddress("MOONWELL_rETH")
+        );
         uint256 borrowAmount = _getMaxBorrowAmount(
-            addresses.getAddress("MOONWELL_wstETH")
+            addresses.getAddress("MOONWELL_rETH")
         ) + 100;
         address underlying = address(mwstETH.underlying());
 
@@ -102,11 +102,11 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
     function testMintwstETHMTokenSucceeds() public {
         address sender = address(this);
         uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_wstETH")
+            addresses.getAddress("MOONWELL_rETH")
         ) / 2;
 
         MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_wstETH"))
+            payable(addresses.getAddress("MOONWELL_rETH"))
         );
         IERC20 token = IERC20(mToken.underlying());
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
@@ -129,7 +129,7 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
         assertTrue(
             comptroller.checkMembership(
                 sender,
-                MToken(addresses.getAddress("MOONWELL_wstETH"))
+                MToken(addresses.getAddress("MOONWELL_rETH"))
             )
         ); /// ensure sender and mToken is in market
 
@@ -146,8 +146,8 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
         assertApproxEqRel(
             liquidity,
             (mintAmount * price * collateralFactor) / 1e36, /// trim off both the CF and Chainlink Price feed extra precision
-            1e14,
-            "liquidity not within 0.01% of given CF"
+            1e9,
+            "liquidity not within .0000001% of given CF"
         );
         assertEq(shortfall, 0, "Incorrect shortfall");
 
@@ -157,7 +157,7 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
         vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
         mrd._updateBorrowSpeed(
-            MToken(addresses.getAddress("MOONWELL_wstETH")), /// reward mwstETH
+            MToken(addresses.getAddress("MOONWELL_rETH")), /// reward mwstETH
             well, /// rewards paid in WELL
             1e18 /// pay 1 well per second in rewards to borrowers
         );
@@ -171,7 +171,7 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
-                MToken(addresses.getAddress("MOONWELL_wstETH")),
+                MToken(addresses.getAddress("MOONWELL_rETH")),
                 addresses.getAddress("WELL")
             );
 

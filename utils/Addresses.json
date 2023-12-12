@@ -498,5 +498,140 @@
         "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
         "chainId": 1284,
         "name": "WORMHOLE_BRIDGE_RELAYER"
+    },
+    {
+        "addr": "0x8E00D5e02E65A19337Cdba98bbA9F84d4186a180",
+        "chainId": 1284,
+        "name": "UNITROLLER"
+    },
+    {
+        "addr": "0x933fCDf708481c57E9FD82f6BAA084f42e98B60e",
+        "chainId": 1284,
+        "name": "TOKENSALE"
+    },
+    {
+        "addr": "0x8568A675384d761f36eC269D695d6Ce4423cfaB1",
+        "chainId": 1284,
+        "name": "STWELL"
+    },
+    {
+        "addr": "0x091608f4e4a15335145be0A279483C0f8E4c7955",
+        "chainId": 1284,
+        "name": "MGLIMMER"
+    },
+    {
+        "addr": "0xb536c1F9A157B263B70A9a35705168ACC0271742",
+        "chainId": 1284,
+        "name": "WELL_LP"
+    },
+    {
+        "addr": "0x0b7a0EAA884849c6Af7a129e899536dDDcA4905E",
+        "chainId": 1285,
+        "name": "UNITROLLER"
+    },
+    {
+        "addr": "0xCd76e63f3AbFA864c53b4B98F57c1aA6539FDa3a",
+        "chainId": 1285,
+        "name": "STWELL"
+    },
+    {
+        "addr": "0xBb8d88bcD9749636BC4D2bE22aaC4Bb3B01A58F1",
+        "chainId": 1285,
+        "name": "WELL"
+    },
+    {
+        "addr": "0x6a1A771C7826596652daDC9145fEAaE62b1cd07f",
+        "chainId": 1285,
+        "name": "MGLIMMER"
+    },
+    {
+        "addr": "0xE6Bfc609A2e58530310D6964ccdd236fc93b4ADB",
+        "chainId": 1285,
+        "name": "WELL_LP"
+    },
+    {
+        "addr": "0xf0A4a985254F5D419E70e52f634B75D36e668D1a",
+        "chainId": 1285,
+        "name": "MOONWELL_VIEWS_IMPLEMENTATION"
+    },
+    {
+        "addr": "0xAb9AAdace66937185AD9345E6AC291aF82386d4E",
+        "chainId": 1285,
+        "name": "MOONWELL_VIEWS_PROXY_ADMIN"
+    },
+    {
+        "addr": "0xe76C8B8706faC85a8Fbdcac3C42e3E7823c73994",
+        "chainId": 1285,
+        "name": "MOONWELL_VIEWS_PROXY"
+    },
+    {
+        "addr": "0x2a55ba986a8c6EE17979f6233985414A865a280f",
+        "chainId": 1284,
+        "name": "MOONWELL_VIEWS_IMPLEMENTATION"
+    },
+    {
+        "addr": "0x6658ed2f38E4e76BA8F3cb88061372bFdA2821A0",
+        "chainId": 1284,
+        "name": "MOONWELL_VIEWS_PROXY_ADMIN"
+    },
+    {
+        "addr": "0xb4104C02BBf4E9be85AAa41a62974E4e28D59A33",
+        "chainId": 1284,
+        "name": "MOONWELL_VIEWS_PROXY"
+    },
+    {
+        "addr": "0x29eA8B56341EE95C819F4438bc048C6239AE5b71",
+        "chainId": 8453,
+        "name": "MOONWELL_VIEWS_IMPLEMENTATION"
+    },
+    {
+        "addr": "0xFf0731337F615aC5403cb243623283BC04cDe121",
+        "chainId": 8453,
+        "name": "MOONWELL_VIEWS_PROXY_ADMIN"
+    },
+    {
+        "addr": "0x6834770ABA6c2028f448E3259DDEE4BCB879d459",
+        "chainId": 8453,
+        "name": "MOONWELL_VIEWS_PROXY"
+    },
+    {
+        "addr": "0x6834770ABA6c2028f448E3259DDEE4BCB879d459",
+        "chainId": 84531,
+        "name": "MOONWELL_VIEWS_IMPLEMENTATION"
+    },
+    {
+        "addr": "0x76871dE49ADBC457dcba809De8D95b4ECF938F51",
+        "chainId": 84531,
+        "name": "MOONWELL_VIEWS_PROXY_ADMIN"
+    },
+    {
+        "addr": "0xFf0731337F615aC5403cb243623283BC04cDe121",
+        "chainId": 84531,
+        "name": "MOONWELL_VIEWS_PROXY"
+    },
+    {
+        "addr": "0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c",
+        "chainId": 8453,
+        "name": "rETH"
+    },
+    {
+        "addr": "0xf397bF97280B488cA19ee3093E81C0a77F02e9a5",
+        "chainId": 8453,
+        "name": "CHAINLINK_RETH_ETH"
+    },
+    {
+        "addr": "0x106c7f4f7f0F1B1B5973dD7b89CF3ac46420945F",
+        "chainId": 8453,
+        "name": "CHAINLINK_RETH_ETH_COMPOSITE_ORACLE"
+    },
+    {
+        "addr": "0x36BD01e31834A1ea271F0A135e92517a6320B511",
+        "chainId": 8453,
+        "name": "JUMP_RATE_IRM_MOONWELL_rETH"
+    },
+    {
+        "addr": "0xCB1DaCd30638ae38F2B94eA64F066045B7D45f44",
+        "chainId": 8453,
+        "name": "MOONWELL_rETH"
     }
 ]

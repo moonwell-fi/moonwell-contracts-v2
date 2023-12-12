@@ -105,6 +105,8 @@ dist
 # TernJS port file
 .tern-port
 
+.devcontainer
+
 artifacts/
 
 broadcast/

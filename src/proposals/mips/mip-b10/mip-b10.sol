@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
@@ -11,7 +11,7 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
+import {IWormhole} from "@protocol/Governance/IWormhole.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {MIPProposal} from "@proposals/MIPProposal.s.sol";
@@ -31,9 +31,10 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 /// This is a template of a MIP proposal that can be used to add new mTokens
 /// @dev be sure to include all necessary underlying and price feed addresses
 /// in the Addresses.sol contract for the network the MTokens are being deployed on.
-contract mipb08 is Proposal, CrossChainProposal, Configs {
+contract mipb10 is Proposal, CrossChainProposal, Configs {
     /// @notice the name of the proposal
-    string public constant name = "MIP wstETH Market Creation";
+    /// Read more here: https://forum.moonwell.fi/t/mip-b10-onboard-reth-as-collateral-on-base-deployment/672
+    string public constant name = "MIP-B10 rETH Market Creation";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;
@@ -57,7 +58,7 @@ contract mipb08 is Proposal, CrossChainProposal, Configs {
         /// for example, should be set to
         /// LISTING_PATH="./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
         string
-            memory descriptionPath = "./src/proposals/mips/mip-b08/MIP-B08.md";
+            memory descriptionPath = "./src/proposals/mips/mip-b10/MIP-B10.md";
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(descriptionPath)
         );
@@ -69,7 +70,7 @@ contract mipb08 is Proposal, CrossChainProposal, Configs {
 
         {
             string
-                memory mtokensPath = "./src/proposals/mips/mip-b08/MTokens.json";
+                memory mtokensPath = "./src/proposals/mips/mip-b10/MTokens.json";
             /// MTOKENS_PATH="./src/proposals/mips/examples/mip-market-listing/MTokens.json"
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
@@ -102,7 +103,7 @@ contract mipb08 is Proposal, CrossChainProposal, Configs {
 
         {
             string
-                memory mtokensPath = "./src/proposals/mips/mip-b08/RewardStreams.json";
+                memory mtokensPath = "./src/proposals/mips/mip-b10/RewardStreams.json";
             /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);

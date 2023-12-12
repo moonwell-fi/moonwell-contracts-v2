@@ -36,8 +36,8 @@ contract DeployCompositeOracle is Script {
         vm.startBroadcast(PRIVATE_KEY);
         ChainlinkCompositeOracle clco = new ChainlinkCompositeOracle(
             addresses.getAddress("CHAINLINK_ETH_USD"),
-            addresses.getAddress("CHAINLINK_STETH_ETH"),
-            addresses.getAddress("CHAINLINK_WSTETH_STETH")
+            addresses.getAddress("CHAINLINK_RETH_ETH"),
+            address(0) /// only 2 oracles for this composite oracle
         );
 
         console.log("successfully deployed chainlink composite oracle: %s", address(clco));

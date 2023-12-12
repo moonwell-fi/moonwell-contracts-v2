@@ -109,6 +109,10 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
             );
 
             for (uint256 i = 0; i < decodedEmissions.length; i++) {
+                require(
+                    decodedEmissions[i].borrowEmissionsPerSec != 0,
+                    "borrow speed must be gte 1"
+                );
                 emissions[block.chainid].push(decodedEmissions[i]);
             }
         }
@@ -391,7 +395,10 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public override(CrossChainProposal, MIPProposal) {
+    function run(
+        Addresses addresses,
+        address
+    ) public override(CrossChainProposal, MIPProposal) {
         printCalldata(addresses);
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
