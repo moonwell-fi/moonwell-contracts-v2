@@ -7,6 +7,7 @@ import "@forge-std/Test.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Addresses} from "@proposals/Addresses.sol";
+import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {mipb12Base} from "@protocol/proposals/mips/mip-b12/mip-b12-base.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
@@ -41,6 +42,26 @@ contract DeployxWellBaseTest is mipb12Base {
 
     function testValidate() public {
         validate(addresses, address(0));
+    }
+
+    function testReinitializeFails() public {
+        vm.expectRevert("Initializable: contract is already initialized");
+        xwell.initialize(
+            "WELL Token",
+            "xWELL",
+            address(1),
+            new MintLimits.RateLimitMidPointInfo[](0),
+            0,
+            address(0)
+        );
+
+        vm.expectRevert("Initializable: contract is already initialized");
+        wormholeAdapter.initialize(
+            address(1),
+            address(1),
+            address(1),
+            wormholeMoonbeamChainid
+        );
     }
 
     function testSetup() public {
