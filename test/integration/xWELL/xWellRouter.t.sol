@@ -40,6 +40,9 @@ contract xWellRouterTest is Test, ChainIds {
     uint16 public constant wormholeMoonbeamChainid =
         uint16(moonBeamWormholeChainId);
 
+    /// @notice event emitted when WELL is bridged to xWELL via the base chain
+    event BridgeOutSuccess(address indexed to, uint256 amount);
+
     function setUp() public {
         addresses = new Addresses();
 
@@ -79,9 +82,96 @@ contract xWellRouterTest is Test, ChainIds {
             address(wormholeAdapter),
             "Wormhole bridge address incorrect"
         );
+        assertEq(
+            router.baseWormholeChainId(),
+            baseWormholeChainId,
+            "Base wormhole chain id incorrect"
+        );
     }
 
-    function testBridgeOutSuccess() public {}
+    function testBridgeOutNoApprovalFails() public {
+        uint256 mintAmount = 100_000_000 * 1e18;
+
+        deal(address(well), address(this), mintAmount);
+        uint256 bridgeCost = router.bridgeCost();
+
+        vm.deal(address(this), bridgeCost);
+
+        vm.expectRevert(
+            "Well::transferFrom: transfer amount exceeds spender allowance"
+        );
+        router.bridgeToBase{value: bridgeCost}(mintAmount);
+    }
+
+    function testBridgeOutNoBalanceFails() public {
+        uint256 mintAmount = 100_000_000 * 1e18;
+
+        uint256 bridgeCost = router.bridgeCost();
+
+        vm.deal(address(this), bridgeCost);
+        well.approve(address(router), mintAmount);
+
+        vm.expectRevert(
+            "Well::_transferTokens: transfer amount exceeds balance"
+        );
+        router.bridgeToBase{value: bridgeCost}(mintAmount);
+    }
+
+    function testBridgeOutSuccess() public {
+        testBridgeOutSuccess(300_000_000 * 1e18);
+    }
+
+    function testBridgeOutToSuccess(
+        uint256 mintAmount
+    ) public returns (uint256) {
+        mintAmount = _bound(
+            mintAmount,
+            1,
+            xwell.buffer(address(wormholeAdapter))
+        );
+
+        uint256 startingXWellBalance = xwell.balanceOf(address(this));
+        uint256 startingXWellTotalSupply = xwell.totalSupply();
+        uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
+
+        deal(address(well), address(this), mintAmount);
+        uint256 bridgeCost = router.bridgeCost();
+        vm.deal(address(this), bridgeCost);
+        uint256 startingWellBalance = well.balanceOf(address(this));
+        uint256 startingLockboxWellBalance = well.balanceOf(address(lockbox));
+
+        well.approve(address(router), mintAmount);
+        vm.expectEmit(true, true, true, true, address(router));
+        emit BridgeOutSuccess(address(this), mintAmount);
+        router.bridgeToBase{value: bridgeCost}(address(this), mintAmount);
+
+        assertEq(
+            xwell.buffer(address(wormholeAdapter)),
+            startingBuffer + mintAmount,
+            "incorrect buffer"
+        );
+        assertEq(
+            xwell.balanceOf(address(this)),
+            startingXWellBalance,
+            "incorrect user xwell balance"
+        );
+        assertEq(
+            well.balanceOf(address(this)),
+            startingWellBalance - mintAmount,
+            "incorrect user well balance"
+        );
+        assertEq(
+            well.balanceOf(address(lockbox)),
+            startingLockboxWellBalance + mintAmount,
+            "incorrect lockbox well balance"
+        );
+        assertEq(
+            xwell.totalSupply(),
+            startingXWellTotalSupply,
+            "incorrect xwell total supply"
+        );
+        return mintAmount;
+    }
 
     function testBridgeOutSuccess(uint256 mintAmount) public returns (uint256) {
         mintAmount = _bound(
@@ -90,17 +180,46 @@ contract xWellRouterTest is Test, ChainIds {
             xwell.buffer(address(wormholeAdapter))
         );
 
-        uint256 startingXWellBalance = xwell.balanceOf(user);
+        uint256 startingXWellBalance = xwell.balanceOf(address(this));
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
         deal(address(well), address(this), mintAmount);
         uint256 bridgeCost = router.bridgeCost();
         vm.deal(address(this), bridgeCost);
+        uint256 startingWellBalance = well.balanceOf(address(this));
+        uint256 startingLockboxWellBalance = well.balanceOf(address(lockbox));
 
         well.approve(address(router), mintAmount);
+        vm.expectEmit(true, true, true, true, address(router));
+        emit BridgeOutSuccess(address(this), mintAmount);
         router.bridgeToBase{value: bridgeCost}(mintAmount);
 
+        assertEq(
+            xwell.buffer(address(wormholeAdapter)),
+            startingBuffer + mintAmount,
+            "incorrect buffer"
+        );
+        assertEq(
+            xwell.balanceOf(address(this)),
+            startingXWellBalance,
+            "incorrect user xwell balance"
+        );
+        assertEq(
+            well.balanceOf(address(this)),
+            startingWellBalance - mintAmount,
+            "incorrect user well balance"
+        );
+        assertEq(
+            well.balanceOf(address(lockbox)),
+            startingLockboxWellBalance + mintAmount,
+            "incorrect lockbox well balance"
+        );
+        assertEq(
+            xwell.totalSupply(),
+            startingXWellTotalSupply,
+            "incorrect xwell total supply"
+        );
         return mintAmount;
     }
 }
