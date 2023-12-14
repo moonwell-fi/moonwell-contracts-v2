@@ -32,7 +32,14 @@ contract xWELLRouter {
     /// @notice the chain id of the base chain
     uint16 public constant baseWormholeChainId = 30;
 
+    /// @notice event emitted when WELL is bridged to xWELL via the base chain
+    event BridgeOutSuccess(address indexed to, uint256 amount);
+
     /// @notice initialize the xWELL router
+    /// @param _xwell the xWELL token
+    /// @param _well the standard WELL token
+    /// @param _lockbox the xWELL lockbox
+    /// @param _wormholeBridge the wormhole bridge adapter proxy
     constructor(
         address _xwell,
         address _well,
@@ -89,5 +96,7 @@ contract xWELLRouter {
             xwellAmount,
             to
         );
+
+        emit BridgeOutSuccess(to, amount);
     }
 }
