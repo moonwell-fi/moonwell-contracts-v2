@@ -8,6 +8,34 @@ In order to allow token holders to seamlessly use the bridge, the frontend will 
 
 To find out the required amount of gas to be spent to ensure a transaction is successful, the frontend can call the `bridgeCost(uint16 dstChainId)` function on the bridge adapter. This function takes only the destination wormhole chain id the parameter, and returns the maximum amount of gas that should be spent to ensure the transaction is successful. The frontend can then use this value to set the amount native asset to pay for the transaction. This amount of native tokens should be sent in the call to bridge.
 
+### Router Contract
+
+In order to use the router to simplify users migrating from WELL to xWELL, the frontend will need to talk to the router contract. Users will approve the router to spend their WELL and then call `bridgeToBase(address to, uint256 amount)` if to is different from sender, or `bridgeToBase(uint256 amount)` if to is the same as sender. The router will then transfer the WELL from the user to the lockbox contract, and then the lockbox contract will mint the same amount of xWELL to the router, which will then migrate those tokens to xWELL the base chain through the WormholeAdapter. The user must pass the correct amount of GLMR to the router to cover the gas costs of the transaction. The amount can be found by calling the `bridgeCost()` function on the router contract which returns a uint256.
+
+### Events
+
+When a user uses the WormholeBridgeAdapter contract to move tokens from one chain to another, the following events will be emitted
+
+from the xWELL token:
+
+On Mint:
+```Transfer(address(0), to, amount);```
+```BufferUsed(amount, newBufferStored);```
+
+On Burn:
+```Transfer(from, address(0), amount);```
+```BufferReplenished(amount, newBufferStored);```
+
+from the WormholeBridgeAdapter:
+
+on Mint:
+```BridgedIn(chainId, user, amount)```
+```BridgedIn(uint256 indexed srcChainId, address indexed tokenReceiver, uint256 amount);```
+
+on Burn:
+```TokensSent(targetChainId, to, amount);```
+```BridgedOut(uint256 indexed dstChainId, address indexed bridgeUser, address indexed tokenReceiver, uint256 amount);```
+
 ## xWELL Token xERC20 Differences
 
 xERC20 enforces a global rate limit per second on each bridge, meaning all bridge's buffers refill at the same speed once depleted. The xWELL implementation allows each bridge to have a different rate limit, allowing for more flexibility in the bridge setup. The xWELL implementation also allows for a bridge to be disabled, preventing any further minting from that bridge. This is useful if a bridge is compromised and needs to be disabled.
