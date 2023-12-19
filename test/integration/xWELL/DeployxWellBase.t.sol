@@ -12,7 +12,7 @@ import {mipb12Base} from "@protocol/proposals/mips/mip-b12/mip-b12-base.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 
-contract DeployxWellBaseTest is mipb12Base {
+contract DeployxWellLiveSystemBaseTest is mipb12Base {
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
 
@@ -48,7 +48,7 @@ contract DeployxWellBaseTest is mipb12Base {
         vm.expectRevert("Initializable: contract is already initialized");
         xwell.initialize(
             "WELL Token",
-            "xWELL",
+            "WELL",
             address(1),
             new MintLimits.RateLimitMidPointInfo[](0),
             0,
