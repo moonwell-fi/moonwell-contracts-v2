@@ -106,7 +106,7 @@ contract mipb12Moonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
             initializeXWell(
                 xwellProxy,
                 "WELL Token",
-                "xWELL",
+                "WELL",
                 artemisTimelock,
                 limits,
                 pauseDuration,
