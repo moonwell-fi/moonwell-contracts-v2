@@ -23,8 +23,8 @@ contract xWELL is
     /// @notice maximum supply is 5 billion tokens if all WELL holders migrate to xWELL
     uint256 public constant MAX_SUPPLY = 5_000_000_000 * 1e18;
 
-    /// @notice maximum supply is 5 billion tokens if all WELL holders migrate to xWELL
-    uint128 public constant MAX_RATE_LIMIT_PER_SECOND = 5_000_000_000 * 1e18;
+    /// @notice maximum rate limit per second is 1k
+    uint128 public constant MAX_RATE_LIMIT_PER_SECOND = 1_000 * 1e18;
 
     /// @notice minimum buffer cap
     uint112 public constant MIN_BUFFER_CAP = 1_000 * 1e18;
