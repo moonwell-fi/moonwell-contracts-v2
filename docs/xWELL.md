@@ -18,7 +18,7 @@ The xWELL token has a guardian system that allows for the token to be paused, wh
 
 The owner can change the pause duration, even while the contract is paused. This allows the owner to extend the pause duration if needed during an emergency situation.
 
-If the owner grants a new pause guardian while the contract is paused, then the contract will immediately unpause. Therefore, the owner should only grant a new pause guardian if the contract is not paused, however we did not want to enshrine this at the code.
+The owner can only grant a new pause guardian if the contract is not paused, and the owner can unpause the contract, which enables them to assign a new pause guardian.
 
 ### Ownership
 
