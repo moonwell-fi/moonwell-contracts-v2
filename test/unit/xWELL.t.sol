@@ -561,7 +561,7 @@ contract xWELLUnitTest is BaseTest {
     function testAddNewBridgeBufferCapZeroFails() public {
         uint112 bufferCap = 0;
         address newBridge = address(100);
-        uint128 rateLimitPerSecond = 10_000 * 1e18;
+        uint128 rateLimitPerSecond = 1_000 * 1e18;
 
         MintLimits.RateLimitMidPointInfo memory bridge = MintLimits
             .RateLimitMidPointInfo({
