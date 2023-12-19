@@ -47,7 +47,7 @@ contract DeployxWellLiveSystemBaseTest is mipb12Base {
     function testReinitializeFails() public {
         vm.expectRevert("Initializable: contract is already initialized");
         xwell.initialize(
-            "WELL Token",
+            "WELL",
             "WELL",
             address(1),
             new MintLimits.RateLimitMidPointInfo[](0),

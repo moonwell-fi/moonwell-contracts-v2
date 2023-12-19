@@ -70,7 +70,7 @@ contract mipb12Base is Proposal, CrossChainProposal, Configs, xWELLDeploy {
 
             initializeXWell(
                 xwellProxy,
-                "WELL Token",
+                "WELL",
                 "WELL",
                 temporalGov,
                 limits,

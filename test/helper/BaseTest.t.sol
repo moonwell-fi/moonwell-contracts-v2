@@ -40,7 +40,7 @@ contract BaseTest is xWELLDeploy, Test {
     xWELL public xwellProxy;
 
     /// @notice name of the token
-    string public xwellName = "WELL Token";
+    string public xwellName = "WELL";
 
     /// @notice symbol of the token
     string public xwellSymbol = "WELL";
