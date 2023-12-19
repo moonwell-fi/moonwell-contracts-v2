@@ -122,7 +122,16 @@ invariant balanceOfLteUint224Max(address a)
         }
     }
 
-/// vote count cannot exceed uint224 max
+
+/// if buffer cap is non zero, it implies that buffer cap is gt min buffer cap
+invariant bufferCapGteMinBufferCap(address a)
+    bufferCap(a) != 0 => assert_uint112(bufferCap(a)) >= minBufferCap(); /// buffercap can never exceed uint112 max
+
+invariant rateLimitPerSecondLteMaxRateLimit(address a)
+    assert_uint128(rateLimitPerSecond(a)) <= maxRateLimitPerSecond();
+
+invariant nonZeroRateLimitPerSecondImpliesNonZeroBufferCap(address a)
+    assert_uint128(rateLimitPerSecond(a)) != 0 => bufferCap(a) != 0;
 
 /*
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐

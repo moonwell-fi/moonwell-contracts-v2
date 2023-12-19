@@ -13,8 +13,11 @@ methods {
     function paused()                              external returns (bool)           ;
     function buffer(address)                       external returns (uint256)        ;
     function getPastTotalSupply(uint256)           external returns (uint256)        ;
+    function numCheckpoints(address)               external returns (uint32)  envfree;
     function delegates(address)                    external returns (address) envfree;
     function bufferCap(address)                    external returns (uint256) envfree;
     function getVotes(address)                     external returns (uint256) envfree;
-    function numCheckpoints(address)               external returns (uint32)  envfree;
+    function rateLimitPerSecond(address)           external returns (uint256) envfree;
+    function minBufferCap()                        external returns (uint112) envfree;
+    function maxRateLimitPerSecond()               external returns (uint128) envfree;
 }
