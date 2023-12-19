@@ -5,7 +5,6 @@ import "@forge-std/Test.sol";
 import "@test/helper/BaseTest.t.sol";
 
 contract xWELLUnitTest is BaseTest {
-
     function setUp() public override {
         super.setUp();
         vm.prank(owner);
@@ -41,17 +40,17 @@ contract xWELLUnitTest is BaseTest {
         assertEq(xwellProxy.symbol(), xwellSymbol, "incorrect symbol");
         assertEq(xwellProxy.totalSupply(), 0, "incorrect total supply");
         assertEq(xwellProxy.owner(), address(this), "incorrect owner");
-        assertEq(xwellProxy.pendingOwner(), address(0), "incorrect pending owner");
+        assertEq(
+            xwellProxy.pendingOwner(),
+            address(0),
+            "incorrect pending owner"
+        );
         assertEq(
             xwellProxy.CLOCK_MODE(),
             "mode=timestamp",
             "incorrect clock mode"
         );
-        assertEq(
-            xwellProxy.clock(),
-            block.timestamp,
-            "incorrect timestamp"
-        );
+        assertEq(xwellProxy.clock(), block.timestamp, "incorrect timestamp");
         assertEq(
             xwellProxy.MAX_SUPPLY(),
             5_000_000_000 * 1e18,
@@ -293,6 +292,21 @@ contract xWELLUnitTest is BaseTest {
             newPauseGuardian,
             "incorrect pause guardian"
         );
+    }
+
+    function testGrantPauseGuardianWhilePausedUnpauses() public {
+        vm.prank(pauseGuardian);
+        xwellProxy.pause();
+        assertTrue(xwellProxy.paused(), "contract not paused");
+        
+        address newPauseGuardian = address(0xffffffff);
+        xwellProxy.grantPauseGuardian(newPauseGuardian);
+        assertEq(
+            xwellProxy.pauseGuardian(),
+            newPauseGuardian,
+            "incorrect pause guardian"
+        );
+        assertFalse(xwellProxy.paused(), "contract not unpaused");
     }
 
     function testUpdatePauseDurationSucceeds() public {
@@ -761,6 +775,22 @@ contract xWELLUnitTest is BaseTest {
         vm.prank(bridge);
         vm.expectRevert("MintLimits: replenish amount cannot be 0");
         xwellProxy.burn(address(this), 0);
+    }
+
+    function testDepleteBufferNonBridgeByOneFails() public {
+        address bridge = address(0xeeeee);
+
+        vm.prank(bridge);
+        vm.expectRevert("RateLimited: buffer cap overflow");
+        xwellProxy.burn(address(this), 1);
+    }
+
+    function testReplenishBufferNonBridgeByOneFails() public {
+        address bridge = address(0xeeeee);
+
+        vm.prank(bridge);
+        vm.expectRevert("RateLimited: rate limit hit");
+        xwellProxy.mint(address(this), 1);
     }
 
     function testMintFailsWhenPaused() public {
