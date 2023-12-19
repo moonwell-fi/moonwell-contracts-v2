@@ -23,8 +23,8 @@ contract xWELL is
     /// @notice maximum supply is 5 billion tokens if all WELL holders migrate to xWELL
     uint256 public constant MAX_SUPPLY = 5_000_000_000 * 1e18;
 
-    /// @notice maximum rate limit per second is 1k
-    uint128 public constant MAX_RATE_LIMIT_PER_SECOND = 1_000 * 1e18;
+    /// @notice maximum rate limit per second is 25k
+    uint128 public constant MAX_RATE_LIMIT_PER_SECOND = 25_000 * 1e18;
 
     /// @notice minimum buffer cap
     uint112 public constant MIN_BUFFER_CAP = 1_000 * 1e18;
@@ -189,11 +189,17 @@ contract xWELL is
     }
 
     /// @notice grant new pause guardian
-    /// @dev should only be called when unpaused, otherwise the
+    /// @dev can only be called when unpaused, otherwise the
     /// contract can be paused again
     /// @param newPauseGuardian the new pause guardian
-    function grantPauseGuardian(address newPauseGuardian) external onlyOwner {
+    function grantPauseGuardian(address newPauseGuardian) external onlyOwner whenNotPaused {
         _grantGuardian(newPauseGuardian);
+    }
+
+    /// @notice unpauses this contract, only callable by owner
+    /// allows the owner to unpause the contract when the guardian has paused
+    function ownerUnpause() external onlyOwner whenPaused {
+        _unpause();
     }
 
     /// @notice update the pause duration
