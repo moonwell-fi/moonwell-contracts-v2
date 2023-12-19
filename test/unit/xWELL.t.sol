@@ -294,19 +294,15 @@ contract xWELLUnitTest is BaseTest {
         );
     }
 
-    function testGrantPauseGuardianWhilePausedUnpauses() public {
+    function testGrantPauseGuardianWhilePausedFails() public {
         vm.prank(pauseGuardian);
         xwellProxy.pause();
         assertTrue(xwellProxy.paused(), "contract not paused");
-        
         address newPauseGuardian = address(0xffffffff);
+
+        vm.expectRevert("Pausable: paused");
         xwellProxy.grantPauseGuardian(newPauseGuardian);
-        assertEq(
-            xwellProxy.pauseGuardian(),
-            newPauseGuardian,
-            "incorrect pause guardian"
-        );
-        assertFalse(xwellProxy.paused(), "contract not unpaused");
+        assertTrue(xwellProxy.paused(), "contract not paused");
     }
 
     function testUpdatePauseDurationSucceeds() public {
@@ -801,6 +797,26 @@ contract xWELLUnitTest is BaseTest {
         vm.prank(address(xerc20Lockbox));
         vm.expectRevert("Pausable: paused");
         xwellProxy.mint(address(xerc20Lockbox), 1);
+    }
+
+    function testOwnerCanUnpause() public {
+        vm.prank(pauseGuardian);
+        xwellProxy.pause();
+        assertTrue(xwellProxy.paused());
+
+        xwellProxy.ownerUnpause();
+        assertTrue(xwellProxy.paused(), "contract not unpaused");
+    }
+
+    function testOwnerUnpauseFailsNotPaused() public {
+        vm.expectRevert("Pausable: not paused");
+        xwellProxy.ownerUnpause();
+    }
+
+    function testNonOwnerUnpauseFails() public {
+        vm.prank(address(10000000000));
+        vm.expectRevert("Ownable: caller is not the owner");
+        xwellProxy.ownerUnpause();
     }
 
     function testMintSucceedsAfterPauseDuration() public {
