@@ -40,10 +40,10 @@ contract BaseTest is xWELLDeploy, Test {
     xWELL public xwellProxy;
 
     /// @notice name of the token
-    string public xwellName = "Cross Chain WELL";
+    string public xwellName = "WELL Token";
 
     /// @notice symbol of the token
-    string public xwellSymbol = "xWELL";
+    string public xwellSymbol = "WELL";
 
     /// @notice owner of the token
     address public owner = address(100_000_000);
