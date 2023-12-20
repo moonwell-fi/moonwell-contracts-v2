@@ -18,6 +18,8 @@ The xWELL token has a guardian system that allows for the token to be paused, wh
 
 The owner can change the pause duration, even while the contract is paused. This allows the owner to extend the pause duration if needed during an emergency situation.
 
+The owner can only grant a new pause guardian if the contract is not paused, and the owner can unpause the contract, which enables them to assign a new pause guardian.
+
 ### Ownership
 
 The contract is owned by the Temporal Governor on Base, and by the Moonwell Artemis Timelock on Moonwell. The owner can change the guardian address, and add, remove and change the rate limits on the bridges. The owner can also change the pause duration, even while the contract is paused.

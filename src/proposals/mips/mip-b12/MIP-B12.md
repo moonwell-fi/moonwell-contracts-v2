@@ -83,9 +83,9 @@ forge test --match-path test/invariant/xWELLInvariant.t.sol
 To run the integration tests for xWELL, run the following command:
 
 ```
-forge test --match-contract DeployxWellBaseTest --fork-url base -vvv
+forge test --match-contract DeployxWellLiveSystemBaseTest --fork-url base -vvv
 ```
 
 ```
-forge test --match-contract DeployxWellMoonbeamTest --fork-url moonbeam -vvv
+forge test --match-contract DeployxWellLiveSystemMoonbeamTest --fork-url moonbeam -vvv
 ```

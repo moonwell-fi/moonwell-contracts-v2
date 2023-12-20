@@ -13,7 +13,7 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {mipb12Moonbeam} from "@protocol/proposals/mips/mip-b12/mip-b12-moonbeam.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 
-contract DeployxWellMoonbeamTest is mipb12Moonbeam {
+contract DeployxWellLiveSystemMoonbeamTest is mipb12Moonbeam {
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
 
@@ -57,8 +57,8 @@ contract DeployxWellMoonbeamTest is mipb12Moonbeam {
     function testReinitializeFails() public {
         vm.expectRevert("Initializable: contract is already initialized");
         xwell.initialize(
-            "WELL Token",
-            "xWELL",
+            "WELL",
+            "WELL",
             address(1),
             new MintLimits.RateLimitMidPointInfo[](0),
             0,

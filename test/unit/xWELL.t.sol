@@ -5,7 +5,6 @@ import "@forge-std/Test.sol";
 import "@test/helper/BaseTest.t.sol";
 
 contract xWELLUnitTest is BaseTest {
-
     function setUp() public override {
         super.setUp();
         vm.prank(owner);
@@ -41,17 +40,17 @@ contract xWELLUnitTest is BaseTest {
         assertEq(xwellProxy.symbol(), xwellSymbol, "incorrect symbol");
         assertEq(xwellProxy.totalSupply(), 0, "incorrect total supply");
         assertEq(xwellProxy.owner(), address(this), "incorrect owner");
-        assertEq(xwellProxy.pendingOwner(), address(0), "incorrect pending owner");
+        assertEq(
+            xwellProxy.pendingOwner(),
+            address(0),
+            "incorrect pending owner"
+        );
         assertEq(
             xwellProxy.CLOCK_MODE(),
             "mode=timestamp",
             "incorrect clock mode"
         );
-        assertEq(
-            xwellProxy.clock(),
-            block.timestamp,
-            "incorrect timestamp"
-        );
+        assertEq(xwellProxy.clock(), block.timestamp, "incorrect timestamp");
         assertEq(
             xwellProxy.MAX_SUPPLY(),
             5_000_000_000 * 1e18,
@@ -293,6 +292,17 @@ contract xWELLUnitTest is BaseTest {
             newPauseGuardian,
             "incorrect pause guardian"
         );
+    }
+
+    function testGrantPauseGuardianWhilePausedFails() public {
+        vm.prank(pauseGuardian);
+        xwellProxy.pause();
+        assertTrue(xwellProxy.paused(), "contract not paused");
+        address newPauseGuardian = address(0xffffffff);
+
+        vm.expectRevert("Pausable: paused");
+        xwellProxy.grantPauseGuardian(newPauseGuardian);
+        assertTrue(xwellProxy.paused(), "contract not paused");
     }
 
     function testUpdatePauseDurationSucceeds() public {
@@ -561,7 +571,7 @@ contract xWELLUnitTest is BaseTest {
     function testAddNewBridgeBufferCapZeroFails() public {
         uint112 bufferCap = 0;
         address newBridge = address(100);
-        uint128 rateLimitPerSecond = 10_000 * 1e18;
+        uint128 rateLimitPerSecond = 1_000 * 1e18;
 
         MintLimits.RateLimitMidPointInfo memory bridge = MintLimits
             .RateLimitMidPointInfo({
@@ -763,6 +773,22 @@ contract xWELLUnitTest is BaseTest {
         xwellProxy.burn(address(this), 0);
     }
 
+    function testDepleteBufferNonBridgeByOneFails() public {
+        address bridge = address(0xeeeee);
+
+        vm.prank(bridge);
+        vm.expectRevert("RateLimited: buffer cap overflow");
+        xwellProxy.burn(address(this), 1);
+    }
+
+    function testReplenishBufferNonBridgeByOneFails() public {
+        address bridge = address(0xeeeee);
+
+        vm.prank(bridge);
+        vm.expectRevert("RateLimited: rate limit hit");
+        xwellProxy.mint(address(this), 1);
+    }
+
     function testMintFailsWhenPaused() public {
         vm.prank(pauseGuardian);
         xwellProxy.pause();
@@ -771,6 +797,26 @@ contract xWELLUnitTest is BaseTest {
         vm.prank(address(xerc20Lockbox));
         vm.expectRevert("Pausable: paused");
         xwellProxy.mint(address(xerc20Lockbox), 1);
+    }
+
+    function testOwnerCanUnpause() public {
+        vm.prank(pauseGuardian);
+        xwellProxy.pause();
+        assertTrue(xwellProxy.paused());
+
+        xwellProxy.ownerUnpause();
+        assertTrue(xwellProxy.paused(), "contract not unpaused");
+    }
+
+    function testOwnerUnpauseFailsNotPaused() public {
+        vm.expectRevert("Pausable: not paused");
+        xwellProxy.ownerUnpause();
+    }
+
+    function testNonOwnerUnpauseFails() public {
+        vm.prank(address(10000000000));
+        vm.expectRevert("Ownable: caller is not the owner");
+        xwellProxy.ownerUnpause();
     }
 
     function testMintSucceedsAfterPauseDuration() public {
