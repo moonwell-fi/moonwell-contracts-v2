@@ -7,6 +7,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+import {AxelarBridgeAdapter} from "@protocol/xWELL/AxelarBridgeAdapter.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 
 contract xWELLDeploy {
@@ -243,5 +244,44 @@ contract xWELLDeploy {
         address well
     ) public returns (address) {
         return address(new XERC20Lockbox(xwell, well));
+    }
+
+    /// @notice deploy the axelar bridge adapter
+    /// @param proxyAdmin The proxy admin address
+    function deployAxelarBridgeAdapter(
+        address proxyAdmin
+    ) public returns (address axelarBridgeAddress, address axelarBridgeProxy) {
+        axelarBridgeAddress = address(new AxelarBridgeAdapter());
+
+        axelarBridgeProxy = address(
+            new TransparentUpgradeableProxy(axelarBridgeAddress, proxyAdmin, "")
+        );
+    }
+
+    /// @notice initialize the axelar bridge adapter
+    /// @param axelarBridgeProxy The proxy address
+    /// @param xwellProxy The xWELL token address
+    /// @param owner The owner of the adapter
+    /// @param axelarGateway The axelar gateway address
+    /// @param axelarGasService The axelar gas service address
+    /// @param chainIds The chain ids to support
+    /// @param configs The chain configs
+    function initializeAxelarBridgeAdapter(
+        address axelarBridgeProxy,
+        address xwellProxy,
+        address owner,
+        address axelarGateway,
+        address axelarGasService,
+        AxelarBridgeAdapter.ChainIds[] memory chainIds,
+        AxelarBridgeAdapter.ChainConfig[] memory configs
+    ) public {
+        AxelarBridgeAdapter(axelarBridgeProxy).initialize(
+            xwellProxy,
+            owner,
+            axelarGateway,
+            axelarGasService,
+            chainIds,
+            configs
+        );
     }
 }

@@ -28,7 +28,6 @@ contract WormholeBridgeAdapter is
     /// @dev packing these variables into a single slot saves a
     /// COLD SLOAD on bridge out operations.
 
-    /// TODO investigate and ensure this is accurate. If it can be lower, move lower.
     /// @notice gas limit for wormhole relayer, changeable incase gas prices change on external network
     uint96 public gasLimit = 300_000;
 

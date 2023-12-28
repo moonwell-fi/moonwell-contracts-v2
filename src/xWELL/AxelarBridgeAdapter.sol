@@ -12,8 +12,7 @@ import {AddressToString, StringToAddress} from "@protocol/xWELL/axelar-interface
 /// @notice Axelar Token Bridge adapter for XERC20 tokens
 /// @dev the access control model for this contract is to deploy
 /// the same exact contract on separate chains, otherwise this does not work.
-/// TODO change this model to trusted sender addresses, and explicitly rather than implicitly check.
-contract AxelarBridge is xERC20BridgeAdapter {
+contract AxelarBridgeAdapter is xERC20BridgeAdapter {
     using SafeERC20 for IERC20;
     using StringToAddress for string;
     using AddressToString for address;
@@ -38,7 +37,6 @@ contract AxelarBridge is xERC20BridgeAdapter {
 
     /// @notice whether or not a given address on a given chain is approved
     /// to mint tokens on this chain.
-    /// TODO add setter functions for this mappping
     mapping(string => mapping(address => bool)) public isApproved;
 
     //// ------------------------------------------------------------
@@ -79,6 +77,16 @@ contract AxelarBridge is xERC20BridgeAdapter {
     /// @param axelarId axelar chain id
     /// @param approval whether or not the bridge address is approved
     event AxelarBridgeApprovalUpdated(
+        address indexed bridge,
+        string indexed axelarId,
+        bool approval
+    );
+
+    /// @notice emitted when a new sender approval is updated
+    /// @param bridge adapter address approved
+    /// @param axelarId axelar chain id
+    /// @param approval whether or not the bridge adapter address is approved
+    event SenderApprovalUpdated(
         address indexed bridge,
         string indexed axelarId,
         bool approval
@@ -147,8 +155,10 @@ contract AxelarBridge is xERC20BridgeAdapter {
     /// callable only by the owner
     /// @param chainIds the chain ids to add
     function addChainIds(ChainIds[] calldata chainIds) external onlyOwner {
-        for (uint256 i; i < chainIds.length; ++i) {
-            _addChainId(chainIds[i]);
+        unchecked {
+            for (uint256 i; i < chainIds.length; ++i) {
+                _addChainId(chainIds[i]);
+            }
         }
     }
 
@@ -156,18 +166,34 @@ contract AxelarBridge is xERC20BridgeAdapter {
     /// callable only by the owner
     /// @param chainIds the chain ids to remove
     function removeChainIds(ChainIds[] calldata chainIds) external onlyOwner {
-        for (uint256 i; i < chainIds.length; ++i) {
-            _removeChainId(chainIds[i]);
+        unchecked {
+            for (uint256 i; i < chainIds.length; ++i) {
+                _removeChainId(chainIds[i]);
+            }
         }
     }
 
     /// @notice add approved external bridge address on a different chain
     /// @param configs of bridges and chainids to add
-    function addApprovedExternalChainSenders(
+    function addExternalChainSenders(
         ChainConfig[] memory configs
     ) external onlyOwner {
-        for (uint256 i = 0; i < configs.length; i++) {
-            _addExternalSender(configs[i]);
+        unchecked {
+            for (uint256 i = 0; i < configs.length; i++) {
+                _addExternalSender(configs[i]);
+            }
+        }
+    }
+
+    /// @notice remove bridge addresses as trusted senders from a different chain
+    /// @param configs of bridges and chainids to remove
+    function removeExternalChainSenders(
+        ChainConfig[] memory configs
+    ) external onlyOwner {
+        unchecked {
+            for (uint256 i = 0; i < configs.length; i++) {
+                _removeExternalSender(configs[i]);
+            }
         }
     }
 
@@ -177,6 +203,10 @@ contract AxelarBridge is xERC20BridgeAdapter {
     //// ------------------------------------------------------------
     //// ------------------------------------------------------------
 
+    /// @notice helper function to add a new trusted sender.
+    /// the axelar chainid must be currently valid, and
+    /// the adapter address must not already be approved.
+    /// @param config the config to add
     function _addExternalSender(ChainConfig memory config) private {
         require(
             !isApproved[config.axelarid][config.adapter],
@@ -189,6 +219,23 @@ contract AxelarBridge is xERC20BridgeAdapter {
         );
 
         isApproved[config.axelarid][config.adapter] = true;
+
+        emit SenderApprovalUpdated(config.adapter, config.axelarid, true);
+    }
+
+    /// @notice can only remove when the config is already approved.
+    /// state of the axelarid does not matter as an axelar id could be removed
+    /// and external senders still need to be cleaned up from that config.
+    /// @param config the config to remove
+    function _removeExternalSender(ChainConfig memory config) private {
+        require(
+            isApproved[config.axelarid][config.adapter],
+            "AxelarBridge: config not already approved"
+        );
+
+        isApproved[config.axelarid][config.adapter] = false;
+
+        emit SenderApprovalUpdated(config.adapter, config.axelarid, false);
     }
 
     /// @notice helper function to add a new chain id to the mapping.
@@ -196,11 +243,11 @@ contract AxelarBridge is xERC20BridgeAdapter {
     function _addChainId(ChainIds memory chainids) private {
         require(
             !validChainId(chainids.chainid),
-            "AxelarBridge: existing axelarId config"
+            "AxelarBridge: existing chainId config"
         );
         require(
             !validAxelarChainid(chainids.axelarid),
-            "AxelarBridge: existing chainid config"
+            "AxelarBridge: existing axelarId config"
         );
 
         chainIdToAxelarId[chainids.chainid] = chainids.axelarid;
@@ -214,11 +261,11 @@ contract AxelarBridge is xERC20BridgeAdapter {
     function _removeChainId(ChainIds memory chainids) private {
         require(
             validChainId(chainids.chainid),
-            "AxelarBridge: non-existent axelarId config"
+            "AxelarBridge: non-existent chainid config"
         );
         require(
             validAxelarChainid(chainids.axelarid),
-            "AxelarBridge: non-existent chainid config"
+            "AxelarBridge: non-existent axelarId config"
         );
 
         delete chainIdToAxelarId[chainids.chainid];
@@ -245,7 +292,7 @@ contract AxelarBridge is xERC20BridgeAdapter {
         address to
     ) internal override {
         require(
-            abi.encode(chainIdToAxelarId[dstChainId]).length != 0,
+            bytes(chainIdToAxelarId[dstChainId]).length != 0,
             "AxelarBridge: invalid chain id"
         );
 

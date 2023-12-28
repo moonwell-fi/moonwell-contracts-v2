@@ -145,7 +145,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     function testAllTrustedSendersTrusted() public {
         bytes32[] memory trustedSenders = wormholeBridgeAdapterProxy
             .allTrustedSenders(chainId);
-        
+
         for (uint256 i = 0; i < trustedSenders.length; i++) {
             assertTrue(
                 wormholeBridgeAdapterProxy.isTrustedSender(

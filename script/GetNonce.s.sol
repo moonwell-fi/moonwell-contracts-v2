@@ -38,7 +38,7 @@ contract GetNonce is Script, Test {
         addresses = new Addresses();
     }
 
-    function run() public {
+    function run() public view {
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
         console.log("account nonce: ", vm.getNonce(deployerAddress));
