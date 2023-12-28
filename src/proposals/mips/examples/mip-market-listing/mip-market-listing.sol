@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
@@ -11,7 +11,7 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {IWormhole} from "@protocol/Governance/IWormhole.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {MIPProposal} from "@proposals/MIPProposal.s.sol";
@@ -417,16 +417,16 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
-                /// TODO validate borrow cap is always lte 90% of supply cap
                 uint256 borrowCap = comptroller.borrowCaps(
                     addresses.getAddress(config.addressesString)
                 );
                 uint256 supplyCap = comptroller.supplyCaps(
                     addresses.getAddress(config.addressesString)
                 );
-
+                
                 uint256 maxBorrowCap = (supplyCap * 10) / 9;
-
+                
+                /// validate borrow cap is always lte 90% of supply cap
                 assertTrue(
                     borrowCap <= maxBorrowCap,
                     "borrow cap exceeds max borrow"

@@ -13,7 +13,6 @@ contract CreationCodeUnitTest is CreateCode {
         bytes memory code = getCode(path); /// load creation bytecode into memory
 
         address deployedAddress = deployCode(code);
-        console.log("deployedAddress: ", deployedAddress);
 
         (bool success, ) = deployedAddress.call(
             abi.encodeWithSignature(

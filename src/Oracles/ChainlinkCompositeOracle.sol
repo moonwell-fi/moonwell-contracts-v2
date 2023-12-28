@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
 import {AggregatorV3Interface} from "@protocol/Oracles/AggregatorV3Interface.sol";
 

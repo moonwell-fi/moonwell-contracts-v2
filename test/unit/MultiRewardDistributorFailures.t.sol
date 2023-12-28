@@ -15,8 +15,8 @@ import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
 import {WhitePaperInterestRateModel} from "@protocol/IRModels/WhitePaperInterestRateModel.sol";
 import {InterestRateModel} from "@protocol/IRModels/InterestRateModel.sol";
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 contract MultiRewardDistributorFailures is Test {
     Comptroller comptroller;

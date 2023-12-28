@@ -20,15 +20,31 @@ abstract contract TimelockProposal is Proposal {
     /// @notice set the debug flag
     function setDebug(bool debug) public {
         DEBUG = debug;
-    } 
+    }
 
     /// @notice push an action to the Timelock proposal
-    function _pushTimelockAction(uint256 value, address target, bytes memory data, string memory description) internal {
-        actions.push(TimelockAction({value: value, target: target, arguments: data, description: description}));
+    function _pushTimelockAction(
+        uint256 value,
+        address target,
+        bytes memory data,
+        string memory description
+    ) internal {
+        actions.push(
+            TimelockAction({
+                value: value,
+                target: target,
+                arguments: data,
+                description: description
+            })
+        );
     }
 
     /// @notice push an action to the Timelock proposal with a value of 0
-    function _pushTimelockAction(address target, bytes memory data, string memory description) internal {
+    function _pushTimelockAction(
+        address target,
+        bytes memory data,
+        string memory description
+    ) internal {
         _pushTimelockAction(0, target, data, description);
     }
 
@@ -43,7 +59,9 @@ abstract contract TimelockProposal is Proposal {
     ) internal {
         require(actions.length > 0, "Empty timelock operation");
 
-        ITimelockController timelock = ITimelockController(payable(timelockAddress));
+        ITimelockController timelock = ITimelockController(
+            payable(timelockAddress)
+        );
         uint256 delay = timelock.getMinDelay();
         bytes32 salt = keccak256(abi.encode(actions[0].description));
 
@@ -63,10 +81,14 @@ abstract contract TimelockProposal is Proposal {
         /// value can be 0
         /// arguments can be 0 as long as eth is sent
         for (uint256 i = 0; i < proposalLength; i++) {
-            require(actions[i].target != address(0), "Invalid target for timelock");
+            require(
+                actions[i].target != address(0),
+                "Invalid target for timelock"
+            );
             /// if there are no args and no eth, the action is not valid
             require(
-                (actions[i].arguments.length == 0 && actions[i].value > 0) || actions[i].arguments.length > 0,
+                (actions[i].arguments.length == 0 && actions[i].value > 0) ||
+                    actions[i].arguments.length > 0,
                 "Invalid arguments for timelock"
             );
 
@@ -75,11 +97,27 @@ abstract contract TimelockProposal is Proposal {
             payloads[i] = actions[i].arguments;
         }
 
-        bytes32 proposalId = timelock.hashOperationBatch(targets, values, payloads, predecessor, salt);
+        bytes32 proposalId = timelock.hashOperationBatch(
+            targets,
+            values,
+            payloads,
+            predecessor,
+            salt
+        );
 
-        if (!timelock.isOperationPending(proposalId) && !timelock.isOperation(proposalId)) {
+        if (
+            !timelock.isOperationPending(proposalId) &&
+            !timelock.isOperation(proposalId)
+        ) {
             vm.prank(proposerAddress);
-            timelock.scheduleBatch(targets, values, payloads, predecessor, salt, delay);
+            timelock.scheduleBatch(
+                targets,
+                values,
+                payloads,
+                predecessor,
+                salt,
+                delay
+            );
 
             if (DEBUG) {
                 console.log(

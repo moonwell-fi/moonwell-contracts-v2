@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
@@ -104,10 +104,6 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
                 addresses.getAddress("WELL")
             );
 
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
-
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.supplyEmissionsPerSec, 1e18);
@@ -133,10 +129,6 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
                 MToken(addresses.getAddress("MOONWELL_USDBC")),
                 addresses.getAddress("WELL")
             );
-
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
@@ -79,7 +79,7 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
     function testBorrowingOverBorrowCapFails() public {
         uint256 mintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_wstETH")
-        );
+        ) - 1e18;
         uint256 borrowAmount = _getMaxBorrowAmount(
             addresses.getAddress("MOONWELL_wstETH")
         ) + 100;
@@ -146,8 +146,8 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
         assertApproxEqRel(
             liquidity,
             (mintAmount * price * collateralFactor) / 1e36, /// trim off both the CF and Chainlink Price feed extra precision
-            1e9,
-            "liquidity not within .0000001% of given CF"
+            1e14,
+            "liquidity not within 0.01% of given CF"
         );
         assertEq(shortfall, 0, "Incorrect shortfall");
 

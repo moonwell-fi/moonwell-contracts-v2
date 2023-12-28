@@ -10,7 +10,7 @@ LATEST_MIP_DIR=$(ls -1v ${BASE_DIR}/ | grep '^mip-b' | tail -n 1)
 
 MIP_NUM=${LATEST_MIP_DIR:5:2}
 
-if [[ "$LATEST_MIP_DIR" == "mip-b07.sol" ]]; then
+if [[ "$LATEST_MIP_DIR" == "mip-b12-moonbeam.sol" ]]; then
     echo "PROPOSAL_ARTIFACT_PATH="
 else
     echo "PROPOSAL_ARTIFACT_PATH=${BASE_DIR}/${LATEST_MIP_DIR}/mipb${MIP_NUM}.json"
