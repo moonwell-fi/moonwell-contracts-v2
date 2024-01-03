@@ -370,7 +370,7 @@
         "name": "MTOKEN_IMPLEMENTATION"
     },
     {
-        "addr": "0x492dcEF1fc5253413fC5576B9522840a1A774DCe",
+        "addr": "0xF22c8255eA615b3Da6CA5CF5aeCc8956bfF07Aa8",
         "chainId": 8453,
         "name": "JUMP_RATE_IRM_MOONWELL_USDBC"
     },
@@ -380,7 +380,7 @@
         "name": "MOONWELL_DAI"
     },
     {
-        "addr": "0x492dcEF1fc5253413fC5576B9522840a1A774DCe",
+        "addr": "0x32f3A6134590fc2d9440663d35a2F0a6265F04c4",
         "chainId": 8453,
         "name": "JUMP_RATE_IRM_MOONWELL_DAI"
     },
@@ -390,7 +390,7 @@
         "name": "MOONWELL_USDBC"
     },
     {
-        "addr": "0x492dcEF1fc5253413fC5576B9522840a1A774DCe",
+        "addr": "0x32f3A6134590fc2d9440663d35a2F0a6265F04c4",
         "chainId": 8453,
         "name": "JUMP_RATE_IRM_MOONWELL_USDC"
     },
