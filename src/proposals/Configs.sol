@@ -66,7 +66,6 @@ contract Configs is Test {
         );
 
         for (uint256 i = 0; i < decodedJson.length; i++) {
-
             require(
                 decodedJson[i].collateralFactor <= 0.95e18,
                 "collateral factor absurdly high, are you sure you want to proceed?"
@@ -86,9 +85,7 @@ contract Configs is Test {
             cTokenConfigurations[_baseChainId].push(decodedJson[i]);
         }
 
-        fileContents = vm.readFile(
-            "./src/proposals/mainnetRewardStreams.json"
-        );
+        fileContents = vm.readFile("./src/proposals/mainnetRewardStreams.json");
         rawJson = vm.parseJson(fileContents);
         EmissionConfig[] memory decodedEmissions = abi.decode(
             rawJson,
