@@ -613,5 +613,10 @@
         "addr": "0xCB1DaCd30638ae38F2B94eA64F066045B7D45f44",
         "chainId": 8453,
         "name": "MOONWELL_rETH"
+    },
+    {
+        "addr": "0x4200000000000000000000000000000000000042",
+        "chainId": 8453,
+        "name": "OPTIMISM"
     }
 ]
