@@ -2,7 +2,7 @@
     {
         "borrowEmissionsPerSec": 1,
         "emissionToken": "OPTIMISM",
-        "endTime": 1708005633,
+        "endTime": 1708725600,
         "mToken": "MOONWELL_DAI",
         "owner": "EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
@@ -10,7 +10,7 @@
     {
         "borrowEmissionsPerSec": 1,
         "emissionToken": "OPTIMISM",
-        "endTime": 1708005633,
+        "endTime": 1708725600,
         "mToken": "MOONWELL_USDC",
         "owner": "EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
@@ -18,7 +18,7 @@
     {
         "borrowEmissionsPerSec": 1,
         "emissionToken": "OPTIMISM",
-        "endTime": 1708005633,
+        "endTime": 1708725600,
         "mToken": "MOONWELL_USDBC",
         "owner": "EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
@@ -26,7 +26,7 @@
     {
         "borrowEmissionsPerSec": 1,
         "emissionToken": "OPTIMISM",
-        "endTime": 1708005633,
+        "endTime": 1708725600,
         "mToken": "MOONWELL_cbETH",
         "owner": "EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
@@ -34,7 +34,7 @@
     {
         "borrowEmissionsPerSec": 1,
         "emissionToken": "OPTIMISM",
-        "endTime": 1708005633,
+        "endTime": 1708725600,
         "mToken": "MOONWELL_WETH",
         "owner": "EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
@@ -42,7 +42,7 @@
     {
         "borrowEmissionsPerSec": 1,
         "emissionToken": "OPTIMISM",
-        "endTime": 1708005633,
+        "endTime": 1708725600,
         "mToken": "MOONWELL_wstETH",
         "owner": "EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
@@ -50,7 +50,7 @@
     {
         "borrowEmissionsPerSec": 1,
         "emissionToken": "OPTIMISM",
-        "endTime": 1708005633,
+        "endTime": 1708725600,
         "mToken": "MOONWELL_rETH",
         "owner": "EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
