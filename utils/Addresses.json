@@ -410,7 +410,7 @@
         "name": "MOONWELL_WETH"
     },
     {
-        "addr": "0x78Fe5d0427E669ba9F964C3495fF381a805a0487",
+        "addr": "0x1Cdb984008dcEe9d06c28654ed31cf82680EeA62",
         "chainId": 8453,
         "name": "JUMP_RATE_IRM_MOONWELL_cbETH"
     },
