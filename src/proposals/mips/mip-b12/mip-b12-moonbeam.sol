@@ -275,7 +275,7 @@ contract mipb12Moonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
             address[] memory recordedAddresses
         ) = addresses.getRecordedAddresses();
         for (uint256 j = 0; j < recordedNames.length; j++) {
-            console.log('{\n        "addr": "%s, ', recordedAddresses[j]);
+            console.log('{\n        "addr": "%s", ', recordedAddresses[j]);
             console.log('        "chainId": %d,', block.chainid);
             console.log(
                 '        "name": "%s"\n}%s',
