@@ -30,10 +30,7 @@ contract GetNonce is Script, Test {
 
     constructor() {
         // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = vm.envOr(
-            "ETH_PRIVATE_KEY",
-            77814517325470205911140941194401928579557062014761831930645393041380819009408
-        );
+        PRIVATE_KEY = uint256(vm.envBytes32("ETH_PRIVATE_KEY"));
 
         addresses = new Addresses();
     }
@@ -41,6 +38,7 @@ contract GetNonce is Script, Test {
     function run() public view {
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
+        console.log("deployerAddress: ", deployerAddress);
         console.log("account nonce: ", vm.getNonce(deployerAddress));
     }
 }
