@@ -635,47 +635,47 @@
         "name": "MOONWELL_rETH"
     },
     {
-        "addr": "0xF9Ebc3B140D802240AE2EBF1a3D388E5cd670872",
+        "addr": "0x734AbBCe07679C9A6B4Fe3bC16325e028fA6DbB7",
         "chainId": 8453,
         "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY"
     },
     {
-        "addr": "0xa8458d9A119C74195c51650AdF0D22853DbCc2b6",
+        "addr": "0xEF68C8f8BDeEF8e938F519ee818DeC80e320CE6b",
         "chainId": 8453,
         "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
     },
     {
-        "addr": "0x54720dBdb9bC6BCCe6796b3C57d4527e848E5873",
+        "addr": "0x3b1BDDC0998058dD266e2a0aC855D0d750700a7f",
         "chainId": 8453,
         "name": "xWELL_LOGIC"
     },
     {
-        "addr": "0xE5Fa985320031010F371870107Ea8fB4a408d0c8",
+        "addr": "0xA88594D404727625A9437C3f886C7643872296AE",
         "chainId": 8453,
         "name": "xWELL_PROXY"
     },
     {
-        "addr": "0xd12A18b8ad26C2957138cEf6687675d2985128Da",
+        "addr": "0x0D45033775b290D69462944289b7A402a651B460",
         "chainId": 1284,
         "name": "xWELL_LOCKBOX"
     },
     {
-        "addr": "0xF9Ebc3B140D802240AE2EBF1a3D388E5cd670872",
+        "addr": "0x734AbBCe07679C9A6B4Fe3bC16325e028fA6DbB7",
         "chainId": 1284,
         "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY"
     },
     {
-        "addr": "0xa8458d9A119C74195c51650AdF0D22853DbCc2b6",
+        "addr": "0xEF68C8f8BDeEF8e938F519ee818DeC80e320CE6b",
         "chainId": 1284,
         "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
     },
     {
-        "addr": "0x54720dBdb9bC6BCCe6796b3C57d4527e848E5873",
+        "addr": "0x3b1BDDC0998058dD266e2a0aC855D0d750700a7f",
         "chainId": 1284,
         "name": "xWELL_LOGIC"
     },
     {
-        "addr": "0xE5Fa985320031010F371870107Ea8fB4a408d0c8",
+        "addr": "0xA88594D404727625A9437C3f886C7643872296AE",
         "chainId": 1284,
         "name": "xWELL_PROXY"
     }
