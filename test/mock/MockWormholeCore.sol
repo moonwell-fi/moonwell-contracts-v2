@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import {IWormhole} from "@protocol/Governance/IWormhole.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 
 contract MockWormholeCore {
     bool public validity = true;
