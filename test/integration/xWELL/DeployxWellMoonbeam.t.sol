@@ -10,10 +10,10 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
-import {mipb12Moonbeam} from "@protocol/proposals/mips/mip-b12/mip-b12-moonbeam.sol";
+import {xwellDeployMoonbeam} from "@protocol/proposals/mips/mip-xwell/xwellDeployMoonbeam.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 
-contract DeployxWellLiveSystemMoonbeamTest is mipb12Moonbeam {
+contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
 

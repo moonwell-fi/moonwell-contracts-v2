@@ -8,11 +8,11 @@ import "@forge-std/Test.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
-import {mipb12Base} from "@protocol/proposals/mips/mip-b12/mip-b12-base.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+import {xwellDeployBase} from "@protocol/proposals/mips/mip-xwell/xwellDeployBase.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 
-contract DeployxWellLiveSystemBaseTest is mipb12Base {
+contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
 
