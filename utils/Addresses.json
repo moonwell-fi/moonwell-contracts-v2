@@ -678,5 +678,10 @@
         "addr": "0xA88594D404727625A9437C3f886C7643872296AE",
         "chainId": 1284,
         "name": "xWELL_PROXY"
+    },
+    {
+        "addr": "0xfB26A4947A38cb53e2D083c6490060CCCE7438c5",
+        "chainId": 1284,
+        "name": "xWELL_ROUTER"
     }
 ]
