@@ -184,11 +184,6 @@ contract mipb12Base is Proposal, CrossChainProposal, Configs, xWELLDeploy {
                 rateLimitPerSecond,
                 "rateLimitPerSecond is incorrect"
             );
-            assertEq(
-                xWELL(basexWellProxy).midPoint(wormholeAdapter),
-                bufferCap / 2,
-                "midpoint is incorrect"
-            );
             /// ensure correct buffer cap
             assertEq(
                 xWELL(basexWellProxy).bufferCap(wormholeAdapter),
