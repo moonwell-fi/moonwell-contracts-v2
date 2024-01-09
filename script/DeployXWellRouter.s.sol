@@ -26,20 +26,21 @@ contract DeployXWellRouter is Script, Test {
 
     constructor() {
         // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = vm.envOr(
-            "ETH_PRIVATE_KEY",
-            77814517325470205911140941194401928579557062014761831930645393041380819009408
-        );
+        PRIVATE_KEY = uint256(vm.envBytes32("ETH_PRIVATE_KEY"));
 
         addresses = new Addresses();
     }
 
     function run() public returns (xWELLRouter router) {
+        vm.startBroadcast(PRIVATE_KEY);
+
         router = new xWELLRouter(
             addresses.getAddress("xWELL_PROXY"),
             addresses.getAddress("WELL"),
             addresses.getAddress("xWELL_LOCKBOX"),
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
+
+        vm.stopBroadcast();
     }
 }
