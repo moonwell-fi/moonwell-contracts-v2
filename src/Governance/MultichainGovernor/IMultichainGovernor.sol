@@ -1,7 +1,8 @@
 pragma solidity 0.8.19;
 
 /// @notice pauseable by the guardian
-///
+/// @notice upgradeable, constructor disables implementation
+/// TODO investigate whether GovernorCompatibilityBravoUpgradeable can be used
 interface IMultichainGovernor {
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
@@ -67,6 +68,13 @@ interface IMultichainGovernor {
         uint256 votes;
     }
 
+    /// TODO shrink down data size to use single storage slot
+    struct VoteCounts {
+        uint256 forVotes;
+        uint256 againstVotes;
+        uint256 abstainVotes;
+    }
+
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
     //// ------------- View Functions ----------------- ////
@@ -84,11 +92,25 @@ interface IMultichainGovernor {
 
     function pauseDuration() external view returns (uint256);
 
+    /// @notice override with a mapping
+    function chainAddressVotes(
+        uint256 proposalId,
+        uint256 chainId,
+        address voteGatheringAddress
+    ) external view returns (VoteCounts memory);
+
     /// address the contract can be rolled back to by break glass guardian
     function governanceRollbackAddress() external view returns (address);
 
     /// break glass guardian
     function breakGlassGuardian() external view returns (address);
+
+    /// returns whether or not the user is a vote collector contract
+    /// and can vote on a given chain
+    function isCrossChainVoteCollector(
+        uint256 chainId,
+        address voteCollector
+    ) external view returns (bool);
 
     /// pause guardian address
     function pauseGuardian() external view returns (address);
@@ -136,6 +158,12 @@ interface IMultichainGovernor {
         uint256 blockNumber
     ) external view returns (uint256);
 
+    /// ---------------------------------------------- ////
+    /// ---------------------------------------------- ////
+    /// ------------- Permisslionless ---------------- ////
+    /// ---------------------------------------------- ////
+    /// ---------------------------------------------- ////
+
     /// @dev Returns the proposal ID for the proposed proposal
     /// only callable if user has proposal threshold or more votes
     function propose(
@@ -157,6 +185,10 @@ interface IMultichainGovernor {
 
     /// @dev allows user to cast vote for a proposal
     function castVote(uint256 proposalId, uint8 voteValue) external;
+
+    /// @dev allows votes from external chains to be counted
+    /// calls wormhole core to decode VAA, ensures validity of sender
+    function collectCrosschainVote(bytes memory VAA) external;
 
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
