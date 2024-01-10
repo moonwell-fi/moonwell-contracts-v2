@@ -1,118 +1,117 @@
 pragma solidity 0.8.19;
 
 import {IWormhole} from "@protocol/Governance/IWormhole.sol";
-import { IMultichainVoteCollection } from "@protocol/Governance/IMultichainVoteCollection.sol";
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {IMultichainVoteCollection} from "@protocol/Governance/IMultichainVoteCollection.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {Initialize} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /// Upgradeable, constructor disables implementation
- contract MultichainVoteCollection is TransparentUpgradeableProxy, IMultichainVoteCollection {
-     
-     // Moonbeam Governor Contract Address 
-     // TODO get correct address
-     address public moombeamGovernorAddress;
+contract MultichainVoteCollection is IMultichainVoteCollection, Initialize {
+    // Moonbeam Governor Contract Address
+    // TODO get correct address
+    address public moombeamGovernorAddress;
 
-     struct MultichainProposal {
-         // unix timestamp when voting will start
-         uint256 votingStartTime;
-         // unix timestamp when voting will end
-         uint256 votingEndTime;
-         MultichainVotes votes;
-     }
+    struct MultichainProposal {
+        // unix timestamp when voting will start
+        uint256 votingStartTime;
+        // unix timestamp when voting will end
+        uint256 votingEndTime;
+        MultichainVotes votes;
+    }
 
-     struct MultichainVotes {
-         // votes for the proposal
-         uint256 forVotes;
-         // votes against the proposal
-         uint256 againstVotes;
-         // votes that abstain
-         uint256 abstainVotes;
-      }
+    struct MultichainVotes {
+        // votes for the proposal
+        uint256 forVotes;
+        // votes against the proposal
+        uint256 againstVotes;
+        // votes that abstain
+        uint256 abstainVotes;
+    }
 
     /// @notice Values for votes
     uint8 public constant voteValueYes = 0;
     uint8 public constant voteValueNo = 1;
     uint8 public constant voteValueAbstain = 2;
 
-     mapping(uint256 proposalId => MultichainProposal) public proposals;
+    mapping(uint256 proposalId => MultichainProposal) public proposals;
 
-     constructor(address owner, bytes memory initdata) {
-         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-                                                                             address(this),
-                                                                             owner,
-                                                                             initdata
-        );
- 
-     }
+    /// @notice logic contract cannot be initialized
+    constructor() {
+        _disableInitializers();
+    }
 
-     function initializer(address _moonbeamGovernorAddress) public {
-         moombeamGovernorAddress  = _moonbeamGovernorAddress;
-     }
-     
-     /// @dev allows user to cast vote for a proposal
-     function castVote(uint256 proposalId, uint8 voteValue) external {
-         // Check if proposal start time has passed
-         require(proposals[proposalId].votingStartTime < block.timestamp, "Voting has not started yet");
+    function initialize() external initializer {
+        moombeamGovernorAddress = _moonbeamGovernorAddress;
+    }
 
-         // Check if proposal end time has not passed
-         require(proposals[proposalId].votingEndTime > block.timestamp, "Voting has ended");
-         
-         // 0: yes, 1: o, 2: abstain
-     }
+    /// @dev allows user to cast vote for a proposal
+    function castVote(uint256 proposalId, uint8 voteValue) external {
+        MultichainProposal storage proposal = proposals[proposalId];
+        // Check if proposal start time has passed
+        require(proposal.votingStartTime < block.timestamp, "Voting has not started yet");
 
-     /// @dev Returns the number of votes for a given user
-     /// queries xWELL only
-     function getVotingPower(
-                             address voter,
-                             uint256 blockNumber
-     ) external view returns (uint256) {
+        // Check if proposal end time has not passed
+        require(proposal.votingEndTime > block.timestamp, "Voting has ended");
 
-        
-     }
+        uint256 votes = _getVotingPower(voter, proposal.startBlock);
 
-     /// @dev emits the vote VAA for a given proposal
-     function emitVoteVAA(uint256 proposalId) external {
-        
-     }
+        // 0: yes, 1: o, 2: abstain
+        if (voteValue == voteValueYes) {
+            proposal.votes.forVotes = add256(proposal.forVotes, votes);
+        } else if (voteValue == voteValueNo) {
+            proposal.votes.againstVotes = add256(proposal.againstVotes, votes);
+        } else if (voteValue == voteValueAbstain) {
+            proposal.votes.abstainVotes = add256(proposal.abstainVotes, votes);
+        } else {
+            // Catch all. If an above case isn't matched then the value is not valid.
+            revert("MultichainVoteCollection::castVote: invalid vote value");
+        }
+    }
 
-     function createProposalId(bytes memory VAA) public {
-         // This call accepts single VAAs and headless VAAs
-         (
-          IWormhole.VM memory vm,
-          bool valid,
-          string memory reason
-         ) = wormholeBridge.parseAndVerifyVM(VAA);
+    /// @dev Returns the number of votes for a given user
+    /// queries xWELL only
+    function _getVotingPower(address voter, uint256 blockNumber) external view returns (uint256) {}
 
-         // Ensure VAA parsing verification succeeded.
-         require(valid, reason);
+    /// @dev emits the vote VAA for a given proposal
+    function emitVoteVAA(uint256 proposalId) external {}
 
-         // Decode the payload
-         (uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime) =
-             abi.decode(vm.payload, (uint256, uint256, uint256));
+    function createProposalId(bytes memory VAA) public {
+        // This call accepts single VAAs and headless VAAs
+        (IWormhole.VM memory vm, bool valid, string memory reason) = wormholeBridge.parseAndVerifyVM(VAA);
 
-         // Get the emitter address
-         address emitter = vm.emitterAddress;
+        // Ensure VAA parsing verification succeeded.
+        require(valid, reason);
 
-         // Call the internal createProposalId function
-         _createProposalId(proposalId, votingStartTime, votingEndTime, emitter);
-     }
+        // Decode the payload
+        (uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime) =
+            abi.decode(vm.payload, (uint256, uint256, uint256));
 
-     /// @dev allows MultichainGovernor to create a proposal ID
-     /// @todo check if min time sanity checks are necessary
-     function _createProposalId(uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, address emitter) internal {
-         // Ensure the message is from the MultichainGovernor
-         require(emitter == MOONBEAM_GOVERNOR_ADDRESS, "Emitter is not MultichainGovernor");
+        // Get the emitter address
+        address emitter = vm.emitterAddress;
 
-         // Ensure proposalId is unique
-         require(proposals[proposalId].votingStartTime == 0, "Proposal already exists");
+        // Call the internal createProposalId function
+        _createProposalId(proposalId, votingStartTime, votingEndTime, emitter);
+    }
 
-         // Ensure votingStartTime is less than votingEndTime
-         require(votingStartTime < votingEndTime, "Start time must be before end time");
+    /// @dev allows MultichainGovernor to create a proposal ID
+    /// @todo check if min time sanity checks are necessary
+    function _createProposalId(uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, address emitter)
+        internal
+    {
+        // Ensure the message is from the MultichainGovernor
+        require(emitter == MOONBEAM_GOVERNOR_ADDRESS, "Emitter is not MultichainGovernor");
 
-         // Ensure votingEndTime is in the future
-         require(votingEndTime > block.timestamp, "End time must be in the future");
+        // Ensure proposalId is unique
+        require(proposals[proposalId].votingStartTime == 0, "Proposal already exists");
 
-         MultichainProposal storage proposal = proposals[_proposal.proposalId];
-         proposal.votingStartTime = votingStartTime;
-         proposal.votingEndTime = votingEndTime;
-     }
- }
+        // Ensure votingStartTime is less than votingEndTime
+        require(votingStartTime < votingEndTime, "Start time must be before end time");
+
+        // Ensure votingEndTime is in the future
+        require(votingEndTime > block.timestamp, "End time must be in the future");
+
+        MultichainProposal storage proposal = proposals[_proposal.proposalId];
+        proposal.votingStartTime = votingStartTime;
+        proposal.votingEndTime = votingEndTime;
+    }
+}
