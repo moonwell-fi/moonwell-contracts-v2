@@ -1,79 +1,135 @@
 pragma solidity 0.8.19;
 
+import {GovernorCompatibilityBravoUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/governance/compatibility/GovernorCompatibilityBravoUpgradeable.sol";
+import {GovernorSettingsUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/governance/extensions/GovernorSettingsUpgradeable.sol";
+import {ERC20VotesCompUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20VotesCompUpgradeable.sol";
+import {GovernorUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/governance/GovernorUpgradeable.sol";
+import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {SnapshotInterface} from "@protocol/Governance/MultichainGovernor/SnapshotInterface.sol";
+import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
+import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
+
+/// WARNING: this contract is at very high risk of running over bytecode size limit
+///   we may need to split things out into multiple contracts, so keep things as
+///   concise as possible.
+
 /// @notice pauseable by the guardian
 /// @notice upgradeable, constructor disables implementation
-/// TODO investigate whether GovernorCompatibilityBravoUpgradeable can be used
-interface IMultichainGovernor {
-    //// ---------------------------------------------- ////
-    //// ---------------------------------------------- ////
-    //// --------------- Data Structures -------------- ////
-    //// ---------------------------------------------- ////
-    //// ---------------------------------------------- ////
 
-    /// @notice Possible states that a proposal may be in
-    /// TODO remove unused states per specification
-    enum ProposalState {
-        Pending,
-        Active,
-        Canceled,
-        Defeated,
-        Succeeded,
-        Queued,
-        Expired,
-        Executed
+/// Note:
+/// - moonbeam block times are consistently 12 seconds with few exceptions https://moonscan.io/chart/blocktime
+/// this means that a timestamp can be converted to a block number with a high degree of accuracy
+
+/// TODO, remove all OZ governor stuff, we're going to roll our own from scratch
+contract MultichainGovernor is
+    GovernorCompatibilityBravoUpgradeable,
+    GovernorSettingsUpgradeable,
+    GovernorUpgradeable
+{
+    using EnumerableSet for EnumerableSet.UintSet;
+
+    /// @notice active proposals user has proposed
+    /// will automatically clear executed or cancelled
+    /// proposals from set when called by user
+    mapping(address user => EnumerableSet.UintSet userProposals)
+        private userLiveProposals;
+
+    /// @notice reference to the xWELL token
+    xWELL public xWell;
+
+    /// @notice reference to the WELL token
+    WELL public well;
+
+    /// @notice reference to the stkWELL token
+    SnapshotInterface public stkWell;
+
+    /// @notice reference to the WELL token distributor contract
+    SnapshotInterface public distributor;
+
+    /// @notice the period of time in which a proposal can have
+    /// additional cross chain votes collected
+    uint256 public crossChainVoteCollectionPeriod;
+
+    /// @notice disable the initializer to stop governance hijacking
+    /// and avoid selfdestruct attacks.
+    constructor() {
+        _disableInitializers();
     }
 
-    struct Proposal {
-        /// @notice Unique id for looking up a proposal
-        uint256 id;
-        /// @notice Creator of the proposal
-        address proposer;
-        /// @notice The timestamp that the proposal will be available for execution, set once the vote succeeds
-        uint256 eta;
-        /// @notice the ordered list of target addresses for calls to be made
-        address[] targets;
-        /// @notice The ordered list of values (i.e. msg.value) to be passed to the calls to be made
-        uint256[] values;
-        /// @notice The ordered list of calldata to be passed to each call
-        bytes[] calldatas;
-        /// @notice The timestamp at which voting begins: holders must delegate their votes prior to this time
-        uint256 startTimestamp;
-        /// @notice The timestamp at which voting ends: votes must be cast prior to this time
-        uint256 endTimestamp;
-        /// @notice The block at which voting began: holders must have delegated their votes prior to this block
-        uint256 startBlock;
-        /// @notice Current number of votes in favor of this proposal
-        uint256 forVotes;
-        /// @notice Current number of votes in opposition to this proposal
-        uint256 againstVotes;
-        /// @notice Current number of votes in abstention to this proposal
-        uint256 abstainVotes;
-        /// @notice The total votes on a proposal.
-        uint256 totalVotes;
-        /// @notice Flag marking whether the proposal has been canceled
-        bool canceled;
-        /// @notice Flag marking whether the proposal has been executed
-        bool executed;
-        /// @notice Receipts of ballots for the entire set of voters
-        mapping(address => Receipt) receipts;
+    /// @notice initialize the governor contract
+    /// @param _xWell address of the xWELL token
+    /// @param _well address of the WELL token
+    /// @param _stkWell address of the stkWELL token
+    /// @param _distributor address of the WELL distributor contract
+    /// @param _proposalThreshold minimum number of votes to propose
+    /// @param _votingPeriod duration of voting period in blocks
+    /// @param _votingDelay duration of voting delay in blocks
+    /// @param _crossChainVoteCollectionPeriod duration of cross chain vote collection period in blocks
+    /// @param _quorum minimum number of votes for a proposal to pass
+    /// @param _maxUserLiveProposals maximum number of live proposals per user
+    /// @param _pauseDuration duration of pause in blocks
+    /// @param _pauseGuardian address of the pause guardian
+    function initialize(
+        address _xWell,
+        address _well,
+        address _stkWell,
+        address _distributor,
+        uint256 _proposalThreshold,
+        uint256 _votingPeriod,
+        uint256 _votingDelay,
+        uint256 _crossChainVoteCollectionPeriod,
+        uint256 _quorum,
+        uint256 _maxUserLiveProposals,
+        uint128 _pauseDuration,
+        address _pauseGuardian
+    ) public initializer {
+        __GovernorVotes_init(ERC20VotesCompUpgradeable(_xWell));
+        __GovernorCompatibilityBravo_init();
+        __Governor_init("Moonwell Multichain Governor");
+
+        xWell = xWELL(_xWell);
+        well = WELL(_well);
+        stkWell = SnapshotInterface(_stkWell);
+        distributor = SnapshotInterface(_distributor);
+
+        _setProposalThreshold(_proposalThreshold);
+        _setVotingPeriod(_votingPeriod);
+        _setVotingDelay(_votingDelay);
+        _setCrossChainVoteCollectionPeriod(_crossChainVoteCollectionPeriod); /// TODO define
+        _setQuorum(_quorum);
+        _setMaxUserLiveProposals(_maxUserLiveProposals); /// TODO define
+
+        __Pausable_init(); /// not really needed, but seems like good form
+        _updatePauseDuration(_pauseDuration);
+        _grantGuardian(_pauseGuardian); /// set the pause guardian
     }
 
-    /// @notice Ballot receipt record for a voter
-    struct Receipt {
-        /// @notice Whether or not a vote has been cast
-        bool hasVoted;
-        /// @notice The value of the vote.
-        uint8 voteValue;
-        /// @notice The number of votes the voter had, which were cast
-        uint256 votes;
+    function _setCrossChainVoteCollectionPeriod(
+        uint256 _crossChainVoteCollectionPeriod
+    ) private {
+        crossChainVoteCollectionPeriod = _crossChainVoteCollectionPeriod;
     }
 
-    /// TODO shrink down data size to use single storage slot
-    struct VoteCounts {
-        uint256 forVotes;
-        uint256 againstVotes;
-        uint256 abstainVotes;
+    function _setMaxUserLiveProposals(uint256 _maxUserLiveProposals) private {
+        maxUserLiveProposals = _maxUserLiveProposals;
     }
+
+    /// TODO override this function from GovernorCompatibilityBravoUpgradeable
+    function _getVotes(
+        address account,
+        uint256 timepoint,
+        bytes memory /*params*/
+    ) internal view virtual override returns (uint256) {}
+
+    /// TODO override this function from GovernorUpgradeable
+    /// @param account The address of the account to check
+    /// @param timestamp The unix timestamp in seconds to check the balance at
+    function getVotes(
+        address account,
+        uint256 timestamp
+    ) public view virtual override returns (uint256) {}
 
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
@@ -217,12 +273,6 @@ interface IMultichainGovernor {
     ) external;
 
     function setBreakGlassGuardian(address newGuardian) external;
-
-    /// @notice add and remove calldata from the whitelist
-    function updateApprovedCalldata(
-        bytes calldata data,
-        bool approved
-    ) external;
 
     function setGovernanceReturnAddress(address newAddress) external;
 
