@@ -1,15 +1,15 @@
 pragma solidity 0.8.19;
 
 import {IWormhole} from "@protocol/Governance/IWormhole.sol";
-import {IMultichainVoteCollection} from "@protocol/Governance/IMultichainVoteCollection.sol";
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {Initialize} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {IMultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/IMultichainVoteCollection.sol";
+import {Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /// Upgradeable, constructor disables implementation
-contract MultichainVoteCollection is IMultichainVoteCollection, Initialize {
+contract MultichainVoteCollection is IMultichainVoteCollection, Initializable {
     // Moonbeam Governor Contract Address
     // TODO get correct address
     address public moombeamGovernorAddress;
+    IWormhole public immutable wormholeBridge;
 
     struct MultichainProposal {
         // unix timestamp when voting will start
@@ -40,8 +40,9 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initialize {
         _disableInitializers();
     }
 
-    function initialize() external initializer {
+    function initialize(address _moonbeamGovernorAddress, address wormholeCore) external initializer {
         moombeamGovernorAddress = _moonbeamGovernorAddress;
+        wormholeBridge = IWormhole(wormholeCore);
     }
 
     /// @dev allows user to cast vote for a proposal
@@ -53,15 +54,15 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initialize {
         // Check if proposal end time has not passed
         require(proposal.votingEndTime > block.timestamp, "Voting has ended");
 
-        uint256 votes = _getVotingPower(voter, proposal.startBlock);
+        uint256 votes = _getVotingPower(msg.sender, block.number);
 
         // 0: yes, 1: o, 2: abstain
         if (voteValue == voteValueYes) {
-            proposal.votes.forVotes = add256(proposal.forVotes, votes);
+            proposal.votes.forVotes +=  votes;
         } else if (voteValue == voteValueNo) {
-            proposal.votes.againstVotes = add256(proposal.againstVotes, votes);
+            proposal.votes.againstVotes +=  votes;
         } else if (voteValue == voteValueAbstain) {
-            proposal.votes.abstainVotes = add256(proposal.abstainVotes, votes);
+            proposal.votes.abstainVotes += votes;
         } else {
             // Catch all. If an above case isn't matched then the value is not valid.
             revert("MultichainVoteCollection::castVote: invalid vote value");
@@ -70,7 +71,7 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initialize {
 
     /// @dev Returns the number of votes for a given user
     /// queries xWELL only
-    function _getVotingPower(address voter, uint256 blockNumber) external view returns (uint256) {}
+    function _getVotingPower(address voter, uint256 blockNumber) internal view returns (uint256) {}
 
     /// @dev emits the vote VAA for a given proposal
     function emitVoteVAA(uint256 proposalId) external {}
@@ -87,19 +88,20 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initialize {
             abi.decode(vm.payload, (uint256, uint256, uint256));
 
         // Get the emitter address
-        address emitter = vm.emitterAddress;
+        // TODO check this casting
+        address emitter = address(uint160(uint256(vm.emitterAddress)));
 
         // Call the internal createProposalId function
         _createProposalId(proposalId, votingStartTime, votingEndTime, emitter);
     }
 
     /// @dev allows MultichainGovernor to create a proposal ID
-    /// @todo check if min time sanity checks are necessary
+    /// TODO check if min time sanity checks are necessary
     function _createProposalId(uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, address emitter)
         internal
     {
         // Ensure the message is from the MultichainGovernor
-        require(emitter == MOONBEAM_GOVERNOR_ADDRESS, "Emitter is not MultichainGovernor");
+        require(emitter == moombeamGovernorAddress, "Emitter is not MultichainGovernor");
 
         // Ensure proposalId is unique
         require(proposals[proposalId].votingStartTime == 0, "Proposal already exists");
@@ -110,7 +112,7 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initialize {
         // Ensure votingEndTime is in the future
         require(votingEndTime > block.timestamp, "End time must be in the future");
 
-        MultichainProposal storage proposal = proposals[_proposal.proposalId];
+        MultichainProposal storage proposal = proposals[proposalId];
         proposal.votingStartTime = votingStartTime;
         proposal.votingEndTime = votingEndTime;
     }
