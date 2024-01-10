@@ -683,5 +683,15 @@
         "addr": "0xfB26A4947A38cb53e2D083c6490060CCCE7438c5",
         "chainId": 1284,
         "name": "xWELL_ROUTER"
+    },
+    {
+        "addr": "0x933fCDf708481c57E9FD82f6BAA084f42e98B60e",
+        "chainId": 1284,
+        "name": "TOKEN_SALE_DISTRIBUTOR_PROXY"
+    },
+    {
+        "addr": "0x8568A675384d761f36eC269D695d6Ce4423cfaB1",
+        "chainId": 1284,
+        "name": "stkWELL"
     }
 ]
