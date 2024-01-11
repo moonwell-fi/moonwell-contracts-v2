@@ -9,6 +9,7 @@ import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/Enu
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {SnapshotInterface} from "@protocol/Governance/MultichainGovernor/SnapshotInterface.sol";
 import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 
 /// WARNING: this contract is at very high risk of running over bytecode size limit
@@ -23,12 +24,23 @@ import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardi
 /// this means that a timestamp can be converted to a block number with a high degree of accuracy
 
 /// TODO, remove all OZ governor stuff, we're going to roll our own from scratch
-contract MultichainGovernor is
-    GovernorCompatibilityBravoUpgradeable,
-    GovernorSettingsUpgradeable,
-    GovernorUpgradeable
+abstract contract MultichainGovernor is
+    WormholeTrustedSender,
+    IMultichainGovernor,
+    ConfigurablePauseGuardian
 {
     using EnumerableSet for EnumerableSet.UintSet;
+
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// -------------------- STATE VARIABLES -------------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+
+    /// @notice all live proposals, executed and cancelled proposals are removed
+    /// when a new proposal is created, it is added to this set and any stale
+    /// items are removed
+    EnumerableSet.UintSet private liveProposals;
 
     /// @notice active proposals user has proposed
     /// will automatically clear executed or cancelled
@@ -36,11 +48,18 @@ contract MultichainGovernor is
     mapping(address user => EnumerableSet.UintSet userProposals)
         private userLiveProposals;
 
+    /// @notice the number of votes for a given proposal on a given chain
+    mapping(uint16 chainId => mapping(address => VoteCounts))
+        public chainVoteCollectorVotes;
+
+    /// @notice the total number of votes for a given proposal
+    mapping(uint256 proposalId => VoteCounts) public proposals;
+
     /// @notice reference to the xWELL token
     xWELL public xWell;
 
     /// @notice reference to the WELL token
-    WELL public well;
+    SnapshotInterface public well;
 
     /// @notice reference to the stkWELL token
     SnapshotInterface public stkWell;
@@ -50,7 +69,36 @@ contract MultichainGovernor is
 
     /// @notice the period of time in which a proposal can have
     /// additional cross chain votes collected
-    uint256 public crossChainVoteCollectionPeriod;
+    uint256 public override crossChainVoteCollectionPeriod;
+
+    /// @notice the maximum number of user live proposals
+    uint256 public override maxUserLiveProposals;
+
+    /// @notice quorum needed for a proposal to pass
+    uint256 public override quorum;
+
+    /// @notice the minimum number of votes needed to propose
+    uint256 public override proposalThreshold;
+
+    /// @notice the minimum number of votes needed to propose
+    uint256 public override votingDelay;
+
+    /// @notice the voting period
+    uint256 public override votingPeriod;
+
+    /// @notice the governance rollback address
+    address public override governanceRollbackAddress;
+
+    /// @notice the break glass guardian address
+    /// can only break glass one time, and then role is revoked
+    /// and needs to be reinstated by governance
+    address public override breakGlassGuardian;
+
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// ------------------------- EVENTS ------------------------ ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
 
     /// @notice disable the initializer to stop governance hijacking
     /// and avoid selfdestruct attacks.
@@ -71,6 +119,7 @@ contract MultichainGovernor is
     /// @param _maxUserLiveProposals maximum number of live proposals per user
     /// @param _pauseDuration duration of pause in blocks
     /// @param _pauseGuardian address of the pause guardian
+    /// @param _trustedSenders list of trusted senders
     function initialize(
         address _xWell,
         address _well,
@@ -83,14 +132,11 @@ contract MultichainGovernor is
         uint256 _quorum,
         uint256 _maxUserLiveProposals,
         uint128 _pauseDuration,
-        address _pauseGuardian
+        address _pauseGuardian,
+        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
     ) public initializer {
-        __GovernorVotes_init(ERC20VotesCompUpgradeable(_xWell));
-        __GovernorCompatibilityBravo_init();
-        __Governor_init("Moonwell Multichain Governor");
-
         xWell = xWELL(_xWell);
-        well = WELL(_well);
+        well = SnapshotInterface(_well);
         stkWell = SnapshotInterface(_stkWell);
         distributor = SnapshotInterface(_distributor);
 
@@ -104,7 +150,49 @@ contract MultichainGovernor is
         __Pausable_init(); /// not really needed, but seems like good form
         _updatePauseDuration(_pauseDuration);
         _grantGuardian(_pauseGuardian); /// set the pause guardian
+        _addTrustedSenders(_trustedSenders);
     }
+
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// ----------------------- MODIFIERS ----------------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+
+    /// @notice modifier to restrict function access to only governor address
+    modifier onlyGovernor() {
+        require(
+            msg.sender == address(this),
+            "MultichainGovernor: only governor"
+        );
+        _;
+    }
+
+    /// @notice modifier to restrict function access to only break glass guardian
+    /// immediately sets break glass guardian to address 0 on use
+    modifier onlyBreakGlassGuardian() {
+        require(
+            msg.sender == breakGlassGuardian,
+            "MultichainGovernor: only break glass guardian"
+        );
+        breakGlassGuardian = address(0);
+        _;
+    }
+
+    /// @notice modifier to restrict function access to only trusted senders
+    modifier onlyTrustedSender(uint16 chainId, address sender) {
+        require(
+            isTrustedSender(chainId, sender),
+            "MultichainGovernor: only trusted sender"
+        );
+        _;
+    }
+
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// ------------------- HELPER FUNCTIONS -------------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
 
     function _setCrossChainVoteCollectionPeriod(
         uint256 _crossChainVoteCollectionPeriod
@@ -116,20 +204,47 @@ contract MultichainGovernor is
         maxUserLiveProposals = _maxUserLiveProposals;
     }
 
-    /// TODO override this function from GovernorCompatibilityBravoUpgradeable
-    function _getVotes(
-        address account,
-        uint256 timepoint,
-        bytes memory /*params*/
-    ) internal view virtual override returns (uint256) {}
+    function _setQuorum(uint256 _quorum) private {
+        quorum = _quorum;
+    }
 
-    /// TODO override this function from GovernorUpgradeable
+    function _setVotingDelay(uint256 _votingDelay) private {
+        votingDelay = _votingDelay;
+    }
+
+    function _setVotingPeriod(uint256 _votingPeriod) private {
+        votingPeriod = _votingPeriod;
+    }
+
+    function _setProposalThreshold(uint256 _proposalThreshold) private {
+        proposalThreshold = _proposalThreshold;
+    }
+
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// -------------------- VIEW FUNCTIONS --------------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+
+    /// returns the total voting power for an address at a given block number and timestamp
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
+    /// @param blockNumber The block number to check the balance at
     function getVotes(
         address account,
-        uint256 timestamp
-    ) public view virtual override returns (uint256) {}
+        uint256 timestamp,
+        uint256 blockNumber
+    ) public view returns (uint256) {
+        uint256 wellVotes = well.getPriorVotes(account, timestamp);
+        uint256 stkWellVotes = stkWell.getPriorVotes(account, blockNumber);
+        uint256 distributorVotes = distributor.getPriorVotes(
+            account,
+            blockNumber
+        );
+        uint256 xWellVotes = xWell.getPastVotes(account, blockNumber);
+
+        return xWellVotes + stkWellVotes + distributorVotes + wellVotes;
+    }
 
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
@@ -144,75 +259,49 @@ contract MultichainGovernor is
     /// - setAdmin to rollback address
     /// - publishMessage that adds rollback address as trusted sender in TemporalGovernor, with calldata for each chain
     /// TODO triple check that non of the aforementioned functions have hash collisions with something that would make them dangerous
-    function whitelistedCalldatas(bytes calldata) external view returns (bool);
-
-    function pauseDuration() external view returns (uint256);
+    function whitelistedCalldatas(
+        bytes calldata
+    ) external view returns (bool) {}
 
     /// @notice override with a mapping
     function chainAddressVotes(
         uint256 proposalId,
         uint256 chainId,
         address voteGatheringAddress
-    ) external view returns (VoteCounts memory);
-
-    /// address the contract can be rolled back to by break glass guardian
-    function governanceRollbackAddress() external view returns (address);
-
-    /// break glass guardian
-    function breakGlassGuardian() external view returns (address);
+    ) external view returns (VoteCounts memory) {}
 
     /// returns whether or not the user is a vote collector contract
     /// and can vote on a given chain
     function isCrossChainVoteCollector(
-        uint256 chainId,
+        uint16 chainId,
         address voteCollector
-    ) external view returns (bool);
+    ) external view returns (bool) {
+        return isTrustedSender(chainId, voteCollector);
+    }
 
-    /// pause guardian address
-    function pauseGuardian() external view returns (address);
+    function isCrossChainVoteCollector(
+        uint16 chainId,
+        bytes32 voteCollector
+    ) external view returns (bool) {
+        return isTrustedSender(chainId, voteCollector);
+    }
 
     /// @notice The total number of proposals
-    function state(uint256 proposalId) external view returns (ProposalState);
-
-    /// @notice The total amount of live proposals
-    /// proposals that failed will not be included in this list
-    /// HMMMM, is a proposal that is succeeded, and past the cross chain vote collection stage but not executed live?
-    function liveProposals() external view returns (uint256[] memory);
-
-    /// @dev Returns the proposal threshold (minimum number of votes to propose)
-    /// changeable through governance proposals
-    function proposalThreshold() external view returns (uint256);
-
-    /// @dev Returns the voting period for a proposal to pass
-    function votingPeriod() external view returns (uint256);
-
-    /// @dev Returns the voting delay before voting begins
-    function votingDelay() external view returns (uint256);
-
-    /// @dev Returns the cross chain voting period for a given proposal
-    function crossChainVoteCollectionPeriod() external view returns (uint256);
-
-    /// @dev Returns the quorum for a proposal to pass
-    function quorum() external view returns (uint256);
-
-    /// @notice for backwards compatability with OZ governor
-    function quorum(uint256) external view returns (uint256);
-
-    /// @dev Returns the maximum number of live proposals per user
-    /// changeable through governance proposals
-    function maxUserLiveProposals() external view returns (uint256);
+    function state(
+        uint256 proposalId
+    ) external view virtual returns (ProposalState);
 
     /// @dev Returns the number of live proposals for a given user
     function currentUserLiveProposals(
         address user
-    ) external view returns (uint256);
+    ) external view virtual returns (uint256);
 
     /// @dev Returns the number of votes for a given user
     /// queries WELL, xWELL, distributor, and safety module
     function getVotingPower(
         address voter,
         uint256 blockNumber
-    ) external view returns (uint256);
+    ) external view virtual returns (uint256);
 
     /// ---------------------------------------------- ////
     /// ---------------------------------------------- ////
@@ -227,24 +316,24 @@ contract MultichainGovernor is
         uint256[] memory values,
         bytes[] memory calldatas,
         string memory description
-    ) external returns (uint256);
+    ) external override returns (uint256) {}
 
-    function execute(uint256 proposalId) external;
+    function execute(uint256 proposalId) external override {}
 
     /// @dev callable only by the proposer, cancels proposal if it has not been executed
-    function proposerCancel(uint256 proposalId) external;
+    function proposerCancel(uint256 proposalId) external override {}
 
     /// @dev callable by anyone, succeeds in cancellation if user has less votes than proposal threshold
     /// at the current point in time.
     /// reverts otherwise.
-    function permissionlessCancel(uint256 proposalId) external;
+    function permissionlessCancel(uint256 proposalId) external override {}
 
     /// @dev allows user to cast vote for a proposal
-    function castVote(uint256 proposalId, uint8 voteValue) external;
+    function castVote(uint256 proposalId, uint8 voteValue) external override {}
 
     /// @dev allows votes from external chains to be counted
     /// calls wormhole core to decode VAA, ensures validity of sender
-    function collectCrosschainVote(bytes memory VAA) external;
+    function collectCrosschainVote(bytes memory VAA) external override {}
 
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
@@ -253,28 +342,32 @@ contract MultichainGovernor is
     //// ---------------------------------------------- ////
 
     /// updates the proposal threshold
-    function updateProposalThreshold(uint256 newProposalThreshold) external;
+    function updateProposalThreshold(
+        uint256 newProposalThreshold
+    ) external override {}
 
     /// updates the maximum user live proposals
-    function updateMaxUserLiveProposals(uint256 newMaxLiveProposals) external;
+    function updateMaxUserLiveProposals(
+        uint256 newMaxLiveProposals
+    ) external override {}
 
     /// updates the quorum
-    function updateQuorum(uint256 newQuorum) external;
+    function updateQuorum(uint256 newQuorum) external override {}
 
     /// updates the voting period
-    function updateVotingPeriod(uint256 newVotingPeriod) external;
+    function updateVotingPeriod(uint256 newVotingPeriod) external override {}
 
     /// updates the voting delay
-    function updateVotingDelay(uint256 newVotingDelay) external;
+    function updateVotingDelay(uint256 newVotingDelay) external override {}
 
     /// updates the cross chain voting collection period
     function updateCrossChainVoteCollectionPeriod(
         uint256 newCrossChainVoteCollectionPeriod
-    ) external;
+    ) external override {}
 
-    function setBreakGlassGuardian(address newGuardian) external;
+    function setBreakGlassGuardian(address newGuardian) external override {}
 
-    function setGovernanceReturnAddress(address newAddress) external;
+    function setGovernanceReturnAddress(address newAddress) external override {}
 
     //// @notice array lengths must add up
     /// values must sum to msg.value to ensure guardian cannot steal funds
@@ -284,5 +377,5 @@ contract MultichainGovernor is
         address[] calldata targets,
         uint256[] calldata values,
         bytes[] calldata calldatas
-    ) external payable;
+    ) external payable override onlyBreakGlassGuardian {}
 }

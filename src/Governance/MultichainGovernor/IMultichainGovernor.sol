@@ -90,8 +90,6 @@ interface IMultichainGovernor {
     /// TODO triple check that non of the aforementioned functions have hash collisions with something that would make them dangerous
     function whitelistedCalldatas(bytes calldata) external view returns (bool);
 
-    function pauseDuration() external view returns (uint256);
-
     /// @notice override with a mapping
     function chainAddressVotes(
         uint256 proposalId,
@@ -111,9 +109,6 @@ interface IMultichainGovernor {
         uint256 chainId,
         address voteCollector
     ) external view returns (bool);
-
-    /// pause guardian address
-    function pauseGuardian() external view returns (address);
 
     /// @notice The total number of proposals
     function state(uint256 proposalId) external view returns (ProposalState);
@@ -138,9 +133,6 @@ interface IMultichainGovernor {
 
     /// @dev Returns the quorum for a proposal to pass
     function quorum() external view returns (uint256);
-
-    /// @notice for backwards compatability with OZ governor
-    function quorum(uint256) external view returns (uint256);
 
     /// @dev Returns the maximum number of live proposals per user
     /// changeable through governance proposals
