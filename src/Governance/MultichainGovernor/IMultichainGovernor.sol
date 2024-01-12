@@ -11,15 +11,14 @@ interface IMultichainGovernor {
     //// ---------------------------------------------- ////
 
     /// @notice Possible states that a proposal may be in
-    /// TODO remove unused states per specification
+    /// TODO add CrossChainVoteCollection into the contract
     enum ProposalState {
         Pending,
         Active,
+        CrossChainVoteCollection,
         Canceled,
         Defeated,
         Succeeded,
-        Queued,
-        Expired,
         Executed
     }
 
@@ -40,6 +39,9 @@ interface IMultichainGovernor {
         uint256 startTimestamp;
         /// @notice The timestamp at which voting ends: votes must be cast prior to this time
         uint256 endTimestamp;
+        /// @notice The timestamp at which cross chain voting collection ends:
+        /// votes must be registered prior to this time
+        uint256 crossChainVoteCollectionEndTimestamp;
         /// @notice The block at which voting began: holders must have delegated their votes prior to this block
         uint256 startBlock;
         /// @notice Current number of votes in favor of this proposal
@@ -68,7 +70,6 @@ interface IMultichainGovernor {
         uint256 votes;
     }
 
-    /// TODO shrink down data size to use single storage slot
     struct VoteCounts {
         uint256 forVotes;
         uint256 againstVotes;
