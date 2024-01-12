@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "./MockERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface CToken {
     function redeemUnderlying(uint256 redeemAmount) external returns (uint256);

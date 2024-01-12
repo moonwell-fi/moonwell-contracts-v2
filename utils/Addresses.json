@@ -20,9 +20,19 @@
         "name": "ARTEMIS_GOVERNOR"
     },
     {
+        "addr": "0xb0eE65140C89a24Db5931D7DDF2c2a7c6f1d9f5B",
+        "chainId": 1284,
+        "name": "MOONBEAM_PROXY_ADMIN"
+    },
+    {
         "addr": "0x511aB53F793683763E5a8829738301368a2411E3",
         "chainId": 1284,
         "name": "WELL"
+    },
+    {
+        "addr": "0x82Aa6030973B61AcED7c978ee0e73A83136b02a9",
+        "chainId": 1284,
+        "name": "MOONBEAM_PAUSE_GUARDIAN_MULTISIG"
     },
     {
         "addr": "0x4200000000000000000000000000000000000006",
@@ -480,6 +490,16 @@
         "name": "MOONWELL_wstETH"
     },
     {
+        "addr": "0x706f82e9bb5b0813501714ab5974216704980e31",
+        "chainId": 8453,
+        "name": "WORMHOLE_BRIDGE_RELAYER"
+    },
+    {
+        "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
+        "chainId": 1284,
+        "name": "WORMHOLE_BRIDGE_RELAYER"
+    },
+    {
         "addr": "0x8E00D5e02E65A19337Cdba98bbA9F84d4186a180",
         "chainId": 1284,
         "name": "UNITROLLER"
@@ -613,5 +633,55 @@
         "addr": "0xCB1DaCd30638ae38F2B94eA64F066045B7D45f44",
         "chainId": 8453,
         "name": "MOONWELL_rETH"
+    },
+    {
+        "addr": "0x734AbBCe07679C9A6B4Fe3bC16325e028fA6DbB7",
+        "chainId": 8453,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY"
+    },
+    {
+        "addr": "0xEF68C8f8BDeEF8e938F519ee818DeC80e320CE6b",
+        "chainId": 8453,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
+    },
+    {
+        "addr": "0x3b1BDDC0998058dD266e2a0aC855D0d750700a7f",
+        "chainId": 8453,
+        "name": "xWELL_LOGIC"
+    },
+    {
+        "addr": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "chainId": 8453,
+        "name": "xWELL_PROXY"
+    },
+    {
+        "addr": "0x0D45033775b290D69462944289b7A402a651B460",
+        "chainId": 1284,
+        "name": "xWELL_LOCKBOX"
+    },
+    {
+        "addr": "0x734AbBCe07679C9A6B4Fe3bC16325e028fA6DbB7",
+        "chainId": 1284,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY"
+    },
+    {
+        "addr": "0xEF68C8f8BDeEF8e938F519ee818DeC80e320CE6b",
+        "chainId": 1284,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
+    },
+    {
+        "addr": "0x3b1BDDC0998058dD266e2a0aC855D0d750700a7f",
+        "chainId": 1284,
+        "name": "xWELL_LOGIC"
+    },
+    {
+        "addr": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "chainId": 1284,
+        "name": "xWELL_PROXY"
+    },
+    {
+        "addr": "0xfB26A4947A38cb53e2D083c6490060CCCE7438c5",
+        "chainId": 1284,
+        "name": "xWELL_ROUTER"
     }
 ]
