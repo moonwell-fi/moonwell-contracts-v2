@@ -1,48 +1,143 @@
 pragma solidity 0.8.19;
 
-import {IWormhole} from "@protocol/Governance/IWormhole.sol";
 import {IMultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/IMultichainVoteCollection.sol";
 import {Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
+import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 
 /// Upgradeable, constructor disables implementation
-contract MultichainVoteCollection is IMultichainVoteCollection, Initializable {
-    // Moonbeam Governor Contract Address
-    // TODO get correct address
-    address public moombeamGovernorAddress;
-    IWormhole public immutable wormholeBridge;
-
-    struct MultichainProposal {
-        // unix timestamp when voting will start
-        uint256 votingStartTime;
-        // unix timestamp when voting will end
-        uint256 votingEndTime;
-        MultichainVotes votes;
-    }
-
-    struct MultichainVotes {
-        // votes for the proposal
-        uint256 forVotes;
-        // votes against the proposal
-        uint256 againstVotes;
-        // votes that abstain
-        uint256 abstainVotes;
-    }
+contract MultichainVoteCollection is IMultichainVoteCollection, Initializable , Owanble2StepUpgradeable, IWormholeReceiver {
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// ----------------------- CONSTANTS ----------------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
 
     /// @notice Values for votes
-    uint8 public constant voteValueYes = 0;
-    uint8 public constant voteValueNo = 1;
-    uint8 public constant voteValueAbstain = 2;
 
+    /// @notice value for a yes vote
+    uint8 public constant VOTE_VALUE_YES = 0;
+
+    /// @notice value for a no vote
+    uint8 public constant VOTE_VALUE_NO = 1;
+
+    /// @notice value for an abstain vote
+    uint8 public constant VOTE_VALUE_ABSTAIN = 2;
+
+    /// @notice Moombeam constants
+
+    // @notice MoonBeam Governor Contract Address
+    address public moomBeamGovernor;
+
+    // @notice Moonbeam Chain Id
+    uint256 public constant moonBeamChainId = 1284;
+
+    /// @notice Wormhole constants
+
+    // @notice Moonbeam Wormhole Chain Id
+    uint16 public constant moonBeamWormholeChainId = 16;
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+    /// ------------------ SINGLE STORAGE SLOT ------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @dev packing these variables into a single slot saves a
+    /// COLD SLOAD on bridge out operations.
+
+    /// @notice gas limit for wormhole relayer, changeable incase gas prices change on MoomBeam network
+    uint96 public gasLimit = 300_000;
+
+    /// @notice address of the wormhole relayer cannot be changed by owner
+    /// because the relayer contract is a proxy and should never change its address
+    IWormholeRelayer public wormholeRelayer;
+
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// -------------------- STATE VARIABLES -------------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+
+    /// @notice reference to the xWELL token
+    xWELL public xWell;
+
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+    /// ----------------------- MAPPINGS ------------------------
+    /// ---------------------------------------------------------
+    /// ---------------------------------------------------------
+
+    /// @notice nonces that have already been processed
+    mapping(bytes32 => bool) public processedNonces;
+
+    /// @notice mapping from proposalId to MultichainProposal
     mapping(uint256 proposalId => MultichainProposal) public proposals;
 
-    /// @notice logic contract cannot be initialized
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// ------------------------- EVENTS ------------------------ ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+
+    // @notice An event emitted when a proposal is created
+    event ProposalCreated(
+        uint256 proposalId,
+        uint256 votingStartTime,
+        uint256 votingEndTime,
+        uint256 voteCollectionEndTime
+    );
+
+    /// @notice emitted when the gas limit changes on the MoomBeam chain
+    /// @param oldGasLimit old gas limit
+    /// @param newGasLimit new gas limit
+    event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
+
+    /// @notice emitted when votes are emitted to the MoomBeam chain
+    /// @param proposalId the proposal id
+    /// @param forVotes number of votes for the proposal
+    /// @param againstVotes number of votes against the proposal
+    /// @param abstainVotes number of votes abstaining the proposal
+    event VotesEmitted(
+        uint256 proposalId,
+        uint256 forVotes,
+        uint256 againstVotes,
+        uint256 abstainVotes
+    );
+
+    /// @notice disable the initializer to stop governance hijacking
+    /// and avoid selfdestruct attacks.
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address _moonbeamGovernorAddress, address wormholeCore) external initializer {
-        moombeamGovernorAddress = _moonbeamGovernorAddress;
-        wormholeBridge = IWormhole(wormholeCore);
+    /// @notice initialize the governor contract
+    /// @param _xWell address of the xWELL token
+    /// @param _moonBeamGovernor address of the moonbeam governor contract
+    /// @param _wormholeRelayer address of the wormhole relayer
+    function initialize(address _xWell, address _moonBeamGovernor, address _wormholeRelayer) external initializer {
+        xWell = xWELL(_xWell);
+        moomBeamGovernor = _moonbeamGovernor;
+        wormholeRelayer = IWormholeRelayer(_wormholeRelayer);
+
+        gasLimit = 300_000; /// @dev default starting gas limit for relayer 
+    }
+
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ---------------- View Only Functions -------------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+
+    /// @notice Estimate bridge cost to bridge out to a destination chain
+    function bridgeCost() public view returns (uint256 gasCost) {
+        (gasCost, ) = wormholeRelayer.quoteEVMDeliveryPrice(
+                                                            moonBeamWormholeChainId,
+                                                            0,
+                                                            gasLimit
+        );
     }
 
     /// @dev allows user to cast vote for a proposal
@@ -57,11 +152,11 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initializable {
         uint256 votes = _getVotingPower(msg.sender, block.number);
 
         // 0: yes, 1: o, 2: abstain
-        if (voteValue == voteValueYes) {
+        if (voteValue == VOTE_VALUE_YES) {
             proposal.votes.forVotes +=  votes;
-        } else if (voteValue == voteValueNo) {
+        } else if (voteValue == VOTE_VALUE_NO) {
             proposal.votes.againstVotes +=  votes;
-        } else if (voteValue == voteValueAbstain) {
+        } else if (voteValue == VOTE_VALUE_ABSTAIN) {
             proposal.votes.abstainVotes += votes;
         } else {
             // Catch all. If an above case isn't matched then the value is not valid.
@@ -73,36 +168,73 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initializable {
     /// queries xWELL only
     function _getVotingPower(address voter, uint256 blockNumber) internal view returns (uint256) {}
 
-    /// @dev emits the vote VAA for a given proposal
-    function emitVoteVAA(uint256 proposalId) external {}
+    /// @notice Emits votes to be contabilized on MoomBeam Governor contract
+    /// @param proposalId the proposal id
+    function emitVotes(uint256 proposalId) external override {
+        // Cost to bridge out to MoomBeam chain
+        uint256 cost = bridgeCost();
+        require(msg.value == cost, "WormholeBridge: cost not equal to quote");
 
-    function createProposalId(bytes memory VAA) public {
-        // This call accepts single VAAs and headless VAAs
-        (IWormhole.VM memory vm, bool valid, string memory reason) = wormholeBridge.parseAndVerifyVM(VAA);
+        // Get the proposal
+        MultichainProposal storage proposal = proposals[proposalId];
 
-        // Ensure VAA parsing verification succeeded.
-        require(valid, reason);
+        // Check if proposal end time has passed
+        require(proposal.voteCollectionEndTime < block.timestamp, "MultichainVoteCollection: Voting has not ended yet");
 
-        // Decode the payload
-        (uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime) =
-            abi.decode(vm.payload, (uint256, uint256, uint256));
+        // Check if proposal collection end time has not passed
+        require(proposal.voteCollectionEndTime > block.timestamp, "MultichainVoteCollection: Voting collection phase has ended");
 
-        // Get the emitter address
-        // TODO check this casting
-        address emitter = address(uint160(uint256(vm.emitterAddress)));
+        // Get votes
+        MultichainVotes storage votes = proposal.votes;
 
-        // Call the internal createProposalId function
-        _createProposalId(proposalId, votingStartTime, votingEndTime, emitter);
+        // Send votes to MoomBeam chain
+        wormholeRelayer.sendPayloadToEvm{value: cost}(
+            moonBeamWormholeChainId,
+            moonBeamGovernor,
+            abi.encode(proposalId, votes.forVotes, votes.againstVotes, votes.abstainVotes),
+            0, /// no receiver value allowed, only message passing
+            gasLimit
+        );
+
+        emit VotesEmitted(proposalId, votes.forVotes, votes.againstVotes, votes.abstainVotes);
+    }
+
+    /// @notice callable only by the wormhole relayer
+    /// @param payload the payload of the message, contains proposalId, votingStartTime, votingEndTime and voteCollectionEndTime
+    /// additional vaas, unused parameter
+    /// @param senderAddress the address of the sender on the source chain, bytes32 encoded
+    /// @param sourceChain the chain id of the source chain
+    /// @param nonce the unique message ID
+    function receiveWormholeMessages(
+        bytes memory payload,
+        bytes[] memory, // additionalVaas
+        bytes32 senderAddress,
+        uint16 sourceChain,
+        bytes32 nonce
+    ) external payable override {
+        require(msg.value == 0, "MultichainVoteCollection: no value allowed");
+        require(
+            msg.sender == address(wormholeRelayer),
+            "MultichainVoteCollection: only relayer allowed"
+        );
+         require(moomBeamGovernor, senderAddress, "MultichainVoteCollection: sender address is not moonbeam governor");
+        require(
+            !processedNonces[nonce],
+            "MultichainVoteCollection: message already processed"
+        );
+
+        processedNonces[nonce] = true;
+
+        // Parse the payload and do the corresponding actions!
+        (uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, uint256 voteCollectionEndTime) =
+            abi.decode(payload, (uint256, uint256, uint256, uint256));
+
+        /// mint tokens and emit events
+        _createProposal(proposalId, votingStartTime, votingEndTime, voteCollectionEndTime);
     }
 
     /// @dev allows MultichainGovernor to create a proposal ID
-    /// TODO check if min time sanity checks are necessary
-    function _createProposalId(uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, address emitter)
-        internal
-    {
-        // Ensure the message is from the MultichainGovernor
-        require(emitter == moombeamGovernorAddress, "Emitter is not MultichainGovernor");
-
+    function _createProposal(uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, uint256 voteCollectionEndTime) internal {
         // Ensure proposalId is unique
         require(proposals[proposalId].votingStartTime == 0, "Proposal already exists");
 
@@ -112,8 +244,30 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initializable {
         // Ensure votingEndTime is in the future
         require(votingEndTime > block.timestamp, "End time must be in the future");
 
+        // Create the proposal
         MultichainProposal storage proposal = proposals[proposalId];
         proposal.votingStartTime = votingStartTime;
         proposal.votingEndTime = votingEndTime;
+        proposal.voteCollectionEndTime = voteCollectionEndTime;
+
+        // Emit the ProposalCreated event
+        emit ProposalCreated(proposalId, votingStartTime, votingEndTime, votingCollectionEndTime);
     }
+
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+    /// ---------------- Admin Only Functions ------------------
+    /// --------------------------------------------------------
+    /// --------------------------------------------------------
+
+    /// @notice set a gas limit for the relayer on the MoomBeam chain
+    /// should only be called if there is a change in gas prices on the MoomBeam chain
+    /// @param newGasLimit new gas limit to set
+    function setGasLimit(uint96 newGasLimit) external onlyOwner {
+        uint96 oldGasLimit = gasLimit;
+        gasLimit = newGasLimit;
+
+        emit GasLimitUpdated(oldGasLimit, newGasLimit);
+    }
+
 }

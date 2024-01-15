@@ -1,11 +1,27 @@
 pragma solidity 0.8.19;
 
-/// Upgradeable, constructor disables implementation
+/// @notice pauseable by the guardian
+/// @notice upgradeable, constructor disables implementation
 interface IMultichainVoteCollection {
-    /// TODO define further
+    struct MultichainProposal {
+        // unix timestamp when voting will start
+        uint256 votingStartTime;
+        // unix timestamp when voting will end
+        uint256 votingEndTime;
+        // unix timestamp when vote collection phase ends
+        uint256 voteCollectionEndTime;
+        // votes 
+        MultichainVotes votes;
+    }
 
-    /// returns address on moonbeam to target
-    function getTargetAddress() external view returns (address);
+    struct MultichainVotes {
+        // votes for the proposal
+        uint256 forVotes;
+        // votes against the proposal
+        uint256 againstVotes;
+        // votes that abstain
+        uint256 abstainVotes;
+    }
 
     /// @dev allows user to cast vote for a proposal
     function castVote(uint256 proposalId, uint8 voteValue) external;
@@ -16,6 +32,12 @@ interface IMultichainVoteCollection {
     /// @dev emits the vote VAA for a given proposal
     function emitVoteVAA(uint256 proposalId) external;
 
+    /// @dev emits the vote VAA for a given proposal
+    function emitVoteVAA(uint256 proposalId) external;
+
+    /// @notice Emits votes to be contabilized on MoomBeam Governor contract
+    function emitVotes(uint256 proposalId) external; 
+
     /// @dev allows MultichainGovernor to create a proposal ID
-    function createProposalId(bytes memory VAA) external;
+    function createProposal(bytes memory VAA) external;
 }
