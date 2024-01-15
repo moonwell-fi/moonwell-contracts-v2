@@ -2,7 +2,6 @@ pragma solidity 0.8.19;
 
 /// @notice pauseable by the guardian
 /// @notice upgradeable, constructor disables implementation
-/// TODO investigate whether GovernorCompatibilityBravoUpgradeable can be used
 interface IMultichainGovernor {
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
@@ -11,7 +10,6 @@ interface IMultichainGovernor {
     //// ---------------------------------------------- ////
 
     /// @notice Possible states that a proposal may be in
-    /// TODO add CrossChainVoteCollection into the contract
     enum ProposalState {
         Pending,
         Active,
@@ -19,7 +17,8 @@ interface IMultichainGovernor {
         Canceled,
         Defeated,
         Succeeded,
-        Executed
+        Executed,
+        Invalid
     }
 
     struct Proposal {
@@ -44,6 +43,8 @@ interface IMultichainGovernor {
         uint256 crossChainVoteCollectionEndTimestamp;
         /// @notice The block at which voting began: holders must have delegated their votes prior to this block
         uint256 startBlock;
+        /// @notice The block at which voting ends: voters must have registered their votes prior to this block
+        uint256 endBlock;
         /// @notice Current number of votes in favor of this proposal
         uint256 forVotes;
         /// @notice Current number of votes in opposition to this proposal
@@ -70,6 +71,7 @@ interface IMultichainGovernor {
         uint256 votes;
     }
 
+    /// @notice The total amount of votes for each option
     struct VoteCounts {
         uint256 forVotes;
         uint256 againstVotes;
