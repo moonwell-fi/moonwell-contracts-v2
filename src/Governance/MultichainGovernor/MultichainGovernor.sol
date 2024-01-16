@@ -145,14 +145,6 @@ abstract contract MultichainGovernor is
     /// @notice the voting period
     uint256 public override votingPeriod;
 
-    /// @notice the block voting delay
-    /// TODO remove and replace this functionality with seconds to blocks conversion
-    // uint256 public override blockVotingDelay;
-
-    /// @notice the block voting period
-    /// TODO remove and replace this functionality with seconds to blocks conversion
-    /// uint256 public override blockVotingPeriod;
-
     /// --------------------------------------------------------- ///
     /// ------------------------- SAFETY ------------------------ ///
     /// --------------------------------------------------------- ///
