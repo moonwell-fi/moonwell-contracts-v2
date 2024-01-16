@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
-import "@forge-std/console.sol";
 
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
@@ -12,10 +11,8 @@ import {StringUtils} from "@proposals/utils/StringUtils.sol";
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
+import {MoonwellArtemisGovernor, IERC20} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 import {mipb12} from "@protocol/proposals/mips/mip-b12/mip-b12.sol";
-
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 contract NomadCollateralIntegrationTest is Test, ChainIds, CreateCode {
