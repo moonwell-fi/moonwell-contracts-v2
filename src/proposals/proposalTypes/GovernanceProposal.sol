@@ -20,14 +20,77 @@ abstract contract GovernanceProposal is Proposal {
 
     GovernanceAction[] public actions;
 
+    /// @notice hex encoded description of the proposal
+    bytes public PROPOSAL_DESCRIPTION;
+
+    /// @notice set the governance proposal's description
+    function _setProposalDescription(bytes memory newProposalDescription) internal {
+        PROPOSAL_DESCRIPTION = newProposalDescription;
+    }
+
     /// @notice set the debug flag
     function setDebug(bool debug) public {
         DEBUG = debug;
     }
 
-    function printCalldata(Addresses addresses) public override {}
+    /// @notice get actions
+    function _getActions()
+        internal
+        view
+        returns (address[] memory, uint256[] memory, string[] memory, bytes[] memory)
+    {
+        address[] memory targets = new address[](actions.length);
+        uint256[] memory values = new uint256[](actions.length);
+        string[] memory signatures = new string[](actions.length);
+        bytes[] memory calldatas = new bytes[](actions.length);
 
-    function printProposalActionSteps() public override {}
+        for (uint256 i = 0; i < actions.length; i++) {
+            targets[i] = actions[i].target;
+            values[i] = actions[i].value;
+            signatures[i] = "";
+            calldatas[i] = actions[i].data;
+        }
+
+        return (targets, values, signatures, calldatas);
+    }
+
+    /// @notice print the actions that will be executed by the proposal
+    function printActions(address governorAddress) public {
+        (address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas) =
+            _getActions();
+        MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(governorAddress);
+        bytes memory governorCalldata = abi.encodeWithSignature(
+            "propose(address[],uint256[],string[],bytes[],string)",
+            targets,
+            values,
+            signatures,
+            calldatas,
+            PROPOSAL_DESCRIPTION
+        );
+
+        console.log("governor calldata");
+        emit log_bytes(governorCalldata);
+    }
+
+    /// @notice print calldata
+    function printCalldata(Addresses addresses) public override {
+        printActions(addresses.getAddress("ARTEMIS_GOVERNOR"));
+    }
+
+    /// @notice print the proposal action steps
+    function printProposalActionSteps() public override {
+        console.log("\n\nProposal Description:\n\n%s", string(PROPOSAL_DESCRIPTION));
+
+        console.log("\n\n------------------ Proposal Actions ------------------");
+
+        for (uint256 i = 0; i < actions.length; i++) {
+            console.log("%d). %s", i + 1, actions[i].description);
+            console.log("target: %s\nvalue: %d\npayload", actions[i].target, actions[i].value);
+            emit log_bytes(actions[i].data);
+
+            console.log("\n");
+        }
+    }
 
     /// @notice deal tokens
     /// @param token address of the token
@@ -67,12 +130,9 @@ abstract contract GovernanceProposal is Proposal {
     /// @param timelockAddress address of the timelock
     /// @param governorAddress address of the artemis governor
     /// @param proposerAddress address of the proposer
-    function _simulateGovernanceActions(
-        address timelockAddress,
-        address governorAddress,
-        address proposerAddress,
-        string memory description
-    ) internal {
+    function _simulateGovernanceActions(address timelockAddress, address governorAddress, address proposerAddress)
+        internal
+    {
         require(actions.length > 0, "Empty governance operation");
 
         /// @dev deal and delegate, so the proposal can be simulated end-to-end
@@ -84,21 +144,17 @@ abstract contract GovernanceProposal is Proposal {
         /// @dev skip ahead
         vm.roll(block.number + 1000);
 
-        /// @dev loop through the struct and prep the data for the governance proposal
-        address[] memory targets = new address[](actions.length);
-        uint256[] memory values = new uint256[](actions.length);
-        string[] memory signatures = new string[](actions.length);
-        bytes[] memory calldatas = new bytes[](actions.length);
-        for (uint256 i = 0; i < actions.length; i++) {
-            targets[i] = actions[i].target;
-            values[i] = actions[i].value;
-            signatures[i] = "";
-            calldatas[i] = actions[i].data;
-        }
-
+        /// @dev build proposal
+        (address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas) =
+            _getActions();
         MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(governorAddress);
         bytes memory encoded = abi.encodeWithSignature(
-            "propose(address[],uint256[],string[],bytes[],string)", targets, values, signatures, calldatas, description
+            "propose(address[],uint256[],string[],bytes[],string)",
+            targets,
+            values,
+            signatures,
+            calldatas,
+            PROPOSAL_DESCRIPTION
         );
 
         /// @dev output

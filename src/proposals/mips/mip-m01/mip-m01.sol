@@ -10,7 +10,12 @@ import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.so
 contract mipm01 is GovernanceProposal {
     string public constant name = "MIP-M01";
 
-    constructor() {}
+    constructor() {
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile("./src/proposals/mips/mip-m01/MIP-M01.md")
+        );
+        _setProposalDescription(proposalDescription);
+    }
 
     function deploy(Addresses addresses, address) public override {}
 
@@ -102,8 +107,7 @@ contract mipm01 is GovernanceProposal {
         _simulateGovernanceActions(
             addresses.getAddress("MOONBEAM_TIMELOCK"),
             addresses.getAddress("ARTEMIS_GOVERNOR"),
-            address(this),
-            "Redemption and Reallocation of Nomad Collateral and Protocol Reserves for FRAX Market Enhancement (Proposal 1)"
+            address(this)
         );
     }
 }
