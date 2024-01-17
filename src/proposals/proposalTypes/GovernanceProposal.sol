@@ -11,7 +11,7 @@ abstract contract GovernanceProposal is Proposal {
 
     struct GovernanceAction {
         address target;
-        uint value;
+        uint256 value;
         string signature;
         bytes data;
     }
@@ -22,7 +22,7 @@ abstract contract GovernanceProposal is Proposal {
     function setDebug(bool debug) public {
         DEBUG = debug;
     }
- 
+
     /// @notice deal tokens
     /// @param token address of the token
     /// @param toAddress address to send tokens to
@@ -43,7 +43,9 @@ abstract contract GovernanceProposal is Proposal {
     /// @param value msg.value
     /// @param signature function signature
     /// @param data calldata
-    function _pushGovernanceAction(address target, uint value, string memory signature, bytes memory data) internal {
+    function _pushGovernanceAction(address target, uint256 value, string memory signature, bytes memory data)
+        internal
+    {
         actions.push(GovernanceAction({target: target, value: value, signature: signature, data: data}));
     }
 
@@ -61,7 +63,7 @@ abstract contract GovernanceProposal is Proposal {
     /// @param proposerAddress address of the proposer
     function _simulateGovernanceActions(
         address timelockAddress,
-        address governorAddress, 
+        address governorAddress,
         address proposerAddress,
         string memory description
     ) internal {
@@ -75,7 +77,7 @@ abstract contract GovernanceProposal is Proposal {
         uint256[] memory values = new uint256[](actions.length);
         string[] memory signatures = new string[](actions.length);
         bytes[] memory calldatas = new bytes[](actions.length);
-        for (uint i = 0; i < actions.length; i++) {
+        for (uint256 i = 0; i < actions.length; i++) {
             targets[i] = actions[i].target;
             values[i] = actions[i].value;
             signatures[i] = actions[i].signature;
@@ -83,13 +85,7 @@ abstract contract GovernanceProposal is Proposal {
         }
 
         MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(governorAddress);
-        uint proposalId = governor.propose(
-            targets,
-            values,
-            signatures,
-            calldatas,
-            description
-        );
+        uint256 proposalId = governor.propose(targets, values, signatures, calldatas, description);
 
         /// @dev warp past the voting delay
         vm.warp(block.timestamp + governor.votingDelay() + 1);

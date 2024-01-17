@@ -8,8 +8,8 @@ import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 
-contract mipm14 is GovernanceProposal {
-    string public constant name = "MIP-B14";
+contract mipm01 is GovernanceProposal {
+    string public constant name = "MIP-M01";
 
     constructor() {}
 
@@ -37,7 +37,12 @@ contract mipm14 is GovernanceProposal {
         uint256 mwBTCReserves = mwBTC.totalReserves();
 
         /// @dev set max operations on artemis governor to 1000
-        _pushGovernanceAction(addresses.getAddress("ARTEMIS_GOVERNOR"), 0, "", abi.encodeWithSignature("setProposalMaxOperations(uint256)", 1000));
+        _pushGovernanceAction(
+            addresses.getAddress("ARTEMIS_GOVERNOR"),
+            0,
+            "",
+            abi.encodeWithSignature("setProposalMaxOperations(uint256)", 1000)
+        );
 
         /// @dev reduce mUSDC.mad reserves
         _pushGovernanceAction(address(mUSDC), 0, "", abi.encodeWithSignature("_reduceReserves(uint256)", mUSDCReserves));
@@ -49,13 +54,34 @@ contract mipm14 is GovernanceProposal {
         _pushGovernanceAction(address(mwBTC), 0, "", abi.encodeWithSignature("_reduceReserves(uint256)", mwBTCReserves));
 
         /// @dev transfer USDC from the timelock to the multisig
-        _pushGovernanceAction(addresses.getAddress("USDC"), 0, "", abi.encodeWithSignature("transfer(address,uint256)", addresses.getAddress("NOMAD_REALLOCATION_MULTISIG"), mUSDCReserves));
+        _pushGovernanceAction(
+            addresses.getAddress("USDC"),
+            0,
+            "",
+            abi.encodeWithSignature(
+                "transfer(address,uint256)", addresses.getAddress("NOMAD_REALLOCATION_MULTISIG"), mUSDCReserves
+            )
+        );
 
         /// @dev transfer WETH from the timelock to the multisig
-        _pushGovernanceAction(addresses.getAddress("WETH"), 0, "", abi.encodeWithSignature("transfer(address,uint256)", addresses.getAddress("NOMAD_REALLOCATION_MULTISIG"), mETHReserves));
+        _pushGovernanceAction(
+            addresses.getAddress("WETH"),
+            0,
+            "",
+            abi.encodeWithSignature(
+                "transfer(address,uint256)", addresses.getAddress("NOMAD_REALLOCATION_MULTISIG"), mETHReserves
+            )
+        );
 
         /// @dev transfer WBTC from the timelock to the multisig
-        _pushGovernanceAction(addresses.getAddress("WBTC"), 0, "", abi.encodeWithSignature("transfer(address,uint256)", addresses.getAddress("NOMAD_REALLOCATION_MULTISIG"), mwBTCReserves));
+        _pushGovernanceAction(
+            addresses.getAddress("WBTC"),
+            0,
+            "",
+            abi.encodeWithSignature(
+                "transfer(address,uint256)", addresses.getAddress("NOMAD_REALLOCATION_MULTISIG"), mwBTCReserves
+            )
+        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}
