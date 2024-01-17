@@ -8,7 +8,7 @@ import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 
 /// Upgradeable, constructor disables implementation
-contract MultichainVoteCollection is IMultichainVoteCollection, Initializable , Owanble2StepUpgradeable, IWormholeReceiver {
+contract MultichainVoteCollection is IMultichainVoteCollection, Ownable2StepUpgradeable, IWormholeReceiver {
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
     /// ----------------------- CONSTANTS ----------------------- ///
@@ -87,7 +87,7 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initializable , 
         uint256 proposalId,
         uint256 votingStartTime,
         uint256 votingEndTime,
-        uint256 voteCollectionEndTime
+        uint256 votingCollectionEndTime
     );
 
     /// @notice emitted when the gas limit changes on the MoomBeam chain
@@ -119,7 +119,7 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initializable , 
     /// @param _wormholeRelayer address of the wormhole relayer
     function initialize(address _xWell, address _moonBeamGovernor, address _wormholeRelayer) external initializer {
         xWell = xWELL(_xWell);
-        moomBeamGovernor = _moonbeamGovernor;
+        moomBeamGovernor = _moonBeamGovernor;
         wormholeRelayer = IWormholeRelayer(_wormholeRelayer);
 
         gasLimit = 300_000; /// @dev default starting gas limit for relayer 
@@ -149,7 +149,7 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initializable , 
         // Check if proposal end time has not passed
         require(proposal.votingEndTime > block.timestamp, "Voting has ended");
 
-        uint256 votes = _getVotingPower(msg.sender, block.number);
+        uint256 votes = getVotes(msg.sender, block.timestamp);
 
         // 0: yes, 1: o, 2: abstain
         if (voteValue == VOTE_VALUE_YES) {
@@ -164,13 +164,19 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initializable , 
         }
     }
 
-    /// @dev Returns the number of votes for a given user
-    /// queries xWELL only
-    function _getVotingPower(address voter, uint256 blockNumber) internal view returns (uint256) {}
+    /// @notice returns the total voting power for an address at a given block number and timestamp
+    /// @param account The address of the account to check
+    /// @param timestamp The unix timestamp in seconds to check the balance at
+    function getVotes(
+        address account,
+        uint256 timestamp
+    ) public view returns (uint256) {
+        return xWell.getPastVotes(account, timestamp);
+    }
 
     /// @notice Emits votes to be contabilized on MoomBeam Governor contract
     /// @param proposalId the proposal id
-    function emitVotes(uint256 proposalId) external override {
+    function emitVotes(uint256 proposalId) external override payable {
         // Cost to bridge out to MoomBeam chain
         uint256 cost = bridgeCost();
         require(msg.value == cost, "WormholeBridge: cost not equal to quote");
@@ -179,10 +185,10 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initializable , 
         MultichainProposal storage proposal = proposals[proposalId];
 
         // Check if proposal end time has passed
-        require(proposal.voteCollectionEndTime < block.timestamp, "MultichainVoteCollection: Voting has not ended yet");
+        require(proposal.votingCollectionEndTime < block.timestamp, "MultichainVoteCollection: Voting has not ended yet");
 
         // Check if proposal collection end time has not passed
-        require(proposal.voteCollectionEndTime > block.timestamp, "MultichainVoteCollection: Voting collection phase has ended");
+        require(proposal.votingCollectionEndTime > block.timestamp, "MultichainVoteCollection: Voting collection phase has ended");
 
         // Get votes
         MultichainVotes storage votes = proposal.votes;
@@ -190,7 +196,7 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initializable , 
         // Send votes to MoomBeam chain
         wormholeRelayer.sendPayloadToEvm{value: cost}(
             moonBeamWormholeChainId,
-            moonBeamGovernor,
+            moomBeamGovernor,
             abi.encode(proposalId, votes.forVotes, votes.againstVotes, votes.abstainVotes),
             0, /// no receiver value allowed, only message passing
             gasLimit
@@ -217,7 +223,8 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initializable , 
             msg.sender == address(wormholeRelayer),
             "MultichainVoteCollection: only relayer allowed"
         );
-         require(moomBeamGovernor, senderAddress, "MultichainVoteCollection: sender address is not moonbeam governor");
+        address senderAddressDecoded = address(uint160(uint256(senderAddress)));
+         require(moomBeamGovernor == senderAddressDecoded, "MultichainVoteCollection: sender address is not moonbeam governor");
         require(
             !processedNonces[nonce],
             "MultichainVoteCollection: message already processed"
@@ -226,15 +233,15 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initializable , 
         processedNonces[nonce] = true;
 
         // Parse the payload and do the corresponding actions!
-        (uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, uint256 voteCollectionEndTime) =
+        (uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, uint256 votingCollectionEndTime) =
             abi.decode(payload, (uint256, uint256, uint256, uint256));
 
         /// mint tokens and emit events
-        _createProposal(proposalId, votingStartTime, votingEndTime, voteCollectionEndTime);
+        _createProposal(proposalId, votingStartTime, votingEndTime, votingCollectionEndTime);
     }
 
     /// @dev allows MultichainGovernor to create a proposal ID
-    function _createProposal(uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, uint256 voteCollectionEndTime) internal {
+    function _createProposal(uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, uint256 votingCollectionEndTime) internal {
         // Ensure proposalId is unique
         require(proposals[proposalId].votingStartTime == 0, "Proposal already exists");
 
@@ -248,7 +255,7 @@ contract MultichainVoteCollection is IMultichainVoteCollection, Initializable , 
         MultichainProposal storage proposal = proposals[proposalId];
         proposal.votingStartTime = votingStartTime;
         proposal.votingEndTime = votingEndTime;
-        proposal.voteCollectionEndTime = voteCollectionEndTime;
+        proposal.votingCollectionEndTime = votingCollectionEndTime;
 
         // Emit the ProposalCreated event
         emit ProposalCreated(proposalId, votingStartTime, votingEndTime, votingCollectionEndTime);

@@ -9,7 +9,7 @@ interface IMultichainVoteCollection {
         // unix timestamp when voting will end
         uint256 votingEndTime;
         // unix timestamp when vote collection phase ends
-        uint256 voteCollectionEndTime;
+        uint256 votingCollectionEndTime;
         // votes 
         MultichainVotes votes;
     }
@@ -27,22 +27,8 @@ interface IMultichainVoteCollection {
     function castVote(uint256 proposalId, uint8 voteValue) external;
 
     /// @dev Returns the number of votes for a given user
-    function getVotingPower(address voter, uint256 blockNumber) external view returns (uint256);
+    function getVotes(address account, uint256 timestamp) external view returns (uint256);
 
     /// @notice Emits votes to be contabilized on MoomBeam Governor contract
-    function emitVotes(uint256 proposalId) external; 
-
-    /// @notice callable only by the wormhole relayer
-    /// @param payload the payload of the message, contains proposalId, votingStartTime, votingEndTime and voteCollectionEndTime
-    /// additional vaas, unused parameter
-    /// @param senderAddress the address of the sender on the source chain, bytes32 encoded
-    /// @param sourceChain the chain id of the source chain
-    /// @param nonce the unique message ID
-    function receiveWormholeMessages(
-        bytes memory payload,
-        bytes[] memory, // additionalVaas
-        bytes32 senderAddress,
-        uint16 sourceChain,
-        bytes32 nonce
-    ) external;
+    function emitVotes(uint256 proposalId) external payable;
 }
