@@ -6,7 +6,6 @@ import "@forge-std/Test.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
-import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {StringUtils} from "@proposals/utils/StringUtils.sol";
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
@@ -15,7 +14,7 @@ import {MoonwellArtemisGovernor, IERC20} from "@protocol/Governance/deprecated/M
 import {mipm01} from "@protocol/proposals/mips/mip-m01/mip-m01.sol";
 
 /// @notice run this on a chainforked moonbeam node.
-contract NomadCollateralMoonbeamTest is Test, ChainIds, CreateCode {
+contract NomadCollateralMoonbeamTest is Test {
     using StringUtils for string;
 
     MoonwellArtemisGovernor public governor;
@@ -33,7 +32,7 @@ contract NomadCollateralMoonbeamTest is Test, ChainIds, CreateCode {
     function setUp() public {
         address[] memory mips = new address[](1);
         mips[0] = address(new mipm01());
-        
+
         addresses = new Addresses();
 
         MErc20Delegator mUSDC = MErc20Delegator(payable(addresses.getAddress("MOONWELL_mUSDC")));
@@ -50,9 +49,7 @@ contract NomadCollateralMoonbeamTest is Test, ChainIds, CreateCode {
         proposals.testProposals(true, false, false, false, true, true, false, false);
         addresses = proposals.addresses();
 
-        governor = MoonwellArtemisGovernor(
-            addresses.getAddress("ARTEMIS_GOVERNOR")
-        );
+        governor = MoonwellArtemisGovernor(addresses.getAddress("ARTEMIS_GOVERNOR"));
     }
 
     function testProposalMaxOperations() public {

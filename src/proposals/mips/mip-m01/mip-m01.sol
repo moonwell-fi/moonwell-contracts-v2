@@ -93,6 +93,9 @@ contract mipm01 is GovernanceProposal {
     function printProposalActionSteps() public override {}
 
     function run(Addresses addresses, address) public override {
+        /// @dev enable debugging
+        setDebug(true);
+
         Well well = Well(payable(addresses.getAddress("WELL")));
 
         _deal(address(well), address(this), 100_000_000e18);

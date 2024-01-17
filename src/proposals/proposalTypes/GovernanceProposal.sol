@@ -1,6 +1,7 @@
 pragma solidity 0.8.19;
 
 import {Test} from "@forge-std/Test.sol";
+import {console} from "@forge-std/console.sol";
 
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
@@ -85,6 +86,20 @@ abstract contract GovernanceProposal is Proposal {
         }
 
         MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(governorAddress);
+        /// @dev output
+        if (DEBUG) {
+            console.log("Governance proposal with", actions.length, (actions.length > 1 ? "actions." : "action."));
+            emit log_bytes(
+                abi.encodeWithSignature(
+                    "propose(address[],uint256[],string[],bytes[],description)",
+                    targets,
+                    values,
+                    signatures,
+                    calldatas,
+                    description
+                )
+            );
+        }
         uint256 proposalId = governor.propose(targets, values, signatures, calldatas, description);
 
         /// @dev warp past the voting delay
