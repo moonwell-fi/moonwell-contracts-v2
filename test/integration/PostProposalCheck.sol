@@ -49,7 +49,7 @@ contract PostProposalCheck is CreateCode {
 
         proposals.setUp();
         proposals.testProposals(
-            true, /// do not log debug output
+            false, /// do not log debug output
             true,
             true,
             true,
