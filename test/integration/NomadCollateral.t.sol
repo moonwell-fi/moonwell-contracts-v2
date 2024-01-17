@@ -18,7 +18,6 @@ import {mipm16} from "@protocol/proposals/mips/mip-m16/mip-m16.sol";
 contract NomadCollateralMoonbeamTest is Test {
     using StringUtils for string;
 
-    MoonwellArtemisGovernor public governor;
     TestProposals public proposals;
     Addresses public addresses;
     Well public well;
@@ -52,11 +51,10 @@ contract NomadCollateralMoonbeamTest is Test {
         proposals.setUp();
         proposals.testProposals(true, false, false, false, true, true, false, false);
         addresses = proposals.addresses();
-
-        governor = MoonwellArtemisGovernor(addresses.getAddress("ARTEMIS_GOVERNOR"));
     }
 
     function testProposalMaxOperations() public {
+        MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(addresses.getAddress("ARTEMIS_GOVERNOR"));
         assertEq(governor.proposalMaxOperations(), 1_000);
     }
 
