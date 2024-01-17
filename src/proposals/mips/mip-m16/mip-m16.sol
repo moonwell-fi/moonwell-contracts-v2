@@ -7,12 +7,12 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 
-contract mipm01 is GovernanceProposal {
-    string public constant name = "MIP-M01";
+contract mipm16 is GovernanceProposal {
+    string public constant name = "MIP-M16";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m01/MIP-M01.md")
+            vm.readFile("./src/proposals/mips/mip-m16/MIP-M16.md")
         );
         _setProposalDescription(proposalDescription);
     }

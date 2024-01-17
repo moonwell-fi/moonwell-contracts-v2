@@ -1,4 +1,4 @@
-# MIP-M01: Redemption and Reallocation of Nomad Collateral and Protocol Reserves for FRAX Market Enhancement (Proposal 1)
+# MIP-M16: Redemption and Reallocation of Nomad Collateral and Protocol Reserves for FRAX Market Enhancement (Proposal 1)
 
 ## Overview
 

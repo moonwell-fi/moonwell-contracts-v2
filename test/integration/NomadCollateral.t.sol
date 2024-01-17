@@ -12,7 +12,7 @@ import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MoonwellArtemisGovernor, IERC20} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
-import {mipm01} from "@protocol/proposals/mips/mip-m01/mip-m01.sol";
+import {mipm16} from "@protocol/proposals/mips/mip-m16/mip-m16.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 contract NomadCollateralMoonbeamTest is Test {
@@ -35,7 +35,7 @@ contract NomadCollateralMoonbeamTest is Test {
 
     function setUp() public {
         address[] memory mips = new address[](1);
-        mips[0] = address(new mipm01());
+        mips[0] = address(new mipm16());
 
         addresses = new Addresses();
 
