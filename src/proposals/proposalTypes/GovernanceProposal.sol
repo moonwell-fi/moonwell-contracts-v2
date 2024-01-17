@@ -166,7 +166,7 @@ abstract contract GovernanceProposal is Proposal {
         }
 
         (bool success, bytes memory data) = address(governor).call{value: 0}(encoded);
-        require(success);
+        require(success, "GovernanceProposal: failed to raise governance proposal");
 
         uint256 proposalId = abi.decode(data, (uint256));
         {
