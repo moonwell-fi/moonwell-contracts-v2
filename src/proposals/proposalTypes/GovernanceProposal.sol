@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 import {Test} from "@forge-std/Test.sol";
 import {console} from "@forge-std/console.sol";
 
+import {Addresses} from "@proposals/Addresses.sol";
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {MoonwellArtemisGovernor, TimelockInterface} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
@@ -13,7 +14,7 @@ abstract contract GovernanceProposal is Proposal {
     struct GovernanceAction {
         address target;
         uint256 value;
-        string signature;
+        string description;
         bytes data;
     }
 
@@ -23,6 +24,10 @@ abstract contract GovernanceProposal is Proposal {
     function setDebug(bool debug) public {
         DEBUG = debug;
     }
+
+    function printCalldata(Addresses addresses) public override {}
+
+    function printProposalActionSteps() public override {}
 
     /// @notice deal tokens
     /// @param token address of the token
@@ -42,20 +47,20 @@ abstract contract GovernanceProposal is Proposal {
     /// @notice push a Governance proposal action
     /// @param target the target contract
     /// @param value msg.value
-    /// @param signature function signature
+    /// @param description description of the action
     /// @param data calldata
-    function _pushGovernanceAction(address target, uint256 value, string memory signature, bytes memory data)
+    function _pushGovernanceAction(address target, uint256 value, string memory description, bytes memory data)
         internal
     {
-        actions.push(GovernanceAction({target: target, value: value, signature: signature, data: data}));
+        actions.push(GovernanceAction({target: target, value: value, description: description, data: data}));
     }
 
     /// @notice push an action to the Governance proposal with a value of 0
     /// @param target the target contract
-    /// @param signature function signature
+    /// @param description description of the action
     /// @param data calldata
-    function _pushGovernanceAction(address target, string memory signature, bytes memory data) internal {
-        _pushGovernanceAction(target, 0, signature, data);
+    function _pushGovernanceAction(address target, string memory description, bytes memory data) internal {
+        _pushGovernanceAction(target, 0, description, data);
     }
 
     /// @notice Simulate governance proposal
@@ -70,6 +75,12 @@ abstract contract GovernanceProposal is Proposal {
     ) internal {
         require(actions.length > 0, "Empty governance operation");
 
+        /// @dev deal and delegate, so the proposal can be simulated end-to-end
+        Addresses addresses = new Addresses();
+        Well well = Well(payable(addresses.getAddress("WELL")));
+        _deal(address(well), address(this), 100_000_000e18);
+        _delegate(address(this), well);
+
         /// @dev skip ahead
         vm.roll(block.number + 1000);
 
@@ -81,44 +92,50 @@ abstract contract GovernanceProposal is Proposal {
         for (uint256 i = 0; i < actions.length; i++) {
             targets[i] = actions[i].target;
             values[i] = actions[i].value;
-            signatures[i] = actions[i].signature;
+            signatures[i] = "";
             calldatas[i] = actions[i].data;
         }
 
         MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(governorAddress);
+        bytes memory encoded = abi.encodeWithSignature(
+            "propose(address[],uint256[],string[],bytes[],string)", targets, values, signatures, calldatas, description
+        );
+
         /// @dev output
         if (DEBUG) {
             console.log("Governance proposal with", actions.length, (actions.length > 1 ? "actions." : "action."));
-            emit log_bytes(
-                abi.encodeWithSignature(
-                    "propose(address[],uint256[],string[],bytes[],description)",
-                    targets,
-                    values,
-                    signatures,
-                    calldatas,
-                    description
-                )
-            );
+            emit log_bytes(encoded);
         }
-        uint256 proposalId = governor.propose(targets, values, signatures, calldatas, description);
 
-        /// @dev warp past the voting delay
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        (bool success, bytes memory data) = address(governor).call{value: 0}(encoded);
+        require(success);
 
-        /// @dev vote yes on said proposal
-        governor.castVote(proposalId, 0);
+        uint256 proposalId = abi.decode(data, (uint256));
+        {
+            /// @dev check that the proposal is in the pending state
+            MoonwellArtemisGovernor.ProposalState proposalState = governor.state(proposalId);
+            require(proposalState == MoonwellArtemisGovernor.ProposalState.Pending);
 
-        /// @dev warp past voting end time
-        vm.warp(block.timestamp + governor.votingPeriod());
+            /// @dev warp past the voting delay
+            vm.warp(block.timestamp + governor.votingDelay() + 1);
+        }
 
-        /// @dev queue the proposal
-        governor.queue(proposalId);
+        {
+            /// @dev vote yes on said proposal
+            governor.castVote(proposalId, 0);
 
-        TimelockInterface timelock = TimelockInterface(payable(timelockAddress));
-        vm.warp(block.timestamp + timelock.delay());
+            /// @dev warp past voting end time
+            vm.warp(block.timestamp + governor.votingPeriod());
 
-        /// @dev execute the proposal
-        governor.execute(proposalId);
-        vm.roll(block.number + 1);
+            /// @dev queue the proposal
+            governor.queue(proposalId);
+
+            TimelockInterface timelock = TimelockInterface(payable(timelockAddress));
+            vm.warp(block.timestamp + timelock.delay());
+
+            /// @dev execute the proposal
+            governor.execute(proposalId);
+            vm.roll(block.number + 1);
+        }
     }
 }

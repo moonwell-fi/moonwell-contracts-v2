@@ -5,7 +5,6 @@ import "@forge-std/Test.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 
 contract mipm01 is GovernanceProposal {
@@ -39,25 +38,35 @@ contract mipm01 is GovernanceProposal {
         /// @dev set max operations on artemis governor to 1000
         _pushGovernanceAction(
             addresses.getAddress("ARTEMIS_GOVERNOR"),
-            0,
-            "",
+            "Set the max operations on the artemis governor to 1000",
             abi.encodeWithSignature("setProposalMaxOperations(uint256)", 1000)
         );
 
         /// @dev reduce mUSDC.mad reserves
-        _pushGovernanceAction(address(mUSDC), 0, "", abi.encodeWithSignature("_reduceReserves(uint256)", mUSDCReserves));
+        _pushGovernanceAction(
+            address(mUSDC),
+            "Reduce the reserves of mUSDC.mad",
+            abi.encodeWithSignature("_reduceReserves(uint256)", mUSDCReserves)
+        );
 
         /// @dev reduce mETH.mad reserves
-        _pushGovernanceAction(address(mETH), 0, "", abi.encodeWithSignature("_reduceReserves(uint256)", mETHReserves));
+        _pushGovernanceAction(
+            address(mETH),
+            "Reduce the reserves of mETH.mad",
+            abi.encodeWithSignature("_reduceReserves(uint256)", mETHReserves)
+        );
 
         /// @dev reduce mBTC.mad reserves
-        _pushGovernanceAction(address(mwBTC), 0, "", abi.encodeWithSignature("_reduceReserves(uint256)", mwBTCReserves));
+        _pushGovernanceAction(
+            address(mwBTC),
+            "Reduce the reserves of mwBTC.mad",
+            abi.encodeWithSignature("_reduceReserves(uint256)", mwBTCReserves)
+        );
 
         /// @dev transfer USDC from the timelock to the multisig
         _pushGovernanceAction(
-            addresses.getAddress("USDC"),
-            0,
-            "",
+            addresses.getAddress("madUSDC"),
+            "Transfer madUSDC from the Timelock to the multisig",
             abi.encodeWithSignature(
                 "transfer(address,uint256)", addresses.getAddress("NOMAD_REALLOCATION_MULTISIG"), mUSDCReserves
             )
@@ -65,9 +74,8 @@ contract mipm01 is GovernanceProposal {
 
         /// @dev transfer WETH from the timelock to the multisig
         _pushGovernanceAction(
-            addresses.getAddress("WETH"),
-            0,
-            "",
+            addresses.getAddress("madWETH"),
+            "Transfer madETH from the Timelock to the multisig",
             abi.encodeWithSignature(
                 "transfer(address,uint256)", addresses.getAddress("NOMAD_REALLOCATION_MULTISIG"), mETHReserves
             )
@@ -75,9 +83,8 @@ contract mipm01 is GovernanceProposal {
 
         /// @dev transfer WBTC from the timelock to the multisig
         _pushGovernanceAction(
-            addresses.getAddress("WBTC"),
-            0,
-            "",
+            addresses.getAddress("madWBTC"),
+            "Transfer madWBTC from the Timelock to the multisig",
             abi.encodeWithSignature(
                 "transfer(address,uint256)", addresses.getAddress("NOMAD_REALLOCATION_MULTISIG"), mwBTCReserves
             )
@@ -88,18 +95,10 @@ contract mipm01 is GovernanceProposal {
 
     function validate(Addresses addresses, address) public override {}
 
-    function printCalldata(Addresses addresses) public override {}
-
-    function printProposalActionSteps() public override {}
-
     function run(Addresses addresses, address) public override {
         /// @dev enable debugging
         setDebug(true);
 
-        Well well = Well(payable(addresses.getAddress("WELL")));
-
-        _deal(address(well), address(this), 100_000_000e18);
-        _delegate(address(this), well);
         _simulateGovernanceActions(
             addresses.getAddress("MOONBEAM_TIMELOCK"),
             addresses.getAddress("ARTEMIS_GOVERNOR"),

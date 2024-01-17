@@ -632,17 +632,17 @@
     {
         "addr": "0x8f552a71efe5eefc207bf75485b356a0b3f01ec9",
         "chainId": 1284,
-        "name": "USDC"
+        "name": "madUSDC"
     },
     {
         "addr": "0x30d2a9f5fdf90ace8c17952cbb4ee48a55d916a7",
         "chainId": 1284,
-        "name": "WETH"
+        "name": "madWETH"
     },
     {
         "addr": "0x1dc78acda13a8bc4408b207c9e48cdbc096d95e0",
         "chainId": 1284,
-        "name": "WBTC"
+        "name": "madWBTC"
     },
     {
         "addr": "0x949D6a0E3b1064d498D529a388B953b344CD13F7",

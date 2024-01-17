@@ -2,4 +2,6 @@
 
 ## Overview
 
-Please see [here](https://forum.moonwell.fi/t/request-for-proposal-rfp-redemption-and-reallocation-of-nomad-collateral-and-protocol-reserves-for-frax-market-enhancement/746/3).
+Currently, the maximum number of actions a proposal can execute is 25. However, this will need to be increased in order to handle the sheer volume of actions that will be required in order to fix the bad debt accounts in proposal 2. This proposal will increase the maximum number of proposal actions to 1,000 so that future proposals are not bottlenecked on the number of actions they can take. During this proposal, all Nomad reserves will be transferred to the community multisig. This will allow the KYC process to begin before the second proposal has taken place.
+
+Please see [here](https://forum.moonwell.fi/t/request-for-proposal-rfp-redemption-and-reallocation-of-nomad-collateral-and-protocol-reserves-for-frax-market-enhancement/746/3) for further details.
