@@ -15,7 +15,7 @@ import {MoonwellArtemisGovernor, IERC20} from "@protocol/Governance/deprecated/M
 import {mipb12} from "@protocol/proposals/mips/mip-b12/mip-b12.sol";
 
 /// @notice run this on a chainforked moonbeam node.
-contract NomadCollateralIntegrationTest is Test, ChainIds, CreateCode {
+contract NomadCollateralMoonbeamTest is Test, ChainIds, CreateCode {
     using StringUtils for string;
 
     MoonwellArtemisGovernor public governor;

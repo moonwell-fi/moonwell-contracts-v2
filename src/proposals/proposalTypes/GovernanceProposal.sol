@@ -63,8 +63,8 @@ abstract contract GovernanceProposal is Proposal {
         address timelockAddress,
         address governorAddress, 
         address proposerAddress,
-        string memory description)
-    internal {
+        string memory description
+    ) internal {
         require(actions.length > 0, "Empty governance operation");
 
         /// @dev skip ahead
