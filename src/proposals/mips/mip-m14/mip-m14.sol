@@ -8,7 +8,7 @@ import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 
-contract mipb14 is GovernanceProposal {
+contract mipm14 is GovernanceProposal {
     string public constant name = "MIP-B14";
 
     constructor() {}
