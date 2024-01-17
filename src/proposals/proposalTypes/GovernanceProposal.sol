@@ -39,12 +39,13 @@ abstract contract GovernanceProposal is Proposal {
         view
         returns (address[] memory, uint256[] memory, string[] memory, bytes[] memory)
     {
-        address[] memory targets = new address[](actions.length);
-        uint256[] memory values = new uint256[](actions.length);
-        string[] memory signatures = new string[](actions.length);
-        bytes[] memory calldatas = new bytes[](actions.length);
+        uint256 actionsLength = actions.length;
+        address[] memory targets = new address[](actionsLength);
+        uint256[] memory values = new uint256[](actionsLength);
+        string[] memory signatures = new string[](actionsLength);
+        bytes[] memory calldatas = new bytes[](actionsLength);
 
-        for (uint256 i = 0; i < actions.length; i++) {
+        for (uint256 i = 0; i < actionsLength; i++) {
             targets[i] = actions[i].target;
             values[i] = actions[i].value;
             signatures[i] = "";
@@ -133,7 +134,8 @@ abstract contract GovernanceProposal is Proposal {
     function _simulateGovernanceActions(address timelockAddress, address governorAddress, address proposerAddress)
         internal
     {
-        require(actions.length > 0, "Empty governance operation");
+        uint256 actionsLength = actions.length;
+        require(actionsLength > 0, "Empty governance operation");
 
         /// @dev deal and delegate, so the proposal can be simulated end-to-end
         Addresses addresses = new Addresses();
@@ -159,7 +161,7 @@ abstract contract GovernanceProposal is Proposal {
 
         /// @dev output
         if (DEBUG) {
-            console.log("Governance proposal with", actions.length, (actions.length > 1 ? "actions." : "action."));
+            console.log("Governance proposal with", actionsLength, (actionsLength > 1 ? "actions." : "action."));
             emit log_bytes(encoded);
         }
 
