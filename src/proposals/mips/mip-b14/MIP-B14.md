@@ -1,4 +1,4 @@
-# MIP-B12: Redemption and Reallocation of Nomad Collateral and Protocol Reserves for FRAX Market Enhancement (Proposal 1)
+# MIP-B14: Redemption and Reallocation of Nomad Collateral and Protocol Reserves for FRAX Market Enhancement (Proposal 1)
 
 ## Overview
 
