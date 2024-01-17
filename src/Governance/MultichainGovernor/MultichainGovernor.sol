@@ -88,8 +88,8 @@ abstract contract MultichainGovernor is
     mapping(uint16 wormholeChainId => VoteCounts)
         public chainVoteCollectorVotes;
 
-    /// @notice the total number of votes for a given proposal
-    mapping(uint256 proposalId => VoteCounts) public proposals;
+    /// @notice the proposal information for a given proposal
+    mapping(uint256 proposalId => Proposal) public proposals;
 
     /// @notice whether or not a calldata bytes is allowed for break glass guardian
     /// whether or not the calldata is whitelisted for break glass guardian
@@ -140,14 +140,10 @@ abstract contract MultichainGovernor is
     uint256 public override proposalThreshold;
 
     /// @notice the minimum number of votes needed to propose
-    uint256 public override unixTimestampVotingDelay;
+    uint256 public override votingDelay;
 
     /// @notice the voting period
-    uint256 public override unixTimestampVotingPeriod;
-
-    uint256 public override blockVotingDelay;
-
-    uint256 public override blockVotingPeriod;
+    uint256 public override votingPeriod;
 
     /// --------------------------------------------------------- ///
     /// ------------------------- SAFETY ------------------------ ///
@@ -217,9 +213,6 @@ abstract contract MultichainGovernor is
     /// @notice An event emitted when the governance return address is changed.
     event GovernanceReturnAddressChanged(address oldValue, address newValue);
 
-    /// @notice An event emitted when the proposal threshold has changed.
-    event ProposalThresholdChanged(uint256 oldValue, uint256 newValue);
-
     /// @notice An event emitted when the cross chain vote collection period has changed.
     event CrossChainVoteCollectionPeriodChanged(
         uint256 oldValue,
@@ -234,6 +227,22 @@ abstract contract MultichainGovernor is
     /// @param newGasLimit new gas limit
     event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
 
+    /// @notice emitted when a cross chain vote is collected
+    /// @param nonce the nonce of the cross chain vote
+    /// @param proposalId the proposal id
+    /// @param sourceChain the wormhole chain id the vote was collected from
+    /// @param forVotes the number of votes for the proposal
+    /// @param againstVotes the number of votes against the proposal
+    /// @param abstainVotes the number of votes abstaining from the proposal
+    event CrossChainVoteCollected(
+        bytes32 nonce,
+        uint256 proposalId,
+        uint16 sourceChain,
+        uint256 forVotes,
+        uint256 againstVotes,
+        uint256 abstainVotes
+    );
+
     /// @notice disable the initializer to stop governance hijacking
     /// and avoid selfdestruct attacks.
     constructor() {
@@ -246,8 +255,8 @@ abstract contract MultichainGovernor is
     /// @param _stkWell address of the stkWELL token
     /// @param _distributor address of the WELL distributor contract
     /// @param _proposalThreshold minimum number of votes to propose
-    /// @param _votingPeriod duration of voting period in blocks
-    /// @param _votingDelay duration of voting delay in blocks
+    /// @param _votingPeriodSeconds duration of voting period in blocks
+    /// @param _votingDelaySeconds duration of voting delay in blocks
     /// @param _crossChainVoteCollectionPeriod duration of cross chain vote collection period in blocks
     /// @param _quorum minimum number of votes for a proposal to pass
     /// @param _maxUserLiveProposals maximum number of live proposals per user
@@ -308,12 +317,15 @@ abstract contract MultichainGovernor is
     }
 
     /// @notice modifier to restrict function access to only break glass guardian
-    /// immediately sets break glass guardian to address 0 on use
+    /// immediately sets break glass guardian to address 0 on use, and emits the
+    /// BreakGlassGuardianChanged event
     modifier onlyBreakGlassGuardian() {
         require(
             msg.sender == breakGlassGuardian,
             "MultichainGovernor: only break glass guardian"
         );
+
+        emit BreakGlassGuardianChanged(breakGlassGuardian, address(0));
 
         breakGlassGuardian = address(0);
 
@@ -372,8 +384,8 @@ abstract contract MultichainGovernor is
             _votingDelay != 0,
             "MultichainGovernor: invalid vote delay period"
         );
-        uint256 _oldValue = unixTimestampVotingDelay;
-        unixTimestampVotingDelay = _votingDelay;
+        uint256 _oldValue = votingDelay;
+        votingDelay = _votingDelay;
 
         emit VotingDelayChanged(_oldValue, _votingDelay);
     }
@@ -384,8 +396,8 @@ abstract contract MultichainGovernor is
             _votingPeriod != 0,
             "MultichainGovernor: invalid voting period"
         );
-        uint256 _oldValue = unixTimestampVotingPeriod;
-        unixTimestampVotingPeriod = _votingPeriod;
+        uint256 _oldValue = votingPeriod;
+        votingPeriod = _votingPeriod;
 
         emit VotingPeriodChanged(_oldValue, _votingPeriod);
     }
@@ -599,13 +611,16 @@ abstract contract MultichainGovernor is
             // (2) total votes was less than the quorum amount.
         } else if (
             proposal.forVotes <= proposal.againstVotes ||
-            proposal.totalVotes < quorumVotes
+            proposal.totalVotes < quorum
         ) {
             return ProposalState.Defeated;
         } else if (proposal.eta == 0) {
             return ProposalState.Succeeded;
         } else if (proposal.executed) {
             return ProposalState.Executed;
+        } else {
+            /// TODO this should never be reachable, ask SMT solver or certora if it is
+            return ProposalState.Invalid;
         }
     }
 
@@ -652,14 +667,13 @@ abstract contract MultichainGovernor is
             userProposalCount < maxUserLiveProposals,
             "MultichainGovernor: too many live proposals for this user"
         );
+        uint256 blockVotingPeriod = votingPeriod / MOONBEAM_BLOCK_TIME;
+        uint256 blockVotingDelay = votingDelay / MOONBEAM_BLOCK_TIME;
 
-        /// TODO define these block state variables
-        uint256 startTimestamp = block.timestamp + unixTimestampVotingDelay;
+        uint256 startTimestamp = block.timestamp + votingDelay;
         uint256 startBlock = block.number + blockVotingDelay;
 
-        uint256 endTimestamp = block.timestamp +
-            unixTimestampVotingPeriod +
-            unixTimestampVotingDelay;
+        uint256 endTimestamp = block.timestamp + votingPeriod + votingDelay;
         uint256 endBlock = block.number + blockVotingPeriod + blockVotingDelay;
 
         /// TODO add cross chain vote collection period assignment here
@@ -686,8 +700,6 @@ abstract contract MultichainGovernor is
         newProposal.totalVotes = 0;
         newProposal.canceled = false;
         newProposal.executed = false;
-
-        latestProposalIds[newProposal.proposer] = proposalCount;
 
         /// post proposal checks, should never be possible
         /// essentially assertions with revert messages
@@ -730,12 +742,12 @@ abstract contract MultichainGovernor is
         unchecked {
             /// TODO change to functionCallWithValue, ignore returned bytes memory
             for (uint256 i = 0; i < proposal.targets.length; i++) {
-                (bool success, string memory error) = proposal.targets[i].call{
+                (bool success, bytes memory error) = proposal.targets[i].call{
                     value: proposal.values[i]
                 }(proposal.calldatas[i]);
 
                 if (!success) {
-                    revert(error);
+                    revert(string(error));
                 }
             }
         }
@@ -747,8 +759,8 @@ abstract contract MultichainGovernor is
     function proposerCancel(uint256 proposalId) external override {}
 
     /// @dev callable by anyone, succeeds in cancellation if user has less votes than proposal threshold
-    /// at the current point in time.
-    /// reverts otherwise.
+    /// at the current point in time, or the contract is paused.
+    /// Otherwise reverts.
     function permissionlessCancel(uint256 proposalId) external override {}
 
     /// @dev allows user to cast vote for a proposal
@@ -762,7 +774,7 @@ abstract contract MultichainGovernor is
         bytes32 senderAddress,
         uint16 sourceChain,
         bytes32 nonce
-    ) external override {
+    ) external {
         require(
             msg.sender == address(wormholeRelayer),
             "WormholeBridge: only relayer allowed"
@@ -814,6 +826,7 @@ abstract contract MultichainGovernor is
         proposal.abstainVotes += abstainVotes;
 
         emit CrossChainVoteCollected(
+            nonce,
             proposalId,
             sourceChain,
             forVotes,
@@ -850,14 +863,14 @@ abstract contract MultichainGovernor is
     /// TODO change to accept both block and timestamp and then validate that they are within a certain range
     /// i.e. the block number * block time is equals the timestamp
     /// updates the voting period
-    function updateVotingPeriodTimestamp(
+    function updateVotingPeriod(
         uint256 newVotingPeriod
     ) external override onlyGovernor {
         _setVotingPeriod(newVotingPeriod);
     }
 
     /// updates the voting delay
-    function updateVotingDelayTimestamp(
+    function updateVotingDelay(
         uint256 newVotingDelay
     ) external override onlyGovernor {
         _setVotingDelay(newVotingDelay);
@@ -875,11 +888,6 @@ abstract contract MultichainGovernor is
     ) external override onlyGovernor {
         _setBreakGlassGuardian(newGuardian);
     }
-
-    /// TODO should this be updateable?
-    function setGovernanceReturnAddress(
-        address newAddress
-    ) external override onlyGovernor {}
 
     //// @notice array lengths must add up
     /// values must sum to msg.value to ensure guardian cannot steal funds
