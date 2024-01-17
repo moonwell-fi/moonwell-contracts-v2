@@ -109,7 +109,7 @@ interface IMultichainGovernor {
     /// returns whether or not the user is a vote collector contract
     /// and can vote on a given chain
     function isCrossChainVoteCollector(
-        uint256 chainId,
+        uint16 chainId,
         address voteCollector
     ) external view returns (bool);
 
@@ -146,10 +146,13 @@ interface IMultichainGovernor {
         address user
     ) external view returns (uint256);
 
-    /// @dev Returns the number of votes for a given user
-    /// queries WELL, xWELL, distributor, and safety module
-    function getVotingPower(
-        address voter,
+    /// returns the total voting power for an address at a given block number and timestamp
+    /// @param account The address of the account to check
+    /// @param timestamp The unix timestamp in seconds to check the balance at
+    /// @param blockNumber The block number to check the balance at
+    function getVotes(
+        address account,
+        uint256 timestamp,
         uint256 blockNumber
     ) external view returns (uint256);
 
@@ -166,7 +169,7 @@ interface IMultichainGovernor {
         uint256[] memory values,
         bytes[] memory calldatas,
         string memory description
-    ) external returns (uint256);
+    ) external payable returns (uint256);
 
     function execute(uint256 proposalId) external;
 
@@ -183,7 +186,13 @@ interface IMultichainGovernor {
 
     /// @dev allows votes from external chains to be counted
     /// calls wormhole core to decode VAA, ensures validity of sender
-    function collectCrosschainVote(bytes memory VAA) external;
+    function collectCrosschainVote(
+        bytes memory payload,
+        bytes[] memory, // additionalVaas
+        bytes32 senderAddress,
+        uint16 sourceChain,
+        bytes32 nonce
+    ) external;
 
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
@@ -218,8 +227,6 @@ interface IMultichainGovernor {
         bytes calldata data,
         bool approved
     ) external;
-
-    function setGovernanceReturnAddress(address newAddress) external;
 
     //// @notice array lengths must add up
     /// values must sum to msg.value to ensure guardian cannot steal funds
