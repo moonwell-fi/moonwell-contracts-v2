@@ -21,8 +21,6 @@ import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardi
 /// Note:
 /// - moonbeam block times are consistently 12 seconds with few exceptions https://moonscan.io/chart/blocktime
 /// this means that a timestamp can be converted to a block number with a high degree of accuracy
-
-/// there can only be one
 contract MultichainGovernor is
     WormholeTrustedSender,
     IMultichainGovernor,
@@ -158,116 +156,11 @@ contract MultichainGovernor is
     /// and needs to be reinstated by governance
     address public override breakGlassGuardian;
 
-    /// --------------------------------------------------------- ///
-    /// --------------------------------------------------------- ///
-    /// ------------------------- EVENTS ------------------------ ///
-    /// --------------------------------------------------------- ///
-    /// --------------------------------------------------------- ///
-
-    /// @notice An event emitted when the first vote is cast in a proposal
-    event StartBlockSet(uint256 proposalId, uint256 startBlock);
-
-    /// @notice An event emitted when a vote has been cast on a proposal
-    event VoteCast(
-        address voter,
-        uint256 proposalId,
-        uint8 voteValue,
-        uint256 votes
-    );
-
-    /// @notice An event emitted when a new proposal is created
-    event ProposalCreated(
-        uint256 id,
-        address proposer,
-        address[] targets,
-        uint256[] values,
-        bytes[] calldatas,
-        uint256 startTimestamp,
-        uint256 endTimestamp,
-        string description
-    );
-
-    /// @notice An event emitted when a proposal has been canceled
-    event ProposalCanceled(uint256 id);
-
-    /// @notice An event emitted when a proposal has been queued in the Timelock
-    event ProposalQueued(uint256 id, uint256 eta);
-
-    /// @notice An event emitted when a proposal has been executed in the Timelock
-    event ProposalExecuted(uint256 id);
-
-    /// @notice An event emitted when thee quorum votes is changed.
-    event QuroumVotesChanged(uint256 oldValue, uint256 newValue);
-
-    /// @notice An event emitted when the proposal threshold is changed.
-    event ProposalThresholdChanged(uint256 oldValue, uint256 newValue);
-
-    /// @notice An event emitted when the voting delay is changed.
-    event VotingDelayChanged(uint256 oldValue, uint256 newValue);
-
-    /// @notice An event emitted when the voting period is changed.
-    event VotingPeriodChanged(uint256 oldValue, uint256 newValue);
-
-    /// @notice An event emitted when the break glass guardian is changed.
-    event BreakGlassGuardianChanged(address oldValue, address newValue);
-
-    /// @notice An event emitted when the governance return address is changed.
-    event GovernanceReturnAddressChanged(address oldValue, address newValue);
-
-    /// @notice An event emitted when the cross chain vote collection period has changed.
-    event CrossChainVoteCollectionPeriodChanged(
-        uint256 oldValue,
-        uint256 newValue
-    );
-
-    /// @notice An event emitted when the max user live proposals has changed.
-    event UserMaxProposalsChanged(uint256 oldValue, uint256 newValue);
-
-    /// @notice emitted when the gas limit changes on external chains
-    /// @param oldGasLimit old gas limit
-    /// @param newGasLimit new gas limit
-    event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
-
-    /// @notice emitted when a cross chain vote is collected
-    /// @param nonce the nonce of the cross chain vote
-    /// @param proposalId the proposal id
-    /// @param sourceChain the wormhole chain id the vote was collected from
-    /// @param forVotes the number of votes for the proposal
-    /// @param againstVotes the number of votes against the proposal
-    /// @param abstainVotes the number of votes abstaining from the proposal
-    event CrossChainVoteCollected(
-        bytes32 nonce,
-        uint256 proposalId,
-        uint16 sourceChain,
-        uint256 forVotes,
-        uint256 againstVotes,
-        uint256 abstainVotes
-    );
-
-    /// @notice emitted when a chain config is updated
-    /// @param chainId the chain id of the chain config
-    /// @param destinationAddress the destination address of the chain config
-    /// @param removed whether or not the chain config was removed
-    event ChainConfigUpdated(
-        uint16 chainId,
-        address destinationAddress,
-        bool removed
-    );
-
-    /// @notice emitted when a calldata approval is changed for break glass guardian
-    /// @param data the calldata that was approved or unapproved
-    /// @param approved whether or not the calldata was approved or unapproved
-    event CalldataApprovalUpdated(bytes data, bool approved);
-
     /// @notice disable the initializer to stop governance hijacking
     /// and avoid selfdestruct attacks.
     constructor() {
         _disableInitializers();
     }
-
-    // /// @param _xWell address of the xWELL token
-    // /// @param _well address of the WELL token
-    // /// @param _stkWell address of the stkWELL token
 
     struct InitializeData {
         address well;
@@ -287,51 +180,27 @@ contract MultichainGovernor is
     }
 
     /// @notice initialize the governor contract
-    /// @param _distributor address of the WELL distributor contract
-    /// @param _proposalThreshold minimum number of votes to propose
-    /// @param _votingPeriodSeconds duration of voting period in blocks
-    /// @param _votingDelaySeconds duration of voting delay in blocks
-    /// @param _crossChainVoteCollectionPeriod duration of cross chain vote collection period in blocks
-    /// @param _quorum minimum number of votes for a proposal to pass
-    /// @param _maxUserLiveProposals maximum number of live proposals per user
-    /// @param _pauseDuration duration of pause in blocks
-    /// @param _pauseGuardian address of the pause guardian
-    /// @param _breakGlassGuardian address of the break glass guardian
-    /// @param _trustedSenders list of trusted senders
-    /// TODO add the wormhole relayer address as a parameter here
-    function initialize(
-        // address _stkWell,
-        address _distributor,
-        uint256 _proposalThreshold,
-        uint256 _votingPeriodSeconds,
-        uint256 _votingDelaySeconds,
-        uint256 _crossChainVoteCollectionPeriod,
-        uint256 _quorum,
-        uint256 _maxUserLiveProposals,
-        uint128 _pauseDuration,
-        address _pauseGuardian,
-        address _breakGlassGuardian,
-        address _well,
-        address _xWell,
-        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
-    ) public initializer {
-        xWell = xWELL(_xWell);
-        well = SnapshotInterface(_well);
-        // stkWell = SnapshotInterface(_stkWell);
-        distributor = SnapshotInterface(_distributor);
+    /// @param initData initialization data
+    function initialize(InitializeData memory initData) public initializer {
+        xWell = xWELL(initData.xWell);
+        well = SnapshotInterface(initData.well);
+        stkWell = SnapshotInterface(initData.stkWell);
+        distributor = SnapshotInterface(initData.distributor);
 
-        _setProposalThreshold(_proposalThreshold);
-        _setVotingPeriod(_votingPeriodSeconds);
-        _setVotingDelay(_votingDelaySeconds);
-        _setCrossChainVoteCollectionPeriod(_crossChainVoteCollectionPeriod);
-        _setQuorum(_quorum);
-        _setMaxUserLiveProposals(_maxUserLiveProposals);
-        _setBreakGlassGuardian(_breakGlassGuardian);
+        _setProposalThreshold(initData.proposalThreshold);
+        _setVotingPeriod(initData.votingPeriodSeconds);
+        _setVotingDelay(initData.votingDelaySeconds);
+        _setCrossChainVoteCollectionPeriod(
+            initData.crossChainVoteCollectionPeriod
+        );
+        _setQuorum(initData.quorum);
+        _setMaxUserLiveProposals(initData.maxUserLiveProposals);
+        _setBreakGlassGuardian(initData.breakGlassGuardian);
 
         __Pausable_init(); /// not really needed, but seems like good form
-        _updatePauseDuration(_pauseDuration);
-        _grantGuardian(_pauseGuardian); /// set the pause guardian
-        _addTrustedSenders(_trustedSenders);
+        _updatePauseDuration(initData.pauseDuration);
+        _grantGuardian(initData.pauseGuardian); /// set the pause guardian
+        _addTrustedSenders(initData.trustedSenders);
 
         _setGasLimit(300_000); /// @dev default starting gas limit for relayer
     }
@@ -608,7 +477,7 @@ contract MultichainGovernor is
 
     function liveProposals() external view override returns (uint256[] memory) {
         uint256 liveProposalCount = getNumLiveProposals();
-        uint256[] memory liveProposalIds = new uint256[](proposalCount);
+        uint256[] memory liveProposalIds = new uint256[](liveProposalCount);
 
         uint256[] memory allProposals = _liveProposals.values();
         uint256 liveProposalIndex = 0;
