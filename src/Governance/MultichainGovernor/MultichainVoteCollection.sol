@@ -185,6 +185,12 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
         emit ProposalCreated(proposalId, votingStartTime, votingEndTime, votingCollectionEndTime);
     }
 
+    //// ---------------------------------------------- ////
+    //// ---------------------------------------------- ////
+    //// ----------------- ADMIN ONLY ----------------- ////
+    //// ---------------------------------------------- ////
+    //// ---------------------------------------------- ////
+
     /// @notice remove trusted senders from external chains
     /// @param _trustedSenders array of trusted senders to remove
     function removeTrustedSenders(

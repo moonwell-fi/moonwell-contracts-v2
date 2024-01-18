@@ -741,6 +741,7 @@ contract MultichainGovernor is
         return newProposal.id;
     }
 
+
     function execute(uint256 proposalId) external override {
         require(
             state(proposalId) == ProposalState.Succeeded,
@@ -785,30 +786,12 @@ contract MultichainGovernor is
 
     /// @dev allows votes from external chains to be counted
     /// calls wormhole core to decode VAA, ensures validity of sender
-    function collectCrosschainVote(
-        bytes memory payload,
-        bytes[] memory, // additionalVaas
-        bytes32 senderAddress,
+    // @param sourceChain the chain id of the source chain
+    // @param payload contains proposalId, forVotes, againstVotes, abstainVotes
+    function _bridgeIn(
         uint16 sourceChain,
-        bytes32 nonce
-    ) external override {
-        require(
-            msg.sender == address(wormholeRelayer),
-            "WormholeBridge: only relayer allowed"
-        );
-
-        require(
-            !processedNonces[nonce],
-            "MultichainGovernor: nonce already processed"
-        );
-
-        processedNonces[nonce] = true;
-
-        require(
-            isTrustedSender(sourceChain, senderAddress),
-            "MultichainGovernor: invalid sender"
-        );
-
+        bytes memory payload
+    ) internal override {
         /// payload should be 4 uint256s
         require(
             payload.length == 128,
@@ -854,7 +837,6 @@ contract MultichainGovernor is
         proposal.abstainVotes += abstainVotes;
 
         emit CrossChainVoteCollected(
-            nonce,
             proposalId,
             sourceChain,
             forVotes,
@@ -1035,8 +1017,4 @@ contract MultichainGovernor is
         _setGasLimit(newGasLimit);
     }
 
-    // @notice bridge Funds from sourceChain
-    // @param sourceChain source chain
-    // @param payload contains proposalId, forVotes, againstVotes, abstainVotes
-    function _bridgeIn(uint16 sourceChain, bytes memory payload) internal override {}
 }

@@ -12,7 +12,7 @@ abstract contract WormholeBridgeBase is
     IWormholeReceiver,
     WormholeTrustedSender
 {
-    // TODO do we need that?
+    // TODO do we need this?
     using SafeCast for uint256;
     using EnumerableSet for EnumerableSet.UintSet;
 
@@ -208,5 +208,9 @@ abstract contract WormholeBridgeBase is
         _bridgeIn(sourceChain, payload);
      }
 
+    // @notice logic for bringing payload in from external chain
+    // @dev must be overridden by implementation contract
+    // @param sourceChain the chain id of the source chain
+    // @param payload the payload of the message
     function _bridgeIn(uint16 sourceChain, bytes memory payload) internal virtual;
 }

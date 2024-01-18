@@ -69,14 +69,12 @@ interface IMultichainGovernor {
     event UserMaxProposalsChanged(uint256 oldValue, uint256 newValue);
 
     /// @notice emitted when a cross chain vote is collected
-    /// @param nonce the nonce of the cross chain vote
     /// @param proposalId the proposal id
     /// @param sourceChain the wormhole chain id the vote was collected from
     /// @param forVotes the number of votes for the proposal
     /// @param againstVotes the number of votes against the proposal
     /// @param abstainVotes the number of votes abstaining from the proposal
     event CrossChainVoteCollected(
-        bytes32 nonce,
         uint256 proposalId,
         uint16 sourceChain,
         uint256 forVotes,
@@ -279,16 +277,6 @@ interface IMultichainGovernor {
 
     /// @dev allows user to cast vote for a proposal
     function castVote(uint256 proposalId, uint8 voteValue) external;
-
-    /// @dev allows votes from external chains to be counted
-    /// calls wormhole core to decode VAA, ensures validity of sender
-    function collectCrosschainVote(
-        bytes memory payload,
-        bytes[] memory, // additionalVaas
-        bytes32 senderAddress,
-        uint16 sourceChain,
-        bytes32 nonce
-    ) external;
 
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
