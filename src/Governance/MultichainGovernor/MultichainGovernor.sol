@@ -188,7 +188,7 @@ contract MultichainGovernor is
         _updatePauseDuration(initData.pauseDuration);
         _grantGuardian(initData.pauseGuardian); /// set the pause guardian
 
-        // initialize WormholeBridgeBase, set relayer, adds trusted senders and set gas limit
+        // initialize WormholeBridgeBase, set relayer, add trusted senders and set gas limit
         _initialize(address(wormholeRelayer), initData.trustedSenders);
     }
 
@@ -906,6 +906,10 @@ contract MultichainGovernor is
         _addTrustedSenders(_trustedSenders);
     }
 
+    /// @notice add map of target addresses for external chains
+    /// @dev there is no check here to ensure there isn't an existing configuration
+    /// ensure the proper add or remove is being called when using this function
+    /// @param _chainConfig array of chainids to addresses to add
     function setTargetAddress(TrustedSender[] memory _chainConfig) external onlyGovernor {
         _setTargetAddresses(_chainConfig);
     }
@@ -1031,5 +1035,8 @@ contract MultichainGovernor is
         _setGasLimit(newGasLimit);
     }
 
+    // @notice bridge Funds from sourceChain
+    // @param sourceChain source chain
+    // @param payload contains proposalId, forVotes, againstVotes, abstainVotes
     function _bridgeIn(uint16 sourceChain, bytes memory payload) internal override {}
 }

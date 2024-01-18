@@ -156,6 +156,7 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
         emit VotesEmitted(proposalId, votes.forVotes, votes.againstVotes, votes.abstainVotes);
     }
 
+    /// @notice bridge proposals from moonbeam 
     /// @param payload the payload of the message, contains proposalId, votingStartTime, votingEndTime and voteCollectionEndTime
     function _bridgeIn(
         uint16, // ignore source chain as we only accept messages from the moombeam chain
