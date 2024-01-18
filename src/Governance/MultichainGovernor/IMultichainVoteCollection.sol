@@ -4,24 +4,24 @@ pragma solidity 0.8.19;
 /// @notice upgradeable, constructor disables implementation
 interface IMultichainVoteCollection {
     struct MultichainProposal {
-        // unix timestamp when voting will start
+        // @notice unix timestamp when voting will start
         uint256 votingStartTime;
-        // unix timestamp when voting will end
+        // @notice unix timestamp when voting will end
         uint256 votingEndTime;
-        // unix timestamp when vote collection phase ends
+        // @notice unix timestamp when vote collection phase ends
         uint256 votingCollectionEndTime;
-        // votes 
+        // @notice votes
         MultichainVotes votes;
-        // is emitted
+        // @notice votes has been emitted to Moonbeam Governor
         bool emitted;
     }
 
     struct MultichainVotes {
-        // votes for the proposal
+        // @notice votes for the proposal
         uint256 forVotes;
-        // votes against the proposal
+        // @notice votes against the proposal
         uint256 againstVotes;
-        // votes that abstain
+        // @notice votes that abstain
         uint256 abstainVotes;
     }
 
