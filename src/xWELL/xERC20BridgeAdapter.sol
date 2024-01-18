@@ -1,13 +1,11 @@
 pragma solidity 0.8.19;
 
-import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-
 import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 
 /// @notice Abstract Upgradeable xERC20 Adapter Contract
-abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
+abstract contract xERC20BridgeAdapter {
     using SafeERC20 for IERC20;
 
     /// @notice address of the xERC20 token
@@ -24,7 +22,7 @@ abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
     /// @param bridgeUser user who bridged out tokens
     /// @param tokenReceiver address to receive tokens on destination chain
     /// @param amount of tokens bridged out
-    event BridgedOut(
+    event BridgedTokenOut(
         uint256 indexed dstChainId,
         address indexed bridgeUser,
         address indexed tokenReceiver,
@@ -35,16 +33,11 @@ abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
     /// @param srcChainId source chain id tokens were bridged from
     /// @param tokenReceiver address to receive tokens on destination chain
     /// @param amount of tokens bridged in
-    event BridgedIn(
+    event BridgedTokenIn(
         uint256 indexed srcChainId,
         address indexed tokenReceiver,
         uint256 amount
     );
-
-    /// @notice ensure logic contract is unusable
-    constructor() {
-        _disableInitializers();
-    }
 
     /// @notice Bridge Out Funds to an external chain
     /// @param dstChainId Destination chain id
@@ -55,9 +48,9 @@ abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
         uint256 amount,
         address to
     ) external payable virtual {
-        _bridgeOut(msg.sender, dstChainId, amount, to);
+        _bridgeTokenOut(msg.sender, dstChainId, amount, to);
 
-        emit BridgedOut(dstChainId, msg.sender, to, amount);
+        emit BridgedTokenOut(dstChainId, msg.sender, to, amount);
     }
 
     /// @notice set the xERC20 token
@@ -75,30 +68,28 @@ abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
         xERC20.burn(user, amount);
     }
 
-    /// @notice Bridge in funds from the chain from the given user
-    /// by minting tokens to the user
-    /// @param chainId chain id funds are bridged from
-    /// @param user to bridge in funds to
-    /// @param amount of xERC20 tokens to bridge in
-    function _bridgeIn(
-        uint256 chainId,
-        address user,
-        uint256 amount
-    ) internal virtual {
-        xERC20.mint(user, amount);
-
-        emit BridgedIn(chainId, user, amount);
-    }
-
     /// @notice bridge tokens from this chain to the dstChain
     /// @param user address burning tokens and funding the cross chain call
     /// @param dstChainId destination chain id
     /// @param amount amount of tokens to bridge
     /// @param to address to receive tokens on the destination chain
-    function _bridgeOut(
+    function _bridgeTokenOut(
         address user,
         uint256 dstChainId,
         uint256 amount,
         address to
     ) internal virtual;
+
+    /// @notice bridge tokens from srcChain to this chain
+    /// @param amount amount of tokens to bridge
+    /// @param to address to receive tokens on the destination chain
+    function _bridgeTokenIn(
+                            uint256 chainId,
+                            uint256 amount,
+                            address to
+    ) internal {
+        xERC20.mint(to, amount);
+
+        emit BridgedTokenIn(chainId, to, amount);
+    }
 }

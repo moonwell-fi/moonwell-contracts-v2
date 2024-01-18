@@ -12,6 +12,8 @@ interface IMultichainVoteCollection {
         uint256 votingCollectionEndTime;
         // votes 
         MultichainVotes votes;
+        // is emitted
+        bool emitted;
     }
 
     struct MultichainVotes {
