@@ -162,20 +162,35 @@ contract MultichainGovernor is
         _disableInitializers();
     }
 
+    /// @notice struct containing initializer data
     struct InitializeData {
+        /// well token address
         address well;
+        /// xWell token address
         address xWell;
+        /// stkWell token address
         address stkWell;
+        /// crowdsale token distributor address
         address distributor;
+        /// proposal threshold
         uint256 proposalThreshold;
+        /// voting period in seconds
         uint256 votingPeriodSeconds;
+        /// voting period delay in seconds
         uint256 votingDelaySeconds;
+        /// cross chain voting collection period in seconds
         uint256 crossChainVoteCollectionPeriod;
+        /// number of total votes required to meet quorum
         uint256 quorum;
+        /// maximum number of live proposals a user can have at a single point in time
         uint256 maxUserLiveProposals;
+        /// pause duration in seconds
         uint128 pauseDuration;
+        /// pause guardian address
         address pauseGuardian;
+        /// break glass guardian address
         address breakGlassGuardian;
+        /// trusted senders that can relay messages to this contract
         WormholeTrustedSender.TrustedSender[] trustedSenders;
     }
 
