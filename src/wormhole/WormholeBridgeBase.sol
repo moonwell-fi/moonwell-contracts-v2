@@ -5,15 +5,16 @@ import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
-import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 
 /// @notice Wormhole xERC20 Token Bridge adapter
 abstract contract WormholeBridgeBase is
     IWormholeReceiver,
-    WormholeTrustedSender,
-    Ownable2StepUpgradeable 
+    WormholeTrustedSender
 {
+    // TODO do we need that?
     using SafeCast for uint256;
+    using EnumerableSet for EnumerableSet.UintSet;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -44,6 +45,14 @@ abstract contract WormholeBridgeBase is
     /// starts off mapped to itself, but can be changed by governance
     mapping(uint16 => address) public targetAddress;
 
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// -------------------- STATE VARIABLES -------------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+
+    EnumerableSet.UintSet internal _targetChains;
+
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
     /// ------------------------ EVENTS -------------------------
@@ -64,12 +73,6 @@ abstract contract WormholeBridgeBase is
     /// @param newGasLimit new gas limit
     event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
 
-    /// construct the logic contract and initialize so that the initialize function is uncallable
-    /// from the implementation and only callable from the proxy
-    constructor() {
-        _disableInitializers();
-    }
-
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
     /// ---------------------- INITIALIZE -----------------------
@@ -78,17 +81,14 @@ abstract contract WormholeBridgeBase is
 
     /// @notice Initialize the Wormhole bridge
     /// @param wormholeRelayerAddress address of the wormhole relayer
-    /// @param targetChain chain id of the target chain to address for bridging
+    /// @param trustedSenders array of trusted senders to add
     function _initialize(
         address wormholeRelayerAddress,
-        uint16 targetChain
-    ) internal initializer {
+        TrustedSender[] memory trustedSenders
+    ) internal {
         wormholeRelayer = IWormholeRelayer(wormholeRelayerAddress);
-
-        /// initialize contract to trust this exact same address on an external chain
-        /// @dev the external chain contracts MUST HAVE THE SAME ADDRESS on the external chain
-        targetAddress[targetChain] = address(this);
-        _addTrustedSender(address(this), targetChain);
+        
+        _addTrustedSenders(trustedSenders);
 
         gasLimit = 300_000; /// @dev default starting gas limit for relayer 
     }
@@ -102,42 +102,28 @@ abstract contract WormholeBridgeBase is
     /// @notice set a gas limit for the relayer on the external chain
     /// should only be called if there is a change in gas prices on the external chain
     /// @param newGasLimit new gas limit to set
-    function setGasLimit(uint96 newGasLimit) external onlyOwner {
+    function _setGasLimit(uint96 newGasLimit) internal  {
         uint96 oldGasLimit = gasLimit;
         gasLimit = newGasLimit;
 
         emit GasLimitUpdated(oldGasLimit, newGasLimit);
     }
 
-    /// @notice remove trusted senders from external chains
-    /// @param _trustedSenders array of trusted senders to remove
-    function removeTrustedSenders(
-        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
-    ) external onlyOwner {
-        _removeTrustedSenders(_trustedSenders);
-    }
-
-    /// @notice add trusted senders from external chains
-    /// @param _trustedSenders array of trusted senders to add
-    function addTrustedSenders(
-        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
-    ) external onlyOwner {
-        _addTrustedSenders(_trustedSenders);
-    }
-
     /// @notice add map of target addresses for external chains
     /// @dev there is no check here to ensure there isn't an existing configuration
     /// ensure the proper add or remove is being called when using this function
     /// @param _chainConfig array of chainids to addresses to add
-    function setTargetAddresses(
-        WormholeTrustedSender.TrustedSender[] memory _chainConfig
-    ) external onlyOwner {
+    function _setTargetAddresses(
+        TrustedSender[] memory _chainConfig
+    ) internal {
         for (uint256 i = 0; i < _chainConfig.length; i++) {
-            targetAddress[_chainConfig[i].chainId] = _chainConfig[i].addr;
+            uint16 chainId = _chainConfig[i].chainId;
+            targetAddress[chainId] = _chainConfig[i].addr;
+            _targetChains.add(chainId);
 
             emit TargetAddressUpdated(
-                _chainConfig[i].chainId,
-                _chainConfig[i].addr
+                                      chainId,
+                                      _chainConfig[i].addr
             );
         }
     }

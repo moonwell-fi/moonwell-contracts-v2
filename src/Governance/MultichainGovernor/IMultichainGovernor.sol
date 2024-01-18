@@ -68,11 +68,6 @@ interface IMultichainGovernor {
     /// @notice An event emitted when the max user live proposals has changed.
     event UserMaxProposalsChanged(uint256 oldValue, uint256 newValue);
 
-    /// @notice emitted when the gas limit changes on external chains
-    /// @param oldGasLimit old gas limit
-    /// @param newGasLimit new gas limit
-    event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
-
     /// @notice emitted when a cross chain vote is collected
     /// @param nonce the nonce of the cross chain vote
     /// @param proposalId the proposal id

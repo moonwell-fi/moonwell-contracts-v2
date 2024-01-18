@@ -9,7 +9,8 @@ import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contr
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 
 /// Upgradeable, constructor disables implementation
-contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBase {
+contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBase, Ownable2StepUpgradeable  {
+    
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
     /// ----------------------- CONSTANTS ----------------------- ///
@@ -90,7 +91,9 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
     function initialize(address _xWell, address _moonBeamGovernor, address _wormholeRelayer, uint16 _moombeamWormholeChainId) external initializer {
         xWell = xWELL(_xWell);
         moombeamGovernor = _moonBeamGovernor;
-        _initialize(_wormholeRelayer, _moombeamWormholeChainId);
+        TrustedSender[] memory trustedSenders = new TrustedSender[](1);
+        trustedSenders[0] = TrustedSender(_moombeamWormholeChainId, _moonBeamGovernor);
+        _initialize(_wormholeRelayer, trustedSenders);
     }
 
     /// @dev allows user to cast vote for a proposal
@@ -180,4 +183,28 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
         // Emit the ProposalCreated event
         emit ProposalCreated(proposalId, votingStartTime, votingEndTime, votingCollectionEndTime);
     }
+
+    /// @notice remove trusted senders from external chains
+    /// @param _trustedSenders array of trusted senders to remove
+    function removeTrustedSenders(
+        TrustedSender[] memory _trustedSenders
+    ) external onlyOwner {
+        _removeTrustedSenders(_trustedSenders);
+    }
+
+    /// @notice add trusted senders from external chains
+    /// @param _trustedSenders array of trusted senders to add
+    function addTrustedSenders(
+        TrustedSender[] memory _trustedSenders
+    ) external onlyOwner {
+        _addTrustedSenders(_trustedSenders);
+    }
+
+    /// @notice set a gas limit for the relayer on the external chain
+    /// should only be called if there is a change in gas prices on the external chain
+    /// @param newGasLimit new gas limit to set
+    function setGasLimit(uint96 newGasLimit) external onlyOwner {
+        _setGasLimit(newGasLimit);
+    }
+
 }

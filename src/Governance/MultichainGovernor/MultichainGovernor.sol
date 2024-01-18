@@ -2,14 +2,12 @@ pragma solidity 0.8.19;
 
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
-
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
-import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {SnapshotInterface} from "@protocol/Governance/MultichainGovernor/SnapshotInterface.sol";
 import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
+import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 
 /// WARNING: this contract is at high risk of running over bytecode size limit
 ///   we may need to split things out into multiple contracts, so keep things as
@@ -22,9 +20,9 @@ import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardi
 /// - moonbeam block times are consistently 12 seconds with few exceptions https://moonscan.io/chart/blocktime
 /// this means that a timestamp can be converted to a block number with a high degree of accuracy
 contract MultichainGovernor is
-    WormholeTrustedSender,
     IMultichainGovernor,
-    ConfigurablePauseGuardian
+    ConfigurablePauseGuardian,
+    WormholeBridgeBase
 {
     using EnumerableSet for EnumerableSet.UintSet;
     using Address for address;
@@ -34,17 +32,6 @@ contract MultichainGovernor is
     /// -------------------- STATE VARIABLES -------------------- ///
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
-
-    /// @dev packing these variables into a single slot saves a
-    /// COLD SLOAD on propose operations.
-
-    /// @notice gas limit for wormhole relayer, changeable incase gas
-    /// prices change on external network starts at 300k gas.
-    uint96 public gasLimit;
-
-    /// @notice address of the wormhole relayer cannot be changed by owner
-    /// because the relayer contract is a proxy and should never change its address
-    IWormholeRelayer public wormholeRelayer;
 
     /// @notice The total number of proposals
     uint256 public proposalCount;
@@ -79,21 +66,6 @@ contract MultichainGovernor is
     mapping(bytes whitelistedCalldata => bool)
         public
         override whitelistedCalldatas;
-
-    /// @notice nonces that have already been processed
-    mapping(bytes32 => bool) public processedNonces;
-
-    /// @notice chain configuration
-    struct ChainConfig {
-        /// chainid of the wormhole chain
-        uint16 chainId;
-        /// destination address of the wormhole chain
-        address destinationAddress;
-    }
-
-    /// @notice the chain configs to relay new proposals to
-    /// TODO add governor only getter and setter functions for these
-    ChainConfig[] public chainConfigs;
 
     /// --------------------------------------------------------- ///
     /// --------------------- VOTING TOKENS --------------------- ///
@@ -191,7 +163,7 @@ contract MultichainGovernor is
         /// break glass guardian address
         address breakGlassGuardian;
         /// trusted senders that can relay messages to this contract
-        WormholeTrustedSender.TrustedSender[] trustedSenders;
+        TrustedSender[] trustedSenders;
     }
 
     /// @notice initialize the governor contract
@@ -215,9 +187,9 @@ contract MultichainGovernor is
         __Pausable_init(); /// not really needed, but seems like good form
         _updatePauseDuration(initData.pauseDuration);
         _grantGuardian(initData.pauseGuardian); /// set the pause guardian
-        _addTrustedSenders(initData.trustedSenders);
 
-        _setGasLimit(300_000); /// @dev default starting gas limit for relayer
+        // initialize WormholeBridgeBase, set relayer, adds trusted senders and set gas limit
+        _initialize(address(wormholeRelayer), initData.trustedSenders);
     }
 
     /// --------------------------------------------------------- ///
@@ -326,13 +298,6 @@ contract MultichainGovernor is
         proposalThreshold = _proposalThreshold;
 
         emit ProposalThresholdChanged(oldValue, _proposalThreshold);
-    }
-
-    function _setGasLimit(uint96 newGasLimit) private {
-        uint96 oldGasLimit = gasLimit;
-        gasLimit = newGasLimit;
-
-        emit GasLimitUpdated(oldGasLimit, newGasLimit);
     }
 
     function _setBreakGlassGuardian(address newGuardian) private {
@@ -463,25 +428,12 @@ contract MultichainGovernor is
     /// -------------------- VIEW FUNCTIONS --------------------- ///
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
-
-    /// @notice Estimate bridge cost to bridge out to a destination chain
-    /// @param dstChainId Destination chain id
-    function bridgeCost(
-        uint16 dstChainId
-    ) public view returns (uint256 gasCost) {
-        (gasCost, ) = wormholeRelayer.quoteEVMDeliveryPrice(
-            dstChainId,
-            0,
-            gasLimit
-        );
-    }
-
     /// tells you the cost of going to all different required chains
     function getProposeCost() public view returns (uint256) {
         uint256 totalCost = 0;
 
-        for (uint256 i = 0; i < chainConfigs.length; ) {
-            totalCost += bridgeCost(chainConfigs[i].chainId);
+        for (uint256 i = 0; i < _targetChains.length(); ) {
+            totalCost += bridgeCost(uint16(_targetChains.at(i)));
             unchecked {
                 i++;
             }
@@ -767,16 +719,8 @@ contract MultichainGovernor is
 
             /// call relayer with information about proposal
             /// iterate over chainConfigs and send messages to each of them
-            for (uint256 i = 0; i < chainConfigs.length; ) {
-                wormholeRelayer.sendPayloadToEvm{
-                    value: bridgeCost(chainConfigs[i].chainId)
-                }(
-                    chainConfigs[i].chainId,
-                    chainConfigs[i].destinationAddress,
-                    payload, /// payload
-                    0, /// no receiver value allowed, only message passing
-                    gasLimit
-                );
+            for (uint256 i = 0; i < _targetChains.length(); ) {
+                _bridgeOut(_targetChains.at(i), payload);
                 unchecked {
                     i++;
                 }
@@ -946,69 +890,10 @@ contract MultichainGovernor is
         emit CalldataApprovalUpdated(data, approved);
     }
 
-    /// @notice add a chain configuration for a given wormhole chain id and destination address
-    /// reverts if chain id already exists in the current chain config array
-    /// @param chainConfig the chain config to add
-    function addChainConfig(
-        ChainConfig memory chainConfig
-    ) external onlyGovernor {
-        require(
-            chainConfig.chainId != 0,
-            "MultichainGovernor: invalid chain id"
-        );
-        require(
-            chainConfig.destinationAddress != address(0),
-            "MultichainGovernor: invalid destination address"
-        );
-
-        for (uint256 i = 0; i < chainConfigs.length; ) {
-            require(
-                chainConfigs[i].chainId != chainConfig.chainId,
-                "MultichainGovernor: chain id already exists"
-            );
-            unchecked {
-                i++;
-            }
-        }
-
-        chainConfigs.push(chainConfig);
-
-        emit ChainConfigUpdated(
-            chainConfig.chainId,
-            chainConfig.destinationAddress,
-            false
-        );
-    }
-
-    /// @notice remove the chain config for a given chain id
-    /// reverts if chainId does not exist in the current chain config array
-    /// @param chainId the chain id to remove
-    function removeChainConfig(uint16 chainId) external onlyGovernor {
-        require(chainId != 0, "MultichainGovernor: invalid chain id");
-
-        for (uint256 i = 0; i < chainConfigs.length; ) {
-            if (chainConfigs[i].chainId == chainId) {
-                address destination = chainConfigs[i].destinationAddress;
-
-                chainConfigs[i] = chainConfigs[chainConfigs.length - 1];
-                chainConfigs.pop();
-
-                emit ChainConfigUpdated(chainId, destination, true);
-
-                return;
-            }
-            unchecked {
-                i++;
-            }
-        }
-
-        revert("MultichainGovernor: chain id not found");
-    }
-
     /// @notice remove trusted senders from external chains
     /// @param _trustedSenders array of trusted senders to remove
     function removeTrustedSenders(
-        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
+        TrustedSender[] memory _trustedSenders
     ) external onlyGovernor {
         _removeTrustedSenders(_trustedSenders);
     }
@@ -1016,9 +901,13 @@ contract MultichainGovernor is
     /// @notice add trusted senders from external chains
     /// @param _trustedSenders array of trusted senders to add
     function addTrustedSenders(
-        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
+        TrustedSender[] memory _trustedSenders
     ) external onlyGovernor {
         _addTrustedSenders(_trustedSenders);
+    }
+
+    function setTargetAddress(TrustedSender[] memory _chainConfig) external onlyGovernor {
+        _setTargetAddresses(_chainConfig);
     }
 
     /// @notice updates the proposal threshold
@@ -1134,4 +1023,13 @@ contract MultichainGovernor is
 
         emit ProposalExecuted(uint256(uint160(msg.sender)));
     }
+
+    /// @notice set a gas limit for the relayer on the external chain
+    /// should only be called if there is a change in gas prices on the external chain
+    /// @param newGasLimit new gas limit to set
+    function setGasLimit(uint96 newGasLimit) external onlyGovernor{
+        _setGasLimit(newGasLimit);
+    }
+
+    function _bridgeIn(uint16 sourceChain, bytes memory payload) internal override {}
 }
