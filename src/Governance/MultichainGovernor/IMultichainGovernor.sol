@@ -3,6 +3,107 @@ pragma solidity 0.8.19;
 /// @notice pauseable by the guardian
 /// @notice upgradeable, constructor disables implementation
 interface IMultichainGovernor {
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// ------------------------- EVENTS ------------------------ ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+
+    /// @notice An event emitted when the first vote is cast in a proposal
+    event StartBlockSet(uint256 proposalId, uint256 startBlock);
+
+    /// @notice An event emitted when a vote has been cast on a proposal
+    event VoteCast(
+        address voter,
+        uint256 proposalId,
+        uint8 voteValue,
+        uint256 votes
+    );
+
+    /// @notice An event emitted when a new proposal is created
+    event ProposalCreated(
+        uint256 id,
+        address proposer,
+        address[] targets,
+        uint256[] values,
+        bytes[] calldatas,
+        uint256 startTimestamp,
+        uint256 endTimestamp,
+        string description
+    );
+
+    /// @notice An event emitted when a proposal has been canceled
+    event ProposalCanceled(uint256 id);
+
+    /// @notice An event emitted when a proposal has been queued in the Timelock
+    event ProposalQueued(uint256 id, uint256 eta);
+
+    /// @notice An event emitted when a proposal has been executed in the Timelock
+    event ProposalExecuted(uint256 id);
+
+    /// @notice An event emitted when thee quorum votes is changed.
+    event QuroumVotesChanged(uint256 oldValue, uint256 newValue);
+
+    /// @notice An event emitted when the proposal threshold is changed.
+    event ProposalThresholdChanged(uint256 oldValue, uint256 newValue);
+
+    /// @notice An event emitted when the voting delay is changed.
+    event VotingDelayChanged(uint256 oldValue, uint256 newValue);
+
+    /// @notice An event emitted when the voting period is changed.
+    event VotingPeriodChanged(uint256 oldValue, uint256 newValue);
+
+    /// @notice An event emitted when the break glass guardian is changed.
+    event BreakGlassGuardianChanged(address oldValue, address newValue);
+
+    /// @notice An event emitted when the governance return address is changed.
+    event GovernanceReturnAddressChanged(address oldValue, address newValue);
+
+    /// @notice An event emitted when the cross chain vote collection period has changed.
+    event CrossChainVoteCollectionPeriodChanged(
+        uint256 oldValue,
+        uint256 newValue
+    );
+
+    /// @notice An event emitted when the max user live proposals has changed.
+    event UserMaxProposalsChanged(uint256 oldValue, uint256 newValue);
+
+    /// @notice emitted when the gas limit changes on external chains
+    /// @param oldGasLimit old gas limit
+    /// @param newGasLimit new gas limit
+    event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
+
+    /// @notice emitted when a cross chain vote is collected
+    /// @param nonce the nonce of the cross chain vote
+    /// @param proposalId the proposal id
+    /// @param sourceChain the wormhole chain id the vote was collected from
+    /// @param forVotes the number of votes for the proposal
+    /// @param againstVotes the number of votes against the proposal
+    /// @param abstainVotes the number of votes abstaining from the proposal
+    event CrossChainVoteCollected(
+        bytes32 nonce,
+        uint256 proposalId,
+        uint16 sourceChain,
+        uint256 forVotes,
+        uint256 againstVotes,
+        uint256 abstainVotes
+    );
+
+    /// @notice emitted when a chain config is updated
+    /// @param chainId the chain id of the chain config
+    /// @param destinationAddress the destination address of the chain config
+    /// @param removed whether or not the chain config was removed
+    event ChainConfigUpdated(
+        uint16 chainId,
+        address destinationAddress,
+        bool removed
+    );
+
+    /// @notice emitted when a calldata approval is changed for break glass guardian
+    /// @param data the calldata that was approved or unapproved
+    /// @param approved whether or not the calldata was approved or unapproved
+    event CalldataApprovalUpdated(bytes data, bool approved);
+
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
     //// --------------- Data Structures -------------- ////
@@ -109,7 +210,7 @@ interface IMultichainGovernor {
     /// returns whether or not the user is a vote collector contract
     /// and can vote on a given chain
     function isCrossChainVoteCollector(
-        uint256 chainId,
+        uint16 chainId,
         address voteCollector
     ) external view returns (bool);
 
@@ -146,10 +247,13 @@ interface IMultichainGovernor {
         address user
     ) external view returns (uint256);
 
-    /// @dev Returns the number of votes for a given user
-    /// queries WELL, xWELL, distributor, and safety module
-    function getVotingPower(
-        address voter,
+    /// returns the total voting power for an address at a given block number and timestamp
+    /// @param account The address of the account to check
+    /// @param timestamp The unix timestamp in seconds to check the balance at
+    /// @param blockNumber The block number to check the balance at
+    function getVotes(
+        address account,
+        uint256 timestamp,
         uint256 blockNumber
     ) external view returns (uint256);
 
@@ -166,7 +270,7 @@ interface IMultichainGovernor {
         uint256[] memory values,
         bytes[] memory calldatas,
         string memory description
-    ) external returns (uint256);
+    ) external payable returns (uint256);
 
     function execute(uint256 proposalId) external;
 
@@ -183,7 +287,13 @@ interface IMultichainGovernor {
 
     /// @dev allows votes from external chains to be counted
     /// calls wormhole core to decode VAA, ensures validity of sender
-    function collectCrosschainVote(bytes memory VAA) external;
+    function collectCrosschainVote(
+        bytes memory payload,
+        bytes[] memory, // additionalVaas
+        bytes32 senderAddress,
+        uint16 sourceChain,
+        bytes32 nonce
+    ) external;
 
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
@@ -218,8 +328,6 @@ interface IMultichainGovernor {
         bytes calldata data,
         bool approved
     ) external;
-
-    function setGovernanceReturnAddress(address newAddress) external;
 
     //// @notice array lengths must add up
     /// values must sum to msg.value to ensure guardian cannot steal funds
