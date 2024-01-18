@@ -8,13 +8,11 @@ import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 import {IAxelarGateway} from "@protocol/xWELL/axelar-interfaces/IAxelarGateway.sol";
 import {IAxelarGasService} from "@protocol/xWELL/axelar-interfaces/IAxelarGasService.sol";
 import {AddressToString, StringToAddress} from "@protocol/xWELL/axelar-interfaces/AddressString.sol";
-import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 
 /// @notice Axelar Token Bridge adapter for XERC20 tokens
 /// @dev the access control model for this contract is to deploy
 /// the same exact contract on separate chains, otherwise this does not work.
-contract AxelarBridgeAdapter is xERC20BridgeAdapter, Ownable2StepUpgradeable 
- {
+contract AxelarBridgeAdapter is xERC20BridgeAdapter {
     using SafeERC20 for IERC20;
     using StringToAddress for string;
     using AddressToString for address;
@@ -94,12 +92,6 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter, Ownable2StepUpgradeable
         bool approval
     );
 
-    /// construct the logic contract and initialize so that the initialize function is uncallable
-    /// from the implementation and only callable from the proxy
-    constructor() {
-        _disableInitializers();
-    }
-
     /// --------------------------------------------------------
     /// --------------------------------------------------------
     /// ---------------------- Initialize ----------------------
@@ -117,7 +109,6 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter, Ownable2StepUpgradeable
         ChainIds[] memory chainIds,
         ChainConfig[] memory configs
     ) public initializer {
-        __Ownable_init();
         /// transfer ownership
         _transferOwnership(newOwner);
 
@@ -294,7 +285,7 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter, Ownable2StepUpgradeable
     /// @param dstChainId destination chain id
     /// @param amount amount of tokens to bridge
     /// @param to address to receive tokens on the destination chain
-    function _bridgeTokenOut(
+    function _bridgeOut(
         address user,
         uint256 dstChainId,
         uint256 amount,
@@ -326,7 +317,7 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter, Ownable2StepUpgradeable
             payload
         );
 
-        emit BridgedTokenOut(dstChainId, user, to, amount);
+        emit BridgedOut(dstChainId, user, to, amount);
     }
 
     //// ------------------------------------------------------------
@@ -372,6 +363,6 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter, Ownable2StepUpgradeable
             (address, uint256)
         );
 
-        _bridgeTokenIn(axelarIdToChainId[sourceChain], amount, user);
+        _bridgeIn(axelarIdToChainId[sourceChain], user, amount);
     }
 }
