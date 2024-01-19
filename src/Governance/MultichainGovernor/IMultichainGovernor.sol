@@ -137,8 +137,6 @@ interface IMultichainGovernor {
         uint256 crossChainVoteCollectionEndTimestamp;
         /// @notice The block at which voting began: holders must have delegated their votes prior to this block
         uint256 startBlock;
-        /// @notice The block at which voting ends: voters must have registered their votes prior to this block
-        uint256 endBlock;
         /// @notice Current number of votes in favor of this proposal
         uint256 forVotes;
         /// @notice Current number of votes in opposition to this proposal
