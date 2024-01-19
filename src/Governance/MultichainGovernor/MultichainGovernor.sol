@@ -207,6 +207,8 @@ contract MultichainGovernor is
         _setMaxUserLiveProposals(initData.maxUserLiveProposals);
         _setBreakGlassGuardian(initData.breakGlassGuardian);
 
+        _addTrustedSenders(initData.trustedSenders);
+
         __Pausable_init();
 
         _updatePauseDuration(initData.pauseDuration);
