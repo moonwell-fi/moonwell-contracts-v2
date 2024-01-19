@@ -84,13 +84,17 @@ abstract contract WormholeBridgeBase is
     /// ensure the proper add or remove is being called when using this function
     /// @param _chainConfig array of chainids to addresses to add
     function _addTargetAddresses(TrustedSender[] memory _chainConfig) internal {
-        for (uint256 i = 0; i < _chainConfig.length; i++) {
+        for (uint256 i = 0; i < _chainConfig.length; ) {
             uint16 chainId = _chainConfig[i].chainId;
             targetAddress[chainId] = _chainConfig[i].addr;
             require(
                 _targetChains.add(chainId),
                 "WormholeBridge: chain already added"
             );
+
+            unchecked {
+                i++;
+            }
 
             emit TargetAddressUpdated(chainId, _chainConfig[i].addr);
         }
@@ -103,7 +107,7 @@ abstract contract WormholeBridgeBase is
     function _removeTargetAddresses(
         TrustedSender[] memory _chainConfig
     ) internal {
-        for (uint256 i = 0; i < _chainConfig.length; i++) {
+        for (uint256 i = 0; i < _chainConfig.length; ) {
             uint16 chainId = _chainConfig[i].chainId;
             targetAddress[chainId] = address(0);
             require(
@@ -112,6 +116,10 @@ abstract contract WormholeBridgeBase is
             );
 
             emit TargetAddressUpdated(chainId, address(0));
+
+            unchecked {
+                i++;
+            }
         }
     }
 
