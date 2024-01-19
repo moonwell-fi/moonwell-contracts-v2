@@ -4,6 +4,7 @@ import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openze
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
+import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 
 contract MultichainGovernorDeploy {
@@ -22,6 +23,19 @@ contract MultichainGovernorDeploy {
 
         proxy = address(
             new TransparentUpgradeableProxy(governorImpl, proxyAdmin, initData)
+        );
+    }
+
+    function deployVoteCollection(address xWell, address mombeanGovernor, address relayer, address mombeanChainId, address proxyAdmin) public returns (address proxy, address voteCollectionImpl) {
+        bytes memory initData = abi.encodeWithSignature(
+                                                        "initialize(address, address, address, uint16)",
+                                                        xWell, mombeanGovernor, relayer, mombeanChainId
+        );
+
+        voteCollectionImpl = address(new MultichainVoteCollection());
+
+        proxy = address(
+                        new TransparentUpgradeableProxy(voteCollectionImpl, proxyAdmin, initData)
         );
     }
 }
