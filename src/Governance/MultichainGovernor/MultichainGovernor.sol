@@ -674,7 +674,7 @@ contract MultichainGovernor is
         uint256[] memory values,
         bytes[] memory calldatas,
         string memory description
-    ) external payable override returns (uint256) {
+    ) external payable override whenNotPaused returns (uint256) {
         /// get user voting power from all voting sources
         require(
             getVotes(msg.sender, block.timestamp - 1, block.number - 1) >=
@@ -760,7 +760,7 @@ contract MultichainGovernor is
         return newProposal.id;
     }
 
-    function execute(uint256 proposalId) external override {
+    function execute(uint256 proposalId) external override whenNotPaused {
         require(
             state(proposalId) == ProposalState.Succeeded,
             "MultichainGovernor: proposal can only be executed if it is Succeeded"
@@ -800,12 +800,19 @@ contract MultichainGovernor is
     function permissionlessCancel(uint256 proposalId) external override {}
 
     /// @dev allows user to cast vote for a proposal
-    function castVote(uint256 proposalId, uint8 voteValue) external override {}
+    /// @param proposalId the id of the proposal to vote on
+    /// @param voteValue the value of the vote, can be either YES, NO, or ABSTAIN
+    function castVote(
+        uint256 proposalId,
+        uint8 voteValue
+    ) external override whenNotPaused {
+        _castVote(msg.sender, proposalId, voteValue);
+    }
 
-    /// @dev allows votes from external chains to be counted
-    /// calls wormhole core to decode VAA, ensures validity of sender
-    // @param sourceChain the chain id of the source chain
-    // @param payload contains proposalId, forVotes, againstVotes, abstainVotes
+    /// @notice allows votes from external chains to be counted
+    /// ensures validity of sender
+    /// @param sourceChain the chain id of the source chain
+    /// @param payload contains proposalId, forVotes, againstVotes, abstainVotes
     function _bridgeIn(
         uint16 sourceChain,
         bytes memory payload
