@@ -664,10 +664,6 @@ contract MultichainGovernor is
         bytes[] memory calldatas,
         string memory description
     ) external payable override returns (uint256) {
-        require(
-            bridgeCostAll() == msg.value,
-            "MultichainGovernor: invalid proposal cost"
-        );
         /// get user voting power from all voting sources
         require(
             getVotes(msg.sender, block.timestamp - 1, block.number - 1) >=
@@ -737,16 +733,7 @@ contract MultichainGovernor is
 
         /// call relayer with information about proposal
         /// iterate over chainConfigs and send messages to each of them
-        uint256 chainsLength = _targetChains.length();
-
-        /// call relayer with information about proposal
-        /// iterate over chainConfigs and send messages to each of them
-        for (uint256 i = 0; i < chainsLength; ) {
-            _bridgeOut(uint16(_targetChains.at(i)), payload);
-            unchecked {
-                i++;
-            }
-        }
+        _bridgeOutAll(payload);
 
         emit ProposalCreated(
             newProposal.id,

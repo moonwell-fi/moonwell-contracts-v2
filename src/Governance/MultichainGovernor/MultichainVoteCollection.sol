@@ -69,11 +69,11 @@ contract MultichainVoteCollection is
 
     /// @notice initialize the governor contract
     /// @param _xWell address of the xWELL token
-    /// @param _moonBeamGovernor address of the moonbeam governor contract
+    /// @param _moombeanGovernor address of the moonbeam governor contract
     /// @param _wormholeRelayer address of the wormhole relayer
     function initialize(
         address _xWell,
-        address _moonBeamGovernor,
+        address _moombeanGovernor,
         address _wormholeRelayer,
         uint16 _moombeanWormholeChainId
     ) external initializer {
@@ -81,7 +81,7 @@ contract MultichainVoteCollection is
 
         moombeanWormholeChainId = _moombeanWormholeChainId;
 
-        _addTrustedSender(_moonBeamGovernor, _moombeanWormholeChainId);
+        _addTrustedSender(_moombeanGovernor, _moombeanWormholeChainId);
 
         _addWormholeRelayer(_wormholeRelayer);
     }
