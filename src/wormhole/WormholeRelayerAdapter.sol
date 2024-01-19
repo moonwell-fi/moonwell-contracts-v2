@@ -17,6 +17,7 @@ contract WormholeRelayerAdapter {
      *
      * @param targetAddress address to call on targetChain (that implements IWormholeReceiver)
      * @param payload arbitrary bytes to pass in as parameter in call to `targetAddress`
+     * @param gasLimit gas limit for call to `targetAddress`
      * @return sequence sequence number of published VAA containing delivery instructions
      */
     function sendPayloadToEvm(
@@ -24,9 +25,9 @@ contract WormholeRelayerAdapter {
         address targetAddress,
         bytes memory payload,
         uint256,
-        uint256 
+        uint256 gasLimit
     ) external payable returns (uint64) {
-        (bool success, ) = targetAddress.call(payload);
+        (bool success, ) = targetAddress.call{ gas: gasLimit }(payload);
 
         require(success, "WormholeRelayerAdapter: Call to targetAddress failed");
 
