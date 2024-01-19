@@ -1,6 +1,5 @@
 pragma solidity 0.8.19;
 
-import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
@@ -12,7 +11,6 @@ abstract contract WormholeBridgeBase is
     IWormholeReceiver,
     WormholeTrustedSender
 {
-    using SafeCast for uint256;
     using EnumerableSet for EnumerableSet.UintSet;
 
     /// ---------------------------------------------------------
@@ -166,16 +164,48 @@ abstract contract WormholeBridgeBase is
     /// --------------------------------------------------------
     /// --------------------------------------------------------
 
+
+    /// @notice Bridge Out Funds to all external chains.
+    /// @param payload Payload to send to the external chain
+    function _bridgeOutAll(bytes memory payload) internal {
+        require(
+            bridgeCostAll() == msg.value,
+            "WormholeBridge: total cost not equal to quote"
+        );
+        uint256 chainsLength = _targetChains.length();
+        for (uint256 i = 0; i < chainsLength; ) {
+            _bridgeOutInternal(uint16(_targetChains.at(i)), payload);
+            unchecked {
+                i++;
+            }
+        }
+    }
+
     /// @notice Bridge Out Funds to an external chain.
     /// @param targetChain Destination chain id
     /// @param payload Payload to send to the external chain
-    function _bridgeOut(uint16 targetChain, bytes memory payload) internal {
+    function _bridgeOut(
+        uint16 targetChain,
+        bytes memory payload
+    ) internal {
         uint256 cost = bridgeCost(targetChain);
         require(msg.value == cost, "WormholeBridge: cost not equal to quote");
+        _bridgeOutInternal(targetChain, payload);
+    }
+
+    /// @notice Bridge Out Funds to an external chain.
+    /// @param targetChain Destination chain id
+    /// @param payload Payload to send to the external chain
+    function _bridgeOutInternal(
+        uint16 targetChain,
+        bytes memory payload
+    ) internal {
         require(
             targetAddress[targetChain] != address(0),
             "WormholeBridge: invalid target chain"
         );
+
+        uint256 cost = bridgeCost(targetChain);
 
         wormholeRelayer.sendPayloadToEvm{value: cost}(
             targetChain,
