@@ -7,11 +7,11 @@ import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/Multic
 
 contract MultichainGovernorDeploy {
     function deployMultichainGovernor(
-        MultichainGovernor.InitializeData memory initData
+        MultichainGovernor.InitializeData memory _initData
     ) public returns (address proxyAdmin, address proxy, address governorImpl) {
         bytes memory initData = abi.encodeWithSignature(
             "initialize((address,address,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint128,address,address,(uint16,address)[]))",
-            initData
+            _initData
         );
 
         proxyAdmin = address(new ProxyAdmin());

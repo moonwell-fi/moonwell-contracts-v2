@@ -256,5 +256,6 @@ abstract contract WormholeBridgeBase is
     function _bridgeIn(
         uint16 sourceChain,
         bytes memory payload
+
     ) internal virtual;
 }
