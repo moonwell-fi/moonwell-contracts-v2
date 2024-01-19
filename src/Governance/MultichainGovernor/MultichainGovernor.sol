@@ -352,6 +352,10 @@ contract MultichainGovernor is
         emit BreakGlassGuardianChanged(oldGuardian, newGuardian);
     }
 
+    /// @notice helper function to cast votes in governance
+    /// @param voter address of the voter
+    /// @param proposalId id of the proposal to vote on
+    /// @param voteValue the value of the vote, can be either YES, NO, or ABSTAIN
     function _castVote(
         address voter,
         uint256 proposalId,
@@ -466,6 +470,10 @@ contract MultichainGovernor is
     /// -------------------- VIEW FUNCTIONS --------------------- ///
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
+
+    /// @notice returns the currently live proposals
+    /// live proposals are defined as being in the
+    /// Active, Pending or CrossChainVoteCollection period.
     function liveProposals() external view override returns (uint256[] memory) {
         uint256 liveProposalCount = getNumLiveProposals();
         uint256[] memory liveProposalIds = new uint256[](liveProposalCount);
@@ -487,6 +495,9 @@ contract MultichainGovernor is
         return liveProposalIds;
     }
 
+    /// @notice returns the number of live proposals,
+    /// live proposals are defined as being in the
+    /// Active, Pending or CrossChainVoteCollection period.
     function getNumLiveProposals() public view returns (uint256 count) {
         uint256[] memory allProposals = _liveProposals.values();
 
