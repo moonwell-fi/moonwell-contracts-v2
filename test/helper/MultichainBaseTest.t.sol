@@ -9,11 +9,14 @@ import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 
 contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     MultichainGovernor governor;
     MultichainVoteCollection voteCollection;
     WormholeRelayerAdapter wormholeRelayerAdapter;
+    xWELL xwell;
+    
     uint256 public constant proposalThreshold = 100_000_000 * 1e18;
     uint256 public constant votingPeriodSeconds = 3 days;
     uint256 public constant votingDelaySeconds = 1 days;
@@ -35,6 +38,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         initData.maxUserLiveProposals = maxUserLiveProposals;
         initData.pauseDuration = pauseDuration;
         initData.pauseGuardian = pauseGuardian;
+        // TODO add relayer to initData
 
         WormholeTrustedSender.TrustedSender[]
             memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
@@ -66,10 +70,62 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             pauseGuardian
         );
 
+        xwell = xWELL(xwellProxy);
+
         wormholeRelayerAdapter = new WormholeRelayerAdapter();
 
         (address voteCollectionProxy, address voteCollectionImpl) = deployVoteCollection(xwellProxy, governorProxy, address(wormholeRelayerAdapter), moonbeanChainId, proxyAdmin);
         voteCollection = MultichainVoteCollection(voteCollectionProxy);
      }
+
+    function testGovernorSetup() public {
+        assertEq(
+            governor.proposalThreshold(),
+            proposalThreshold,
+            "proposalThreshold"
+        );
+        assertEq(
+            governor.votingPeriod(),
+            votingPeriodSeconds,
+            "votingPeriodSeconds"
+        );
+        assertEq(
+            governor.votingDelay(),
+            votingDelaySeconds,
+            "votingDelaySeconds"
+        );
+        assertEq(
+            governor.crossChainVoteCollectionPeriod(),
+            crossChainVoteCollectionPeriod,
+            "crossChainVoteCollectionPeriod"
+        );
+        assertEq(governor.quorum(), quorum, "quorum");
+        assertEq(
+            governor.maxUserLiveProposals(),
+            maxUserLiveProposals,
+            "maxUserLiveProposals"
+        );
+        assertEq(governor.pauseDuration(), pauseDuration, "pauseDuration");
+        assertEq(governor.pauseGuardian(), pauseGuardian, "pauseGuardian");
+        assertFalse(governor.paused(), "paused");
+        assertFalse(governor.pauseUsed(), "paused used");
+    }
+
+    function testVoteCollectionSetup() public {
+        assertEq(
+            address(voteCollection.xWell()),
+            address(xwell),
+            "xWell address"
+        );
+        assertTrue(
+            voteCollection.isTrustedSender(moonbeanChainId, address(governor)),
+            "governor address is trusted sender"
+        );
+        assertEq(
+            address(voteCollection.wormholeRelayer()),
+            address(wormholeRelayerAdapter),
+            "relayer address"
+        );
+    }
 
 }
