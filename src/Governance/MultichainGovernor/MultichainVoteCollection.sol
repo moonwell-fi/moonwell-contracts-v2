@@ -24,7 +24,7 @@ contract MultichainVoteCollection is
     /// @notice reference to the xWELL token
     xWELL public xWell;
 
-    // @notice MoonBeam Wormhole Chain Id
+    /// @notice MoonBeam Wormhole Chain Id
     uint16 internal moombeanWormholeChainId;
 
     /// ---------------------------------------------------------
