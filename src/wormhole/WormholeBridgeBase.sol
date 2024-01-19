@@ -49,7 +49,7 @@ abstract contract WormholeBridgeBase is
     /// --------------------------------------------------------- ///
 
     /// @notice set of target chains to bridge out to
-    /// @dev values are less or equal to 2^16, as add function takes uint16 as parameter
+    /// @dev values are less or equal to 2^16 - 1, as add function takes uint16 as parameter
     EnumerableSet.UintSet internal _targetChains;
 
     /// ---------------------------------------------------------
