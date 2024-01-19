@@ -653,10 +653,14 @@ contract MultichainGovernor is
     }
 
     /// @notice The total state of a given proposal
-    /// three distinct states:
+    /// distinct states:
+    ///      canceled                              -> means proposer canceled, proposer votes fell below threshold and was canceled, or contract was paused and vote was canceled
     ///      pending                               -> means block timestamp is less than or equal to the start timestamp
-    ///      started                               -> means block timestamp is greater than the start timestamp
+    ///      active                                -> means block timestamp is greater than the start timestamp
     ///      cross chain vote collection period    -> block timestamp is greater than the end timestamp and less than or equal to the cross chain vote collection end timestamp
+    ///      succeeded                             -> block timestamp is past the cross chain vote collection period and yay votes are greater than nay votes
+    ///      defeated                              -> block timestamp is past the cross chain vote collection period and nay votes are greater than or equal to yay votes
+    ///      invalid                               -> state should not be reachable
     /// @param proposalId The id of the proposal to check
     function state(uint256 proposalId) public view returns (ProposalState) {
         require(
