@@ -10,7 +10,11 @@ import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 
 /// Upgradeable, constructor disables implementation
-contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBase, Ownable2StepUpgradeable {
+contract MultichainVoteCollection is
+    IMultichainVoteCollection,
+    WormholeBridgeBase,
+    Ownable2StepUpgradeable
+{
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
     /// -------------------- STATE VARIABLES -------------------- ///
@@ -39,7 +43,10 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
 
     // @notice An event emitted when a proposal is created
     event ProposalCreated(
-        uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, uint256 votingCollectionEndTime
+        uint256 proposalId,
+        uint256 votingStartTime,
+        uint256 votingEndTime,
+        uint256 votingCollectionEndTime
     );
 
     /// @notice emitted when votes are emitted to the MoomBeam chain
@@ -47,7 +54,12 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
     /// @param forVotes number of votes for the proposal
     /// @param againstVotes number of votes against the proposal
     /// @param abstainVotes number of votes abstaining the proposal
-    event VotesEmitted(uint256 proposalId, uint256 forVotes, uint256 againstVotes, uint256 abstainVotes);
+    event VotesEmitted(
+        uint256 proposalId,
+        uint256 forVotes,
+        uint256 againstVotes,
+        uint256 abstainVotes
+    );
 
     /// @notice disable the initializer to stop governance hijacking
     /// and avoid selfdestruct attacks.
@@ -80,13 +92,22 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
 
         // Maintain require statments below pairing with the artemis governor behavior
         // Check if proposal start time has passed
-        require(proposal.votingStartTime < block.timestamp, "MultichainVoteCollection: Voting has not started yet");
+        require(
+            proposal.votingStartTime < block.timestamp,
+            "MultichainVoteCollection: Voting has not started yet"
+        );
 
         // Check if proposal end time has not passed
-        require(proposal.votingEndTime >= block.timestamp, "MultichainVoteCollection: Voting has ended");
+        require(
+            proposal.votingEndTime >= block.timestamp,
+            "MultichainVoteCollection: Voting has ended"
+        );
 
         // Vote value must be 0, 1 or 2
-        require(voteValue <= Constants.VOTE_VALUE_ABSTAIN, "MultichainVoteCollection: invalid vote value");
+        require(
+            voteValue <= Constants.VOTE_VALUE_ABSTAIN,
+            "MultichainVoteCollection: invalid vote value"
+        );
 
         // Check if user has already voted
         Receipt storage receipt = proposal.receipts[msg.sender];
@@ -120,7 +141,10 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
     /// @notice returns the total voting power for an address at a given block number and timestamp
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
-    function getVotes(address account, uint256 timestamp) public view returns (uint256) {
+    function getVotes(
+        address account,
+        uint256 timestamp
+    ) public view returns (uint256) {
         return xWell.getPastVotes(account, timestamp);
     }
 
@@ -130,12 +154,17 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
         // Get the proposal
         MultichainProposal storage proposal = proposals[proposalId];
 
-
         // Check if proposal have not been emitted yet
-        require(!proposal.emitted, "MultichainVoteCollection: votes already emitted");
+        require(
+            !proposal.emitted,
+            "MultichainVoteCollection: votes already emitted"
+        );
 
         // Check if proposal end time has passed
-        require(proposal.votingEndTime < block.timestamp, "MultichainVoteCollection: Voting has not ended yet");
+        require(
+            proposal.votingEndTime < block.timestamp,
+            "MultichainVoteCollection: Voting has not ended yet"
+        );
 
         // Check if proposal collection end time has not passed
         require(
@@ -147,37 +176,68 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
         MultichainVotes storage votes = proposal.votes;
 
         // Check if proposal has votes
-        require(votes.totalVotes > 0, "MultichainVoteCollection: proposal has no votes");
+        require(
+            votes.totalVotes > 0,
+            "MultichainVoteCollection: proposal has no votes"
+        );
 
         proposal.emitted = true;
 
         _bridgeOut(
-            moombeanWormholeChainId, abi.encode(proposalId, votes.forVotes, votes.againstVotes, votes.abstainVotes)
+            moombeanWormholeChainId,
+            abi.encode(
+                proposalId,
+                votes.forVotes,
+                votes.againstVotes,
+                votes.abstainVotes
+            )
         );
 
-        emit VotesEmitted(proposalId, votes.forVotes, votes.againstVotes, votes.abstainVotes);
+        emit VotesEmitted(
+            proposalId,
+            votes.forVotes,
+            votes.againstVotes,
+            votes.abstainVotes
+        );
     }
 
     /// @notice bridge proposals from moonbeam
     /// @param sourceChain the chain id of the source chain
     /// @param payload the payload of the message, contains proposalId, votingStartTime, votingEndTime and voteCollectionEndTime
-    function _bridgeIn(uint16 sourceChain, bytes memory payload) internal override {
+    function _bridgeIn(
+        uint16 sourceChain,
+        bytes memory payload
+    ) internal override {
         // Parse the payload and do the corresponding actions!
-        (uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, uint256 votingCollectionEndTime) =
-            abi.decode(payload, (uint256, uint256, uint256, uint256));
+        (
+            uint256 proposalId,
+            uint256 votingStartTime,
+            uint256 votingEndTime,
+            uint256 votingCollectionEndTime
+        ) = abi.decode(payload, (uint256, uint256, uint256, uint256));
 
         require(
-            sourceChain == moombeanWormholeChainId, "MultichainVoteCollection: accepts only proposals from moonbeam"
+            sourceChain == moombeanWormholeChainId,
+            "MultichainVoteCollection: accepts only proposals from moonbeam"
         );
 
         // Ensure proposalId is unique
-        require(proposals[proposalId].votingStartTime == 0, "Proposal already exists");
+        require(
+            proposals[proposalId].votingStartTime == 0,
+            "Proposal already exists"
+        );
 
         // Ensure votingStartTime is less than votingEndTime
-        require(votingStartTime < votingEndTime, "Start time must be before end time");
+        require(
+            votingStartTime < votingEndTime,
+            "Start time must be before end time"
+        );
 
         // Ensure votingEndTime is in the future
-        require(votingEndTime > block.timestamp, "End time must be in the future");
+        require(
+            votingEndTime > block.timestamp,
+            "End time must be in the future"
+        );
 
         // Create the proposal
         MultichainProposal storage proposal = proposals[proposalId];
@@ -186,7 +246,12 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
         proposal.votingCollectionEndTime = votingCollectionEndTime;
 
         // Emit the ProposalCreated event
-        emit ProposalCreated(proposalId, votingStartTime, votingEndTime, votingCollectionEndTime);
+        emit ProposalCreated(
+            proposalId,
+            votingStartTime,
+            votingEndTime,
+            votingCollectionEndTime
+        );
     }
 
     //// ---------------------------------------------- ////
@@ -197,13 +262,17 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
 
     /// @notice remove trusted senders from external chains
     /// @param _trustedSenders array of trusted senders to remove
-    function removeTrustedSenders(TrustedSender[] memory _trustedSenders) external onlyOwner {
+    function removeTrustedSenders(
+        TrustedSender[] memory _trustedSenders
+    ) external onlyOwner {
         _removeTrustedSenders(_trustedSenders);
     }
 
     /// @notice add trusted senders from external chains
     /// @param _trustedSenders array of trusted senders to add
-    function addTrustedSenders(TrustedSender[] memory _trustedSenders) external onlyOwner {
+    function addTrustedSenders(
+        TrustedSender[] memory _trustedSenders
+    ) external onlyOwner {
         _addTrustedSenders(_trustedSenders);
     }
 

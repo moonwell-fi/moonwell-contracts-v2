@@ -13,7 +13,12 @@ interface IMultichainGovernor {
     event StartBlockSet(uint256 proposalId, uint256 startBlock);
 
     /// @notice An event emitted when a vote has been cast on a proposal
-    event VoteCast(address voter, uint256 proposalId, uint8 voteValue, uint256 votes);
+    event VoteCast(
+        address voter,
+        uint256 proposalId,
+        uint8 voteValue,
+        uint256 votes
+    );
 
     /// @notice An event emitted when a new proposal is created
     event ProposalCreated(
@@ -55,7 +60,10 @@ interface IMultichainGovernor {
     event GovernanceReturnAddressChanged(address oldValue, address newValue);
 
     /// @notice An event emitted when the cross chain vote collection period has changed.
-    event CrossChainVoteCollectionPeriodChanged(uint256 oldValue, uint256 newValue);
+    event CrossChainVoteCollectionPeriodChanged(
+        uint256 oldValue,
+        uint256 newValue
+    );
 
     /// @notice An event emitted when the max user live proposals has changed.
     event UserMaxProposalsChanged(uint256 oldValue, uint256 newValue);
@@ -67,14 +75,22 @@ interface IMultichainGovernor {
     /// @param againstVotes the number of votes against the proposal
     /// @param abstainVotes the number of votes abstaining from the proposal
     event CrossChainVoteCollected(
-        uint256 proposalId, uint16 sourceChain, uint256 forVotes, uint256 againstVotes, uint256 abstainVotes
+        uint256 proposalId,
+        uint16 sourceChain,
+        uint256 forVotes,
+        uint256 againstVotes,
+        uint256 abstainVotes
     );
 
     /// @notice emitted when a chain config is updated
     /// @param chainId the chain id of the chain config
     /// @param destinationAddress the destination address of the chain config
     /// @param removed whether or not the chain config was removed
-    event ChainConfigUpdated(uint16 chainId, address destinationAddress, bool removed);
+    event ChainConfigUpdated(
+        uint16 chainId,
+        address destinationAddress,
+        bool removed
+    );
 
     /// @notice emitted when a calldata approval is changed for break glass guardian
     /// @param data the calldata that was approved or unapproved
@@ -172,10 +188,11 @@ interface IMultichainGovernor {
     function whitelistedCalldatas(bytes calldata) external view returns (bool);
 
     /// @notice override with a mapping
-    function chainAddressVotes(uint256 proposalId, uint256 chainId, address voteGatheringAddress)
-        external
-        view
-        returns (VoteCounts memory);
+    function chainAddressVotes(
+        uint256 proposalId,
+        uint256 chainId,
+        address voteGatheringAddress
+    ) external view returns (VoteCounts memory);
 
     /// address the contract can be rolled back to by break glass guardian
     function governanceRollbackAddress() external view returns (address);
@@ -185,7 +202,10 @@ interface IMultichainGovernor {
 
     /// returns whether or not the user is a vote collector contract
     /// and can vote on a given chain
-    function isCrossChainVoteCollector(uint16 chainId, address voteCollector) external view returns (bool);
+    function isCrossChainVoteCollector(
+        uint16 chainId,
+        address voteCollector
+    ) external view returns (bool);
 
     /// @notice The total number of proposals
     function state(uint256 proposalId) external view returns (ProposalState);
@@ -216,13 +236,19 @@ interface IMultichainGovernor {
     function maxUserLiveProposals() external view returns (uint256);
 
     /// @dev Returns the number of live proposals for a given user
-    function currentUserLiveProposals(address user) external view returns (uint256);
+    function currentUserLiveProposals(
+        address user
+    ) external view returns (uint256);
 
     /// returns the total voting power for an address at a given block number and timestamp
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
     /// @param blockNumber The block number to check the balance at
-    function getVotes(address account, uint256 timestamp, uint256 blockNumber) external view returns (uint256);
+    function getVotes(
+        address account,
+        uint256 timestamp,
+        uint256 blockNumber
+    ) external view returns (uint256);
 
     /// ---------------------------------------------- ////
     /// ---------------------------------------------- ////
@@ -274,18 +300,25 @@ interface IMultichainGovernor {
     function updateVotingDelay(uint256 newVotingDelay) external;
 
     /// updates the cross chain voting collection period
-    function updateCrossChainVoteCollectionPeriod(uint256 newCrossChainVoteCollectionPeriod) external;
+    function updateCrossChainVoteCollectionPeriod(
+        uint256 newCrossChainVoteCollectionPeriod
+    ) external;
 
     function setBreakGlassGuardian(address newGuardian) external;
 
     /// @notice add and remove calldata from the whitelist
-    function updateApprovedCalldata(bytes calldata data, bool approved) external;
+    function updateApprovedCalldata(
+        bytes calldata data,
+        bool approved
+    ) external;
 
     //// @notice array lengths must add up
     /// values must sum to msg.value to ensure guardian cannot steal funds
     /// calldata must be whitelisted
     /// only break glass guardian can call, once, and when they do, their role is revoked
-    function executeBreakGlass(address[] calldata targets, uint256[] calldata values, bytes[] calldata calldatas)
-        external
-        payable;
+    function executeBreakGlass(
+        address[] calldata targets,
+        uint256[] calldata values,
+        bytes[] calldata calldatas
+    ) external payable;
 }
