@@ -20,9 +20,6 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
     /// @notice reference to the xWELL token
     xWELL public xWell;
 
-    // @notice MoonBeam Governor Contract Address
-    address public moombeamGovernor;
-
     // @notice MoonBeam Wormhole Chain Id
     uint16 internal moombeanWormholeChainId;
 
@@ -69,10 +66,12 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
         uint16 _moombeanWormholeChainId
     ) external initializer {
         xWell = xWELL(_xWell);
-        moombeamGovernor = _moonBeamGovernor;
-        TrustedSender[] memory trustedSenders = new TrustedSender[](1);
-        trustedSenders[0] = TrustedSender(_moombeanWormholeChainId, _moonBeamGovernor);
-        _initialize(_wormholeRelayer, trustedSenders);
+
+        moombeanWormholeChainId = _moombeanWormholeChainId;
+
+        _addTrustedSender(_moonBeamGovernor, _moombeanWormholeChainId);
+
+        _addWormholeRelayer(_wormholeRelayer);
     }
 
     /// @dev allows user to cast vote for a proposal
@@ -81,28 +80,41 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
 
         // Maintain require statments below pairing with the artemis governor behavior
         // Check if proposal start time has passed
-        require(proposal.votingStartTime < block.timestamp, "Voting has not started yet");
+        require(proposal.votingStartTime < block.timestamp, "MultichainVoteCollection: Voting has not started yet");
 
         // Check if proposal end time has not passed
-        require(proposal.votingEndTime >= block.timestamp, "Voting has ended");
+        require(proposal.votingEndTime >= block.timestamp, "MultichainVoteCollection: Voting has ended");
 
         // Vote value must be 0, 1 or 2
-        require(voteValue <= Constants.VOTE_VALUE_ABSTAIN, "MultichainGovernor: invalid vote value");
+        require(voteValue <= Constants.VOTE_VALUE_ABSTAIN, "MultichainVoteCollection: invalid vote value");
 
+        // Check if user has already voted
+        Receipt storage receipt = proposal.receipts[msg.sender];
+        require(
+            receipt.hasVoted == false,
+            "MultichainVoteCollection: voter already voted"
+        );
+
+        // Get voting power
         uint256 userVotes = getVotes(msg.sender, proposal.votingStartTime);
 
         MultichainVotes storage votes = proposal.votes;
 
         if (voteValue == Constants.VOTE_VALUE_YES) {
-            votes.forVotes = votes.forVotes + userVotes;
+            votes.forVotes += votes.forVotes;
         } else if (voteValue == Constants.VOTE_VALUE_NO) {
-            votes.againstVotes = votes.againstVotes + userVotes;
+            votes.againstVotes += votes.againstVotes;
         } else if (voteValue == Constants.VOTE_VALUE_ABSTAIN) {
-            votes.abstainVotes = votes.abstainVotes + userVotes;
-        } else {
-            /// TODO question for SMT solver or Certora, should never be reachable
-            assert(false);
+            votes.abstainVotes += votes.abstainVotes;
         }
+
+        // Add user votes to total votes
+        votes.totalVotes += userVotes;
+
+        // Create receipt
+        receipt.hasVoted = true;
+        receipt.voteValue = voteValue;
+        receipt.votes = userVotes;
     }
 
     /// @notice returns the total voting power for an address at a given block number and timestamp
@@ -118,6 +130,8 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
         // Get the proposal
         MultichainProposal storage proposal = proposals[proposalId];
 
+
+        // Check if proposal have not been emitted yet
         require(!proposal.emitted, "MultichainVoteCollection: votes already emitted");
 
         // Check if proposal end time has passed
@@ -129,10 +143,13 @@ contract MultichainVoteCollection is IMultichainVoteCollection, WormholeBridgeBa
             "MultichainVoteCollection: Voting collection phase has ended"
         );
 
-        proposal.emitted = true;
-
         // Get votes
         MultichainVotes storage votes = proposal.votes;
+
+        // Check if proposal has votes
+        require(votes.totalVotes > 0, "MultichainVoteCollection: proposal has no votes");
+
+        proposal.emitted = true;
 
         _bridgeOut(
             moombeanWormholeChainId, abi.encode(proposalId, votes.forVotes, votes.againstVotes, votes.abstainVotes)

@@ -12,8 +12,20 @@ interface IMultichainVoteCollection {
         uint256 votingCollectionEndTime;
         // @notice votes
         MultichainVotes votes;
+        /// @notice Receipts of ballots for the entire set of voters
+        mapping(address => Receipt) receipts;
         // @notice votes has been emitted to Moonbeam Governor
         bool emitted;
+    }
+
+    /// @notice Ballot receipt record for a voter
+    struct Receipt {
+        /// @notice Whether or not a vote has been cast
+        bool hasVoted;
+        /// @notice The value of the vote.
+        uint8 voteValue;
+        /// @notice The number of votes the voter had, which were cast
+        uint256 votes;
     }
 
     struct MultichainVotes {
@@ -23,6 +35,8 @@ interface IMultichainVoteCollection {
         uint256 againstVotes;
         // @notice votes that abstain
         uint256 abstainVotes;
+        // @notice total votes
+        uint256 totalVotes;
     }
 
     /// @dev allows user to cast vote for a proposal

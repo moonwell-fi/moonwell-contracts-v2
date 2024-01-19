@@ -22,7 +22,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver, WormholeTrustedSender
     /// COLD SLOAD on bridge out operations.
 
     /// @notice gas limit for wormhole relayer, changeable incase gas prices change on external network
-    uint96 public gasLimit = 300_000;
+    uint96 public gasLimit;
 
     /// @notice address of the wormhole relayer cannot be changed by owner
     /// because the relayer contract is a proxy and should never change its address
@@ -35,11 +35,11 @@ abstract contract WormholeBridgeBase is IWormholeReceiver, WormholeTrustedSender
     /// ---------------------------------------------------------
 
     /// @notice nonces that have already been processed
-    mapping(bytes32 => bool) public processedNonces;
+    mapping(bytes32 nonce => bool processed) public processedNonces;
 
     /// @notice chain id of the target chain to address for bridging
     /// starts off mapped to itself, but can be changed by governance
-    mapping(uint16 => address) public targetAddress;
+    mapping(uint16 chainId => address target) public targetAddress;
 
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
@@ -65,31 +65,6 @@ abstract contract WormholeBridgeBase is IWormholeReceiver, WormholeTrustedSender
     /// @param newGasLimit new gas limit
     event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
 
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-    /// ---------------------- INITIALIZE -----------------------
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-
-    /// @notice Initialize the Wormhole bridge
-    /// @param wormholeRelayerAddress address of the wormhole relayer
-    /// @param trustedSenders array of trusted senders to add
-    function _initialize(address wormholeRelayerAddress, TrustedSender[] memory trustedSenders) internal {
-        wormholeRelayer = IWormholeRelayer(wormholeRelayerAddress);
-
-        _addTrustedSenders(trustedSenders);
-
-        gasLimit = 300_000;
-
-        /// @dev default starting gas limit for relayer
-    }
-
-    /// --------------------------------------------------------
-    /// --------------------------------------------------------
-    /// ---------------- Admin Only Functions ------------------
-    /// --------------------------------------------------------
-    /// --------------------------------------------------------
-
     /// @notice set a gas limit for the relayer on the external chain
     /// should only be called if there is a change in gas prices on the external chain
     /// @param newGasLimit new gas limit to set
@@ -104,14 +79,35 @@ abstract contract WormholeBridgeBase is IWormholeReceiver, WormholeTrustedSender
     /// @dev there is no check here to ensure there isn't an existing configuration
     /// ensure the proper add or remove is being called when using this function
     /// @param _chainConfig array of chainids to addresses to add
-    function _setTargetAddresses(TrustedSender[] memory _chainConfig) internal {
+    function _addTargetAddresses(TrustedSender[] memory _chainConfig) internal {
         for (uint256 i = 0; i < _chainConfig.length; i++) {
             uint16 chainId = _chainConfig[i].chainId;
             targetAddress[chainId] = _chainConfig[i].addr;
-            _targetChains.add(chainId);
+            require(_targetChains.add(chainId), "WormholeBridge: chain already added");
 
             emit TargetAddressUpdated(chainId, _chainConfig[i].addr);
         }
+    }
+
+    /// @notice remove map of target addresses for external chains
+    /// @dev there is no check here to ensure there isn't an existing configuration
+    /// ensure the proper add or remove is being called when using this function
+    /// @param _chainConfig array of chainids to addresses to remove
+    function _removeTargetAddresses(TrustedSender[] memory _chainConfig) internal {
+        for (uint256 i = 0; i < _chainConfig.length; i++) {
+            uint16 chainId = _chainConfig[i].chainId;
+            targetAddress[chainId] = address(0);
+            require(_targetChains.remove(chainId), "WormholeBridge: chain not added");
+
+            emit TargetAddressUpdated(chainId, address(0));
+        }
+    }
+
+    /// @notice add wormhole relayer contract
+    /// @param _wormholeRelayer address of the wormhole relayer
+    function _addWormholeRelayer(address _wormholeRelayer) internal {
+        require(address(wormholeRelayer) == address(0), "WormholeBridge: relayer already set");
+        wormholeRelayer = IWormholeRelayer(_wormholeRelayer);
     }
 
     /// --------------------------------------------------------
@@ -126,6 +122,21 @@ abstract contract WormholeBridgeBase is IWormholeReceiver, WormholeTrustedSender
         (gasCost,) = wormholeRelayer.quoteEVMDeliveryPrice(dstChainId, 0, gasLimit);
     }
 
+    /// @notice Estimate bridge cost to bridge out to all chains
+    function bridgeCostAll() public view returns (uint256) {
+        uint256 totalCost = 0;
+
+        uint256 chainsLength = _targetChains.length();
+        for (uint256 i = 0; i < chainsLength;) {
+            totalCost += bridgeCost(uint16(_targetChains.at(i)));
+            unchecked {
+                i++;
+            }
+        }
+
+        return totalCost;
+    }
+
     /// --------------------------------------------------------
     /// --------------------------------------------------------
     /// -------------------- Bridge In/Out ---------------------
@@ -135,15 +146,14 @@ abstract contract WormholeBridgeBase is IWormholeReceiver, WormholeTrustedSender
     /// @notice Bridge Out Funds to an external chain.
     /// @param targetChain Destination chain id
     /// @param payload Payload to send to the external chain
-    function _bridgeOut(uint256 targetChain, bytes memory payload) internal {
-        uint16 targetChainId = targetChain.toUint16();
-        uint256 cost = bridgeCost(targetChainId);
+    function _bridgeOut(uint16 targetChain, bytes memory payload) internal {
+        uint256 cost = bridgeCost(targetChain);
         require(msg.value == cost, "WormholeBridge: cost not equal to quote");
-        require(targetAddress[targetChainId] != address(0), "WormholeBridge: invalid target chain");
+        require(targetAddress[targetChain] != address(0), "WormholeBridge: invalid target chain");
 
         wormholeRelayer.sendPayloadToEvm{value: cost}(
-            targetChainId,
-            targetAddress[targetChainId],
+            targetChain,
+            targetAddress[targetChain],
             payload,
             0,
             /// no receiver value allowed, only message passing

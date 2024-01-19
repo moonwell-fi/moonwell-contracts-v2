@@ -154,6 +154,8 @@ contract MultichainGovernor is IMultichainGovernor, ConfigurablePauseGuardian, W
         address pauseGuardian;
         /// break glass guardian address
         address breakGlassGuardian;
+        /// wormhole relayer
+        address wormholeRelayer;
         /// trusted senders that can relay messages to this contract
         TrustedSender[] trustedSenders;
     }
@@ -178,11 +180,11 @@ contract MultichainGovernor is IMultichainGovernor, ConfigurablePauseGuardian, W
 
         /// not really needed, but seems like good form
         _updatePauseDuration(initData.pauseDuration);
-        _grantGuardian(initData.pauseGuardian);
-        /// set the pause guardian
 
-        // initialize WormholeBridgeBase, set relayer, add trusted senders and set gas limit
-        _initialize(address(wormholeRelayer), initData.trustedSenders);
+        /// set the pause guardian
+        _grantGuardian(initData.pauseGuardian);
+
+        _addWormholeRelayer(address(initData.wormholeRelayer));
     }
 
     /// --------------------------------------------------------- ///
@@ -289,11 +291,11 @@ contract MultichainGovernor is IMultichainGovernor, ConfigurablePauseGuardian, W
         uint256 votes = getVotes(voter, proposal.startTimestamp, proposal.startBlock);
 
         if (voteValue == Constants.VOTE_VALUE_YES) {
-            proposal.forVotes = proposal.forVotes + votes;
+            proposal.forVotes += proposal.forVotes;
         } else if (voteValue == Constants.VOTE_VALUE_NO) {
-            proposal.againstVotes = proposal.againstVotes + votes;
+            proposal.againstVotes += proposal.againstVotes;
         } else if (voteValue == Constants.VOTE_VALUE_ABSTAIN) {
-            proposal.abstainVotes = proposal.abstainVotes + votes;
+            proposal.abstainVotes += proposal.abstainVotes;
         } else {
             /// TODO question for SMT solver or Certora, should never be reachable
             assert(false);
@@ -375,20 +377,6 @@ contract MultichainGovernor is IMultichainGovernor, ConfigurablePauseGuardian, W
     /// -------------------- VIEW FUNCTIONS --------------------- ///
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
-    /// tells you the cost of going to all different required chains
-    function getProposeCost() public view returns (uint256) {
-        uint256 totalCost = 0;
-
-        for (uint256 i = 0; i < _targetChains.length();) {
-            totalCost += bridgeCost(uint16(_targetChains.at(i)));
-            unchecked {
-                i++;
-            }
-        }
-
-        return totalCost;
-    }
-
     function liveProposals() external view override returns (uint256[] memory) {
         uint256 liveProposalCount = getNumLiveProposals();
         uint256[] memory liveProposalIds = new uint256[](liveProposalCount);
@@ -552,7 +540,7 @@ contract MultichainGovernor is IMultichainGovernor, ConfigurablePauseGuardian, W
         bytes[] memory calldatas,
         string memory description
     ) external payable override returns (uint256) {
-        require(getProposeCost() == msg.value, "MultichainGovernor: invalid proposal cost");
+        require(bridgeCostAll() == msg.value, "MultichainGovernor: invalid proposal cost");
         /// get user voting power from all voting sources
         require(
             getVotes(msg.sender, block.timestamp - 1, block.number - 1) >= proposalThreshold,
@@ -618,10 +606,11 @@ contract MultichainGovernor is IMultichainGovernor, ConfigurablePauseGuardian, W
             bytes memory payload =
                 abi.encode(proposalCount, startTimestamp, endTimestamp, crossChainVoteCollectionEndTimestamp);
 
+            uint256 chainsLength = _targetChains.length();
             /// call relayer with information about proposal
             /// iterate over chainConfigs and send messages to each of them
-            for (uint256 i = 0; i < _targetChains.length();) {
-                _bridgeOut(_targetChains.at(i), payload);
+            for (uint256 i = 0; i < chainsLength;) {
+                _bridgeOut(uint16(_targetChains.at(i)), payload);
                 unchecked {
                     i++;
                 }
@@ -752,8 +741,8 @@ contract MultichainGovernor is IMultichainGovernor, ConfigurablePauseGuardian, W
     /// @dev there is no check here to ensure there isn't an existing configuration
     /// ensure the proper add or remove is being called when using this function
     /// @param _chainConfig array of chainids to addresses to add
-    function setTargetAddress(TrustedSender[] memory _chainConfig) external onlyGovernor {
-        _setTargetAddresses(_chainConfig);
+    function addTargetAddresses(TrustedSender[] memory _chainConfig) external onlyGovernor {
+        _addTargetAddresses(_chainConfig);
     }
 
     /// @notice updates the proposal threshold
