@@ -183,13 +183,15 @@ contract MultichainGovernor is
         address breakGlassGuardian;
         /// wormhole relayer
         address wormholeRelayer;
-        /// trusted senders that can relay messages to this contract
-        TrustedSender[] trustedSenders;
     }
 
     /// @notice initialize the governor contract
     /// @param initData initialization data
-    function initialize(InitializeData memory initData) public initializer {
+    /// @param trustedSenders that can relay messages to this contract
+    function initialize(
+        InitializeData memory initData,
+        TrustedSender[] memory trustedSenders
+    ) external initializer {
         xWell = xWELL(initData.xWell);
         well = SnapshotInterface(initData.well);
         stkWell = SnapshotInterface(initData.stkWell);
@@ -265,9 +267,9 @@ contract MultichainGovernor is
     function _setCrossChainVoteCollectionPeriod(
         uint256 _crossChainVoteCollectionPeriod
     ) private {
-        /// TODO maybe add constants around this so governance can't make settings too strange
         require(
-            _crossChainVoteCollectionPeriod != 0,
+            _crossChainVoteCollectionPeriod >=
+                Constants.MIN_CROSS_CHAIN_VOTE_COLLECTION_PERIOD,
             "MultichainGovernor: invalid vote collection period"
         );
         uint256 oldVal = crossChainVoteCollectionPeriod;
@@ -279,7 +281,16 @@ contract MultichainGovernor is
         );
     }
 
+    /// @notice user max live proposals cannot be zero, as that would brick governance permanently
+    /// @param _maxUserLiveProposals the new max user live proposals
     function _setMaxUserLiveProposals(uint256 _maxUserLiveProposals) private {
+        /// TODO add upper bound here to check that the max user live proposals is not too high
+        /// to avoid spamming of proposals
+        require(
+            _maxUserLiveProposals != 0,
+            "MultichainGovernor: invalid max user live proposals"
+        );
+
         uint256 _oldValue = maxUserLiveProposals;
         maxUserLiveProposals = _maxUserLiveProposals;
 
@@ -287,18 +298,23 @@ contract MultichainGovernor is
     }
 
     function _setQuorum(uint256 _quorum) private {
+        /// TODO add minimum quorum to stop governance from setting quorum too low
+        require(_quorum != 0, "MultichainGovernor: invalid quorum");
+
         uint256 _oldValue = quorum;
         quorum = _quorum;
 
         emit QuroumVotesChanged(_oldValue, _quorum);
     }
 
+    /// TODO mark for removal, pending Luke's review
     function _setVotingDelay(uint256 _votingDelay) private {
         /// TODO maybe add constants around this so governance can't make settings too strange
         require(
             _votingDelay != 0,
             "MultichainGovernor: invalid vote delay period"
         );
+
         uint256 _oldValue = votingDelay;
         votingDelay = _votingDelay;
 
@@ -308,16 +324,21 @@ contract MultichainGovernor is
     function _setVotingPeriod(uint256 _votingPeriod) private {
         /// TODO maybe add constants around this so governance can't make settings too strange
         require(
-            _votingPeriod != 0,
+            _votingPeriod >= Constants.MIN_VOTING_PERIOD,
             "MultichainGovernor: invalid voting period"
         );
         uint256 _oldValue = votingPeriod;
+
         votingPeriod = _votingPeriod;
 
         emit VotingPeriodChanged(_oldValue, _votingPeriod);
     }
 
     function _setProposalThreshold(uint256 _proposalThreshold) private {
+        require(
+            _proposalThreshold >= Constants.MIN_PROPOSAL_THRESHOLD,
+            "MultichainGovernor: invalid threshold"
+        );
         uint256 oldValue = proposalThreshold;
         proposalThreshold = _proposalThreshold;
 
@@ -354,6 +375,15 @@ contract MultichainGovernor is
         );
 
         if (proposal.startBlock == 0) {
+            /// @notice this can create an issue where if no votes are cast on Moonbeam,
+            /// and votes are cast on the other chain, a malicious user could vote on the other chain,
+            /// transfer their tokens to moonbeam, convert xWELL to WELL, self delegate, and then cast
+            /// their votes again on moonbeam. This would allow them to double their voting power.
+            /// The mitigation for this is to have at least one voter vote within the first twenty
+            /// minutes of the proposal going live. This way, there is no opportunity to double vote
+            /// OTOH we could just adjust the block number based on the start timestamp, but this is
+            /// also potentially problematic as the block number is not a perfect approximation of
+            /// time and is variable.
             proposal.startBlock = block.number - 1;
         }
 
@@ -384,32 +414,6 @@ contract MultichainGovernor is
 
         emit VoteCast(voter, proposalId, voteValue, votes);
     }
-
-    /// build out a FSM or CFG of this function and see if its functionality
-    /// can be combined into the _syncTotalLiveProposals function
-    /// @notice sync up user current total live proposals count
-    /// @param user the user to sync
-    // function _syncUserLiveProposals(address user) private {
-    //     uint256[] memory userProposals = _userLiveProposals[user].values();
-
-    //     unchecked {
-    //         for (uint256 i = 0; i < userProposals.length; i++) {
-    //             ProposalState proposalsState = state(userProposals[i]);
-    //             if (
-    //                 proposalsState == ProposalState.Defeated ||
-    //                 proposalsState == ProposalState.Canceled ||
-    //                 proposalsState == ProposalState.Executed ||
-    //                 proposalsState == ProposalState.Invalid
-    //             ) {
-    //                 _removeFromSet(
-    //                     _userLiveProposals[user],
-    //                     userProposals[i],
-    //                     "MultichainGovernor: could not remove proposal from user live proposals"
-    //                 );
-    //             }
-    //         }
-    //     }
-    // }
 
     /// we must sync the user live proposals before we sync the total live
     /// proposals. This way a single function call syncs all values in both sets
@@ -767,11 +771,11 @@ contract MultichainGovernor is
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
 
-        /// TODO sync total proposals by removing this proposal ID from the live proposals set
-        /// TODO sync user proposals by removing this proposal ID from the user's live proposals
+        /// remove the proposal that is about to be executed from all proposals,
+        /// and remove from inactive proposals from user list
+        _syncTotalLiveProposals();
 
         unchecked {
-            /// TODO change to functionCallWithValue, ignore returned bytes memory
             for (uint256 i = 0; i < proposal.targets.length; i++) {
                 proposal.targets[i].functionCallWithValue(
                     proposal.calldatas[i],
@@ -814,7 +818,7 @@ contract MultichainGovernor is
             "MultichainGovernor: invalid payload length"
         );
 
-        /// TODO only allow relayer creation of vote counts once on vote collector
+        /// only allow relayer creation of vote counts once on vote collector
         /// contract and only if there is at least 1 value that is non zero
         /// if there have been no votes cast for a particular proposal, do not allow
         /// the relaying of any information cross chain
@@ -840,9 +844,6 @@ contract MultichainGovernor is
             state(proposalId) == ProposalState.CrossChainVoteCollection,
             "MultichainGovernor: proposal not in cross chain vote collection period"
         );
-
-        /// TODO check that total votes cast from this chain do not sum to more WELL
-        /// tokens than held in the lockbox
 
         voteCounts.forVotes = forVotes;
         voteCounts.againstVotes = againstVotes;
