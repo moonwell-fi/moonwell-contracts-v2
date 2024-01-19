@@ -164,7 +164,6 @@ abstract contract WormholeBridgeBase is
     /// --------------------------------------------------------
     /// --------------------------------------------------------
 
-
     /// @notice Bridge Out Funds to all external chains.
     /// @param payload Payload to send to the external chain
     function _bridgeOutAll(bytes memory payload) internal {
@@ -184,10 +183,7 @@ abstract contract WormholeBridgeBase is
     /// @notice Bridge Out Funds to an external chain.
     /// @param targetChain Destination chain id
     /// @param payload Payload to send to the external chain
-    function _bridgeOut(
-        uint16 targetChain,
-        bytes memory payload
-    ) internal {
+    function _bridgeOut(uint16 targetChain, bytes memory payload) internal {
         uint256 cost = bridgeCost(targetChain);
         require(msg.value == cost, "WormholeBridge: cost not equal to quote");
         _bridgeOutInternal(targetChain, payload);
@@ -256,6 +252,5 @@ abstract contract WormholeBridgeBase is
     function _bridgeIn(
         uint16 sourceChain,
         bytes memory payload
-
     ) internal virtual;
 }
