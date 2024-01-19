@@ -26,7 +26,7 @@ contract MultichainGovernorDeploy {
         );
     }
 
-    function deployVoteCollection(address xWell, address mombeanGovernor, address relayer, address mombeanChainId, address proxyAdmin) public returns (address proxy, address voteCollectionImpl) {
+    function deployVoteCollection(address xWell, address mombeanGovernor, address relayer, uint16 mombeanChainId, address proxyAdmin) public returns (address proxy, address voteCollectionImpl) {
         bytes memory initData = abi.encodeWithSignature(
                                                         "initialize(address, address, address, uint16)",
                                                         xWell, mombeanGovernor, relayer, mombeanChainId
