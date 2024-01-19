@@ -7,7 +7,6 @@ import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 /// @notice Wormhole xERC20 Token Bridge adapter
 contract WormholeRelayerAdapter {
 
-    uint64 public sequence;
     uint256 public nonce;
 
     /**
@@ -31,7 +30,8 @@ contract WormholeRelayerAdapter {
 
         require(success, "WormholeRelayerAdapter: Call to targetAddress failed");
 
-        return ++sequence;
+        // return zero as we ignore the sequence 
+        return 0;
     }
 
     /**
