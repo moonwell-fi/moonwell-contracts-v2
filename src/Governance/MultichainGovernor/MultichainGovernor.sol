@@ -209,7 +209,6 @@ contract MultichainGovernor is
 
         __Pausable_init();
 
-        /// not really needed, but seems like good form
         _updatePauseDuration(initData.pauseDuration);
 
         /// set the pause guardian
