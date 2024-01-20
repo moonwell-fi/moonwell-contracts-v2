@@ -117,16 +117,19 @@ contract MultichainVoteCollection is
         );
 
         // Get voting power
-        uint256 userVotes = getVotes(msg.sender, proposal.votingStartTime);
+        uint256 userVotes = getVotes(
+            msg.sender,
+            proposal.voteSnapshotTimestamp
+        );
 
         MultichainVotes storage votes = proposal.votes;
 
         if (voteValue == Constants.VOTE_VALUE_YES) {
-            votes.forVotes += votes.forVotes;
+            votes.forVotes += userVotes;
         } else if (voteValue == Constants.VOTE_VALUE_NO) {
-            votes.againstVotes += votes.againstVotes;
+            votes.againstVotes += userVotes;
         } else if (voteValue == Constants.VOTE_VALUE_ABSTAIN) {
-            votes.abstainVotes += votes.abstainVotes;
+            votes.abstainVotes += userVotes;
         }
 
         // Add user votes to total votes
@@ -136,6 +139,8 @@ contract MultichainVoteCollection is
         receipt.hasVoted = true;
         receipt.voteValue = voteValue;
         receipt.votes = userVotes;
+
+        /// TODO add event for votes cast
     }
 
     /// @notice returns the total voting power for an address at a given block number and timestamp
@@ -211,10 +216,11 @@ contract MultichainVoteCollection is
         // Parse the payload and do the corresponding actions!
         (
             uint256 proposalId,
+            uint256 votingSnapshotTime,
             uint256 votingStartTime,
             uint256 votingEndTime,
             uint256 votingCollectionEndTime
-        ) = abi.decode(payload, (uint256, uint256, uint256, uint256));
+        ) = abi.decode(payload, (uint256, uint256, uint256, uint256, uint256));
 
         require(
             sourceChain == moombeanWormholeChainId,
@@ -244,6 +250,7 @@ contract MultichainVoteCollection is
         proposal.votingStartTime = votingStartTime;
         proposal.votingEndTime = votingEndTime;
         proposal.votingCollectionEndTime = votingCollectionEndTime;
+        proposal.voteSnapshotTimestamp = votingSnapshotTime;
 
         // Emit the ProposalCreated event
         emit ProposalCreated(
