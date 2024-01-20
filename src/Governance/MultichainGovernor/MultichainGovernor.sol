@@ -68,7 +68,7 @@ contract MultichainGovernor is
         private _userLiveProposals;
 
     /// @notice the number of votes for a given proposal on a given chainid
-    mapping(uint16 wormholeChainId => VoteCounts)
+    mapping(uint16 wormholeChainId => mapping(uint256 proposalId => VoteCounts))
         public chainVoteCollectorVotes;
 
     /// @notice the proposal information for a given proposal
@@ -185,6 +185,9 @@ contract MultichainGovernor is
         address wormholeRelayer;
     }
 
+    /// TODO rework so that the voting delay isn't used as the snapshot timestamp,
+    /// and is instead used as when votes are allowed to be cast
+
     /// @notice initialize the governor contract
     /// @param initData initialization data
     /// @param trustedSenders that can relay messages to this contract
@@ -270,7 +273,9 @@ contract MultichainGovernor is
     ) private {
         require(
             _crossChainVoteCollectionPeriod >=
-                Constants.MIN_CROSS_CHAIN_VOTE_COLLECTION_PERIOD,
+                Constants.MIN_CROSS_CHAIN_VOTE_COLLECTION_PERIOD &&
+                _crossChainVoteCollectionPeriod <=
+                Constants.MAX_CROSS_CHAIN_VOTE_COLLECTION_PERIOD,
             "MultichainGovernor: invalid vote collection period"
         );
         uint256 oldVal = crossChainVoteCollectionPeriod;
@@ -285,10 +290,9 @@ contract MultichainGovernor is
     /// @notice user max live proposals cannot be zero, as that would brick governance permanently
     /// @param _maxUserLiveProposals the new max user live proposals
     function _setMaxUserLiveProposals(uint256 _maxUserLiveProposals) private {
-        /// TODO add upper bound here to check that the max user live proposals is not too high
-        /// to avoid spamming of proposals
         require(
-            _maxUserLiveProposals != 0,
+            _maxUserLiveProposals != 0 &&
+                _maxUserLiveProposals <= Constants.MAX_USER_PROPOSAL_COUNT,
             "MultichainGovernor: invalid max user live proposals"
         );
 
@@ -308,11 +312,10 @@ contract MultichainGovernor is
         emit QuroumVotesChanged(_oldValue, _quorum);
     }
 
-    /// TODO mark for removal, pending Luke's review
+    /// @param _votingDelay the new voting delay
     function _setVotingDelay(uint256 _votingDelay) private {
-        /// TODO maybe add constants around this so governance can't make settings too strange
         require(
-            _votingDelay != 0,
+            _votingDelay != 0 && _votingDelay <= Constants.MAX_VOTING_DELAY,
             "MultichainGovernor: invalid vote delay period"
         );
 
@@ -322,12 +325,14 @@ contract MultichainGovernor is
         emit VotingDelayChanged(_oldValue, _votingDelay);
     }
 
+    /// @param _votingPeriod the new voting period
     function _setVotingPeriod(uint256 _votingPeriod) private {
-        /// TODO maybe add constants around this so governance can't make settings too strange
         require(
-            _votingPeriod >= Constants.MIN_VOTING_PERIOD,
-            "MultichainGovernor: invalid voting period"
+            _votingPeriod >= Constants.MIN_VOTING_PERIOD &&
+                _votingPeriod <= Constants.MAX_VOTING_PERIOD,
+            "MultichainGovernor: voting period out of bounds"
         );
+
         uint256 _oldValue = votingPeriod;
 
         votingPeriod = _votingPeriod;
@@ -335,17 +340,21 @@ contract MultichainGovernor is
         emit VotingPeriodChanged(_oldValue, _votingPeriod);
     }
 
+    /// @param _proposalThreshold the new proposal threshold
     function _setProposalThreshold(uint256 _proposalThreshold) private {
         require(
-            _proposalThreshold >= Constants.MIN_PROPOSAL_THRESHOLD,
-            "MultichainGovernor: invalid threshold"
+            _proposalThreshold >= Constants.MIN_PROPOSAL_THRESHOLD &&
+                _proposalThreshold <= Constants.MAX_PROPOSAL_THRESHOLD,
+            "MultichainGovernor: proposal threshold out of bounds"
         );
+
         uint256 oldValue = proposalThreshold;
         proposalThreshold = _proposalThreshold;
 
         emit ProposalThresholdChanged(oldValue, _proposalThreshold);
     }
 
+    /// @param newGuardian the new guardian address
     function _setBreakGlassGuardian(address newGuardian) private {
         address oldGuardian = breakGlassGuardian;
         breakGlassGuardian = newGuardian;
@@ -379,35 +388,19 @@ contract MultichainGovernor is
             "MultichainGovernor: voter already voted"
         );
 
-        if (proposal.startBlock == 0) {
-            /// @notice this can create an issue where if no votes are cast on Moonbeam,
-            /// and votes are cast on the other chain, a malicious user could vote on the other chain,
-            /// transfer their tokens to moonbeam, convert xWELL to WELL, self delegate, and then cast
-            /// their votes again on moonbeam. This would allow them to double their voting power.
-            /// The mitigation for this is to have at least one voter vote within the first twenty
-            /// minutes of the proposal going live. This way, there is no opportunity to double vote
-            /// OTOH we could just adjust the block number based on the start timestamp, but this is
-            /// also potentially problematic as the block number is not a perfect approximation of
-            /// time and is variable.
-            proposal.startBlock = block.number - 1;
-        }
-
         /// if a user tries to vote at the start timestamp or the start block, then it will fail
         uint256 votes = getVotes(
             voter,
-            proposal.startTimestamp,
+            proposal.voteSnapshotTimestamp,
             proposal.startBlock
         );
 
         if (voteValue == Constants.VOTE_VALUE_YES) {
-            proposal.forVotes += proposal.forVotes;
+            proposal.forVotes += votes;
         } else if (voteValue == Constants.VOTE_VALUE_NO) {
-            proposal.againstVotes += proposal.againstVotes;
+            proposal.againstVotes += votes;
         } else if (voteValue == Constants.VOTE_VALUE_ABSTAIN) {
-            proposal.abstainVotes += proposal.abstainVotes;
-        } else {
-            /// TODO question for SMT solver or Certora, should never be reachable
-            assert(false);
+            proposal.abstainVotes += votes;
         }
 
         // Increase total votes
@@ -482,12 +475,7 @@ contract MultichainGovernor is
         uint256[] memory allProposals = _liveProposals.values();
         uint256 liveProposalIndex = 0;
         for (uint256 i = 0; i < allProposals.length; i++) {
-            ProposalState proposalsState = state(allProposals[i]);
-            if (
-                proposalsState == ProposalState.Active ||
-                proposalsState == ProposalState.Pending ||
-                proposalsState == ProposalState.CrossChainVoteCollection
-            ) {
+            if (proposalActive(allProposals[i])) {
                 liveProposalIds[liveProposalIndex] = allProposals[i];
                 liveProposalIndex++;
             }
@@ -503,12 +491,7 @@ contract MultichainGovernor is
         uint256[] memory allProposals = _liveProposals.values();
 
         for (uint256 i = 0; i < allProposals.length; ) {
-            ProposalState proposalsState = state(allProposals[i]);
-            if (
-                proposalsState == ProposalState.Active ||
-                proposalsState == ProposalState.Pending ||
-                proposalsState == ProposalState.CrossChainVoteCollection
-            ) {
+            if (proposalActive(allProposals[i])) {
                 count++;
             }
         }
@@ -524,12 +507,7 @@ contract MultichainGovernor is
 
         uint256 totalLiveProposals = 0;
         for (uint256 i = 0; i < userProposals.length; i++) {
-            ProposalState proposalsState = state(userProposals[i]);
-            if (
-                proposalsState == ProposalState.Active ||
-                proposalsState == ProposalState.Pending ||
-                proposalsState == ProposalState.CrossChainVoteCollection
-            ) {
+            if (proposalActive(userProposals[i])) {
                 totalLiveProposals++;
             }
         }
@@ -588,12 +566,45 @@ contract MultichainGovernor is
         return xWellVotes + stkWellVotes + distributorVotes + wellVotes;
     }
 
+    /// @notice returns the current voting power for an address across well, xWell, stkWell and distributor
+    /// @param account The address of the account to check
+    function getCurrentVotes(address account) public view returns (uint256) {
+        uint256 wellVotes = well.getCurrentVotes(account);
+        uint256 stkWellVotes = stkWell.getCurrentVotes(account);
+        uint256 distributorVotes = distributor.getCurrentVotes(account);
+
+        uint256 xWellVotes = xWell.getVotes(account);
+
+        return xWellVotes + stkWellVotes + distributorVotes + wellVotes;
+    }
+
+    /// @notice returns whether or not a given propsal is active
+    /// @param proposalId the id of the proposal to check
+    function proposalActive(uint256 proposalId) public view returns (bool) {
+        ProposalState proposalState = state(proposalId);
+
+        return
+            proposalState == ProposalState.Active ||
+            proposalState == ProposalState.Pending ||
+            proposalState == ProposalState.CrossChainVoteCollection;
+    }
+
     /// @notice override with a mapping
     function chainAddressVotes(
         uint256 proposalId,
-        uint256 chainId,
-        address voteGatheringAddress
-    ) external view returns (VoteCounts memory) {}
+        uint16 chainId
+    )
+        external
+        view
+        returns (uint256 forVotes, uint256 againstVotes, uint256 abstainVotes)
+    {
+        VoteCounts storage voteCounts = chainVoteCollectorVotes[chainId][
+            proposalId
+        ];
+        forVotes = voteCounts.forVotes;
+        againstVotes = voteCounts.againstVotes;
+        abstainVotes = voteCounts.abstainVotes;
+    }
 
     /// returns whether or not the user is a vote collector contract
     /// and can vote on a given chain
@@ -633,7 +644,7 @@ contract MultichainGovernor is
         if (proposal.canceled) {
             return ProposalState.Canceled;
             // Then check if the proposal is pending or active, in which case nothing else can be determined at this time.
-        } else if (block.timestamp <= proposal.startTimestamp) {
+        } else if (block.timestamp <= proposal.votingStartTime) {
             return ProposalState.Pending;
         } else if (block.timestamp <= proposal.endTimestamp) {
             return ProposalState.Active;
@@ -696,7 +707,6 @@ contract MultichainGovernor is
             "MultichainGovernor: description can not be empty"
         );
 
-        /// _syncUserLiveProposals(msg.sender); /// remove inactive proposal from user list
         _syncTotalLiveProposals(); /// remove inactive proposals from all proposals, and remove from inactive proposals from user list
 
         {
@@ -711,17 +721,20 @@ contract MultichainGovernor is
 
         Proposal storage newProposal = proposals[proposalCount];
 
-        uint256 startTimestamp = block.timestamp + votingDelay;
+        uint256 startTimestamp = block.timestamp - 1;
         uint256 endTimestamp = block.timestamp + votingPeriod + votingDelay;
         uint256 crossChainVoteCollectionEndTimestamp = endTimestamp +
             crossChainVoteCollectionPeriod;
+        uint256 votingStartTime = block.timestamp + votingDelay;
 
         newProposal.id = proposalCount;
         newProposal.proposer = msg.sender;
         newProposal.targets = targets;
         newProposal.values = values;
         newProposal.calldatas = calldatas;
-        newProposal.startTimestamp = startTimestamp;
+        newProposal.voteSnapshotTimestamp = startTimestamp;
+        newProposal.votingStartTime = votingStartTime;
+        newProposal.startBlock = block.number - 1;
         newProposal.endTimestamp = endTimestamp;
         newProposal
             .crossChainVoteCollectionEndTimestamp = crossChainVoteCollectionEndTimestamp;
@@ -736,9 +749,11 @@ contract MultichainGovernor is
             _liveProposals.add(proposalCount),
             "MultichainGovernor: cannot add the same proposal twice to global set"
         );
+
         bytes memory payload = abi.encode(
             proposalCount,
             startTimestamp,
+            votingStartTime,
             endTimestamp,
             crossChainVoteCollectionEndTimestamp
         );
@@ -787,18 +802,34 @@ contract MultichainGovernor is
         emit ProposalExecuted(proposalId);
     }
 
-    /// TODO consolidate cancellation functions to allow cancellation in these flows:
+    /// @dev callable only by the proposer, cancels proposal if it has not been executed
+    ///  cancellation is allowed in these flows:
     ///  - proposer cancels
     ///  - permissionless cancel, user voting power currently drops below threshold
-    ///  - permissionless cancel, contract is paused
+    /// If proposal threshold is increased in an active governance proposal, and a user has proposed
+    /// when they met the old proposal threshold, but not the new one, then anyone can cancel their proposal
+    function cancel(uint256 proposalId) external override {
+        require(
+            msg.sender == proposals[proposalId].proposer ||
+                getCurrentVotes(proposals[proposalId].proposer) <
+                proposalThreshold,
+            "MultichainGovernor: unauthorized cancel"
+        );
 
-    /// @dev callable only by the proposer, cancels proposal if it has not been executed
-    function proposerCancel(uint256 proposalId) external override {}
+        ProposalState proposalState = state(proposalId);
 
-    /// @dev callable by anyone, succeeds in cancellation if user has less votes than proposal threshold
-    /// at the current point in time, or the contract is paused.
-    /// Otherwise reverts.
-    function permissionlessCancel(uint256 proposalId) external override {}
+        require(
+            proposalState == ProposalState.Active ||
+                proposalState == ProposalState.Pending ||
+                proposalState == ProposalState.CrossChainVoteCollection,
+            "MultichainGovernor: cannot cancel inactive proposal"
+        );
+
+        Proposal storage proposal = proposals[proposalId];
+        proposal.canceled = true;
+
+        emit ProposalCanceled(proposalId);
+    }
 
     /// @dev allows user to cast vote for a proposal
     /// @param proposalId the id of the proposal to vote on
@@ -824,11 +855,20 @@ contract MultichainGovernor is
             "MultichainGovernor: invalid payload length"
         );
 
+        (
+            uint256 proposalId,
+            uint256 forVotes,
+            uint256 againstVotes,
+            uint256 abstainVotes
+        ) = abi.decode(payload, (uint256, uint256, uint256, uint256));
+
         /// only allow relayer creation of vote counts once on vote collector
         /// contract and only if there is at least 1 value that is non zero
         /// if there have been no votes cast for a particular proposal, do not allow
         /// the relaying of any information cross chain
-        VoteCounts storage voteCounts = chainVoteCollectorVotes[sourceChain];
+        VoteCounts storage voteCounts = chainVoteCollectorVotes[sourceChain][
+            proposalId
+        ];
 
         /// logic to ensure cross chain vote collection contract can only relay vote counts once for a given proposal
         /// if all of these values are zero, then the values have not been set yet
@@ -838,13 +878,6 @@ contract MultichainGovernor is
                 voteCounts.abstainVotes == 0,
             "MultichainGovernor: vote already collected"
         );
-
-        (
-            uint256 proposalId,
-            uint256 forVotes,
-            uint256 againstVotes,
-            uint256 abstainVotes
-        ) = abi.decode(payload, (uint256, uint256, uint256, uint256));
 
         require(
             state(proposalId) == ProposalState.CrossChainVoteCollection,
@@ -1044,6 +1077,30 @@ contract MultichainGovernor is
         }
 
         emit ProposalExecuted(uint256(uint160(msg.sender)));
+    }
+
+    /// @notice only callable by the pause guardian when not paused
+    /// automatically cancels all in flight proposals
+    function pause() public override {
+        super.pause();
+
+        uint256[] memory allProposals = _liveProposals.values();
+
+        for (uint256 i = 0; i < allProposals.length; ) {
+            if (proposalActive(allProposals[i])) {
+                proposals[allProposals[i]].canceled = true;
+
+                emit ProposalCanceled(allProposals[i]);
+            }
+
+            unchecked {
+                i++;
+            }
+        }
+
+        /// remove all inactive proposals from all proposals,
+        /// and remove from inactive proposals from user list
+        _syncTotalLiveProposals();
     }
 
     /// @notice set a gas limit for the relayer on the external chain
