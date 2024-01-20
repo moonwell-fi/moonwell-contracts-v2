@@ -128,8 +128,10 @@ interface IMultichainGovernor {
         uint256[] values;
         /// @notice The ordered list of calldata to be passed to each call
         bytes[] calldatas;
-        /// @notice The timestamp at which voting begins: holders must delegate their votes prior to this time
-        uint256 startTimestamp;
+        /// @notice The timestamp at which vote snapshots are taken at
+        uint256 voteSnapshotTimestamp;
+        /// @notice the timestamp at which users can begin voting
+        uint256 votingStartTime;
         /// @notice The timestamp at which voting ends: votes must be cast prior to this time
         uint256 endTimestamp;
         /// @notice The timestamp at which cross chain voting collection ends:
@@ -185,12 +187,14 @@ interface IMultichainGovernor {
     /// TODO triple check that non of the aforementioned functions have hash collisions with something that would make them dangerous
     function whitelistedCalldatas(bytes calldata) external view returns (bool);
 
-    /// @notice override with a mapping
+    /// @notice return votes for a proposal id on a given chain
     function chainAddressVotes(
         uint256 proposalId,
-        uint256 chainId,
-        address voteGatheringAddress
-    ) external view returns (VoteCounts memory);
+        uint16 chainId
+    )
+        external
+        view
+        returns (uint256 forVotes, uint256 againstVotes, uint256 abstainVotes);
 
     /// address the contract can be rolled back to by break glass guardian
     function governanceRollbackAddress() external view returns (address);
@@ -266,12 +270,11 @@ interface IMultichainGovernor {
     function execute(uint256 proposalId) external;
 
     /// @dev callable only by the proposer, cancels proposal if it has not been executed
-    function proposerCancel(uint256 proposalId) external;
+    function cancel(uint256 proposalId) external;
 
     /// @dev callable by anyone, succeeds in cancellation if user has less votes than proposal threshold
     /// at the current point in time.
     /// reverts otherwise.
-    function permissionlessCancel(uint256 proposalId) external;
 
     /// @dev allows user to cast vote for a proposal
     function castVote(uint256 proposalId, uint8 voteValue) external;
