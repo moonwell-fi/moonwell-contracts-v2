@@ -314,12 +314,10 @@ interface IMultichainGovernor {
     ) external;
 
     //// @notice array lengths must add up
-    /// values must sum to msg.value to ensure guardian cannot steal funds
     /// calldata must be whitelisted
     /// only break glass guardian can call, once, and when they do, their role is revoked
     function executeBreakGlass(
         address[] calldata targets,
-        uint256[] calldata values,
         bytes[] calldata calldatas
     ) external payable;
 }
