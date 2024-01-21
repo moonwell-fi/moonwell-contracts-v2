@@ -302,9 +302,13 @@ contract MultichainGovernor is
         emit UserMaxProposalsChanged(_oldValue, _maxUserLiveProposals);
     }
 
+    /// minimum quorum is 0
+    /// @param _quorum the new quorum
     function _setQuorum(uint256 _quorum) private {
-        /// TODO add minimum quorum to stop governance from setting quorum too low
-        require(_quorum != 0, "MultichainGovernor: invalid quorum");
+        require(
+            _quorum <= Constants.MAX_QUORUM,
+            "MultichainGovernor: invalid quorum"
+        );
 
         uint256 _oldValue = quorum;
         quorum = _quorum;
@@ -312,10 +316,11 @@ contract MultichainGovernor is
         emit QuroumVotesChanged(_oldValue, _quorum);
     }
 
+    /// minimum voting delay is 0
     /// @param _votingDelay the new voting delay
     function _setVotingDelay(uint256 _votingDelay) private {
         require(
-            _votingDelay != 0 && _votingDelay <= Constants.MAX_VOTING_DELAY,
+            _votingDelay <= Constants.MAX_VOTING_DELAY,
             "MultichainGovernor: invalid vote delay period"
         );
 
