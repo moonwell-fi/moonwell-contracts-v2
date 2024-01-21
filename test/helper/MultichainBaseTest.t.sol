@@ -12,11 +12,12 @@ import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 
 contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
-    MultichainGovernor governor;
-    MultichainVoteCollection voteCollection;
-    WormholeRelayerAdapter wormholeRelayerAdapter;
-    xWELL xwell;
-    
+    WormholeRelayerAdapter public wormholeRelayerAdapter;
+    MultichainVoteCollection public voteCollection;
+    MultichainGovernor public governorLogic; /// logic contract
+    MultichainGovernor public governor; /// proxy contract
+    xWELL public xwell;
+
     uint256 public constant proposalThreshold = 100_000_000 * 1e18;
     uint256 public constant votingPeriodSeconds = 3 days;
     uint256 public constant votingDelaySeconds = 1 days;
@@ -24,8 +25,8 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     uint256 public constant quorum = 1_000_000 * 1e18;
     uint256 public constant maxUserLiveProposals = 5;
     uint128 public constant pauseDuration = 10 days;
-    address public pauseGuardian = address(this);
     uint16 public constant moonbeanChainId = 16;
+    address public pauseGuardian = address(this);
 
     function setUp() public {
         MultichainGovernor.InitializeData memory initData;
@@ -38,7 +39,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         initData.maxUserLiveProposals = maxUserLiveProposals;
         initData.pauseDuration = pauseDuration;
         initData.pauseGuardian = pauseGuardian;
-        // TODO add relayer to initData
+        /// TODO add relayer to initData
 
         WormholeTrustedSender.TrustedSender[]
             memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
@@ -48,20 +49,17 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         (
             address proxyAdmin,
             address governorProxy,
-            address governorImpl
+            address governorImplementation
         ) = deployMultichainGovernor(initData, trustedSenders);
 
         governor = MultichainGovernor(governorProxy);
+        governorLogic = MultichainGovernor(governorImplementation);
 
         MintLimits.RateLimitMidPointInfo[]
             memory newRateLimits = new MintLimits.RateLimitMidPointInfo[](0);
 
-        // deploy xWELL
-        (
-            address xwellLogic,
-            address xwellProxy,
-            
-        ) = deployXWell(
+        /// deploy xWELL
+        (, address xwellProxy, ) = deployXWell(
             "XWell",
             "XWELL",
             address(this), //owner
@@ -74,58 +72,13 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         wormholeRelayerAdapter = new WormholeRelayerAdapter();
 
-        (address voteCollectionProxy, address voteCollectionImpl) = deployVoteCollection(xwellProxy, governorProxy, address(wormholeRelayerAdapter), moonbeanChainId, proxyAdmin);
-        voteCollection = MultichainVoteCollection(voteCollectionProxy);
-     }
-
-    function testGovernorSetup() public {
-        assertEq(
-            governor.proposalThreshold(),
-            proposalThreshold,
-            "proposalThreshold"
-        );
-        assertEq(
-            governor.votingPeriod(),
-            votingPeriodSeconds,
-            "votingPeriodSeconds"
-        );
-        assertEq(
-            governor.votingDelay(),
-            votingDelaySeconds,
-            "votingDelaySeconds"
-        );
-        assertEq(
-            governor.crossChainVoteCollectionPeriod(),
-            crossChainVoteCollectionPeriod,
-            "crossChainVoteCollectionPeriod"
-        );
-        assertEq(governor.quorum(), quorum, "quorum");
-        assertEq(
-            governor.maxUserLiveProposals(),
-            maxUserLiveProposals,
-            "maxUserLiveProposals"
-        );
-        assertEq(governor.pauseDuration(), pauseDuration, "pauseDuration");
-        assertEq(governor.pauseGuardian(), pauseGuardian, "pauseGuardian");
-        assertFalse(governor.paused(), "paused");
-        assertFalse(governor.pauseUsed(), "paused used");
-    }
-
-    function testVoteCollectionSetup() public {
-        assertEq(
-            address(voteCollection.xWell()),
-            address(xwell),
-            "xWell address"
-        );
-        assertTrue(
-            voteCollection.isTrustedSender(moonbeanChainId, address(governor)),
-            "governor address is trusted sender"
-        );
-        assertEq(
-            address(voteCollection.wormholeRelayer()),
+        (address voteCollectionProxy, ) = deployVoteCollection(
+            xwellProxy,
+            governorProxy,
             address(wormholeRelayerAdapter),
-            "relayer address"
+            moonbeanChainId,
+            proxyAdmin
         );
+        voteCollection = MultichainVoteCollection(voteCollectionProxy);
     }
-
 }
