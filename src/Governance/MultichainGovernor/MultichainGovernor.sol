@@ -55,7 +55,6 @@ contract MultichainGovernor is
     /// @notice The total number of proposals
     uint256 public proposalCount;
 
-    /// TODO possible to remove this as there is no max live proposals?
     /// @notice all live proposals, executed and cancelled proposals are removed
     /// when a new proposal is created, it is added to this set and any stale
     /// items are removed
@@ -183,9 +182,6 @@ contract MultichainGovernor is
         /// wormhole relayer
         address wormholeRelayer;
     }
-
-    /// TODO rework so that the voting delay isn't used as the snapshot timestamp,
-    /// and is instead used as when votes are allowed to be cast
 
     /// @notice initialize the governor contract
     /// @param initData initialization data
@@ -408,7 +404,7 @@ contract MultichainGovernor is
         }
 
         // Increase total votes
-        proposal.totalVotes = proposal.totalVotes + votes;
+        proposal.totalVotes += votes;
 
         receipt.hasVoted = true;
         receipt.voteValue = voteValue;
@@ -516,6 +512,9 @@ contract MultichainGovernor is
         proposal.forVotes += forVotes;
         proposal.againstVotes += againstVotes;
         proposal.abstainVotes += abstainVotes;
+
+        /// increment totalVotes to maintain invariant TotalVotes = ForVotes + AgainstVotes + AbstainVotes
+        proposal.totalVotes += forVotes + againstVotes + abstainVotes;
 
         emit CrossChainVoteCollected(
             proposalId,
