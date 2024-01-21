@@ -34,7 +34,7 @@ contract MultichainGovernorDeploy {
         address proxyAdmin
     ) public returns (address proxy, address voteCollectionImpl) {
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(address, address, address, uint16)",
+            "initialize(address,address,address,uint16)",
             xWell,
             mombeanGovernor,
             relayer,
