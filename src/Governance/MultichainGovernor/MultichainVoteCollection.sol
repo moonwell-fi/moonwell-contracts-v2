@@ -41,7 +41,7 @@ contract MultichainVoteCollection is
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
 
-    // @notice An event emitted when a proposal is created
+    /// @notice An event emitted when a proposal is created
     event ProposalCreated(
         uint256 proposalId,
         uint256 votingStartTime,
@@ -59,6 +59,14 @@ contract MultichainVoteCollection is
         uint256 forVotes,
         uint256 againstVotes,
         uint256 abstainVotes
+    );
+
+    /// @notice event emitted when a vote has been cast on a proposal
+    event VoteCast(
+        address voter,
+        uint256 proposalId,
+        uint8 voteValue,
+        uint256 votes
     );
 
     /// @notice disable the initializer to stop governance hijacking
@@ -90,33 +98,33 @@ contract MultichainVoteCollection is
     function castVote(uint256 proposalId, uint8 voteValue) external {
         MultichainProposal storage proposal = proposals[proposalId];
 
-        // Maintain require statments below pairing with the artemis governor behavior
-        // Check if proposal start time has passed
+        /// Maintain require statments below pairing with the artemis governor behavior
+        /// Check if proposal start time has passed
         require(
             proposal.votingStartTime < block.timestamp,
             "MultichainVoteCollection: Voting has not started yet"
         );
 
-        // Check if proposal end time has not passed
+        /// Check if proposal end time has not passed
         require(
             proposal.votingEndTime >= block.timestamp,
             "MultichainVoteCollection: Voting has ended"
         );
 
-        // Vote value must be 0, 1 or 2
+        /// Vote value must be 0, 1 or 2
         require(
             voteValue <= Constants.VOTE_VALUE_ABSTAIN,
             "MultichainVoteCollection: invalid vote value"
         );
 
-        // Check if user has already voted
+        /// Check if user has already voted
         Receipt storage receipt = proposal.receipts[msg.sender];
         require(
             receipt.hasVoted == false,
             "MultichainVoteCollection: voter already voted"
         );
 
-        // Get voting power
+        /// Get voting power
         uint256 userVotes = getVotes(
             msg.sender,
             proposal.voteSnapshotTimestamp
@@ -132,15 +140,15 @@ contract MultichainVoteCollection is
             votes.abstainVotes += userVotes;
         }
 
-        // Add user votes to total votes
+        /// Add user votes to total votes
         votes.totalVotes += userVotes;
 
-        // Create receipt
+        /// Create receipt
         receipt.hasVoted = true;
         receipt.voteValue = voteValue;
         receipt.votes = userVotes;
 
-        /// TODO add event for votes cast
+        emit VoteCast(msg.sender, proposalId, voteValue, userVotes);
     }
 
     /// @notice returns the total voting power for an address at a given block number and timestamp
@@ -156,34 +164,34 @@ contract MultichainVoteCollection is
     /// @notice Emits votes to be contabilized on MoomBeam Governor contract
     /// @param proposalId the proposal id
     function emitVotes(uint256 proposalId) external payable override {
-        // Get the proposal
+        /// Get the proposal
         MultichainProposal storage proposal = proposals[proposalId];
 
-        // Check if proposal have not been emitted yet
+        /// Get votes
+        MultichainVotes storage votes = proposal.votes;
+
+        /// Check if proposal has votes
+        require(
+            votes.totalVotes > 0,
+            "MultichainVoteCollection: proposal has no votes"
+        );
+
+        /// Check if proposal have not been emitted yet
         require(
             !proposal.emitted,
             "MultichainVoteCollection: votes already emitted"
         );
 
-        // Check if proposal end time has passed
+        /// Check if proposal end time has passed
         require(
             proposal.votingEndTime < block.timestamp,
-            "MultichainVoteCollection: Voting has not ended yet"
+            "MultichainVoteCollection: Voting has not ended"
         );
 
-        // Check if proposal collection end time has not passed
+        /// Check if proposal collection end time has not passed
         require(
             proposal.votingCollectionEndTime >= block.timestamp,
             "MultichainVoteCollection: Voting collection phase has ended"
-        );
-
-        // Get votes
-        MultichainVotes storage votes = proposal.votes;
-
-        // Check if proposal has votes
-        require(
-            votes.totalVotes > 0,
-            "MultichainVoteCollection: proposal has no votes"
         );
 
         proposal.emitted = true;
@@ -213,7 +221,7 @@ contract MultichainVoteCollection is
         uint16 sourceChain,
         bytes memory payload
     ) internal override {
-        // Parse the payload and do the corresponding actions!
+        /// Parse the payload and do the corresponding actions!
         (
             uint256 proposalId,
             uint256 votingSnapshotTime,
@@ -227,32 +235,32 @@ contract MultichainVoteCollection is
             "MultichainVoteCollection: accepts only proposals from moonbeam"
         );
 
-        // Ensure proposalId is unique
+        /// Ensure proposalId is unique
         require(
             proposals[proposalId].votingStartTime == 0,
             "Proposal already exists"
         );
 
-        // Ensure votingStartTime is less than votingEndTime
+        /// Ensure votingStartTime is less than votingEndTime
         require(
             votingStartTime < votingEndTime,
             "Start time must be before end time"
         );
 
-        // Ensure votingEndTime is in the future
+        /// Ensure votingEndTime is in the future
         require(
             votingEndTime > block.timestamp,
             "End time must be in the future"
         );
 
-        // Create the proposal
+        /// Create the proposal
         MultichainProposal storage proposal = proposals[proposalId];
         proposal.votingStartTime = votingStartTime;
         proposal.votingEndTime = votingEndTime;
         proposal.votingCollectionEndTime = votingCollectionEndTime;
         proposal.voteSnapshotTimestamp = votingSnapshotTime;
 
-        // Emit the ProposalCreated event
+        /// Emit the ProposalCreated event
         emit ProposalCreated(
             proposalId,
             votingStartTime,
