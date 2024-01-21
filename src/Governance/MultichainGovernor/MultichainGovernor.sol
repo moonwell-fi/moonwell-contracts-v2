@@ -81,7 +81,6 @@ contract MultichainGovernor is
     /// - setPendingAdmin to rollback address
     /// - setAdmin to rollback address
     /// - publishMessage that adds rollback address as trusted sender in TemporalGovernor, with calldata for each chain
-    /// TODO triple check that none of the aforementioned functions have hash collisions with something that would make them dangerous
     mapping(bytes whitelistedCalldata => bool)
         public
         override whitelistedCalldatas;
@@ -464,6 +463,69 @@ contract MultichainGovernor is
         require(set.remove(proposalId), errorMessage);
     }
 
+    /// @notice allows votes from external chains to be counted
+    /// ensures validity of sender
+    /// @param sourceChain the chain id of the source chain
+    /// @param payload contains proposalId, forVotes, againstVotes, abstainVotes
+    function _bridgeIn(
+        uint16 sourceChain,
+        bytes memory payload
+    ) internal override {
+        /// payload should be 4 uint256s
+        require(
+            payload.length == 128,
+            "MultichainGovernor: invalid payload length"
+        );
+
+        (
+            uint256 proposalId,
+            uint256 forVotes,
+            uint256 againstVotes,
+            uint256 abstainVotes
+        ) = abi.decode(payload, (uint256, uint256, uint256, uint256));
+
+        /// only allow relayer creation of vote counts once on vote collector
+        /// contract and only if there is at least 1 value that is non zero
+        /// if there have been no votes cast for a particular proposal, do not allow
+        /// the relaying of any information cross chain
+        VoteCounts storage voteCounts = chainVoteCollectorVotes[sourceChain][
+            proposalId
+        ];
+
+        /// logic to ensure cross chain vote collection contract can only relay vote counts once for a given proposal
+        /// if all of these values are zero, then the values have not been set yet
+        require(
+            voteCounts.forVotes == 0 &&
+                voteCounts.againstVotes == 0 &&
+                voteCounts.abstainVotes == 0,
+            "MultichainGovernor: vote already collected"
+        );
+
+        require(
+            state(proposalId) == ProposalState.CrossChainVoteCollection,
+            "MultichainGovernor: proposal not in cross chain vote collection period"
+        );
+
+        voteCounts.forVotes = forVotes;
+        voteCounts.againstVotes = againstVotes;
+        voteCounts.abstainVotes = abstainVotes;
+
+        /// update the proposal state to contain these votes by modifying the proposal struct
+        Proposal storage proposal = proposals[proposalId];
+
+        proposal.forVotes += forVotes;
+        proposal.againstVotes += againstVotes;
+        proposal.abstainVotes += abstainVotes;
+
+        emit CrossChainVoteCollected(
+            proposalId,
+            sourceChain,
+            forVotes,
+            againstVotes,
+            abstainVotes
+        );
+    }
+
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
     /// -------------------- VIEW FUNCTIONS --------------------- ///
@@ -645,7 +707,8 @@ contract MultichainGovernor is
 
         Proposal storage proposal = proposals[proposalId];
 
-        // First check if the proposal cancelled.
+        // First check if the proposal cancelled as proposal can
+        /// be canceled at any time during the lifecycle.
         if (proposal.canceled) {
             return ProposalState.Canceled;
             // Then check if the proposal is pending or active, in which case nothing else can be determined at this time.
@@ -656,7 +719,6 @@ contract MultichainGovernor is
             // Then, check if the proposal is in cross chain vote collection period
         } else if (
             block.timestamp <= proposal.crossChainVoteCollectionEndTimestamp
-            // TODO test this logic
         ) {
             return ProposalState.CrossChainVoteCollection;
             /// any from here on out means the proposal is no longer active, and no change in votes can be registered.
@@ -846,69 +908,6 @@ contract MultichainGovernor is
         _castVote(msg.sender, proposalId, voteValue);
     }
 
-    /// @notice allows votes from external chains to be counted
-    /// ensures validity of sender
-    /// @param sourceChain the chain id of the source chain
-    /// @param payload contains proposalId, forVotes, againstVotes, abstainVotes
-    function _bridgeIn(
-        uint16 sourceChain,
-        bytes memory payload
-    ) internal override {
-        /// payload should be 4 uint256s
-        require(
-            payload.length == 128,
-            "MultichainGovernor: invalid payload length"
-        );
-
-        (
-            uint256 proposalId,
-            uint256 forVotes,
-            uint256 againstVotes,
-            uint256 abstainVotes
-        ) = abi.decode(payload, (uint256, uint256, uint256, uint256));
-
-        /// only allow relayer creation of vote counts once on vote collector
-        /// contract and only if there is at least 1 value that is non zero
-        /// if there have been no votes cast for a particular proposal, do not allow
-        /// the relaying of any information cross chain
-        VoteCounts storage voteCounts = chainVoteCollectorVotes[sourceChain][
-            proposalId
-        ];
-
-        /// logic to ensure cross chain vote collection contract can only relay vote counts once for a given proposal
-        /// if all of these values are zero, then the values have not been set yet
-        require(
-            voteCounts.forVotes == 0 &&
-                voteCounts.againstVotes == 0 &&
-                voteCounts.abstainVotes == 0,
-            "MultichainGovernor: vote already collected"
-        );
-
-        require(
-            state(proposalId) == ProposalState.CrossChainVoteCollection,
-            "MultichainGovernor: proposal not in cross chain vote collection period"
-        );
-
-        voteCounts.forVotes = forVotes;
-        voteCounts.againstVotes = againstVotes;
-        voteCounts.abstainVotes = abstainVotes;
-
-        /// update the proposal state to contain these votes by modifying the proposal struct
-        Proposal storage proposal = proposals[proposalId];
-
-        proposal.forVotes += forVotes;
-        proposal.againstVotes += againstVotes;
-        proposal.abstainVotes += abstainVotes;
-
-        emit CrossChainVoteCollected(
-            proposalId,
-            sourceChain,
-            forVotes,
-            againstVotes,
-            abstainVotes
-        );
-    }
-
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
     /// ---------- governance only functions ---------- ////
@@ -1024,48 +1023,21 @@ contract MultichainGovernor is
     }
 
     //// @notice array lengths must add up
-    /// values must sum to msg.value to ensure guardian cannot steal funds
     /// calldata must be whitelisted
     /// only break glass guardian can call, once, and when they do, their role is revoked
     /// before any external functions are called. This prevents reentrancy/multiple uses
     /// by a single guardian.
     /// @param targets the targets to call
-    /// @param values the values to send
     /// @param calldatas the calldatas to call
     function executeBreakGlass(
         address[] calldata targets,
-        uint256[] calldata values,
         bytes[] calldata calldatas
     ) external payable override onlyBreakGlassGuardian {
         require(
-            targets.length == values.length &&
-                targets.length == calldatas.length,
+            targets.length == calldatas.length,
             "MultichainGovernor: arity mismatch"
         );
 
-        uint256 totalValue = 0;
-        for (uint256 i = 0; i < values.length; ) {
-            totalValue += values[i]; /// not gonna get me with an overflow you sneaky malicious guardian
-
-            unchecked {
-                i++;
-            }
-        }
-
-        require(
-            totalValue == msg.value,
-            "MultichainGovernor: values must sum to msg.value"
-        );
-
-        unchecked {
-            for (uint256 i = 0; i < calldatas.length; i++) {
-                require(
-                    whitelistedCalldatas[calldatas[i]],
-                    "MultichainGovernor: calldata not whitelisted"
-                );
-            }
-        }
-
         unchecked {
             for (uint256 i = 0; i < calldatas.length; i++) {
                 require(
@@ -1073,9 +1045,8 @@ contract MultichainGovernor is
                     "MultichainGovernor: calldata not whitelisted"
                 );
 
-                targets[i].functionCallWithValue(
+                targets[i].functionCall(
                     calldatas[i],
-                    values[i],
                     "MultichainGovernor: break glass guardian call failed"
                 );
             }
