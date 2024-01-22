@@ -71,7 +71,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             address governorImplementation,
             address voteCollectionProxy,
             address wormholeRelayerAdapterAddress,
-            address proxyAdmin
+
         ) = deployGovernorRelayerAndVoteCollection(initData, address(0), 16);
 
         governor = MultichainGovernor(governorProxy);
