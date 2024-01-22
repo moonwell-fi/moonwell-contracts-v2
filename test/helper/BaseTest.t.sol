@@ -1,20 +1,20 @@
 pragma solidity 0.8.19;
 
-import { TransparentUpgradeableProxy, ITransparentUpgradeableProxy } from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { ProxyAdmin } from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
 
-import { xWELL } from "@protocol/xWELL/xWELL.sol";
-import { Addresses } from "@proposals/Addresses.sol";
-import { MockERC20 } from "@test/mock/MockERC20.sol";
-import { MintLimits } from "@protocol/xWELL/MintLimits.sol";
-import { xWELLDeploy } from "@protocol/xWELL/xWELLDeploy.sol";
-import { XERC20Lockbox } from "@protocol/xWELL/XERC20Lockbox.sol";
-import { WormholeBridgeAdapter } from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import { WormholeTrustedSender } from "@protocol/Governance/WormholeTrustedSender.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {Addresses} from "@proposals/Addresses.sol";
+import {MockERC20} from "@test/mock/MockERC20.sol";
+import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
+import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
+import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 
-import { SigUtils } from "@test/helper/SigUtils.sol";
+import {SigUtils} from "@test/helper/SigUtils.sol";
 
 contract BaseTest is xWELLDeploy, Test {
     /// @notice addresses contract, stores all addresses
