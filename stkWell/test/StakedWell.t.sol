@@ -6,8 +6,8 @@ contract StakedWellUnitTest {
     StakedWell stakedWell;
 
     function setUp() public {
-        stakedWell = new StakedWell();
-        stakedWell.initialize()
+        stakedWell = deployCode("StakedWell", "src/stkdWell/StakedWell.sol");
+        stakedWell.initialize();
         
     }
 }
