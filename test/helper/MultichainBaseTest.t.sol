@@ -10,13 +10,18 @@ import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {Well} from "@protocol/Governance/Well.sol";
 
 contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     WormholeRelayerAdapter public wormholeRelayerAdapter;
     MultichainVoteCollection public voteCollection;
     MultichainGovernor public governorLogic; /// logic contract
     MultichainGovernor public governor; /// proxy contract
+
     xWELL public xwell;
+    Well public well;
+    Well public distributor;
+    Well public stkWell;
 
     uint256 public constant proposalThreshold = 100_000_000 * 1e18;
     uint256 public constant votingPeriodSeconds = 3 days;
@@ -28,32 +33,10 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     uint16 public constant moonbeanChainId = 16;
     address public pauseGuardian = address(this);
 
-    function setUp() public {
-        MultichainGovernor.InitializeData memory initData;
-        initData.proposalThreshold = proposalThreshold;
-        initData.votingPeriodSeconds = votingPeriodSeconds;
-        initData.votingDelaySeconds = votingDelaySeconds;
-        initData
-            .crossChainVoteCollectionPeriod = crossChainVoteCollectionPeriod;
-        initData.quorum = quorum;
-        initData.maxUserLiveProposals = maxUserLiveProposals;
-        initData.pauseDuration = pauseDuration;
-        initData.pauseGuardian = pauseGuardian;
-        /// TODO add relayer to initData
-
-        WormholeTrustedSender.TrustedSender[]
-            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
-                0
-            );
-
-        (
-            address proxyAdmin,
-            address governorProxy,
-            address governorImplementation
-        ) = deployMultichainGovernor(initData, trustedSenders);
-
-        governor = MultichainGovernor(governorProxy);
-        governorLogic = MultichainGovernor(governorImplementation);
+    function setUp() public virtual {
+        well = new Well(address(this));
+        distributor = new Well(address(this));
+        stkWell = new Well(address(this));
 
         MintLimits.RateLimitMidPointInfo[]
             memory newRateLimits = new MintLimits.RateLimitMidPointInfo[](0);
@@ -68,17 +51,45 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             pauseGuardian
         );
 
+        MultichainGovernor.InitializeData memory initData;
+        initData.proposalThreshold = proposalThreshold;
+        initData.votingPeriodSeconds = votingPeriodSeconds;
+        initData.votingDelaySeconds = votingDelaySeconds;
+        initData
+            .crossChainVoteCollectionPeriod = crossChainVoteCollectionPeriod;
+        initData.quorum = quorum;
+        initData.maxUserLiveProposals = maxUserLiveProposals;
+        initData.pauseDuration = pauseDuration;
+        initData.pauseGuardian = pauseGuardian;
+        initData.xWell = xwellProxy;
+        initData.well = address(well);
+        initData.stkWell = address(stkWell);
+        initData.distributor = address(distributor);
+
+        (
+            address governorProxy,
+            address governorImplementation,
+            address voteCollectionProxy,
+            address wormholeRelayerAdapterAddress,
+            address proxyAdmin
+        ) = deployGovernorRelayerAndVoteCollection(initData, address(0), 16);
+
+        governor = MultichainGovernor(governorProxy);
+        governorLogic = MultichainGovernor(governorImplementation);
         xwell = xWELL(xwellProxy);
-
-        wormholeRelayerAdapter = new WormholeRelayerAdapter();
-
-        (address voteCollectionProxy, ) = deployVoteCollection(
-            xwellProxy,
-            governorProxy,
-            address(wormholeRelayerAdapter),
-            moonbeanChainId,
-            proxyAdmin
+        wormholeRelayerAdapter = WormholeRelayerAdapter(
+            wormholeRelayerAdapterAddress
         );
         voteCollection = MultichainVoteCollection(voteCollectionProxy);
+
+        xwell.addBridge(
+            MintLimits.RateLimitMidPointInfo({
+                bridge: address(this),
+                rateLimitPerSecond: 0,
+                bufferCap: 10_000_000_000 * 1e18
+            })
+        );
+
+        xwell.mint(address(this), 5_000_000_000 * 1e18);
     }
 }
