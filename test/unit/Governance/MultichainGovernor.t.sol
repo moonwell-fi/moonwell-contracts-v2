@@ -340,4 +340,30 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         assertTrue(governor.pauseUsed(), "pauseUsed not updated");
         assertEq(governor.pauseStartTime(), block.timestamp, "pauseStartTime");
     }
+
+    function test_Propose_WhenPaused_Fails() public {
+        test_pause_PauseGuardian_Succeeds();
+
+        vm.expectRevert("Pausable: paused");
+        governor.propose(
+            new address[](0),
+            new uint256[](0),
+            new bytes[](0),
+            ""
+        );
+    }
+
+    function test_Execute_WhenPaused_Fails() public {
+        test_pause_PauseGuardian_Succeeds();
+
+        vm.expectRevert("Pausable: paused");
+        governor.execute(0);
+    }
+
+    function test_CastVote_WhenPaused_Fails() public {
+        test_pause_PauseGuardian_Succeeds();
+
+        vm.expectRevert("Pausable: paused");
+        governor.castVote(0, 0);
+    }
 }
