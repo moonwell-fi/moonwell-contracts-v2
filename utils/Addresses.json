@@ -613,5 +613,40 @@
         "addr": "0xCB1DaCd30638ae38F2B94eA64F066045B7D45f44",
         "chainId": 8453,
         "name": "MOONWELL_rETH"
+    },
+    {
+        "addr": "0x02e9081DfadD37A852F9a73C4d7d69e615E61334",
+        "chainId": 1284,
+        "name": "MOONWELL_mUSDC"
+    },
+    {
+        "addr": "0xc3090f41Eb54A7f18587FD6651d4D3ab477b07a4",
+        "chainId": 1284,
+        "name": "MOONWELL_mETH"
+    },
+    {
+        "addr": "0x24A9d8f1f350d59cB0368D3d52A77dB29c833D1D",
+        "chainId": 1284,
+        "name": "MOONWELL_mwBTC"
+    },
+    {
+        "addr": "0x8f552a71efe5eefc207bf75485b356a0b3f01ec9",
+        "chainId": 1284,
+        "name": "madUSDC"
+    },
+    {
+        "addr": "0x30d2a9f5fdf90ace8c17952cbb4ee48a55d916a7",
+        "chainId": 1284,
+        "name": "madWETH"
+    },
+    {
+        "addr": "0x1dc78acda13a8bc4408b207c9e48cdbc096d95e0",
+        "chainId": 1284,
+        "name": "madWBTC"
+    },
+    {
+        "addr": "0x949D6a0E3b1064d498D529a388B953b344CD13F7",
+        "chainId": 1284,
+        "name": "NOMAD_REALLOCATION_MULTISIG"
     }
 ]
