@@ -9,7 +9,6 @@ import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMult
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 
-///
 // t0, user a has x votes, cast vote
 // t1, user a sends tokens to chain 2
 // t2, user a receives tokens
