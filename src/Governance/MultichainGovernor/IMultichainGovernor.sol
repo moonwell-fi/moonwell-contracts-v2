@@ -267,7 +267,7 @@ interface IMultichainGovernor {
         string memory description
     ) external payable returns (uint256);
 
-    function execute(uint256 proposalId) external;
+    function execute(uint256 proposalId) external payable;
 
     /// @dev callable only by the proposer, cancels proposal if it has not been executed
     function cancel(uint256 proposalId) external;
