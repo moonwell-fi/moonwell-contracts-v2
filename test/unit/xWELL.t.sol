@@ -1,8 +1,7 @@
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
-
-import "@test/helper/BaseTest.t.sol";
+import '@forge-std/Test.sol';
+import '@test/helper/BaseTest.t.sol';
 
 contract xWELLUnitTest is BaseTest {
     function setUp() public override {
@@ -15,7 +14,7 @@ contract xWELLUnitTest is BaseTest {
     function testSetup() public {
         assertTrue(
             xwellProxy.DOMAIN_SEPARATOR() != bytes32(0),
-            "domain separator not set"
+            'domain separator not set'
         );
         (
             bytes1 fields,
@@ -26,76 +25,76 @@ contract xWELLUnitTest is BaseTest {
             bytes32 salt,
 
         ) = xwellProxy.eip712Domain();
-        assertEq(fields, hex"0f", "incorrect fields");
-        assertEq(version, "1", "incorrect version");
-        assertEq(chainId, block.chainid, "incorrect chain id");
-        assertEq(salt, bytes32(0), "incorrect salt");
+        assertEq(fields, hex'0f', 'incorrect fields');
+        assertEq(version, '1', 'incorrect version');
+        assertEq(chainId, block.chainid, 'incorrect chain id');
+        assertEq(salt, bytes32(0), 'incorrect salt');
         assertEq(
             verifyingContract,
             address(xwellProxy),
-            "incorrect verifying contract"
+            'incorrect verifying contract'
         );
-        assertEq(name, xwellName, "incorrect name from eip712Domain()");
-        assertEq(xwellProxy.name(), xwellName, "incorrect name");
-        assertEq(xwellProxy.symbol(), xwellSymbol, "incorrect symbol");
-        assertEq(xwellProxy.totalSupply(), 0, "incorrect total supply");
-        assertEq(xwellProxy.owner(), address(this), "incorrect owner");
+        assertEq(name, xwellName, 'incorrect name from eip712Domain()');
+        assertEq(xwellProxy.name(), xwellName, 'incorrect name');
+        assertEq(xwellProxy.symbol(), xwellSymbol, 'incorrect symbol');
+        assertEq(xwellProxy.totalSupply(), 0, 'incorrect total supply');
+        assertEq(xwellProxy.owner(), address(this), 'incorrect owner');
         assertEq(
             xwellProxy.pendingOwner(),
             address(0),
-            "incorrect pending owner"
+            'incorrect pending owner'
         );
         assertEq(
             xwellProxy.CLOCK_MODE(),
-            "mode=timestamp",
-            "incorrect clock mode"
+            'mode=timestamp',
+            'incorrect clock mode'
         );
-        assertEq(xwellProxy.clock(), block.timestamp, "incorrect timestamp");
+        assertEq(xwellProxy.clock(), block.timestamp, 'incorrect timestamp');
         assertEq(
             xwellProxy.MAX_SUPPLY(),
             5_000_000_000 * 1e18,
-            "incorrect max supply"
+            'incorrect max supply'
         );
         assertEq(
             xwellProxy.bufferCap(address(xerc20Lockbox)),
             type(uint112).max,
-            "incorrect lockbox buffer cap"
+            'incorrect lockbox buffer cap'
         );
         assertEq(
             xwellProxy.bufferCap(address(xerc20Lockbox)),
             xwellProxy.mintingMaxLimitOf(address(xerc20Lockbox)),
-            "incorrect lockbox mintingMaxLimitOf"
+            'incorrect lockbox mintingMaxLimitOf'
         );
         assertEq(
             xwellProxy.bufferCap(address(xerc20Lockbox)),
             xwellProxy.burningMaxLimitOf(address(xerc20Lockbox)),
-            "incorrect lockbox burningMaxLimitOf"
+            'incorrect lockbox burningMaxLimitOf'
         );
         assertEq(
             xwellProxy.buffer(address(xerc20Lockbox)),
             type(uint112).max / 2,
-            "incorrect lockbox buffer"
+            'incorrect lockbox buffer'
         );
         assertEq(
             xwellProxy.buffer(address(xerc20Lockbox)),
             xwellProxy.mintingCurrentLimitOf(address(xerc20Lockbox)),
-            "incorrect lockbox mintingCurrentLimitOf"
+            'incorrect lockbox mintingCurrentLimitOf'
         );
         assertEq(
             xwellProxy.bufferCap(address(xerc20Lockbox)) -
                 xwellProxy.buffer(address(xerc20Lockbox)),
             xwellProxy.burningCurrentLimitOf(address(xerc20Lockbox)),
-            "incorrect lockbox burningCurrentLimitOf"
+            'incorrect lockbox burningCurrentLimitOf'
         );
         assertEq(
             xwellProxy.rateLimitPerSecond(address(xerc20Lockbox)),
             0,
-            "incorrect lockbox rate limit per second"
+            'incorrect lockbox rate limit per second'
         );
         assertEq(
             xwellProxy.maxPauseDuration(),
             xwellProxy.MAX_PAUSE_DURATION(),
-            "incorrect max pause duration"
+            'incorrect max pause duration'
         );
 
         /// PROXY OWNERSHIP
@@ -106,30 +105,30 @@ contract xWELLUnitTest is BaseTest {
                 ITransparentUpgradeableProxy(address(xwellProxy))
             ),
             address(proxyAdmin),
-            "incorrect proxy admin"
+            'incorrect proxy admin'
         );
 
         /// PAUSING
         assertEq(
             xwellProxy.pauseGuardian(),
             pauseGuardian,
-            "incorrect pause guardian"
+            'incorrect pause guardian'
         );
-        assertEq(xwellProxy.pauseStartTime(), 0, "incorrect pause start time");
+        assertEq(xwellProxy.pauseStartTime(), 0, 'incorrect pause start time');
         assertEq(
             xwellProxy.pauseDuration(),
             pauseDuration,
-            "incorrect pause duration"
+            'incorrect pause duration'
         );
-        assertFalse(xwellProxy.paused(), "incorrectly paused");
-        assertFalse(xwellProxy.pauseUsed(), "pause should not be used");
+        assertFalse(xwellProxy.paused(), 'incorrectly paused');
+        assertFalse(xwellProxy.pauseUsed(), 'pause should not be used');
     }
 
     function testInitializationFailsPauseDurationGtMax() public {
         uint256 maxPauseDuration = xwellProxy.MAX_PAUSE_DURATION();
 
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(string,string,address,(uint112,uint128,address)[],uint128,address)",
+            'initialize(string,string,address,(uint112,uint128,address)[],uint128,address)',
             xwellName,
             xwellSymbol,
             owner,
@@ -138,7 +137,7 @@ contract xWELLUnitTest is BaseTest {
             pauseGuardian
         );
 
-        vm.expectRevert("xWELL: pause duration too long");
+        vm.expectRevert('xWELL: pause duration too long');
         new TransparentUpgradeableProxy(
             address(xwellLogic),
             address(proxyAdmin),
@@ -152,16 +151,16 @@ contract xWELLUnitTest is BaseTest {
         vm.prank(owner);
         xwellProxy.acceptOwnership();
 
-        assertEq(xwellProxy.owner(), owner, "incorrect owner");
+        assertEq(xwellProxy.owner(), owner, 'incorrect owner');
         assertEq(
             xwellProxy.pendingOwner(),
             address(0),
-            "incorrect pending owner"
+            'incorrect pending owner'
         );
     }
 
     function testInitializeLogicContractFails() public {
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert('Initializable: contract is already initialized');
         xwellLogic.initialize(
             xwellName,
             xwellSymbol,
@@ -175,7 +174,7 @@ contract xWELLUnitTest is BaseTest {
     function testTransferToTokenContractFails() public {
         testLockboxCanMint(1);
 
-        vm.expectRevert("xERC20: cannot transfer to token contract");
+        vm.expectRevert('xERC20: cannot transfer to token contract');
         xwellProxy.transfer(address(xwellProxy), 1);
     }
 
@@ -183,7 +182,7 @@ contract xWELLUnitTest is BaseTest {
         uint256 maxSupply = xwellProxy.MAX_SUPPLY();
 
         vm.prank(address(xerc20Lockbox));
-        vm.expectRevert("xERC20: max supply exceeded");
+        vm.expectRevert('xERC20: max supply exceeded');
         xwellProxy.mint(address(xerc20Lockbox), maxSupply + 1);
     }
 
@@ -226,38 +225,38 @@ contract xWELLUnitTest is BaseTest {
         _lockboxCanMint(mintAmount);
         _lockboxCanBurn(mintAmount);
 
-        assertEq(xwellProxy.totalSupply(), 0, "incorrect total supply");
+        assertEq(xwellProxy.totalSupply(), 0, 'incorrect total supply');
     }
 
     /// ACL
 
     function testGrantGuardianNonOwnerReverts() public {
         testPendingOwnerAccepts();
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert('Ownable: caller is not the owner');
         xwellProxy.grantPauseGuardian(address(0));
     }
 
     function testSetPauseDurationNonOwnerReverts() public {
         testPendingOwnerAccepts();
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert('Ownable: caller is not the owner');
         xwellProxy.setPauseDuration(0);
     }
 
     function testSetBufferCapNonOwnerReverts() public {
         testPendingOwnerAccepts();
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert('Ownable: caller is not the owner');
         xwellProxy.setBufferCap(address(0), 0);
     }
 
     function testSetRateLimitPerSecondNonOwnerReverts() public {
         testPendingOwnerAccepts();
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert('Ownable: caller is not the owner');
         xwellProxy.setRateLimitPerSecond(address(0), 0);
     }
 
     function testAddBridgeNonOwnerReverts() public {
         testPendingOwnerAccepts();
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert('Ownable: caller is not the owner');
         xwellProxy.addBridge(
             MintLimits.RateLimitMidPointInfo({
                 bridge: address(0),
@@ -269,19 +268,19 @@ contract xWELLUnitTest is BaseTest {
 
     function testAddBridgesNonOwnerReverts() public {
         testPendingOwnerAccepts();
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert('Ownable: caller is not the owner');
         xwellProxy.addBridges(new MintLimits.RateLimitMidPointInfo[](0));
     }
 
     function testRemoveBridgeNonOwnerReverts() public {
         testPendingOwnerAccepts();
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert('Ownable: caller is not the owner');
         xwellProxy.removeBridge(address(0));
     }
 
     function testRemoveBridgesNonOwnerReverts() public {
         testPendingOwnerAccepts();
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert('Ownable: caller is not the owner');
         xwellProxy.removeBridges(new address[](0));
     }
 
@@ -290,19 +289,19 @@ contract xWELLUnitTest is BaseTest {
         assertEq(
             xwellProxy.pauseGuardian(),
             newPauseGuardian,
-            "incorrect pause guardian"
+            'incorrect pause guardian'
         );
     }
 
     function testGrantPauseGuardianWhilePausedFails() public {
         vm.prank(pauseGuardian);
         xwellProxy.pause();
-        assertTrue(xwellProxy.paused(), "contract not paused");
+        assertTrue(xwellProxy.paused(), 'contract not paused');
         address newPauseGuardian = address(0xffffffff);
 
-        vm.expectRevert("Pausable: paused");
+        vm.expectRevert('Pausable: paused');
         xwellProxy.grantPauseGuardian(newPauseGuardian);
-        assertTrue(xwellProxy.paused(), "contract not paused");
+        assertTrue(xwellProxy.paused(), 'contract not paused');
     }
 
     function testUpdatePauseDurationSucceeds() public {
@@ -311,13 +310,13 @@ contract xWELLUnitTest is BaseTest {
         assertEq(
             xwellProxy.pauseDuration(),
             newDuration,
-            "incorrect pause duration"
+            'incorrect pause duration'
         );
     }
 
     function testUpdatePauseDurationGtMaxPauseDurationFails() public {
         uint128 newDuration = uint128(xwellProxy.MAX_PAUSE_DURATION() + 1);
-        vm.expectRevert("xWELL: pause duration too long");
+        vm.expectRevert('xWELL: pause duration too long');
 
         xwellProxy.setPauseDuration(newDuration);
     }
@@ -335,14 +334,14 @@ contract xWELLUnitTest is BaseTest {
         assertEq(
             xwellProxy.bufferCap(address(xerc20Lockbox)),
             bufferCap,
-            "incorrect buffer cap"
+            'incorrect buffer cap'
         );
     }
 
     function testSetBufferCapZeroFails() public {
         uint112 bufferCap = 0;
 
-        vm.expectRevert("MintLimits: bufferCap cannot be 0");
+        vm.expectRevert('MintLimits: bufferCap cannot be 0');
         xwellProxy.setBufferCap(address(xerc20Lockbox), bufferCap);
     }
 
@@ -364,7 +363,7 @@ contract xWELLUnitTest is BaseTest {
         assertEq(
             xwellProxy.rateLimitPerSecond(address(xerc20Lockbox)),
             newRateLimitPerSecond,
-            "incorrect rate limit per second"
+            'incorrect rate limit per second'
         );
     }
 
@@ -408,13 +407,13 @@ contract xWELLUnitTest is BaseTest {
         assertEq(
             xwellProxy.rateLimitPerSecond(bridge),
             newRateLimitPerSecond,
-            "incorrect rate limit per second"
+            'incorrect rate limit per second'
         );
 
         assertEq(
             xwellProxy.bufferCap(bridge),
             newBufferCap,
-            "incorrect buffer cap"
+            'incorrect buffer cap'
         );
     }
 
@@ -457,13 +456,13 @@ contract xWELLUnitTest is BaseTest {
         assertEq(
             xwellProxy.rateLimitPerSecond(bridge),
             newRateLimitPerSecond,
-            "incorrect rate limit per second"
+            'incorrect rate limit per second'
         );
 
         assertEq(
             xwellProxy.bufferCap(bridge),
             newBufferCap,
-            "incorrect buffer cap"
+            'incorrect buffer cap'
         );
     }
 
@@ -483,7 +482,7 @@ contract xWELLUnitTest is BaseTest {
                 rateLimitPerSecond: rateLimitPerSecond
             });
 
-        vm.expectRevert("MintLimits: rate limit already exists");
+        vm.expectRevert('MintLimits: rate limit already exists');
         xwellProxy.addBridge(bridge);
     }
 
@@ -501,7 +500,7 @@ contract xWELLUnitTest is BaseTest {
                 rateLimitPerSecond: rateLimitPerSecond
             });
 
-        vm.expectRevert("MintLimits: buffer cap below min");
+        vm.expectRevert('MintLimits: buffer cap below min');
         xwellProxy.addBridge(bridge);
     }
 
@@ -517,7 +516,7 @@ contract xWELLUnitTest is BaseTest {
             bufferCap + 1
         );
 
-        vm.expectRevert("MintLimits: buffer cap below min");
+        vm.expectRevert('MintLimits: buffer cap below min');
         xwellProxy.setBufferCap(newBridge, bufferCap);
     }
 
@@ -534,7 +533,7 @@ contract xWELLUnitTest is BaseTest {
                 )
             });
 
-        vm.expectRevert("MintLimits: rateLimitPerSecond too high");
+        vm.expectRevert('MintLimits: rateLimitPerSecond too high');
         xwellProxy.addBridge(bridge);
     }
 
@@ -543,7 +542,7 @@ contract xWELLUnitTest is BaseTest {
             xwellProxy.MAX_RATE_LIMIT_PER_SECOND()
         );
 
-        vm.expectRevert("MintLimits: rateLimitPerSecond too high");
+        vm.expectRevert('MintLimits: rateLimitPerSecond too high');
         xwellProxy.setRateLimitPerSecond(
             address(xerc20Lockbox),
             maxRateLimitPerSecond + 1
@@ -564,7 +563,7 @@ contract xWELLUnitTest is BaseTest {
                 rateLimitPerSecond: rateLimitPerSecond
             });
 
-        vm.expectRevert("MintLimits: invalid bridge address");
+        vm.expectRevert('MintLimits: invalid bridge address');
         xwellProxy.addBridge(bridge);
     }
 
@@ -580,7 +579,7 @@ contract xWELLUnitTest is BaseTest {
                 rateLimitPerSecond: rateLimitPerSecond
             });
 
-        vm.expectRevert("MintLimits: buffer cap below min");
+        vm.expectRevert('MintLimits: buffer cap below min');
         xwellProxy.addBridge(bridge);
     }
 
@@ -595,7 +594,7 @@ contract xWELLUnitTest is BaseTest {
             )
         );
 
-        vm.expectRevert("MintLimits: non-existent rate limit");
+        vm.expectRevert('MintLimits: non-existent rate limit');
         xwellProxy.setRateLimitPerSecond(address(0), newRateLimitPerSecond);
     }
 
@@ -603,7 +602,7 @@ contract xWELLUnitTest is BaseTest {
         uint112 newBufferCap
     ) public {
         newBufferCap = uint112(_bound(newBufferCap, 1, type(uint112).max));
-        vm.expectRevert("MintLimits: non-existent rate limit");
+        vm.expectRevert('MintLimits: non-existent rate limit');
         xwellProxy.setBufferCap(address(0), newBufferCap);
     }
 
@@ -613,27 +612,27 @@ contract xWELLUnitTest is BaseTest {
         assertEq(
             xwellProxy.bufferCap(address(xerc20Lockbox)),
             0,
-            "incorrect buffer cap"
+            'incorrect buffer cap'
         );
         assertEq(
             xwellProxy.rateLimitPerSecond(address(xerc20Lockbox)),
             0,
-            "incorrect rate limit per second"
+            'incorrect rate limit per second'
         );
         assertEq(
             xwellProxy.buffer(address(xerc20Lockbox)),
             0,
-            "incorrect buffer"
+            'incorrect buffer'
         );
     }
 
     function testCannotRemoveNonExistentBridge() public {
-        vm.expectRevert("MintLimits: cannot remove non-existent rate limit");
+        vm.expectRevert('MintLimits: cannot remove non-existent rate limit');
         xwellProxy.removeBridge(address(0));
     }
 
     function testCannotRemoveNonExistentBridges() public {
-        vm.expectRevert("MintLimits: cannot remove non-existent rate limit");
+        vm.expectRevert('MintLimits: cannot remove non-existent rate limit');
         xwellProxy.removeBridges(new address[](2));
     }
 
@@ -654,14 +653,14 @@ contract xWELLUnitTest is BaseTest {
             assertEq(
                 xwellProxy.bufferCap(bridges[i]),
                 0,
-                "incorrect buffer cap"
+                'incorrect buffer cap'
             );
             assertEq(
                 xwellProxy.rateLimitPerSecond(bridges[i]),
                 0,
-                "incorrect rate limit per second"
+                'incorrect rate limit per second'
             );
-            assertEq(xwellProxy.buffer(bridges[i]), 0, "incorrect buffer");
+            assertEq(xwellProxy.buffer(bridges[i]), 0, 'incorrect buffer');
         }
     }
 
@@ -691,22 +690,22 @@ contract xWELLUnitTest is BaseTest {
         assertEq(
             xwellProxy.buffer(bridge),
             buffer + amount,
-            "incorrect buffer amount"
+            'incorrect buffer amount'
         );
         assertEq(
             xwellProxy.balanceOf(address(this)),
             userStartingBalance - amount,
-            "incorrect user balance"
+            'incorrect user balance'
         );
         assertEq(
             xwellProxy.allowance(address(this), bridge),
             0,
-            "incorrect allowance"
+            'incorrect allowance'
         );
         assertEq(
             startingTotalSupply - xwellProxy.totalSupply(),
             amount,
-            "incorrect total supply"
+            'incorrect total supply'
         );
     }
 
@@ -731,17 +730,17 @@ contract xWELLUnitTest is BaseTest {
         assertEq(
             xwellProxy.buffer(bridge),
             buffer - amount,
-            "incorrect buffer amount"
+            'incorrect buffer amount'
         );
         assertEq(
             xwellProxy.totalSupply() - startingTotalSupply,
             amount,
-            "incorrect total supply"
+            'incorrect total supply'
         );
         assertEq(
             xwellProxy.balanceOf(address(this)) - userStartingBalance,
             amount,
-            "incorrect user balance"
+            'incorrect user balance'
         );
     }
 
@@ -755,7 +754,7 @@ contract xWELLUnitTest is BaseTest {
         testAddNewBridgeOwnerSucceeds(bridge, rateLimitPerSecond, bufferCap);
 
         vm.prank(bridge);
-        vm.expectRevert("MintLimits: deplete amount cannot be 0");
+        vm.expectRevert('MintLimits: deplete amount cannot be 0');
         xwellProxy.mint(address(this), 0);
     }
 
@@ -769,7 +768,7 @@ contract xWELLUnitTest is BaseTest {
         testAddNewBridgeOwnerSucceeds(bridge, rateLimitPerSecond, bufferCap);
 
         vm.prank(bridge);
-        vm.expectRevert("MintLimits: replenish amount cannot be 0");
+        vm.expectRevert('MintLimits: replenish amount cannot be 0');
         xwellProxy.burn(address(this), 0);
     }
 
@@ -777,7 +776,7 @@ contract xWELLUnitTest is BaseTest {
         address bridge = address(0xeeeee);
 
         vm.prank(bridge);
-        vm.expectRevert("RateLimited: buffer cap overflow");
+        vm.expectRevert('RateLimited: buffer cap overflow');
         xwellProxy.burn(address(this), 1);
     }
 
@@ -785,7 +784,7 @@ contract xWELLUnitTest is BaseTest {
         address bridge = address(0xeeeee);
 
         vm.prank(bridge);
-        vm.expectRevert("RateLimited: rate limit hit");
+        vm.expectRevert('RateLimited: rate limit hit');
         xwellProxy.mint(address(this), 1);
     }
 
@@ -795,7 +794,7 @@ contract xWELLUnitTest is BaseTest {
         assertTrue(xwellProxy.paused());
 
         vm.prank(address(xerc20Lockbox));
-        vm.expectRevert("Pausable: paused");
+        vm.expectRevert('Pausable: paused');
         xwellProxy.mint(address(xerc20Lockbox), 1);
     }
 
@@ -805,17 +804,17 @@ contract xWELLUnitTest is BaseTest {
         assertTrue(xwellProxy.paused());
 
         xwellProxy.ownerUnpause();
-        assertTrue(xwellProxy.paused(), "contract not unpaused");
+        assertTrue(xwellProxy.paused(), 'contract not unpaused');
     }
 
     function testOwnerUnpauseFailsNotPaused() public {
-        vm.expectRevert("Pausable: not paused");
+        vm.expectRevert('Pausable: not paused');
         xwellProxy.ownerUnpause();
     }
 
     function testNonOwnerUnpauseFails() public {
         vm.prank(address(10000000000));
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert('Ownable: caller is not the owner');
         xwellProxy.ownerUnpause();
     }
 
@@ -834,7 +833,7 @@ contract xWELLUnitTest is BaseTest {
         assertTrue(xwellProxy.paused());
 
         vm.prank(address(xerc20Lockbox));
-        vm.expectRevert("Pausable: paused");
+        vm.expectRevert('Pausable: paused');
         xwellProxy.burn(address(xerc20Lockbox), 1);
     }
 
@@ -860,7 +859,7 @@ contract xWELLUnitTest is BaseTest {
         assertEq(
             xwellProxy.allowance(address(this), address(xerc20Lockbox)),
             startingAllowance + amount,
-            "incorrect allowance"
+            'incorrect allowance'
         );
     }
 
@@ -879,7 +878,35 @@ contract xWELLUnitTest is BaseTest {
         assertEq(
             xwellProxy.allowance(address(this), address(xerc20Lockbox)),
             startingAllowance - amount,
-            "incorrect allowance"
+            'incorrect allowance'
         );
+    }
+
+    function testPermit(uint256 amount) public {
+        address spender = address(xerc20Lockbox);
+        uint256 deadline = 5000000000; // timestamp far in the future
+        uint256 ownerPrivateKey = 0xA11CE;
+        address owner = vm.addr(ownerPrivateKey);
+
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: owner,
+            spender: spender,
+            value: amount,
+            nonce: 0,
+            deadline: deadline
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
+
+        xwellProxy.permit(owner, spender, amount, deadline, v, r, s);
+
+        assertEq(
+            xwellProxy.allowance(owner, spender),
+            amount,
+            'incorrect allowance'
+        );
+        assertEq(xwellProxy.nonces(owner), 1, 'incorrect nonce');
     }
 }

@@ -1,18 +1,20 @@
 pragma solidity 0.8.19;
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import { TransparentUpgradeableProxy, ITransparentUpgradeableProxy } from '@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol';
+import { ProxyAdmin } from '@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol';
 
-import "@forge-std/Test.sol";
+import '@forge-std/Test.sol';
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {MockERC20} from "@test/mock/MockERC20.sol";
-import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
-import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
-import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
-import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import { xWELL } from '@protocol/xWELL/xWELL.sol';
+import { Addresses } from '@proposals/Addresses.sol';
+import { MockERC20 } from '@test/mock/MockERC20.sol';
+import { MintLimits } from '@protocol/xWELL/MintLimits.sol';
+import { xWELLDeploy } from '@protocol/xWELL/xWELLDeploy.sol';
+import { XERC20Lockbox } from '@protocol/xWELL/XERC20Lockbox.sol';
+import { WormholeBridgeAdapter } from '@protocol/xWELL/WormholeBridgeAdapter.sol';
+import { WormholeTrustedSender } from '@protocol/Governance/WormholeTrustedSender.sol';
+
+import { SigUtils } from '@test/helper/SigUtils.sol';
 
 contract BaseTest is xWELLDeploy, Test {
     /// @notice addresses contract, stores all addresses
@@ -39,11 +41,14 @@ contract BaseTest is xWELLDeploy, Test {
     /// @notice proxy contract, stores all state
     xWELL public xwellProxy;
 
+    /// @notice signature utils contract
+    SigUtils public sigUtils;
+
     /// @notice name of the token
-    string public xwellName = "WELL";
+    string public xwellName = 'WELL';
 
     /// @notice symbol of the token
-    string public xwellSymbol = "WELL";
+    string public xwellSymbol = 'WELL';
 
     /// @notice owner of the token
     address public owner = address(100_000_000);
@@ -68,11 +73,11 @@ contract BaseTest is xWELLDeploy, Test {
 
     function setUp() public virtual {
         addresses = new Addresses();
-        if (addresses.getAddress("WELL") == address(0)) {
+        if (addresses.getAddress('WELL') == address(0)) {
             well = new MockERC20();
-            addresses.addAddress("WELL", address(well));
+            addresses.addAddress('WELL', address(well));
         } else {
-            well = MockERC20(addresses.getAddress("WELL"));
+            well = MockERC20(addresses.getAddress('WELL'));
         }
 
         {
@@ -94,17 +99,17 @@ contract BaseTest is xWELLDeploy, Test {
                 wormholeAdapterProxy
             );
 
-            vm.label(xwellLogicAddress, "xWELL Logic");
-            vm.label(xwellProxyAddress, "xWELL Proxy");
-            vm.label(proxyAdminAddress, "Proxy Admin");
-            vm.label(lockboxAddress, "Lockbox");
-            vm.label(pauseGuardian, "Pause Guardian");
-            vm.label(owner, "Owner");
-            vm.label(pauseGuardian, "Pause Guardian");
-            vm.label(address(wormholeAdapterLogic), "WormholeAdapterLogic");
+            vm.label(xwellLogicAddress, 'xWELL Logic');
+            vm.label(xwellProxyAddress, 'xWELL Proxy');
+            vm.label(proxyAdminAddress, 'Proxy Admin');
+            vm.label(lockboxAddress, 'Lockbox');
+            vm.label(pauseGuardian, 'Pause Guardian');
+            vm.label(owner, 'Owner');
+            vm.label(pauseGuardian, 'Pause Guardian');
+            vm.label(address(wormholeAdapterLogic), 'WormholeAdapterLogic');
             vm.label(
                 address(wormholeBridgeAdapterProxy),
-                "WormholeAdapterProxy"
+                'WormholeAdapterProxy'
             );
         }
 
@@ -139,6 +144,8 @@ contract BaseTest is xWELLDeploy, Test {
             wormholeRelayer,
             chainId
         );
+
+        sigUtils = new SigUtils(xwellProxy.DOMAIN_SEPARATOR());
     }
 
     /// --------------------------------------------------------
@@ -162,17 +169,17 @@ contract BaseTest is xWELLDeploy, Test {
         assertEq(
             startingTotalSupply - endingTotalSupply,
             burnAmount,
-            "incorrect burn amount to totalSupply"
+            'incorrect burn amount to totalSupply'
         );
         assertEq(
             endingWellBalance - startingWellBalance,
             burnAmount,
-            "incorrect burn amount to well balance"
+            'incorrect burn amount to well balance'
         );
         assertEq(
             startingXwellBalance - endingXwellBalance,
             burnAmount,
-            "incorrect burn amount to xwell balance"
+            'incorrect burn amount to xwell balance'
         );
     }
 
@@ -191,17 +198,17 @@ contract BaseTest is xWELLDeploy, Test {
         assertEq(
             startingTotalSupply - endingTotalSupply,
             burnAmount,
-            "incorrect burn amount to totalSupply"
+            'incorrect burn amount to totalSupply'
         );
         assertEq(
             endingWellBalance - startingWellBalance,
             burnAmount,
-            "incorrect burn amount to well balance"
+            'incorrect burn amount to well balance'
         );
         assertEq(
             startingXwellBalance - endingXwellBalance,
             burnAmount,
-            "incorrect burn amount to xwell balance"
+            'incorrect burn amount to xwell balance'
         );
     }
 
@@ -222,17 +229,17 @@ contract BaseTest is xWELLDeploy, Test {
         assertEq(
             endingTotalSupply - startingTotalSupply,
             mintAmount,
-            "incorrect mint amount to totalSupply"
+            'incorrect mint amount to totalSupply'
         );
         assertEq(
             startingWellBalance - endingWellBalance,
             mintAmount,
-            "incorrect mint amount to well balance"
+            'incorrect mint amount to well balance'
         );
         assertEq(
             endingXwellBalance - startingXwellBalance,
             mintAmount,
-            "incorrect mint amount to xwell balance"
+            'incorrect mint amount to xwell balance'
         );
     }
 
@@ -253,17 +260,17 @@ contract BaseTest is xWELLDeploy, Test {
         assertEq(
             endingTotalSupply - startingTotalSupply,
             mintAmount,
-            "incorrect mint amount to totalSupply"
+            'incorrect mint amount to totalSupply'
         );
         assertEq(
             startingWellBalance - endingWellBalance,
             mintAmount,
-            "incorrect mint amount to well balance"
+            'incorrect mint amount to well balance'
         );
         assertEq(
             endingXwellBalance - startingXwellBalance,
             mintAmount,
-            "incorrect mint amount to xwell balance"
+            'incorrect mint amount to xwell balance'
         );
     }
 }
