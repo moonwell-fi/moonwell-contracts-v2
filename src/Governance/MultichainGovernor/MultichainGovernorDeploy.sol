@@ -6,6 +6,7 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 
 contract MultichainGovernorDeploy {
     function deployMultichainGovernor(
@@ -28,17 +29,17 @@ contract MultichainGovernorDeploy {
 
     function deployVoteCollection(
         address xWell,
-        address mombeanGovernor,
+        address moonbeamGovernor,
         address relayer,
-        uint16 mombeanChainId,
+        uint16 moonbeamChainId,
         address proxyAdmin
     ) public returns (address proxy, address voteCollectionImpl) {
         bytes memory initData = abi.encodeWithSignature(
             "initialize(address,address,address,uint16)",
             xWell,
-            mombeanGovernor,
+            moonbeamGovernor,
             relayer,
-            mombeanChainId
+            moonbeamChainId
         );
 
         voteCollectionImpl = address(new MultichainVoteCollection());
@@ -49,6 +50,68 @@ contract MultichainGovernorDeploy {
                 proxyAdmin,
                 initData
             )
+        );
+    }
+
+    function deployGovernorRelayerAndVoteCollection(
+        MultichainGovernor.InitializeData memory initializeData,
+        address proxyAdminParameter,
+        uint16 moonbeamChainId
+    )
+        public
+        returns (
+            address governorProxy,
+            address governorImplementation,
+            address voteCollectionProxy,
+            address wormholeRelayerAdapter,
+            address proxyAdmin
+        )
+    {
+        proxyAdmin = proxyAdminParameter == address(0)
+            ? address(new ProxyAdmin())
+            : proxyAdminParameter;
+
+        address voteCollectionImpl = address(new MultichainVoteCollection());
+
+        voteCollectionProxy = address(
+            new TransparentUpgradeableProxy(voteCollectionImpl, proxyAdmin, "")
+        );
+
+        governorImplementation = address(new MultichainGovernor());
+
+        governorProxy = address(
+            new TransparentUpgradeableProxy(
+                governorImplementation,
+                proxyAdmin,
+                ""
+            )
+        );
+
+        WormholeTrustedSender.TrustedSender[]
+            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                1
+            );
+
+        trustedSenders[0] = WormholeTrustedSender.TrustedSender({
+            chainId: moonbeamChainId,
+            addr: voteCollectionProxy
+        });
+
+        wormholeRelayerAdapter = address(new WormholeRelayerAdapter());
+
+        /// add wormhole relayer adapter to initialize function
+        initializeData.wormholeRelayer = wormholeRelayerAdapter;
+
+        MultichainGovernor(governorProxy).initialize(
+            initializeData,
+            trustedSenders
+        );
+
+        MultichainVoteCollection(voteCollectionProxy).initialize(
+            initializeData.xWell,
+            governorProxy,
+            wormholeRelayerAdapter,
+            moonbeamChainId
         );
     }
 }
