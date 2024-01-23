@@ -55,7 +55,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             "xWell address"
         );
         assertTrue(
-            voteCollection.isTrustedSender(moonbeanChainId, address(governor)),
+            voteCollection.isTrustedSender(moonbeamChainId, address(governor)),
             "governor address is trusted sender"
         );
         assertEq(
@@ -74,7 +74,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
         vm.expectRevert("Initializable: contract is already initialized");
 
-        governorLogic.initialize(initData, trustedSenders);
+        governorLogic.initialize(initData, trustedSenders, new bytes[](0));
     }
 
     function testDeployxWell() public {

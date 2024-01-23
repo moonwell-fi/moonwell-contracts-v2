@@ -47,12 +47,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect wormhole relayer"
         );
         assertTrue(
-            governor.isTrustedSender(moonbeanChainId, address(voteCollection)),
+            governor.isTrustedSender(moonbeamChainId, address(voteCollection)),
             "voteCollection not whitelisted to send messages in"
         );
         assertTrue(
             governor.isCrossChainVoteCollector(
-                moonbeanChainId,
+                moonbeamChainId,
                 address(voteCollection)
             ),
             "voteCollection not whitelisted to send messages in"
@@ -69,7 +69,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
     /// Proposing on MultichainGovernor
 
-    function test_Propose_UpdateProposalThreshold_Succeeds()
+    function testProposeUpdateProposalThresholdSucceeds()
         public
         returns (uint256)
     {
@@ -166,11 +166,11 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
     /// Voting on MultichainGovernor
 
-    function test_VotingValidProposalId_Succeeds()
+    function testVotingValidProposalIdSucceeds()
         public
         returns (uint256 proposalId)
     {
-        proposalId = test_Propose_UpdateProposalThreshold_Succeeds();
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
 
         vm.warp(block.timestamp + governor.votingDelay() + 1);
 
@@ -203,18 +203,18 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
     /// cannot vote twice on the same proposal
 
-    function test_VotingTwiceSameProposal_Fails() public {
-        uint256 proposalId = test_VotingValidProposalId_Succeeds();
+    function testVotingTwiceSameProposalFails() public {
+        uint256 proposalId = testVotingValidProposalIdSucceeds();
 
         vm.expectRevert("MultichainVoteCollection: voter already voted");
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
     }
 
-    function test_VotingValidProposalIdInvalidVoteValue_Fails()
+    function testVotingValidProposalIdInvalidVoteValueFails()
         public
         returns (uint256 proposalId)
     {
-        proposalId = test_Propose_UpdateProposalThreshold_Succeeds();
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
 
         vm.warp(block.timestamp + governor.votingDelay() + 1);
 
@@ -228,11 +228,11 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         voteCollection.castVote(proposalId, 3);
     }
 
-    function test_VotingPendingProposalId_Fails()
+    function testVotingPendingProposalIdFails()
         public
         returns (uint256 proposalId)
     {
-        proposalId = test_Propose_UpdateProposalThreshold_Succeeds();
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
 
         vm.warp(block.timestamp + governor.votingDelay());
 
@@ -246,11 +246,11 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
     }
 
-    function test_VotingPastVoteEndTimeProposal_Fails()
+    function testVotingPastVoteEndTimeProposalFails()
         public
         returns (uint256 proposalId)
     {
-        proposalId = test_Propose_UpdateProposalThreshold_Succeeds();
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
 
         vm.warp(
             block.timestamp +
@@ -269,11 +269,11 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
     }
 
-    function test_VotingInvalidVoteValue_Fails()
+    function testVotingInvalidVoteValueFails()
         public
         returns (uint256 proposalId)
     {
-        proposalId = test_Propose_UpdateProposalThreshold_Succeeds();
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
 
         vm.warp(block.timestamp + governor.votingDelay() + 1);
 
@@ -287,8 +287,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         voteCollection.castVote(proposalId, 3);
     }
 
-    function test_VotingNoVotes_Fails() public returns (uint256 proposalId) {
-        proposalId = test_Propose_UpdateProposalThreshold_Succeeds();
+    function testVotingNoVotesFails() public returns (uint256 proposalId) {
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
 
         vm.warp(block.timestamp + governor.votingDelay() + 1);
 
@@ -306,7 +306,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     /// Multiple users all voting on the same proposal
 
     /// WELL
-    function test_MultipleUserVoteWell_Succeeds() public {
+    function testMultipleUserVoteWellSucceeds() public {
         address user1 = address(1);
         address user2 = address(2);
         address user3 = address(3);
@@ -329,7 +329,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.warp(block.timestamp + 1);
 
         uint256 snapshotTimestamp = block.timestamp - 1;
-        uint256 proposalId = test_Propose_UpdateProposalThreshold_Succeeds();
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
         vm.warp(block.timestamp + governor.votingDelay() + 1);
 
@@ -417,7 +417,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         }
     }
 
-    function test_MultipleUserVoteWithWellDelegation_Succeeds() public {
+    function testMultipleUserVoteWithWellDelegationSucceeds() public {
         uint256 voteAmount = 1_000_000 * 1e18;
 
         address user1 = address(1);
@@ -436,7 +436,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.warp(block.timestamp + 1);
 
-        uint256 proposalId = test_Propose_UpdateProposalThreshold_Succeeds();
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -507,7 +507,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     /// xWELL
-    function test_MultipleUserVotexWell_Succeeds() public {
+    function testMultipleUserVotexWellSucceeds() public {
         address user1 = address(1);
         address user2 = address(2);
         address user3 = address(3);
@@ -529,7 +529,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         /// include users before snapshot timestamp
         vm.warp(block.timestamp + 1);
 
-        uint256 proposalId = test_Propose_UpdateProposalThreshold_Succeeds();
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -615,7 +615,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
     }
 
-    function test_MultipleUserVoteWithxWellDelegation_Succeeds() public {
+    function testMultipleUserVoteWithxWellDelegationSucceeds() public {
         uint256 voteAmount = 1_000_000 * 1e18;
 
         address user1 = address(1);
@@ -634,7 +634,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.warp(block.timestamp + 1);
 
-        uint256 proposalId = test_Propose_UpdateProposalThreshold_Succeeds();
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
         assertEq(
             uint256(governor.state(proposalId)),
