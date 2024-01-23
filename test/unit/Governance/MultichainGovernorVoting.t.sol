@@ -59,6 +59,13 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             ),
             "voteCollection not whitelisted to send messages in"
         );
+
+        for (uint256 i = 0; i < approvedCalldata.length; i++) {
+            assertTrue(
+                governor.whitelistedCalldatas(approvedCalldata[i]),
+                "calldata not approved"
+            );
+        }
     }
 
     /// Proposing on MultichainGovernor
@@ -706,5 +713,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
     }
 
-    /// Voting on MultichainVoteCollection
+    /// TODO
+    ///  - test different states, approved, canceled, executed, defeated, succeeded
+    ///  - test changing parameters with multiple live proposals
+    ///  - test executing, breaking glass, pausing, adding and removing approved calldata and unpausing
 }
