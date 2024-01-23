@@ -204,8 +204,6 @@ contract MultichainGovernor is
         _setMaxUserLiveProposals(initData.maxUserLiveProposals);
         _setBreakGlassGuardian(initData.breakGlassGuardian);
 
-        _addTrustedSenders(trustedSenders);
-
         __Pausable_init();
 
         _updatePauseDuration(initData.pauseDuration);
@@ -214,6 +212,11 @@ contract MultichainGovernor is
         _grantGuardian(initData.pauseGuardian);
 
         _addWormholeRelayer(address(initData.wormholeRelayer));
+
+        /// @notice this is not good as we have duplicate data and should be fixed
+        /// TODO remove one or the other
+        _addTrustedSenders(trustedSenders);
+        _addTargetAddresses(trustedSenders);
     }
 
     /// --------------------------------------------------------- ///
