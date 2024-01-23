@@ -7,32 +7,134 @@ import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Well} from "@protocol/Governance/Well.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 
-contract MultichainBaseTest is MultichainGovernorDeploy, xWELLDeploy {
+contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
+    /// @notice reference to the mock wormhole trusted sender contract
     WormholeRelayerAdapter public wormholeRelayerAdapter;
-    MultichainVoteCollection public voteCollection;
-    MultichainGovernor public governorLogic; /// logic contract
-    MultichainGovernor public governor; /// proxy contract
 
+    /// @notice reference to the Multichain vote collection contract
+    MultichainVoteCollection public voteCollection;
+
+    /// @notice reference to the Multichain governor logic contract
+    MultichainGovernor public governorLogic;
+
+    /// @notice reference to the Multichain governor proxy contract
+    MultichainGovernor public governor;
+
+    /// @notice reference to the xWELL token
     xWELL public xwell;
+
+    /// @notice reference to the well token
     Well public well;
+
+    /// @notice reference to the well distributor contract
     Well public distributor;
+
+    /// @notice reference to the staked well contract
     IStakedWell public stkWell;
 
+    /// @notice threshold of tokens required to create a proposal
     uint256 public constant proposalThreshold = 100_000_000 * 1e18;
-    uint256 public constant votingPeriodSeconds = 3 days;
-    uint256 public constant votingDelaySeconds = 1 days;
+
+    /// @notice duration of the cross chain vote collection period
     uint256 public constant crossChainVoteCollectionPeriod = 1 days;
+
+    /// @notice address used to simulate a rollback
+    address public constant rollbackAddress = address(0xdead);
+
+    /// @notice duration of the voting period for a proposal
+    uint256 public constant votingPeriodSeconds = 3 days;
+
+    /// @notice delay before voting on a proposal may take place, once proposed
+    uint256 public constant votingDelaySeconds = 1 days;
+
+    /// @notice minimum number of votes cast required for a proposal to pass
     uint256 public constant quorum = 1_000_000 * 1e18;
+
+    /// @notice maximum number of live proposals that a user can have
     uint256 public constant maxUserLiveProposals = 5;
+
+    /// @notice duration of the pause
     uint128 public constant pauseDuration = 10 days;
-    uint16 public constant moonbeanChainId = 16;
+
+    /// @notice moonbeam wormhole chain id
+    uint16 public constant moonbeamChainId = 16;
+
+    /// @notice pause guardian
     address public pauseGuardian = address(this);
+
+    /// @notice address of the temporal governor
+    address[] public temporalGovernanceTargets = [address(this)];
+
+    /// @notice trusted senders for temporal governor
+    ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
+
+    /// @notice calldata for temporal governor
+    bytes[] public temporalGovernanceCalldata;
+
+    /// @notice whitelisted calldata for MultichainGovernor
+    bytes[] public approvedCalldata;
+
+    constructor() {
+        temporalGovernanceTrustedSenders.push(
+            ITemporalGovernor.TrustedSender({
+                chainId: moonbeamChainId,
+                addr: address(this)
+            })
+        );
+
+        temporalGovernanceCalldata.push(
+            abi.encodeWithSignature(
+                "setTrustedSenders((uint16,address)[])",
+                temporalGovernanceTrustedSenders
+            )
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "transferOwnership(address)",
+                rollbackAddress
+            )
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature("changeAdmin(address)", rollbackAddress)
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "setEmissionsManager(address)",
+                rollbackAddress
+            )
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "publishMessage(uint32,bytes,uint8)",
+                1000,
+                abi.encode(
+                    temporalGovernanceTargets[0],
+                    temporalGovernanceTargets,
+                    new uint256[](1),
+                    temporalGovernanceCalldata
+                ),
+                200
+            )
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "_setPendingAdmin(address)",
+                rollbackAddress
+            )
+        );
+    }
 
     function setUp() public virtual {
         vm.warp(100 + block.timestamp);
@@ -74,7 +176,12 @@ contract MultichainBaseTest is MultichainGovernorDeploy, xWELLDeploy {
             address voteCollectionProxy,
             address wormholeRelayerAdapterAddress,
 
-        ) = deployGovernorRelayerAndVoteCollection(initData, address(0), 16);
+        ) = deployGovernorRelayerAndVoteCollection(
+                initData,
+                approvedCalldata,
+                address(0),
+                16
+            );
 
         governor = MultichainGovernor(governorProxy);
         governorLogic = MultichainGovernor(governorImplementation);
