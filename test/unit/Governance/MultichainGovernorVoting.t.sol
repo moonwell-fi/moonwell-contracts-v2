@@ -34,7 +34,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
                 block.timestamp - 1,
                 block.number - 1
             ),
-            20_000_000_000 * 1e18,
+            15_000_000_000 * 1e18,
             "incorrect vote amount"
         );
 
@@ -234,7 +234,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             uint256 votesAbstain
         ) = governor.proposalVotes(proposalId);
 
-        assertEq(votesFor, 20_000_000_000 * 1e18, "votes for incorrect");
+        assertEq(votesFor, 15_000_000_000 * 1e18, "votes for incorrect");
         assertEq(votesAgainst, 0, "votes against incorrect");
         assertEq(votesAbstain, 0, "abstain votes incorrect");
         assertEq(votesFor, totalVotes, "total votes incorrect");
