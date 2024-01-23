@@ -14,7 +14,7 @@ import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 
-contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
+contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     function setUp() public override {
         super.setUp();
 
@@ -38,10 +38,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect vote amount"
         );
 
-        assertEq(address(governor.well()), address(well));
-        assertEq(address(governor.xWell()), address(xwell));
-        assertEq(address(governor.stkWell()), address(stkWell));
-        assertEq(address(governor.distributor()), address(distributor));
+        assertEq(address(voteCollection.xWell()), address(xwell));
+        assertEq(address(voteCollection.stkWell()), address(xwell)); /// TODO change this once PR merges
 
         assertEq(
             address(governor.wormholeRelayer()),
@@ -60,97 +58,16 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "voteCollection not whitelisted to send messages in"
         );
 
-        for (uint256 i = 0; i < approvedCalldata.length; i++) {
-            assertTrue(
-                governor.whitelistedCalldatas(approvedCalldata[i]),
-                "calldata not approved"
-            );
-        }
+        assertTrue(governor.bridgeCostAll() != 0, "no targets");
+
+        assertEq(
+            governor.getAllTargetChains().length,
+            1,
+            "incorrect target chains length"
+        );
     }
 
     /// Proposing on MultichainGovernor
-
-    function testProposeInsufficientProposalThresholdFails() public {
-        address[] memory targets = new address[](0);
-        uint256[] memory values = new uint256[](0);
-        bytes[] memory calldatas = new bytes[](0);
-        string memory description = "Mock Proposal MIP-M00";
-
-        vm.roll(block.number - 1);
-        vm.warp(block.timestamp - 1);
-        vm.expectRevert(
-            "MultichainGovernor: proposer votes below proposal threshold"
-        );
-
-        governor.propose(targets, values, calldatas, description);
-    }
-
-    function testProposeArityMismatchFails() public {
-        address[] memory targets = new address[](1);
-        uint256[] memory values = new uint256[](0);
-        bytes[] memory calldatas = new bytes[](0);
-        string memory description = "Mock Proposal MIP-M00";
-
-        /// branch 1
-
-        vm.expectRevert(
-            "MultichainGovernor: proposal function information arity mismatch"
-        );
-        governor.propose(targets, values, calldatas, description);
-
-        /// branch 2
-
-        values = new uint256[](1);
-
-        vm.expectRevert(
-            "MultichainGovernor: proposal function information arity mismatch"
-        );
-        governor.propose(targets, values, calldatas, description);
-    }
-
-    function testProposeNoActionsFails() public {
-        address[] memory targets = new address[](0);
-        uint256[] memory values = new uint256[](0);
-        bytes[] memory calldatas = new bytes[](0);
-        string memory description = "Mock Empty Proposal MIP-M00";
-
-        vm.expectRevert("MultichainGovernor: must provide actions");
-        governor.propose(targets, values, calldatas, description);
-    }
-
-    function testProposeNoDescriptionsFails() public {
-        address[] memory targets = new address[](1);
-        uint256[] memory values = new uint256[](1);
-        bytes[] memory calldatas = new bytes[](1);
-        string memory description = "";
-
-        vm.expectRevert("MultichainGovernor: description can not be empty");
-        governor.propose(targets, values, calldatas, description);
-    }
-
-    function testProposeOverMaxProposalCountFails() public {
-        address[] memory targets = new address[](1);
-        uint256[] memory values = new uint256[](1);
-        bytes[] memory calldatas = new bytes[](1);
-        string memory description = "Mock Proposal MIP-M00";
-
-        for (uint256 i = 0; i < governor.maxUserLiveProposals(); i++) {
-            uint256 bridgeCost = governor.bridgeCostAll();
-            vm.deal(address(this), bridgeCost);
-
-            uint256 proposalId = governor.propose{value: bridgeCost}(
-                targets,
-                values,
-                calldatas,
-                description
-            );
-        }
-
-        vm.expectRevert(
-            "MultichainGovernor: too many live proposals for this user"
-        );
-        governor.propose(targets, values, calldatas, description);
-    }
 
     function testProposeUpdateProposalThresholdSucceeds()
         public
@@ -190,6 +107,47 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         assertEq(proposalId, endProposalCount, "proposal id incorrect");
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
 
+        {
+            (
+                uint256 snapshotStartTimestamp,
+                uint256 votingStartTime,
+                uint256 endTimestamp,
+                uint256 crossChainVoteCollectionEndTimestamp,
+                ,
+                ,
+                ,
+
+            ) = voteCollection.proposalInformation(proposalId);
+            (
+                ,
+                uint256 snapshotStartTimestampGov,
+                uint256 votingStartTimeGov,
+                uint256 endTimestampGov,
+                uint256 crossChainVoteCollectionEndTimestampGov,
+                ,
+                ,
+                ,
+
+            ) = governor.proposalInformation(proposalId);
+
+            assertEq(
+                snapshotStartTimestamp,
+                snapshotStartTimestampGov,
+                "incorrect snapshot start timestamp"
+            );
+            assertEq(
+                votingStartTime,
+                votingStartTimeGov,
+                "incorrect voting start time"
+            );
+            assertEq(endTimestamp, endTimestampGov, "incorrect end timestamp");
+            assertEq(
+                crossChainVoteCollectionEndTimestamp,
+                crossChainVoteCollectionEndTimestampGov,
+                "incorrect cross chain vote collection end timestamp"
+            );
+        }
+
         uint256[] memory proposals = governor.liveProposals();
 
         bool proposalFound;
@@ -222,9 +180,12 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
 
-        governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
 
-        (bool hasVoted, , ) = governor.getReceipt(proposalId, address(this));
+        (bool hasVoted, , ) = voteCollection.getReceipt(
+            proposalId,
+            address(this)
+        );
         assertTrue(hasVoted, "user did not vote");
 
         (
@@ -232,9 +193,9 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             uint256 votesFor,
             uint256 votesAgainst,
             uint256 votesAbstain
-        ) = governor.proposalVotes(proposalId);
+        ) = voteCollection.proposalVotes(proposalId);
 
-        assertEq(votesFor, 20_000_000_000 * 1e18, "votes for incorrect");
+        assertEq(votesFor, 5_000_000_000 * 1e18, "votes for incorrect");
         assertEq(votesAgainst, 0, "votes against incorrect");
         assertEq(votesAbstain, 0, "abstain votes incorrect");
         assertEq(votesFor, totalVotes, "total votes incorrect");
@@ -245,8 +206,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     function testVotingTwiceSameProposalFails() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
 
-        vm.expectRevert("MultichainGovernor: voter already voted");
-        governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+        vm.expectRevert("MultichainVoteCollection: voter already voted");
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
     }
 
     function testVotingValidProposalIdInvalidVoteValueFails()
@@ -263,8 +224,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
 
-        vm.expectRevert("MultichainGovernor: invalid vote value");
-        governor.castVote(proposalId, 3);
+        vm.expectRevert("MultichainVoteCollection: invalid vote value");
+        voteCollection.castVote(proposalId, 3);
     }
 
     function testVotingPendingProposalIdFails()
@@ -281,8 +242,31 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect state, not pending"
         );
 
-        vm.expectRevert("MultichainGovernor: voting is closed");
-        governor.castVote(proposalId, Constants.VOTE_VALUE_NO);
+        vm.expectRevert("MultichainVoteCollection: Voting has not started yet");
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
+    }
+
+    function testVotingPastVoteEndTimeProposalFails()
+        public
+        returns (uint256 proposalId)
+    {
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        vm.warp(
+            block.timestamp +
+                governor.votingDelay() +
+                governor.votingPeriod() +
+                1
+        );
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            2,
+            "incorrect state, not in crosschain vote collection period"
+        );
+
+        vm.expectRevert("MultichainVoteCollection: Voting has ended");
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
     }
 
     function testVotingInvalidVoteValueFails()
@@ -299,8 +283,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
 
-        vm.expectRevert("MultichainGovernor: invalid vote value");
-        governor.castVote(proposalId, 3);
+        vm.expectRevert("MultichainVoteCollection: invalid vote value");
+        voteCollection.castVote(proposalId, 3);
     }
 
     function testVotingNoVotesFails() public returns (uint256 proposalId) {
@@ -314,9 +298,9 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
 
-        vm.expectRevert("MultichainGovernor: voter has no votes");
+        vm.expectRevert("MultichainVoteCollection: voter has no votes");
         vm.prank(address(1));
-        governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
     }
 
     /// Multiple users all voting on the same proposal
@@ -328,43 +312,38 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         address user3 = address(3);
         uint256 voteAmount = 1_000_000 * 1e18;
 
-        well.transfer(user1, voteAmount);
-        well.transfer(user2, voteAmount);
-        well.transfer(user3, voteAmount);
+        xwell.transfer(user1, voteAmount);
+        xwell.transfer(user2, voteAmount);
+        xwell.transfer(user3, voteAmount);
 
         vm.prank(user1);
-        well.delegate(user1);
+        xwell.delegate(user1);
 
         vm.prank(user2);
-        well.delegate(user2);
+        xwell.delegate(user2);
 
         vm.prank(user3);
-        well.delegate(user3);
+        xwell.delegate(user3);
 
         /// include users before snapshot block
-        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
 
+        uint256 snapshotTimestamp = block.timestamp - 1;
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
         vm.warp(block.timestamp + governor.votingDelay() + 1);
 
-        assertEq(
-            uint256(governor.state(proposalId)),
-            1,
-            "incorrect state, not active"
-        );
-
         vm.prank(user1);
-        governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
 
         vm.prank(user2);
-        governor.castVote(proposalId, Constants.VOTE_VALUE_NO);
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
 
         vm.prank(user3);
-        governor.castVote(proposalId, Constants.VOTE_VALUE_ABSTAIN);
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_ABSTAIN);
 
         {
-            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+            (bool hasVoted, uint8 voteValue, uint256 votes) = voteCollection
                 .getReceipt(proposalId, user1);
 
             assertTrue(hasVoted, "user1 has not voted");
@@ -375,8 +354,9 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
                 "user1 did not vote yes"
             );
         }
+
         {
-            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+            (bool hasVoted, uint8 voteValue, uint256 votes) = voteCollection
                 .getReceipt(proposalId, user2);
 
             assertTrue(hasVoted, "user2 has not voted");
@@ -387,8 +367,9 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
                 "user2 did not vote no"
             );
         }
+
         {
-            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+            (bool hasVoted, uint8 voteValue, uint256 votes) = voteCollection
                 .getReceipt(proposalId, user3);
 
             assertTrue(hasVoted, "user3 has not voted");
@@ -400,28 +381,40 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             );
         }
 
-        (
-            ,
-            ,
-            ,
-            ,
-            ,
-            uint256 totalVotes,
-            uint256 forVotes,
-            uint256 againstVotes,
-            uint256 abstainVotes
-        ) = governor.proposalInformation(proposalId);
+        {
+            (
+                uint256 snapshotStartTimestamp,
+                uint256 votingStartTime,
+                ,
+                ,
+                uint256 totalVotes,
+                uint256 forVotes,
+                uint256 againstVotes,
+                uint256 abstainVotes
+            ) = voteCollection.proposalInformation(proposalId);
 
-        assertEq(
-            totalVotes,
-            forVotes + againstVotes + abstainVotes,
-            "incorrect total votes"
-        );
+            assertEq(
+                snapshotTimestamp,
+                snapshotStartTimestamp,
+                "snapshot timestamp incorrect"
+            );
+            assertEq(
+                snapshotStartTimestamp + 1 + governor.votingDelay(),
+                votingStartTime,
+                "voting start time incorrect"
+            );
 
-        assertEq(totalVotes, 3 * voteAmount, "incorrect total votes");
-        assertEq(forVotes, voteAmount, "incorrect for votes");
-        assertEq(againstVotes, voteAmount, "incorrect against votes");
-        assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
+            assertEq(
+                totalVotes,
+                forVotes + againstVotes + abstainVotes,
+                "incorrect total votes"
+            );
+
+            assertEq(totalVotes, 3 * voteAmount, "incorrect total votes");
+            assertEq(forVotes, voteAmount, "incorrect for votes");
+            assertEq(againstVotes, voteAmount, "incorrect against votes");
+            assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
+        }
     }
 
     function testMultipleUserVoteWithWellDelegationSucceeds() public {
@@ -432,16 +425,16 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         address user3 = address(3);
         address user4 = address(4);
 
-        well.transfer(address(user1), 1_000_000 * 1e18);
-        well.transfer(address(user3), 1_000_000 * 1e18);
+        xwell.transfer(address(user1), 1_000_000 * 1e18);
+        xwell.transfer(address(user3), 1_000_000 * 1e18);
 
         vm.prank(user1);
-        well.delegate(user2);
+        xwell.delegate(user2);
 
         vm.prank(user3);
-        well.delegate(user4);
+        xwell.delegate(user4);
 
-        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
 
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
@@ -460,13 +453,13 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
 
         vm.prank(user2);
-        governor.castVote(proposalId, Constants.VOTE_VALUE_NO);
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
 
         vm.prank(user4);
-        governor.castVote(proposalId, Constants.VOTE_VALUE_ABSTAIN);
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_ABSTAIN);
 
         {
-            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+            (bool hasVoted, uint8 voteValue, uint256 votes) = voteCollection
                 .getReceipt(proposalId, user2);
 
             assertTrue(hasVoted, "user2 has not voted");
@@ -478,7 +471,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             );
         }
         {
-            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+            (bool hasVoted, uint8 voteValue, uint256 votes) = voteCollection
                 .getReceipt(proposalId, user4);
 
             assertTrue(hasVoted, "user4 has not voted");
@@ -495,12 +488,11 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             ,
             ,
             ,
-            ,
             uint256 totalVotes,
             uint256 forVotes,
             uint256 againstVotes,
             uint256 abstainVotes
-        ) = governor.proposalInformation(proposalId);
+        ) = voteCollection.proposalInformation(proposalId);
 
         assertEq(
             totalVotes,
@@ -713,8 +705,5 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
     }
 
-    /// TODO
-    ///  - test different states, approved, canceled, executed, defeated, succeeded
-    ///  - test changing parameters with multiple live proposals
-    ///  - test executing, breaking glass, pausing, adding and removing approved calldata and unpausing
+    /// Voting on MultichainVoteCollection
 }

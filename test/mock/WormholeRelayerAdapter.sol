@@ -6,46 +6,49 @@ import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 
 /// @notice Wormhole xERC20 Token Bridge adapter
 contract WormholeRelayerAdapter {
-
     uint256 public nonce;
 
-    /**
-     * @notice Publishes an instruction for the default delivery provider
-     * to relay a payload to the address `targetAddress`
-     * `targetAddress` must implement the IWormholeReceiver interface
-     *
-     * @param targetAddress address to call on targetChain (that implements IWormholeReceiver)
-     * @param payload arbitrary bytes to pass in as parameter in call to `targetAddress`
-     * @param gasLimit gas limit for call to `targetAddress`
-     * @return sequence sequence number of published VAA containing delivery instructions
-     */
+    /// @notice Publishes an instruction for the default delivery provider
+    /// to relay a payload to the address `targetAddress`
+    /// `targetAddress` must implement the IWormholeReceiver interface
+    ///
+    /// @param targetAddress address to call on targetChain (that implements IWormholeReceiver)
+    /// @param payload arbitrary bytes to pass in as parameter in call to `targetAddress`
+    /// @return sequence sequence number of published VAA containing delivery instructions
     function sendPayloadToEvm(
-        uint16,
+        uint16 chainId,
         address targetAddress,
         bytes memory payload,
-        uint256,
-        uint256 gasLimit
+        uint256, /// shhh
+        uint256 /// shhh
     ) external payable returns (uint64) {
-        (bool success, ) = targetAddress.call{ gas: gasLimit }(payload);
+        /// immediately call the target
+        IWormholeReceiver(targetAddress).receiveWormholeMessages(
+            payload,
+            new bytes[](0),
+            bytes32(uint256(uint160(msg.sender))),
+            chainId,
+            bytes32(++nonce)
+        );
 
-        require(success, "WormholeRelayerAdapter: Call to targetAddress failed");
-
-        // return zero as we ignore the sequence 
-        return 0;
+        return uint64(nonce);
     }
 
-    /**
-     * @notice Mock relayer calling `receiveWormholeMessages` into targetAddress 
-     * `targetAddress` must implement the IWormholeReceiver interface
-     *
-     * @param targetAddress address to call on targetChain (that implements IWormholeReceiver)
-     * @param payload arbitrary bytes to pass in as parameter in call to `targetAddress`
-     */
-    function forwardPayloadMessage(bytes memory payload, address senderAddress, uint16 senderChain, IWormholeReceiver targetAddress) external {
-        bytes[] memory additionalVaas = new bytes[](0);
-
-        targetAddress.receiveWormholeMessages(payload, additionalVaas, bytes32(uint256(uint160(senderAddress))), senderChain, bytes32(++nonce));
-
+    /// @notice Retrieve the price for relaying messages to another chain
+    /// currently hardcoded to 0.01 ether
+    function quoteEVMDeliveryPrice(
+        uint16,
+        uint256,
+        uint256
+    )
+        external
+        view
+        returns (
+            uint256 nativePriceQuote,
+            uint256 targetChainRefundPerGasUnused
+        )
+    {
+        nativePriceQuote = 0.01 ether;
+        targetChainRefundPerGasUnused = 0;
     }
 }
- 

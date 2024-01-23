@@ -141,6 +141,20 @@ abstract contract WormholeBridgeBase is
     /// --------------------------------------------------------
     /// --------------------------------------------------------
 
+    function getAllTargetChains() public view returns (uint16[] memory) {
+        uint256 chainsLength = _targetChains.length();
+        uint16[] memory chains = new uint16[](chainsLength);
+
+        for (uint256 i = 0; i < chainsLength; ) {
+            chains[i] = uint16(_targetChains.at(i));
+            unchecked {
+                i++;
+            }
+        }
+
+        return chains;
+    }
+
     /// @notice Estimate bridge cost to bridge out to a destination chain
     /// @param dstChainId Destination chain id
     function bridgeCost(

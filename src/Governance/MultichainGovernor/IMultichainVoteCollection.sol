@@ -11,7 +11,7 @@ interface IMultichainVoteCollection {
         /// @notice unix timestamp when voting will end
         uint256 votingEndTime;
         /// @notice unix timestamp when vote collection phase ends
-        uint256 votingCollectionEndTime;
+        uint256 crossChainVoteCollectionEndTimestamp;
         /// @notice votes
         MultichainVotes votes;
         /// @notice Receipts of ballots for the entire set of voters
@@ -41,15 +41,15 @@ interface IMultichainVoteCollection {
         uint256 totalVotes;
     }
 
-    /// @dev allows user to cast vote for a proposal
+    /// @notice allows user to cast vote for a proposal
     function castVote(uint256 proposalId, uint8 voteValue) external;
 
-    /// @dev Returns the number of votes for a given user
+    /// @notice Returns the number of votes for a given user
     function getVotes(
         address account,
         uint256 timestamp
     ) external view returns (uint256);
 
-    /// @notice Emits votes to be contabilized on MoomBeam Governor contract
+    /// @notice Emits votes to be counted on Moonbeam Governor contract
     function emitVotes(uint256 proposalId) external payable;
 }

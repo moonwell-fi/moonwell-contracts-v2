@@ -55,6 +55,7 @@ contract MultichainGovernorDeploy {
 
     function deployGovernorRelayerAndVoteCollection(
         MultichainGovernor.InitializeData memory initializeData,
+        bytes[] memory whitelistedCalldata,
         address proxyAdminParameter,
         uint16 moonbeamChainId
     )
@@ -104,11 +105,13 @@ contract MultichainGovernorDeploy {
 
         MultichainGovernor(governorProxy).initialize(
             initializeData,
-            trustedSenders
+            trustedSenders,
+            whitelistedCalldata
         );
 
         MultichainVoteCollection(voteCollectionProxy).initialize(
             initializeData.xWell,
+            initializeData.xWell, /// TODO change this to stkWELL on Base at a later point in time
             governorProxy,
             wormholeRelayerAdapter,
             moonbeamChainId
