@@ -15,6 +15,10 @@ interface IStakedWell {
         uint128 _distributionDuration,
         address _governance
     ) external;
+
+    function stake(address to, uint256 amount) external;
+
+    function balanceOf(address account) external view returns (uint256);
 }
 
 contract StakedWellUnitTest is BaseTest {
@@ -41,16 +45,23 @@ contract StakedWellUnitTest is BaseTest {
             address(this),
             address(this),
             1,
-            address(this)
+            address(0)
         );
 
-        amount = 10_000 ** 10 * 18;
+        amount = xwellProxy.MAX_SUPPLY();
         vm.prank(address(xerc20Lockbox));
         xwellProxy.mint(address(this), amount);
     }
 
     function testStake() public {
-        uint256 balance = xwellProxy.balanceOf(address(this));
-        console.log(balance);
+        xwellProxy.approve(address(stakedWell), amount);
+
+        // stake
+        stakedWell.stake(address(this), amount);
+        assertEq(
+            stakedWell.balanceOf(address(this)),
+            amount,
+            "Wrong staked amount"
+        );
     }
 }
