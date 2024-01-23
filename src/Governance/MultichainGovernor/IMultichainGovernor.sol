@@ -213,7 +213,8 @@ interface IMultichainGovernor {
     function state(uint256 proposalId) external view returns (ProposalState);
 
     /// @notice The total amount of live proposals
-    /// proposals that were cancelled or defeated will not be included in this list
+    /// proposals in the pending, voting or cross chain vote collection period will be included in this list
+    /// proposals that were cancelled, executed, or defeated will not be included in this list
     function liveProposals() external view returns (uint256[] memory);
 
     /// @dev Returns the proposal threshold (minimum number of votes to propose)
