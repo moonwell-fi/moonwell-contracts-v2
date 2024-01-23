@@ -7,6 +7,7 @@ import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
@@ -67,10 +68,72 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     /// @notice pause guardian
     address public pauseGuardian = address(this);
 
+    /// @notice address of the temporal governor
+    address[] public temporalGovernanceTargets = [address(this)];
+
+    /// @notice trusted senders for temporal governor
+    ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
+
+    /// @notice calldata for temporal governor
+    bytes[] public temporalGovernanceCalldata;
+
     /// @notice whitelisted calldata for MultichainGovernor
-    bytes[] public approvedCalldata = [
-        abi.encodeWithSignature("transferOwnership(address)", rollbackAddress)
-    ];
+    bytes[] public approvedCalldata;
+
+    constructor() {
+        temporalGovernanceTrustedSenders.push(
+            ITemporalGovernor.TrustedSender({
+                chainId: moonbeamChainId,
+                addr: address(this)
+            })
+        );
+
+        temporalGovernanceCalldata.push(
+            abi.encodeWithSignature(
+                "setTrustedSenders((uint16,address)[])",
+                temporalGovernanceTrustedSenders
+            )
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "transferOwnership(address)",
+                rollbackAddress
+            )
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature("changeAdmin(address)", rollbackAddress)
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "setEmissionsManager(address)",
+                rollbackAddress
+            )
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "publishMessage(uint32,bytes,uint8)",
+                1000,
+                abi.encode(
+                    temporalGovernanceTargets[0],
+                    temporalGovernanceTargets,
+                    new uint256[](1),
+                    temporalGovernanceCalldata
+                ),
+                200
+            )
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "_setPendingAdmin(address)",
+                rollbackAddress
+            )
+        );
+    }
 
     function setUp() public virtual {
         vm.warp(100 + block.timestamp);
