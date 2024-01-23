@@ -107,6 +107,47 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(proposalId, endProposalCount, "proposal id incorrect");
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
 
+        {
+            (
+                uint256 snapshotStartTimestamp,
+                uint256 votingStartTime,
+                uint256 endTimestamp,
+                uint256 crossChainVoteCollectionEndTimestamp,
+                ,
+                ,
+                ,
+
+            ) = voteCollection.proposalInformation(proposalId);
+            (
+                ,
+                uint256 snapshotStartTimestampGov,
+                uint256 votingStartTimeGov,
+                uint256 endTimestampGov,
+                uint256 crossChainVoteCollectionEndTimestampGov,
+                ,
+                ,
+                ,
+
+            ) = governor.proposalInformation(proposalId);
+
+            assertEq(
+                snapshotStartTimestamp,
+                snapshotStartTimestampGov,
+                "incorrect snapshot start timestamp"
+            );
+            assertEq(
+                votingStartTime,
+                votingStartTimeGov,
+                "incorrect voting start time"
+            );
+            assertEq(endTimestamp, endTimestampGov, "incorrect end timestamp");
+            assertEq(
+                crossChainVoteCollectionEndTimestamp,
+                crossChainVoteCollectionEndTimestampGov,
+                "incorrect cross chain vote collection end timestamp"
+            );
+        }
+
         uint256[] memory proposals = governor.liveProposals();
 
         bool proposalFound;

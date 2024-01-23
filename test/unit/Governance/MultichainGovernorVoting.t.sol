@@ -128,7 +128,15 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         string memory description = "Mock Proposal MIP-M00";
 
         for (uint256 i = 0; i < governor.maxUserLiveProposals(); i++) {
-            governor.propose(targets, values, calldatas, description);
+            uint256 bridgeCost = governor.bridgeCostAll();
+            vm.deal(address(this), bridgeCost);
+
+            uint256 proposalId = governor.propose{value: bridgeCost}(
+                targets,
+                values,
+                calldatas,
+                description
+            );
         }
 
         vm.expectRevert(
@@ -155,8 +163,10 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
 
         uint256 startProposalCount = governor.proposalCount();
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
 
-        uint256 proposalId = governor.propose(
+        uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
             calldatas,
