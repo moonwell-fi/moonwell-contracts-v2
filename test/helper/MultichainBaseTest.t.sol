@@ -11,6 +11,7 @@ import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Well} from "@protocol/Governance/Well.sol";
+import {IStakedWell} from "@protocol/IStakedWell.sol";
 
 contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     WormholeRelayerAdapter public wormholeRelayerAdapter;
@@ -21,7 +22,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     xWELL public xwell;
     Well public well;
     Well public distributor;
-    Well public stkWell;
+    IStakedWell public stkWell;
 
     uint256 public constant proposalThreshold = 100_000_000 * 1e18;
     uint256 public constant votingPeriodSeconds = 3 days;
@@ -38,7 +39,8 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         well = new Well(address(this));
         distributor = new Well(address(this));
-        stkWell = new Well(address(this));
+        address stakedWellAddress = deployCode("StakedWell.sol:StakedWell");
+        stkWell = IStakedWell(stakedWellAddress);
 
         MintLimits.RateLimitMidPointInfo[]
             memory newRateLimits = new MintLimits.RateLimitMidPointInfo[](0);

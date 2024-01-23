@@ -109,7 +109,7 @@ contract MultichainGovernorDeploy {
 
         MultichainVoteCollection(voteCollectionProxy).initialize(
             initializeData.xWell,
-            initializeData.xWell, /// TODO change this to stkWELL on Base at a later point in time
+            initializeData.stkWell,
             governorProxy,
             wormholeRelayerAdapter,
             moonbeamChainId

@@ -240,7 +240,7 @@ contract MultichainVoteCollection is
         return xWell.getPastVotes(account, timestamp);
         /// TODO add stkWELL in once imported into this repo, Ana please uncomment the next two lines once you've imported things
         /// +
-        /// stkWell.getPriorVotes(account, timestamp); /// TODO need actual stkWELL contract for this to work
+        stkWell.getPriorVotes(account, timestamp); /// TODO need actual stkWELL contract for this to work
     }
 
     /// @notice Emits votes to be contabilized on Moonbeam Governor contract
