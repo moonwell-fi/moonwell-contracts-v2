@@ -8,15 +8,13 @@ import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 contract WormholeRelayerAdapter {
     uint256 public nonce;
 
-    /**
-     * @notice Publishes an instruction for the default delivery provider
-     * to relay a payload to the address `targetAddress`
-     * `targetAddress` must implement the IWormholeReceiver interface
-     *
-     * @param targetAddress address to call on targetChain (that implements IWormholeReceiver)
-     * @param payload arbitrary bytes to pass in as parameter in call to `targetAddress`
-     * @return sequence sequence number of published VAA containing delivery instructions
-     */
+    /// @notice Publishes an instruction for the default delivery provider
+    /// to relay a payload to the address `targetAddress`
+    /// `targetAddress` must implement the IWormholeReceiver interface
+    ///
+    /// @param targetAddress address to call on targetChain (that implements IWormholeReceiver)
+    /// @param payload arbitrary bytes to pass in as parameter in call to `targetAddress`
+    /// @return sequence sequence number of published VAA containing delivery instructions
     function sendPayloadToEvm(
         uint16 chainId,
         address targetAddress,
@@ -36,6 +34,8 @@ contract WormholeRelayerAdapter {
         return uint64(nonce);
     }
 
+    /// @notice Retrieve the price for relaying messages to another chain
+    /// currently hardcoded to 0.01 ether
     function quoteEVMDeliveryPrice(
         uint16,
         uint256,
