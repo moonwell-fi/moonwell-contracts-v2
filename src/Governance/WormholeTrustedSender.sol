@@ -36,7 +36,7 @@ contract WormholeTrustedSender is IWormholeTrustedSender {
     /// trusted sender per chain id
     function _addTrustedSenders(
         TrustedSender[] memory _trustedSenders
-    ) internal {
+    ) internal virtual {
         unchecked {
             for (uint256 i = 0; i < _trustedSenders.length; i++) {
                 _addTrustedSender(
@@ -86,7 +86,7 @@ contract WormholeTrustedSender is IWormholeTrustedSender {
     /// @param _trustedSenders The list of trusted senders to remove
     function _removeTrustedSenders(
         TrustedSender[] memory _trustedSenders
-    ) internal {
+    ) internal virtual {
         unchecked {
             for (uint256 i = 0; i < _trustedSenders.length; i++) {
                 _removeTrustedSender(
@@ -142,7 +142,9 @@ contract WormholeTrustedSender is IWormholeTrustedSender {
     /// then to a bytes32 *left* aligns it, so we right shift to get the proper data
     /// @param addr The address to convert
     /// @return The address as a bytes32
-    function addressToBytes(address addr) public pure override returns (bytes32) {
+    function addressToBytes(
+        address addr
+    ) public pure override returns (bytes32) {
         return bytes32(bytes20(addr)) >> 96;
     }
 }

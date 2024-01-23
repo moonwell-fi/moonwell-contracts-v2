@@ -73,22 +73,22 @@ abstract contract WormholeBridgeBase is
         emit GasLimitUpdated(oldGasLimit, newGasLimit);
     }
 
-    /// @dev Updates the list of trusted senders
+    /// @notice Add to the list of trusted senders
     /// @param _trustedSenders The list of trusted senders, allowing one
     /// trusted sender per chain id
     /// @dev override WormholeTrustedSender to add chain id to _targetChains
     function _addTrustedSenders(
-        TrustedSender[] memory _chainConfig
+        TrustedSender[] memory _trustedSenders
     ) internal override {
-        for (uint256 i = 0; i < _chainConfig.length; ) {
-            uint16 chainId = _chainConfig[i].chainId;
-            targetAddress[chainId] = _chainConfig[i].addr;
+        for (uint256 i = 0; i < _trustedSenders.length; ) {
+            uint16 chainId = _trustedSenders[i].chainId;
+            targetAddress[chainId] = _trustedSenders[i].addr;
             require(
                 _targetChains.add(chainId),
                 "WormholeBridge: chain already added"
             );
 
-            _addTrustedSender(_chainConfig[i].addr, chainId);
+            _addTrustedSender(_trustedSenders[i].addr, chainId);
 
             unchecked {
                 i++;
@@ -96,22 +96,22 @@ abstract contract WormholeBridgeBase is
         }
     }
 
-    /// @notice remove a trusted sender
-    /// @param trustedSender The trusted sender to remove
-    /// @param chainId The chain id of the trusted sender to remove
+    /// @notice Remove from the list of trusted senders
+    /// @param _trustedSenders The list of trusted senders, allowing one
+    /// trusted sender per chain id
     /// @dev override WormholeTrustedSender to remove chain id to _targetChains
     function _removeTrustedSenders(
-        TrustedSender[] memory _chainConfig
+        TrustedSender[] memory _trustedSenders
     ) internal override {
-        for (uint256 i = 0; i < _chainConfig.length; ) {
-            uint16 chainId = _chainConfig[i].chainId;
+        for (uint256 i = 0; i < _trustedSenders.length; ) {
+            uint16 chainId = _trustedSenders[i].chainId;
             targetAddress[chainId] = address(0);
             require(
                 _targetChains.remove(chainId),
                 "WormholeBridge: chain not added"
             );
 
-            _removeTrustedSender(_chainConfig[i].addr, chainId);
+            _removeTrustedSender(_trustedSenders[i].addr, chainId);
 
             unchecked {
                 i++;
