@@ -185,9 +185,11 @@ contract MultichainGovernor is
     /// @notice initialize the governor contract
     /// @param initData initialization data
     /// @param trustedSenders that can relay messages to this contract
+    /// @param calldatas calldatas to whitelist for break glass guardian
     function initialize(
         InitializeData memory initData,
-        TrustedSender[] memory trustedSenders
+        TrustedSender[] memory trustedSenders,
+        bytes[] calldata calldatas
     ) external initializer {
         xWell = xWELL(initData.xWell);
         well = SnapshotInterface(initData.well);
@@ -217,6 +219,10 @@ contract MultichainGovernor is
         /// TODO remove one or the other
         _addTrustedSenders(trustedSenders);
         _addTargetAddresses(trustedSenders);
+
+        for (uint256 i = 0; i < calldatas.length; i++) {
+            _updateApprovedCalldata(calldatas[i], true);
+        }
     }
 
     /// --------------------------------------------------------- ///
@@ -280,6 +286,8 @@ contract MultichainGovernor is
         votes = receipt.votes;
     }
 
+    /// @notice returns information on a proposal
+    /// @param proposalId the id of the proposal to check
     function proposalInformation(
         uint256 proposalId
     )
@@ -311,6 +319,9 @@ contract MultichainGovernor is
         abstainVotes = proposal.abstainVotes;
     }
 
+    /// @notice returns the vote counts for a proposal
+    /// includes the total vote count, for, against and abstain votes
+    /// @param proposalId the id of the proposal to check
     function proposalVotes(
         uint256 proposalId
     )
@@ -765,23 +776,7 @@ contract MultichainGovernor is
         bytes calldata data,
         bool approved
     ) external onlyGovernor {
-        /// can only approve if it is not already approved
-        if (approved == true) {
-            require(
-                !whitelistedCalldatas[data],
-                "MultichainGovernor: calldata already approved"
-            );
-        } else {
-            /// can only remove approval if already approved
-            require(
-                whitelistedCalldatas[data],
-                "MultichainGovernor: calldata already not approved"
-            );
-        }
-
-        whitelistedCalldatas[data] = approved;
-
-        emit CalldataApprovalUpdated(data, approved);
+        _updateApprovedCalldata(data, approved);
     }
 
     /// @notice remove trusted senders from external chains
@@ -935,6 +930,34 @@ contract MultichainGovernor is
     /// ------------------- HELPER FUNCTIONS -------------------- ///
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
+
+    /// @notice helper function to whitelist calldata
+    /// if the calldata is already whitelisted, then it can only be removed
+    /// if the calldata is not already whitelisted, then it can only be approved
+    /// @param data the calldata to update approval for
+    /// @param approved whether or not the calldata is approved
+    function _updateApprovedCalldata(
+        bytes calldata data,
+        bool approved
+    ) private {
+        /// can only approve if it is not already approved
+        if (approved == true) {
+            require(
+                !whitelistedCalldatas[data],
+                "MultichainGovernor: calldata already approved"
+            );
+        } else {
+            /// can only remove approval if already approved
+            require(
+                whitelistedCalldatas[data],
+                "MultichainGovernor: calldata already not approved"
+            );
+        }
+
+        whitelistedCalldatas[data] = approved;
+
+        emit CalldataApprovalUpdated(data, approved);
+    }
 
     function _setCrossChainVoteCollectionPeriod(
         uint256 _crossChainVoteCollectionPeriod
