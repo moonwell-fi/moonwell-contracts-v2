@@ -220,8 +220,10 @@ contract MultichainGovernor is
         _addTrustedSenders(trustedSenders);
         _addTargetAddresses(trustedSenders);
 
-        for (uint256 i = 0; i < calldatas.length; i++) {
-            _updateApprovedCalldata(calldatas[i], true);
+        unchecked {
+            for (uint256 i = 0; i < calldatas.length; i++) {
+                _updateApprovedCalldata(calldatas[i], true);
+            }
         }
     }
 
@@ -277,7 +279,7 @@ contract MultichainGovernor is
     function getReceipt(
         uint256 proposalId,
         address voter
-    ) public view returns (bool hasVoted, uint8 voteValue, uint256 votes) {
+    ) external view returns (bool hasVoted, uint8 voteValue, uint256 votes) {
         Proposal storage proposal = proposals[proposalId];
         Receipt storage receipt = proposal.receipts[voter];
 
@@ -291,7 +293,7 @@ contract MultichainGovernor is
     function proposalInformation(
         uint256 proposalId
     )
-        public
+        external
         view
         returns (
             address proposer,
@@ -325,7 +327,7 @@ contract MultichainGovernor is
     function proposalVotes(
         uint256 proposalId
     )
-        public
+        external
         view
         returns (
             uint256 totalVotes,
@@ -347,7 +349,7 @@ contract MultichainGovernor is
     function getProposalData(
         uint256 proposalId
     )
-        public
+        external
         view
         returns (
             address[] memory targets,
@@ -369,10 +371,14 @@ contract MultichainGovernor is
 
         uint256[] memory allProposals = _liveProposals.values();
         uint256 liveProposalIndex = 0;
-        for (uint256 i = 0; i < allProposals.length; i++) {
-            if (proposalActive(allProposals[i])) {
-                liveProposalIds[liveProposalIndex] = allProposals[i];
-                liveProposalIndex++;
+
+        unchecked {
+            for (uint256 i = 0; i < allProposals.length; i++) {
+                if (proposalActive(allProposals[i])) {
+                    /// these values should never go above uint_max
+                    liveProposalIds[liveProposalIndex] = allProposals[i];
+                    liveProposalIndex++;
+                }
             }
         }
 
@@ -444,7 +450,7 @@ contract MultichainGovernor is
         return userProposals;
     }
 
-    /// returns the total voting power for an address at a given block number and timestamp
+    /// @notice returns the total voting power for an address at a given block number and timestamp
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
     /// @param blockNumber The block number to check the balance at
@@ -488,7 +494,7 @@ contract MultichainGovernor is
             proposalState == ProposalState.CrossChainVoteCollection;
     }
 
-    /// @notice override with a mapping
+    /// @notice return the votes for a particular chain and proposal
     function chainAddressVotes(
         uint256 proposalId,
         uint16 chainId
@@ -586,6 +592,10 @@ contract MultichainGovernor is
 
     /// @dev Returns the proposal ID for the proposed proposal
     /// only callable if user has proposal threshold or more votes
+    /// @param targets the list of target addresses for calls to be made
+    /// @param values the list of values to be used for the calls
+    /// @param calldatas the list of calldatas to be used for the calls
+    /// @param description the description of the proposal
     function propose(
         address[] memory targets,
         uint256[] memory values,
@@ -620,6 +630,19 @@ contract MultichainGovernor is
                 userProposalCount < maxUserLiveProposals,
                 "MultichainGovernor: too many live proposals for this user"
             );
+        }
+
+        {
+            /// check to ensure the sum of values does not overflow
+            /// this is an implicit check that sum is lte UINT_256 max,
+            /// this way a user cannot create a proposal that can never be executed
+            uint256 totalValue = 0;
+            for (uint256 i = 0; i < values.length; ) {
+                totalValue += values[i];
+                unchecked {
+                    i++;
+                }
+            }
         }
 
         proposalCount++;
@@ -681,6 +704,12 @@ contract MultichainGovernor is
         return newProposal.id;
     }
 
+    /// @notice execute a proposal
+    /// can only be called if the proposal is in the succeeded state
+    /// can only be called when the contract is not paused
+    /// the sum of the values must be equal to the msg.value
+    /// the native token balance of this contract will remain unchanged before and after a proposal is executed
+    /// @param proposalId the id of the proposal to execute
     function execute(
         uint256 proposalId
     ) external payable override whenNotPaused {
@@ -979,6 +1008,7 @@ contract MultichainGovernor is
     }
 
     /// @notice user max live proposals cannot be zero, as that would brick governance permanently
+    /// 0 < max live proposals <= max user proposal count
     /// @param _maxUserLiveProposals the new max user live proposals
     function _setMaxUserLiveProposals(uint256 _maxUserLiveProposals) private {
         require(
