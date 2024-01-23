@@ -19,6 +19,13 @@ interface IStakedWell {
     function stake(address to, uint256 amount) external;
 
     function balanceOf(address account) external view returns (uint256);
+
+    function getPriorVotes(
+        address account,
+        uint256 blockNumber
+    ) external view returns (uint256);
+
+    function redeem(address to, uint256 amount) external;
 }
 
 contract StakedWellUnitTest is BaseTest {
@@ -63,5 +70,42 @@ contract StakedWellUnitTest is BaseTest {
             amount,
             "Wrong staked amount"
         );
+    }
+
+    function testGetPriorVotes() public {
+        testStake();
+
+        uint256 blockTimestamp = block.timestamp;
+
+        vm.warp(block.timestamp + 1);
+        assertEq(
+            stakedWell.getPriorVotes(address(this), blockTimestamp),
+            amount,
+            "Wrong prior votes"
+        );
+    }
+
+    function testRedeem() public {
+        testStake();
+
+        vm.warp(block.timestamp + cooldown + 1);
+        stakedWell.redeem(address(this), amount);
+        assertEq(stakedWell.balanceOf(address(this)), 0, "Wrong staked amount");
+    }
+
+    function testRedeemBeforeCooldown() public {
+        testStake();
+
+        vm.warp(block.timestamp + cooldown - 1);
+        vm.expectRevert("INSUFFICIENT_COOLDOWN");
+        stakedWell.redeem(address(this), amount);
+    }
+
+    function testRedeemAfterUnstakePeriod() public {
+        testStake();
+
+        vm.warp(block.timestamp + cooldown + unstakePeriod + 1);
+        vm.expectRevert("UNSTAKE_WINDOW_FINISHED");
+        stakedWell.redeem(address(this), amount);
     }
 }
