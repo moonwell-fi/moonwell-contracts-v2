@@ -443,7 +443,7 @@ contract MultichainGovernor is
         uint256 blockNumber
     ) public view returns (uint256) {
         uint256 wellVotes = well.getPriorVotes(account, blockNumber);
-        uint256 stkWellVotes = stkWell.getPriorVotes(account, blockNumber);
+        uint256 stkWellVotes = stkWell.getPriorVotes(account, timestamp);
         uint256 distributorVotes = distributor.getPriorVotes(
             account,
             blockNumber

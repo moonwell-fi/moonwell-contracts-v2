@@ -13,7 +13,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Well} from "@protocol/Governance/Well.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 
-contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
+contract MultichainBaseTest is MultichainGovernorDeploy, xWELLDeploy {
     WormholeRelayerAdapter public wormholeRelayerAdapter;
     MultichainVoteCollection public voteCollection;
     MultichainGovernor public governorLogic; /// logic contract
@@ -39,8 +39,6 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         well = new Well(address(this));
         distributor = new Well(address(this));
-        address stakedWellAddress = deployCode("StakedWell.sol:StakedWell");
-        stkWell = IStakedWell(stakedWellAddress);
 
         MintLimits.RateLimitMidPointInfo[]
             memory newRateLimits = new MintLimits.RateLimitMidPointInfo[](0);
@@ -95,5 +93,11 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         );
 
         xwell.mint(address(this), 5_000_000_000 * 1e18);
+
+        stkWell = deployStakedWell(xwellProxy);
+
+        uint256 amountToStake = 2_000_000_000 * 1e18;
+        xwell.approve(address(stkWell), amountToStake);
+        stkWell.stake(address(this), amountToStake);
     }
 }

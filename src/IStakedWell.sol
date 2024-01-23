@@ -22,4 +22,6 @@ interface IStakedWell {
     ) external view returns (uint256);
 
     function redeem(address to, uint256 amount) external;
+
+    function mint(address to, uint256 amount) external;
 }

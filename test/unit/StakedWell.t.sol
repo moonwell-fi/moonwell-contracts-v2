@@ -32,12 +32,10 @@ contract StakedWellUnitTest is BaseTest {
         amount = xwellProxy.MAX_SUPPLY();
         vm.prank(address(xerc20Lockbox));
         xwellProxy.mint(address(this), amount);
+        xwellProxy.approve(address(stakedWell), amount);
     }
 
     function testStake() public {
-        xwellProxy.approve(address(stakedWell), amount);
-
-        // stake
         stakedWell.stake(address(this), amount);
         assertEq(
             stakedWell.balanceOf(address(this)),
