@@ -78,7 +78,7 @@ contract WormholeTrustedSender is IWormholeTrustedSender {
         emit TrustedSenderUpdated(
             chainId,
             trustedSender,
-            false /// added to list
+            false /// removed from list
         );
     }
 
@@ -115,7 +115,7 @@ contract WormholeTrustedSender is IWormholeTrustedSender {
     function isTrustedSender(
         uint16 chainId,
         address addr
-    ) external view override returns (bool) {
+    ) public view override returns (bool) {
         return isTrustedSender(chainId, addressToBytes(addr));
     }
 
