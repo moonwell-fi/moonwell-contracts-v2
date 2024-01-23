@@ -55,6 +55,7 @@ contract MultichainGovernorDeploy {
 
     function deployGovernorRelayerAndVoteCollection(
         MultichainGovernor.InitializeData memory initializeData,
+        bytes[] memory whitelistedCalldata,
         address proxyAdminParameter,
         uint16 moonbeamChainId
     )
@@ -104,7 +105,8 @@ contract MultichainGovernorDeploy {
 
         MultichainGovernor(governorProxy).initialize(
             initializeData,
-            trustedSenders
+            trustedSenders,
+            whitelistedCalldata
         );
 
         MultichainVoteCollection(voteCollectionProxy).initialize(
