@@ -41,15 +41,15 @@ interface IMultichainVoteCollection {
         uint256 totalVotes;
     }
 
-    /// @dev allows user to cast vote for a proposal
+    /// @notice allows user to cast vote for a proposal
     function castVote(uint256 proposalId, uint8 voteValue) external;
 
-    /// @dev Returns the number of votes for a given user
+    /// @notice Returns the number of votes for a given user
     function getVotes(
         address account,
         uint256 timestamp
     ) external view returns (uint256);
 
-    /// @notice Emits votes to be contabilized on MoomBeam Governor contract
+    /// @notice Emits votes to be counted on Moonbeam Governor contract
     function emitVotes(uint256 proposalId) external payable;
 }
