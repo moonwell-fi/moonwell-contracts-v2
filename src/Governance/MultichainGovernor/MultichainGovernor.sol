@@ -215,10 +215,7 @@ contract MultichainGovernor is
 
         _addWormholeRelayer(address(initData.wormholeRelayer));
 
-        /// @notice this is not good as we have duplicate data and should be fixed
-        /// TODO remove one or the other
         _addTrustedSenders(trustedSenders);
-        _addTargetAddresses(trustedSenders);
 
         unchecked {
             for (uint256 i = 0; i < calldatas.length; i++) {
@@ -822,16 +819,6 @@ contract MultichainGovernor is
         TrustedSender[] memory _trustedSenders
     ) external onlyGovernor {
         _addTrustedSenders(_trustedSenders);
-    }
-
-    /// @notice add map of target addresses for external chains
-    /// @dev there is no check here to ensure there isn't an existing configuration
-    /// ensure the proper add or remove is being called when using this function
-    /// @param _chainConfig array of chainids to addresses to add
-    function addTargetAddresses(
-        TrustedSender[] memory _chainConfig
-    ) external onlyGovernor {
-        _addTargetAddresses(_chainConfig);
     }
 
     /// @notice updates the proposal threshold

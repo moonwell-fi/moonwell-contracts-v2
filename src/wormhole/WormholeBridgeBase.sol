@@ -58,14 +58,6 @@ abstract contract WormholeBridgeBase is
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
 
-    /// @notice chain id of the target chain to address for bridging
-    /// @param dstChainId destination chain id to send tokens to
-    /// @param target address to send tokens to
-    event TargetAddressUpdated(
-        uint16 indexed dstChainId,
-        address indexed target
-    );
-
     /// @notice emitted when the gas limit changes on external chains
     /// @param oldGasLimit old gas limit
     /// @param newGasLimit new gas limit
@@ -81,11 +73,13 @@ abstract contract WormholeBridgeBase is
         emit GasLimitUpdated(oldGasLimit, newGasLimit);
     }
 
-    /// @notice add map of target addresses for external chains
-    /// @dev there is no check here to ensure there isn't an existing configuration
-    /// ensure the proper add or remove is being called when using this function
-    /// @param _chainConfig array of chainids to addresses to add
-    function _addTargetAddresses(TrustedSender[] memory _chainConfig) internal {
+    /// @dev Updates the list of trusted senders
+    /// @param _trustedSenders The list of trusted senders, allowing one
+    /// trusted sender per chain id
+    /// @dev override WormholeTrustedSender to add chain id to _targetChains
+    function _addTrustedSenders(
+        TrustedSender[] memory _chainConfig
+    ) internal override {
         for (uint256 i = 0; i < _chainConfig.length; ) {
             uint16 chainId = _chainConfig[i].chainId;
             targetAddress[chainId] = _chainConfig[i].addr;
@@ -94,7 +88,7 @@ abstract contract WormholeBridgeBase is
                 "WormholeBridge: chain already added"
             );
 
-            emit TargetAddressUpdated(chainId, _chainConfig[i].addr);
+            _addTrustedSender(_chainConfig[i].addr, chainId);
 
             unchecked {
                 i++;
@@ -102,13 +96,13 @@ abstract contract WormholeBridgeBase is
         }
     }
 
-    /// @notice remove map of target addresses for external chains
-    /// @dev there is no check here to ensure there isn't an existing configuration
-    /// ensure the proper add or remove is being called when using this function
-    /// @param _chainConfig array of chainids to addresses to remove
-    function _removeTargetAddresses(
+    /// @notice remove a trusted sender
+    /// @param trustedSender The trusted sender to remove
+    /// @param chainId The chain id of the trusted sender to remove
+    /// @dev override WormholeTrustedSender to remove chain id to _targetChains
+    function _removeTrustedSenders(
         TrustedSender[] memory _chainConfig
-    ) internal {
+    ) internal override {
         for (uint256 i = 0; i < _chainConfig.length; ) {
             uint16 chainId = _chainConfig[i].chainId;
             targetAddress[chainId] = address(0);
@@ -117,7 +111,7 @@ abstract contract WormholeBridgeBase is
                 "WormholeBridge: chain not added"
             );
 
-            emit TargetAddressUpdated(chainId, address(0));
+            _removeTrustedSender(_chainConfig[i].addr, chainId);
 
             unchecked {
                 i++;
