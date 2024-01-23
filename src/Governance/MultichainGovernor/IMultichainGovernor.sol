@@ -68,20 +68,13 @@ interface IMultichainGovernor {
     /// @notice An event emitted when the max user live proposals has changed.
     event UserMaxProposalsChanged(uint256 oldValue, uint256 newValue);
 
-    /// @notice emitted when the gas limit changes on external chains
-    /// @param oldGasLimit old gas limit
-    /// @param newGasLimit new gas limit
-    event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
-
     /// @notice emitted when a cross chain vote is collected
-    /// @param nonce the nonce of the cross chain vote
     /// @param proposalId the proposal id
     /// @param sourceChain the wormhole chain id the vote was collected from
     /// @param forVotes the number of votes for the proposal
     /// @param againstVotes the number of votes against the proposal
     /// @param abstainVotes the number of votes abstaining from the proposal
     event CrossChainVoteCollected(
-        bytes32 nonce,
         uint256 proposalId,
         uint16 sourceChain,
         uint256 forVotes,
@@ -135,8 +128,10 @@ interface IMultichainGovernor {
         uint256[] values;
         /// @notice The ordered list of calldata to be passed to each call
         bytes[] calldatas;
-        /// @notice The timestamp at which voting begins: holders must delegate their votes prior to this time
-        uint256 startTimestamp;
+        /// @notice The timestamp at which vote snapshots are taken at
+        uint256 voteSnapshotTimestamp;
+        /// @notice the timestamp at which users can begin voting
+        uint256 votingStartTime;
         /// @notice The timestamp at which voting ends: votes must be cast prior to this time
         uint256 endTimestamp;
         /// @notice The timestamp at which cross chain voting collection ends:
@@ -192,12 +187,14 @@ interface IMultichainGovernor {
     /// TODO triple check that non of the aforementioned functions have hash collisions with something that would make them dangerous
     function whitelistedCalldatas(bytes calldata) external view returns (bool);
 
-    /// @notice override with a mapping
+    /// @notice return votes for a proposal id on a given chain
     function chainAddressVotes(
         uint256 proposalId,
-        uint256 chainId,
-        address voteGatheringAddress
-    ) external view returns (VoteCounts memory);
+        uint16 chainId
+    )
+        external
+        view
+        returns (uint256 forVotes, uint256 againstVotes, uint256 abstainVotes);
 
     /// address the contract can be rolled back to by break glass guardian
     function governanceRollbackAddress() external view returns (address);
@@ -270,28 +267,17 @@ interface IMultichainGovernor {
         string memory description
     ) external payable returns (uint256);
 
-    function execute(uint256 proposalId) external;
+    function execute(uint256 proposalId) external payable;
 
     /// @dev callable only by the proposer, cancels proposal if it has not been executed
-    function proposerCancel(uint256 proposalId) external;
+    function cancel(uint256 proposalId) external;
 
     /// @dev callable by anyone, succeeds in cancellation if user has less votes than proposal threshold
     /// at the current point in time.
     /// reverts otherwise.
-    function permissionlessCancel(uint256 proposalId) external;
 
     /// @dev allows user to cast vote for a proposal
     function castVote(uint256 proposalId, uint8 voteValue) external;
-
-    /// @dev allows votes from external chains to be counted
-    /// calls wormhole core to decode VAA, ensures validity of sender
-    function collectCrosschainVote(
-        bytes memory payload,
-        bytes[] memory, // additionalVaas
-        bytes32 senderAddress,
-        uint16 sourceChain,
-        bytes32 nonce
-    ) external;
 
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
@@ -328,12 +314,10 @@ interface IMultichainGovernor {
     ) external;
 
     //// @notice array lengths must add up
-    /// values must sum to msg.value to ensure guardian cannot steal funds
     /// calldata must be whitelisted
     /// only break glass guardian can call, once, and when they do, their role is revoked
     function executeBreakGlass(
         address[] calldata targets,
-        uint256[] calldata values,
         bytes[] calldata calldatas
     ) external payable;
 }

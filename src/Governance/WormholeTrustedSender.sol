@@ -78,7 +78,7 @@ contract WormholeTrustedSender is IWormholeTrustedSender {
         emit TrustedSenderUpdated(
             chainId,
             trustedSender,
-            false /// added to list
+            false /// removed from list
         );
     }
 
