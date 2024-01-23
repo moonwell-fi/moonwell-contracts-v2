@@ -1,6 +1,6 @@
 [profile.default]
 src = 'src'
-out = 'artifacts/foundry'
+out = '../artifacts/foundry/'
 libs = ['node_modules', 'lib']
 test = 'test'
 cache_path  = 'artifacts/forge-cache'

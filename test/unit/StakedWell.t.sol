@@ -35,10 +35,7 @@ contract StakedWellUnitTest is BaseTest {
     uint256 amount;
     function setUp() public override {
         super.setUp();
-        address stakedWellAddress = deployCode(
-            "StakedWell.sol:StakedWell",
-            "stkWell/artifacts/StakedWell.sol/StakedWell.json"
-        );
+        address stakedWellAddress = deployCode("StakedWell.sol:StakedWell");
         stakedWell = IStakedWell(stakedWellAddress);
 
         cooldown = 1 days;
