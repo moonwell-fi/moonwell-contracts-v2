@@ -11,7 +11,7 @@ interface IMultichainVoteCollection {
         /// @notice unix timestamp when voting will end
         uint256 votingEndTime;
         /// @notice unix timestamp when vote collection phase ends
-        uint256 votingCollectionEndTime;
+        uint256 crossChainVoteCollectionEndTimestamp;
         /// @notice votes
         MultichainVotes votes;
         /// @notice Receipts of ballots for the entire set of voters
