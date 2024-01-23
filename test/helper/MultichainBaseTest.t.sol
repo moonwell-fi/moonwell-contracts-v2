@@ -154,6 +154,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             pauseDuration,
             pauseGuardian
         );
+        stkWell = deployStakedWell(xwellProxy);
 
         MultichainGovernor.InitializeData memory initData;
         initData.proposalThreshold = proposalThreshold;
@@ -200,8 +201,6 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         );
 
         xwell.mint(address(this), 5_000_000_000 * 1e18);
-
-        stkWell = deployStakedWell(xwellProxy);
 
         uint256 amountToStake = 2_000_000_000 * 1e18;
         xwell.approve(address(stkWell), amountToStake);

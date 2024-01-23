@@ -1,9 +1,0 @@
-[profile.default]
-src = 'src'
-out = '../artifacts/foundry/'
-libs = ['node_modules', 'lib']
-test = 'test'
-cache_path  = 'artifacts/forge-cache'
-fs_permissions = [{ access = "read", path = "./"}]
-solc = "0.6.12"
-evm_version = 'paris' # lock to paris to prevent use of push0 opcode which is not live on base
