@@ -3,13 +3,13 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {IERC20} from "./IERC20.sol";
+import {SafeERC20} from "./SafeERC20.sol";
 import {IStakedToken} from "./IStakedToken.sol";
+import {Initializable} from "./Initializable.sol";
 import {ITransferHook} from "./ITransferHook.sol";
 import {IEcosystemReserve} from "./IEcosystemReserve.sol";
 import {ERC20WithSnapshot} from "./ERC20WithSnapshot.sol";
-import {SafeERC20} from "./SafeERC20.sol";
 import {DistributionTypes} from "./DistributionTypes.sol";
-import {Initializable} from "./Initializable.sol";
 import {DistributionManager} from "./DistributionManager.sol";
 import {ReentrancyGuardUpgradeable} from "./ReentrancyGuardUpgradeable.sol";
 
