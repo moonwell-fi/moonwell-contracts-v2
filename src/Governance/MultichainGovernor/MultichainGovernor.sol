@@ -946,6 +946,11 @@ contract MultichainGovernor is
     /// should only be called if there is a change in gas prices on the external chain
     /// @param newGasLimit new gas limit to set
     function setGasLimit(uint96 newGasLimit) external onlyGovernor {
+        require(
+            newGasLimit >= Constants.MIN_GAS_LIMIT,
+            "MultichainGovernor: gas limit too low"
+        );
+
         _setGasLimit(newGasLimit);
     }
 

@@ -756,6 +756,22 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
     }
 
+    /// TODO tests around gov proposals:
+    ///  - updateApprovedCalldata
+    ///  - removeExternalChainConfig
+    ///  - addExternalChainConfig
+    ///  - updateProposalThreshold
+    ///  - updateMaxUserLiveProposals
+    ///  - updateQuorum
+    ///  - updateVotingPeriod
+    ///  - updateVotingDelay
+    ///  - updateCrossChainVoteCollectionPeriod
+    ///  - setBreakGlassGuardian
+    ///  - minGasLimit
+
+    /// mix and match these items, update one parameter while another proposal is in flight
+    /// move the max gas limit too low and brick the thing
+
     /// TODO
     ///  - test different states, approved, canceled, executed, defeated, succeeded
 
