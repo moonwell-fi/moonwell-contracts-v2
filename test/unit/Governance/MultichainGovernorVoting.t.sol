@@ -138,7 +138,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             uint256 bridgeCost = governor.bridgeCostAll();
             vm.deal(address(this), bridgeCost);
 
-            uint256 proposalId = governor.propose{value: bridgeCost}(
+            governor.propose{value: bridgeCost}(
                 targets,
                 values,
                 calldatas,
@@ -713,8 +713,77 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
     }
 
+    function testFromWormholeFormatToAddress() public {
+        bytes32 invalidAddress1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000;
+        bytes32 invalidAddress2 = 0xFFFFFFFFFFFFFFFFFFFFFFFF0000000000000000000000000000000000000000; /// bytes32(uint256(type(uint256).max << 160));
+
+        bytes32 validAddress1 = 0x000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+        bytes32 validAddress2 = 0x000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0;
+        bytes32 validAddress3 = 0x000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00;
+        bytes32 validAddress4 = 0x000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000;
+        bytes32 validAddress5 = 0x0000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000;
+
+        vm.expectRevert("WormholeBridge: invalid address");
+        governor.fromWormholeFormat(invalidAddress1);
+
+        vm.expectRevert("WormholeBridge: invalid address");
+        governor.fromWormholeFormat(invalidAddress2);
+
+        assertEq(
+            governor.fromWormholeFormat(validAddress1),
+            address(uint160(uint256(validAddress1))),
+            "invalid address 1"
+        );
+        assertEq(
+            governor.fromWormholeFormat(validAddress2),
+            address(uint160(uint256(validAddress2))),
+            "invalid address 2"
+        );
+        assertEq(
+            governor.fromWormholeFormat(validAddress3),
+            address(uint160(uint256(validAddress3))),
+            "invalid address 3"
+        );
+        assertEq(
+            governor.fromWormholeFormat(validAddress4),
+            address(uint160(uint256(validAddress4))),
+            "invalid address 4"
+        );
+        assertEq(
+            governor.fromWormholeFormat(validAddress5),
+            address(uint160(uint256(validAddress5))),
+            "invalid address 5"
+        );
+    }
+
     /// TODO
     ///  - test different states, approved, canceled, executed, defeated, succeeded
+
+    function testVotingMovesToApprovedStateAfterEnoughForVotesPostXChainVoteCollection() {}
+
+    function testVotingMovesToDefeatedStateAfterEnoughAgainstForVotes() {}
+
+    function testVotingMovesToDefeatedStateAfterEnoughAbstainVotes() {}
+
+    function testStateMovesToExecutedStateAfterExecution() {}
+
+    function testExecuteFailsAfterExecution() {}
+
+    function testExecuteFailsAfterDefeat() {}
+
+    function testExecuteFailsAfterCancel() {}
+
+    function testExecuteFailsAfterApproved() {}
+
+    function testExecuteFailsDuringXChainVoteCollection() {}
+
     ///  - test changing parameters with multiple live proposals
+
+    function testChangingQuorumWithTwoLiveProposals() public {}
+
+    function testChangingMaxUserLiveProposalsWithTwoLiveProposals() public {}
+
+    function testPausingWithThreeLiveProposals() public {}
+
     ///  - test executing, breaking glass, pausing, adding and removing approved calldata and unpausing
 }
