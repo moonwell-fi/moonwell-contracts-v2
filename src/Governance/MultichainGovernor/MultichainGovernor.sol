@@ -574,10 +574,12 @@ contract MultichainGovernor is
             proposal.totalVotes < quorum
         ) {
             return ProposalState.Defeated;
-        } else if (proposal.eta == 0) {
-            return ProposalState.Succeeded;
         } else if (proposal.executed) {
             return ProposalState.Executed;
+        } else if (proposal.eta == 0) {
+            // TODO eta is never set, and this branch is reacheable only on execute
+            // function so should eta be removed?
+            return ProposalState.Succeeded;
         } else {
             /// TODO this should never be reachable, ask SMT solver or certora if it is
             assert(false);
@@ -720,8 +722,10 @@ contract MultichainGovernor is
             "MultichainGovernor: proposal can only be executed if it is Succeeded"
         );
 
-        Proposal storage proposal = proposals[proposalId];
         uint256 totalValue = 0;
+
+        Proposal storage proposal = proposals[proposalId];
+
         for (uint256 i = 0; i < proposal.targets.length; ) {
             totalValue += proposal.values[i];
             unchecked {

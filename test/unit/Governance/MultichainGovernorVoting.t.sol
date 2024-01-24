@@ -775,27 +775,200 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     /// TODO
     ///  - test different states, approved, canceled, executed, defeated, succeeded
 
+    // @dev helper function to create a proposal and vote quorum and changing state
+    function createProposalAndVotesQuorum(
+        uint8 voteValue
+    ) private returns (uint256) {
+        address user = address(1);
+        uint256 voteAmount = governor.quorum();
+
+        well.transfer(user, voteAmount);
+
+        vm.prank(user);
+        well.delegate(user);
+
+        /// include user before snapshot block
+        vm.roll(block.number + 1);
+
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            1,
+            "incorrect state, not active"
+        );
+
+        vm.prank(user);
+        governor.castVote(proposalId, voteValue);
+
+        return proposalId;
+    }
+
     function testVotingMovesToApprovedStateAfterEnoughForVotesPostXChainVoteCollection()
         public
-    {}
+    {
+        uint256 proposalId = createProposalAndVotesQuorum(
+            Constants.VOTE_VALUE_YES
+        );
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
 
-    function testVotingMovesToDefeatedStateAfterEnoughAgainstForVotes()
+        ) = governor.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            5,
+            "incorrect state, not succeeded"
+        );
+    }
+
+    function testVotingMovesToDefeatedStateAfterEnoughAgainstForVotes() public {
+        uint256 proposalId = createProposalAndVotesQuorum(
+            Constants.VOTE_VALUE_NO
+        );
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
+
+        ) = governor.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            4,
+            "incorrect state, not defeated"
+        );
+    }
+
+    function testVotingMovesToDefeatedStateAfterEnoughAbstainVotes()
         public
-    {}
+        returns (uint256 proposalId)
+    {
+        proposalId = createProposalAndVotesQuorum(Constants.VOTE_VALUE_ABSTAIN);
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
 
-    function testVotingMovesToDefeatedStateAfterEnoughAbstainVotes() public {}
+        ) = governor.proposalInformation(proposalId);
 
-    function testStateMovesToExecutedStateAfterExecution() public {}
+        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
 
-    function testExecuteFailsAfterExecution() public {}
+        assertEq(
+            uint256(governor.state(proposalId)),
+            4,
+            "incorrect state, not defeated"
+        );
+    }
 
-    function testExecuteFailsAfterDefeat() public {}
+    function testStateMovesToExecutedStateAfterExecution()
+        public
+        returns (uint256 proposalId)
+    {
+        proposalId = createProposalAndVotesQuorum(Constants.VOTE_VALUE_YES);
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
 
-    function testExecuteFailsAfterCancel() public {}
+        ) = governor.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+
+        governor.execute(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            6,
+            "incorrect state, not executed"
+        );
+    }
+
+    function testExecuteFailsAfterExecution() public {
+        uint256 proposalId = testStateMovesToExecutedStateAfterExecution();
+
+        vm.expectRevert(
+            "MultichainGovernor: proposal can only be executed if it is Succeeded"
+        );
+        governor.execute(proposalId);
+    }
+
+    function testExecuteFailsAfterDefeat() public {
+        uint256 proposalId = testVotingMovesToDefeatedStateAfterEnoughAbstainVotes();
+
+        vm.expectRevert(
+            "MultichainGovernor: proposal can only be executed if it is Succeeded"
+        );
+        governor.execute(proposalId);
+    }
+
+    function testExecuteFailsAfterCancel() public {
+        uint256 proposalId = createProposalAndVotesQuorum(
+            Constants.VOTE_VALUE_YES
+        );
+
+        governor.cancel(proposalId);
+
+        vm.expectRevert(
+            "MultichainGovernor: proposal can only be executed if it is Succeeded"
+        );
+        governor.execute(proposalId);
+    }
 
     function testExecuteFailsAfterApproved() public {}
 
-    function testExecuteFailsDuringXChainVoteCollection() public {}
+    function testExecuteFailsDuringXChainVoteCollection() public {
+        uint256 proposalId = createProposalAndVotesQuorum(
+            Constants.VOTE_VALUE_YES
+        );
+
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
+
+        ) = governor.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp);
+
+        vm.expectRevert(
+            "MultichainGovernor: proposal can only be executed if it is Succeeded"
+        );
+        governor.execute(proposalId);
+    }
 
     ///  - test changing parameters with multiple live proposals
 
