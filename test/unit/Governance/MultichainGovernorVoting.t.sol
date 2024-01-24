@@ -883,7 +883,32 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
     }
 
-    function testStateMovesToExecutedStateAfterExecution() public {}
+    function testStateMovesToExecutedStateAfterExecution() public {
+        uint256 proposalId = createProposalAndVotesQuorum(
+            Constants.VOTE_VALUE_YES
+        );
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
+
+        ) = governor.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+
+        governor.execute(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            6,
+            "incorrect state, not executed"
+        );
+    }
 
     function testExecuteFailsAfterExecution() public {}
 
