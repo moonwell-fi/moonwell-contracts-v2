@@ -125,6 +125,8 @@ contract MultichainVoteCollection is
         votes = receipt.votes;
     }
 
+    /// @notice returns information on a proposal
+    /// @param proposalId the id of the proposal to check
     function proposalInformation(
         uint256 proposalId
     )
@@ -157,6 +159,9 @@ contract MultichainVoteCollection is
         abstainVotes = proposal.votes.abstainVotes;
     }
 
+    /// @notice returns the vote counts for a proposal
+    /// includes the total vote count, for, against and abstain votes
+    /// @param proposalId the id of the proposal to check
     function proposalVotes(
         uint256 proposalId
     )
@@ -177,7 +182,9 @@ contract MultichainVoteCollection is
         abstainVotes = proposal.votes.abstainVotes;
     }
 
-    /// @dev allows user to cast vote for a proposal
+    /// @notice allows user to cast vote for a proposal
+    /// @param proposalId the id of the proposal to vote on
+    /// @param voteValue the value of the vote
     function castVote(uint256 proposalId, uint8 voteValue) external {
         MultichainProposal storage proposal = proposals[proposalId];
 
