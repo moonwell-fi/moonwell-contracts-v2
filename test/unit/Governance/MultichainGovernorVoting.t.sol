@@ -876,7 +876,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         _warpPastVotingDelay();
 
-        _castVotes(proposalId, Constants.VOTE_VALUE_YES, user);
+        _castVotes(proposalId, Constants.VOTE_VALUE_NO, user);
 
         _warpPastProposalEnd(proposalId);
 
@@ -898,7 +898,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         _warpPastVotingDelay();
 
-        _castVotes(proposalId, Constants.VOTE_VALUE_YES, user);
+        _castVotes(proposalId, Constants.VOTE_VALUE_NO, user);
 
         (
             ,
@@ -974,9 +974,13 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         _castVotes(proposalId, Constants.VOTE_VALUE_YES, user);
 
+        _warpPastProposalEnd(proposalId);
+
+        governor.execute(proposalId);
+
         assertEq(
             uint256(governor.state(proposalId)),
-            7,
+            6,
             "incorrect state, not executed"
         );
 
@@ -1195,23 +1199,25 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         _warpPastVotingDelay();
 
-        vm.expectRevert(
-            "MultichainGovernor: too many live proposals for this user"
-        );
+        _castVotes(proposalId1, Constants.VOTE_VALUE_YES, user);
 
-        (
-            ,
-            ,
-            ,
-            ,
-            uint256 crossChainVoteCollectionEndTimestamp,
-            ,
-            ,
-            ,
+        _castVotes(proposalId2, Constants.VOTE_VALUE_YES, user);
 
-        ) = governor.proposalInformation(proposalId2);
+        {
+            (
+                ,
+                ,
+                ,
+                ,
+                uint256 crossChainVoteCollectionEndTimestamp,
+                ,
+                ,
+                ,
 
-        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+            ) = governor.proposalInformation(proposalId2);
+
+            vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+        }
 
         assertEq(
             uint256(governor.state(proposalId1)),
@@ -1221,11 +1227,70 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalId2)),
-            4,
-            "incorrect state for proposal 2, not defeated"
+            5,
+            "incorrect state for proposal 2, not succeeded"
         );
 
-        governor.updateQuorum(governor.quorum() + 1);
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Max User Live Proposals";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        uint256 newMaxUserLiveProposals = governor.maxUserLiveProposals() + 1;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateMaxUserLiveProposals(uint256)",
+            newMaxUserLiveProposals
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalIdUpdateMaxLiveProposals = governor.propose{
+            value: bridgeCost
+        }(targets, values, calldatas, description);
+
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+
+        assertEq(
+            uint256(governor.state(proposalIdUpdateMaxLiveProposals)),
+            1,
+            "incorrect state, not active"
+        );
+
+        vm.prank(user);
+        governor.castVote(
+            proposalIdUpdateMaxLiveProposals,
+            Constants.VOTE_VALUE_YES
+        );
+
+        {
+            (
+                ,
+                ,
+                ,
+                ,
+                uint256 crossChainVoteCollectionEndTimestamp,
+                ,
+                ,
+                ,
+
+            ) = governor.proposalInformation(proposalIdUpdateMaxLiveProposals);
+
+            vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+        }
+
+        assertEq(
+            uint256(governor.state(proposalIdUpdateMaxLiveProposals)),
+            5,
+            "incorrect state, not succeeded"
+        );
+
+        governor.execute(proposalIdUpdateMaxLiveProposals);
+
+        assertEq(governor.maxUserLiveProposals(), newMaxUserLiveProposals);
 
         // quorum not met
         assertEq(
