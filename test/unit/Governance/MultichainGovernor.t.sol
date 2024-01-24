@@ -107,7 +107,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
                 0
             );
         vm.expectRevert("MultichainGovernor: only governor");
-        governor.removeTrustedSenders(_trustedSenders);
+        governor.removeExternalChainConfig(_trustedSenders);
     }
 
     function test_addTrustedSenders_NonGovernor_Fails() public {
@@ -116,7 +116,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
                 0
             );
         vm.expectRevert("MultichainGovernor: only governor");
-        governor.addTrustedSenders(_trustedSenders);
+        governor.addExternalChainConfig(_trustedSenders);
     }
 
     function test_updateProposalThreshold_NonGovernor_Fails() public {
@@ -185,7 +185,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = test_addTrustedSenders_Governor_Succeeds();
         vm.prank(address(governor));
-        governor.removeTrustedSenders(_trustedSenders);
+        governor.removeExternalChainConfig(_trustedSenders);
 
         assertFalse(
             governor.isTrustedSender(
@@ -209,7 +209,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         _trustedSenders[0].addr = address(this);
 
         vm.prank(address(governor));
-        governor.addTrustedSenders(_trustedSenders);
+        governor.addExternalChainConfig(_trustedSenders);
         assertTrue(
             governor.isTrustedSender(
                 _trustedSenders[0].chainId,
