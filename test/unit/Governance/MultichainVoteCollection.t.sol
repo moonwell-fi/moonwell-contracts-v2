@@ -21,7 +21,6 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         xwell.delegate(address(this));
         well.delegate(address(this));
         distributor.delegate(address(this));
-        stkWell.delegate(address(this));
 
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
@@ -34,12 +33,17 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
                 block.timestamp - 1,
                 block.number - 1
             ),
-            20_000_000_000 * 1e18,
+            15_000_000_000 * 1e18,
+            "incorrect vote amount"
+        );
+        assertEq(
+            voteCollection.getVotes(address(this), block.timestamp - 1),
+            5_000_000_000 * 1e18,
             "incorrect vote amount"
         );
 
         assertEq(address(voteCollection.xWell()), address(xwell));
-        assertEq(address(voteCollection.stkWell()), address(xwell)); /// TODO change this once PR merges
+        assertEq(address(voteCollection.stkWell()), address(stkWell));
 
         assertEq(
             address(governor.wormholeRelayer()),

@@ -12,6 +12,7 @@ import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Well} from "@protocol/Governance/Well.sol";
+import {IStakedWell} from "@protocol/IStakedWell.sol";
 
 contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     /// @notice reference to the mock wormhole trusted sender contract
@@ -35,8 +36,8 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     /// @notice reference to the well distributor contract
     Well public distributor;
 
-    /// @notice reference to the stkWELL token
-    Well public stkWell;
+    /// @notice reference to the staked well contract
+    IStakedWell public stkWell;
 
     /// @notice threshold of tokens required to create a proposal
     uint256 public constant proposalThreshold = 100_000_000 * 1e18;
@@ -140,7 +141,6 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         well = new Well(address(this));
         distributor = new Well(address(this));
-        stkWell = new Well(address(this));
 
         MintLimits.RateLimitMidPointInfo[]
             memory newRateLimits = new MintLimits.RateLimitMidPointInfo[](0);
@@ -154,6 +154,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             pauseDuration,
             pauseGuardian
         );
+        stkWell = deployStakedWell(xwellProxy);
 
         MultichainGovernor.InitializeData memory initData;
         initData.proposalThreshold = proposalThreshold;
@@ -200,5 +201,9 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         );
 
         xwell.mint(address(this), 5_000_000_000 * 1e18);
+
+        uint256 amountToStake = 2_000_000_000 * 1e18;
+        xwell.approve(address(stkWell), amountToStake);
+        stkWell.stake(address(this), amountToStake);
     }
 }

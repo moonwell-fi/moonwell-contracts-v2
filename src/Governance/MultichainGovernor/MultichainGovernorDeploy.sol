@@ -6,9 +6,11 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import "@forge-std/Test.sol";
 
-contract MultichainGovernorDeploy {
+contract MultichainGovernorDeploy is Test {
     function deployMultichainGovernor(
         MultichainGovernor.InitializeData memory initializeData,
         WormholeTrustedSender.TrustedSender[] memory trustedSenders
@@ -111,10 +113,30 @@ contract MultichainGovernorDeploy {
 
         MultichainVoteCollection(voteCollectionProxy).initialize(
             initializeData.xWell,
-            initializeData.xWell, /// TODO change this to stkWELL on Base at a later point in time
+            initializeData.stkWell,
             governorProxy,
             wormholeRelayerAdapter,
             moonbeamChainId
+        );
+    }
+
+    function deployStakedWell(
+        address xwellProxy
+    ) public returns (IStakedWell stkWell) {
+        uint256 cooldown = 1 days;
+        uint256 unstakePeriod = 3 days;
+
+        address stakedWellAddress = deployCode("StakedWell.sol:StakedWell");
+        stkWell = IStakedWell(stakedWellAddress);
+        stkWell.initialize(
+            xwellProxy,
+            xwellProxy,
+            cooldown,
+            unstakePeriod,
+            address(this), // TODO check this
+            address(this), // TODO check this
+            1,
+            address(0)
         );
     }
 }
