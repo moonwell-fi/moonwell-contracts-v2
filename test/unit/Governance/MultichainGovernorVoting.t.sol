@@ -930,11 +930,45 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         governor.execute(proposalId);
     }
 
-    function testExecuteFailsAfterCancel() public {}
+    function testExecuteFailsAfterCancel() public {
+        uint256 proposalId = createProposalAndVotesQuorum(
+            Constants.VOTE_VALUE_YES
+        );
+
+        governor.cancel(proposalId);
+
+        vm.expectRevert(
+            "MultichainGovernor: proposal can only be executed if it is Succeeded"
+        );
+        governor.execute(proposalId);
+    }
 
     function testExecuteFailsAfterApproved() public {}
 
-    function testExecuteFailsDuringXChainVoteCollection() public {}
+    function testExecuteFailsDuringXChainVoteCollection() public {
+        uint256 proposalId = createProposalAndVotesQuorum(
+            Constants.VOTE_VALUE_YES
+        );
+
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
+
+        ) = governor.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp);
+
+        vm.expectRevert(
+            "MultichainGovernor: proposal can only be executed if it is Succeeded"
+        );
+        governor.execute(proposalId);
+    }
 
     ///  - test changing parameters with multiple live proposals
 
