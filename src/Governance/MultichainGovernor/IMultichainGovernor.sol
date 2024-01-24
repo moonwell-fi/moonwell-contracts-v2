@@ -111,17 +111,12 @@ interface IMultichainGovernor {
         Canceled,
         Defeated,
         Succeeded,
-        Executed,
-        Invalid
+        Executed
     }
 
     struct Proposal {
-        /// @notice Unique id for looking up a proposal
-        uint256 id;
         /// @notice Creator of the proposal
         address proposer;
-        /// @notice The timestamp that the proposal will be available for execution, set once the vote succeeds
-        uint256 eta;
         /// @notice the ordered list of target addresses for calls to be made
         address[] targets;
         /// @notice The ordered list of values (i.e. msg.value) to be passed to the calls to be made
@@ -137,7 +132,7 @@ interface IMultichainGovernor {
         /// @notice The timestamp at which cross chain voting collection ends:
         /// votes must be registered prior to this time
         uint256 crossChainVoteCollectionEndTimestamp;
-        /// @notice The block at which voting began: holders must have delegated their votes prior to this block
+        /// @notice The block at which voting snapshot is taken: holders must have delegated their votes prior to this block
         uint256 startBlock;
         /// @notice Current number of votes in favor of this proposal
         uint256 forVotes;

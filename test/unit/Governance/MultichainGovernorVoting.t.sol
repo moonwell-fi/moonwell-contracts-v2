@@ -775,6 +775,10 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     /// TODO
     ///  - test different states, approved, canceled, executed, defeated, succeeded
 
+    function _createProposal() private returns (uint256 proposalId) {
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
+    }
+
     // @dev helper function to create a proposal and vote quorum and changing state
     function createProposalAndVotesQuorum(
         uint8 voteValue
@@ -790,7 +794,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         /// include user before snapshot block
         vm.roll(block.number + 1);
 
-        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        uint256 proposalId = _createProposal();
 
         vm.warp(block.timestamp + governor.votingDelay() + 1);
 
@@ -806,12 +810,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         return proposalId;
     }
 
-    function testVotingMovesToApprovedStateAfterEnoughForVotesPostXChainVoteCollection()
-        public
-    {
-        uint256 proposalId = createProposalAndVotesQuorum(
-            Constants.VOTE_VALUE_YES
-        );
+    function _warpPastProposalEnd(uint256 proposalId) private {
         (
             ,
             ,
@@ -825,6 +824,16 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         ) = governor.proposalInformation(proposalId);
 
         vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+    }
+
+    function testVotingMovesToApprovedStateAfterEnoughForVotesPostXChainVoteCollection()
+        public
+    {
+        uint256 proposalId = createProposalAndVotesQuorum(
+            Constants.VOTE_VALUE_YES
+        );
+
+        _warpPastProposalEnd(proposalId);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -837,19 +846,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         uint256 proposalId = createProposalAndVotesQuorum(
             Constants.VOTE_VALUE_NO
         );
-        (
-            ,
-            ,
-            ,
-            ,
-            uint256 crossChainVoteCollectionEndTimestamp,
-            ,
-            ,
-            ,
 
-        ) = governor.proposalInformation(proposalId);
-
-        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+        _warpPastProposalEnd(proposalId);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -936,6 +934,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
 
         governor.cancel(proposalId);
+        assertEq(uint256(governor.state(proposalId)), 3, "incorrect state");
 
         vm.expectRevert(
             "MultichainGovernor: proposal can only be executed if it is Succeeded"
@@ -964,6 +963,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         vm.warp(crossChainVoteCollectionEndTimestamp);
 
+        assertEq(uint256(governor.state(proposalId)), 2, "incorrect state");
+
         vm.expectRevert(
             "MultichainGovernor: proposal can only be executed if it is Succeeded"
         );
@@ -976,7 +977,33 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
     function testChangingMaxUserLiveProposalsWithTwoLiveProposals() public {}
 
-    function testPausingWithThreeLiveProposals() public {}
+    function testPausingWithThreeLiveProposals() public {
+        uint256 proposalId1 = _createProposal();
+        uint256 proposalId2 = _createProposal();
+        uint256 proposalId3 = _createProposal();
+
+        assertEq(
+            uint256(governor.state(proposalId1)),
+            0,
+            "incorrect state, not pending"
+        );
+        assertEq(
+            uint256(governor.state(proposalId2)),
+            0,
+            "incorrect state, not pending"
+        );
+        assertEq(
+            uint256(governor.state(proposalId3)),
+            0,
+            "incorrect state, not pending"
+        );
+
+        governor.pause();
+
+        assertEq(uint256(governor.state(proposalId1)), 3, "incorrect state");
+        assertEq(uint256(governor.state(proposalId2)), 3, "incorrect state");
+        assertEq(uint256(governor.state(proposalId3)), 3, "incorrect state");
+    }
 
     ///  - test executing, breaking glass, pausing, adding and removing approved calldata and unpausing
 }

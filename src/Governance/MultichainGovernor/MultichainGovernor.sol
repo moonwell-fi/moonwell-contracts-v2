@@ -576,14 +576,12 @@ contract MultichainGovernor is
             return ProposalState.Defeated;
         } else if (proposal.executed) {
             return ProposalState.Executed;
-        } else if (proposal.eta == 0) {
-            // TODO eta is never set, and this branch is reacheable only on execute
-            // function so should eta be removed?
-            return ProposalState.Succeeded;
         } else {
-            /// TODO this should never be reachable, ask SMT solver or certora if it is
-            assert(false);
-            return ProposalState.Invalid;
+            /// Succeeded implies != defeated, executed, canceled, CrossChainVoteCollection, active or pending
+            /// Succeeded implies for votes outweigh against votes, and quorum is met
+            /// Succeeded implies block.timestamp > crossChainVoteCollectionEndTimestamp
+
+            return ProposalState.Succeeded;
         }
     }
 
@@ -650,43 +648,48 @@ contract MultichainGovernor is
 
         proposalCount++;
 
-        Proposal storage newProposal = proposals[proposalCount];
+        uint256 proposalId = proposalCount;
+
+        Proposal storage newProposal = proposals[proposalId];
+        bytes memory payload;
 
         uint256 startTimestamp = block.timestamp - 1;
         uint256 endTimestamp = block.timestamp + votingPeriod + votingDelay;
-        uint256 crossChainVoteCollectionEndTimestamp = endTimestamp +
-            crossChainVoteCollectionPeriod;
-        uint256 votingStartTime = block.timestamp + votingDelay;
 
-        newProposal.id = proposalCount;
-        newProposal.proposer = msg.sender;
-        newProposal.targets = targets;
-        newProposal.values = values;
-        newProposal.calldatas = calldatas;
-        newProposal.voteSnapshotTimestamp = startTimestamp;
-        newProposal.votingStartTime = votingStartTime;
-        newProposal.startBlock = block.number - 1;
-        newProposal.endTimestamp = endTimestamp;
-        newProposal
-            .crossChainVoteCollectionEndTimestamp = crossChainVoteCollectionEndTimestamp;
+        {
+            uint256 crossChainVoteCollectionEndTimestamp = endTimestamp +
+                crossChainVoteCollectionPeriod;
+            uint256 votingStartTime = block.timestamp + votingDelay;
+
+            newProposal.proposer = msg.sender;
+            newProposal.targets = targets;
+            newProposal.values = values;
+            newProposal.calldatas = calldatas;
+            newProposal.voteSnapshotTimestamp = startTimestamp;
+            newProposal.votingStartTime = votingStartTime;
+            newProposal.startBlock = block.number - 1;
+            newProposal.endTimestamp = endTimestamp;
+            newProposal
+                .crossChainVoteCollectionEndTimestamp = crossChainVoteCollectionEndTimestamp;
+
+            payload = abi.encode(
+                proposalId,
+                startTimestamp,
+                votingStartTime,
+                endTimestamp,
+                crossChainVoteCollectionEndTimestamp
+            );
+        }
 
         /// post proposal checks, should never be possible to revert
         /// essentially assertions with revert messages
         require(
-            _userLiveProposals[msg.sender].add(proposalCount),
+            _userLiveProposals[msg.sender].add(proposalId),
             "MultichainGovernor: user cannot add the same proposal twice"
         );
         require(
-            _liveProposals.add(proposalCount),
+            _liveProposals.add(proposalId),
             "MultichainGovernor: cannot add the same proposal twice to global set"
-        );
-
-        bytes memory payload = abi.encode(
-            proposalCount,
-            startTimestamp,
-            votingStartTime,
-            endTimestamp,
-            crossChainVoteCollectionEndTimestamp
         );
 
         /// call relayer with information about proposal
@@ -694,7 +697,7 @@ contract MultichainGovernor is
         _bridgeOutAll(payload);
 
         emit ProposalCreated(
-            newProposal.id,
+            proposalId,
             msg.sender,
             targets,
             values,
@@ -704,7 +707,7 @@ contract MultichainGovernor is
             description
         );
 
-        return newProposal.id;
+        return proposalId;
     }
 
     /// @notice execute a proposal
@@ -1156,8 +1159,7 @@ contract MultichainGovernor is
                 if (
                     proposalsState == ProposalState.Defeated ||
                     proposalsState == ProposalState.Canceled ||
-                    proposalsState == ProposalState.Executed ||
-                    proposalsState == ProposalState.Invalid
+                    proposalsState == ProposalState.Executed
                 ) {
                     /// remove proposal from user before removing from the global set
                     /// this ensures that the user can sync their live proposals and propose
