@@ -15,6 +15,8 @@ import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 
 contract MultichainGovernorUnitTest is MultichainBaseTest {
+    event BreakGlassGuardianChanged(address oldValue, address newValue);
+
     function testGovernorSetup() public {
         assertEq(
             governor.proposalThreshold(),
@@ -96,12 +98,12 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     /// ACL Negative Tests
 
     /// GOVERNOR
-    function test_updateApprovedCalldata_NonGovernor_Fails() public {
+    function testUpdateApprovedCalldataNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateApprovedCalldata("", true);
     }
 
-    function test_removeTrustedSenders_NonGovernor_Fails() public {
+    function testRemoveTrustedSendersNonGovernorFails() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
@@ -110,7 +112,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.removeExternalChainConfig(_trustedSenders);
     }
 
-    function test_addTrustedSenders_NonGovernor_Fails() public {
+    function testAddTrustedSendersNonGovernorFails() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
@@ -119,52 +121,50 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.addExternalChainConfig(_trustedSenders);
     }
 
-    function test_updateProposalThreshold_NonGovernor_Fails() public {
+    function testUpdateProposalThresholdNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateProposalThreshold(1000);
     }
 
-    function test_updateMaxUserLiveProposals_NonGovernor_Fails() public {
+    function testUpdateMaxUserLiveProposalsNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateMaxUserLiveProposals(1000);
     }
 
-    function test_updateQuorum_NonGovernor_Fails() public {
+    function testUpdateQuorumNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateQuorum(1000);
     }
 
-    function test_updateVotingPeriod_NonGovernor_Fails() public {
+    function testUpdateVotingPeriodNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateVotingPeriod(1000);
     }
 
-    function test_updateVotingDelay_NonGovernor_Fails() public {
+    function testUpdateVotingDelayNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateVotingDelay(1000);
     }
 
-    function test_updateCrossChainVoteCollectionPeriod_NonGovernor_Fails()
-        public
-    {
+    function testUpdateCrossChainVoteCollectionPeriodNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateCrossChainVoteCollectionPeriod(1000);
     }
 
-    function test_setBreakGlassGuardian_NonGovernor_Fails() public {
+    function testSetBreakGlassGuardianNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.setBreakGlassGuardian(address(this));
     }
 
     /// BREAK GLASS GUARDIAN
 
-    function test_executeBreakGlass_NonBreakGlassGuardian_Fails() public {
+    function testExecuteBreakGlassNonBreakGlassGuardianFails() public {
         vm.expectRevert("MultichainGovernor: only break glass guardian");
         governor.executeBreakGlass(new address[](0), new bytes[](0));
     }
 
     /// PAUSE GUARDIAN
-    function test_pause_NonPauseGuardian_Fails() public {
+    function testPauseNonPauseGuardianFails() public {
         vm.expectRevert("ConfigurablePauseGuardian: only pause guardian");
         vm.prank(address(1));
         governor.pause();
@@ -172,7 +172,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
     /// ACL Positive Tests
 
-    function test_updateApprovedCalldata_Governor_Succeeds() public {
+    function testUpdateApprovedCalldataGovernorSucceeds() public {
         vm.prank(address(governor));
         governor.updateApprovedCalldata("", true);
         assertTrue(
@@ -181,9 +181,10 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function test_removeTrustedSenders_Governor_Succeeds() public {
+    function testRemoveTrustedSendersGovernorSucceeds() public {
         WormholeTrustedSender.TrustedSender[]
-            memory _trustedSenders = test_addTrustedSenders_Governor_Succeeds();
+            memory _trustedSenders = testAddTrustedSendersGovernorSucceeds();
+
         vm.prank(address(governor));
         governor.removeExternalChainConfig(_trustedSenders);
 
@@ -196,7 +197,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function test_addTrustedSenders_Governor_Succeeds()
+    function testAddTrustedSendersGovernorSucceeds()
         public
         returns (WormholeTrustedSender.TrustedSender[] memory)
     {
@@ -221,7 +222,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         return _trustedSenders;
     }
 
-    function test_updateProposalThreshold_Governor_Succeeds() public {
+    function testUpdateProposalThresholdGovernorSucceeds() public {
         uint256 newProposalThreshold = Constants.MIN_PROPOSAL_THRESHOLD;
 
         vm.prank(address(governor));
@@ -234,20 +235,20 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function test_updateMaxUserLiveProposals_Governor_Succeeds() public {
-        uint256 maxUserLiveProposals = 5;
+    function testUpdateMaxUserLiveProposalsGovernorSucceeds() public {
+        uint256 newMaxUserLiveProposals = 4;
 
         vm.prank(address(governor));
-        governor.updateMaxUserLiveProposals(maxUserLiveProposals);
+        governor.updateMaxUserLiveProposals(newMaxUserLiveProposals);
 
         assertEq(
             governor.maxUserLiveProposals(),
-            maxUserLiveProposals,
+            newMaxUserLiveProposals,
             "maxUserLiveProposals not updated"
         );
     }
 
-    function test_updateQuorum_Governor_Succeeds() public {
+    function testUpdateQuorumGovernorSucceeds() public {
         uint256 newQuorum = 2_500_000_000 * 1e18;
 
         vm.prank(address(governor));
@@ -256,7 +257,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         assertEq(governor.quorum(), newQuorum, "quorum not updated");
     }
 
-    function test_updateVotingPeriod_Governor_Succeeds() public {
+    function testUpdateVotingPeriodGovernorSucceeds() public {
         uint256 newVotingPeriod = 1 hours;
 
         vm.prank(address(governor));
@@ -269,7 +270,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function test_updateVotingDelay_Governor_Succeeds() public {
+    function testUpdateVotingDelayGovernorSucceeds() public {
         uint256 newVotingDelay = 1 hours;
 
         vm.prank(address(governor));
@@ -282,9 +283,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function test_updateCrossChainVoteCollectionPeriod_Governor_Succeeds()
-        public
-    {
+    function testUpdateCrossChainVoteCollectionPeriodGovernorSucceeds() public {
         uint256 newCrossChainVoteCollectionPeriod = 1 hours;
         vm.prank(address(governor));
         governor.updateCrossChainVoteCollectionPeriod(
@@ -298,7 +297,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function test_setBreakGlassGuardian_Governor_Succeeds() public {
+    function testSetBreakGlassGuardianGovernorSucceeds() public {
         address newBgg = address(1);
 
         vm.prank(address(governor));
@@ -311,9 +310,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    event BreakGlassGuardianChanged(address oldValue, address newValue);
-
-    function test_executeBreakGlass_BreakGlassGuardian_Succeeds() public {
+    function testExecuteBreakGlassBreakGlassGuardianSucceeds() public {
         address bgg = governor.breakGlassGuardian();
 
         vm.prank(bgg);
@@ -330,7 +327,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     /// PAUSE GUARDIAN
-    function test_pause_PauseGuardian_Succeeds() public {
+    function testPausePauseGuardianSucceeds() public {
         vm.warp(block.timestamp + 1);
 
         vm.prank(governor.pauseGuardian());
@@ -341,8 +338,8 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         assertEq(governor.pauseStartTime(), block.timestamp, "pauseStartTime");
     }
 
-    function test_Propose_WhenPaused_Fails() public {
-        test_pause_PauseGuardian_Succeeds();
+    function testProposeWhenPausedFails() public {
+        testPausePauseGuardianSucceeds();
 
         vm.expectRevert("Pausable: paused");
         governor.propose(
@@ -353,15 +350,15 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function test_Execute_WhenPaused_Fails() public {
-        test_pause_PauseGuardian_Succeeds();
+    function testExecuteWhenPausedFails() public {
+        testPausePauseGuardianSucceeds();
 
         vm.expectRevert("Pausable: paused");
         governor.execute(0);
     }
 
-    function test_CastVote_WhenPaused_Fails() public {
-        test_pause_PauseGuardian_Succeeds();
+    function testCastVoteWhenPausedFails() public {
+        testPausePauseGuardianSucceeds();
 
         vm.expectRevert("Pausable: paused");
         governor.castVote(0, 0);
