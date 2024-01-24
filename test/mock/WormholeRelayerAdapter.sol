@@ -42,7 +42,7 @@ contract WormholeRelayerAdapter {
         uint256
     )
         external
-        view
+        pure
         returns (
             uint256 nativePriceQuote,
             uint256 targetChainRefundPerGasUnused
