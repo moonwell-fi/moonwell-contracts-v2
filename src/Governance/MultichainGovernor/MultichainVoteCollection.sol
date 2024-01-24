@@ -10,6 +10,7 @@ import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {SnapshotInterface} from "@protocol/Governance/MultichainGovernor/SnapshotInterface.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
+import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 
 /// Upgradeable, constructor disables implementation
 contract MultichainVoteCollection is
@@ -80,6 +81,35 @@ contract MultichainVoteCollection is
         _disableInitializers();
     }
 
+    /// @notice initialize the governor contract
+    /// @param _xWell address of the xWELL token
+    /// @param _stkWell address of the stkWell token
+    /// @param _moonbeamGovernor address of the moonbeam governor contract
+    /// @param _wormholeRelayer address of the wormhole relayer
+    /// @param _moonbeamWormholeChainId chain id of the moonbeam chain
+    function initialize(
+        address _xWell,
+        address _stkWell,
+        address _moonbeamGovernor,
+        address _wormholeRelayer,
+        uint16 _moonbeamWormholeChainId
+    ) external initializer {
+        xWell = xWELL(_xWell);
+        stkWell = SnapshotInterface(_stkWell);
+
+        moonbeamWormholeChainId = _moonbeamWormholeChainId;
+
+        _addTargetAddress(_moonbeamWormholeChainId, _moonbeamGovernor);
+
+        _addWormholeRelayer(_wormholeRelayer);
+    }
+
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------- VIEW FUNCTIONS -------------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+
     /// @notice returns a user's vote receipt on a given proposal
     /// @param proposalId the id of the proposal to check
     /// @param voter the address of the voter to check
@@ -145,29 +175,6 @@ contract MultichainVoteCollection is
         forVotes = proposal.votes.forVotes;
         againstVotes = proposal.votes.againstVotes;
         abstainVotes = proposal.votes.abstainVotes;
-    }
-
-    /// @notice initialize the governor contract
-    /// @param _xWell address of the xWELL token
-    /// @param _stkWell address of the stkWell token
-    /// @param _moonbeamGovernor address of the moonbeam governor contract
-    /// @param _wormholeRelayer address of the wormhole relayer
-    /// @param _moonbeamWormholeChainId chain id of the moonbeam chain
-    function initialize(
-        address _xWell,
-        address _stkWell,
-        address _moonbeamGovernor,
-        address _wormholeRelayer,
-        uint16 _moonbeamWormholeChainId
-    ) external initializer {
-        xWell = xWELL(_xWell);
-        stkWell = SnapshotInterface(_stkWell);
-
-        moonbeamWormholeChainId = _moonbeamWormholeChainId;
-
-        _addTrustedSender(_moonbeamGovernor, _moonbeamWormholeChainId);
-
-        _addWormholeRelayer(_wormholeRelayer);
     }
 
     /// @dev allows user to cast vote for a proposal
@@ -360,17 +367,17 @@ contract MultichainVoteCollection is
     /// @notice remove trusted senders from external chains
     /// @param _trustedSenders array of trusted senders to remove
     function removeTrustedSenders(
-        TrustedSender[] memory _trustedSenders
+        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
     ) external onlyOwner {
-        _removeTrustedSenders(_trustedSenders);
+        _removeTargetAddresses(_trustedSenders);
     }
 
     /// @notice add trusted senders from external chains
     /// @param _trustedSenders array of trusted senders to add
     function addTrustedSenders(
-        TrustedSender[] memory _trustedSenders
+        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
     ) external onlyOwner {
-        _addTrustedSenders(_trustedSenders);
+        _addTargetAddresses(_trustedSenders);
     }
 
     /// @notice set a gas limit for the relayer on the external chain
