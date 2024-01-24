@@ -2,12 +2,14 @@ pragma solidity 0.8.19;
 
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
+
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 import {SnapshotInterface} from "@protocol/Governance/MultichainGovernor/SnapshotInterface.sol";
-import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
-import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
+import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 
 // t0, user a has x votes, cast vote
 // t1, user a sends tokens to chain 2
@@ -188,7 +190,7 @@ contract MultichainGovernor is
     /// @param calldatas calldatas to whitelist for break glass guardian
     function initialize(
         InitializeData memory initData,
-        TrustedSender[] memory trustedSenders,
+        WormholeTrustedSender.TrustedSender[] memory trustedSenders,
         bytes[] calldata calldatas
     ) external initializer {
         xWell = xWELL(initData.xWell);
@@ -217,7 +219,6 @@ contract MultichainGovernor is
 
         /// @notice this is not good as we have duplicate data and should be fixed
         /// TODO remove one or the other
-        _addTrustedSenders(trustedSenders);
         _addTargetAddresses(trustedSenders);
 
         unchecked {
@@ -809,29 +810,23 @@ contract MultichainGovernor is
     }
 
     /// @notice remove trusted senders from external chains
+    /// can only remove trusted senders from a chain that is already stored
+    /// if the chain doesn't already exist in storage, revert
     /// @param _trustedSenders array of trusted senders to remove
-    function removeTrustedSenders(
-        TrustedSender[] memory _trustedSenders
+    function removeExternalChainConfig(
+        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
     ) external onlyGovernor {
-        _removeTrustedSenders(_trustedSenders);
+        _removeTargetAddresses(_trustedSenders);
     }
 
     /// @notice add trusted senders from external chains
+    /// can only add one trusted sender per chain,
+    /// if more than one trusted sender per chain is added, revert
     /// @param _trustedSenders array of trusted senders to add
-    function addTrustedSenders(
-        TrustedSender[] memory _trustedSenders
+    function addExternalChainConfig(
+        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
     ) external onlyGovernor {
-        _addTrustedSenders(_trustedSenders);
-    }
-
-    /// @notice add map of target addresses for external chains
-    /// @dev there is no check here to ensure there isn't an existing configuration
-    /// ensure the proper add or remove is being called when using this function
-    /// @param _chainConfig array of chainids to addresses to add
-    function addTargetAddresses(
-        TrustedSender[] memory _chainConfig
-    ) external onlyGovernor {
-        _addTargetAddresses(_chainConfig);
+        _addTargetAddresses(_trustedSenders);
     }
 
     /// @notice updates the proposal threshold
