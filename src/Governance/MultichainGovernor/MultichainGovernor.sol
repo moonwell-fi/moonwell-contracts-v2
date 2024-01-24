@@ -412,9 +412,11 @@ contract MultichainGovernor is
         uint256[] memory userProposals = _userLiveProposals[user].values();
 
         uint256 totalLiveProposals = 0;
-        for (uint256 i = 0; i < userProposals.length; i++) {
-            if (proposalActive(userProposals[i])) {
-                totalLiveProposals++;
+        unchecked {
+            for (uint256 i = 0; i < userProposals.length; i++) {
+                if (proposalActive(userProposals[i])) {
+                    totalLiveProposals++;
+                }
             }
         }
 
@@ -603,6 +605,8 @@ contract MultichainGovernor is
         bytes[] memory calldatas,
         string memory description
     ) external payable override whenNotPaused returns (uint256) {
+        /// Checks
+
         /// get user voting power from all voting sources
         require(
             getVotes(msg.sender, block.timestamp - 1, block.number - 1) >=
@@ -623,6 +627,7 @@ contract MultichainGovernor is
             "MultichainGovernor: description can not be empty"
         );
 
+        /// Effects in Checks phase
         _syncTotalLiveProposals(); /// remove inactive proposals from all proposals, and remove from inactive proposals from user list
 
         {
@@ -646,17 +651,16 @@ contract MultichainGovernor is
             }
         }
 
+        /// Effects
+
         proposalCount++;
 
-        uint256 proposalId = proposalCount;
-
-        Proposal storage newProposal = proposals[proposalId];
+        Proposal storage newProposal = proposals[proposalCount];
         bytes memory payload;
 
-        uint256 startTimestamp = block.timestamp - 1;
-        uint256 endTimestamp = block.timestamp + votingPeriod + votingDelay;
-
         {
+            uint256 startTimestamp = block.timestamp - 1;
+            uint256 endTimestamp = block.timestamp + votingPeriod + votingDelay;
             uint256 crossChainVoteCollectionEndTimestamp = endTimestamp +
                 crossChainVoteCollectionPeriod;
             uint256 votingStartTime = block.timestamp + votingDelay;
@@ -673,41 +677,43 @@ contract MultichainGovernor is
                 .crossChainVoteCollectionEndTimestamp = crossChainVoteCollectionEndTimestamp;
 
             payload = abi.encode(
-                proposalId,
+                proposalCount,
                 startTimestamp,
                 votingStartTime,
                 endTimestamp,
                 crossChainVoteCollectionEndTimestamp
+            );
+
+            emit ProposalCreated(
+                proposalCount,
+                msg.sender,
+                targets,
+                values,
+                calldatas,
+                startTimestamp,
+                endTimestamp,
+                description
             );
         }
 
         /// post proposal checks, should never be possible to revert
         /// essentially assertions with revert messages
         require(
-            _userLiveProposals[msg.sender].add(proposalId),
+            _userLiveProposals[msg.sender].add(proposalCount),
             "MultichainGovernor: user cannot add the same proposal twice"
         );
         require(
-            _liveProposals.add(proposalId),
+            _liveProposals.add(proposalCount),
             "MultichainGovernor: cannot add the same proposal twice to global set"
         );
+
+        /// Interactions
 
         /// call relayer with information about proposal
         /// iterate over chainConfigs and send messages to each of them
         _bridgeOutAll(payload);
 
-        emit ProposalCreated(
-            proposalId,
-            msg.sender,
-            targets,
-            values,
-            calldatas,
-            startTimestamp,
-            endTimestamp,
-            description
-        );
-
-        return proposalId;
+        return proposalCount;
     }
 
     /// @notice execute a proposal
