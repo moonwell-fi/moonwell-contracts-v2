@@ -366,7 +366,7 @@ contract MultichainVoteCollection is
 
     /// @notice remove trusted senders from external chains
     /// @param _trustedSenders array of trusted senders to remove
-    function removeTrustedSenders(
+    function removeExternalChainConfig(
         WormholeTrustedSender.TrustedSender[] memory _trustedSenders
     ) external onlyOwner {
         _removeTargetAddresses(_trustedSenders);
@@ -374,7 +374,7 @@ contract MultichainVoteCollection is
 
     /// @notice add trusted senders from external chains
     /// @param _trustedSenders array of trusted senders to add
-    function addTrustedSenders(
+    function addExternalChainConfig(
         WormholeTrustedSender.TrustedSender[] memory _trustedSenders
     ) external onlyOwner {
         _addTargetAddresses(_trustedSenders);

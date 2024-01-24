@@ -227,7 +227,7 @@ interface IMultichainGovernor {
     /// @dev Returns the voting delay before voting begins
     function votingDelay() external view returns (uint256);
 
-    /// @dev Returns the cross chain voting period for a given proposal
+    /// @dev Returns the cross chain voting period
     function crossChainVoteCollectionPeriod() external view returns (uint256);
 
     /// @dev Returns the quorum for a proposal to pass

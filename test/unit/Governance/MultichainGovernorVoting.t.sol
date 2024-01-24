@@ -777,7 +777,51 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
     function testVotingMovesToApprovedStateAfterEnoughForVotesPostXChainVoteCollection()
         public
-    {}
+    {
+        address user = address(1);
+        uint256 voteAmount = governor.quorum();
+
+        well.transfer(user, voteAmount);
+
+        vm.prank(user);
+        well.delegate(user);
+
+        /// include user before snapshot block
+        vm.roll(block.number + 1);
+
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            1,
+            "incorrect state, not active"
+        );
+
+        vm.prank(user);
+        governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
+
+        ) = governor.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            5,
+            "incorrect state, not succeeded"
+        );
+    }
 
     function testVotingMovesToDefeatedStateAfterEnoughAgainstForVotes()
         public

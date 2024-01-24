@@ -575,6 +575,8 @@ contract MultichainGovernor is
         ) {
             return ProposalState.Defeated;
         } else if (proposal.eta == 0) {
+            // TODO eta is never set, and this branch is reacheable only in execute
+            // function so should eta be removed?
             return ProposalState.Succeeded;
         } else if (proposal.executed) {
             return ProposalState.Executed;
