@@ -759,23 +759,27 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     /// TODO
     ///  - test different states, approved, canceled, executed, defeated, succeeded
 
-    function testVotingMovesToApprovedStateAfterEnoughForVotesPostXChainVoteCollection() {}
+    function testVotingMovesToApprovedStateAfterEnoughForVotesPostXChainVoteCollection()
+        public
+    {}
 
-    function testVotingMovesToDefeatedStateAfterEnoughAgainstForVotes() {}
+    function testVotingMovesToDefeatedStateAfterEnoughAgainstForVotes()
+        public
+    {}
 
-    function testVotingMovesToDefeatedStateAfterEnoughAbstainVotes() {}
+    function testVotingMovesToDefeatedStateAfterEnoughAbstainVotes() public {}
 
-    function testStateMovesToExecutedStateAfterExecution() {}
+    function testStateMovesToExecutedStateAfterExecution() public {}
 
-    function testExecuteFailsAfterExecution() {}
+    function testExecuteFailsAfterExecution() public {}
 
-    function testExecuteFailsAfterDefeat() {}
+    function testExecuteFailsAfterDefeat() public {}
 
-    function testExecuteFailsAfterCancel() {}
+    function testExecuteFailsAfterCancel() public {}
 
-    function testExecuteFailsAfterApproved() {}
+    function testExecuteFailsAfterApproved() public {}
 
-    function testExecuteFailsDuringXChainVoteCollection() {}
+    function testExecuteFailsDuringXChainVoteCollection() public {}
 
     ///  - test changing parameters with multiple live proposals
 
