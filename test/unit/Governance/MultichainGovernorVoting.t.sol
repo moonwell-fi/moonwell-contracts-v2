@@ -775,9 +775,10 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     /// TODO
     ///  - test different states, approved, canceled, executed, defeated, succeeded
 
-    function testVotingMovesToApprovedStateAfterEnoughForVotesPostXChainVoteCollection()
-        public
-    {
+    // @dev helper function to create a proposal and vote quorum and changing state
+    function createProposalAndVotesQuorum(
+        uint8 voteValue
+    ) private returns (uint256) {
         address user = address(1);
         uint256 voteAmount = governor.quorum();
 
@@ -800,8 +801,17 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
 
         vm.prank(user);
-        governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+        governor.castVote(proposalId, voteValue);
 
+        return proposalId;
+    }
+
+    function testVotingMovesToApprovedStateAfterEnoughForVotesPostXChainVoteCollection()
+        public
+    {
+        uint256 proposalId = createProposalAndVotesQuorum(
+            Constants.VOTE_VALUE_YES
+        );
         (
             ,
             ,
@@ -823,11 +833,55 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
     }
 
-    function testVotingMovesToDefeatedStateAfterEnoughAgainstForVotes()
-        public
-    {}
+    function testVotingMovesToDefeatedStateAfterEnoughAgainstForVotes() public {
+        uint256 proposalId = createProposalAndVotesQuorum(
+            Constants.VOTE_VALUE_NO
+        );
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
 
-    function testVotingMovesToDefeatedStateAfterEnoughAbstainVotes() public {}
+        ) = governor.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            4,
+            "incorrect state, not defeated"
+        );
+    }
+
+    function testVotingMovesToDefeatedStateAfterEnoughAbstainVotes() public {
+        uint256 proposalId = createProposalAndVotesQuorum(
+            Constants.VOTE_VALUE_ABSTAIN
+        );
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
+
+        ) = governor.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            4,
+            "incorrect state, not defeated"
+        );
+    }
 
     function testStateMovesToExecutedStateAfterExecution() public {}
 
