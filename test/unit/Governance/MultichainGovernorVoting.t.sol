@@ -858,10 +858,11 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
     }
 
-    function testVotingMovesToDefeatedStateAfterEnoughAbstainVotes() public {
-        uint256 proposalId = createProposalAndVotesQuorum(
-            Constants.VOTE_VALUE_ABSTAIN
-        );
+    function testVotingMovesToDefeatedStateAfterEnoughAbstainVotes()
+        public
+        returns (uint256 proposalId)
+    {
+        proposalId = createProposalAndVotesQuorum(Constants.VOTE_VALUE_ABSTAIN);
         (
             ,
             ,
@@ -920,7 +921,14 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         governor.execute(proposalId);
     }
 
-    function testExecuteFailsAfterDefeat() public {}
+    function testExecuteFailsAfterDefeat() public {
+        uint256 proposalId = testVotingMovesToDefeatedStateAfterEnoughAbstainVotes();
+
+        vm.expectRevert(
+            "MultichainGovernor: proposal can only be executed if it is Succeeded"
+        );
+        governor.execute(proposalId);
+    }
 
     function testExecuteFailsAfterCancel() public {}
 
