@@ -391,4 +391,15 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         vm.expectRevert("Pausable: paused");
         governor.castVote(0, 0);
     }
+
+    // VIEW FUNCTIONS
+
+    function testIsCrosschainVoteCollector() public {
+        testAddExternalChainConfigGovernorSucceeds();
+        assertEq(
+            governor.isCrossChainVoteCollector(1, address(this)),
+            true,
+            "incorrect is crosschain vote collector"
+        );
+    }
 }

@@ -776,9 +776,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     }
 
     /// TODO tests around gov proposals:
-    ///  - updateApprovedCalldata
-    ///  - removeExternalChainConfig
-    ///  - addExternalChainConfig
     ///  - updateProposalThreshold
     ///  - updateMaxUserLiveProposals
     ///  - updateQuorum
@@ -786,7 +783,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     ///  - updateVotingDelay
     ///  - updateCrossChainVoteCollectionPeriod
     ///  - setBreakGlassGuardian
-    ///  - minGasLimit
 
     /// mix and match these items, update one parameter while another proposal is in flight
     /// move the max gas limit too low and brick the thing
@@ -1233,5 +1229,59 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         assertEq(uint256(governor.state(proposalId3)), 3, "incorrect state");
     }
 
-    ///  - test executing, breaking glass, pausing, adding and removing approved calldata and unpausing
+    // VIEW FUNCTIONS
+
+    function testGetProposalData() public {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = governor.getProposalData(proposalId);
+
+        assertEq(targets.length, 1, "incorrect targets length");
+        assertEq(values.length, 1, "incorrect values length");
+        assertEq(calldatas.length, 1, "incorrect calldatas length");
+
+        assertEq(targets[0], address(governor), "incorrect target");
+        assertEq(values[0], 0, "incorrect value");
+        assertEq(
+            calldatas[0],
+            abi.encodeWithSignature(
+                "updateProposalThreshold(uint256)",
+                100_000_000 * 1e18
+            ),
+            "incorrect calldata"
+        );
+    }
+
+    function testGetNumLiveProposals() public {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        assertEq(
+            governor.getNumLiveProposals(),
+            1,
+            "incorrect num live proposals"
+        );
+        governor.cancel(proposalId);
+        assertEq(
+            governor.getNumLiveProposals(),
+            0,
+            "incorrect num live proposals"
+        );
+    }
+
+    function testCurrentUserLiveProposals() public {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            1,
+            "incorrect num live proposals"
+        );
+        governor.cancel(proposalId);
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            0,
+            "incorrect num live proposals"
+        );
+    }
 }
