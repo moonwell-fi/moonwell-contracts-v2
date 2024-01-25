@@ -1476,4 +1476,14 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect num live proposals"
         );
     }
+
+    function testGetCurrentVotes() public {
+        testUserVotingToProposalWithDifferentTokensSucceeds();
+
+        assertEq(
+            governor.getCurrentVotes(address(1)),
+            3_000_000 * 1e18,
+            "incorrect current votes"
+        );
+    }
 }
