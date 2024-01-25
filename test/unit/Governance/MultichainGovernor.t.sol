@@ -103,7 +103,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.updateApprovedCalldata("", true);
     }
 
-    function testRemoveTrustedSendersNonGovernorFails() public {
+    function testRemoveExternalChainConfigNonGovernorFails() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
@@ -112,7 +112,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.removeExternalChainConfig(_trustedSenders);
     }
 
-    function testAddTrustedSendersNonGovernorFails() public {
+    function testAddExternalChainConfigNonGovernorFails() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
@@ -181,9 +181,9 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function testRemoveTrustedSendersGovernorSucceeds() public {
+    function testRemoveExternalChainConfigGovernorSucceeds() public {
         WormholeTrustedSender.TrustedSender[]
-            memory _trustedSenders = testAddTrustedSendersGovernorSucceeds();
+            memory _trustedSenders = testAddExternalChainConfigGovernorSucceeds();
 
         vm.prank(address(governor));
         governor.removeExternalChainConfig(_trustedSenders);
@@ -193,11 +193,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
                 _trustedSenders[0].chainId,
                 _trustedSenders[0].addr
             ),
-            "trusted sender not added"
+            "trusted sender not removed"
         );
     }
 
-    function testAddTrustedSendersGovernorSucceeds()
+    function testAddExternalChainConfigGovernorSucceeds()
         public
         returns (WormholeTrustedSender.TrustedSender[] memory)
     {

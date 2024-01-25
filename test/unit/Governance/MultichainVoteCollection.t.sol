@@ -736,4 +736,43 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.expectRevert("Ownable: caller is not the owner");
         voteCollection.addExternalChainConfig(_trustedSenders);
     }
+
+    function testRemoveExternalChainConfigOwnerSucceeds() public {
+        WormholeTrustedSender.TrustedSender[]
+            memory _trustedSenders = testAddExternalChainConfigOwnerSucceeds();
+
+        voteCollection.removeExternalChainConfig(_trustedSenders);
+
+        assertFalse(
+            voteCollection.isTrustedSender(
+                _trustedSenders[0].chainId,
+                _trustedSenders[0].addr
+            ),
+            "trusted sender not removed"
+        );
+    }
+
+    function testAddExternalChainConfigOwnerSucceeds()
+        public
+        returns (WormholeTrustedSender.TrustedSender[] memory)
+    {
+        WormholeTrustedSender.TrustedSender[]
+            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                1
+            );
+
+        _trustedSenders[0].chainId = 1;
+        _trustedSenders[0].addr = address(this);
+
+        voteCollection.addExternalChainConfig(_trustedSenders);
+        assertTrue(
+            voteCollection.isTrustedSender(
+                _trustedSenders[0].chainId,
+                _trustedSenders[0].addr
+            ),
+            "trusted sender not added"
+        );
+
+        return _trustedSenders;
+    }
 }
