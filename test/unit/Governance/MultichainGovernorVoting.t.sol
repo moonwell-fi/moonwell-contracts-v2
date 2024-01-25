@@ -732,6 +732,198 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
     }
 
+    // STAKED WELL
+
+    function testMultipleUserVoteStkWellSucceeded() public {
+        address user1 = address(1);
+        address user2 = address(2);
+        address user3 = address(3);
+        uint256 voteAmount = 1_000_000 * 1e18;
+
+        xwell.transfer(user1, voteAmount);
+
+        vm.startPrank(user1);
+        xwell.approve(address(stkWell), voteAmount);
+        stkWell.stake(user1, voteAmount);
+        vm.stopPrank();
+
+        xwell.transfer(user2, voteAmount);
+
+        vm.startPrank(user2);
+        xwell.approve(address(stkWell), voteAmount);
+        stkWell.stake(user2, voteAmount);
+        vm.stopPrank();
+
+        xwell.transfer(user3, voteAmount);
+
+        vm.startPrank(user3);
+        xwell.approve(address(stkWell), voteAmount);
+        stkWell.stake(user3, voteAmount);
+        vm.stopPrank();
+
+        /// include users before snapshot timestamp
+        vm.warp(block.timestamp + 1);
+
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect state, not pending"
+        );
+
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            1,
+            "incorrect state, not active"
+        );
+
+        vm.prank(user1);
+        governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+
+        vm.prank(user2);
+        governor.castVote(proposalId, Constants.VOTE_VALUE_NO);
+
+        vm.prank(user3);
+        governor.castVote(proposalId, Constants.VOTE_VALUE_ABSTAIN);
+
+        {
+            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+                .getReceipt(proposalId, user1);
+
+            assertTrue(hasVoted, "user1 has not voted");
+            assertEq(votes, voteAmount, "user1 has incorrect vote amount");
+            assertEq(
+                voteValue,
+                Constants.VOTE_VALUE_YES,
+                "user1 did not vote yes"
+            );
+        }
+        {
+            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+                .getReceipt(proposalId, user2);
+
+            assertTrue(hasVoted, "user2 has not voted");
+            assertEq(votes, voteAmount, "user2 has incorrect vote amount");
+            assertEq(
+                voteValue,
+                Constants.VOTE_VALUE_NO,
+                "user2 did not vote no"
+            );
+        }
+        {
+            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+                .getReceipt(proposalId, user3);
+
+            assertTrue(hasVoted, "user3 has not voted");
+            assertEq(votes, voteAmount, "user3 has incorrect vote amount");
+            assertEq(
+                voteValue,
+                Constants.VOTE_VALUE_ABSTAIN,
+                "user3 did not vote yes"
+            );
+        }
+
+        (
+            ,
+            ,
+            ,
+            ,
+            ,
+            uint256 totalVotes,
+            uint256 forVotes,
+            uint256 againstVotes,
+            uint256 abstainVotes
+        ) = governor.proposalInformation(proposalId);
+
+        assertEq(
+            totalVotes,
+            forVotes + againstVotes + abstainVotes,
+            "incorrect total votes"
+        );
+
+        assertEq(totalVotes, 3 * voteAmount, "incorrect total votes");
+        assertEq(forVotes, voteAmount, "incorrect for votes");
+        assertEq(againstVotes, voteAmount, "incorrect against votes");
+        assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
+    }
+
+    function testUserVotingToProposalWithDifferentTokensSucceeds() public {
+        address user = address(1);
+        uint256 voteAmount = 1_000_000 * 1e18;
+
+        // well * 2 to deposit half to stkWell
+        well.transfer(user, voteAmount);
+
+        // xwell
+        xwell.transfer(user, voteAmount * 2);
+
+        vm.startPrank(user);
+
+        // stkWell
+        xwell.approve(address(stkWell), voteAmount);
+        stkWell.stake(user, voteAmount);
+
+        well.delegate(user);
+        xwell.delegate(user);
+        vm.stopPrank();
+
+        /// include user before snapshot block
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
+
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            1,
+            "incorrect state, not active"
+        );
+
+        vm.prank(user);
+        governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+
+        {
+            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+                .getReceipt(proposalId, user);
+
+            assertTrue(hasVoted, "user has not voted");
+            assertEq(votes, voteAmount * 3, "user has incorrect vote amount");
+            assertEq(
+                voteValue,
+                Constants.VOTE_VALUE_YES,
+                "user did not vote yes"
+            );
+        }
+
+        (
+            ,
+            ,
+            ,
+            ,
+            ,
+            uint256 totalVotes,
+            uint256 forVotes,
+            uint256 againstVotes,
+            uint256 abstainVotes
+        ) = governor.proposalInformation(proposalId);
+
+        assertEq(
+            totalVotes,
+            forVotes + againstVotes + abstainVotes,
+            "incorrect total votes"
+        );
+
+        assertEq(totalVotes, 3 * voteAmount, "incorrect total votes");
+        assertEq(forVotes, 3 * voteAmount, "incorrect for votes");
+        assertEq(againstVotes, 0, "incorrect against votes");
+        assertEq(abstainVotes, 0, "incorrect abstain votes");
+    }
+
     function testFromWormholeFormatToAddress() public {
         bytes32 invalidAddress1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000;
         bytes32 invalidAddress2 = 0xFFFFFFFFFFFFFFFFFFFFFFFF0000000000000000000000000000000000000000; /// bytes32(uint256(type(uint256).max << 160));
