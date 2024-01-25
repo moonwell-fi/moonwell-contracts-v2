@@ -11,34 +11,10 @@ import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMult
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 
-// t0, user a has x votes, cast vote
-// t1, user a sends tokens to chain 2
-// t2, user a receives tokens
-// t3, user a delegates to self, wait for at least 1 seconds to pass
-// t4, user a can now vote
-
-/// chain a
-///  t0
-///     timestamp 29,000
-///     block 100
-///     user a has 100 votes
-///     voting starts at timestamp 30,000 and block 110
-///
-///  t1
-///     timestamp 29,500 user a sends tokens to chain b, self delegates
-///     no votes on chain a, user a has 100 votes at ts 29,501
-/// chain b
-
-/// WARNING: this contract is at high risk of running over bytecode size limit
-///   we may need to split things out into multiple contracts, so keep things as
-///   concise as possible.
-
-/// @notice pauseable by the guardian
-/// @notice upgradeable, constructor disables implementation
-
-/// Note:
-/// - moonbeam block times are consistently 12 seconds with few exceptions https://moonscan.io/chart/blocktime
-/// this means that a timestamp can be converted to a block number with a high degree of accuracy
+/// @notice Contract is pauseable by the guardian
+/// Break glass guardian can roll back governance to the previous ArtemisTimelock and Governor
+/// @notice upgradeable, constructor disables implementation contract from working
+/// to prevent governance hijacking.
 contract MultichainGovernor is
     IMultichainGovernor,
     ConfigurablePauseGuardian,
@@ -217,8 +193,6 @@ contract MultichainGovernor is
 
         _addWormholeRelayer(address(initData.wormholeRelayer));
 
-        /// @notice this is not good as we have duplicate data and should be fixed
-        /// TODO remove one or the other
         _addTargetAddresses(trustedSenders);
 
         unchecked {
