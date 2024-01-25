@@ -411,7 +411,7 @@ contract MultichainGovernor is
 
         unchecked {
             for (uint256 i = 0; i < allUserProposals.length; i++) {
-                ProposalState proposalsState = state(userProposals[i]);
+                ProposalState proposalsState = state(allUserProposals[i]);
 
                 if (
                     proposalsState == ProposalState.Active ||
