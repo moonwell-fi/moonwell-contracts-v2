@@ -852,7 +852,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.warp(crossChainVoteCollectionEndTimestamp + 1);
     }
 
-    function testVotingMovesToApprovedStateAfterEnoughForVotesPostXChainVoteCollection()
+    function testVotingMovesToSucceededStateAfterEnoughForVotesPostXChainVoteCollection()
         public
     {
         address user = address(1);

@@ -710,4 +710,24 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     /// Voting on MultichainVoteCollection
+
+    /// Only Owner
+
+    function testRemoveExternalChainConfigNonOwnerFails() public {
+        WormholeTrustedSender.TrustedSender[]
+            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                0
+            );
+        vm.expectRevert("MultichainGovernor: only owner");
+        governor.removeExternalChainConfig(_trustedSenders);
+    }
+
+    function testAddExternalChainConfigNonOwnerFails() public {
+        WormholeTrustedSender.TrustedSender[]
+            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                0
+            );
+        vm.expectRevert("MultichainGovernor: only governor");
+        governor.addExternalChainConfig(_trustedSenders);
+    }
 }

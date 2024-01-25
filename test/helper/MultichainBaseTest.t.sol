@@ -171,26 +171,24 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         initData.stkWell = address(stkWell);
         initData.distributor = address(distributor);
 
-        (
-            address governorProxy,
-            address governorImplementation,
-            address voteCollectionProxy,
-            address wormholeRelayerAdapterAddress,
-
-        ) = deployGovernorRelayerAndVoteCollection(
+        MultichainGovernorDeploy.MultichainAddresses
+            memory addresses = deployGovernorRelayerAndVoteCollection(
                 initData,
                 approvedCalldata,
                 address(0),
-                16
+                16,
+                address(this) // voteCollectionOwner
             );
 
-        governor = MultichainGovernor(governorProxy);
-        governorLogic = MultichainGovernor(governorImplementation);
+        governor = MultichainGovernor(addresses.governorProxy);
+        governorLogic = MultichainGovernor(addresses.governorImplementation);
         xwell = xWELL(xwellProxy);
         wormholeRelayerAdapter = WormholeRelayerAdapter(
-            wormholeRelayerAdapterAddress
+            addresses.wormholeRelayerAdapter
         );
-        voteCollection = MultichainVoteCollection(voteCollectionProxy);
+        voteCollection = MultichainVoteCollection(
+            addresses.voteCollectionProxy
+        );
 
         xwell.addBridge(
             MintLimits.RateLimitMidPointInfo({
