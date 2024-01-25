@@ -518,17 +518,6 @@ contract MultichainGovernor is
         return isTrustedSender(chainId, voteCollector);
     }
 
-    /// @notice returns whether or not the user is a vote collector contract
-    /// and can vote on a given chain
-    /// @param chainId the chain id to check
-    /// @param voteCollector the vote collector address to check (bytes32 encoded)
-    function isCrossChainVoteCollector(
-        uint16 chainId,
-        bytes32 voteCollector
-    ) external view returns (bool) {
-        return isTrustedSender(chainId, voteCollector);
-    }
-
     /// @notice The total state of a given proposal
     /// distinct states:
     ///      canceled                              -> means proposer canceled, proposer votes fell below threshold and was canceled, or contract was paused and vote was canceled
