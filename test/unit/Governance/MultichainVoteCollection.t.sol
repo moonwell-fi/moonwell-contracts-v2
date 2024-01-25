@@ -170,7 +170,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         return proposalId;
     }
 
-    /// Voting on MultichainGovernor
+    /// Voting on MultichainVoteCollection
 
     function testVotingValidProposalIdSucceeds()
         public
@@ -711,7 +711,84 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
     }
 
-    /// Voting on MultichainVoteCollection
+    function testEmitVotesToRelayerSucceeded() public {
+        testMultipleUserVoteWellSucceeds();
+
+        uint256 proposalId = governor.proposalCount();
+
+        (
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            uint256 totalVotesVoteCollection,
+            uint256 forVotesVoteCollection,
+            uint256 againstVotesVoteCollection,
+            uint256 abstainVotesVoteCollection
+        ) = voteCollection.proposalInformation(proposalId);
+
+        // test at the last timestamp of the cross chain vote collection period
+        vm.warp(crossChainVoteCollectionEndTimestamp);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            2,
+            "incorrect state, not in crosschain vote collection period"
+        );
+
+        (
+            ,
+            ,
+            ,
+            ,
+            ,
+            uint256 totalVotesBefore,
+            uint256 forVotesBefore,
+            uint256 againstVotesBefore,
+            uint256 abstainVoteBefores
+        ) = governor.proposalInformation(proposalId);
+
+        {
+            uint256 bridgeCost = voteCollection.bridgeCost(moonbeamChainId);
+
+            vm.deal(address(this), bridgeCost);
+
+            voteCollection.emitVotes{value: bridgeCost}(proposalId);
+        }
+
+        (
+            ,
+            ,
+            ,
+            ,
+            ,
+            uint256 totalVotesAfter,
+            uint256 forVotesAfter,
+            uint256 againstVotesAfter,
+            uint256 abstainVotesAfter
+        ) = governor.proposalInformation(proposalId);
+
+        assertEq(
+            totalVotesAfter,
+            totalVotesBefore + totalVotesVoteCollection,
+            "incorrect total votes"
+        );
+        assertEq(
+            forVotesAfter,
+            forVotesBefore + forVotesVoteCollection,
+            "incorrect for votes"
+        );
+        assertEq(
+            againstVotesAfter,
+            againstVotesBefore + againstVotesVoteCollection,
+            "incorrect against votes"
+        );
+        assertEq(
+            abstainVotesAfter,
+            abstainVoteBefores + abstainVotesVoteCollection,
+            "incorrect abstain votes"
+        );
+    }
 
     /// Only Owner
 
