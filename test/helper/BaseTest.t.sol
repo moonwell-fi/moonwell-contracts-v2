@@ -14,6 +14,8 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 
+import {SigUtils} from "@test/helper/SigUtils.sol";
+
 contract BaseTest is xWELLDeploy, Test {
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
@@ -38,6 +40,9 @@ contract BaseTest is xWELLDeploy, Test {
 
     /// @notice proxy contract, stores all state
     xWELL public xwellProxy;
+
+    /// @notice signature utils contract
+    SigUtils public sigUtils;
 
     /// @notice name of the token
     string public xwellName = "WELL";
@@ -139,6 +144,8 @@ contract BaseTest is xWELLDeploy, Test {
             wormholeRelayer,
             chainId
         );
+
+        sigUtils = new SigUtils(xwellProxy.DOMAIN_SEPARATOR());
     }
 
     /// --------------------------------------------------------
