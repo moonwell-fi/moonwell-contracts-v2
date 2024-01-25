@@ -69,6 +69,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             1,
             "incorrect target chains length"
         );
+
+        assertEq(voteCollection.owner(), address(this), "incorrect owner");
     }
 
     /// Proposing on MultichainGovernor
@@ -718,8 +720,10 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
             );
-        vm.expectRevert("MultichainGovernor: only owner");
-        governor.removeExternalChainConfig(_trustedSenders);
+
+        vm.prank(address(1));
+        vm.expectRevert("Ownable: caller is not the owner");
+        voteCollection.removeExternalChainConfig(_trustedSenders);
     }
 
     function testAddExternalChainConfigNonOwnerFails() public {
@@ -727,7 +731,9 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
             );
-        vm.expectRevert("MultichainGovernor: only governor");
-        governor.addExternalChainConfig(_trustedSenders);
+
+        vm.prank(address(1));
+        vm.expectRevert("Ownable: caller is not the owner");
+        voteCollection.addExternalChainConfig(_trustedSenders);
     }
 }
