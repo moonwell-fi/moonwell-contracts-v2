@@ -1,7 +1,6 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
-
 import "@test/helper/BaseTest.t.sol";
 
 contract xWELLUnitTest is BaseTest {
@@ -881,5 +880,33 @@ contract xWELLUnitTest is BaseTest {
             startingAllowance - amount,
             "incorrect allowance"
         );
+    }
+
+    function testPermit(uint256 amount) public {
+        address spender = address(xerc20Lockbox);
+        uint256 deadline = 5000000000; // timestamp far in the future
+        uint256 ownerPrivateKey = 0xA11CE;
+        address owner = vm.addr(ownerPrivateKey);
+
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: owner,
+            spender: spender,
+            value: amount,
+            nonce: 0,
+            deadline: deadline
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
+
+        xwellProxy.permit(owner, spender, amount, deadline, v, r, s);
+
+        assertEq(
+            xwellProxy.allowance(owner, spender),
+            amount,
+            "incorrect allowance"
+        );
+        assertEq(xwellProxy.nonces(owner), 1, "incorrect nonce");
     }
 }
