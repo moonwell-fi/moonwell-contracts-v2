@@ -21,7 +21,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         xwell.delegate(address(this));
         well.delegate(address(this));
         distributor.delegate(address(this));
-        //stkWell.delegate(address(this));
 
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
