@@ -156,6 +156,20 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.setBreakGlassGuardian(address(this));
     }
 
+    function testSetGasLimitNonGovernorFails() public {
+        uint96 gasLimit = Constants.MIN_GAS_LIMIT;
+        vm.prank(address(1));
+        vm.expectRevert("MultichainGovernor: only governor");
+        governor.setGasLimit(gasLimit);
+    }
+
+    function testSetGasLimitTooLow() public {
+        uint96 gasLimit = Constants.MIN_GAS_LIMIT - 1;
+        vm.expectRevert("MultichainGovernor: gas limit too low");
+        vm.prank(address(governor));
+        governor.setGasLimit(gasLimit);
+    }
+
     /// BREAK GLASS GUARDIAN
 
     function testExecuteBreakGlassNonBreakGlassGuardianFails() public {
@@ -324,6 +338,13 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             address(0),
             "break glass guardian not reset"
         );
+    }
+
+    function testSetGasLimitGovernorSucceeds() public {
+        uint96 gasLimit = Constants.MIN_GAS_LIMIT;
+        vm.prank(address(governor));
+        governor.setGasLimit(gasLimit);
+        assertEq(governor.gasLimit(), gasLimit, "incorrect gas limit");
     }
 
     /// PAUSE GUARDIAN
