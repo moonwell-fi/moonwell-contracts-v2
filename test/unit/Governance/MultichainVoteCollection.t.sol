@@ -711,6 +711,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
     }
 
+    // Emit votes to Governor
     function testEmitVotesToGovernorSucceeded() public {
         testMultipleUserVoteWellSucceeds();
 
@@ -792,6 +793,59 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             proposalBefore.abstainVotes + proposalVoteCollection.abstainVotes,
             "incorrect abstain votes"
         );
+    }
+
+    function testEmitVotesProposalHasNoVotes() public {
+        testProposeUpdateProposalThresholdSucceeds();
+
+        uint256 proposalId = governor.proposalCount();
+
+        vm.expectRevert("MultichainVoteCollection: proposal has no votes");
+        voteCollection.emitVotes(proposalId);
+    }
+
+    function testEmitVotesProposalHasAlreadyBeenEmitted() public {
+        testEmitVotesToGovernorSucceeded();
+
+        uint256 proposalId = governor.proposalCount();
+
+        vm.expectRevert("MultichainVoteCollection: votes already emitted");
+        voteCollection.emitVotes(proposalId);
+    }
+
+    function testEmitVotesProposalEndTimeHasNotPassed() public {
+        uint256 proposalId = testVotingValidProposalIdSucceeds();
+
+        (, , uint256 endTimestamp, , , , , ) = voteCollection
+            .proposalInformation(proposalId);
+
+        // test at the last timestamp of vote period
+        vm.warp(endTimestamp);
+
+        vm.expectRevert("MultichainVoteCollection: Voting has not ended");
+        voteCollection.emitVotes(proposalId);
+    }
+
+    function testEmitVotesProposalCollectionEndTimeHasPassed() public {
+        uint256 proposalId = testVotingValidProposalIdSucceeds();
+
+        (
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
+
+        ) = voteCollection.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+
+        vm.expectRevert(
+            "MultichainVoteCollection: Voting collection phase has ended"
+        );
+        voteCollection.emitVotes(proposalId);
     }
 
     /// Only Owner
