@@ -286,7 +286,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testVotingNoVotesFails() public returns (uint256 proposalId) {
-        proposalId = testProposeUpdateProposalThresholdSucceeds();
+        proposalId = testEmitVotesToGovernorSucceeded();
 
         vm.warp(block.timestamp + governor.votingDelay() + 1);
 
@@ -736,10 +736,13 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     // Emit votes to Governor
-    function testEmitVotesToGovernorSucceeded() public {
+    function testEmitVotesToGovernorSucceeded()
+        public
+        returns (uint256 proposalId)
+    {
         testMultipleUserVoteWellSucceeds();
 
-        uint256 proposalId = governor.proposalCount();
+        proposalId = governor.proposalCount();
 
         IMultichainGovernor.ProposalInformation
             memory proposalVoteCollection = getVoteCollectionProposalInformation(
@@ -918,5 +921,23 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.prank(address(1));
         vm.expectRevert("Ownable: caller is not the owner");
         voteCollection.setGasLimit(gasLimit);
+    }
+
+    // VIEW FUNCTIONS
+
+    function testGetChainAddresVotes() public {
+        uint256 proposalId = testEmitVotesToGovernorSucceeded();
+
+        uint256 voteAmount = 1_000_000 * 1e18;
+
+        (
+            uint256 votesFor,
+            uint256 votesAgainst,
+            uint256 votesAbstain
+        ) = governor.chainAddressVotes(proposalId, 30); // base chain id
+
+        assertEq(votesFor, voteAmount, "votes for incorrect");
+        assertEq(votesAgainst, voteAmount, "votes against incorrect");
+        assertEq(votesAbstain, voteAmount, "abstain votes incorrect");
     }
 }

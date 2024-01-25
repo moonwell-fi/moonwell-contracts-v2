@@ -175,7 +175,8 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
                 initData,
                 approvedCalldata,
                 address(0),
-                16,
+                16, // wormhole moonbeam chain id
+                30, // wormhole base chain id
                 address(this) // voteCollectionOwner
             );
 
