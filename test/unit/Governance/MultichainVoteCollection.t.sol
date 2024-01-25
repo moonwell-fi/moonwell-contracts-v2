@@ -711,24 +711,25 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
     }
 
-    function testEmitVotesToRelayerSucceeded() public {
+    function testEmitVotesToGovernorSucceeded() public {
         testMultipleUserVoteWellSucceeds();
 
         uint256 proposalId = governor.proposalCount();
 
+        ProposalInformation memory proposalVoteCollection;
         (
             ,
             ,
             ,
-            uint256 crossChainVoteCollectionEndTimestamp,
-            uint256 totalVotesVoteCollection,
-            uint256 forVotesVoteCollection,
-            uint256 againstVotesVoteCollection,
-            uint256 abstainVotesVoteCollection
+            proposalVoteCollection.crossChainVoteCollectionEndTimestamp,
+            proposalVoteCollection.totalVotes,
+            proposalVoteCollection.forVotes,
+            proposalVoteCollection.againstVotes,
+            proposalVoteCollection.abstainVotes
         ) = voteCollection.proposalInformation(proposalId);
 
         // test at the last timestamp of the cross chain vote collection period
-        vm.warp(crossChainVoteCollectionEndTimestamp);
+        vm.warp(proposalVoteCollection.crossChainVoteCollectionEndTimestamp);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -736,16 +737,18 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect state, not in crosschain vote collection period"
         );
 
+        ProposalInformation memory proposalBefore;
+
         (
             ,
             ,
             ,
             ,
             ,
-            uint256 totalVotesBefore,
-            uint256 forVotesBefore,
-            uint256 againstVotesBefore,
-            uint256 abstainVoteBefores
+            proposalBefore.totalVotes,
+            proposalBefore.forVotes,
+            proposalBefore.againstVotes,
+            proposalBefore.abstainVotes
         ) = governor.proposalInformation(proposalId);
 
         {
@@ -756,36 +759,37 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             voteCollection.emitVotes{value: bridgeCost}(proposalId);
         }
 
+        ProposalInformation memory proposalAfter;
         (
             ,
             ,
             ,
             ,
             ,
-            uint256 totalVotesAfter,
-            uint256 forVotesAfter,
-            uint256 againstVotesAfter,
-            uint256 abstainVotesAfter
+            proposalAfter.totalVotes,
+            proposalAfter.forVotes,
+            proposalAfter.againstVotes,
+            proposalAfter.abstainVotes
         ) = governor.proposalInformation(proposalId);
 
         assertEq(
-            totalVotesAfter,
-            totalVotesBefore + totalVotesVoteCollection,
+            proposalAfter.totalVotes,
+            proposalBefore.totalVotes + proposalVoteCollection.totalVotes,
             "incorrect total votes"
         );
         assertEq(
-            forVotesAfter,
-            forVotesBefore + forVotesVoteCollection,
+            proposalAfter.forVotes,
+            proposalBefore.forVotes + proposalVoteCollection.forVotes,
             "incorrect for votes"
         );
         assertEq(
-            againstVotesAfter,
-            againstVotesBefore + againstVotesVoteCollection,
+            proposalAfter.againstVotes,
+            proposalBefore.againstVotes + proposalVoteCollection.againstVotes,
             "incorrect against votes"
         );
         assertEq(
-            abstainVotesAfter,
-            abstainVoteBefores + abstainVotesVoteCollection,
+            proposalAfter.abstainVotes,
+            proposalBefore.abstainVotes + proposalVoteCollection.abstainVotes,
             "incorrect abstain votes"
         );
     }
@@ -851,5 +855,24 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         );
 
         return _trustedSenders;
+    }
+
+    function testSetGasLimitOwnerSucceeds() public {
+        uint96 gasLimit = Constants.MIN_GAS_LIMIT;
+        voteCollection.setGasLimit(gasLimit);
+        assertEq(voteCollection.gasLimit(), gasLimit, "incorrect gas limit");
+    }
+
+    function testSetGasLimitTooLow() public {
+        uint96 gasLimit = Constants.MIN_GAS_LIMIT - 1;
+        vm.expectRevert("MultichainVoteCollection: gas limit too low");
+        voteCollection.setGasLimit(gasLimit);
+    }
+
+    function testSetGasLimitNonOwnerFails() public {
+        uint96 gasLimit = Constants.MIN_GAS_LIMIT;
+        vm.prank(address(1));
+        vm.expectRevert("Ownable: caller is not the owner");
+        voteCollection.setGasLimit(gasLimit);
     }
 }

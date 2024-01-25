@@ -399,7 +399,7 @@ contract MultichainVoteCollection is
     function setGasLimit(uint96 newGasLimit) external onlyOwner {
         require(
             newGasLimit >= Constants.MIN_GAS_LIMIT,
-            "MultichainGovernor: gas limit too low"
+            "MultichainVoteCollection: gas limit too low"
         );
 
         _setGasLimit(newGasLimit);

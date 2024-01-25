@@ -65,7 +65,6 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
     /// @notice moonbeam wormhole chain id
     uint16 public constant moonbeamChainId = 16;
-
     /// @notice pause guardian
     address public pauseGuardian = address(this);
 
@@ -80,6 +79,15 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
     /// @notice whitelisted calldata for MultichainGovernor
     bytes[] public approvedCalldata;
+
+    // @dev struct for packing proposal information to avoid stack too deep errors
+    struct ProposalInformation {
+        uint256 crossChainVoteCollectionEndTimestamp;
+        uint256 totalVotes;
+        uint256 forVotes;
+        uint256 againstVotes;
+        uint256 abstainVotes;
+    }
 
     constructor() {
         temporalGovernanceTrustedSenders.push(
