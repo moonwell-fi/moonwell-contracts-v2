@@ -974,7 +974,7 @@ contract MultichainGovernor is
             /// can only remove approval if already approved
             require(
                 whitelistedCalldatas[data],
-                "MultichainGovernor: calldata already not approved"
+                "MultichainGovernor: calldata not approved"
             );
         }
 

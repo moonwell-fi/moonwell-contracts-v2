@@ -110,6 +110,12 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.updateApprovedCalldata("", true);
     }
 
+    function testUpdateApprovedCalldataNonWhitelistedFails() public {
+        vm.prank(address(governor));
+        vm.expectRevert("MultichainGovernor: calldata not approved");
+        governor.updateApprovedCalldata("", false);
+    }
+
     function testRemoveExternalChainConfigNonGovernorFails() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
