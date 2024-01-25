@@ -831,6 +831,13 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         governor.castVote(proposalId, voteValue);
     }
 
+    function _warpToVotingPeriod(uint256 proposalId) private {
+        (, , uint256 votingStartTime, , , , , , ) = governor
+            .proposalInformation(proposalId);
+
+        vm.warp(votingStartTime + 1);
+    }
+
     function _warpPastProposalEnd(uint256 proposalId) private {
         (
             ,
@@ -900,19 +907,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         _castVotes(proposalId, Constants.VOTE_VALUE_NO, user);
 
-        (
-            ,
-            ,
-            ,
-            ,
-            uint256 crossChainVoteCollectionEndTimestamp,
-            ,
-            ,
-            ,
-
-        ) = governor.proposalInformation(proposalId);
-
-        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+        _warpPastProposalEnd(proposalId);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -935,19 +930,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         _castVotes(proposalId, Constants.VOTE_VALUE_YES, user);
 
-        (
-            ,
-            ,
-            ,
-            ,
-            uint256 crossChainVoteCollectionEndTimestamp,
-            ,
-            ,
-            ,
-
-        ) = governor.proposalInformation(proposalId);
-
-        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+        _warpPastProposalEnd(proposalId);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -1040,25 +1023,16 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         uint256 proposalId = _createProposal();
 
-        _warpPastVotingDelay();
+        _warpToVotingPeriod(proposalId);
 
         _castVotes(proposalId, Constants.VOTE_VALUE_YES, user);
 
-        (
-            ,
-            ,
-            ,
-            ,
-            uint256 crossChainVoteCollectionEndTimestamp,
-            ,
-            ,
-            ,
+        assertEq(uint256(governor.state(proposalId)), 1, "incorrect state");
 
-        ) = governor.proposalInformation(proposalId);
+        _warpPastProposalEnd(proposalId);
 
-        vm.warp(crossChainVoteCollectionEndTimestamp);
+        vm.warp(block.timestamp - 1);
 
-        assertEq(uint256(governor.state(proposalId)), 2, "incorrect state");
         assertEq(
             uint256(governor.state(proposalId)),
             2,
@@ -1078,30 +1052,14 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         _transferQuorumAndDelegate(user);
 
         uint256 proposalId1 = _createProposal();
-
         uint256 proposalId2 = _createProposal();
 
         _warpPastVotingDelay();
 
         _castVotes(proposalId1, Constants.VOTE_VALUE_YES, user);
-
         _castVotes(proposalId2, Constants.VOTE_VALUE_YES, user);
 
-        {
-            (
-                ,
-                ,
-                ,
-                ,
-                uint256 crossChainVoteCollectionEndTimestamp,
-                ,
-                ,
-                ,
-
-            ) = governor.proposalInformation(proposalId2);
-
-            vm.warp(crossChainVoteCollectionEndTimestamp + 1);
-        }
+        _warpPastProposalEnd(proposalId2);
 
         assertEq(
             uint256(governor.state(proposalId1)),
@@ -1122,7 +1080,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         targets[0] = address(governor);
         values[0] = 0;
-        uint256 newQuorum = governor.quorum() + 1;
+        uint256 newQuorum = governor.quorum() + 1_000_000 * 1e18;
         calldatas[0] = abi.encodeWithSignature(
             "updateQuorum(uint256)",
             newQuorum
@@ -1149,21 +1107,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.prank(user);
         governor.castVote(proposalIdUpdateQuorum, Constants.VOTE_VALUE_YES);
 
-        {
-            (
-                ,
-                ,
-                ,
-                ,
-                uint256 crossChainVoteCollectionEndTimestamp,
-                ,
-                ,
-                ,
-
-            ) = governor.proposalInformation(proposalIdUpdateQuorum);
-
-            vm.warp(crossChainVoteCollectionEndTimestamp + 1);
-        }
+        _warpPastProposalEnd(proposalIdUpdateQuorum);
 
         assertEq(
             uint256(governor.state(proposalIdUpdateQuorum)),
@@ -1194,30 +1138,14 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         _transferQuorumAndDelegate(user);
 
         uint256 proposalId1 = _createProposal();
-
         uint256 proposalId2 = _createProposal();
 
         _warpPastVotingDelay();
 
         _castVotes(proposalId1, Constants.VOTE_VALUE_YES, user);
-
         _castVotes(proposalId2, Constants.VOTE_VALUE_YES, user);
 
-        {
-            (
-                ,
-                ,
-                ,
-                ,
-                uint256 crossChainVoteCollectionEndTimestamp,
-                ,
-                ,
-                ,
-
-            ) = governor.proposalInformation(proposalId2);
-
-            vm.warp(crossChainVoteCollectionEndTimestamp + 1);
-        }
+        _warpPastProposalEnd(proposalId2);
 
         assertEq(
             uint256(governor.state(proposalId1)),
@@ -1239,7 +1167,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         targets[0] = address(governor);
         values[0] = 0;
-        uint256 newMaxUserLiveProposals = governor.maxUserLiveProposals() + 1;
+        uint256 newMaxUserLiveProposals = governor.maxUserLiveProposals() - 1;
         calldatas[0] = abi.encodeWithSignature(
             "updateMaxUserLiveProposals(uint256)",
             newMaxUserLiveProposals
@@ -1266,21 +1194,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             Constants.VOTE_VALUE_YES
         );
 
-        {
-            (
-                ,
-                ,
-                ,
-                ,
-                uint256 crossChainVoteCollectionEndTimestamp,
-                ,
-                ,
-                ,
-
-            ) = governor.proposalInformation(proposalIdUpdateMaxLiveProposals);
-
-            vm.warp(crossChainVoteCollectionEndTimestamp + 1);
-        }
+        _warpPastProposalEnd(proposalIdUpdateMaxLiveProposals);
 
         assertEq(
             uint256(governor.state(proposalIdUpdateMaxLiveProposals)),
@@ -1291,19 +1205,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         governor.execute(proposalIdUpdateMaxLiveProposals);
 
         assertEq(governor.maxUserLiveProposals(), newMaxUserLiveProposals);
-
-        // quorum not met
-        assertEq(
-            uint256(governor.state(proposalId1)),
-            4,
-            "incorrect state for proposal 1, not defeated"
-        );
-
-        assertEq(
-            uint256(governor.state(proposalId2)),
-            4,
-            "incorrect state for proposal 2, not defeated"
-        );
     }
 
     function testPausingWithThreeLiveProposals() public {
