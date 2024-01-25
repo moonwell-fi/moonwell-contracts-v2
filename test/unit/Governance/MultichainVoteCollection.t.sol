@@ -114,42 +114,34 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
 
         {
-            (
-                uint256 snapshotStartTimestamp,
-                uint256 votingStartTime,
-                uint256 endTimestamp,
-                uint256 crossChainVoteCollectionEndTimestamp,
-                ,
-                ,
-                ,
+            IMultichainGovernor.ProposalInformation
+                memory voteCollectionInfo = getVoteCollectionProposalInformation(
+                    proposalId
+                );
 
-            ) = voteCollection.proposalInformation(proposalId);
-            (
-                ,
-                uint256 snapshotStartTimestampGov,
-                uint256 votingStartTimeGov,
-                uint256 endTimestampGov,
-                uint256 crossChainVoteCollectionEndTimestampGov,
-                ,
-                ,
-                ,
-
-            ) = governor.proposalInformation(proposalId);
+            IMultichainGovernor.ProposalInformation
+                memory governorInfo = governor.proposalInformationStruct(
+                    proposalId
+                );
 
             assertEq(
-                snapshotStartTimestamp,
-                snapshotStartTimestampGov,
+                voteCollectionInfo.snapshotStartTimestamp,
+                governorInfo.snapshotStartTimestamp,
                 "incorrect snapshot start timestamp"
             );
             assertEq(
-                votingStartTime,
-                votingStartTimeGov,
+                voteCollectionInfo.votingStartTime,
+                governorInfo.votingStartTime,
                 "incorrect voting start time"
             );
-            assertEq(endTimestamp, endTimestampGov, "incorrect end timestamp");
             assertEq(
-                crossChainVoteCollectionEndTimestamp,
-                crossChainVoteCollectionEndTimestampGov,
+                voteCollectionInfo.endTimestamp,
+                governorInfo.endTimestamp,
+                "incorrect end timestamp"
+            );
+            assertEq(
+                voteCollectionInfo.crossChainVoteCollectionEndTimestamp,
+                governorInfo.crossChainVoteCollectionEndTimestamp,
                 "incorrect cross chain vote collection end timestamp"
             );
         }
@@ -388,38 +380,52 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         }
 
         {
-            (
-                uint256 snapshotStartTimestamp,
-                uint256 votingStartTime,
-                ,
-                ,
-                uint256 totalVotes,
-                uint256 forVotes,
-                uint256 againstVotes,
-                uint256 abstainVotes
-            ) = voteCollection.proposalInformation(proposalId);
+            IMultichainGovernor.ProposalInformation
+                memory voteCollectionInfo = getVoteCollectionProposalInformation(
+                    proposalId
+                );
 
             assertEq(
                 snapshotTimestamp,
-                snapshotStartTimestamp,
+                voteCollectionInfo.snapshotStartTimestamp,
                 "snapshot timestamp incorrect"
             );
             assertEq(
-                snapshotStartTimestamp + 1 + governor.votingDelay(),
-                votingStartTime,
+                voteCollectionInfo.snapshotStartTimestamp +
+                    1 +
+                    governor.votingDelay(),
+                voteCollectionInfo.votingStartTime,
                 "voting start time incorrect"
             );
 
             assertEq(
-                totalVotes,
-                forVotes + againstVotes + abstainVotes,
+                voteCollectionInfo.totalVotes,
+                voteCollectionInfo.forVotes +
+                    voteCollectionInfo.againstVotes +
+                    voteCollectionInfo.abstainVotes,
                 "incorrect total votes"
             );
 
-            assertEq(totalVotes, 3 * voteAmount, "incorrect total votes");
-            assertEq(forVotes, voteAmount, "incorrect for votes");
-            assertEq(againstVotes, voteAmount, "incorrect against votes");
-            assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
+            assertEq(
+                voteCollectionInfo.totalVotes,
+                3 * voteAmount,
+                "incorrect total votes"
+            );
+            assertEq(
+                voteCollectionInfo.forVotes,
+                voteAmount,
+                "incorrect for votes"
+            );
+            assertEq(
+                voteCollectionInfo.againstVotes,
+                voteAmount,
+                "incorrect against votes"
+            );
+            assertEq(
+                voteCollectionInfo.abstainVotes,
+                voteAmount,
+                "incorrect abstain votes"
+            );
         }
     }
 
@@ -489,27 +495,35 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             );
         }
 
-        (
-            ,
-            ,
-            ,
-            ,
-            uint256 totalVotes,
-            uint256 forVotes,
-            uint256 againstVotes,
-            uint256 abstainVotes
-        ) = voteCollection.proposalInformation(proposalId);
+        IMultichainGovernor.ProposalInformation
+            memory voteCollectionInfo = getVoteCollectionProposalInformation(
+                proposalId
+            );
 
         assertEq(
-            totalVotes,
-            forVotes + againstVotes + abstainVotes,
+            voteCollectionInfo.totalVotes,
+            voteCollectionInfo.forVotes +
+                voteCollectionInfo.againstVotes +
+                voteCollectionInfo.abstainVotes,
             "incorrect total votes"
         );
 
-        assertEq(totalVotes, 2 * voteAmount, "incorrect total votes");
-        assertEq(forVotes, 0, "incorrect for votes");
-        assertEq(againstVotes, voteAmount, "incorrect against votes");
-        assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
+        assertEq(
+            voteCollectionInfo.totalVotes,
+            2 * voteAmount,
+            "incorrect total votes"
+        );
+        assertEq(voteCollectionInfo.forVotes, 0, "incorrect for votes");
+        assertEq(
+            voteCollectionInfo.againstVotes,
+            voteAmount,
+            "incorrect against votes"
+        );
+        assertEq(
+            voteCollectionInfo.abstainVotes,
+            voteAmount,
+            "incorrect abstain votes"
+        );
     }
 
     /// xWELL
@@ -597,28 +611,33 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             );
         }
 
-        (
-            ,
-            ,
-            ,
-            ,
-            ,
-            uint256 totalVotes,
-            uint256 forVotes,
-            uint256 againstVotes,
-            uint256 abstainVotes
-        ) = governor.proposalInformation(proposalId);
+        IMultichainGovernor.ProposalInformation memory governorInfo = governor
+            .proposalInformationStruct(proposalId);
 
         assertEq(
-            totalVotes,
-            forVotes + againstVotes + abstainVotes,
+            governorInfo.totalVotes,
+            governorInfo.forVotes +
+                governorInfo.againstVotes +
+                governorInfo.abstainVotes,
             "incorrect total votes"
         );
 
-        assertEq(totalVotes, 3 * voteAmount, "incorrect total votes");
-        assertEq(forVotes, voteAmount, "incorrect for votes");
-        assertEq(againstVotes, voteAmount, "incorrect against votes");
-        assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
+        assertEq(
+            governorInfo.totalVotes,
+            3 * voteAmount,
+            "incorrect total votes"
+        );
+        assertEq(governorInfo.forVotes, voteAmount, "incorrect for votes");
+        assertEq(
+            governorInfo.againstVotes,
+            voteAmount,
+            "incorrect against votes"
+        );
+        assertEq(
+            governorInfo.abstainVotes,
+            voteAmount,
+            "incorrect abstain votes"
+        );
     }
 
     function testMultipleUserVoteWithxWellDelegationSucceeds() public {
@@ -687,28 +706,33 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             );
         }
 
-        (
-            ,
-            ,
-            ,
-            ,
-            ,
-            uint256 totalVotes,
-            uint256 forVotes,
-            uint256 againstVotes,
-            uint256 abstainVotes
-        ) = governor.proposalInformation(proposalId);
+        IMultichainGovernor.ProposalInformation memory governorInfo = governor
+            .proposalInformationStruct(proposalId);
 
         assertEq(
-            totalVotes,
-            forVotes + againstVotes + abstainVotes,
+            governorInfo.totalVotes,
+            governorInfo.forVotes +
+                governorInfo.againstVotes +
+                governorInfo.abstainVotes,
             "incorrect total votes"
         );
 
-        assertEq(totalVotes, 2 * voteAmount, "incorrect total votes");
-        assertEq(forVotes, 0, "incorrect for votes");
-        assertEq(againstVotes, voteAmount, "incorrect against votes");
-        assertEq(abstainVotes, voteAmount, "incorrect abstain votes");
+        assertEq(
+            governorInfo.totalVotes,
+            2 * voteAmount,
+            "incorrect total votes"
+        );
+        assertEq(governorInfo.forVotes, 0, "incorrect for votes");
+        assertEq(
+            governorInfo.againstVotes,
+            voteAmount,
+            "incorrect against votes"
+        );
+        assertEq(
+            governorInfo.abstainVotes,
+            voteAmount,
+            "incorrect abstain votes"
+        );
     }
 
     // Emit votes to Governor
@@ -717,17 +741,10 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         uint256 proposalId = governor.proposalCount();
 
-        ProposalInformation memory proposalVoteCollection;
-        (
-            ,
-            ,
-            ,
-            proposalVoteCollection.crossChainVoteCollectionEndTimestamp,
-            proposalVoteCollection.totalVotes,
-            proposalVoteCollection.forVotes,
-            proposalVoteCollection.againstVotes,
-            proposalVoteCollection.abstainVotes
-        ) = voteCollection.proposalInformation(proposalId);
+        IMultichainGovernor.ProposalInformation
+            memory proposalVoteCollection = getVoteCollectionProposalInformation(
+                proposalId
+            );
 
         // test at the last timestamp of the cross chain vote collection period
         vm.warp(proposalVoteCollection.crossChainVoteCollectionEndTimestamp);
@@ -738,19 +755,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect state, not in crosschain vote collection period"
         );
 
-        ProposalInformation memory proposalBefore;
-
-        (
-            ,
-            ,
-            ,
-            ,
-            ,
-            proposalBefore.totalVotes,
-            proposalBefore.forVotes,
-            proposalBefore.againstVotes,
-            proposalBefore.abstainVotes
-        ) = governor.proposalInformation(proposalId);
+        IMultichainGovernor.ProposalInformation memory proposalBefore = governor
+            .proposalInformationStruct(proposalId);
 
         {
             uint256 bridgeCost = voteCollection.bridgeCost(moonbeamChainId);
@@ -760,18 +766,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             voteCollection.emitVotes{value: bridgeCost}(proposalId);
         }
 
-        ProposalInformation memory proposalAfter;
-        (
-            ,
-            ,
-            ,
-            ,
-            ,
-            proposalAfter.totalVotes,
-            proposalAfter.forVotes,
-            proposalAfter.againstVotes,
-            proposalAfter.abstainVotes
-        ) = governor.proposalInformation(proposalId);
+        IMultichainGovernor.ProposalInformation memory proposalAfter = governor
+            .proposalInformationStruct(proposalId);
 
         assertEq(
             proposalAfter.totalVotes,
@@ -829,18 +825,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     function testEmitVotesProposalCollectionEndTimeHasPassed() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
 
-        (
-            ,
-            ,
-            ,
-            uint256 crossChainVoteCollectionEndTimestamp,
-            ,
-            ,
-            ,
+        IMultichainGovernor.ProposalInformation
+            memory voteCollectionInfo = getVoteCollectionProposalInformation(
+                proposalId
+            );
 
-        ) = voteCollection.proposalInformation(proposalId);
-
-        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+        vm.warp(voteCollectionInfo.crossChainVoteCollectionEndTimestamp + 1);
 
         vm.expectRevert(
             "MultichainVoteCollection: Voting collection phase has ended"

@@ -114,6 +114,32 @@ interface IMultichainGovernor {
         Executed
     }
 
+    struct ProposalInformation {
+        /// @notice Creator of the proposal
+        address proposer;
+        /// @notice The ordered list of calldata to be passed to each call
+        bytes[] calldatas;
+        /// @notice The timestamp at which vote snapshots are taken at
+        uint256 snapshotStartTimestamp;
+        /// @notice the timestamp at which users can begin voting
+        uint256 votingStartTime;
+        /// @notice The timestamp at which voting ends: votes must be cast prior to this time
+        uint256 endTimestamp;
+        /// @notice The timestamp at which cross chain voting collection ends:
+        /// votes must be registered prior to this time
+        uint256 crossChainVoteCollectionEndTimestamp;
+        /// @notice The block at which voting snapshot is taken: holders must have delegated their votes prior to this block
+        uint256 startBlock;
+        /// @notice Current number of votes in favor of this proposal
+        uint256 forVotes;
+        /// @notice Current number of votes in opposition to this proposal
+        uint256 againstVotes;
+        /// @notice Current number of votes in abstention to this proposal
+        uint256 abstainVotes;
+        /// @notice The total votes on a proposal.
+        uint256 totalVotes;
+    }
+
     struct Proposal {
         /// @notice Creator of the proposal
         address proposer;

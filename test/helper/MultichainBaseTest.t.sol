@@ -80,15 +80,6 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     /// @notice whitelisted calldata for MultichainGovernor
     bytes[] public approvedCalldata;
 
-    // @dev struct for packing proposal information to avoid stack too deep errors
-    struct ProposalInformation {
-        uint256 crossChainVoteCollectionEndTimestamp;
-        uint256 totalVotes;
-        uint256 forVotes;
-        uint256 againstVotes;
-        uint256 abstainVotes;
-    }
-
     constructor() {
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
@@ -211,5 +202,28 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         uint256 amountToStake = 2_000_000_000 * 1e18;
         xwell.approve(address(stkWell), amountToStake);
         stkWell.stake(address(this), amountToStake);
+    }
+
+    // helper functions
+
+    function getVoteCollectionProposalInformation(
+        uint256 proposalId
+    )
+        internal
+        view
+        returns (
+            IMultichainGovernor.ProposalInformation memory proposalInformation
+        )
+    {
+        (
+            proposalInformation.snapshotStartTimestamp,
+            proposalInformation.votingStartTime,
+            proposalInformation.endTimestamp,
+            proposalInformation.crossChainVoteCollectionEndTimestamp,
+            proposalInformation.totalVotes,
+            proposalInformation.forVotes,
+            proposalInformation.againstVotes,
+            proposalInformation.abstainVotes
+        ) = voteCollection.proposalInformation(proposalId);
     }
 }

@@ -263,6 +263,25 @@ contract MultichainGovernor is
         votes = receipt.votes;
     }
 
+    /// @notice returns information on a proposal in a struct format
+    /// @param proposalId the id of the proposal to check
+    function proposalInformationStruct(
+        uint256 proposalId
+    ) external view returns (ProposalInformation memory proposalInfo) {
+        Proposal storage proposal = proposals[proposalId];
+
+        proposalInfo.proposer = proposal.proposer;
+        proposalInfo.snapshotStartTimestamp = proposal.voteSnapshotTimestamp;
+        proposalInfo.votingStartTime = proposal.votingStartTime;
+        proposalInfo.endTimestamp = proposal.endTimestamp;
+        proposalInfo.crossChainVoteCollectionEndTimestamp = proposal
+            .crossChainVoteCollectionEndTimestamp;
+        proposalInfo.totalVotes = proposal.totalVotes;
+        proposalInfo.forVotes = proposal.forVotes;
+        proposalInfo.againstVotes = proposal.againstVotes;
+        proposalInfo.abstainVotes = proposal.abstainVotes;
+    }
+
     /// @notice returns information on a proposal
     /// @param proposalId the id of the proposal to check
     function proposalInformation(
