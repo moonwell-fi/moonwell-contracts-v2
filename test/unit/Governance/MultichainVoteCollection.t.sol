@@ -971,10 +971,42 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     function testBridgeInProposalAlreadyExist() public {
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        bytes memory payload = abi.encode(1, 0, 0, 0, 0);
+        bytes memory payload = abi.encode(proposalId, 0, 0, 0, 0);
 
         vm.prank(address(governor));
-        vm.expectRevert("MultichainVoteCollection: Proposal already exists");
+        vm.expectRevert("MultichainVoteCollection: proposal already exists");
+        wormholeRelayerAdapter.sendPayloadToEvm(
+            30,
+            address(voteCollection),
+            payload,
+            0,
+            0
+        );
+    }
+
+    function testBridgeInVotingStartTimeGreatherThanVoteEndTime() public {
+        bytes memory payload = abi.encode(0, 0, 1, 0, 0);
+
+        vm.prank(address(governor));
+        vm.expectRevert(
+            "MultichainVoteCollection: start time must be before end time"
+        );
+        wormholeRelayerAdapter.sendPayloadToEvm(
+            30,
+            address(voteCollection),
+            payload,
+            0,
+            0
+        );
+    }
+
+    function testBridgeInVotingEndTimeLessThanTimestamp() public {
+        bytes memory payload = abi.encode(0, 0, 0, 1, 0);
+
+        vm.prank(address(governor));
+        vm.expectRevert(
+            "MultichainVoteCollection: end time must be in the future"
+        );
         wormholeRelayerAdapter.sendPayloadToEvm(
             30,
             address(voteCollection),

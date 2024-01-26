@@ -339,19 +339,19 @@ contract MultichainVoteCollection is
         /// Ensure proposalId is unique
         require(
             proposals[proposalId].votingStartTime == 0,
-            "MultichainVoteCollection: Proposal already exists"
+            "MultichainVoteCollection: proposal already exists"
         );
 
         /// Ensure votingStartTime is less than votingEndTime
         require(
             votingStartTime < votingEndTime,
-            "Start time must be before end time"
+            "MultichainVoteCollection: start time must be before end time"
         );
 
         /// Ensure votingEndTime is in the future
         require(
             votingEndTime > block.timestamp,
-            "End time must be in the future"
+            "MultichainVoteCollection: end time must be in the future"
         );
 
         /// Create the proposal
