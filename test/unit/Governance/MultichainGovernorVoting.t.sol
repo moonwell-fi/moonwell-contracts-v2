@@ -47,12 +47,12 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect wormhole relayer"
         );
         assertTrue(
-            governor.isTrustedSender(moonbeamChainId, address(voteCollection)),
+            governor.isTrustedSender(baseChainId, address(voteCollection)),
             "voteCollection not whitelisted to send messages in"
         );
         assertTrue(
             governor.isCrossChainVoteCollector(
-                moonbeamChainId,
+                baseChainId,
                 address(voteCollection)
             ),
             "voteCollection not whitelisted to send messages in"
@@ -967,15 +967,12 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
     }
 
-    /// TODO tests around gov proposals:
     ///  - updateProposalThreshold
     ///  - updateMaxUserLiveProposals
     ///  - updateQuorum
     ///  - updateVotingPeriod
     ///  - updateVotingDelay
     ///  - updateCrossChainVoteCollectionPeriod
-    ///  - setBreakGlassGuardian
-
     /// mix and match these items, update one parameter while another proposal is in flight
     /// move the max gas limit too low and brick the thing
 
@@ -1543,5 +1540,41 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         vm.expectRevert("MultichainGovernor: invalid proposal id");
         governor.state(2);
+    }
+
+    // bridge in
+
+    function testBridgeInWrongPayloadLength() public {
+        testProposeUpdateProposalThresholdSucceeds();
+
+        bytes memory payload = abi.encode(0, 0, 0);
+
+        vm.prank(address(voteCollection));
+        vm.expectRevert("MultichainGovernor: invalid payload length");
+        wormholeRelayerAdapter.sendPayloadToEvm(
+            moonbeamChainId,
+            address(governor),
+            payload,
+            0,
+            0
+        );
+    }
+
+    function testBridgeInProposalNotInCrossChainPeriod() public {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        bytes memory payload = abi.encode(proposalId, 0, 0, 0);
+
+        vm.prank(address(voteCollection));
+        vm.expectRevert(
+            "MultichainGovernor: proposal not in cross chain vote collection period"
+        );
+        wormholeRelayerAdapter.sendPayloadToEvm(
+            moonbeamChainId,
+            address(governor),
+            payload,
+            0,
+            0
+        );
     }
 }

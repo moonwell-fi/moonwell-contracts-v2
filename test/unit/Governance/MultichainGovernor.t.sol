@@ -145,9 +145,35 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.updateProposalThreshold(1000);
     }
 
+    function testUpdateProposalThresholdTooLowFails() public {
+        vm.expectRevert("MultichainGovernor: proposal threshold out of bounds");
+        vm.prank(address(governor));
+        governor.updateProposalThreshold(Constants.MIN_PROPOSAL_THRESHOLD - 1);
+    }
+
+    function testUpdateProposalThresholdTooHighFails() public {
+        vm.expectRevert("MultichainGovernor: proposal threshold out of bounds");
+        vm.prank(address(governor));
+        governor.updateProposalThreshold(Constants.MAX_PROPOSAL_THRESHOLD + 1);
+    }
+
     function testUpdateMaxUserLiveProposalsNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateMaxUserLiveProposals(1000);
+    }
+
+    function testUpdateMaxUserLiveProposalsZeroFails() public {
+        vm.expectRevert("MultichainGovernor: invalid max user live proposals");
+        vm.prank(address(governor));
+        governor.updateMaxUserLiveProposals(0);
+    }
+
+    function testUpdateMaxUserLiveProposalsTooHighFails() public {
+        vm.expectRevert("MultichainGovernor: invalid max user live proposals");
+        vm.prank(address(governor));
+        governor.updateMaxUserLiveProposals(
+            Constants.MAX_USER_PROPOSAL_COUNT + 1
+        );
     }
 
     function testUpdateQuorumNonGovernorFails() public {
@@ -155,19 +181,50 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.updateQuorum(1000);
     }
 
+    function testUpdateQuorumTooHighFails() public {
+        vm.expectRevert("MultichainGovernor: invalid quorum");
+        vm.prank(address(governor));
+        governor.updateQuorum(Constants.MAX_QUORUM + 1);
+    }
+
     function testUpdateVotingPeriodNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateVotingPeriod(1000);
     }
 
-    function testUpdateVotingDelayNonGovernorFails() public {
-        vm.expectRevert("MultichainGovernor: only governor");
-        governor.updateVotingDelay(1000);
+    function testUpdateVotingPeriodTooLowFails() public {
+        vm.expectRevert("MultichainGovernor: voting period out of bounds");
+        vm.prank(address(governor));
+        governor.updateVotingPeriod(Constants.MIN_VOTING_PERIOD - 1);
+    }
+
+    function testUpdateVotingPeriodTooHighFails() public {
+        vm.expectRevert("MultichainGovernor: voting period out of bounds");
+        vm.prank(address(governor));
+        governor.updateVotingPeriod(Constants.MAX_VOTING_PERIOD + 1);
     }
 
     function testUpdateCrossChainVoteCollectionPeriodNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateCrossChainVoteCollectionPeriod(1000);
+    }
+
+    function testUpdateCrossChainVoteCollectionPeriodTooLowFails() public {
+        vm.expectRevert("MultichainGovernor: invalid vote collection period");
+        vm.prank(address(governor));
+
+        governor.updateCrossChainVoteCollectionPeriod(
+            Constants.MIN_CROSS_CHAIN_VOTE_COLLECTION_PERIOD - 1
+        );
+    }
+
+    function testUpdateCrossChainVoteCollectionPeriodTooHighFails() public {
+        vm.expectRevert("MultichainGovernor: invalid vote collection period");
+        vm.prank(address(governor));
+
+        governor.updateCrossChainVoteCollectionPeriod(
+            Constants.MAX_CROSS_CHAIN_VOTE_COLLECTION_PERIOD + 1
+        );
     }
 
     function testSetBreakGlassGuardianNonGovernorFails() public {
@@ -187,6 +244,17 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         vm.expectRevert("MultichainGovernor: gas limit too low");
         vm.prank(address(governor));
         governor.setGasLimit(gasLimit);
+    }
+
+    function testUpdateVotingDelayNonGovernorFails() public {
+        vm.expectRevert("MultichainGovernor: only governor");
+        governor.updateVotingDelay(1000);
+    }
+
+    function testUpdateVotingDelayTooHighFails() public {
+        vm.expectRevert("MultichainGovernor: invalid vote delay period");
+        vm.prank(address(governor));
+        governor.updateVotingDelay(Constants.MAX_VOTING_DELAY + 1);
     }
 
     /// BREAK GLASS GUARDIAN

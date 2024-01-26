@@ -65,6 +65,10 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
     /// @notice moonbeam wormhole chain id
     uint16 public constant moonbeamChainId = 16;
+
+    /// @notice base wormhole chain id
+    uint16 public constant baseChainId = 30;
+
     /// @notice pause guardian
     address public pauseGuardian = address(this);
 
@@ -176,8 +180,8 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
                 initData,
                 approvedCalldata,
                 address(0),
-                16, // wormhole moonbeam chain id
-                30, // wormhole base chain id
+                moonbeamChainId, // wormhole moonbeam chain id
+                baseChainId, // wormhole base chain id
                 address(this) // voteCollectionOwner
             );
 

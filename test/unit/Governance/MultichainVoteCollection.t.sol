@@ -51,12 +51,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect wormhole relayer"
         );
         assertTrue(
-            governor.isTrustedSender(moonbeamChainId, address(voteCollection)),
+            voteCollection.isTrustedSender(moonbeamChainId, address(governor)),
             "voteCollection not whitelisted to send messages in"
         );
         assertTrue(
             governor.isCrossChainVoteCollector(
-                moonbeamChainId,
+                baseChainId,
                 address(voteCollection)
             ),
             "voteCollection not whitelisted to send messages in"
@@ -301,7 +301,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testVotingNoVotesFails() public returns (uint256 proposalId) {
-        proposalId = testEmitVotesToGovernorSucceeded();
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
 
         vm.warp(block.timestamp + governor.votingDelay() + 1);
 
@@ -966,7 +966,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 1
             );
-        trustedSenders[0].chainId = 30;
+        trustedSenders[0].chainId = baseChainId;
         trustedSenders[0].addr = address(governor);
         voteCollection.addExternalChainConfig(trustedSenders);
 
@@ -975,7 +975,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "MultichainVoteCollection: accepts only proposals from moonbeam"
         );
         wormholeRelayerAdapter.sendPayloadToEvm(
-            16,
+            moonbeamChainId, // pass moonbeam as the target chain so that relayer adapter do the flip
             address(voteCollection),
             payload,
             0,
@@ -1041,6 +1041,23 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         wormholeRelayerAdapter.sendPayloadToEvm(
             30,
             address(voteCollection),
+            payload,
+            0,
+            0
+        );
+    }
+
+    // test governor bridge in votes already collected here to reuse emit votes test
+    function testBridgeInVotesAlreadyCollected() public {
+        uint256 proposalId = testEmitVotesToGovernorSucceeded();
+
+        bytes memory payload = abi.encode(proposalId, 0, 0, 0);
+
+        vm.prank(address(voteCollection));
+        vm.expectRevert("MultichainGovernor: vote already collected");
+        wormholeRelayerAdapter.sendPayloadToEvm(
+            moonbeamChainId,
+            address(governor),
             payload,
             0,
             0
