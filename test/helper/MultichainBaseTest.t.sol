@@ -165,6 +165,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         initData.maxUserLiveProposals = maxUserLiveProposals;
         initData.pauseDuration = pauseDuration;
         initData.pauseGuardian = pauseGuardian;
+        initData.breakGlassGuardian = address(123);
         initData.xWell = xwellProxy;
         initData.well = address(well);
         initData.stkWell = address(stkWell);

@@ -14,6 +14,12 @@ import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 
+contract MockTimelock {
+    function transferOwnership(address) external pure returns (bool) {
+        return true;
+    }
+}
+
 contract MultichainGovernorUnitTest is MultichainBaseTest {
     event BreakGlassGuardianChanged(address oldValue, address newValue);
 
@@ -190,6 +196,41 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.executeBreakGlass(new address[](0), new bytes[](0));
     }
 
+    function testExecuteBreakGlassEmptyArray() public {
+        vm.prank(governor.breakGlassGuardian());
+        vm.expectRevert("MultichainGovernor: empty array");
+        governor.executeBreakGlass(new address[](0), new bytes[](0));
+    }
+
+    function testExecuteBreakGlassNonWhitelistedFails() public {
+        vm.prank(governor.breakGlassGuardian());
+        vm.expectRevert("MultichainGovernor: calldata not whitelisted");
+        governor.executeBreakGlass(new address[](1), new bytes[](1));
+    }
+
+    function testExecuteBreakGlassBreakGlassGuardianSucceeds() public {
+        address[] memory targets = new address[](1);
+        targets[0] = address(new MockTimelock());
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature(
+            "transferOwnership(address)",
+            rollbackAddress
+        );
+        address bgg = governor.breakGlassGuardian();
+
+        vm.prank(bgg);
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BreakGlassGuardianChanged(bgg, address(0));
+        governor.executeBreakGlass(targets, calldatas);
+
+        assertEq(
+            governor.breakGlassGuardian(),
+            address(0),
+            "break glass guardian not reset"
+        );
+    }
+
     /// PAUSE GUARDIAN
     function testPauseNonPauseGuardianFails() public {
         vm.expectRevert("ConfigurablePauseGuardian: only pause guardian");
@@ -334,22 +375,6 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             governor.breakGlassGuardian(),
             newBgg,
             "breakGlassGuardian not updated"
-        );
-    }
-
-    function testExecuteBreakGlassBreakGlassGuardianSucceeds() public {
-        address bgg = governor.breakGlassGuardian();
-
-        vm.prank(bgg);
-        vm.expectEmit(true, true, true, true, address(governor));
-        emit BreakGlassGuardianChanged(bgg, address(0));
-
-        governor.executeBreakGlass(new address[](0), new bytes[](0));
-
-        assertEq(
-            governor.breakGlassGuardian(),
-            address(0),
-            "break glass guardian not reset"
         );
     }
 

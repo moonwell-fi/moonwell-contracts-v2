@@ -11,6 +11,8 @@ import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMult
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 
+import {console} from "@forge-std/console.sol";
+
 /// @notice Contract is pauseable by the guardian
 /// Break glass guardian can roll back governance to the previous ArtemisTimelock and Governor
 /// @notice upgradeable, constructor disables implementation contract from working
@@ -895,6 +897,8 @@ contract MultichainGovernor is
             targets.length == calldatas.length,
             "MultichainGovernor: arity mismatch"
         );
+
+        require(targets.length > 0, "MultichainGovernor: empty array");
 
         unchecked {
             for (uint256 i = 0; i < calldatas.length; i++) {
