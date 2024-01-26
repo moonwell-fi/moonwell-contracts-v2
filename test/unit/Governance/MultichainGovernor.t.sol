@@ -470,6 +470,50 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         assertTrue(governor.pauseUsed(), "pauseUsed not updated");
         assertEq(governor.pauseStartTime(), block.timestamp, "pauseStartTime");
     }
+    function testPauseGuardianWithActiveProposalsCancelProposals() public {
+        well.delegate(address(this));
+
+        vm.roll(block.timestamp + 1);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        //        vm.warp(block.timestamp + 1);
+
+        vm.prank(governor.pauseGuardian());
+        governor.pause();
+
+        assertTrue(governor.paused(), "governor not paused");
+        assertTrue(governor.pauseUsed(), "pauseUsed not updated");
+        assertEq(governor.pauseStartTime(), block.timestamp, "pauseStartTime");
+        assertEq(
+            governor.proposalActive(proposalId),
+            false,
+            "proposal not cancelled"
+        );
+    }
 
     function testProposeWhenPausedFails() public {
         testPausePauseGuardianSucceeds();
