@@ -940,4 +940,47 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(votesAgainst, voteAmount, "votes against incorrect");
         assertEq(votesAbstain, voteAmount, "abstain votes incorrect");
     }
+
+    // bridge in
+
+    function testBridgeInWrongSourceChain() public {
+        bytes memory payload = abi.encode(0, 0, 0, 0, 0);
+
+        // add trusted sender
+        WormholeTrustedSender.TrustedSender[]
+            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                1
+            );
+        trustedSenders[0].chainId = 30;
+        trustedSenders[0].addr = address(governor);
+        voteCollection.addExternalChainConfig(trustedSenders);
+
+        vm.prank(address(governor));
+        vm.expectRevert(
+            "MultichainVoteCollection: accepts only proposals from moonbeam"
+        );
+        wormholeRelayerAdapter.sendPayloadToEvm(
+            16,
+            address(voteCollection),
+            payload,
+            0,
+            0
+        );
+    }
+
+    function testBridgeInProposalAlreadyExist() public {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        bytes memory payload = abi.encode(1, 0, 0, 0, 0);
+
+        vm.prank(address(governor));
+        vm.expectRevert("MultichainVoteCollection: Proposal already exists");
+        wormholeRelayerAdapter.sendPayloadToEvm(
+            30,
+            address(voteCollection),
+            payload,
+            0,
+            0
+        );
+    }
 }
