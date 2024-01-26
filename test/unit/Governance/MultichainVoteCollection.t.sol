@@ -199,8 +199,23 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(votesFor, totalVotes, "total votes incorrect");
     }
 
-    /// cannot vote twice on the same proposal
+    // voter has no votes
+    function testVotingVoterHasNoVotes() public {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            1,
+            "incorrect state, not active"
+        );
+        vm.prank(address(1));
+        vm.expectRevert("MultichainVoteCollection: voter has no votes");
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
+    }
+
+    /// cannot vote twice on the same proposal
     function testVotingTwiceSameProposalFails() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
 
