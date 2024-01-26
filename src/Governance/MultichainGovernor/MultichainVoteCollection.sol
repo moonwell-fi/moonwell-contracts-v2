@@ -322,6 +322,12 @@ contract MultichainVoteCollection is
         uint16 sourceChain,
         bytes memory payload
     ) internal override {
+        /// payload should be 5 uint256s
+        require(
+            payload.length == 160,
+            "MultichainVoteCollection: invalid payload length"
+        );
+
         /// Parse the payload and do the corresponding actions!
         (
             uint256 proposalId,

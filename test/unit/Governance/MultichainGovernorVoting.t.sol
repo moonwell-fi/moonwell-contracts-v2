@@ -1726,8 +1726,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     // bridge in
 
     function testBridgeInWrongPayloadLength() public {
-        testProposeUpdateProposalThresholdSucceeds();
-
         bytes memory payload = abi.encode(0, 0, 0);
 
         vm.prank(address(voteCollection));

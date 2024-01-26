@@ -983,6 +983,20 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         );
     }
 
+    function testBridgeInWrongPayloadLength() public {
+        bytes memory payload = abi.encode(0, 0, 0, 0);
+
+        vm.prank(address(governor));
+        vm.expectRevert("MultichainVoteCollection: invalid payload length");
+        wormholeRelayerAdapter.sendPayloadToEvm(
+            baseChainId,
+            address(voteCollection),
+            payload,
+            0,
+            0
+        );
+    }
+
     function testBridgeInProposalAlreadyExist() public {
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
@@ -991,7 +1005,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.prank(address(governor));
         vm.expectRevert("MultichainVoteCollection: proposal already exists");
         wormholeRelayerAdapter.sendPayloadToEvm(
-            30,
+            baseChainId,
             address(voteCollection),
             payload,
             0,
