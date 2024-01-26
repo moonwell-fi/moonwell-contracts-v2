@@ -984,6 +984,22 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         );
     }
 
+    function testBridgeInVotingSnapshotTimeGreatherThanStartTime() public {
+        bytes memory payload = abi.encode(0, 1, 0, 0, 0);
+
+        vm.prank(address(governor));
+        vm.expectRevert(
+            "MultichainVoteCollection: snapshot time must be before start time"
+        );
+        wormholeRelayerAdapter.sendPayloadToEvm(
+            30,
+            address(voteCollection),
+            payload,
+            0,
+            0
+        );
+    }
+
     function testBridgeInVotingStartTimeGreatherThanVoteEndTime() public {
         bytes memory payload = abi.encode(0, 0, 1, 0, 0);
 
@@ -1001,7 +1017,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testBridgeInVotingEndTimeLessThanTimestamp() public {
-        bytes memory payload = abi.encode(0, 0, 0, 1, 0);
+        bytes memory payload = abi.encode(0, 0, 1, 2, 0);
 
         vm.prank(address(governor));
         vm.expectRevert(

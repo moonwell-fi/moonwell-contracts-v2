@@ -342,6 +342,12 @@ contract MultichainVoteCollection is
             "MultichainVoteCollection: proposal already exists"
         );
 
+        /// Ensure votingSnapshotTime is less than votingStartTime
+        require(
+            votingSnapshotTime < votingStartTime,
+            "MultichainVoteCollection: snapshot time must be before start time"
+        );
+
         /// Ensure votingStartTime is less than votingEndTime
         require(
             votingStartTime < votingEndTime,
