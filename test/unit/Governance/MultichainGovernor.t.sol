@@ -270,6 +270,12 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.executeBreakGlass(new address[](0), new bytes[](0));
     }
 
+    function testExecuteBreakGlassDifferentLengths() public {
+        vm.prank(governor.breakGlassGuardian());
+        vm.expectRevert("MultichainGovernor: arity mismatch");
+        governor.executeBreakGlass(new address[](1), new bytes[](0));
+    }
+
     function testExecuteBreakGlassNonWhitelistedFails() public {
         vm.prank(governor.breakGlassGuardian());
         vm.expectRevert("MultichainGovernor: calldata not whitelisted");

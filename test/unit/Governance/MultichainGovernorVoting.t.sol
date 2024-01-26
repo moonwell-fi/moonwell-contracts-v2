@@ -9,11 +9,14 @@ import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {MockWeth} from "@test/mock/MockWeth.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 
 contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
+    event ProposalCanceled(uint256 proposalId);
+
     function setUp() public override {
         super.setUp();
 
@@ -1172,8 +1175,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     }
 
     function testExecuteFailsAfterCancel() public {
-        _transferQuorumAndDelegate(address(1));
-
         uint256 proposalId = _createProposal();
 
         _warpPastVotingDelay();
@@ -1187,16 +1188,132 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect state, not canceled"
         );
 
-        assertEq(
-            uint256(governor.state(proposalId)),
-            3,
-            "incorrect state, not canceled"
-        );
-
         vm.expectRevert(
             "MultichainGovernor: proposal can only be executed if it is Succeeded"
         );
         governor.execute(proposalId);
+    }
+
+    function testExecuteWithValueSucceed() public {
+        address user = address(1);
+        _transferQuorumAndDelegate(user);
+
+        address[] memory targets = new address[](2);
+        uint256[] memory values = new uint256[](2);
+        bytes[] memory calldatas = new bytes[](2);
+        string memory description = "Proposal MIP-M00 - Deposit WETH";
+
+        MockWeth weth = new MockWeth();
+        targets[0] = address(weth);
+        values[0] = 100 * 1e18;
+        calldatas[0] = abi.encodeWithSignature("deposit()");
+
+        targets[1] = address(weth);
+        values[1] = 100 * 1e18;
+        calldatas[1] = abi.encodeWithSignature("deposit()");
+
+        uint256 startProposalCount = governor.proposalCount();
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        uint256 endProposalCount = governor.proposalCount();
+
+        assertEq(
+            startProposalCount + 1,
+            endProposalCount,
+            "proposal count incorrect"
+        );
+        assertEq(proposalId, endProposalCount, "proposal id incorrect");
+        assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        _warpPastVotingDelay();
+
+        _castVotes(proposalId, Constants.VOTE_VALUE_YES, address(user));
+
+        _warpPastProposalEnd(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            5,
+            "incorrect state, not succeeded"
+        );
+
+        uint256 totalValue = 200 * 1e18;
+
+        vm.deal(address(this), totalValue);
+        governor.execute{value: totalValue}(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            6,
+            "incorrect state, not executed"
+        );
+    }
+
+    function testExecuteWithValueFailsIfValueIsNotEnough() public {
+        address user = address(1);
+        _transferQuorumAndDelegate(user);
+
+        address[] memory targets = new address[](2);
+        uint256[] memory values = new uint256[](2);
+        bytes[] memory calldatas = new bytes[](2);
+        string memory description = "Proposal MIP-M00 - Deposit WETH";
+
+        MockWeth weth = new MockWeth();
+        targets[0] = address(weth);
+        values[0] = 100 * 1e18;
+        calldatas[0] = abi.encodeWithSignature("deposit()");
+
+        targets[1] = address(weth);
+        values[1] = 100 * 1e18;
+        calldatas[1] = abi.encodeWithSignature("deposit()");
+
+        uint256 startProposalCount = governor.proposalCount();
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        uint256 endProposalCount = governor.proposalCount();
+
+        assertEq(
+            startProposalCount + 1,
+            endProposalCount,
+            "proposal count incorrect"
+        );
+        assertEq(proposalId, endProposalCount, "proposal id incorrect");
+        assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        _warpPastVotingDelay();
+
+        _castVotes(proposalId, Constants.VOTE_VALUE_YES, address(user));
+
+        _warpPastProposalEnd(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            5,
+            "incorrect state, not succeeded"
+        );
+
+        // wrong total value
+        uint256 totalValue = 100 * 1e18;
+
+        vm.deal(address(this), totalValue);
+        vm.expectRevert("MultichainGovernor: invalid value");
+        governor.execute{value: totalValue}(proposalId);
     }
 
     function testExecuteFailsDuringXChainVoteCollection() public {
@@ -1226,6 +1343,70 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "MultichainGovernor: proposal can only be executed if it is Succeeded"
         );
         governor.execute(proposalId);
+    }
+
+    /// test canceling a proposal
+
+    function testCancelProposalSucceded() public {
+        uint256 proposalId = _createProposal();
+
+        _warpPastVotingDelay();
+
+        vm.expectEmit(true, false, false, false, address(governor));
+        emit ProposalCanceled(proposalId);
+        governor.cancel(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            3,
+            "incorrect state, not canceled"
+        );
+    }
+
+    function testCancelIfProposerVotesBelowThresholdSucceded() public {
+        uint256 proposalId = _createProposal();
+
+        // zero tokens
+        deal(address(well), address(this), 0);
+        deal(address(xwell), address(this), 0);
+        deal(address(stkWell), address(this), 0);
+
+        _warpPastVotingDelay();
+
+        vm.expectEmit(true, false, false, false, address(governor));
+        emit ProposalCanceled(proposalId);
+        governor.cancel(proposalId);
+        assertEq(
+            uint256(governor.state(proposalId)),
+            3,
+            "incorrect state, not canceled"
+        );
+    }
+
+    function testCancelFailsIfSenderIsNotProposerNeitherProposerVotesBelowThreshold()
+        public
+    {
+        address user = address(1);
+
+        uint256 proposalId = _createProposal();
+
+        _warpPastVotingDelay();
+
+        vm.prank(user);
+        vm.expectRevert("MultichainGovernor: unauthorized cancel");
+        governor.cancel(proposalId);
+    }
+
+    function testCancelFailsIfProposalIsAlreadyCanceled() public {
+        uint256 proposalId = _createProposal();
+
+        _warpPastVotingDelay();
+
+        governor.cancel(proposalId);
+        assertEq(uint256(governor.state(proposalId)), 3, "incorrect state");
+
+        vm.expectRevert("MultichainGovernor: cannot cancel inactive proposal");
+        governor.cancel(proposalId);
     }
 
     ///  - test changing parameters with multiple live proposals
