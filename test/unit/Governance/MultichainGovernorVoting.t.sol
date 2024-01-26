@@ -1477,6 +1477,21 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
     }
 
+    function testLiveProposals() public {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        assertEq(
+            governor.liveProposals()[0],
+            proposalId,
+            "incorrect num live proposals"
+        );
+        governor.cancel(proposalId);
+        assertEq(
+            governor.liveProposals().length,
+            0,
+            "incorrect num live proposals"
+        );
+    }
+
     function testGetUserLiveProposals() public {
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
