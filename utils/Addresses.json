@@ -15,6 +15,16 @@
         "name": "TEMPORAL_GOVERNOR_GUARDIAN"
     },
     {
+        "addr": "0xED301cd3EB27217BDB05C4E9B820a8A3c8B665f9",
+        "chainId": 1284,
+        "name": "CHAINLINK_ORACLE"
+    },
+    {
+        "addr": "0x8E00D5e02E65A19337Cdba98bbA9F84d4186a180",
+        "chainId": 1284,
+        "name": "COMPTROLLER"
+    },
+    {
         "addr": "0xfc4DFB17101A12C5CEc5eeDd8E92B5b16557666d",
         "chainId": 1284,
         "name": "ARTEMIS_GOVERNOR"
@@ -518,6 +528,46 @@
         "addr": "0x091608f4e4a15335145be0A279483C0f8E4c7955",
         "chainId": 1284,
         "name": "MGLIMMER"
+    },
+    {
+        "addr": "0xD22Da948c0aB3A27f5570b604f3ADef5F68211C3",
+        "chainId": 1284,
+        "name": "MDOT"
+    },
+    {
+        "addr": "0x42A96C0681B74838eC525AdbD13c37f66388f289",
+        "chainId": 1284,
+        "name": "MUSDT"
+    },
+    {
+        "addr": "0x1C55649f73CDA2f72CEf3DD6C5CA3d49EFcF484C",
+        "chainId": 1284,
+        "name": "MFRAX"
+    },
+    {
+        "addr": "0x744b1756e7651c6D57f5311767EAFE5E931D615b",
+        "chainId": 1284,
+        "name": "MUSDC"
+    },
+    {
+        "addr": "0x22b1a40e3178fe7C7109eFCc247C5bB2B34ABe32",
+        "chainId": 1284,
+        "name": "MXCUSDC"
+    },
+    {
+        "addr": "0xb6c94b3A378537300387B57ab1cC0d2083f9AeaC",
+        "chainId": 1284,
+        "name": "METHWH"
+    },
+    {
+        "addr": "0xaaa20c5a584a9fECdFEDD71E46DA7858B774A9ce",
+        "chainId": 1284,
+        "name": "MBTCWH"
+    },
+    {
+        "addr": "0x7793E08Eb4525309C46C9BA394cE33361A167ba4",
+        "chainId": 1284,
+        "name": "ECOSYSTEM_RESERVE_CONTROLLER"
     },
     {
         "addr": "0xb536c1F9A157B263B70A9a35705168ACC0271742",
