@@ -1534,4 +1534,14 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect current votes"
         );
     }
+
+    function testStateInvalidProposalId() public {
+        testProposeUpdateProposalThresholdSucceeds();
+
+        vm.expectRevert("MultichainGovernor: invalid proposal id");
+        governor.state(0);
+
+        vm.expectRevert("MultichainGovernor: invalid proposal id");
+        governor.state(2);
+    }
 }
