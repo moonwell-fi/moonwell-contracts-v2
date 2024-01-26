@@ -24,231 +24,84 @@ contract mipm16 is GovernanceProposal {
     function afterDeploySetup(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-        address multichainGovernorAddress = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR"
-        );
+        address mUSDCAddress = addresses.getAddress("MOONWELL_mUSDC");
+        address mETHAddress = addresses.getAddress("MOONWELL_mETH");
+        address mwBTCAddress = addresses.getAddress("MOONWELL_mwBTC");
 
-        // bytes memory wormholeTemporalGovPayload = abi.encodeWithSignature(
-        //     "publishMessage(uint32,bytes,uint8)",
-        //     nonce,
-        //     temporalGovCalldata,
-        //     consistencyLevel
-        // );
-        /// TODO add multichain governor as wormhole trusted sender in temporal governor
+        /// @dev mUSDC.mad
+        MErc20Delegator mUSDC = MErc20Delegator(payable(mUSDCAddress));
+        uint256 mUSDCReserves = mUSDC.totalReserves();
 
-        /// transfer ownership of the wormhole bridge adapter on the moonbeam chain to the multichain governor
+        /// @dev mETH.mad
+        MErc20Delegator mETH = MErc20Delegator(payable(mETHAddress));
+        uint256 mETHReserves = mETH.totalReserves();
+
+        /// @dev mBTC.mad
+        MErc20Delegator mwBTC = MErc20Delegator(payable(mwBTCAddress));
+        uint256 mwBTCReserves = mwBTC.totalReserves();
+
+        /// @dev set max operations on artemis governor to 1000
         _pushGovernanceAction(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-            "Set the admin of the Wormhole Bridge Adapter to the multichain governor",
-            abi.encodeWithSignature(
-                "transferOwnership(address)",
-                multichainGovernorAddress
-            )
+            addresses.getAddress("ARTEMIS_GOVERNOR"),
+            "Set the max operations on the artemis governor to 1000",
+            abi.encodeWithSignature("setProposalMaxOperations(uint256)", 1000)
         );
 
-        /// add the multichain governor as a trusted sender in the wormhole bridge adapter on base
+        /// @dev reduce mUSDC.mad reserves
         _pushGovernanceAction(
-            addresses.getAddress("WORMHOLE_CORE"),
-            "Set the admin of the Wormhole Bridge Adapter to the multichain governor",
-            abi.encodeWithSignature(
-                "publishMessage(address)",
-                multichainGovernorAddress
-            )
+            address(mUSDC),
+            "Reduce the reserves of mUSDC.mad",
+            abi.encodeWithSignature("_reduceReserves(uint256)", mUSDCReserves)
         );
 
-        /// transfer ownership of proxy admin to the multichain governor
+        /// @dev reduce mETH.mad reserves
         _pushGovernanceAction(
-            addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
-            "Set the admin of the Chainlink Oracle to the multichain governor",
-            abi.encodeWithSignature(
-                "transferOwnership(address)",
-                multichainGovernorAddress
-            )
+            address(mETH),
+            "Reduce the reserves of mETH.mad",
+            abi.encodeWithSignature("_reduceReserves(uint256)", mETHReserves)
         );
 
-        /// begin transfer of ownership of the xwell token to the multichain governor
-        /// This one has to go through Temporal Governance
+        /// @dev reduce mBTC.mad reserves
         _pushGovernanceAction(
-            addresses.getAddress("xWELL_PROXY"),
-            "Set the pending admin of the xWELL Token to the multichain governor",
-            abi.encodeWithSignature(
-                "transferOwnership(address)",
-                multichainGovernorAddress
-            )
+            address(mwBTC),
+            "Reduce the reserves of mwBTC.mad",
+            abi.encodeWithSignature("_reduceReserves(uint256)", mwBTCReserves)
         );
 
-        /// transfer ownership of chainlink oracle
-        _pushGovernanceAction(
-            addresses.getAddress("CHAINLINK_ORACLE"),
-            "Set the admin of the Chainlink Oracle to the multichain governor",
-            abi.encodeWithSignature(
-                "setAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
+        /// @dev Nomad reallocation multisig
+        address nomadReallocationMultisig = addresses.getAddress("NOMAD_REALLOCATION_MULTISIG");
 
-        /// transfer emissions manager of safety module
-        _pushGovernanceAction(
-            addresses.getAddress("stkWELL"),
-            "Set the emissions config of the Safety Module to the multichain governor",
-            abi.encodeWithSignature(
-                "setEmissionsManager(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        /// set pending admin of comptroller
-        _pushGovernanceAction(
-            addresses.getAddress("COMPTROLLER"),
-            "Set the pending owner of the comptroller to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        /// set pending admin of the vesting contract
-        _pushGovernanceAction(
-            addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY"),
-            "Set the pending admin of the vesting contract to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        /// set funds admin of ecosystem reserve controller
-        /// TODO double check that the ecosystem reserve controller is the correct contract
-        _pushGovernanceAction(
-            addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY"),
-            "Set the pending admin of the vesting contract to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        /// set pending admin of the MTokens
-
-        _pushGovernanceAction(
-            addresses.getAddress("madWBTC"),
-            "Set the pending owner of madWBTC to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        _pushGovernanceAction(
-            addresses.getAddress("madWETH"),
-            "Set the pending owner of madWETH to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
+        /// @dev transfer USDC from the timelock to the multisig
         _pushGovernanceAction(
             addresses.getAddress("madUSDC"),
-            "Set the pending owner of madUSDC to the multichain governor",
+            "Transfer madUSDC from the Timelock to the multisig",
             abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
+                "transfer(address,uint256)", nomadReallocationMultisig, mUSDCReserves
             )
         );
 
+        /// @dev transfer WETH from the timelock to the multisig
         _pushGovernanceAction(
-            addresses.getAddress("MOONWELL_mwBTC"),
-            "Set the pending owner of MOONWELL_mwBTC to the multichain governor",
+            addresses.getAddress("madWETH"),
+            "Transfer madETH from the Timelock to the multisig",
             abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
+                "transfer(address,uint256)", nomadReallocationMultisig, mETHReserves
             )
         );
 
+        /// @dev transfer WBTC from the timelock to the multisig
         _pushGovernanceAction(
-            addresses.getAddress("MOONWELL_mETH"),
-            "Set the pending owner of MOONWELL_mETH to the multichain governor",
+            addresses.getAddress("madWBTC"),
+            "Transfer madWBTC from the Timelock to the multisig",
             abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        _pushGovernanceAction(
-            addresses.getAddress("MOONWELL_mUSDC"),
-            "Set the pending owner of MOONWELL_mUSDC to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        _pushGovernanceAction(
-            addresses.getAddress("MGLIMMER"),
-            "Set the pending owner of MGLIMMER to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        _pushGovernanceAction(
-            addresses.getAddress("MDOT"),
-            "Set the pending owner of MDOT to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        _pushGovernanceAction(
-            addresses.getAddress("MUSDT"),
-            "Set the pending owner of MUSDT to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        _pushGovernanceAction(
-            addresses.getAddress("MFRAX"),
-            "Set the pending owner of MFRAX to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        _pushGovernanceAction(
-            addresses.getAddress("MUSDC"),
-            "Set the pending owner of MUSDC to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        _pushGovernanceAction(
-            addresses.getAddress("MXCUSDC"),
-            "Set the pending owner of MXCUSDC to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            )
-        );
-
-        _pushGovernanceAction(
-            addresses.getAddress("METHWH"),
-            "Set the pending owner of METHWH to the multichain governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
+                "transfer(address,uint256)", nomadReallocationMultisig, mwBTCReserves
             )
         );
     }
 
     function teardown(Addresses addresses, address) public pure override {}
+
+    function validate(Addresses addresses, address) public override {}
 
     function run(Addresses addresses, address) public override {
         /// @dev enable debugging
@@ -259,10 +112,5 @@ contract mipm16 is GovernanceProposal {
             addresses.getAddress("ARTEMIS_GOVERNOR"),
             address(this)
         );
-    }
-
-    function validate(Addresses addresses, address) public override {
-        /// TODO validate that pending owners have been set where appropriate
-        /// TODO validate that new admin/owner has been set where appropriate
     }
 }
