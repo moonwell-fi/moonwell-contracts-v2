@@ -289,7 +289,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         governor.castVote(proposalId, 3);
     }
 
-    function testVotingPendingProposalIdFails()
+    function testVotingBeforeProposalStartsFailsWell()
         public
         returns (uint256 proposalId)
     {
@@ -301,9 +301,25 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
 
-        /// should revert, but for a different reason
-        /// TODO update this test name
-        vm.expectRevert("MultichainGovernor: voting is closed");
+        vm.roll(block.number - 1);
+        vm.expectRevert("Well::getPriorVotes: not yet determined");
+        governor.castVote(proposalId, Constants.VOTE_VALUE_NO);
+    }
+
+    function testVotingBeforeProposalStartsFails()
+        public
+        returns (uint256 proposalId)
+    {
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect state, not active"
+        );
+
+        vm.warp(block.timestamp - 1);
+        vm.expectRevert("not yet determined");
         governor.castVote(proposalId, Constants.VOTE_VALUE_NO);
     }
 
