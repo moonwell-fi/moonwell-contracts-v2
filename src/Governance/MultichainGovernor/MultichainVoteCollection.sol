@@ -264,7 +264,6 @@ contract MultichainVoteCollection is
 
     /// @notice Emits votes to be contabilized on Moonbeam Governor contract
     /// @param proposalId the proposal id
-    /// TODO this function should allow emission as many times as any user wants
     function emitVotes(uint256 proposalId) external payable override {
         /// Get the proposal
         MultichainProposal storage proposal = proposals[proposalId];
@@ -278,12 +277,6 @@ contract MultichainVoteCollection is
             "MultichainVoteCollection: proposal has no votes"
         );
 
-        /// Check if proposal have not been emitted yet
-        require(
-            !proposal.emitted,
-            "MultichainVoteCollection: votes already emitted"
-        );
-
         /// Check if proposal end time has passed
         require(
             proposal.votingEndTime < block.timestamp,
@@ -295,8 +288,6 @@ contract MultichainVoteCollection is
             proposal.crossChainVoteCollectionEndTimestamp >= block.timestamp,
             "MultichainVoteCollection: Voting collection phase has ended"
         );
-
-        proposal.emitted = true;
 
         _bridgeOut(
             moonbeamWormholeChainId,

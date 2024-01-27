@@ -565,7 +565,7 @@ contract MultichainGovernor is
     /// @param proposalId the id of the proposal to rebroadcast
     function rebroadcastProposal(uint256 proposalId) external {
         ProposalState proposalState = state(proposalId);
-        require(proposalState == ProposalState.Succeeded, "invalid state");
+        require(proposalState == ProposalState.Active, "invalid state");
 
         Proposal storage proposal = proposals[proposalId];
 

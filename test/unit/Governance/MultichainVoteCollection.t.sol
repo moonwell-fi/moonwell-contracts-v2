@@ -810,15 +810,6 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         voteCollection.emitVotes(proposalId);
     }
 
-    function testEmitVotesProposalHasAlreadyBeenEmitted() public {
-        testEmitVotesToGovernorSucceeded();
-
-        uint256 proposalId = governor.proposalCount();
-
-        vm.expectRevert("MultichainVoteCollection: votes already emitted");
-        voteCollection.emitVotes(proposalId);
-    }
-
     function testEmitVotesProposalEndTimeHasNotPassed() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
 
