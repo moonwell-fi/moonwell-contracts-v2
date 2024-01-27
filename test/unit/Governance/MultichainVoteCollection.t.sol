@@ -174,7 +174,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalId)),
-            1,
+            0,
             "incorrect state, not active"
         );
 
@@ -207,7 +207,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalId)),
-            1,
+            0,
             "incorrect state, not active"
         );
         vm.prank(address(1));
@@ -233,7 +233,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalId)),
-            1,
+            0,
             "incorrect state, not active"
         );
 
@@ -246,6 +246,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         returns (uint256 proposalId)
     {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -266,7 +268,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalId)),
-            2,
+            1,
             "incorrect state, not in crosschain vote collection period"
         );
 
@@ -284,7 +286,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalId)),
-            1,
+            0,
             "incorrect state, not active"
         );
 
@@ -299,7 +301,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalId)),
-            1,
+            0,
             "incorrect state, not active"
         );
 
@@ -759,7 +761,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalId)),
-            2,
+            1,
             "incorrect state, not in crosschain vote collection period"
         );
 
