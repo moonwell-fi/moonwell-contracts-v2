@@ -170,7 +170,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -203,7 +203,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     function testVotingVoterHasNoVotes() public {
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -229,7 +229,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -241,21 +241,18 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         voteCollection.castVote(proposalId, 3);
     }
 
-    function testVotingPendingProposalIdFails()
+    function testVotingActiveProposalIdSucceeds()
         public
         returns (uint256 proposalId)
     {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay());
-
         assertEq(
             uint256(governor.state(proposalId)),
             0,
-            "incorrect state, not pending"
+            "incorrect state, not active"
         );
 
-        vm.expectRevert("MultichainVoteCollection: Voting has not started yet");
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
     }
 
@@ -265,12 +262,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(
-            block.timestamp +
-                governor.votingDelay() +
-                governor.votingPeriod() +
-                1
-        );
+        vm.warp(block.timestamp + governor.votingPeriod() + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -288,7 +280,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -303,7 +295,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     function testVotingNoVotesFails() public returns (uint256 proposalId) {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -344,7 +336,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         uint256 snapshotTimestamp = block.timestamp - 1;
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         vm.prank(user1);
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
@@ -406,9 +398,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
                 "snapshot timestamp incorrect"
             );
             assertEq(
-                voteCollectionInfo.snapshotStartTimestamp +
-                    1 +
-                    governor.votingDelay(),
+                voteCollectionInfo.snapshotStartTimestamp + 1,
                 voteCollectionInfo.votingStartTime,
                 "voting start time incorrect"
             );
@@ -468,14 +458,14 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(
             uint256(governor.state(proposalId)),
             0,
-            "incorrect state, not pending"
+            "incorrect state, not active"
         );
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
-            1,
+            0,
             "incorrect state, not active"
         );
 
@@ -569,14 +559,14 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(
             uint256(governor.state(proposalId)),
             0,
-            "incorrect state, not pending"
+            "incorrect state, not active"
         );
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
-            1,
+            0,
             "incorrect state, not active"
         );
 
@@ -679,14 +669,14 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(
             uint256(governor.state(proposalId)),
             0,
-            "incorrect state, not pending"
+            "incorrect state, not active"
         );
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
-            1,
+            0,
             "incorrect state, not active"
         );
 

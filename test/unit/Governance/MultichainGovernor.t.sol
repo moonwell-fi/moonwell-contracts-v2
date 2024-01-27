@@ -34,11 +34,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             votingPeriodSeconds,
             "votingPeriodSeconds"
         );
-        assertEq(
-            governor.votingDelay(),
-            votingDelaySeconds,
-            "votingDelaySeconds"
-        );
+
         assertEq(
             governor.crossChainVoteCollectionPeriod(),
             crossChainVoteCollectionPeriod,
@@ -246,17 +242,6 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.setGasLimit(gasLimit);
     }
 
-    function testUpdateVotingDelayNonGovernorFails() public {
-        vm.expectRevert("MultichainGovernor: only governor");
-        governor.updateVotingDelay(1000);
-    }
-
-    function testUpdateVotingDelayTooHighFails() public {
-        vm.expectRevert("MultichainGovernor: invalid vote delay period");
-        vm.prank(address(governor));
-        governor.updateVotingDelay(Constants.MAX_VOTING_DELAY + 1);
-    }
-
     /// BREAK GLASS GUARDIAN
 
     function testExecuteBreakGlassNonBreakGlassGuardianFails() public {
@@ -412,19 +397,6 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function testUpdateVotingDelayGovernorSucceeds() public {
-        uint256 newVotingDelay = 1 hours;
-
-        vm.prank(address(governor));
-        governor.updateVotingDelay(newVotingDelay);
-
-        assertEq(
-            governor.votingDelay(),
-            newVotingDelay,
-            "votingDelay not updated"
-        );
-    }
-
     function testUpdateCrossChainVoteCollectionPeriodGovernorSucceeds() public {
         uint256 newCrossChainVoteCollectionPeriod = 1 hours;
         vm.prank(address(governor));
@@ -470,6 +442,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         assertTrue(governor.pauseUsed(), "pauseUsed not updated");
         assertEq(governor.pauseStartTime(), block.timestamp, "pauseStartTime");
     }
+
     function testPauseGuardianWithActiveProposalsCancelProposals() public {
         well.delegate(address(this));
 

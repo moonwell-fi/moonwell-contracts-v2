@@ -70,6 +70,11 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @param newGasLimit new gas limit
     event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
 
+    /// @notice emitted when a bridge out fails
+    /// @param dstChainId destination chain id to send tokens to
+    /// @param payload payload that failed to send
+    event BridgeOutFailed(uint16 dstChainId, bytes payload);
+
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
     /// ------------------------ HELPERS ------------------------
@@ -175,15 +180,23 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     }
 
     /// @notice Estimate bridge cost to bridge out to a destination chain
+    /// @dev this function returns 0 if the quote fails.
+    /// in all other cases, the value returned should be non zero.
     /// @param dstChainId Destination chain id
     function bridgeCost(
         uint16 dstChainId
     ) public view returns (uint256 gasCost) {
-        (gasCost, ) = wormholeRelayer.quoteEVMDeliveryPrice(
-            dstChainId,
-            0,
-            gasLimit
-        );
+        try
+            wormholeRelayer.quoteEVMDeliveryPrice(dstChainId, 0, gasLimit)
+        returns (uint256 cost, uint256) {
+            gasCost = cost;
+        } catch {
+            /// this is a bad situation, but we still want to allow the bridge out
+            /// so fail silently and set gasCost to 0.
+            /// the bridge out will most likely fail from this point out, however,
+            /// the proposal on Moonbeam will still be created.
+            gasCost = 0;
+        }
     }
 
     /// @notice Estimate bridge cost to bridge out to all chains
@@ -266,14 +279,18 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
 
         uint256 cost = bridgeCost(targetChain);
 
-        wormholeRelayer.sendPayloadToEvm{value: cost}(
-            targetChain,
-            targetAddress[targetChain],
-            payload,
-            0,
-            /// no receiver value allowed, only message passing
-            gasLimit
-        );
+        try
+            wormholeRelayer.sendPayloadToEvm{value: cost}(
+                targetChain,
+                targetAddress[targetChain],
+                payload,
+                0,
+                /// no receiver value allowed, only message passing
+                gasLimit
+            )
+        {} catch {
+            emit BridgeOutFailed(targetChain, payload);
+        }
     }
 
     /// @notice callable only by the wormhole relayer

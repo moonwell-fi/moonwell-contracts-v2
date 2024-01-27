@@ -47,9 +47,6 @@ interface IMultichainGovernor {
     /// @notice An event emitted when the proposal threshold is changed.
     event ProposalThresholdChanged(uint256 oldValue, uint256 newValue);
 
-    /// @notice An event emitted when the voting delay is changed.
-    event VotingDelayChanged(uint256 oldValue, uint256 newValue);
-
     /// @notice An event emitted when the voting period is changed.
     event VotingPeriodChanged(uint256 oldValue, uint256 newValue);
 
@@ -105,7 +102,6 @@ interface IMultichainGovernor {
 
     /// @notice Possible states that a proposal may be in
     enum ProposalState {
-        Pending,
         Active,
         CrossChainVoteCollection,
         Canceled,
@@ -245,9 +241,6 @@ interface IMultichainGovernor {
     /// @dev Returns the voting period for a proposal to pass
     function votingPeriod() external view returns (uint256);
 
-    /// @dev Returns the voting delay before voting begins
-    function votingDelay() external view returns (uint256);
-
     /// @dev Returns the cross chain voting period
     function crossChainVoteCollectionPeriod() external view returns (uint256);
 
@@ -317,9 +310,6 @@ interface IMultichainGovernor {
 
     /// updates the voting period
     function updateVotingPeriod(uint256 newVotingPeriod) external;
-
-    /// updates the voting delay
-    function updateVotingDelay(uint256 newVotingDelay) external;
 
     /// updates the cross chain voting collection period
     function updateCrossChainVoteCollectionPeriod(

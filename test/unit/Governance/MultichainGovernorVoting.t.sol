@@ -236,7 +236,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -277,7 +277,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -295,14 +295,14 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay());
-
         assertEq(
             uint256(governor.state(proposalId)),
             0,
-            "incorrect state, not pending"
+            "incorrect state, not active"
         );
 
+        /// should revert, but for a different reason
+        /// TODO update this test name
         vm.expectRevert("MultichainGovernor: voting is closed");
         governor.castVote(proposalId, Constants.VOTE_VALUE_NO);
     }
@@ -313,7 +313,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -328,7 +328,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     function testVotingNoVotesFails() public returns (uint256 proposalId) {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -368,7 +368,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -473,7 +473,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect state, not pending"
         );
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -567,7 +567,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect state, not pending"
         );
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -672,7 +672,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect state, not pending"
         );
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -775,7 +775,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect state, not pending"
         );
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -879,7 +879,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -999,7 +999,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     }
 
     function _warpPastVotingDelay() private {
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
     }
 
     function _castVotes(
@@ -1009,7 +1009,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     ) private {
         assertEq(
             uint256(governor.state(proposalId)),
-            1,
+            0,
             "incorrect state, not active"
         );
 
@@ -1358,7 +1358,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalId)),
-            3,
+            2,
             "incorrect state, not canceled"
         );
     }
@@ -1378,7 +1378,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         governor.cancel(proposalId);
         assertEq(
             uint256(governor.state(proposalId)),
-            3,
+            2,
             "incorrect state, not canceled"
         );
     }
@@ -1403,7 +1403,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         _warpPastVotingDelay();
 
         governor.cancel(proposalId);
-        assertEq(uint256(governor.state(proposalId)), 3, "incorrect state");
+        assertEq(uint256(governor.state(proposalId)), 2, "incorrect state");
 
         vm.expectRevert("MultichainGovernor: cannot cancel inactive proposal");
         governor.cancel(proposalId);
@@ -1427,13 +1427,13 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalId1)),
-            5,
+            4,
             "incorrect state for proposal 1, not succeeded"
         );
 
         assertEq(
             uint256(governor.state(proposalId2)),
-            5,
+            4,
             "incorrect state for proposal 2, not succeeded"
         );
 
@@ -1460,11 +1460,11 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             description
         );
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalIdUpdateQuorum)),
-            1,
+            0,
             "incorrect state, not active"
         );
 
@@ -1475,7 +1475,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalIdUpdateQuorum)),
-            5,
+            4,
             "incorrect state, not succeeded"
         );
 
@@ -1486,13 +1486,13 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         // quorum not met
         assertEq(
             uint256(governor.state(proposalId1)),
-            4,
+            3,
             "incorrect state for proposal 1, not defeated"
         );
 
         assertEq(
             uint256(governor.state(proposalId2)),
-            4,
+            3,
             "incorrect state for proposal 2, not defeated"
         );
     }
@@ -1513,13 +1513,13 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalId1)),
-            5,
+            4,
             "incorrect state for proposal 1, not succeeded"
         );
 
         assertEq(
             uint256(governor.state(proposalId2)),
-            5,
+            4,
             "incorrect state for proposal 2, not succeeded"
         );
 
@@ -1544,11 +1544,11 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             value: bridgeCost
         }(targets, values, calldatas, description);
 
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalIdUpdateMaxLiveProposals)),
-            1,
+            0,
             "incorrect state, not active"
         );
 
@@ -1562,7 +1562,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         assertEq(
             uint256(governor.state(proposalIdUpdateMaxLiveProposals)),
-            5,
+            4,
             "incorrect state, not succeeded"
         );
 
@@ -1579,24 +1579,24 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         assertEq(
             uint256(governor.state(proposalId1)),
             0,
-            "incorrect state, not pending"
+            "incorrect state, not active"
         );
         assertEq(
             uint256(governor.state(proposalId2)),
             0,
-            "incorrect state, not pending"
+            "incorrect state, not active"
         );
         assertEq(
             uint256(governor.state(proposalId3)),
             0,
-            "incorrect state, not pending"
+            "incorrect state, not active"
         );
 
         governor.pause();
 
-        assertEq(uint256(governor.state(proposalId1)), 3, "incorrect state");
-        assertEq(uint256(governor.state(proposalId2)), 3, "incorrect state");
-        assertEq(uint256(governor.state(proposalId3)), 3, "incorrect state");
+        assertEq(uint256(governor.state(proposalId1)), 2, "incorrect state");
+        assertEq(uint256(governor.state(proposalId2)), 2, "incorrect state");
+        assertEq(uint256(governor.state(proposalId3)), 2, "incorrect state");
     }
 
     // VIEW FUNCTIONS
@@ -1688,7 +1688,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         // set vm to crosschain collection period
         vm.warp(crossChainVoteCollectionEndTimestamp);
 
-        assertEq(uint256(governor.state(proposalId)), 2, "incorrect state");
+        assertEq(uint256(governor.state(proposalId)), 1, "incorrect state");
 
         assertEq(
             governor.getUserLiveProposals(address(this))[0],

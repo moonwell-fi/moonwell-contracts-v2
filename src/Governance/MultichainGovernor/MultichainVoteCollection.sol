@@ -264,6 +264,7 @@ contract MultichainVoteCollection is
 
     /// @notice Emits votes to be contabilized on Moonbeam Governor contract
     /// @param proposalId the proposal id
+    /// TODO this function should allow emission as many times as any user wants
     function emitVotes(uint256 proposalId) external payable override {
         /// Get the proposal
         MultichainProposal storage proposal = proposals[proposalId];

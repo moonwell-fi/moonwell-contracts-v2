@@ -102,10 +102,6 @@ contract MultichainGovernor is
     /// @notice the minimum number of votes needed to propose
     uint256 public override proposalThreshold;
 
-    /// @notice the minimum number of votes needed to propose
-    /// changing this variable only affects the proposals created after the change
-    uint256 public override votingDelay;
-
     /// @notice the voting period
     /// changing this variable only affects the proposals created after the change
     uint256 public override votingPeriod;
@@ -142,8 +138,6 @@ contract MultichainGovernor is
         uint256 proposalThreshold;
         /// voting period in seconds
         uint256 votingPeriodSeconds;
-        /// voting period delay in seconds
-        uint256 votingDelaySeconds;
         /// cross chain voting collection period in seconds
         uint256 crossChainVoteCollectionPeriod;
         /// number of total votes required to meet quorum
@@ -176,7 +170,6 @@ contract MultichainGovernor is
 
         _setProposalThreshold(initData.proposalThreshold);
         _setVotingPeriod(initData.votingPeriodSeconds);
-        _setVotingDelay(initData.votingDelaySeconds);
         _setCrossChainVoteCollectionPeriod(
             initData.crossChainVoteCollectionPeriod
         );
@@ -358,7 +351,7 @@ contract MultichainGovernor is
 
     /// @notice returns the currently live proposals
     /// live proposals are defined as being in the
-    /// Active, Pending or CrossChainVoteCollection period.
+    /// Active, or CrossChainVoteCollection period.
     function liveProposals() external view override returns (uint256[] memory) {
         uint256 liveProposalCount = getNumLiveProposals();
         uint256[] memory liveProposalIds = new uint256[](liveProposalCount);
@@ -381,7 +374,7 @@ contract MultichainGovernor is
 
     /// @notice returns the number of live proposals,
     /// live proposals are defined as being in the
-    /// Active, Pending or CrossChainVoteCollection period.
+    /// Active, or CrossChainVoteCollection period.
     function getNumLiveProposals() public view returns (uint256 count) {
         uint256[] memory allProposals = _liveProposals.values();
 
@@ -397,7 +390,8 @@ contract MultichainGovernor is
     }
 
     /// @notice returns the number of live proposals a user has
-    /// a proposal is considered live if it is active or pending
+    /// a proposal is considered live if it is active or in
+    /// cross chain vote collection period
     /// @param user The address of the user to check
     function currentUserLiveProposals(
         address user
@@ -480,7 +474,6 @@ contract MultichainGovernor is
 
         return
             proposalState == ProposalState.Active ||
-            proposalState == ProposalState.Pending ||
             proposalState == ProposalState.CrossChainVoteCollection;
     }
 
@@ -515,7 +508,6 @@ contract MultichainGovernor is
     /// @notice The total state of a given proposal
     /// distinct states:
     ///      canceled                              -> means proposer canceled, proposer votes fell below threshold and was canceled, or contract was paused and vote was canceled
-    ///      pending                               -> means block timestamp is less than or equal to the start timestamp
     ///      active                                -> means block timestamp is greater than the start timestamp
     ///      cross chain vote collection period    -> block timestamp is greater than the end timestamp and less than or equal to the cross chain vote collection end timestamp
     ///      succeeded                             -> block timestamp is past the cross chain vote collection period and yay votes are greater than nay votes
@@ -535,8 +527,6 @@ contract MultichainGovernor is
         if (proposal.canceled) {
             return ProposalState.Canceled;
             // Then check if the proposal is pending or active, in which case nothing else can be determined at this time.
-        } else if (block.timestamp <= proposal.votingStartTime) {
-            return ProposalState.Pending;
         } else if (block.timestamp <= proposal.endTimestamp) {
             return ProposalState.Active;
             // Then, check if the proposal is in cross chain vote collection period
@@ -568,6 +558,27 @@ contract MultichainGovernor is
     /// ------------- Permisslionless ---------------- ////
     /// ---------------------------------------------- ////
     /// ---------------------------------------------- ////
+
+    /// @notice allows for re-broadcasting of a proposal in case the
+    /// wormhole relayer or wormhole core contract is paused.
+    /// @dev can only be called if the proposal is in the active state
+    /// @param proposalId the id of the proposal to rebroadcast
+    function rebroadcastProposal(uint256 proposalId) external {
+        ProposalState proposalState = state(proposalId);
+        require(proposalState == ProposalState.Succeeded, "invalid state");
+
+        Proposal storage proposal = proposals[proposalId];
+
+        bytes memory payload = abi.encode(
+            proposalId,
+            proposal.voteSnapshotTimestamp,
+            proposal.votingStartTime,
+            proposal.endTimestamp,
+            proposal.crossChainVoteCollectionEndTimestamp
+        );
+
+        _bridgeOutAll(payload);
+    }
 
     /// @dev Returns the proposal ID for the proposed proposal
     /// only callable if user has proposal threshold or more votes
@@ -636,17 +647,16 @@ contract MultichainGovernor is
 
         {
             uint256 startTimestamp = block.timestamp - 1;
-            uint256 endTimestamp = block.timestamp + votingPeriod + votingDelay;
+            uint256 endTimestamp = block.timestamp + votingPeriod;
             uint256 crossChainVoteCollectionEndTimestamp = endTimestamp +
                 crossChainVoteCollectionPeriod;
-            uint256 votingStartTime = block.timestamp + votingDelay;
 
             newProposal.proposer = msg.sender;
             newProposal.targets = targets;
             newProposal.values = values;
             newProposal.calldatas = calldatas;
             newProposal.voteSnapshotTimestamp = startTimestamp;
-            newProposal.votingStartTime = votingStartTime;
+            newProposal.votingStartTime = block.timestamp;
             newProposal.startBlock = block.number - 1;
             newProposal.endTimestamp = endTimestamp;
             newProposal
@@ -655,7 +665,7 @@ contract MultichainGovernor is
             payload = abi.encode(
                 proposalCount,
                 startTimestamp,
-                votingStartTime,
+                block.timestamp,
                 endTimestamp,
                 crossChainVoteCollectionEndTimestamp
             );
@@ -761,7 +771,6 @@ contract MultichainGovernor is
 
         require(
             proposalState == ProposalState.Active ||
-                proposalState == ProposalState.Pending ||
                 proposalState == ProposalState.CrossChainVoteCollection,
             "MultichainGovernor: cannot cancel inactive proposal"
         );
@@ -848,14 +857,6 @@ contract MultichainGovernor is
         uint256 newVotingPeriod
     ) external override onlyGovernor {
         _setVotingPeriod(newVotingPeriod);
-    }
-
-    /// updates the voting delay
-    /// @param newVotingDelay the new voting delay
-    function updateVotingDelay(
-        uint256 newVotingDelay
-    ) external override onlyGovernor {
-        _setVotingDelay(newVotingDelay);
     }
 
     /// updates the cross chain voting collection period
@@ -1026,20 +1027,6 @@ contract MultichainGovernor is
         quorum = _quorum;
 
         emit QuroumVotesChanged(_oldValue, _quorum);
-    }
-
-    /// minimum voting delay is 0
-    /// @param _votingDelay the new voting delay
-    function _setVotingDelay(uint256 _votingDelay) private {
-        require(
-            _votingDelay <= Constants.MAX_VOTING_DELAY,
-            "MultichainGovernor: invalid vote delay period"
-        );
-
-        uint256 _oldValue = votingDelay;
-        votingDelay = _votingDelay;
-
-        emit VotingDelayChanged(_oldValue, _votingDelay);
     }
 
     /// @param _votingPeriod the new voting period

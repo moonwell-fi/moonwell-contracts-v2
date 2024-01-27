@@ -51,9 +51,6 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     /// @notice duration of the voting period for a proposal
     uint256 public constant votingPeriodSeconds = 3 days;
 
-    /// @notice delay before voting on a proposal may take place, once proposed
-    uint256 public constant votingDelaySeconds = 1 days;
-
     /// @notice minimum number of votes cast required for a proposal to pass
     uint256 public constant quorum = 1_000_000 * 1e18;
 
@@ -162,7 +159,6 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         MultichainGovernor.InitializeData memory initData;
         initData.proposalThreshold = proposalThreshold;
         initData.votingPeriodSeconds = votingPeriodSeconds;
-        initData.votingDelaySeconds = votingDelaySeconds;
         initData
             .crossChainVoteCollectionPeriod = crossChainVoteCollectionPeriod;
         initData.quorum = quorum;
