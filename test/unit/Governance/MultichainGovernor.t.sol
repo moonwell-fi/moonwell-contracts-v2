@@ -23,6 +23,17 @@ contract MockTimelock {
 contract MultichainGovernorUnitTest is MultichainBaseTest {
     event BreakGlassGuardianChanged(address oldValue, address newValue);
 
+    function setUp() public override {
+        super.setUp();
+
+        xwell.delegate(address(this));
+        well.delegate(address(this));
+        distributor.delegate(address(this));
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
+    }
+
     function testGovernorSetup() public {
         assertEq(
             governor.proposalThreshold(),
@@ -444,10 +455,6 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testPauseGuardianWithActiveProposalsCancelProposals() public {
-        well.delegate(address(this));
-
-        vm.roll(block.timestamp + 1);
-
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
         bytes[] memory calldatas = new bytes[](1);
@@ -523,5 +530,108 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             true,
             "incorrect is crosschain vote collector"
         );
+    }
+
+    // rebroadcast tests
+    function testProposeWormholeBroadcastingFailsProposeCreationStillSucceed()
+        public
+        returns (uint256)
+    {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 startTimestamp = block.timestamp;
+        uint256 endTimestamp = startTimestamp + governor.votingPeriod();
+        bytes memory payload = abi.encode(
+            1,
+            startTimestamp - 1,
+            startTimestamp,
+            endTimestamp,
+            endTimestamp + governor.crossChainVoteCollectionPeriod()
+        );
+
+        // mock call to wormhole relayar adapter to fail
+        bytes memory data = abi.encodeWithSignature(
+            "sendPayloadToEvm(uint256,address,bytes,uint256,uint256)",
+            baseChainId,
+            address(voteCollection),
+            payload,
+            0,
+            0
+        );
+
+        console.log("data");
+        console.logBytes(data);
+
+        vm.mockCallRevert(address(wormholeRelayerAdapter), data, "");
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        {
+            IMultichainGovernor.ProposalInformation
+                memory voteCollectionInfo = getVoteCollectionProposalInformation(
+                    proposalId
+                );
+
+            IMultichainGovernor.ProposalInformation
+                memory governorInfo = governor.proposalInformationStruct(
+                    proposalId
+                );
+
+            assertEq(
+                voteCollectionInfo.snapshotStartTimestamp,
+                governorInfo.snapshotStartTimestamp,
+                "incorrect snapshot start timestamp"
+            );
+            assertEq(
+                voteCollectionInfo.votingStartTime,
+                governorInfo.votingStartTime,
+                "incorrect voting start time"
+            );
+            assertEq(
+                voteCollectionInfo.endTimestamp,
+                governorInfo.endTimestamp,
+                "incorrect end timestamp"
+            );
+            assertEq(
+                voteCollectionInfo.crossChainVoteCollectionEndTimestamp,
+                governorInfo.crossChainVoteCollectionEndTimestamp,
+                "incorrect cross chain vote collection end timestamp"
+            );
+        }
+
+        uint256[] memory proposals = governor.liveProposals();
+
+        bool proposalFound;
+
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (proposals[i] == proposalId) {
+                proposalFound = true;
+                break;
+            }
+        }
+
+        assertTrue(proposalFound, "proposal not found in live proposals");
+
+        return proposalId;
     }
 }
