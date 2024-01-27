@@ -646,8 +646,9 @@ contract MultichainGovernor is
         bytes memory payload;
 
         {
-            uint256 startTimestamp = block.timestamp - 1;
-            uint256 endTimestamp = block.timestamp + votingPeriod;
+            uint256 startTimestamp = block.timestamp;
+            uint256 voteSnapshotTimestamp = startTimestamp - 1;
+            uint256 endTimestamp = startTimestamp + votingPeriod;
             uint256 crossChainVoteCollectionEndTimestamp = endTimestamp +
                 crossChainVoteCollectionPeriod;
 
@@ -655,8 +656,9 @@ contract MultichainGovernor is
             newProposal.targets = targets;
             newProposal.values = values;
             newProposal.calldatas = calldatas;
-            newProposal.voteSnapshotTimestamp = startTimestamp;
-            newProposal.votingStartTime = block.timestamp;
+            newProposal.voteSnapshotTimestamp = voteSnapshotTimestamp;
+            newProposal.votingStartTime = startTimestamp;
+            // TODO shouldn't this be block.number?
             newProposal.startBlock = block.number - 1;
             newProposal.endTimestamp = endTimestamp;
             newProposal
@@ -664,8 +666,8 @@ contract MultichainGovernor is
 
             payload = abi.encode(
                 proposalCount,
+                voteSnapshotTimestamp,
                 startTimestamp,
-                block.timestamp,
                 endTimestamp,
                 crossChainVoteCollectionEndTimestamp
             );
@@ -1077,7 +1079,7 @@ contract MultichainGovernor is
     ) internal {
         require(
             state(proposalId) == ProposalState.Active,
-            "MultichainGovernor: voting is closed"
+            "MultichainGovernor: proposal not active"
         );
         require(
             voteValue <= Constants.VOTE_VALUE_ABSTAIN,
