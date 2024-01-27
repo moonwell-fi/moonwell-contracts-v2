@@ -75,6 +75,18 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @param payload payload that failed to send
     event BridgeOutFailed(uint16 dstChainId, bytes payload);
 
+    /// @notice event emitted when a bridge out succeeds
+    /// @param dstWormholeChainId destination wormhole chain id to send tokens to
+    /// @param gasLimit gas limit used to send tokens
+    /// @param dst destination address to send tokens to
+    /// @param payload payload that was sent
+    event BridgeOutSuccess(
+        uint16 dstWormholeChainId,
+        uint96 gasLimit,
+        address dst,
+        bytes payload
+    );
+
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
     /// ------------------------ HELPERS ------------------------
@@ -165,6 +177,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// --------------------------------------------------------
     /// --------------------------------------------------------
 
+    /// @notice returns all target wormhole chain ids for this contract instance
     function getAllTargetChains() public view returns (uint16[] memory) {
         uint256 chainsLength = _targetChains.length();
         uint16[] memory chains = new uint16[](chainsLength);
@@ -182,17 +195,23 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @notice Estimate bridge cost to bridge out to a destination chain
     /// @dev this function returns 0 if the quote fails.
     /// in all other cases, the value returned should be non zero.
-    /// @param dstChainId Destination chain id
+    /// @param dstWormholeChainId Destination chain id
     function bridgeCost(
-        uint16 dstChainId
+        uint16 dstWormholeChainId
     ) public view returns (uint256 gasCost) {
         try
-            wormholeRelayer.quoteEVMDeliveryPrice(dstChainId, 0, gasLimit)
+            wormholeRelayer.quoteEVMDeliveryPrice(
+                dstWormholeChainId,
+                0,
+                gasLimit
+            )
         returns (uint256 cost, uint256) {
             gasCost = cost;
         } catch {
             /// this is a bad situation, but we still want to allow the bridge out
             /// so fail silently and set gasCost to 0.
+            /// Would like to emit an event here, but that would be a side affect
+            /// to the logs and cause this function to be non view.
             /// the bridge out will most likely fail from this point out, however,
             /// the proposal on Moonbeam will still be created.
             gasCost = 0;
@@ -288,7 +307,14 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
                 /// no receiver value allowed, only message passing
                 gasLimit
             )
-        {} catch {
+        {
+            emit BridgeOutSuccess(
+                targetChain,
+                gasLimit,
+                targetAddress[targetChain],
+                payload
+            );
+        } catch {
             emit BridgeOutFailed(targetChain, payload);
         }
     }
