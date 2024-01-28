@@ -335,6 +335,20 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
+    function testRemoveNonExistentExternalChainConfigGovernorFails() public {
+        WormholeTrustedSender.TrustedSender[]
+            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                1
+            );
+
+        _trustedSenders[0].chainId = 1;
+        _trustedSenders[0].addr = address(this);
+
+        vm.prank(address(governor));
+        vm.expectRevert("WormholeBridge: chain not added");
+        governor.removeExternalChainConfig(_trustedSenders);
+    }
+
     function testAddExternalChainConfigGovernorSucceeds()
         public
         returns (WormholeTrustedSender.TrustedSender[] memory)
@@ -358,6 +372,15 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
 
         return _trustedSenders;
+    }
+
+    function testAddExternalChainConfigGovernorTwiceFails() public {
+        WormholeTrustedSender.TrustedSender[]
+            memory _trustedSenders = testAddExternalChainConfigGovernorSucceeds();
+
+        vm.prank(address(governor));
+        vm.expectRevert("WormholeBridge: chain already added");
+        governor.addExternalChainConfig(_trustedSenders);
     }
 
     function testUpdateProposalThresholdGovernorSucceeds() public {
