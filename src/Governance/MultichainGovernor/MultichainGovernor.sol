@@ -658,7 +658,6 @@ contract MultichainGovernor is
             newProposal.calldatas = calldatas;
             newProposal.voteSnapshotTimestamp = voteSnapshotTimestamp;
             newProposal.votingStartTime = startTimestamp;
-            // TODO shouldn't this be block.number?
             newProposal.startBlock = block.number - 1;
             newProposal.endTimestamp = endTimestamp;
             newProposal
