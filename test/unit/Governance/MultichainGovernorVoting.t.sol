@@ -153,6 +153,32 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         governor.propose(targets, values, calldatas, description);
     }
 
+    function testProposeUpdateProposalThresholdFailsIncorrectGas() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll() - 1; /// 1 Wei less than needed
+        vm.deal(address(this), bridgeCost);
+
+        vm.expectRevert("WormholeBridge: total cost not equal to quote");
+        governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+    }
+
     function testProposeUpdateProposalThresholdSucceeds()
         public
         returns (uint256)
