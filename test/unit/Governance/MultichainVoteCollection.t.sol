@@ -199,6 +199,16 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(votesFor, totalVotes, "total votes incorrect");
     }
 
+    function testVotingValidProposalIdBeforeStartFails()
+        public
+        returns (uint256 proposalId)
+    {
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        vm.expectRevert("MultichainVoteCollection: Voting has not started yet");
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
+    }
+
     // voter has no votes
     function testVotingVoterHasNoVotes() public {
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
@@ -823,6 +833,26 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         voteCollection.emitVotes(proposalId);
     }
 
+    function testEmitVotesProposalEndTimeHasPassedBridgeOutIncorrectAmount()
+        public
+    {
+        uint256 proposalId = testVotingValidProposalIdSucceeds();
+
+        (, , uint256 endTimestamp, , , , , ) = voteCollection
+            .proposalInformation(proposalId);
+
+        // test at the last timestamp of vote period
+        vm.warp(endTimestamp + 1);
+
+        uint256 cost = voteCollection.bridgeCost(
+            voteCollection.moonbeamWormholeChainId()
+        ) - 1;
+        vm.deal(address(this), cost);
+
+        vm.expectRevert("WormholeBridge: cost not equal to quote");
+        voteCollection.emitVotes{value: cost}(proposalId);
+    }
+
     function testEmitVotesProposalCollectionEndTimeHasPassed() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
 
@@ -840,67 +870,6 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     /// Only Owner
-
-    function testRemoveExternalChainConfigNonOwnerFails() public {
-        WormholeTrustedSender.TrustedSender[]
-            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
-                0
-            );
-
-        vm.prank(address(1));
-        vm.expectRevert("Ownable: caller is not the owner");
-        voteCollection.removeExternalChainConfig(_trustedSenders);
-    }
-
-    function testAddExternalChainConfigNonOwnerFails() public {
-        WormholeTrustedSender.TrustedSender[]
-            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
-                0
-            );
-
-        vm.prank(address(1));
-        vm.expectRevert("Ownable: caller is not the owner");
-        voteCollection.addExternalChainConfig(_trustedSenders);
-    }
-
-    function testRemoveExternalChainConfigOwnerSucceeds() public {
-        WormholeTrustedSender.TrustedSender[]
-            memory _trustedSenders = testAddExternalChainConfigOwnerSucceeds();
-
-        voteCollection.removeExternalChainConfig(_trustedSenders);
-
-        assertFalse(
-            voteCollection.isTrustedSender(
-                _trustedSenders[0].chainId,
-                _trustedSenders[0].addr
-            ),
-            "trusted sender not removed"
-        );
-    }
-
-    function testAddExternalChainConfigOwnerSucceeds()
-        public
-        returns (WormholeTrustedSender.TrustedSender[] memory)
-    {
-        WormholeTrustedSender.TrustedSender[]
-            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
-                1
-            );
-
-        _trustedSenders[0].chainId = 1;
-        _trustedSenders[0].addr = address(this);
-
-        voteCollection.addExternalChainConfig(_trustedSenders);
-        assertTrue(
-            voteCollection.isTrustedSender(
-                _trustedSenders[0].chainId,
-                _trustedSenders[0].addr
-            ),
-            "trusted sender not added"
-        );
-
-        return _trustedSenders;
-    }
 
     function testSetGasLimitOwnerSucceeds() public {
         uint96 gasLimit = Constants.MIN_GAS_LIMIT;
@@ -944,19 +913,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     function testBridgeInWrongSourceChain() public {
         bytes memory payload = abi.encode(0, 0, 0, 0, 0);
 
-        // add trusted sender
-        WormholeTrustedSender.TrustedSender[]
-            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
-                1
-            );
-        trustedSenders[0].chainId = baseChainId;
-        trustedSenders[0].addr = address(governor);
-        voteCollection.addExternalChainConfig(trustedSenders);
-
         vm.prank(address(governor));
-        vm.expectRevert(
-            "MultichainVoteCollection: accepts only proposals from moonbeam"
-        );
+        vm.expectRevert("WormholeBridge: sender not trusted");
         wormholeRelayerAdapter.sendPayloadToEvm(
             moonbeamChainId, // pass moonbeam as the target chain so that relayer adapter do the flip
             address(voteCollection),
