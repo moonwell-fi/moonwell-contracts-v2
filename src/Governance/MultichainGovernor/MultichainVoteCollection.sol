@@ -321,12 +321,8 @@ contract MultichainVoteCollection is
     }
 
     /// @notice bridge proposals from moonbeam
-    /// @param sourceChain the chain id of the source chain
     /// @param payload the payload of the message, contains proposalId, votingStartTime, votingEndTime and voteCollectionEndTime
-    function _bridgeIn(
-        uint16 sourceChain,
-        bytes memory payload
-    ) internal override {
+    function _bridgeIn(uint16, bytes memory payload) internal override {
         /// payload should be 5 uint256s
         require(
             payload.length == 160,
