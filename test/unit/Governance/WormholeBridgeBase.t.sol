@@ -100,11 +100,26 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         );
     }
 
-    /// TODO fill these in
-    function testAlreadyProcessedMessageReplayFails(bytes32 nonce) public {}
+    function testAlreadyProcessedMessageReplayFails(bytes32 nonce) public {
+        uint256 proposalId = testReceiveWormholeMessageSucceeds();
+        bytes memory payload = abi.encode(proposalId, 0, 0, 0);
 
-    function testReceiveWormholeMessageSucceeds() public {
-        uint256 proposalId = _createProposal();
+        vm.prank(address(governor.wormholeRelayer()));
+        vm.expectRevert("WormholeBridge: message already processed");
+        governor.receiveWormholeMessages{value: 0}(
+            payload,
+            new bytes[](0), /// field unchecked in contract
+            addressToBytes(address(voteCollection)),
+            baseChainId,
+            bytes32(type(uint256).max)
+        );
+    }
+
+    function testReceiveWormholeMessageSucceeds()
+        public
+        returns (uint256 proposalId)
+    {
+        proposalId = _createProposal();
         bytes memory payload = abi.encode(proposalId, 0, 0, 0);
 
         vm.warp(block.timestamp + governor.votingPeriod() + 1);
