@@ -128,9 +128,10 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             "WormholeBridge: chain already added"
         );
 
+        /// this code should be unreachable
         require(
             _targetChains.add(chainId),
-            "WormholeBridge: chain already added"
+            "WormholeBridge: chain already added to set"
         );
 
         targetAddress[chainId] = addr;
