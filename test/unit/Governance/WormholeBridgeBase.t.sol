@@ -100,7 +100,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         );
     }
 
-    function testAlreadyProcessedMessageReplayFails(bytes32 nonce) public {
+    function testAlreadyProcessedMessageReplayFails() public {
         uint256 proposalId = testReceiveWormholeMessageSucceeds();
         bytes memory payload = abi.encode(proposalId, 0, 0, 0);
 
