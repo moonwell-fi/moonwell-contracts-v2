@@ -167,4 +167,54 @@ contract MultichainGovernorDeploy is Test {
             )
         );
     }
+
+    function deployEcosystemReserve(
+        address proxyAdmin
+    )
+        public
+        returns (
+            address ecosystemReserveProxy,
+            address ecosystemReserveImplementation,
+            address ecosystemReserveControllerProxy,
+            address ecosystemReserveControllerImplementation
+        )
+    {
+        ecosystemReserveImplementation = deployCode(
+            "EcosystemReserve.sol:EcosystemReserve"
+        );
+
+        ecosystemReserveControllerImplementation = deployCode(
+            "EcosystemReserveController.sol:EcosystemReserveController"
+        );
+
+        ecosystemReserveProxy = address(
+            new TransparentUpgradeableProxy(
+                ecosystemReserveImplementation,
+                proxyAdmin,
+                ""
+            )
+        );
+
+        bytes memory initData = abi.encodeWithSignature(
+            "setEcosystemReserve(address)",
+            ecosystemReserveProxy
+        );
+
+        ecosystemReserveControllerProxy = address(
+            new TransparentUpgradeableProxy(
+                ecosystemReserveControllerImplementation,
+                proxyAdmin,
+                initData
+            )
+        );
+
+        (bool success, bytes memory returnData) = ecosystemReserveProxy.call(
+            abi.encodeWithSignature(
+                "initialize(address)",
+                ecosystemReserveControllerProxy
+            )
+        );
+
+        require(success, "EcosystemReserve: initialization failed");
+    }
 }
