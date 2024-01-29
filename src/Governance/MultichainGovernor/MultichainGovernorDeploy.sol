@@ -40,7 +40,7 @@ contract MultichainGovernorDeploy is Test {
         address stkWell,
         address moonbeamGovernor,
         address relayer,
-        uint16 moonbeamChainId,
+        uint16 moonbeamWormholeChainId,
         address proxyAdmin,
         address owner
     ) public returns (address proxy, address voteCollectionImpl) {
@@ -50,7 +50,7 @@ contract MultichainGovernorDeploy is Test {
             stkWell,
             moonbeamGovernor,
             relayer,
-            moonbeamChainId,
+            moonbeamWormholeChainId,
             owner
         );
 
@@ -74,6 +74,8 @@ contract MultichainGovernorDeploy is Test {
         address proxyAdmin;
     }
 
+    /// @notice for testing purposes only, not to be used in production as both
+    /// contracts are deployed on the same chain
     function deployGovernorRelayerAndVoteCollection(
         MultichainGovernor.InitializeData memory initializeData,
         bytes[] memory whitelistedCalldata,
