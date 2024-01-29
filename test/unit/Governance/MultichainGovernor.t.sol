@@ -14,7 +14,26 @@ import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 
+contract MockTimelock {
+    function transferOwnership(address) external pure returns (bool) {
+        return true;
+    }
+}
+
 contract MultichainGovernorUnitTest is MultichainBaseTest {
+    event BreakGlassGuardianChanged(address oldValue, address newValue);
+
+    function setUp() public override {
+        super.setUp();
+
+        xwell.delegate(address(this));
+        well.delegate(address(this));
+        distributor.delegate(address(this));
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
+    }
+
     function testGovernorSetup() public {
         assertEq(
             governor.proposalThreshold(),
@@ -26,11 +45,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             votingPeriodSeconds,
             "votingPeriodSeconds"
         );
-        assertEq(
-            governor.votingDelay(),
-            votingDelaySeconds,
-            "votingDelaySeconds"
-        );
+
         assertEq(
             governor.crossChainVoteCollectionPeriod(),
             crossChainVoteCollectionPeriod,
@@ -96,75 +111,205 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     /// ACL Negative Tests
 
     /// GOVERNOR
-    function test_updateApprovedCalldata_NonGovernor_Fails() public {
+    function testUpdateApprovedCalldataNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateApprovedCalldata("", true);
     }
 
-    function test_removeTrustedSenders_NonGovernor_Fails() public {
+    function testUpdateApprovedCalldataAlreadyWhitelistedFails() public {
+        testUpdateApprovedCalldataGovernorSucceeds();
+        vm.prank(address(governor));
+        vm.expectRevert("MultichainGovernor: calldata already approved");
+        governor.updateApprovedCalldata("", true);
+    }
+
+    function testRemoveNonApprovedCalldataWhitelistedFails() public {
+        testUpdateApprovedCalldataGovernorSucceeds();
+        vm.prank(address(governor));
+        vm.expectRevert("MultichainGovernor: calldata not approved");
+        governor.updateApprovedCalldata(hex"00eeff", false);
+    }
+
+    function testUpdateApprovedCalldataNonWhitelistedFails() public {
+        vm.prank(address(governor));
+        vm.expectRevert("MultichainGovernor: calldata not approved");
+        governor.updateApprovedCalldata("", false);
+    }
+
+    function testRemoveExternalChainConfigNonGovernorFails() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
             );
         vm.expectRevert("MultichainGovernor: only governor");
-        governor.removeTrustedSenders(_trustedSenders);
+        governor.removeExternalChainConfig(_trustedSenders);
     }
 
-    function test_addTrustedSenders_NonGovernor_Fails() public {
+    function testAddExternalChainConfigNonGovernorFails() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
             );
         vm.expectRevert("MultichainGovernor: only governor");
-        governor.addTrustedSenders(_trustedSenders);
+        governor.addExternalChainConfig(_trustedSenders);
     }
 
-    function test_updateProposalThreshold_NonGovernor_Fails() public {
+    function testUpdateProposalThresholdNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateProposalThreshold(1000);
     }
 
-    function test_updateMaxUserLiveProposals_NonGovernor_Fails() public {
+    function testUpdateProposalThresholdTooLowFails() public {
+        vm.expectRevert("MultichainGovernor: proposal threshold out of bounds");
+        vm.prank(address(governor));
+        governor.updateProposalThreshold(Constants.MIN_PROPOSAL_THRESHOLD - 1);
+    }
+
+    function testUpdateProposalThresholdTooHighFails() public {
+        vm.expectRevert("MultichainGovernor: proposal threshold out of bounds");
+        vm.prank(address(governor));
+        governor.updateProposalThreshold(Constants.MAX_PROPOSAL_THRESHOLD + 1);
+    }
+
+    function testUpdateMaxUserLiveProposalsNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateMaxUserLiveProposals(1000);
     }
 
-    function test_updateQuorum_NonGovernor_Fails() public {
+    function testUpdateMaxUserLiveProposalsZeroFails() public {
+        vm.expectRevert("MultichainGovernor: invalid max user live proposals");
+        vm.prank(address(governor));
+        governor.updateMaxUserLiveProposals(0);
+    }
+
+    function testUpdateMaxUserLiveProposalsTooHighFails() public {
+        vm.expectRevert("MultichainGovernor: invalid max user live proposals");
+        vm.prank(address(governor));
+        governor.updateMaxUserLiveProposals(
+            Constants.MAX_USER_PROPOSAL_COUNT + 1
+        );
+    }
+
+    function testUpdateQuorumNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateQuorum(1000);
     }
 
-    function test_updateVotingPeriod_NonGovernor_Fails() public {
+    function testUpdateQuorumTooHighFails() public {
+        vm.expectRevert("MultichainGovernor: invalid quorum");
+        vm.prank(address(governor));
+        governor.updateQuorum(Constants.MAX_QUORUM + 1);
+    }
+
+    function testUpdateVotingPeriodNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateVotingPeriod(1000);
     }
 
-    function test_updateVotingDelay_NonGovernor_Fails() public {
-        vm.expectRevert("MultichainGovernor: only governor");
-        governor.updateVotingDelay(1000);
+    function testUpdateVotingPeriodTooLowFails() public {
+        vm.expectRevert("MultichainGovernor: voting period out of bounds");
+        vm.prank(address(governor));
+        governor.updateVotingPeriod(Constants.MIN_VOTING_PERIOD - 1);
     }
 
-    function test_updateCrossChainVoteCollectionPeriod_NonGovernor_Fails()
-        public
-    {
+    function testUpdateVotingPeriodTooHighFails() public {
+        vm.expectRevert("MultichainGovernor: voting period out of bounds");
+        vm.prank(address(governor));
+        governor.updateVotingPeriod(Constants.MAX_VOTING_PERIOD + 1);
+    }
+
+    function testUpdateCrossChainVoteCollectionPeriodNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateCrossChainVoteCollectionPeriod(1000);
     }
 
-    function test_setBreakGlassGuardian_NonGovernor_Fails() public {
+    function testUpdateCrossChainVoteCollectionPeriodTooLowFails() public {
+        vm.expectRevert("MultichainGovernor: invalid vote collection period");
+        vm.prank(address(governor));
+
+        governor.updateCrossChainVoteCollectionPeriod(
+            Constants.MIN_CROSS_CHAIN_VOTE_COLLECTION_PERIOD - 1
+        );
+    }
+
+    function testUpdateCrossChainVoteCollectionPeriodTooHighFails() public {
+        vm.expectRevert("MultichainGovernor: invalid vote collection period");
+        vm.prank(address(governor));
+
+        governor.updateCrossChainVoteCollectionPeriod(
+            Constants.MAX_CROSS_CHAIN_VOTE_COLLECTION_PERIOD + 1
+        );
+    }
+
+    function testSetBreakGlassGuardianNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.setBreakGlassGuardian(address(this));
     }
 
+    function testSetGasLimitNonGovernorFails() public {
+        uint96 gasLimit = Constants.MIN_GAS_LIMIT;
+        vm.prank(address(1));
+        vm.expectRevert("MultichainGovernor: only governor");
+        governor.setGasLimit(gasLimit);
+    }
+
+    function testSetGasLimitTooLow() public {
+        uint96 gasLimit = Constants.MIN_GAS_LIMIT - 1;
+        vm.expectRevert("MultichainGovernor: gas limit too low");
+        vm.prank(address(governor));
+        governor.setGasLimit(gasLimit);
+    }
+
     /// BREAK GLASS GUARDIAN
 
-    function test_executeBreakGlass_NonBreakGlassGuardian_Fails() public {
+    function testExecuteBreakGlassNonBreakGlassGuardianFails() public {
         vm.expectRevert("MultichainGovernor: only break glass guardian");
         governor.executeBreakGlass(new address[](0), new bytes[](0));
     }
 
+    function testExecuteBreakGlassEmptyArray() public {
+        vm.prank(governor.breakGlassGuardian());
+        vm.expectRevert("MultichainGovernor: empty array");
+        governor.executeBreakGlass(new address[](0), new bytes[](0));
+    }
+
+    function testExecuteBreakGlassDifferentLengths() public {
+        vm.prank(governor.breakGlassGuardian());
+        vm.expectRevert("MultichainGovernor: arity mismatch");
+        governor.executeBreakGlass(new address[](1), new bytes[](0));
+    }
+
+    function testExecuteBreakGlassNonWhitelistedFails() public {
+        vm.prank(governor.breakGlassGuardian());
+        vm.expectRevert("MultichainGovernor: calldata not whitelisted");
+        governor.executeBreakGlass(new address[](1), new bytes[](1));
+    }
+
+    function testExecuteBreakGlassBreakGlassGuardianSucceeds() public {
+        address[] memory targets = new address[](1);
+        targets[0] = address(new MockTimelock());
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature(
+            "transferOwnership(address)",
+            rollbackAddress
+        );
+        address bgg = governor.breakGlassGuardian();
+
+        vm.prank(bgg);
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BreakGlassGuardianChanged(bgg, address(0));
+        governor.executeBreakGlass(targets, calldatas);
+
+        assertEq(
+            governor.breakGlassGuardian(),
+            address(0),
+            "break glass guardian not reset"
+        );
+    }
+
     /// PAUSE GUARDIAN
-    function test_pause_NonPauseGuardian_Fails() public {
+    function testPauseNonPauseGuardianFails() public {
         vm.expectRevert("ConfigurablePauseGuardian: only pause guardian");
         vm.prank(address(1));
         governor.pause();
@@ -172,7 +317,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
     /// ACL Positive Tests
 
-    function test_updateApprovedCalldata_Governor_Succeeds() public {
+    function testUpdateApprovedCalldataGovernorSucceeds() public {
         vm.prank(address(governor));
         governor.updateApprovedCalldata("", true);
         assertTrue(
@@ -181,22 +326,37 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function test_removeTrustedSenders_Governor_Succeeds() public {
+    function testRemoveExternalChainConfigGovernorSucceeds() public {
         WormholeTrustedSender.TrustedSender[]
-            memory _trustedSenders = test_addTrustedSenders_Governor_Succeeds();
+            memory _trustedSenders = testAddExternalChainConfigGovernorSucceeds();
+
         vm.prank(address(governor));
-        governor.removeTrustedSenders(_trustedSenders);
+        governor.removeExternalChainConfig(_trustedSenders);
 
         assertFalse(
             governor.isTrustedSender(
                 _trustedSenders[0].chainId,
                 _trustedSenders[0].addr
             ),
-            "trusted sender not added"
+            "trusted sender not removed"
         );
     }
 
-    function test_addTrustedSenders_Governor_Succeeds()
+    function testRemoveNonExistentExternalChainConfigGovernorFails() public {
+        WormholeTrustedSender.TrustedSender[]
+            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                1
+            );
+
+        _trustedSenders[0].chainId = 1;
+        _trustedSenders[0].addr = address(this);
+
+        vm.prank(address(governor));
+        vm.expectRevert("WormholeBridge: chain not added");
+        governor.removeExternalChainConfig(_trustedSenders);
+    }
+
+    function testAddExternalChainConfigGovernorSucceeds()
         public
         returns (WormholeTrustedSender.TrustedSender[] memory)
     {
@@ -209,7 +369,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         _trustedSenders[0].addr = address(this);
 
         vm.prank(address(governor));
-        governor.addTrustedSenders(_trustedSenders);
+        governor.addExternalChainConfig(_trustedSenders);
         assertTrue(
             governor.isTrustedSender(
                 _trustedSenders[0].chainId,
@@ -221,7 +381,16 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         return _trustedSenders;
     }
 
-    function test_updateProposalThreshold_Governor_Succeeds() public {
+    function testAddExternalChainConfigGovernorTwiceFails() public {
+        WormholeTrustedSender.TrustedSender[]
+            memory _trustedSenders = testAddExternalChainConfigGovernorSucceeds();
+
+        vm.prank(address(governor));
+        vm.expectRevert("WormholeBridge: chain already added");
+        governor.addExternalChainConfig(_trustedSenders);
+    }
+
+    function testUpdateProposalThresholdGovernorSucceeds() public {
         uint256 newProposalThreshold = Constants.MIN_PROPOSAL_THRESHOLD;
 
         vm.prank(address(governor));
@@ -234,20 +403,20 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function test_updateMaxUserLiveProposals_Governor_Succeeds() public {
-        uint256 maxUserLiveProposals = 5;
+    function testUpdateMaxUserLiveProposalsGovernorSucceeds() public {
+        uint256 newMaxUserLiveProposals = 4;
 
         vm.prank(address(governor));
-        governor.updateMaxUserLiveProposals(maxUserLiveProposals);
+        governor.updateMaxUserLiveProposals(newMaxUserLiveProposals);
 
         assertEq(
             governor.maxUserLiveProposals(),
-            maxUserLiveProposals,
+            newMaxUserLiveProposals,
             "maxUserLiveProposals not updated"
         );
     }
 
-    function test_updateQuorum_Governor_Succeeds() public {
+    function testUpdateQuorumGovernorSucceeds() public {
         uint256 newQuorum = 2_500_000_000 * 1e18;
 
         vm.prank(address(governor));
@@ -256,7 +425,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         assertEq(governor.quorum(), newQuorum, "quorum not updated");
     }
 
-    function test_updateVotingPeriod_Governor_Succeeds() public {
+    function testUpdateVotingPeriodGovernorSucceeds() public {
         uint256 newVotingPeriod = 1 hours;
 
         vm.prank(address(governor));
@@ -269,22 +438,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function test_updateVotingDelay_Governor_Succeeds() public {
-        uint256 newVotingDelay = 1 hours;
-
-        vm.prank(address(governor));
-        governor.updateVotingDelay(newVotingDelay);
-
-        assertEq(
-            governor.votingDelay(),
-            newVotingDelay,
-            "votingDelay not updated"
-        );
-    }
-
-    function test_updateCrossChainVoteCollectionPeriod_Governor_Succeeds()
-        public
-    {
+    function testUpdateCrossChainVoteCollectionPeriodGovernorSucceeds() public {
         uint256 newCrossChainVoteCollectionPeriod = 1 hours;
         vm.prank(address(governor));
         governor.updateCrossChainVoteCollectionPeriod(
@@ -298,7 +452,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function test_setBreakGlassGuardian_Governor_Succeeds() public {
+    function testSetBreakGlassGuardianGovernorSucceeds() public {
         address newBgg = address(1);
 
         vm.prank(address(governor));
@@ -311,26 +465,15 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    event BreakGlassGuardianChanged(address oldValue, address newValue);
-
-    function test_executeBreakGlass_BreakGlassGuardian_Succeeds() public {
-        address bgg = governor.breakGlassGuardian();
-
-        vm.prank(bgg);
-        vm.expectEmit(true, true, true, true, address(governor));
-        emit BreakGlassGuardianChanged(bgg, address(0));
-
-        governor.executeBreakGlass(new address[](0), new bytes[](0));
-
-        assertEq(
-            governor.breakGlassGuardian(),
-            address(0),
-            "break glass guardian not reset"
-        );
+    function testSetGasLimitGovernorSucceeds() public {
+        uint96 gasLimit = Constants.MIN_GAS_LIMIT;
+        vm.prank(address(governor));
+        governor.setGasLimit(gasLimit);
+        assertEq(governor.gasLimit(), gasLimit, "incorrect gas limit");
     }
 
     /// PAUSE GUARDIAN
-    function test_pause_PauseGuardian_Succeeds() public {
+    function testPausePauseGuardianSucceeds() public {
         vm.warp(block.timestamp + 1);
 
         vm.prank(governor.pauseGuardian());
@@ -341,8 +484,47 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         assertEq(governor.pauseStartTime(), block.timestamp, "pauseStartTime");
     }
 
-    function test_Propose_WhenPaused_Fails() public {
-        test_pause_PauseGuardian_Succeeds();
+    function testPauseGuardianWithActiveProposalsCancelProposals() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        vm.prank(governor.pauseGuardian());
+        governor.pause();
+
+        assertTrue(governor.paused(), "governor not paused");
+        assertTrue(governor.pauseUsed(), "pauseUsed not updated");
+        assertEq(governor.pauseStartTime(), block.timestamp, "pauseStartTime");
+        assertEq(
+            governor.proposalActive(proposalId),
+            false,
+            "proposal not cancelled"
+        );
+    }
+
+    function testProposeWhenPausedFails() public {
+        testPausePauseGuardianSucceeds();
 
         vm.expectRevert("Pausable: paused");
         governor.propose(
@@ -353,17 +535,137 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function test_Execute_WhenPaused_Fails() public {
-        test_pause_PauseGuardian_Succeeds();
+    function testExecuteWhenPausedFails() public {
+        testPausePauseGuardianSucceeds();
 
         vm.expectRevert("Pausable: paused");
         governor.execute(0);
     }
 
-    function test_CastVote_WhenPaused_Fails() public {
-        test_pause_PauseGuardian_Succeeds();
+    function testCastVoteWhenPausedFails() public {
+        testPausePauseGuardianSucceeds();
 
         vm.expectRevert("Pausable: paused");
         governor.castVote(0, 0);
+    }
+
+    // VIEW FUNCTIONS
+
+    function testIsCrosschainVoteCollector() public {
+        testAddExternalChainConfigGovernorSucceeds();
+        assertEq(
+            governor.isCrossChainVoteCollector(1, address(this)),
+            true,
+            "incorrect is crosschain vote collector"
+        );
+    }
+
+    // rebroadcast tests
+    function testProposeWormholeBroadcastingFailsProposeCreationStillSucceed()
+        public
+        returns (uint256)
+    {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 startTimestamp = block.timestamp;
+        uint256 endTimestamp = startTimestamp + governor.votingPeriod();
+        bytes memory payload = abi.encode(
+            1,
+            startTimestamp - 1,
+            startTimestamp,
+            endTimestamp,
+            endTimestamp + governor.crossChainVoteCollectionPeriod()
+        );
+
+        // mock call to wormhole relayar adapter to fail
+        bytes memory data = abi.encodeWithSignature(
+            "sendPayloadToEvm(uint256,address,bytes,uint256,uint256)",
+            baseChainId,
+            address(voteCollection),
+            payload,
+            0,
+            0
+        );
+
+        console.log("data");
+        console.logBytes(data);
+
+        vm.mockCallRevert(
+            address(wormholeRelayerAdapter),
+            bridgeCost,
+            data,
+            "mock error"
+        );
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        {
+            IMultichainGovernor.ProposalInformation
+                memory voteCollectionInfo = getVoteCollectionProposalInformation(
+                    proposalId
+                );
+
+            IMultichainGovernor.ProposalInformation
+                memory governorInfo = governor.proposalInformationStruct(
+                    proposalId
+                );
+
+            assertEq(
+                voteCollectionInfo.snapshotStartTimestamp,
+                governorInfo.snapshotStartTimestamp,
+                "incorrect snapshot start timestamp"
+            );
+            assertEq(
+                voteCollectionInfo.votingStartTime,
+                governorInfo.votingStartTime,
+                "incorrect voting start time"
+            );
+            assertEq(
+                voteCollectionInfo.endTimestamp,
+                governorInfo.endTimestamp,
+                "incorrect end timestamp"
+            );
+            assertEq(
+                voteCollectionInfo.crossChainVoteCollectionEndTimestamp,
+                governorInfo.crossChainVoteCollectionEndTimestamp,
+                "incorrect cross chain vote collection end timestamp"
+            );
+        }
+
+        uint256[] memory proposals = governor.liveProposals();
+
+        bool proposalFound;
+
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (proposals[i] == proposalId) {
+                proposalFound = true;
+                break;
+            }
+        }
+
+        assertTrue(proposalFound, "proposal not found in live proposals");
+
+        return proposalId;
     }
 }

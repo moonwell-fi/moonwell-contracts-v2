@@ -51,9 +51,6 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     /// @notice duration of the voting period for a proposal
     uint256 public constant votingPeriodSeconds = 3 days;
 
-    /// @notice delay before voting on a proposal may take place, once proposed
-    uint256 public constant votingDelaySeconds = 1 days;
-
     /// @notice minimum number of votes cast required for a proposal to pass
     uint256 public constant quorum = 1_000_000 * 1e18;
 
@@ -65,6 +62,9 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
     /// @notice moonbeam wormhole chain id
     uint16 public constant moonbeamChainId = 16;
+
+    /// @notice base wormhole chain id
+    uint16 public constant baseChainId = 30;
 
     /// @notice pause guardian
     address public pauseGuardian = address(this);
@@ -159,38 +159,37 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         MultichainGovernor.InitializeData memory initData;
         initData.proposalThreshold = proposalThreshold;
         initData.votingPeriodSeconds = votingPeriodSeconds;
-        initData.votingDelaySeconds = votingDelaySeconds;
         initData
             .crossChainVoteCollectionPeriod = crossChainVoteCollectionPeriod;
         initData.quorum = quorum;
         initData.maxUserLiveProposals = maxUserLiveProposals;
         initData.pauseDuration = pauseDuration;
         initData.pauseGuardian = pauseGuardian;
+        initData.breakGlassGuardian = address(123);
         initData.xWell = xwellProxy;
         initData.well = address(well);
         initData.stkWell = address(stkWell);
         initData.distributor = address(distributor);
 
-        (
-            address governorProxy,
-            address governorImplementation,
-            address voteCollectionProxy,
-            address wormholeRelayerAdapterAddress,
-
-        ) = deployGovernorRelayerAndVoteCollection(
+        MultichainGovernorDeploy.MultichainAddresses
+            memory addresses = deployGovernorRelayerAndVoteCollection(
                 initData,
                 approvedCalldata,
                 address(0),
-                16
+                moonbeamChainId, // wormhole moonbeam chain id
+                baseChainId, // wormhole base chain id
+                address(this) // voteCollectionOwner
             );
 
-        governor = MultichainGovernor(governorProxy);
-        governorLogic = MultichainGovernor(governorImplementation);
+        governor = MultichainGovernor(addresses.governorProxy);
+        governorLogic = MultichainGovernor(addresses.governorImplementation);
         xwell = xWELL(xwellProxy);
         wormholeRelayerAdapter = WormholeRelayerAdapter(
-            wormholeRelayerAdapterAddress
+            addresses.wormholeRelayerAdapter
         );
-        voteCollection = MultichainVoteCollection(voteCollectionProxy);
+        voteCollection = MultichainVoteCollection(
+            addresses.voteCollectionProxy
+        );
 
         xwell.addBridge(
             MintLimits.RateLimitMidPointInfo({
@@ -205,5 +204,28 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         uint256 amountToStake = 2_000_000_000 * 1e18;
         xwell.approve(address(stkWell), amountToStake);
         stkWell.stake(address(this), amountToStake);
+    }
+
+    // helper functions
+
+    function getVoteCollectionProposalInformation(
+        uint256 proposalId
+    )
+        internal
+        view
+        returns (
+            IMultichainGovernor.ProposalInformation memory proposalInformation
+        )
+    {
+        (
+            proposalInformation.snapshotStartTimestamp,
+            proposalInformation.votingStartTime,
+            proposalInformation.endTimestamp,
+            proposalInformation.crossChainVoteCollectionEndTimestamp,
+            proposalInformation.totalVotes,
+            proposalInformation.forVotes,
+            proposalInformation.againstVotes,
+            proposalInformation.abstainVotes
+        ) = voteCollection.proposalInformation(proposalId);
     }
 }

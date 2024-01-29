@@ -47,9 +47,6 @@ interface IMultichainGovernor {
     /// @notice An event emitted when the proposal threshold is changed.
     event ProposalThresholdChanged(uint256 oldValue, uint256 newValue);
 
-    /// @notice An event emitted when the voting delay is changed.
-    event VotingDelayChanged(uint256 oldValue, uint256 newValue);
-
     /// @notice An event emitted when the voting period is changed.
     event VotingPeriodChanged(uint256 oldValue, uint256 newValue);
 
@@ -97,6 +94,11 @@ interface IMultichainGovernor {
     /// @param approved whether or not the calldata was approved or unapproved
     event CalldataApprovalUpdated(bytes data, bool approved);
 
+    /// @notice emitted when a proposal is rebroadcasted
+    /// @param proposalId the proposal id
+    /// @param data the calldata that was rebroadcasted
+    event ProposalRebroadcasted(uint256 proposalId, bytes data);
+
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
     //// --------------- Data Structures -------------- ////
@@ -105,23 +107,43 @@ interface IMultichainGovernor {
 
     /// @notice Possible states that a proposal may be in
     enum ProposalState {
-        Pending,
         Active,
         CrossChainVoteCollection,
         Canceled,
         Defeated,
         Succeeded,
-        Executed,
-        Invalid
+        Executed
+    }
+
+    struct ProposalInformation {
+        /// @notice Creator of the proposal
+        address proposer;
+        /// @notice The ordered list of calldata to be passed to each call
+        bytes[] calldatas;
+        /// @notice The timestamp at which vote snapshots are taken at
+        uint256 snapshotStartTimestamp;
+        /// @notice the timestamp at which users can begin voting
+        uint256 votingStartTime;
+        /// @notice The timestamp at which voting ends: votes must be cast prior to this time
+        uint256 endTimestamp;
+        /// @notice The timestamp at which cross chain voting collection ends:
+        /// votes must be registered prior to this time
+        uint256 crossChainVoteCollectionEndTimestamp;
+        /// @notice The block at which voting snapshot is taken: holders must have delegated their votes prior to this block
+        uint256 startBlock;
+        /// @notice Current number of votes in favor of this proposal
+        uint256 forVotes;
+        /// @notice Current number of votes in opposition to this proposal
+        uint256 againstVotes;
+        /// @notice Current number of votes in abstention to this proposal
+        uint256 abstainVotes;
+        /// @notice The total votes on a proposal.
+        uint256 totalVotes;
     }
 
     struct Proposal {
-        /// @notice Unique id for looking up a proposal
-        uint256 id;
         /// @notice Creator of the proposal
         address proposer;
-        /// @notice The timestamp that the proposal will be available for execution, set once the vote succeeds
-        uint256 eta;
         /// @notice the ordered list of target addresses for calls to be made
         address[] targets;
         /// @notice The ordered list of values (i.e. msg.value) to be passed to the calls to be made
@@ -137,7 +159,7 @@ interface IMultichainGovernor {
         /// @notice The timestamp at which cross chain voting collection ends:
         /// votes must be registered prior to this time
         uint256 crossChainVoteCollectionEndTimestamp;
-        /// @notice The block at which voting began: holders must have delegated their votes prior to this block
+        /// @notice The block at which voting snapshot is taken: holders must have delegated their votes prior to this block
         uint256 startBlock;
         /// @notice Current number of votes in favor of this proposal
         uint256 forVotes;
@@ -224,10 +246,7 @@ interface IMultichainGovernor {
     /// @dev Returns the voting period for a proposal to pass
     function votingPeriod() external view returns (uint256);
 
-    /// @dev Returns the voting delay before voting begins
-    function votingDelay() external view returns (uint256);
-
-    /// @dev Returns the cross chain voting period for a given proposal
+    /// @dev Returns the cross chain voting period
     function crossChainVoteCollectionPeriod() external view returns (uint256);
 
     /// @dev Returns the quorum for a proposal to pass
@@ -296,9 +315,6 @@ interface IMultichainGovernor {
 
     /// updates the voting period
     function updateVotingPeriod(uint256 newVotingPeriod) external;
-
-    /// updates the voting delay
-    function updateVotingDelay(uint256 newVotingDelay) external;
 
     /// updates the cross chain voting collection period
     function updateCrossChainVoteCollectionPeriod(

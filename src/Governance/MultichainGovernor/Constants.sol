@@ -49,4 +49,11 @@ library Constants {
 
     /// @notice maximum quorum value is 2.5b
     uint256 public constant MAX_QUORUM = 2_500_000_000 * 1e18;
+
+    /// @notice minimum gas limit for a proposal transaction,
+    /// ensures the governor cannot be bricked by a proposal
+    /// @notice if the opcode price increases suddenly without warning
+    /// on destination chains, this could brick this governance contract
+    /// and require the use of break glass transactions to fix
+    uint96 public constant MIN_GAS_LIMIT = 400_000;
 }
