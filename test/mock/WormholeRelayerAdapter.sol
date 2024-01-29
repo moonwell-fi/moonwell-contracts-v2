@@ -53,3 +53,15 @@ contract WormholeRelayerAdapter {
         targetChainRefundPerGasUnused = 0;
     }
 }
+
+contract WormholeRelayerAdapterRevert {
+    function sendPayloadToEvm(
+        uint16,
+        address,
+        bytes memory,
+        uint256,
+        uint256
+    ) external payable returns (uint64) {
+        revert("revert");
+    }
+}

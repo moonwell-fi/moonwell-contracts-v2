@@ -108,6 +108,7 @@ contract TestProposals is Test {
                 if (debug) {
                     (
                         string[] memory recordedNames,
+                        ,
                         address[] memory recordedAddresses
                     ) = addresses.getRecordedAddresses();
                     for (uint256 j = 0; j < recordedNames.length; j++) {

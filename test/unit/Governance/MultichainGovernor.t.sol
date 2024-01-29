@@ -604,12 +604,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         console.log("data");
         console.logBytes(data);
 
-        vm.mockCallRevert(
-            address(wormholeRelayerAdapter),
-            bridgeCost,
-            data,
-            "mock error"
-        );
+        vm.mockCallRevert(address(wormholeRelayerAdapter), data, "mock error");
 
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
