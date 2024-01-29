@@ -777,10 +777,8 @@ contract MultichainGovernor is
         ProposalState proposalState = state(proposalId);
 
         require(
-            proposalState != ProposalState.Canceled &&
-                proposalState != ProposalState.Defeated &&
-                proposalState != ProposalState.Executed,
-            "MultichainGovernor: cannot cancel executed, defeated or canceled proposal"
+            proposalState == ProposalState.Active,
+            "MultichainGovernor: cannot cancel non active proposal"
         );
 
         Proposal storage proposal = proposals[proposalId];
