@@ -13,6 +13,7 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Well} from "@protocol/Governance/Well.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     /// @notice reference to the mock wormhole trusted sender contract
@@ -154,7 +155,21 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             pauseDuration,
             pauseGuardian
         );
-        stkWell = deployStakedWell(xwellProxy);
+
+        address proxyAdmin = address(new ProxyAdmin());
+        (address stkWellProxy, ) = deployStakedWell(
+            address(xwellProxy),
+            address(xwellProxy),
+            1 days,
+            1 weeks,
+            address(this), // rewardsVault
+            address(this), // emissionManager
+            1 days, // distributionDuration
+            address(0), // governance
+            proxyAdmin // proxyAdmin
+        );
+
+        stkWell = IStakedWell(stkWellProxy);
 
         MultichainGovernor.InitializeData memory initData;
         initData.proposalThreshold = proposalThreshold;
@@ -175,7 +190,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             memory addresses = deployGovernorRelayerAndVoteCollection(
                 initData,
                 approvedCalldata,
-                address(0),
+                proxyAdmin, // proxyAdmin
                 moonbeamChainId, // wormhole moonbeam chain id
                 baseChainId, // wormhole base chain id
                 address(this) // voteCollectionOwner

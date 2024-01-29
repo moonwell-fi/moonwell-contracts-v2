@@ -2,7 +2,6 @@ pragma solidity 0.8.19;
 
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
-
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
@@ -131,22 +130,39 @@ contract MultichainGovernorDeploy is Test {
     }
 
     function deployStakedWell(
-        address xwellProxy
-    ) public returns (IStakedWell stkWell) {
-        uint256 cooldown = 1 days;
-        uint256 unstakePeriod = 3 days;
+        address stakedToken,
+        address rewardToken,
+        uint256 cooldownSeconds,
+        uint256 unstakeWindow,
+        address rewardsVault,
+        address emissionManager,
+        uint128 distributionDuration,
+        address governance,
+        address proxyAdmin
+    ) public returns (address proxy, address implementation) {
+        // deploy implementation
+        implementation = deployCode("StakedWell.sol:StakedWell");
 
-        address stakedWellAddress = deployCode("StakedWell.sol:StakedWell");
-        stkWell = IStakedWell(stakedWellAddress);
-        stkWell.initialize(
-            xwellProxy,
-            xwellProxy,
-            cooldown,
-            unstakePeriod,
-            address(this), // TODO check this
-            address(this), // TODO check this
-            1,
-            address(0)
+        // generate init calldata
+        bytes memory initData = abi.encodeWithSignature(
+            "initialize(address,address,uint256,uint256,address,address,uint128,address)",
+            stakedToken,
+            rewardToken,
+            cooldownSeconds,
+            unstakeWindow,
+            rewardsVault,
+            emissionManager,
+            distributionDuration,
+            governance
+        );
+
+        // deploy proxy
+        proxy = address(
+            new TransparentUpgradeableProxy(
+                implementation,
+                proxyAdmin,
+                initData
+            )
         );
     }
 }
