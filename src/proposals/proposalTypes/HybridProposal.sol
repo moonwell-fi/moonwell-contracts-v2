@@ -262,6 +262,11 @@ abstract contract HybridProposal is
         }
     }
 
+    /// @notice print out the proposal action steps and which chains they were run on
+    function printCalldata(Addresses) public override {
+        printProposalActionSteps();
+    }
+
     function run(Addresses addresses, address) public virtual override {
         /// pre-run verify hooks
         _verifyActionsPreRunHybrid(moonbeamActions);
