@@ -16,8 +16,6 @@ interface IMultichainVoteCollection {
         MultichainVotes votes;
         /// @notice Receipts of ballots for the entire set of voters
         mapping(address => Receipt) receipts;
-        /// @notice votes has been emitted to Moonbeam Governor
-        bool emitted;
     }
 
     /// @notice Ballot receipt record for a voter

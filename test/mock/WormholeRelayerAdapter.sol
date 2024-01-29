@@ -27,7 +27,8 @@ contract WormholeRelayerAdapter {
             payload,
             new bytes[](0),
             bytes32(uint256(uint160(msg.sender))),
-            chainId,
+            chainId == 16 ? 30 : 16, // flip chainId since this has to be the sender
+            // chain not the target chain
             bytes32(++nonce)
         );
 

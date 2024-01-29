@@ -12,7 +12,16 @@ import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 
-/// Upgradeable, constructor disables implementation
+/// @notice Upgradeable contract, constructor disables the implementation contract
+/// This contract is intentionally as minimal as possible. It is only responsible for
+/// collecting votes on chains external to Moonbeam and broadcasting them back to
+/// Moonbeam. It does not have any logic for executing proposals or storing calldata.
+/// While a proposal is in the Cross Chain Vote Collection phase, the vote counts can
+/// be emitted as many times as any user wants. This is to allow users to have their
+/// votes counted on the Moonbeam contract. The Multichain Governor contract on
+/// Moonbeam will only allow receiving of votes for each chaind id and proposal id
+/// once per proposal. This is to prevent votes from external chains being double
+/// counted.
 contract MultichainVoteCollection is
     IMultichainVoteCollection,
     WormholeBridgeBase,
@@ -31,7 +40,7 @@ contract MultichainVoteCollection is
     SnapshotInterface public stkWell;
 
     /// @notice Moonbeam Wormhole Chain Id
-    uint16 internal moonbeamWormholeChainId;
+    uint16 public moonbeamWormholeChainId;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -87,12 +96,14 @@ contract MultichainVoteCollection is
     /// @param _moonbeamGovernor address of the moonbeam governor contract
     /// @param _wormholeRelayer address of the wormhole relayer
     /// @param _moonbeamWormholeChainId chain id of the moonbeam chain
+    /// @param owner address of the owner of the contract
     function initialize(
         address _xWell,
         address _stkWell,
         address _moonbeamGovernor,
         address _wormholeRelayer,
-        uint16 _moonbeamWormholeChainId
+        uint16 _moonbeamWormholeChainId,
+        address owner
     ) external initializer {
         xWell = xWELL(_xWell);
         stkWell = SnapshotInterface(_stkWell);
@@ -102,6 +113,10 @@ contract MultichainVoteCollection is
         _addTargetAddress(_moonbeamWormholeChainId, _moonbeamGovernor);
 
         _addWormholeRelayer(_wormholeRelayer);
+
+        __Ownable_init();
+
+        _transferOwnership(owner); /// directly set the new owner without waiting for pending owner to accept
     }
 
     /// --------------------------------------------------------- ///
@@ -186,6 +201,8 @@ contract MultichainVoteCollection is
     /// @param proposalId the id of the proposal to vote on
     /// @param voteValue the value of the vote
     function castVote(uint256 proposalId, uint8 voteValue) external {
+        /// Checks
+
         MultichainProposal storage proposal = proposals[proposalId];
 
         /// Maintain require statments below pairing with the artemis governor behavior
@@ -221,6 +238,8 @@ contract MultichainVoteCollection is
         );
 
         require(userVotes != 0, "MultichainVoteCollection: voter has no votes");
+
+        /// Effects
 
         MultichainVotes storage votes = proposal.votes;
 
@@ -271,12 +290,6 @@ contract MultichainVoteCollection is
             "MultichainVoteCollection: proposal has no votes"
         );
 
-        /// Check if proposal have not been emitted yet
-        require(
-            !proposal.emitted,
-            "MultichainVoteCollection: votes already emitted"
-        );
-
         /// Check if proposal end time has passed
         require(
             proposal.votingEndTime < block.timestamp,
@@ -288,8 +301,6 @@ contract MultichainVoteCollection is
             proposal.crossChainVoteCollectionEndTimestamp >= block.timestamp,
             "MultichainVoteCollection: Voting collection phase has ended"
         );
-
-        proposal.emitted = true;
 
         _bridgeOut(
             moonbeamWormholeChainId,
@@ -310,12 +321,14 @@ contract MultichainVoteCollection is
     }
 
     /// @notice bridge proposals from moonbeam
-    /// @param sourceChain the chain id of the source chain
     /// @param payload the payload of the message, contains proposalId, votingStartTime, votingEndTime and voteCollectionEndTime
-    function _bridgeIn(
-        uint16 sourceChain,
-        bytes memory payload
-    ) internal override {
+    function _bridgeIn(uint16, bytes memory payload) internal override {
+        /// payload should be 5 uint256s
+        require(
+            payload.length == 160,
+            "MultichainVoteCollection: invalid payload length"
+        );
+
         /// Parse the payload and do the corresponding actions!
         (
             uint256 proposalId,
@@ -325,27 +338,28 @@ contract MultichainVoteCollection is
             uint256 crossChainVoteCollectionEndTimestamp
         ) = abi.decode(payload, (uint256, uint256, uint256, uint256, uint256));
 
-        require(
-            sourceChain == moonbeamWormholeChainId,
-            "MultichainVoteCollection: accepts only proposals from moonbeam"
-        );
-
         /// Ensure proposalId is unique
         require(
             proposals[proposalId].votingStartTime == 0,
-            "Proposal already exists"
+            "MultichainVoteCollection: proposal already exists"
+        );
+
+        /// Ensure votingSnapshotTime is less than votingStartTime
+        require(
+            votingSnapshotTime < votingStartTime,
+            "MultichainVoteCollection: snapshot time must be before start time"
         );
 
         /// Ensure votingStartTime is less than votingEndTime
         require(
             votingStartTime < votingEndTime,
-            "Start time must be before end time"
+            "MultichainVoteCollection: start time must be before end time"
         );
 
         /// Ensure votingEndTime is in the future
         require(
             votingEndTime > block.timestamp,
-            "End time must be in the future"
+            "MultichainVoteCollection: end time must be in the future"
         );
 
         /// Create the proposal
@@ -371,29 +385,13 @@ contract MultichainVoteCollection is
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
 
-    /// @notice remove trusted senders from external chains
-    /// @param _trustedSenders array of trusted senders to remove
-    function removeExternalChainConfig(
-        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
-    ) external onlyOwner {
-        _removeTargetAddresses(_trustedSenders);
-    }
-
-    /// @notice add trusted senders from external chains
-    /// @param _trustedSenders array of trusted senders to add
-    function addExternalChainConfig(
-        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
-    ) external onlyOwner {
-        _addTargetAddresses(_trustedSenders);
-    }
-
     /// @notice set a gas limit for the relayer on the external chain
     /// should only be called if there is a change in gas prices on the external chain
     /// @param newGasLimit new gas limit to set
     function setGasLimit(uint96 newGasLimit) external onlyOwner {
         require(
             newGasLimit >= Constants.MIN_GAS_LIMIT,
-            "MultichainGovernor: gas limit too low"
+            "MultichainVoteCollection: gas limit too low"
         );
 
         _setGasLimit(newGasLimit);

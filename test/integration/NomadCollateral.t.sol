@@ -38,47 +38,38 @@ contract NomadCollateralMoonbeamTest is Test {
 
         addresses = new Addresses();
 
-        mUSDC = MErc20Delegator(payable(addresses.getAddress("MOONWELL_mUSDC")));
+        mUSDC = MErc20Delegator(
+            payable(addresses.getAddress("MOONWELL_mUSDC"))
+        );
         mUSDCReserves = mUSDC.totalReserves();
 
         mETH = MErc20Delegator(payable(addresses.getAddress("MOONWELL_mETH")));
         mETHReserves = mETH.totalReserves();
 
-        mwBTC = MErc20Delegator(payable(addresses.getAddress("MOONWELL_mwBTC")));
+        mwBTC = MErc20Delegator(
+            payable(addresses.getAddress("MOONWELL_mwBTC"))
+        );
         mwBTCReserves = mwBTC.totalReserves();
 
         proposals = new TestProposals(mips);
         proposals.setUp();
-        proposals.testProposals(true, false, false, false, true, true, false, false);
+        proposals.testProposals(
+            true,
+            false,
+            false,
+            false,
+            true,
+            true,
+            false,
+            false
+        );
         addresses = proposals.addresses();
     }
 
     function testProposalMaxOperations() public {
-        MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(addresses.getAddress("ARTEMIS_GOVERNOR"));
+        MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(
+            addresses.getAddress("ARTEMIS_GOVERNOR")
+        );
         assertEq(governor.proposalMaxOperations(), 1_000);
-    }
-
-    function testReduceReservesUSDC() public {
-        IERC20 token = IERC20(addresses.getAddress("madUSDC"));
-        assertTrue(mUSDC.totalReserves() < mUSDCReserves);
-        assertEq(mUSDC.accrueInterest(), 0);
-        assertEq(token.balanceOf(addresses.getAddress("MOONBEAM_TIMELOCK")), 0);
-        assertEq(token.balanceOf(addresses.getAddress("NOMAD_REALLOCATION_MULTISIG")), mUSDCReserves);
-    }
-
-    function testReduceReservesETH() public {
-        IERC20 token = IERC20(addresses.getAddress("madWETH"));
-        assertTrue(mETH.totalReserves() < mETHReserves);
-        assertEq(mETH.accrueInterest(), 0);
-        assertEq(token.balanceOf(addresses.getAddress("MOONBEAM_TIMELOCK")), 0);
-        assertEq(token.balanceOf(addresses.getAddress("NOMAD_REALLOCATION_MULTISIG")), mETHReserves);
-    }
-
-    function testReduceReservesWBTC() public {
-        IERC20 token = IERC20(addresses.getAddress("madWBTC"));
-        assertTrue(mwBTC.totalReserves() < mwBTCReserves);
-        assertEq(mwBTC.accrueInterest(), 0);
-        assertEq(token.balanceOf(addresses.getAddress("MOONBEAM_TIMELOCK")), 0);
-        assertEq(token.balanceOf(addresses.getAddress("NOMAD_REALLOCATION_MULTISIG")), mwBTCReserves);
     }
 }

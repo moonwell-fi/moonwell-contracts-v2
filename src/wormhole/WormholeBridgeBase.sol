@@ -70,6 +70,23 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @param newGasLimit new gas limit
     event GasLimitUpdated(uint96 oldGasLimit, uint96 newGasLimit);
 
+    /// @notice emitted when a bridge out fails
+    /// @param dstChainId destination chain id to send tokens to
+    /// @param payload payload that failed to send
+    event BridgeOutFailed(uint16 dstChainId, bytes payload);
+
+    /// @notice event emitted when a bridge out succeeds
+    /// @param dstWormholeChainId destination wormhole chain id to send tokens to
+    /// @param gasLimit gas limit used to send tokens
+    /// @param dst destination address to send tokens to
+    /// @param payload payload that was sent
+    event BridgeOutSuccess(
+        uint16 dstWormholeChainId,
+        uint96 gasLimit,
+        address dst,
+        bytes payload
+    );
+
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
     /// ------------------------ HELPERS ------------------------
@@ -111,9 +128,10 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             "WormholeBridge: chain already added"
         );
 
+        /// this code should be unreachable
         require(
             _targetChains.add(chainId),
-            "WormholeBridge: chain already added"
+            "WormholeBridge: chain already added to set"
         );
 
         targetAddress[chainId] = addr;
@@ -160,6 +178,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// --------------------------------------------------------
     /// --------------------------------------------------------
 
+    /// @notice returns all target wormhole chain ids for this contract instance
     function getAllTargetChains() public view returns (uint16[] memory) {
         uint256 chainsLength = _targetChains.length();
         uint16[] memory chains = new uint16[](chainsLength);
@@ -175,15 +194,29 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     }
 
     /// @notice Estimate bridge cost to bridge out to a destination chain
-    /// @param dstChainId Destination chain id
+    /// @dev this function returns 0 if the quote fails.
+    /// in all other cases, the value returned should be non zero.
+    /// @param dstWormholeChainId Destination chain id
     function bridgeCost(
-        uint16 dstChainId
+        uint16 dstWormholeChainId
     ) public view returns (uint256 gasCost) {
-        (gasCost, ) = wormholeRelayer.quoteEVMDeliveryPrice(
-            dstChainId,
-            0,
-            gasLimit
-        );
+        try
+            wormholeRelayer.quoteEVMDeliveryPrice(
+                dstWormholeChainId,
+                0,
+                gasLimit
+            )
+        returns (uint256 cost, uint256) {
+            gasCost = cost;
+        } catch {
+            /// this is a bad situation, but we still want to allow the bridge out
+            /// so fail silently and set gasCost to 0.
+            /// Would like to emit an event here, but that would be a side affect
+            /// to the logs and cause this function to be non view.
+            /// the bridge out will most likely fail from this point out, however,
+            /// the proposal on Moonbeam will still be created.
+            gasCost = 0;
+        }
     }
 
     /// @notice Estimate bridge cost to bridge out to all chains
@@ -266,14 +299,25 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
 
         uint256 cost = bridgeCost(targetChain);
 
-        wormholeRelayer.sendPayloadToEvm{value: cost}(
-            targetChain,
-            targetAddress[targetChain],
-            payload,
-            0,
-            /// no receiver value allowed, only message passing
-            gasLimit
-        );
+        try
+            wormholeRelayer.sendPayloadToEvm{value: cost}(
+                targetChain,
+                targetAddress[targetChain],
+                payload,
+                0,
+                /// no receiver value allowed, only message passing
+                gasLimit
+            )
+        {
+            emit BridgeOutSuccess(
+                targetChain,
+                gasLimit,
+                targetAddress[targetChain],
+                payload
+            );
+        } catch {
+            emit BridgeOutFailed(targetChain, payload);
+        }
     }
 
     /// @notice callable only by the wormhole relayer
