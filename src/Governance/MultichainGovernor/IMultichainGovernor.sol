@@ -94,6 +94,11 @@ interface IMultichainGovernor {
     /// @param approved whether or not the calldata was approved or unapproved
     event CalldataApprovalUpdated(bytes data, bool approved);
 
+    /// @notice emitted when a proposal is rebroadcasted
+    /// @param proposalId the proposal id
+    /// @param data the calldata that was rebroadcasted
+    event ProposalRebroadcasted(uint256 proposalId, bytes data);
+
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
     //// --------------- Data Structures -------------- ////
