@@ -208,7 +208,7 @@ contract MultichainGovernorDeploy is Test {
             )
         );
 
-        (bool success, bytes memory returnData) = ecosystemReserveProxy.call(
+        (bool success, ) = ecosystemReserveProxy.call(
             abi.encodeWithSignature(
                 "initialize(address)",
                 ecosystemReserveControllerProxy
