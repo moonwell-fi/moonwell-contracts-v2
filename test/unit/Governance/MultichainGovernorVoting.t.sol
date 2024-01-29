@@ -17,6 +17,8 @@ import {IMultichainGovernor, MultichainGovernor} from "@protocol/Governance/Mult
 contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     event ProposalCanceled(uint256 proposalId);
 
+    event ProposalRebroadcasted(uint256 proposalId, bytes data);
+
     function setUp() public override {
         super.setUp();
 
@@ -254,6 +256,131 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         return proposalId;
     }
 
+    /// rebroadcasting
+
+    function testRebroadcastProposalSucceedsProposalActive() public {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        (
+            ,
+            uint256 voteSnapshotTimestamp,
+            uint256 votingStartTime,
+            uint256 endTimestamp,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
+
+        ) = governor.proposalInformation(proposalId);
+
+        bytes memory payload = abi.encode(
+            proposalId,
+            voteSnapshotTimestamp,
+            votingStartTime,
+            endTimestamp,
+            crossChainVoteCollectionEndTimestamp
+        );
+
+        uint256 cost = governor.bridgeCostAll();
+        vm.deal(address(this), cost);
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit ProposalRebroadcasted(proposalId, payload);
+
+        governor.rebroadcastProposal{value: cost}(proposalId);
+    }
+
+    function testRebroadcastProposalTwiceSucceedsProposalActive() public {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        (
+            ,
+            uint256 voteSnapshotTimestamp,
+            uint256 votingStartTime,
+            uint256 endTimestamp,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
+
+        ) = governor.proposalInformation(proposalId);
+
+        bytes memory payload = abi.encode(
+            proposalId,
+            voteSnapshotTimestamp,
+            votingStartTime,
+            endTimestamp,
+            crossChainVoteCollectionEndTimestamp
+        );
+
+        uint256 cost = governor.bridgeCostAll();
+        vm.deal(address(this), cost);
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit ProposalRebroadcasted(proposalId, payload);
+
+        governor.rebroadcastProposal{value: cost}(proposalId);
+
+        vm.deal(address(this), cost);
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit ProposalRebroadcasted(proposalId, payload);
+        governor.rebroadcastProposal{value: cost}(proposalId);
+    }
+
+    function testRebroadcastProposalFailsInvalidProposalId() public {
+        uint256 proposalId = 100;
+
+        vm.expectRevert("MultichainGovernor: invalid proposal id");
+        governor.rebroadcastProposal(proposalId);
+    }
+
+    function testRebroadcastProposalFailsProposalAfterXChainVoteCollection()
+        public
+    {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        uint256 cost = governor.bridgeCostAll();
+        vm.deal(address(this), cost);
+
+        vm.warp(
+            block.timestamp +
+                governor.votingPeriod() +
+                governor.crossChainVoteCollectionPeriod() +
+                1
+        );
+        vm.expectRevert("MultichainGovernor: invalid state");
+        governor.rebroadcastProposal{value: cost}(proposalId);
+    }
+
+    function testRebroadcastProposalFailsProposalDuringXChainVoteCollection()
+        public
+    {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        uint256 cost = governor.bridgeCostAll();
+        vm.deal(address(this), cost);
+
+        vm.warp(block.timestamp + governor.votingPeriod() + 1);
+        vm.expectRevert("MultichainGovernor: invalid state");
+        governor.rebroadcastProposal{value: cost}(proposalId);
+    }
+
+    function testRebroadcastProposalFailsNoValue() public {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        vm.expectRevert("WormholeBridge: total cost not equal to quote");
+        governor.rebroadcastProposal(proposalId);
+    }
+
+    function testRebroadcastProposalFailsIncorrectValue() public {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        uint256 cost = governor.bridgeCostAll() - 2012;
+        vm.deal(address(this), cost);
+
+        vm.expectRevert("WormholeBridge: total cost not equal to quote");
+        governor.rebroadcastProposal{value: cost}(proposalId);
+    }
+
     /// Voting on MultichainGovernor
 
     function testVotingValidProposalIdSucceeds()
@@ -295,6 +422,24 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         vm.expectRevert("MultichainGovernor: voter already voted");
         governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+    }
+
+    function testVotingXChainVoteCollectionPeriodFails()
+        public
+        returns (uint256 proposalId)
+    {
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        vm.warp(block.timestamp + governor.votingPeriod() + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            1,
+            "incorrect state, not in xchain vote collection period"
+        );
+
+        vm.expectRevert("MultichainGovernor: proposal not active");
+        governor.castVote(proposalId, 2);
     }
 
     function testVotingValidProposalIdInvalidVoteValueFails()
@@ -1425,7 +1570,43 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         governor.cancel(proposalId);
         assertEq(uint256(governor.state(proposalId)), 2, "incorrect state");
 
-        vm.expectRevert("MultichainGovernor: cannot cancel inactive proposal");
+        vm.expectRevert(
+            "MultichainGovernor: cannot cancel executed, defeated or canceled proposal"
+        );
+        governor.cancel(proposalId);
+    }
+
+    function testCancelSucceededProposalSucceeds() public {
+        uint256 proposalId = _createProposal();
+
+        governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+
+        _warpPastProposalEnd(proposalId);
+
+        assertEq(uint256(governor.state(proposalId)), 4, "incorrect state");
+
+        governor.cancel(proposalId);
+
+        assertEq(uint256(governor.state(proposalId)), 2, "incorrect state");
+
+        vm.expectRevert(
+            "MultichainGovernor: cannot cancel executed, defeated or canceled proposal"
+        );
+        governor.cancel(proposalId);
+    }
+
+    function testCancelDefeatedProposalFails() public {
+        uint256 proposalId = _createProposal();
+
+        governor.castVote(proposalId, Constants.VOTE_VALUE_NO);
+
+        _warpPastProposalEnd(proposalId);
+
+        assertEq(uint256(governor.state(proposalId)), 3, "incorrect state");
+
+        vm.expectRevert(
+            "MultichainGovernor: cannot cancel executed, defeated or canceled proposal"
+        );
         governor.cancel(proposalId);
     }
 
@@ -1716,6 +1897,36 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect num live proposals"
         );
         governor.cancel(proposalId);
+        assertEq(
+            governor.getUserLiveProposals(address(this)).length,
+            0,
+            "incorrect num live proposals"
+        );
+    }
+
+    function testGetUserLiveProposalsWithNonActiveProposals() public {
+        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        vm.warp(
+            block.timestamp +
+                governor.votingPeriod() +
+                governor.crossChainVoteCollectionPeriod() +
+                1
+        );
+
+        assertEq(
+            governor.getUserLiveProposals(address(this)).length,
+            0,
+            "incorrect num live proposals"
+        );
+
+        assertEq(uint256(governor.state(proposalId)), 3, "incorrect state");
+
+        vm.expectRevert(
+            "MultichainGovernor: cannot cancel executed, defeated or canceled proposal"
+        );
+        governor.cancel(proposalId);
+
         assertEq(
             governor.getUserLiveProposals(address(this)).length,
             0,
