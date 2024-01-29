@@ -123,6 +123,13 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.updateApprovedCalldata("", true);
     }
 
+    function testRemoveNonApprovedCalldataWhitelistedFails() public {
+        testUpdateApprovedCalldataGovernorSucceeds();
+        vm.prank(address(governor));
+        vm.expectRevert("MultichainGovernor: calldata not approved");
+        governor.updateApprovedCalldata(hex"00eeff", false);
+    }
+
     function testUpdateApprovedCalldataNonWhitelistedFails() public {
         vm.prank(address(governor));
         vm.expectRevert("MultichainGovernor: calldata not approved");
@@ -503,8 +510,6 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
 
-        //        vm.warp(block.timestamp + 1);
-
         vm.prank(governor.pauseGuardian());
         governor.pause();
 
@@ -599,7 +604,13 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         console.log("data");
         console.logBytes(data);
 
-        vm.mockCallRevert(address(wormholeRelayerAdapter), data, "");
+        vm.mockCallRevert(
+            address(wormholeRelayerAdapter),
+            bridgeCost,
+            data,
+            "mock error"
+        );
+
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
