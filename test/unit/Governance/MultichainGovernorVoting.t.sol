@@ -1571,12 +1571,12 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         assertEq(uint256(governor.state(proposalId)), 2, "incorrect state");
 
         vm.expectRevert(
-            "MultichainGovernor: cannot cancel executed, defeated or canceled proposal"
+            "MultichainGovernor: cannot cancel non active proposal"
         );
         governor.cancel(proposalId);
     }
 
-    function testCancelSucceededProposalSucceeds() public {
+    function testCancelSucceededProposalAfterProposalSucceeds() public {
         uint256 proposalId = _createProposal();
 
         governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
@@ -1585,12 +1585,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         assertEq(uint256(governor.state(proposalId)), 4, "incorrect state");
 
-        governor.cancel(proposalId);
-
-        assertEq(uint256(governor.state(proposalId)), 2, "incorrect state");
-
         vm.expectRevert(
-            "MultichainGovernor: cannot cancel executed, defeated or canceled proposal"
+            "MultichainGovernor: cannot cancel non active proposal"
         );
         governor.cancel(proposalId);
     }
@@ -1605,7 +1601,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         assertEq(uint256(governor.state(proposalId)), 3, "incorrect state");
 
         vm.expectRevert(
-            "MultichainGovernor: cannot cancel executed, defeated or canceled proposal"
+            "MultichainGovernor: cannot cancel non active proposal"
         );
         governor.cancel(proposalId);
     }
@@ -1874,33 +1870,24 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     function testGetUserLiveProposals() public {
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
 
-        (
-            ,
-            ,
-            ,
-            ,
-            uint256 crossChainVoteCollectionEndTimestamp,
-            ,
-            ,
-            ,
-
-        ) = governor.proposalInformation(proposalId);
-
-        // set vm to crosschain collection period
-        vm.warp(crossChainVoteCollectionEndTimestamp);
-
-        assertEq(uint256(governor.state(proposalId)), 1, "incorrect state");
+        assertEq(uint256(governor.state(proposalId)), 0, "incorrect state");
 
         assertEq(
             governor.getUserLiveProposals(address(this))[0],
             proposalId,
-            "incorrect num live proposals"
+            "incorrect live proposal at index 0"
+        );
+        assertEq(
+            governor.getUserLiveProposals(address(this)).length,
+            1,
+            "incorrect num live proposals pre cancellation"
         );
         governor.cancel(proposalId);
+
         assertEq(
             governor.getUserLiveProposals(address(this)).length,
             0,
-            "incorrect num live proposals"
+            "incorrect num live proposals post cancellation"
         );
     }
 
@@ -1923,7 +1910,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         assertEq(uint256(governor.state(proposalId)), 3, "incorrect state");
 
         vm.expectRevert(
-            "MultichainGovernor: cannot cancel executed, defeated or canceled proposal"
+            "MultichainGovernor: cannot cancel non active proposal"
         );
         governor.cancel(proposalId);
 
