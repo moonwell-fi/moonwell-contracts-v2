@@ -226,15 +226,6 @@ contract MultichainGovernor is
         _;
     }
 
-    /// @notice modifier to restrict function access to only trusted senders
-    modifier onlyTrustedSender(uint16 chainId, address sender) {
-        require(
-            isTrustedSender(chainId, sender),
-            "MultichainGovernor: only trusted sender"
-        );
-        _;
-    }
-
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
     /// -------------------- VIEW FUNCTIONS --------------------- ///
@@ -392,6 +383,10 @@ contract MultichainGovernor is
     /// @notice returns the number of live proposals a user has
     /// a proposal is considered live if it is active or in
     /// cross chain vote collection period
+    /// If canceled it is not considered counted as a live proposal
+    /// If succeeded it is not considered counted as a live proposal as it could be executed at any time
+    /// If failed it is not considered counted as a live proposal as it can never be executed
+    /// If executed it is not considered counted as a live proposal as it can never be executed again
     /// @param user The address of the user to check
     function currentUserLiveProposals(
         address user
@@ -553,19 +548,22 @@ contract MultichainGovernor is
         }
     }
 
-    /// ---------------------------------------------- ////
-    /// ---------------------------------------------- ////
-    /// ------------- Permisslionless ---------------- ////
-    /// ---------------------------------------------- ////
-    /// ---------------------------------------------- ////
+    /// ---------------------------------------------- ///
+    /// ---------------------------------------------- ///
+    /// ------------- Permisslionless ---------------- ///
+    /// ---------------------------------------------- ///
+    /// ---------------------------------------------- ///
 
     /// @notice allows for re-broadcasting of a proposal in case the
     /// wormhole relayer or wormhole core contract is paused.
     /// @dev can only be called if the proposal is in the active state
     /// @param proposalId the id of the proposal to rebroadcast
-    function rebroadcastProposal(uint256 proposalId) external {
+    function rebroadcastProposal(uint256 proposalId) external payable {
         ProposalState proposalState = state(proposalId);
-        require(proposalState == ProposalState.Active, "invalid state");
+        require(
+            proposalState == ProposalState.Active,
+            "MultichainGovernor: invalid state"
+        );
 
         Proposal storage proposal = proposals[proposalId];
 
@@ -578,6 +576,8 @@ contract MultichainGovernor is
         );
 
         _bridgeOutAll(payload);
+
+        emit ProposalRebroadcasted(proposalId, payload);
     }
 
     /// @dev Returns the proposal ID for the proposed proposal
@@ -755,11 +755,17 @@ contract MultichainGovernor is
     }
 
     /// @dev callable only by the proposer, cancels proposal if it has not been executed
-    ///  cancellation is allowed in these flows:
+    ///  cancellation is allowed in either of these flows:
     ///  - proposer cancels
     ///  - permissionless cancel, user voting power currently drops below threshold
-    /// If proposal threshold is increased in an active governance proposal, and a user has proposed
-    /// when they met the old proposal threshold, but not the new one, then anyone can cancel their proposal
+    /// and
+    /// proposal is in one of the following states:
+    /// - succeeded
+    /// - active
+    /// - cross chain vote collection period
+    /// Edge Case:
+    ///   If proposal threshold is increased in an active governance proposal, and a user has proposed
+    /// when they met the old proposal threshold, but not the new one, then anyone can cancel their proposal.
     function cancel(uint256 proposalId) external override {
         require(
             msg.sender == proposals[proposalId].proposer ||
@@ -771,9 +777,10 @@ contract MultichainGovernor is
         ProposalState proposalState = state(proposalId);
 
         require(
-            proposalState == ProposalState.Active ||
-                proposalState == ProposalState.CrossChainVoteCollection,
-            "MultichainGovernor: cannot cancel inactive proposal"
+            proposalState != ProposalState.Canceled &&
+                proposalState != ProposalState.Defeated &&
+                proposalState != ProposalState.Executed,
+            "MultichainGovernor: cannot cancel executed, defeated or canceled proposal"
         );
 
         Proposal storage proposal = proposals[proposalId];
@@ -913,13 +920,26 @@ contract MultichainGovernor is
 
     /// @notice only callable by the pause guardian when not paused
     /// automatically cancels all in flight proposals
+    /// any proposal that is in an active, vote collection, succeeded or defeated state will be canceled
     function pause() public override {
         super.pause();
 
         uint256[] memory allProposals = _liveProposals.values();
 
         for (uint256 i = 0; i < allProposals.length; ) {
-            if (proposalActive(allProposals[i])) {
+            ProposalState proposalState = state(allProposals[i]);
+            /// if proposal isn't canceled or executed, cancel it
+            /// if proposal is in the active state, it could be Succeeded once xchain vote collection period ends
+            /// if proposal is in the CrossChainVoteCollection state, it could be Succeeded on this period ends
+            /// if proposal is in the Succeeded state, it could be executed or cancelled
+            /// if proposal is in the Defeated state, it cannot be executed, so it can not be cancelled
+            /// if proposal is in the Canceled state, it cannot be executed or cancelled
+            /// if proposal is in the Executed state, it cannot be executed or cancelled
+            if (
+                proposalState != ProposalState.Executed &&
+                proposalState != ProposalState.Defeated &&
+                proposalState != ProposalState.Canceled
+            ) {
                 proposals[allProposals[i]].canceled = true;
 
                 emit ProposalCanceled(allProposals[i]);
