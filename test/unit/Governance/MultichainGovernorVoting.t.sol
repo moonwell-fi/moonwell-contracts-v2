@@ -19,6 +19,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
     event ProposalRebroadcasted(uint256 proposalId, bytes data);
 
+    event BridgeOutFailed(uint16 chainId, bytes payload);
+
     function setUp() public override {
         super.setUp();
 
@@ -257,6 +259,63 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     }
 
     /// rebroadcasting
+    function testProposeWormholeBroadcastingFailsProposeCreationStillSucceed()
+        public
+        returns (uint256)
+    {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 startTimestamp = block.timestamp;
+        uint256 endTimestamp = startTimestamp + governor.votingPeriod();
+        bytes memory payload = abi.encode(
+            1,
+            startTimestamp - 1,
+            startTimestamp,
+            endTimestamp,
+            endTimestamp + governor.crossChainVoteCollectionPeriod()
+        );
+
+        wormholeRelayerAdapter.setShouldRevert(true);
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BridgeOutFailed(baseChainId, payload);
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        uint256[] memory proposals = governor.liveProposals();
+
+        bool proposalFound;
+
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (proposals[i] == proposalId) {
+                proposalFound = true;
+                break;
+            }
+        }
+
+        assertTrue(proposalFound, "proposal not found in live proposals");
+
+        return proposalId;
+    }
 
     function testRebroadcastProposalSucceedsProposalActive() public {
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();

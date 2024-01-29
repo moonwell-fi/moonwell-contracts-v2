@@ -8,6 +8,12 @@ import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 contract WormholeRelayerAdapter {
     uint256 public nonce;
 
+    bool public shouldRevert;
+
+    function setShouldRevert(bool _shouldRevert) external {
+        shouldRevert = _shouldRevert;
+    }
+
     /// @notice Publishes an instruction for the default delivery provider
     /// to relay a payload to the address `targetAddress`
     /// `targetAddress` must implement the IWormholeReceiver interface
@@ -22,6 +28,9 @@ contract WormholeRelayerAdapter {
         uint256, /// shhh
         uint256 /// shhh
     ) external payable returns (uint64) {
+        if (shouldRevert) {
+            revert("revert");
+        }
         /// immediately call the target
         IWormholeReceiver(targetAddress).receiveWormholeMessages(
             payload,
@@ -51,5 +60,17 @@ contract WormholeRelayerAdapter {
     {
         nativePriceQuote = 0.01 ether;
         targetChainRefundPerGasUnused = 0;
+    }
+}
+
+contract WormholeRelayerAdapterRevert {
+    function sendPayloadToEvm(
+        uint16,
+        address,
+        bytes memory,
+        uint256,
+        uint256
+    ) external payable returns (uint64) {
+        revert("revert");
     }
 }

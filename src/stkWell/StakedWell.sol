@@ -15,6 +15,8 @@ contract StakedWell is StakedToken {
     string internal constant SYMBOL = "stkWELL";
     uint8 internal constant DECIMALS = 18;
 
+    constructor() public initializer {}
+
     /**
      * @dev Called by the proxy contract
      **/

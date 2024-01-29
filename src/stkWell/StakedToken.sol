@@ -56,12 +56,6 @@ contract StakedToken is
 
     event Cooldown(address indexed user);
 
-    // TODO add this back once figuring out about upgreadable on ERC20WithSnapshot
-    /// @notice logic contract cannot be initialized
-    //    constructor() public {
-    //        _disableInitializers();
-    //    }
-
     function __StakedToken_init(
         IERC20 stakedToken,
         IERC20 rewardToken,
