@@ -267,7 +267,7 @@ abstract contract HybridProposal is
         printProposalActionSteps();
     }
 
-    function run(Addresses addresses, address) public virtual override {
+    function run(Addresses, address) public virtual override {
         /// pre-run verify hooks
         _verifyActionsPreRunHybrid(moonbeamActions);
 
