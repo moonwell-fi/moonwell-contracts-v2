@@ -105,14 +105,14 @@ contract MultichainVoteCollection is
     /// @param _moonbeamGovernor address of the moonbeam governor contract
     /// @param _wormholeRelayer address of the wormhole relayer
     /// @param _moonbeamWormholeChainId chain id of the moonbeam chain
-    /// @param owner address of the owner of the contract
+    /// @param _owner address of the contract
     function initialize(
         address _xWell,
         address _stkWell,
         address _moonbeamGovernor,
         address _wormholeRelayer,
         uint16 _moonbeamWormholeChainId,
-        address owner
+        address _owner
     ) external initializer {
         xWell = xWELL(_xWell);
         stkWell = SnapshotInterface(_stkWell);
@@ -125,7 +125,7 @@ contract MultichainVoteCollection is
 
         __Ownable_init();
 
-        _transferOwnership(owner); /// directly set the new owner without waiting for pending owner to accept
+        _transferOwnership(_owner); /// directly set the new owner without waiting for pending owner to accept
     }
 
     /// --------------------------------------------------------- ///
