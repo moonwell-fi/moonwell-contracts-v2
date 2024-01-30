@@ -2,14 +2,18 @@ pragma solidity 0.8.19;
 
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
-import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
-import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
-import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
-import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+
 import "@forge-std/Test.sol";
 
+import {IStakedWell} from "@protocol/IStakedWell.sol";
+import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
+import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
+
+/// Helper contract to deploy MultichainGovernor, MultichainVoteCollection,
+/// Ecosystem Reserve, Ecosystem Reserve Controller and StakedWell contracts
 contract MultichainGovernorDeploy is Test {
     function deployMultichainGovernor(
         address proxyAdmin
