@@ -7,16 +7,9 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 
-/// Proposal to run on Moonbeam to create the Multichain Governor
+/// Proposal to run on Moonbeam to create the Multichain Governor contract
 contract mipm18a is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18A";
-
-    constructor() {
-        // bytes memory proposalDescription = abi.encodePacked(
-        //     vm.readFile("./src/proposals/mips/mip-m18/MIP-M18.md")
-        // );
-        // _setProposalDescription(proposalDescription);
-    }
 
     function deploy(Addresses addresses, address) public override {
         address proxyAdmin = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
