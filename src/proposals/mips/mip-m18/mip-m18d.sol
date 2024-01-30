@@ -16,7 +16,7 @@ import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
-contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
+contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
     string public constant name = "MIP-M18D";
 
     /// @notice whitelisted calldata for the break glass guardian
@@ -102,6 +102,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
     function afterDeploySetup(Addresses addresses) public override {}
 
+    /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
         address multichainGovernorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR"
@@ -476,6 +477,6 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             "COMPTROLLER pending admin incorrect"
         );
 
-        /// TODO validate pending admin
+        /// TODO validate stkWELL emissions manager is correct and now multichain governor
     }
 }
