@@ -2331,4 +2331,47 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
     }
+
+    function testUserCanCreateAsManyProposalWantsAsLongNeverExceedsMaxUserLiveProposals()
+        public
+    {
+        for (uint256 i = 0; i < 5; i++) {
+            testProposeUpdateProposalThresholdSucceeds();
+        }
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            5,
+            "incorrect num live proposals"
+        );
+
+        uint256 maxUserLiveProposals = governor.maxUserLiveProposals();
+        console.log("maxUserLiveProposals", maxUserLiveProposals);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory description = "Mock Proposal MIP-M00";
+
+        vm.expectRevert(
+            "MultichainGovernor: too many live proposals for this user"
+        );
+        governor.propose(targets, values, calldatas, description);
+
+        governor.cancel(1);
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            4,
+            "incorrect num live proposals"
+        );
+
+        testProposeUpdateProposalThresholdSucceeds();
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            5,
+            "incorrect num live proposals"
+        );
+    }
 }
