@@ -25,9 +25,24 @@
         "name": "COMPTROLLER"
     },
     {
+        "addr": "0x5402447a0db03EeE98c98b924F7d346bd19cdD17",
+        "chainId": 1284,
+        "name": "BREAK_GLASS_GUARDIAN"
+    },
+    {
+        "addr": "0xCa889f40aae37FFf165BccF69aeF1E82b5C511B9",
+        "chainId": 1284,
+        "name": "ECOSYSTEM_RESERVE_CONTROLLER"
+    },
+    {
         "addr": "0xfc4DFB17101A12C5CEc5eeDd8E92B5b16557666d",
         "chainId": 1284,
         "name": "ARTEMIS_GOVERNOR"
+    },
+    {
+        "addr": "0x3a9249d70dCb4A4E9ef4f3AF99a3A130452ec19B",
+        "chainId": 1284,
+        "name": "ARTEMIS_TIMELOCK"
     },
     {
         "addr": "0xb0eE65140C89a24Db5931D7DDF2c2a7c6f1d9f5B",
@@ -567,7 +582,7 @@
     {
         "addr": "0x7793E08Eb4525309C46C9BA394cE33361A167ba4",
         "chainId": 1284,
-        "name": "ECOSYSTEM_RESERVE_CONTROLLER"
+        "name": "ECOSYSTEM_RESERVE"
     },
     {
         "addr": "0xb536c1F9A157B263B70A9a35705168ACC0271742",
