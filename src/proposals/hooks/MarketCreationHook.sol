@@ -72,7 +72,7 @@ contract MarketCreationHook {
     /// proposal conforms to the expected market creation pattern.
     function _verifyActionsPreRun(
         address[] memory targets,
-        uint256[] memory values,
+        uint256[] memory,
         bytes[] memory datas
     ) internal {
         uint256 proposalLength = targets.length;
