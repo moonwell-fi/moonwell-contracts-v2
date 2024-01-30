@@ -5,6 +5,7 @@ import "@forge-std/Test.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IHybridProposal} from "@proposals/proposalTypes/IHybridProposal.sol";
+import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 
 /// @notice this is a proposal type to be used for proposals that
@@ -16,6 +17,7 @@ import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 /// to switch between forks.
 abstract contract HybridProposal is
     IHybridProposal,
+    IMultichainProposal,
     MarketCreationHook,
     Proposal
 {
@@ -30,6 +32,12 @@ abstract contract HybridProposal is
 
     /// @notice actions to run against contracts live on base
     ProposalAction[] public baseActions;
+
+    /// @notice fork ID for base
+    uint256 public baseForkId;
+
+    /// @notice fork ID for moonbeam
+    uint256 public moonbeamForkId;
 
     /// @notice hex encoded description of the proposal
     bytes public PROPOSAL_DESCRIPTION;
@@ -260,6 +268,22 @@ abstract contract HybridProposal is
 
             console.log("\n");
         }
+    }
+
+    function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) external {
+        require(
+            baseForkId == 0 && moonbeamForkId == 0,
+            "setForkIds: fork IDs already set"
+        );
+        require(
+            _baseForkId != _moonbeamForkId,
+            "setForkIds: fork IDs cannot be the same"
+        );
+
+        baseForkId = _baseForkId;
+        moonbeamForkId = _moonbeamForkId;
+
+        /// no events as this is tooling and never deployed onchain
     }
 
     /// @notice print out the proposal action steps and which chains they were run on
