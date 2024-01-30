@@ -47,6 +47,7 @@ contract MultichainVoteCollection is
     /// ----------------------- MAPPINGS ------------------------
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
+
     /// @notice mapping from proposalId to MultichainProposal
     mapping(uint256 proposalId => MultichainProposal) public proposals;
 
@@ -57,6 +58,10 @@ contract MultichainVoteCollection is
     /// --------------------------------------------------------- ///
 
     /// @notice An event emitted when a proposal is created
+    /// @param proposalId the id of the proposal
+    /// @param votingStartTime the timestamp when voting starts
+    /// @param votingEndTime the timestamp when voting ends
+    /// @param votingCollectionEndTime the timestamp when voting collection ends
     event ProposalCreated(
         uint256 proposalId,
         uint256 votingStartTime,
@@ -77,6 +82,10 @@ contract MultichainVoteCollection is
     );
 
     /// @notice event emitted when a vote has been cast on a proposal
+    /// @param voter the address of the voter
+    /// @param proposalId the id of the proposal
+    /// @param voteValue the value of the vote
+    /// @param votes the number of votes cast
     event VoteCast(
         address voter,
         uint256 proposalId,
