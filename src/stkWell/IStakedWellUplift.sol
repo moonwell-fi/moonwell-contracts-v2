@@ -1,6 +1,8 @@
 pragma solidity 0.8.19;
 
 interface IStakedWellUplift {
+    function EMISSION_MANAGER() external view returns (address);
+
     function STAKED_TOKEN() external view returns (address);
 
     function REWARD_TOKEN() external view returns (address);
