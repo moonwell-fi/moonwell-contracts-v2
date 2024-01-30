@@ -30,6 +30,9 @@ contract ChainIds {
     uint256 public constant goerliChainId = 5;
     uint16 public constant goerliWormholeChainId = 2;
 
+    /// ------------ LOCAL ------------
+    uint256 public constant localChainId = 31337;
+
     /// @notice map a sending chain id to a wormhole chain id
     /// this way during a deployment, we can know which governance contract should own this deployment
     mapping(uint256 => uint16) public chainIdToWormHoleId;
@@ -43,13 +46,15 @@ contract ChainIds {
     constructor() {
         chainIdToWormHoleId[sepoliaChainId] = goerliWormholeChainId; /// sepolia deployment is owned by goerli
         chainIdToWormHoleId[baseGoerliChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
-        
+
         chainIdToWormHoleId[baseChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
         chainIdToWormHoleId[moonBeamChainId] = baseWormholeChainId; /// moonbeam goes to base
 
         sendingChainIdToReceivingChainId[baseGoerliChainId] = moonBaseChainId; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
         sendingChainIdToReceivingChainId[baseChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking base, and sending from moonbeam
         sendingChainIdToReceivingChainId[moonBeamChainId] = baseChainId;
+
+        sendingChainIdToReceivingChainId[localChainId] = localChainId; // unit tests
 
         chainIdTemporalGovTimelock[baseGoerliChainId] = 0; /// no wait on testnet
         chainIdTemporalGovTimelock[baseChainId] = 1 days;

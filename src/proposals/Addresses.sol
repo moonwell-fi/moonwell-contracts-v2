@@ -101,17 +101,20 @@ contract Addresses is IAddresses, Test {
 
         addr = _addresses[name][_chainId];
 
-        require(
-            addr != address(0),
-            string(
-                abi.encodePacked(
-                    "Address: ",
-                    name,
-                    " not set on chain: ",
-                    _chainId.toString()
+        // ignore localnet
+        if (_chainId != 31337) {
+            require(
+                addr != address(0),
+                string(
+                    abi.encodePacked(
+                        "Address: ",
+                        name,
+                        " not set on chain: ",
+                        _chainId.toString()
+                    )
                 )
-            )
-        );
+            );
+        }
     }
 
     /// @notice get an address for the current chainId
