@@ -51,6 +51,11 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice duration of the cross chain vote collection period
     uint256 public constant crossChainVoteCollectionPeriod = 1 days;
 
+    /// @notice proposal's actions mostly happen on moonbeam
+    function primaryForkId() public view override returns (uint256) {
+        return moonbeamForkId;
+    }
+
     function deploy(Addresses, address) public override {}
 
     function afterDeploy(Addresses addresses, address) public override {
@@ -460,7 +465,5 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             governor,
             "COMPTROLLER admin incorrect"
         );
-
-        /// TODO validate pending admin
     }
 }

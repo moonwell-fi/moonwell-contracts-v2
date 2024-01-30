@@ -47,7 +47,17 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice duration of the cross chain vote collection period
     uint256 public constant crossChainVoteCollectionPeriod = 1 days;
 
+    /// @notice proposal's actions all happen on moonbeam
+    function primaryForkId() public view override returns (uint256) {
+        return moonbeamForkId;
+    }
+
     function buildCalldata(Addresses addresses) private {
+        require(
+            temporalGovernanceTargets.length == 0,
+            "calldata already set in mip-18-c"
+        );
+
         address artemisTimelock = addresses.getAddress("ARTEMIS_TIMELOCK");
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
@@ -122,9 +132,11 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
         MultichainGovernor governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
+
+        /// executing proposal on moonbeam, but this proposal needs an address from base
         address multichainVoteCollection = addresses.getAddress(
             "VOTE_COLLECTION_PROXY",
-            chainIdToWormHoleId[block.chainid] /// TODO triple check this
+            sendingChainIdToReceivingChainId[block.chainid]
         );
 
         WormholeTrustedSender.TrustedSender[]
@@ -165,13 +177,13 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
         governor.initialize(initData, trustedSenders, approvedCalldata);
     }
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function afterDeploySetup(Addresses) public override {}
 
-    function build(Addresses addresses) public override {}
+    function build(Addresses) public override {}
 
-    function teardown(Addresses addresses, address) public pure override {}
+    function teardown(Addresses, address) public pure override {}
 
-    function run(Addresses addresses, address) public override {
+    function run(Addresses, address) public override {
         /// @dev enable debugging
     }
 
@@ -260,7 +272,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 chainIdToWormHoleId[block.chainid],
                 addresses.getAddress(
                     "VOTE_COLLECTION_PROXY",
-                    chainIdToWormHoleId[block.chainid]
+                    sendingChainIdToReceivingChainId[block.chainid]
                 )
             ),
             "incorrect cross chain vote collector"
@@ -270,7 +282,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 chainIdToWormHoleId[block.chainid],
                 addresses.getAddress(
                     "VOTE_COLLECTION_PROXY",
-                    chainIdToWormHoleId[block.chainid]
+                    sendingChainIdToReceivingChainId[block.chainid]
                 )
             ),
             "vote collection proxy not trusted sender"

@@ -16,6 +16,8 @@ import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
+/// After this proposal, the Temporal Governor will have 2 admins, the
+/// Multichain Governor and the Artemis Timelock
 contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
     string public constant name = "MIP-M18D";
 
@@ -51,6 +53,11 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice duration of the cross chain vote collection period
     uint256 public constant crossChainVoteCollectionPeriod = 1 days;
 
+    /// @notice proposal's actions mostly happen on moonbeam
+    function primaryForkId() public view override returns (uint256) {
+        return moonbeamForkId;
+    }
+
     function deploy(Addresses, address) public override {}
 
     function afterDeploy(Addresses addresses, address) public override {
@@ -59,7 +66,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
         address multichainVoteCollection = addresses.getAddress(
             "VOTE_COLLECTION_PROXY",
-            chainIdToWormHoleId[block.chainid] /// TODO triple check this
+            sendingChainIdToReceivingChainId[block.chainid] /// TODO triple check this
         );
 
         WormholeTrustedSender.TrustedSender[]
@@ -107,13 +114,6 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
         address multichainGovernorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR"
         );
-        // bytes memory wormholeTemporalGovPayload = abi.encodeWithSignature(
-        //     "publishMessage(uint32,bytes,uint8)",
-        //     nonce,
-        //     temporalGovCalldata,
-        //     consistencyLevel
-        // );
-        /// TODO add multichain governor as wormhole trusted sender in temporal governor
 
         /// Moonbeam actions
 
@@ -131,13 +131,13 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
         /// TODO refactor this out
         /// add the multichain governor as a trusted sender in the wormhole bridge adapter on base
         _pushHybridAction(
-            addresses.getAddress("WORMHOLE_CORE"),
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
             abi.encodeWithSignature(
-                "publishMessage(address)",
-                multichainGovernorAddress
+                "setTrustedSenders((uint16,address)[])",
+                temporalGovernanceTrustedSenders
             ),
             "Set the admin of the Wormhole Bridge Adapter to the multichain governor",
-            true
+            false
         );
 
         /// transfer ownership of proxy admin to the multichain governor
@@ -476,7 +476,5 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
             governor,
             "COMPTROLLER pending admin incorrect"
         );
-
-        /// TODO validate stkWELL emissions manager is correct and now multichain governor
     }
 }

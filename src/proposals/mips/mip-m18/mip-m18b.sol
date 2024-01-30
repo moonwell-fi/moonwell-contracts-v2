@@ -6,6 +6,7 @@ import "@forge-std/Test.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
+import {validateProxy} from "@protocol/proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
@@ -13,6 +14,11 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 
 /// Proposal to run on Base to create the Multichain Vote Collection Contract
+/// As well as the Ecosystem Reserve and Ecosystem Reserve Controller.
+/// The Ecosystem Reserve Controller will be the owner of the Ecosystem Reserve
+/// The Ecosystem Reserve custodies the xWELL that is used to pay rewards for
+/// the safety module (stkWELL).
+/// All contracts deployed are proxies.
 contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice deployment of the Multichain Vote Collection Contract to Base
     string public constant name = "MIP-M18B";
@@ -30,16 +36,16 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice approval amount for ecosystem reserve to give stkWELL in xWELL xD
     uint256 public constant approvalAmount = 5_000_000_000 * 1e18;
 
-    /// @notice slot for the Proxy Admin
-    bytes32 _ADMIN_SLOT =
-        0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-
-    /// @notice slot for the implementation address
-    bytes32 _IMPLEMENTATION_SLOT =
-        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
 
     function deploy(Addresses addresses, address) public override {
-        address proxyAdmin = addresses.getAddress("PROXY_ADMIN");
+        address proxyAdmin = addresses.getAddress(
+            "MRD_PROXY_ADMIN",
+            baseChainId
+        );
 
         /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
         (
@@ -63,9 +69,6 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
             ecosystemReserveControllerImplementation
         );
 
-        /// TODO check on these parameters, change `deployStakedWell` function to make temporal gov owner
-        /// TODO should pass in the proxy admin here
-        /// TODO should receive back both an impl, and a proxy
         {
             (address stkWellProxy, address stkWellImpl) = deployStakedWell(
                 addresses.getAddress("xWELL_PROXY"),
@@ -120,68 +123,44 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
     }
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function afterDeploySetup(Addresses) public override {}
 
-    function build(Addresses addresses) public override {}
+    function build(Addresses) public override {}
 
-    function teardown(Addresses addresses, address) public pure override {}
+    function teardown(Addresses, address) public pure override {}
 
-    function run(Addresses addresses, address) public override {}
-
-    function _validateProxy(
-        address proxy,
-        address logic,
-        address admin,
-        string memory error
-    ) internal {
-        {
-            bytes32 data = vm.load(proxy, _ADMIN_SLOT);
-
-            assertEq(
-                bytes32(uint256(uint160(admin))),
-                data,
-                string(abi.encodePacked(error, " admin not set correctly"))
-            );
-        }
-
-        {
-            bytes32 data = vm.load(proxy, _IMPLEMENTATION_SLOT);
-
-            assertEq(
-                bytes32(uint256(uint160(logic))),
-                data,
-                string(
-                    abi.encodePacked(error, " logic contract not set correctly")
-                )
-            );
-        }
-    }
+    /// nothing to run
+    function run(Addresses, address) public override {}
 
     function validate(Addresses addresses, address) public override {
         /// proxy validation
         {
-            _validateProxy(
+            validateProxy(
+                vm,
                 addresses.getAddress("VOTE_COLLECTION_PROXY"),
                 addresses.getAddress("VOTE_COLLECTION_IMPL"),
-                addresses.getAddress("PROXY_ADMIN"),
+                addresses.getAddress("MRD_PROXY_ADMIN"),
                 "vote collection validation"
             );
-            _validateProxy(
+            validateProxy(
+                vm,
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"),
                 addresses.getAddress("ECOSYSTEM_RESERVE_IMPL"),
-                addresses.getAddress("PROXY_ADMIN"),
+                addresses.getAddress("MRD_PROXY_ADMIN"),
                 "ecosystem reserve validation"
             );
-            _validateProxy(
+            validateProxy(
+                vm,
                 addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER_PROXY"),
                 addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER_IMPL"),
-                addresses.getAddress("PROXY_ADMIN"),
+                addresses.getAddress("MRD_PROXY_ADMIN"),
                 "ecosystem reserve controller validation"
             );
-            _validateProxy(
+            validateProxy(
+                vm,
                 addresses.getAddress("stkWELL_PROXY"),
                 addresses.getAddress("stkWELL_IMPL"),
-                addresses.getAddress("PROXY_ADMIN"),
+                addresses.getAddress("MRD_PROXY_ADMIN"),
                 "stkWELL_PROXY validation"
             );
         }
@@ -229,9 +208,8 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
             );
         }
 
-        /// TODO validate stkWELL contract
+        /// validate stkWELL contract
         {
-            /// smh to this architecture, do better
             IStakedWellUplift stkWell = IStakedWellUplift(
                 addresses.getAddress("stkWELL_PROXY")
             );
@@ -264,6 +242,11 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 "incorrect cooldown seconds"
             );
             assertEq(
+                stkWell.EMISSION_MANAGER(),
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                "incorrect emissions manager"
+            );
+            assertEq(
                 stkWell._governance(),
                 address(0),
                 "incorrect _governance, not address(0)"
@@ -278,7 +261,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
             );
         }
 
-        /// TODO validate vote collection contract
+        /// validate vote collection contract
         {
             MultichainVoteCollection voteCollection = MultichainVoteCollection(
                 addresses.getAddress("VOTE_COLLECTION_PROXY")
@@ -337,7 +320,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                     "MULTICHAIN_GOVERNOR_PROXY",
                     sendingChainIdToReceivingChainId[block.chainid]
                 ),
-                "incorrect vote collection owner, not temporal governor"
+                "target address not multichain governor on moonbeam"
             );
 
             assertTrue(
