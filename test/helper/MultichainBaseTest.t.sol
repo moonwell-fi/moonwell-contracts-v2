@@ -82,6 +82,9 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     /// @notice whitelisted calldata for MultichainGovernor
     bytes[] public approvedCalldata;
 
+    // @notice max vote amount use for fuzzing, well total supply
+    uint256 public maxVoteAmount = 5_000_000_000 * 1e18;
+
     constructor() {
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
@@ -242,5 +245,24 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             proposalInformation.againstVotes,
             proposalInformation.abstainVotes
         ) = voteCollection.proposalInformation(proposalId);
+    }
+
+    // token can be xWELL, WELL or stkWELL
+    function _delegateVoteAmountForUser(
+        address token,
+        address user,
+        uint256 voteAmount
+    ) internal {
+        if (token != address(stkWell)) {
+            deal(token, user, voteAmount);
+            vm.prank(user);
+
+            // users xWell interface but this can also be well
+            xWELL(token).delegate(user);
+        } else {
+            deal(address(xwell), user, voteAmount);
+            xwell.approve(address(stkWell), voteAmount);
+            stkWell.stake(user, voteAmount);
+        }
     }
 }

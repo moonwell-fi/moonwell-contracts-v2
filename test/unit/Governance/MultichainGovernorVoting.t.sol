@@ -441,6 +441,82 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     }
 
     /// Voting on MultichainGovernor
+    function testVotingValidProposalIdSucceedsMultipleUsersVoting(
+        uint256 voteAmount,
+        uint8 voters
+    ) public returns (uint256 proposalId) {
+        vm.assume(voters > 0);
+        vm.assume(voteAmount >= 1e18);
+        vm.assume(voteAmount <= maxVoteAmount);
+        vm.assume(voteAmount * voters <= maxVoteAmount);
+
+        address[] memory users = new address[](voters);
+        for (uint256 i = 0; i < voters; i++) {
+            // random pick of token to delegate, can be well, xwell or stkwell
+            uint256 random = i % 3;
+            address tokenToVote;
+            tokenToVote = address(xwell);
+
+            if (random == 0) {
+                tokenToVote = address(well);
+            } else if (random == 1) {
+                tokenToVote = address(xwell);
+            } else {
+                tokenToVote = address(stkWell);
+            }
+
+            address user = address(uint160(i + 222));
+            users[i] = user;
+
+            _delegateVoteAmountForUser(tokenToVote, user, voteAmount);
+        }
+
+        vm.warp(block.timestamp + 1);
+        vm.roll(block.number + 1);
+
+        // check vote amount for users
+        for (uint256 i = 0; i < voters; i++) {
+            assertEq(
+                governor.getVotes(
+                    users[i],
+                    block.timestamp - 1,
+                    block.number - 1
+                ),
+                voteAmount,
+                "incorrect vote amount"
+            );
+        }
+
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        vm.warp(block.timestamp + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect state, not active"
+        );
+
+        for (uint256 i = 0; i < voters; i++) {
+            address user = users[i];
+            vm.prank(user);
+            governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+            (bool hasVoted, , ) = governor.getReceipt(proposalId, user);
+            assertTrue(hasVoted, "user did not vote");
+        }
+
+        (
+            uint256 totalVotes,
+            uint256 votesFor,
+            uint256 votesAgainst,
+            uint256 votesAbstain
+        ) = governor.proposalVotes(proposalId);
+
+        assertEq(votesFor, voteAmount * voters, "votes for incorrect");
+        assertEq(votesAgainst, 0, "votes against incorrect");
+        assertEq(votesAbstain, 0, "abstain votes incorrect");
+        assertEq(votesFor, totalVotes, "total votes incorrect");
+    }
 
     function testVotingValidProposalIdSucceeds()
         public
