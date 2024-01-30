@@ -4,30 +4,35 @@ import "@forge-std/Test.sol";
 
 import "@test/helper/BaseTest.t.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
+import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
-contract StakedWellUnitTest is BaseTest {
+contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
     IStakedWell stakedWell;
     uint256 cooldown;
     uint256 unstakePeriod;
     uint256 amount;
     function setUp() public override {
         super.setUp();
-        address stakedWellAddress = deployCode("StakedWell.sol:StakedWell");
-        stakedWell = IStakedWell(stakedWellAddress);
+
+        address proxyAdmin = address(new ProxyAdmin());
 
         cooldown = 1 days;
-        unstakePeriod = 3 days;
+        unstakePeriod = 3 weeks;
 
-        stakedWell.initialize(
+        (address stkWellProxy, ) = deployStakedWell(
             address(xwellProxy),
             address(xwellProxy),
             cooldown,
             unstakePeriod,
-            address(this),
-            address(this),
-            1,
-            address(0)
+            address(this), // rewardsVault
+            address(this), // emissionManager
+            1 days, // distributionDuration
+            address(0), // governance
+            proxyAdmin // proxyAdmin
         );
+
+        stakedWell = IStakedWell(stkWellProxy);
 
         amount = xwellProxy.MAX_SUPPLY();
         vm.prank(address(xerc20Lockbox));
