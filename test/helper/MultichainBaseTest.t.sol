@@ -86,7 +86,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
                 chainId: moonbeamChainId,
-                addr: address(this)
+                addr: address(this) /// TODO this is incorrect and should be the artemis timelock contract
             })
         );
 
@@ -172,6 +172,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         stkWell = IStakedWell(stkWellProxy);
 
         MultichainGovernor.InitializeData memory initData;
+
         initData.proposalThreshold = proposalThreshold;
         initData.votingPeriodSeconds = votingPeriodSeconds;
         initData
