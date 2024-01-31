@@ -33,7 +33,6 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             // random pick of token to delegate, can be well, xwell or stkwell
             uint256 random = i % 3;
             address tokenToVote;
-            tokenToVote = address(xwell);
 
             if (random == 0) {
                 tokenToVote = address(well);
@@ -191,17 +190,10 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         address[] memory users = new address[](voters);
         for (uint256 i = 0; i < voters; i++) {
             // random pick of token to delegate, can be well, xwell or stkwell
-            uint256 random = i % 3;
-            address tokenToVote;
-            tokenToVote = address(xwell);
-
-            if (random == 0) {
-                tokenToVote = address(well);
-            } else if (random == 1) {
-                tokenToVote = address(xwell);
-            } else {
-                tokenToVote = address(stkWell);
-            }
+            uint256 random = i % 2;
+            address tokenToVote = random == 0
+                ? address(xwell)
+                : address(stkWell);
 
             address user = address(uint160(i + 1));
             users[i] = user;
@@ -279,7 +271,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             );
 
             // random pick of token to delegate
-            uint256 random = i % 3;
+            uint256 random = i % 2;
             address tokenToVote = random == 0
                 ? address(xwell)
                 : address(stkWell);
