@@ -119,6 +119,7 @@ contract TestMultichainProposals is Test, Initializable {
                 if (debug) {
                     (
                         string[] memory recordedNames,
+                        uint256[] memory chainIds,
                         address[] memory recordedAddresses
                     ) = addresses.getRecordedAddresses();
                     for (uint256 j = 0; j < recordedNames.length; j++) {
@@ -126,7 +127,7 @@ contract TestMultichainProposals is Test, Initializable {
                             '{\n        "addr": "%s", ',
                             recordedAddresses[j]
                         );
-                        console.log('        "chainId": %d,', block.chainid);
+                        console.log('        "chainId": %d,', chainIds[j]);
                         console.log(
                             '        "name": "%s"\n}%s',
                             recordedNames[j],
