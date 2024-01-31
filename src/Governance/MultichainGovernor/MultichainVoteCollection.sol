@@ -125,6 +125,8 @@ contract MultichainVoteCollection is
 
         __Ownable_init();
 
+        _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
+
         _transferOwnership(_owner); /// directly set the new owner without waiting for pending owner to accept
     }
 

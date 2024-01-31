@@ -110,9 +110,6 @@ contract MultichainGovernor is
     /// ------------------------- SAFETY ------------------------ ///
     /// --------------------------------------------------------- ///
 
-    /// @notice the governance rollback address
-    address public override governanceRollbackAddress;
-
     /// @notice the break glass guardian address
     /// can only break glass one time, and then role is revoked
     /// and needs to be reinstated by governance
@@ -187,6 +184,8 @@ contract MultichainGovernor is
         _addWormholeRelayer(address(initData.wormholeRelayer));
 
         _addTargetAddresses(trustedSenders);
+
+        _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
 
         unchecked {
             for (uint256 i = 0; i < calldatas.length; i++) {
