@@ -8,18 +8,12 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 
+import {validateProxy, _IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
+
 /// Proposal to run on Moonbeam to create the Multichain Governor contract
 contract mipm18a is ChainIds, HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment name
     string public constant name = "MIP-M18A";
-
-    /// @notice slot for the Proxy Admin
-    bytes32 _ADMIN_SLOT =
-        0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-
-    /// @notice slot for the implementation address
-    bytes32 _IMPLEMENTATION_SLOT =
-        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     /// @notice proposal's actions all happen on moonbeam
     function primaryForkId() public view override returns (uint256) {
@@ -61,54 +55,12 @@ contract mipm18a is ChainIds, HybridProposal, MultichainGovernorDeploy {
     function run(Addresses, address) public override {}
 
     function validate(Addresses addresses, address) public override {
-        {
-            bytes32 data = vm.load(
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    moonBeamChainId
-                ),
-                _ADMIN_SLOT
-            );
-
-            assertEq(
-                bytes32(
-                    uint256(
-                        uint160(
-                            addresses.getAddress(
-                                "MOONBEAM_PROXY_ADMIN",
-                                moonBeamChainId
-                            )
-                        )
-                    )
-                ),
-                data,
-                "mrd proxy admin not set correctly"
-            );
-        }
-
-        {
-            bytes32 data = vm.load(
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    moonBeamChainId
-                ),
-                _IMPLEMENTATION_SLOT
-            );
-
-            assertEq(
-                bytes32(
-                    uint256(
-                        uint160(
-                            addresses.getAddress(
-                                "MULTICHAIN_GOVERNOR_IMPL",
-                                moonBeamChainId
-                            )
-                        )
-                    )
-                ),
-                data,
-                "mrd implementation not set correctly"
-            );
-        }
+        validateProxy(
+            vm,
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId),
+            addresses.getAddress("MULTICHAIN_GOVERNOR_IMPL", moonBeamChainId),
+            addresses.getAddress("MOONBEAM_PROXY_ADMIN", moonBeamChainId),
+            "moonbeam proxies for multichain governor"
+        );
     }
 }

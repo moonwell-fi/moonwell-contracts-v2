@@ -179,15 +179,14 @@ contract MultichainGovernorDeploy is Test {
         returns (
             address ecosystemReserveProxy,
             address ecosystemReserveImplementation,
-            address ecosystemReserveControllerProxy,
-            address ecosystemReserveControllerImplementation
+            address ecosystemReserveController
         )
     {
         ecosystemReserveImplementation = deployCode(
             "EcosystemReserve.sol:EcosystemReserve"
         );
 
-        ecosystemReserveControllerImplementation = deployCode(
+        ecosystemReserveController = deployCode(
             "EcosystemReserveController.sol:EcosystemReserveController"
         );
 
@@ -195,30 +194,11 @@ contract MultichainGovernorDeploy is Test {
             new TransparentUpgradeableProxy(
                 ecosystemReserveImplementation,
                 proxyAdmin,
-                ""
+                abi.encodeWithSignature(
+                    "initialize(address)",
+                    ecosystemReserveController
+                )
             )
         );
-
-        bytes memory initData = abi.encodeWithSignature(
-            "setEcosystemReserve(address)",
-            ecosystemReserveProxy
-        );
-
-        ecosystemReserveControllerProxy = address(
-            new TransparentUpgradeableProxy(
-                ecosystemReserveControllerImplementation,
-                proxyAdmin,
-                initData
-            )
-        );
-
-        (bool success, ) = ecosystemReserveProxy.call(
-            abi.encodeWithSignature(
-                "initialize(address)",
-                ecosystemReserveControllerProxy
-            )
-        );
-
-        require(success, "EcosystemReserve: initialization failed");
     }
 }

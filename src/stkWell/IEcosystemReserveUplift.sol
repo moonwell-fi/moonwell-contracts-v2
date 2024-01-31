@@ -37,13 +37,13 @@ interface IEcosystemReserveControllerUplift {
     function setFundsAdmin(address admin) external;
 
     /// @notice Initialize function, sets ecosystem reserve, callable only once
-    function setEcosystemReserve() external view returns (address);
+    function setEcosystemReserve(address ecosystemReserve) external;
 
     /// @notice returns reference to ecosystem reserve controller
     function ECOSYSTEM_RESERVE() external view returns (address);
 
     /// @notice returns owner address
-    function transferOwnership(address newOwner) external returns (address);
+    function transferOwnership(address newOwner) external;
 
     /// @notice returns owner address
     function owner() external view returns (address);

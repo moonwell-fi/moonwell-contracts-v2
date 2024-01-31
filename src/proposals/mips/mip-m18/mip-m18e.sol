@@ -19,38 +19,6 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     string public constant name = "MIP-M18E";
 
-    /// @notice whitelisted calldata for the break glass guardian
-    bytes[] public approvedCalldata;
-
-    /// @notice whitelisted calldata for the temporal governor
-    bytes[] public temporalGovernanceCalldata;
-
-    /// @notice trusted senders for the temporal governor
-    ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
-
-    /// TODO verify these params with Luke before code freeze
-
-    /// @notice duration of the voting period for a proposal
-    uint256 public constant votingPeriodSeconds = 3 days;
-
-    /// @notice minimum number of votes cast required for a proposal to pass
-    uint256 public constant quorum = 1_000_000 * 1e18;
-
-    /// @notice maximum number of live proposals that a user can have
-    uint256 public constant maxUserLiveProposals = 5;
-
-    /// @notice duration of the pause
-    uint128 public constant pauseDuration = 10 days;
-
-    /// @notice address of the temporal governor
-    address[] public temporalGovernanceTargets;
-
-    /// @notice threshold of tokens required to create a proposal
-    uint256 public constant proposalThreshold = 100_000_000 * 1e18;
-
-    /// @notice duration of the cross chain vote collection period
-    uint256 public constant crossChainVoteCollectionPeriod = 1 days;
-
     /// @notice proposal's actions mostly happen on moonbeam
     function primaryForkId() public view override returns (uint256) {
         return moonbeamForkId;
@@ -58,52 +26,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
     function deploy(Addresses, address) public override {}
 
-    function afterDeploy(Addresses addresses, address) public override {
-        MultichainGovernor governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        );
-        address multichainVoteCollection = addresses.getAddress(
-            "VOTE_COLLECTION_PROXY",
-            chainIdToWormHoleId[block.chainid] /// TODO triple check this
-        );
-
-        WormholeTrustedSender.TrustedSender[]
-            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
-                1
-            );
-
-        /// TODO give this extra review, ensure addresses and chainids are correct
-        trustedSenders[0].addr = multichainVoteCollection;
-        trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid];
-
-        MultichainGovernor.InitializeData memory initData;
-
-        initData.well = addresses.getAddress("WELL");
-        initData.xWell = addresses.getAddress("xWELL_PROXY");
-        initData.stkWell = addresses.getAddress("stkWELL");
-        initData.distributor = addresses.getAddress(
-            "TOKEN_SALE_DISTRIBUTOR_PROXY"
-        );
-        initData.proposalThreshold = proposalThreshold;
-        initData.votingPeriodSeconds = votingPeriodSeconds;
-        initData
-            .crossChainVoteCollectionPeriod = crossChainVoteCollectionPeriod;
-        initData.quorum = quorum;
-        initData.maxUserLiveProposals = maxUserLiveProposals;
-        initData.pauseDuration = pauseDuration;
-
-        initData.pauseGuardian = addresses.getAddress(
-            "MOONBEAM_PAUSE_GUARDIAN_MULTISIG"
-        );
-        initData.breakGlassGuardian = addresses.getAddress(
-            "BREAK_GLASS_GUARDIAN"
-        );
-        initData.wormholeRelayer = addresses.getAddress(
-            "WORMHOLE_BRIDGE_RELAYER"
-        );
-
-        governor.initialize(initData, trustedSenders, approvedCalldata);
-    }
+    function afterDeploy(Addresses addresses, address) public override {}
 
     function afterDeploySetup(Addresses addresses) public override {}
 

@@ -92,7 +92,7 @@ contract TestMultichainProposals is Test, Initializable {
         bool run,
         bool teardown,
         bool validate
-    ) public returns (uint256[] memory postProposalVmSnapshots) {
+    ) public {
         if (debug) {
             console.log(
                 "TestProposals: running",
@@ -101,13 +101,13 @@ contract TestMultichainProposals is Test, Initializable {
             );
         }
 
-        postProposalVmSnapshots = new uint256[](proposals.length);
         for (uint256 i = 0; i < proposals.length; i++) {
             string memory name = IProposal(address(proposals[i])).name();
             uint256 forkId = IMultichainProposal(address(proposals[i]))
                 .primaryForkId();
 
             vm.selectFork(forkId);
+            console.log("block chain id: ", block.chainid);
 
             // Deploy step
             if (deploy) {
@@ -176,27 +176,19 @@ contract TestMultichainProposals is Test, Initializable {
             }
 
             if (debug) console.log("Proposal", name, "done.");
-
-            postProposalVmSnapshots[i] = vm.snapshot();
         }
-
-        return postProposalVmSnapshots;
     }
 
-    function runProposals()
-        public
-        returns (uint256[] memory postProposalVmSnapshots)
-    {
-        return
-            runProposals(
-                DEBUG,
-                DO_DEPLOY,
-                DO_AFTER_DEPLOY,
-                DO_AFTER_DEPLOY_SETUP,
-                DO_BUILD,
-                DO_RUN,
-                DO_TEARDOWN,
-                DO_VALIDATE
-            );
+    function runProposals() public {
+        runProposals(
+            DEBUG,
+            DO_DEPLOY,
+            DO_AFTER_DEPLOY,
+            DO_AFTER_DEPLOY_SETUP,
+            DO_BUILD,
+            DO_RUN,
+            DO_TEARDOWN,
+            DO_VALIDATE
+        );
     }
 }

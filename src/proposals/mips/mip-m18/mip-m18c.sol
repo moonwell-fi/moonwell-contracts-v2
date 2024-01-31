@@ -130,13 +130,13 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
     function afterDeploy(Addresses addresses, address) public override {
         MultichainGovernor governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
         );
 
         /// executing proposal on moonbeam, but this proposal needs an address from base
         address multichainVoteCollection = addresses.getAddress(
             "VOTE_COLLECTION_PROXY",
-            sendingChainIdToReceivingChainId[block.chainid]
+            baseChainId
         );
 
         WormholeTrustedSender.TrustedSender[]
@@ -189,7 +189,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
     function validate(Addresses addresses, address) public override {
         MultichainGovernor governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
         );
 
         assertEq(
