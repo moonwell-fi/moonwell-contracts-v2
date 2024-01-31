@@ -37,6 +37,16 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect vote amount"
         );
         assertEq(
+            governor.gasLimit(),
+            Constants.MIN_GAS_LIMIT,
+            "incorrect gas limit vote collection"
+        );
+        assertEq(
+            voteCollection.gasLimit(),
+            Constants.MIN_GAS_LIMIT,
+            "incorrect gas limit vote collection"
+        );
+        assertEq(
             voteCollection.getVotes(address(this), block.timestamp - 1),
             5_000_000_000 * 1e18,
             "incorrect vote amount"
