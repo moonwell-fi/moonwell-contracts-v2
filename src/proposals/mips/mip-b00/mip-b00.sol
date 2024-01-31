@@ -73,18 +73,19 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 "mipb00: WORMHOLE_CORE not set"
             );
 
-            // create TEMPORAL_GOVERNOR if it doesn't exist on addresses object
+            /// this will be the governor for all the contracts
+            TemporalGovernor governor = new TemporalGovernor(
+                addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
+                chainIdTemporalGovTimelock[block.chainid], /// get timelock period for deployment chain is on
+                permissionlessUnpauseTime,
+                trustedSenders
+            );
+
+            // change TEMPORAL_GOVERNOR if it already exists
             try addresses.getAddress("TEMPORAL_GOVERNOR") returns (address) {
+                addresses.changeAddress("TEMPORAL_GOVERNOR", address(governor));
                 /// TEMPORAL_GOVERNOR already exists
             } catch {
-                /// this will be the governor for all the contracts
-                TemporalGovernor governor = new TemporalGovernor(
-                    addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
-                    chainIdTemporalGovTimelock[block.chainid], /// get timelock period for deployment chain is on
-                    permissionlessUnpauseTime,
-                    trustedSenders
-                );
-
                 addresses.addAddress("TEMPORAL_GOVERNOR", address(governor));
             }
         }

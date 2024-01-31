@@ -117,8 +117,12 @@ contract Configs is Test {
                     6, /// USDBC is 6 decimals
                     "USDBC"
                 );
-
-                addresses.addAddress("USDBC", address(token));
+                // change USDBC if already exists
+                try addresses.getAddress("USDBC") returns (address) {
+                    addresses.changeAddress("USDBC", address(token));
+                } catch {
+                    addresses.addAddress("USDBC", address(token));
+                }
 
                 token.allocateTo(
                     addresses.getAddress("TEMPORAL_GOVERNOR"),
