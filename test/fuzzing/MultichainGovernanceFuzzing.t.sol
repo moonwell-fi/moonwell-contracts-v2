@@ -317,6 +317,102 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         assertEq(totalVotes, totalVoteAmount, "Total votes incorrect");
     }
 
+    struct FuzzingInput {
+        address user;
+        uint256 wellAmount;
+        uint256 xwellAmount;
+        uint256 stkwellAmount;
+        uint256 vestingWellAmount;
+        uint8 voteValue;
+    }
+
+    function testGovernorVotingMultipleUsersMultipleTokensDifferentVoteValues(
+        FuzzingInput memory input
+    ) public {
+        vm.assume(
+            input.wellAmount > 0 &&
+                input.xwellAmount > 0 &&
+                input.stkwellAmount > 0 &&
+                input.vestingWellAmount > 0
+        );
+        vm.assume(input.user != address(0));
+        vm.assume(input.voteValue < uint8(2));
+        input.xwellAmount = bound(input.xwellAmount, 1e18, totalSupply);
+        input.stkwellAmount = bound(input.stkwellAmount, 1e18, totalSupply);
+        input.wellAmount = bound(input.wellAmount, 1e18, totalSupply);
+
+        // TODO add vesitng well amount
+        uint256 totalVoteAmount = input.wellAmount +
+            input.xwellAmount +
+            input.stkwellAmount;
+
+        _delegateVoteAmountForUser(
+            address(xwell),
+            input.user,
+            input.xwellAmount
+        );
+        _delegateVoteAmountForUser(
+            address(stkWell),
+            input.user,
+            input.stkwellAmount
+        );
+        _delegateVoteAmountForUser(address(well), input.user, input.wellAmount);
+
+        vm.warp(block.timestamp + 1);
+        vm.roll(block.number + 1);
+
+        // check vote amount for users
+        // TODO why this is not matching?
+        assertEq(
+            governor.getVotes(
+                input.user,
+                block.timestamp - 1,
+                block.number - 1
+            ),
+            totalVoteAmount,
+            "incorrect vote amount"
+        );
+
+        uint256 proposalId = _createProposalUpdateThreshold();
+
+        vm.warp(block.timestamp + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect state, not active"
+        );
+
+        vm.prank(input.user);
+        governor.castVote(proposalId, input.voteValue);
+        (bool hasVoted, , ) = governor.getReceipt(proposalId, input.user);
+        assertTrue(hasVoted, "user did not vote");
+
+        (
+            uint256 totalVotes,
+            uint256 votesFor,
+            uint256 votesAgainst,
+            uint256 votesAbstain
+        ) = governor.proposalVotes(proposalId);
+
+        if (input.voteValue == Constants.VOTE_VALUE_YES) {
+            assertEq(votesFor, totalVoteAmount, "votes for incorrect");
+            assertEq(votesAgainst, 0, "votes against incorrect");
+            assertEq(votesAbstain, 0, "abstain votes incorrect");
+            assertEq(votesFor, totalVotes, "total votes incorrect");
+        } else if (input.voteValue == Constants.VOTE_VALUE_NO) {
+            assertEq(votesFor, 0, "votes for incorrect");
+            assertEq(votesAgainst, totalVoteAmount, "votes against incorrect");
+            assertEq(votesAbstain, 0, "abstain votes incorrect");
+            assertEq(votesAgainst, totalVotes, "total votes incorrect");
+        } else {
+            assertEq(votesFor, 0, "votes for incorrect");
+            assertEq(votesAgainst, 0, "votes against incorrect");
+            assertEq(votesAbstain, totalVoteAmount, "abstain votes incorrect");
+            assertEq(votesAbstain, totalVotes, "total votes incorrect");
+        }
+    }
+
     // token can be xWELL, WELL or stkWELL
     function _delegateVoteAmountForUser(
         address token,
