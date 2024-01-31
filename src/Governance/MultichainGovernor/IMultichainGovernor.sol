@@ -206,7 +206,6 @@ interface IMultichainGovernor {
     /// - setPendingAdmin to rollback address
     /// - setAdmin to rollback address
     /// - publishMessage that adds rollback address as trusted sender in TemporalGovernor, with calldata for each chain
-    /// TODO triple check that non of the aforementioned functions have hash collisions with something that would make them dangerous
     function whitelistedCalldatas(bytes calldata) external view returns (bool);
 
     /// @notice return votes for a proposal id on a given chain
@@ -217,9 +216,6 @@ interface IMultichainGovernor {
         external
         view
         returns (uint256 forVotes, uint256 againstVotes, uint256 abstainVotes);
-
-    /// address the contract can be rolled back to by break glass guardian
-    function governanceRollbackAddress() external view returns (address);
 
     /// break glass guardian
     function breakGlassGuardian() external view returns (address);
