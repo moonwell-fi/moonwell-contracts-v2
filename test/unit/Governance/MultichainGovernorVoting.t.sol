@@ -19,6 +19,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
     event ProposalRebroadcasted(uint256 proposalId, bytes data);
 
+    event BridgeOutFailed(uint16 chainId, bytes payload);
+
     function setUp() public override {
         super.setUp();
 
@@ -257,6 +259,63 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     }
 
     /// rebroadcasting
+    function testProposeWormholeBroadcastingFailsProposeCreationStillSucceed()
+        public
+        returns (uint256)
+    {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 startTimestamp = block.timestamp;
+        uint256 endTimestamp = startTimestamp + governor.votingPeriod();
+        bytes memory payload = abi.encode(
+            1,
+            startTimestamp - 1,
+            startTimestamp,
+            endTimestamp,
+            endTimestamp + governor.crossChainVoteCollectionPeriod()
+        );
+
+        wormholeRelayerAdapter.setShouldRevert(true);
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BridgeOutFailed(baseChainId, payload);
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        uint256[] memory proposals = governor.liveProposals();
+
+        bool proposalFound;
+
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (proposals[i] == proposalId) {
+                proposalFound = true;
+                break;
+            }
+        }
+
+        assertTrue(proposalFound, "proposal not found in live proposals");
+
+        return proposalId;
+    }
 
     function testRebroadcastProposalSucceedsProposalActive() public {
         uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
@@ -1972,6 +2031,334 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             payload,
             0,
             0
+        );
+    }
+
+    // test multiple proposals live at the same time
+    // proposal 1 is created at time 102 and has 0 votes, final state: defeated
+    // proposal 2 is created at time 103, votes at timestamp 104 vote
+    // value is for, final state: succeeded
+    // proposal 3 is created at time proposal 1
+    // crossChainVoteCollectionEndTimestamp and vote value
+    // is against, final state: defeated
+    // proposal 4 created at proposal3 crossChainVoteCollectionEndTimestamp, final state: active
+    function testMultipleProposalsCreatedAtDifferentTimes() public {
+        uint256 proposalId1 = testProposeUpdateProposalThresholdSucceeds(); // timestamp here is proposal1 voting start timestamp (102)
+
+        vm.warp(block.timestamp + 1); // timestamp is 103
+
+        uint256 proposalId2 = testVotingValidProposalIdSucceeds(); // timestamp
+        // is 104
+
+        // proposal1 and proposal2 are active at this stage
+
+        {
+            // check live proposals
+            uint256[] memory proposals = governor.liveProposals();
+
+            bool proposal1Found;
+            bool proposal2Found;
+
+            for (uint256 i = 0; i < proposals.length; i++) {
+                if (proposal1Found && proposal2Found) {
+                    break;
+                }
+                if (proposals[i] == proposalId1) {
+                    proposal1Found = true;
+                }
+                if (proposals[i] == proposalId2) {
+                    proposal2Found = true;
+                }
+            }
+
+            assertTrue(
+                proposal1Found,
+                "proposal 1 not found in live proposals"
+            );
+            assertTrue(
+                proposal2Found,
+                "proposal 2 not found in live proposals"
+            );
+        }
+        {
+            // check user proposals
+            uint256[] memory userProposals = governor.getUserLiveProposals(
+                address(this)
+            );
+
+            bool proposal1Found;
+            bool proposal2Found;
+
+            for (uint256 i = 0; i < userProposals.length; i++) {
+                if (proposal1Found && proposal2Found) {
+                    break;
+                }
+                if (userProposals[i] == proposalId1) {
+                    proposal1Found = true;
+                }
+                if (userProposals[i] == proposalId2) {
+                    proposal2Found = true;
+                }
+            }
+            assertTrue(
+                proposal1Found,
+                "proposal 1 not found in user live proposals"
+            );
+
+            assertTrue(
+                proposal2Found,
+                "proposal 2 not found in user live proposals"
+            );
+        }
+
+        IMultichainGovernor.ProposalInformation memory proposal1Info = governor
+            .proposalInformationStruct(proposalId1);
+
+        vm.warp(proposal1Info.crossChainVoteCollectionEndTimestamp + 1);
+
+        uint256 proposalId3 = testProposeUpdateProposalThresholdSucceeds();
+
+        // Proposal 1 is defetead, proposal2 active, proposal 3 active
+        {
+            bool proposal1Found;
+            bool proposal2Found;
+            bool proposal3Found;
+
+            uint256[] memory proposals = governor.liveProposals();
+
+            for (uint256 i = 0; i < proposals.length; i++) {
+                if (proposal1Found && proposal2Found && proposal3Found) {
+                    break;
+                }
+                if (proposals[i] == proposalId1) {
+                    proposal1Found = true;
+                }
+                if (proposals[i] == proposalId2) {
+                    proposal2Found = true;
+                }
+                if (proposals[i] == proposalId3) {
+                    proposal3Found = true;
+                }
+            }
+
+            assertFalse(proposal1Found, "proposal 1 found in live proposals");
+            assertTrue(
+                proposal2Found,
+                "proposal 2 not found in live proposals"
+            );
+            assertTrue(
+                proposal3Found,
+                "proposal 3 not found in live proposals"
+            );
+        }
+
+        {
+            // check user live proposals
+            bool proposal1Found;
+            bool proposal2Found;
+            bool proposal3Found;
+
+            uint256[] memory userProposals = governor.getUserLiveProposals(
+                address(this)
+            );
+
+            for (uint256 i = 0; i < userProposals.length; i++) {
+                if (proposal1Found && proposal2Found && proposal3Found) {
+                    break;
+                }
+                if (userProposals[i] == proposalId1) {
+                    proposal1Found = true;
+                }
+                if (userProposals[i] == proposalId2) {
+                    proposal2Found = true;
+                }
+                if (userProposals[i] == proposalId3) {
+                    proposal3Found = true;
+                }
+            }
+
+            assertFalse(
+                proposal1Found,
+                "proposal 1 found in user live proposals"
+            );
+
+            assertTrue(
+                proposal2Found,
+                "proposal 2 not found in user live proposals"
+            );
+
+            assertTrue(
+                proposal3Found,
+                "proposal 3 not found in user live proposals"
+            );
+        }
+
+        IMultichainGovernor.ProposalInformation memory proposal3Info = governor
+            .proposalInformationStruct(proposalId3);
+
+        vm.warp(proposal3Info.crossChainVoteCollectionEndTimestamp + 1);
+
+        uint256 proposalId4 = testProposeUpdateProposalThresholdSucceeds();
+
+        // only proposal 4 is active
+        {
+            bool proposal1Found;
+            bool proposal2Found;
+            bool proposal3Found;
+            bool proposal4Found;
+
+            uint256[] memory proposals = governor.liveProposals();
+
+            for (uint256 i = 0; i < proposals.length; i++) {
+                if (
+                    proposal1Found &&
+                    proposal2Found &&
+                    proposal3Found &&
+                    proposal4Found
+                ) {
+                    break;
+                }
+                if (proposals[i] == proposalId1) {
+                    proposal1Found = true;
+                }
+                if (proposals[i] == proposalId2) {
+                    proposal2Found = true;
+                }
+                if (proposals[i] == proposalId3) {
+                    proposal3Found = true;
+                }
+                if (proposals[i] == proposalId4) {
+                    proposal4Found = true;
+                }
+            }
+
+            assertFalse(proposal1Found, "proposal 1 found in live proposals");
+            assertFalse(proposal2Found, "proposal 2 found in live proposals");
+            assertFalse(proposal3Found, "proposal 3 found in live proposals");
+            assertTrue(
+                proposal4Found,
+                "proposal 4 not found in live proposals"
+            );
+        }
+
+        // check user live proposals
+        {
+            bool proposal1Found;
+            bool proposal2Found;
+            bool proposal3Found;
+            bool proposal4Found;
+
+            uint256[] memory userProposals = governor.getUserLiveProposals(
+                address(this)
+            );
+
+            for (uint256 i = 0; i < userProposals.length; i++) {
+                if (
+                    proposal1Found &&
+                    proposal2Found &&
+                    proposal3Found &&
+                    proposal4Found
+                ) {
+                    break;
+                }
+                if (userProposals[i] == proposalId1) {
+                    proposal1Found = true;
+                }
+                if (userProposals[i] == proposalId2) {
+                    proposal2Found = true;
+                }
+                if (userProposals[i] == proposalId3) {
+                    proposal3Found = true;
+                }
+                if (userProposals[i] == proposalId4) {
+                    proposal4Found = true;
+                }
+            }
+
+            assertFalse(
+                proposal1Found,
+                "proposal 1 found in user live proposals"
+            );
+            assertFalse(
+                proposal2Found,
+                "proposal 2 found in user live proposals"
+            );
+            assertFalse(
+                proposal3Found,
+                "proposal 3 found in user live proposals"
+            );
+            assertTrue(
+                proposal4Found,
+                "proposal 4 not found in user live proposals"
+            );
+        }
+
+        // check final state of proposals
+        assertEq(
+            uint256(governor.state(proposalId1)),
+            3,
+            "incorrect state, not defeated"
+        );
+
+        assertEq(
+            uint256(governor.state(proposalId2)),
+            4,
+            "incorrect state, not succeeded"
+        );
+
+        assertEq(
+            uint256(governor.state(proposalId3)),
+            3,
+            "incorrect state, not defeated"
+        );
+
+        assertEq(
+            uint256(governor.state(proposalId4)),
+            0,
+            "incorrect state, not active"
+        );
+    }
+
+    function testUserCanCreateAsManyProposalWantsAsLongNeverExceedsMaxUserLiveProposals()
+        public
+    {
+        for (uint256 i = 0; i < 5; i++) {
+            testProposeUpdateProposalThresholdSucceeds();
+        }
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            5,
+            "incorrect num live proposals"
+        );
+
+        uint256 maxUserLiveProposals = governor.maxUserLiveProposals();
+        console.log("maxUserLiveProposals", maxUserLiveProposals);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory description = "Mock Proposal MIP-M00";
+
+        vm.expectRevert(
+            "MultichainGovernor: too many live proposals for this user"
+        );
+        governor.propose(targets, values, calldatas, description);
+
+        governor.cancel(1);
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            4,
+            "incorrect num live proposals"
+        );
+
+        testProposeUpdateProposalThresholdSucceeds();
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            5,
+            "incorrect num live proposals"
         );
     }
 }

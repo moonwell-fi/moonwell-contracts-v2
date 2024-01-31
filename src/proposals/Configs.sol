@@ -48,7 +48,7 @@ contract Configs is Test {
     mapping(uint256 => EmissionConfig[]) public emissions;
 
     uint256 public constant _baseGoerliChainId = 84531;
-    uint256 public constant localChainId = 31337;
+    uint256 public constant _localChainId = 31337;
     uint256 public constant _baseChainId = 8453;
 
     /// @notice initial mToken mint amount
@@ -66,7 +66,6 @@ contract Configs is Test {
         );
 
         for (uint256 i = 0; i < decodedJson.length; i++) {
-
             require(
                 decodedJson[i].collateralFactor <= 0.95e18,
                 "collateral factor absurdly high, are you sure you want to proceed?"
@@ -86,9 +85,7 @@ contract Configs is Test {
             cTokenConfigurations[_baseChainId].push(decodedJson[i]);
         }
 
-        fileContents = vm.readFile(
-            "./src/proposals/mainnetRewardStreams.json"
-        );
+        fileContents = vm.readFile("./src/proposals/mainnetRewardStreams.json");
         rawJson = vm.parseJson(fileContents);
         EmissionConfig[] memory decodedEmissions = abi.decode(
             rawJson,
@@ -101,7 +98,7 @@ contract Configs is Test {
     }
 
     function localInit(Addresses addresses) public {
-        if (block.chainid == localChainId) {
+        if (block.chainid == _localChainId) {
             /// create mock wormhole core for local testing
             MockWormholeCore wormholeCore = new MockWormholeCore();
 
@@ -120,8 +117,12 @@ contract Configs is Test {
                     6, /// USDBC is 6 decimals
                     "USDBC"
                 );
-
-                addresses.addAddress("USDBC", address(token));
+                // change USDBC if already exists
+                try addresses.getAddress("USDBC") returns (address) {
+                    addresses.changeAddress("USDBC", address(token));
+                } catch {
+                    addresses.addAddress("USDBC", address(token));
+                }
 
                 token.allocateTo(
                     addresses.getAddress("TEMPORAL_GOVERNOR"),
@@ -187,7 +188,7 @@ contract Configs is Test {
     }
 
     function init(Addresses addresses) public {
-        if (block.chainid == localChainId) {
+        if (block.chainid == _localChainId) {
             console.log("\n----- deploying locally -----\n");
 
             /// cToken config for WETH, WBTC and USDBC on local
@@ -240,7 +241,7 @@ contract Configs is Test {
                     jrm: jrmConfig
                 });
 
-                cTokenConfigurations[localChainId].push(config);
+                cTokenConfigurations[_localChainId].push(config);
             }
 
             {
@@ -274,7 +275,7 @@ contract Configs is Test {
                     jrm: jrmConfig
                 });
 
-                cTokenConfigurations[localChainId].push(config);
+                cTokenConfigurations[_localChainId].push(config);
             }
 
             return;
@@ -482,7 +483,7 @@ contract Configs is Test {
             memory mTokenConfigs = getCTokenConfigurations(block.chainid);
 
         if (
-            (block.chainid == localChainId ||
+            (block.chainid == _localChainId ||
                 block.chainid == _baseGoerliChainId) &&
             addresses.getAddress("WELL") == address(0)
         ) {
@@ -501,7 +502,7 @@ contract Configs is Test {
         //// create reward configuration for all mTokens
         unchecked {
             for (uint256 i = 0; i < mTokenConfigs.length; i++) {
-                if (block.chainid == localChainId) {
+                if (block.chainid == _localChainId) {
                     /// set supply speed to be 0 and borrow reward speeds to 1
 
                     /// pay USDBC Emissions for depositing ETH locally
@@ -514,7 +515,7 @@ contract Configs is Test {
                         endTime: block.timestamp + 4 weeks
                     });
 
-                    emissions[localChainId].push(emissionConfig);
+                    emissions[_localChainId].push(emissionConfig);
                 }
 
                 if (block.chainid == _baseGoerliChainId) {

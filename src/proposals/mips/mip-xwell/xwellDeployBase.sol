@@ -233,6 +233,7 @@ contract xwellDeployBase is Proposal, CrossChainProposal, Configs, xWELLDeploy {
     function printAddresses(Addresses addresses) private view {
         (
             string[] memory recordedNames,
+            ,
             address[] memory recordedAddresses
         ) = addresses.getRecordedAddresses();
         for (uint256 j = 0; j < recordedNames.length; j++) {

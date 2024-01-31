@@ -95,19 +95,31 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             "",
             new bytes[](0),
             addressToBytes(address(this)),
-            moonbeamChainId,
+            baseChainId,
             bytes32(type(uint256).max)
         );
     }
 
     function testAlreadyProcessedMessageReplayFails() public {
         uint256 proposalId = testReceiveWormholeMessageSucceeds();
-        bytes memory payload = abi.encode(proposalId, 0, 0, 0);
 
-        vm.prank(address(governor.wormholeRelayer()));
+        bytes memory payloadVoteCollection = abi.encode(proposalId, 0, 0, 0, 0);
+
+        vm.startPrank(address(governor.wormholeRelayer()));
+
+        vm.expectRevert("MultichainVoteCollection: proposal already exists");
+        voteCollection.receiveWormholeMessages{value: 0}(
+            payloadVoteCollection,
+            new bytes[](0), /// field unchecked in contract
+            addressToBytes(address(governor)),
+            moonbeamChainId,
+            bytes32(type(uint256).max)
+        );
+
+        bytes memory payloadGovernor = abi.encode(proposalId, 0, 0, 0);
         vm.expectRevert("WormholeBridge: message already processed");
         governor.receiveWormholeMessages{value: 0}(
-            payload,
+            payloadGovernor,
             new bytes[](0), /// field unchecked in contract
             addressToBytes(address(voteCollection)),
             baseChainId,
