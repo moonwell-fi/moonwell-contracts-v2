@@ -15,6 +15,11 @@
     "name": "TEMPORAL_GOVERNOR_GUARDIAN"
   },
   {
+    "addr": "0x5402447a0db03EeE98c98b924F7d346bd19cdD17",
+    "chainId": 1284,
+    "name": "BREAK_GLASS_GUARDIAN"
+  },
+  {
     "addr": "0xfc4DFB17101A12C5CEc5eeDd8E92B5b16557666d",
     "chainId": 1284,
     "name": "ARTEMIS_GOVERNOR"
@@ -35,6 +40,11 @@
     "name": "MOONBEAM_PAUSE_GUARDIAN_MULTISIG"
   },
   {
+    "addr": "0xED301cd3EB27217BDB05C4E9B820a8A3c8B665f9",
+    "chainId": 1284,
+    "name": "CHAINLINK_ORACLE"
+  },
+  {
     "addr": "0x4200000000000000000000000000000000000006",
     "chainId": 84531,
     "name": "WETH"
@@ -43,6 +53,11 @@
     "addr": "0x3a9249d70dCb4A4E9ef4f3AF99a3A130452ec19B",
     "chainId": 1284,
     "name": "MOONBEAM_TIMELOCK"
+  },
+  {
+    "addr": "0x3a9249d70dCb4A4E9ef4f3AF99a3A130452ec19B",
+    "chainId": 1284,
+    "name": "ARTEMIS_TIMELOCK"
   },
   {
     "addr": "0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78",
@@ -505,6 +520,16 @@
     "name": "WORMHOLE_BRIDGE_RELAYER"
   },
   {
+    "addr": "0x7793E08Eb4525309C46C9BA394cE33361A167ba4",
+    "chainId": 1284,
+    "name": "ECOSYSTEM_RESERVE"
+  },
+  {
+    "addr": "0xCa889f40aae37FFf165BccF69aeF1E82b5C511B9",
+    "chainId": 1284,
+    "name": "ECOSYSTEM_RESERVE_CONTROLLER"
+  },
+  {
     "addr": "0x8E00D5e02E65A19337Cdba98bbA9F84d4186a180",
     "chainId": 1284,
     "name": "UNITROLLER"
@@ -522,7 +547,7 @@
   {
     "addr": "0x091608f4e4a15335145be0A279483C0f8E4c7955",
     "chainId": 1284,
-    "name": "MGLIMMER"
+    "name": "mGLIMMER"
   },
   {
     "addr": "0xb536c1F9A157B263B70A9a35705168ACC0271742",
@@ -695,9 +720,19 @@
     "name": "TOKEN_SALE_DISTRIBUTOR_PROXY"
   },
   {
+    "addr": "0x77e43754112adD0a2c5840D25a5663B047B65563",
+    "chainId": 1284,
+    "name": "TOKEN_SALE_DISTRIBUTOR_IMPL"
+  },
+  {
     "addr": "0x8568A675384d761f36eC269D695d6Ce4423cfaB1",
     "chainId": 1284,
     "name": "stkWELL"
+  },
+  {
+    "addr": "0x298f2E346b82D69a473BF25f329BDF869e17dEc8",
+    "chainId": 1284,
+    "name": "MOONWELL_mBUSD"
   },
   {
     "addr": "0x02e9081DfadD37A852F9a73C4d7d69e615E61334",
@@ -728,6 +763,36 @@
     "addr": "0x1dc78acda13a8bc4408b207c9e48cdbc096d95e0",
     "chainId": 1284,
     "name": "madWBTC"
+  },
+  {
+    "addr": "0xD22Da948c0aB3A27f5570b604f3ADef5F68211C3",
+    "chainId": 1284,
+    "name": "mxcDOT"
+  },
+  {
+    "addr": "0x42a96c0681b74838ec525adbd13c37f66388f289",
+    "chainId": 1284,
+    "name": "mxcUSDT"
+  },
+  {
+    "addr": "0x1C55649f73CDA2f72CEf3DD6C5CA3d49EFcF484C",
+    "chainId": 1284,
+    "name": "mFRAX"
+  },
+  {
+    "addr": "0x22b1a40e3178fe7C7109eFCc247C5bB2B34ABe32",
+    "chainId": 1284,
+    "name": "mxcUSDC"
+  },
+  {
+    "addr": "0x744b1756e7651c6D57f5311767EAFE5E931D615b",
+    "chainId": 1284,
+    "name": "mUSDCwh"
+  },
+  {
+    "addr": "0xb6c94b3a378537300387b57ab1cc0d2083f9aeac",
+    "chainId": 1284,
+    "name": "mETHwh"
   },
   {
     "addr": "0x949D6a0E3b1064d498D529a388B953b344CD13F7",
