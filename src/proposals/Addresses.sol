@@ -12,9 +12,6 @@ contract Addresses is IAddresses, Test {
     mapping(string name => mapping(uint256 chainId => address addr))
         public _addresses;
 
-    /// @notice chainid of the network when contract is constructed
-    uint256 public immutable chainId;
-
     /// @notice json structure to read addresses into storage from file
     struct SavedAddresses {
         /// address to store
@@ -47,8 +44,6 @@ contract Addresses is IAddresses, Test {
     string public addressesPath = "./utils/Addresses.json";
 
     constructor() {
-        chainId = block.chainid;
-
         string memory addressesData = string(
             abi.encodePacked(vm.readFile(addressesPath))
         );
@@ -119,7 +114,7 @@ contract Addresses is IAddresses, Test {
 
     /// @notice get an address for the current chainId
     function getAddress(string memory name) public view returns (address) {
-        return _getAddress(name, chainId);
+        return _getAddress(name, block.chainid);
     }
 
     /// @notice get an address for a specific chainId
@@ -132,9 +127,11 @@ contract Addresses is IAddresses, Test {
 
     /// @notice add an address for the current chainId
     function addAddress(string memory name, address addr) public {
-        _addAddress(name, addr, chainId);
+        _addAddress(name, addr, block.chainid);
 
-        recordedAddresses.push(RecordedAddress({name: name, chainId: chainId}));
+        recordedAddresses.push(
+            RecordedAddress({name: name, chainId: block.chainid})
+        );
     }
 
     /// @notice add an address for a specific chainId
@@ -192,7 +189,7 @@ contract Addresses is IAddresses, Test {
 
     /// @notice change an address for the current chainId
     function changeAddress(string memory name, address addr) public {
-        changeAddress(name, addr, chainId);
+        changeAddress(name, addr, block.chainid);
     }
 
     /// @notice remove recorded addresses
