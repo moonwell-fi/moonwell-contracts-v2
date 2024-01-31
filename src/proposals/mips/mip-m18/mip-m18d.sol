@@ -84,7 +84,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 "transferOwnership(address)",
                 multichainGovernorAddress
             ),
-            "Set the admin of the Chainlink Oracle to the multichain governor",
+            "Set the admin of the Moonbeam Proxy Admin to the multichain governor",
             true
         );
 
@@ -122,28 +122,14 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
-        /// set pending admin of comptroller
+        /// set pending admin of unitroller
         _pushHybridAction(
-            addresses.getAddress("COMPTROLLER", moonBeamChainId),
+            addresses.getAddress("UNITROLLER", moonBeamChainId),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending owner of the comptroller to the multichain governor",
-            true
-        );
-
-        /// set pending admin of the vesting contract
-        _pushHybridAction(
-            addresses.getAddress(
-                "TOKEN_SALE_DISTRIBUTOR_PROXY",
-                moonBeamChainId
-            ),
-            abi.encodeWithSignature(
-                "setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of the vesting contract to the multichain governor",
+            "Set the pending owner of the unitroller to the multichain governor",
             true
         );
 
@@ -161,43 +147,6 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
-        /// TODO all of these .mad asset addresses are broken and we need to fix them for this gov proposal to work
-
-        /// set pending admin of the MTokens
-        _pushHybridAction(
-            addresses.getAddress("madWBTC", moonBeamChainId),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending owner of madWBTC to the multichain governor",
-            true
-        );
-
-        /// set pending admin of .mad mTokens
-
-        /// set pending admin of madWETH to the multichain governor
-        _pushHybridAction(
-            addresses.getAddress("madWETH", moonBeamChainId),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending owner of madWETH to the multichain governor",
-            true
-        );
-
-        /// set pending admin of madUSDC to the multichain governor
-        _pushHybridAction(
-            addresses.getAddress("madUSDC", moonBeamChainId),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending owner of madUSDC to the multichain governor",
-            true
-        );
-
         /// set pending admin of MOONWELL_mwBTC to the multichain governor
         _pushHybridAction(
             addresses.getAddress("MOONWELL_mwBTC", moonBeamChainId),
@@ -206,6 +155,17 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 multichainGovernorAddress
             ),
             "Set the pending owner of MOONWELL_mwBTC to the multichain governor",
+            true
+        );
+
+        /// set pending admin of MOONWELL_mBUSD to the multichain governor
+        _pushHybridAction(
+            addresses.getAddress("MOONWELL_mBUSD", moonBeamChainId),
+            abi.encodeWithSignature(
+                "_setPendingAdmin(address)",
+                multichainGovernorAddress
+            ),
+            "Set the pending owner of MOONWELL_mBUSD to the multichain governor",
             true
         );
 
@@ -231,80 +191,80 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
-        /// set pending admin of MGLIMMER to the multichain governor
+        /// set pending admin of mGLIMMER to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("MGLIMMER", moonBeamChainId),
+            addresses.getAddress("mGLIMMER", moonBeamChainId),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending owner of MGLIMMER to the multichain governor",
+            "Set the pending owner of mGLIMMER to the multichain governor",
             true
         );
 
-        /// set pending admin of MDOT to the multichain governor
+        /// set pending admin of mxcDOT to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("MDOT", moonBeamChainId),
+            addresses.getAddress("mxcDOT", moonBeamChainId),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending owner of MDOT to the multichain governor",
+            "Set the pending owner of mxcDOT to the multichain governor",
             true
         );
 
-        /// set pending admin of MUSDT to the multichain governor
+        /// set pending admin of mxcUSDT to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("MUSDT", moonBeamChainId),
+            addresses.getAddress("mxcUSDT", moonBeamChainId),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending owner of MUSDT to the multichain governor",
+            "Set the pending owner of mxcUSDT to the multichain governor",
             true
         );
 
-        /// set pending admin of MFRAX to the multichain governor
+        /// set pending admin of mFRAX to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("MFRAX", moonBeamChainId),
+            addresses.getAddress("mFRAX", moonBeamChainId),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending owner of MFRAX to the multichain governor",
+            "Set the pending owner of mFRAX to the multichain governor",
             true
         );
 
-        /// set pending admin of MUSDC to the multichain governor
+        /// set pending admin of mUSDCwh to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("MUSDC", moonBeamChainId),
+            addresses.getAddress("mUSDCwh", moonBeamChainId),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending owner of MUSDC to the multichain governor",
+            "Set the pending owner of mUSDCwh to the multichain governor",
             true
         );
 
-        /// set pending admin of MXCUSDC to the multichain governor
+        /// set pending admin of mxcUSDC to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("MXCUSDC", moonBeamChainId),
+            addresses.getAddress("mxcUSDC", moonBeamChainId),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending owner of MXCUSDC to the multichain governor",
+            "Set the pending owner of mxcUSDC to the multichain governor",
             true
         );
 
-        /// set pending admin of METHWH to the multichain governor
+        /// set pending admin of mETHwh to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("METHWH", moonBeamChainId),
+            addresses.getAddress("mETHwh", moonBeamChainId),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending owner of METHWH to the multichain governor",
+            "Set the pending owner of mETHwh to the multichain governor",
             true
         );
     }
@@ -383,45 +343,69 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("METHWH")).pendingAdmin(),
+            Timelock(addresses.getAddress("mETHwh")).pendingAdmin(),
             governor,
-            "METHWH pending admin incorrect"
+            "mETHwh pending admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MXCUSDC")).pendingAdmin(),
+            Timelock(addresses.getAddress("mxcUSDC")).pendingAdmin(),
             governor,
-            "MXCUSDC pending admin incorrect"
+            "mxcUSDC pending admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MUSDC")).pendingAdmin(),
+            Timelock(addresses.getAddress("mUSDCwh")).pendingAdmin(),
             governor,
-            "MUSDC pending admin incorrect"
+            "mUSDCwh pending admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MFRAX")).pendingAdmin(),
+            Timelock(addresses.getAddress("mFRAX")).pendingAdmin(),
             governor,
-            "MFRAX pending admin incorrect"
+            "mFRAX pending admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MUSDT")).pendingAdmin(),
+            Timelock(addresses.getAddress("mxcUSDT")).pendingAdmin(),
             governor,
-            "MUSDT pending admin incorrect"
+            "mxcUSDT pending admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MDOT")).pendingAdmin(),
+            Timelock(addresses.getAddress("mxcDOT")).pendingAdmin(),
             governor,
-            "MDOT pending admin incorrect"
+            "mxcDOT pending admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MGLIMMER")).pendingAdmin(),
+            Timelock(addresses.getAddress("mGLIMMER")).pendingAdmin(),
             governor,
-            "MGLIMMER pending admin incorrect"
+            "mGLIMMER pending admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mUSDC")).pendingAdmin(),
+            governor,
+            "MOONWELL_mUSDC pending admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mBUSD")).pendingAdmin(),
+            governor,
+            "MOONWELL_mUSDC pending admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mETH")).pendingAdmin(),
+            governor,
+            "MOONWELL_mETH pending admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mwBTC")).pendingAdmin(),
+            governor,
+            "MOONWELL_mwBTC pending admin incorrect"
         );
 
         assertEq(
@@ -443,34 +427,9 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("madUSDC")).pendingAdmin(),
+            Timelock(addresses.getAddress("UNITROLLER")).pendingAdmin(),
             governor,
-            "madUSDC pending admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("madWETH")).pendingAdmin(),
-            governor,
-            "madWETH pending admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("madWBTC")).pendingAdmin(),
-            governor,
-            "madWBTC pending admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY"))
-                .pendingAdmin(),
-            governor,
-            "TOKEN_SALE_DISTRIBUTOR_PROXY pending admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("COMPTROLLER")).pendingAdmin(),
-            governor,
-            "COMPTROLLER pending admin incorrect"
+            "UNITROLLER pending admin incorrect"
         );
     }
 }

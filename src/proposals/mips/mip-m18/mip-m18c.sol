@@ -193,6 +193,12 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
 
         assertEq(
+            governor.gasLimit(),
+            400_000,
+            "incorrect gas limit on multichain governor"
+        );
+
+        assertEq(
             governor.proposalThreshold(),
             proposalThreshold,
             "incorrect proposal threshold"
@@ -237,11 +243,6 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             address(governor.distributor()),
             addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY"),
             "incorrect distributor address"
-        );
-        assertEq(
-            governor.governanceRollbackAddress(),
-            addresses.getAddress("ARTEMIS_TIMELOCK"),
-            "incorrect rollback address, not timelock"
         );
         assertEq(
             governor.getNumLiveProposals(),

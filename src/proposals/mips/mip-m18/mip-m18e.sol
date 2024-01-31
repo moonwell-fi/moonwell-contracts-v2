@@ -33,7 +33,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
         address multichainGovernorAddress = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR"
+            "MULTICHAIN_GOVERNOR_PROXY"
         );
         // bytes memory wormholeTemporalGovPayload = abi.encodeWithSignature(
         //     "publishMessage(uint32,bytes,uint8)",
@@ -53,7 +53,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
-        /// TODO refactor this into a base action
+        /// TODO THIS IS COMPLETELY WRONG, FIX
         /// remove the artemis timelock as a trusted sender in the wormhole bridge adapter on base
         _pushHybridAction(
             addresses.getAddress("WORMHOLE_CORE"),
@@ -76,43 +76,13 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of comptroller
         _pushHybridAction(
-            addresses.getAddress("COMPTROLLER"),
+            addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of the comptroller as multichain governor",
             true
         );
 
-        /// accept pending admin of the vesting contract
-        _pushHybridAction(
-            addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY"),
-            abi.encodeWithSignature("acceptPendingAdmin()"),
-            "Accept pending admin of the vesting contract as the multichain governor",
-            true
-        );
-
-        /// set pending admin of the MTokens
-        _pushHybridAction(
-            addresses.getAddress("madWBTC"),
-            abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept the pending owner of madWBTC to the multichain governor",
-            true
-        );
-
         /// set pending admin of .mad mTokens
-
-        _pushHybridAction(
-            addresses.getAddress("madWETH"),
-            abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of madWETH as the multichain governor",
-            true
-        );
-
-        _pushHybridAction(
-            addresses.getAddress("madUSDC"),
-            abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of madUSDC as the multichain governor",
-            true
-        );
 
         _pushHybridAction(
             addresses.getAddress("MOONWELL_mwBTC"),
@@ -136,51 +106,51 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
 
         _pushHybridAction(
-            addresses.getAddress("MGLIMMER"),
+            addresses.getAddress("mGLIMMER"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of MGLIMMER as the multichain governor",
+            "Accept admin of mGLIMMER as the multichain governor",
             true
         );
 
         _pushHybridAction(
-            addresses.getAddress("MDOT"),
+            addresses.getAddress("mxcDOT"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Set Accept admin MDOT to as multichain governor",
+            "Set Accept admin mxcDOT to as multichain governor",
             true
         );
 
         _pushHybridAction(
-            addresses.getAddress("MUSDT"),
+            addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Set Accept admin MUSDT to as multichain governor",
+            "Set Accept admin mxcUSDT to as multichain governor",
             true
         );
 
         _pushHybridAction(
-            addresses.getAddress("MFRAX"),
+            addresses.getAddress("mFRAX"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Set Accept admin MFRAX to as multichain governor",
+            "Set Accept admin mFRAX to as multichain governor",
             true
         );
 
         _pushHybridAction(
-            addresses.getAddress("MUSDC"),
+            addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Set Accept admin MUSDC to as multichain governor",
+            "Set Accept admin mUSDCwh to as multichain governor",
             true
         );
 
         _pushHybridAction(
-            addresses.getAddress("MXCUSDC"),
+            addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of MXCUSDC as the multichain governor",
+            "Accept admin of mxcUSDC as the multichain governor",
             true
         );
 
         _pushHybridAction(
-            addresses.getAddress("METHWH"),
+            addresses.getAddress("mETHwh"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of METHWH as the multichain governor",
+            "Accept admin of mETHwh as the multichain governor",
             true
         );
     }
@@ -189,6 +159,35 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
     function run(Addresses addresses, address) public override {
         /// @dev enable debugging
+
+        uint256 activeFork = vm.activeFork();
+
+        vm.selectFork(moonbeamForkId);
+
+        vm.startPrank(
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
+        );
+        for (uint256 i = 0; i < moonbeamActions.length; i++) {
+            moonbeamActions[i].target.call{value: moonbeamActions[i].value}(
+                moonbeamActions[i].data
+            );
+        }
+        vm.stopPrank();
+
+        /// base simulation
+
+        vm.selectFork(baseForkId);
+
+        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId));
+        for (uint256 i = 0; i < baseActions.length; i++) {
+            baseActions[i].target.call{value: baseActions[i].value}(
+                baseActions[i].data
+            );
+        }
+        vm.stopPrank();
+
+        /// switch back to original fork
+        vm.selectFork(activeFork);
     }
 
     function validate(Addresses addresses, address) public override {
@@ -223,80 +222,80 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("METHWH")).admin(),
+            Timelock(addresses.getAddress("mETHwh")).admin(),
             governor,
-            "METHWH admin incorrect"
+            "mETHwh admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("METHWH")).pendingAdmin(),
+            Timelock(addresses.getAddress("mETHwh")).pendingAdmin(),
             address(0),
-            "METHWH pending admin incorrect"
+            "mETHwh pending admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MXCUSDC")).pendingAdmin(),
+            Timelock(addresses.getAddress("mxcUSDC")).pendingAdmin(),
             address(0),
-            "MXCUSDC pending admin incorrect"
+            "mxcUSDC pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MXCUSDC")).admin(),
+            Timelock(addresses.getAddress("mxcUSDC")).admin(),
             governor,
-            "MXCUSDC admin incorrect"
+            "mxcUSDC admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MUSDC")).pendingAdmin(),
+            Timelock(addresses.getAddress("mUSDCwh")).pendingAdmin(),
             address(0),
-            "MUSDC pending admin incorrect"
+            "mUSDCwh pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MUSDC")).admin(),
+            Timelock(addresses.getAddress("mUSDCwh")).admin(),
             governor,
-            "MUSDC admin incorrect"
+            "mUSDCwh admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MFRAX")).admin(),
+            Timelock(addresses.getAddress("mFRAX")).admin(),
             governor,
-            "MFRAX admin incorrect"
+            "mFRAX admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MFRAX")).pendingAdmin(),
+            Timelock(addresses.getAddress("mFRAX")).pendingAdmin(),
             address(0),
-            "MFRAX pending admin incorrect"
+            "mFRAX pending admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MUSDT")).pendingAdmin(),
+            Timelock(addresses.getAddress("mxcUSDT")).pendingAdmin(),
             address(0),
-            "MUSDT pending admin incorrect"
+            "mxcUSDT pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MUSDT")).admin(),
+            Timelock(addresses.getAddress("mxcUSDT")).admin(),
             governor,
-            "MUSDT admin incorrect"
+            "mxcUSDT admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MDOT")).pendingAdmin(),
+            Timelock(addresses.getAddress("mxcDOT")).pendingAdmin(),
             address(0),
-            "MDOT pending admin incorrect"
+            "mxcDOT pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MDOT")).admin(),
+            Timelock(addresses.getAddress("mxcDOT")).admin(),
             governor,
-            "MDOT admin incorrect"
+            "mxcDOT admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MGLIMMER")).pendingAdmin(),
+            Timelock(addresses.getAddress("mGLIMMER")).pendingAdmin(),
             address(0),
-            "MGLIMMER pending admin incorrect"
+            "mGLIMMER pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MGLIMMER")).admin(),
+            Timelock(addresses.getAddress("mGLIMMER")).admin(),
             governor,
-            "MGLIMMER admin incorrect"
+            "mGLIMMER admin incorrect"
         );
 
         assertEq(
@@ -333,60 +332,14 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("madUSDC")).pendingAdmin(),
+            Timelock(addresses.getAddress("UNITROLLER")).pendingAdmin(),
             address(0),
-            "madUSDC pending admin incorrect"
+            "UNITROLLER pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("madUSDC")).admin(),
+            Timelock(addresses.getAddress("UNITROLLER")).admin(),
             governor,
-            "madUSDC admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("madWETH")).pendingAdmin(),
-            address(0),
-            "madWETH pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("madWETH")).admin(),
-            governor,
-            "madWETH admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("madWBTC")).pendingAdmin(),
-            address(0),
-            "madWBTC pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("madWBTC")).admin(),
-            governor,
-            "madWBTC admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY"))
-                .pendingAdmin(),
-            address(0),
-            "TOKEN_SALE_DISTRIBUTOR_PROXY pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY"))
-                .admin(),
-            governor,
-            "TOKEN_SALE_DISTRIBUTOR_PROXY admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("COMPTROLLER")).pendingAdmin(),
-            address(0),
-            "COMPTROLLER pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("COMPTROLLER")).admin(),
-            governor,
-            "COMPTROLLER admin incorrect"
+            "UNITROLLER admin incorrect"
         );
     }
 }
