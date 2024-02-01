@@ -23,7 +23,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         uint256 voteAmount,
         uint8 voters
     ) public returns (uint256 proposalId) {
-        vm.assume(voters > 0);
+        voters = uint8(bound(voters, 1, type(uint8).max));
         // vote amount * voters must be less than total supply
         uint256 maxVoteAmount = totalSupply / voters;
         voteAmount = bound(voteAmount, 1e18, maxVoteAmount);
@@ -99,8 +99,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
     function testVotingGovernorMultipleUsersVotingVaryingVoutAmount(
         uint8 voters
     ) public returns (uint256 proposalId) {
-        vm.assume(voters > 0);
-
+        voters = uint8(bound(voters, 1, type(uint8).max));
         address[] memory users = new address[](voters);
         uint256[] memory voteAmounts = new uint256[](voters);
         uint256 totalVoteAmount = 0;
@@ -182,7 +181,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         uint256 voteAmount,
         uint8 voters
     ) public returns (uint256 proposalId) {
-        vm.assume(voters > 0);
+        voters = uint8(bound(voters, 1, type(uint8).max));
         // vote amount * voters must be less than total supply
         uint256 maxVoteAmount = totalSupply / voters;
         voteAmount = bound(voteAmount, 1e18, maxVoteAmount);
@@ -248,7 +247,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
     function testVotingVoteCollectionMultipleUsersVotingVaryingVoutAmount(
         uint8 voters
     ) public returns (uint256 proposalId) {
-        vm.assume(voters > 0);
+        voters = uint8(bound(voters, 1, type(uint8).max));
 
         address[] memory users = new address[](voters);
         uint256[] memory voteAmounts = new uint256[](voters);
