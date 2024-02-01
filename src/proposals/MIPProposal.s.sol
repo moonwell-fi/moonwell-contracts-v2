@@ -78,6 +78,7 @@ abstract contract MIPProposal is Script {
         if (DO_DEPLOY) {
             (
                 string[] memory recordedNames,
+                ,
                 address[] memory recordedAddresses
             ) = addresses.getRecordedAddresses();
             for (uint256 i = 0; i < recordedNames.length; i++) {

@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
@@ -13,7 +13,7 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {IWormhole} from "@protocol/Governance/IWormhole.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/Oracles/PriceOracle.sol";
@@ -81,7 +81,13 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 trustedSenders
             );
 
-            addresses.addAddress("TEMPORAL_GOVERNOR", address(governor));
+            // change TEMPORAL_GOVERNOR if it already exists
+            try addresses.getAddress("TEMPORAL_GOVERNOR") returns (address) {
+                addresses.changeAddress("TEMPORAL_GOVERNOR", address(governor));
+                /// TEMPORAL_GOVERNOR already exists
+            } catch {
+                addresses.addAddress("TEMPORAL_GOVERNOR", address(governor));
+            }
         }
 
         deployAndMint(addresses);

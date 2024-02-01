@@ -5,8 +5,9 @@ libs = ['node_modules', 'lib']
 test = 'test'
 cache_path  = 'artifacts/forge-cache'
 fs_permissions = [{ access = "read", path = "./"}]
-solc = "0.8.19" # lock to paris to prevent use of push0 opcode which is not live on base
+auto_detect_solc = true
 evm_version = 'paris' # lock to paris to prevent use of push0 opcode which is not live on base
+optimizer_runs = 1
 
 [rpc_endpoints]
 localhost = "http://127.0.0.1:8545"
@@ -28,3 +29,6 @@ goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/a
 sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
 base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
 baseGoerli = { key = "PLACEHOLDER_STRING", url= "https://api-goerli.basescan.org/api" }
+
+[fuzz]
+fail_on_revert = true
