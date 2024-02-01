@@ -291,34 +291,75 @@ abstract contract HybridProposal is
         printProposalActionSteps();
     }
 
+    function deploy(Addresses, address) public virtual override {}
+
+    function afterDeploy(Addresses, address) public virtual override {}
+
+    function afterDeploySetup(Addresses) public virtual override {}
+
+    function build(Addresses) public virtual override {}
+
+    function teardown(Addresses, address) public pure virtual override {}
+
     function run(Addresses, address) public virtual override {
-        /// pre-run verify hooks
+        /// @dev enable debugging
+    }
+
+    /// runs the proposal on moonbeam and base, verifying the actions through the hook
+    /// @param addresses the addresses contract
+    /// @param _moonbeamForkId the fork ID for moonbeam
+    /// @param _baseForkId the fork ID for base
+    /// @param moonbeamGovernor the moonbeam governor address
+    function _run(
+        Addresses addresses,
+        uint256 _moonbeamForkId,
+        uint256 _baseForkId,
+        address moonbeamGovernor
+    ) internal {
+        uint256 activeFork = vm.activeFork();
+
+        vm.selectFork(_moonbeamForkId);
+
         _verifyActionsPreRunHybrid(moonbeamActions);
 
-        /// run actions on moonbeam
-        // _simulateGovProposal(addresses.getAddress("MULTISIG"));
+        vm.startPrank(moonbeamGovernor);
+        for (uint256 i = 0; i < moonbeamActions.length; i++) {
+            (bool success, ) = moonbeamActions[i].target.call{
+                value: moonbeamActions[i].value
+            }(moonbeamActions[i].data);
 
-        /// post-run verify hooks
+            require(success, "moonbeam action failed");
+        }
+
         _verifyMTokensPostRun();
 
-        /// wipe hook data in Market Creation Hook
+        vm.stopPrank();
 
         delete createdMTokens;
         comptroller = address(0);
 
-        /// pre-run verify hooks
+        /// base simulation
+
+        vm.selectFork(_baseForkId);
+
         _verifyActionsPreRunHybrid(baseActions);
 
-        /// run actions on base
-        /// TODO figure this out
-        // _simulateTemporalGovernorActions(addresses.getAddress("MULTISIG"));
+        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        for (uint256 i = 0; i < baseActions.length; i++) {
+            (bool success, ) = baseActions[i].target.call{
+                value: baseActions[i].value
+            }(baseActions[i].data);
 
-        /// post-run verify hooks
+            require(success, "base action failed");
+        }
+        vm.stopPrank();
+
         _verifyMTokensPostRun();
-
-        /// wipe hook data in Market Creation Hook
 
         delete createdMTokens;
         comptroller = address(0);
+
+        /// switch back to original fork
+        vm.selectFork(activeFork);
     }
 }
