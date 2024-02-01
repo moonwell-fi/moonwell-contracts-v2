@@ -105,7 +105,6 @@ contract TestMultichainProposals is Test, Initializable {
                 .primaryForkId();
 
             vm.selectFork(forkId);
-            console.log("block chain id: ", block.chainid);
 
             // Deploy step
             if (deploy) {
