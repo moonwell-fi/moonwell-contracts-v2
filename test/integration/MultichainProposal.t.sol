@@ -8,12 +8,14 @@ import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
+import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {StringUtils} from "@proposals/utils/StringUtils.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
+import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 
 import {mipm18a} from "@proposals/mips/mip-m18/mip-m18a.sol";
 import {mipm18b} from "@proposals/mips/mip-m18/mip-m18b.sol";
@@ -32,6 +34,7 @@ contract MultichainProposalTest is
 {
     using StringUtils for string;
 
+    MultichainVoteCollection public voteCollection;
     MoonwellArtemisGovernor public governor;
     IWormhole public wormhole;
     Timelock public timelock;
@@ -89,9 +92,50 @@ contract MultichainProposalTest is
         );
 
         vm.selectFork(moonbeamForkId);
-    }
-
-    function testRunProposals() public {
         runProposals();
     }
+
+    function testSetup() public {
+        vm.selectFork(baseForkId);
+        voteCollection = MultichainVoteCollection(
+            addresses.getAddress("VOTE_COLLECTION_PROXY")
+        );
+
+        assertEq(
+            voteCollection.gasLimit(),
+            Constants.MIN_GAS_LIMIT,
+            "incorrect gas limit vote collection"
+        );
+        assertEq(
+            address(voteCollection.wormholeRelayer()),
+            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+            "incorrect wormhole relayer"
+        );
+        assertEq(
+            address(voteCollection.xWell()),
+            addresses.getAddress("xWELL_PROXY"),
+            "incorrect xWELL contract"
+        );
+        assertEq(
+            address(voteCollection.stkWell()),
+            addresses.getAddress("stkWELL_PROXY"),
+            "incorrect xWELL contract"
+        );
+    }
+
+    function testVotingOnBasexWellSucceeds() public {}
+
+    function testVotingOnBasestkWellSucceeds() public {}
+
+    function testVotingOnBasestkWellPostVotingPeriodFails() public {}
+
+    function testEmittingVotesMultipleTimesVoteCollectionPeriodSucceeds()
+        public
+    {}
+
+    function testReceiveProposalFromRelayersSucceeds() public {}
+
+    function testReceiveSameProposalFromRelayersTwiceFails() public {}
+
+    function testEmittingVotesPostVoteCollectionPeriodFails() public {}
 }
