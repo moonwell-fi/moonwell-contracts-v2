@@ -318,7 +318,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
     }
 
     struct FuzzingInput {
-        address user;
+        uint160 user;
         uint256 wellAmount;
         uint256 xwellAmount;
         uint256 stkwellAmount;
@@ -329,43 +329,76 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
     function testGovernorVotingMultipleUsersMultipleTokensDifferentVoteValues(
         FuzzingInput memory input
     ) public {
-        vm.assume(
-            input.wellAmount > 0 &&
-                input.xwellAmount > 0 &&
-                input.stkwellAmount > 0 &&
-                input.vestingWellAmount > 0
+        input.voteValue = uint8(bound(input.voteValue, 0, 2));
+        address userAddress = address(
+            uint160(bound(input.user, 1, type(uint160).max))
         );
-        vm.assume(input.user != address(0));
-        vm.assume(input.voteValue < uint8(2));
-        input.xwellAmount = bound(input.xwellAmount, 1e18, totalSupply);
-        input.stkwellAmount = bound(input.stkwellAmount, 1e18, totalSupply);
-        input.wellAmount = bound(input.wellAmount, 1e18, totalSupply);
+
+        input.xwellAmount = bound(input.xwellAmount, 1, xwell.totalSupply());
+        input.stkwellAmount = bound(
+            input.stkwellAmount,
+            1,
+            stkWell.totalSupply()
+        );
+        input.wellAmount = bound(input.wellAmount, 1, well.totalSupply());
+        input.vestingWellAmount = bound(
+            input.vestingWellAmount,
+            1,
+            distributor.totalSupply()
+        );
 
         // TODO add vesitng well amount
         uint256 totalVoteAmount = input.wellAmount +
             input.xwellAmount +
-            input.stkwellAmount;
+            input.stkwellAmount +
+            input.vestingWellAmount;
 
         _delegateVoteAmountForUser(
+            address(stkWell),
+            userAddress,
+            input.stkwellAmount
+        );
+        _delegateVoteAmountForUser(
+            address(well),
+            userAddress,
+            input.wellAmount
+        );
+        _delegateVoteAmountForUser(
             address(xwell),
-            input.user,
+            userAddress,
             input.xwellAmount
         );
         _delegateVoteAmountForUser(
-            address(stkWell),
-            input.user,
-            input.stkwellAmount
+            address(distributor),
+            userAddress,
+            input.vestingWellAmount
         );
-        _delegateVoteAmountForUser(address(well), input.user, input.wellAmount);
 
+        // check user balance to ensure it's correct
+        assertEq(
+            xwell.balanceOf(userAddress),
+            input.xwellAmount,
+            "incorrect xwell balance"
+        );
+
+        assertEq(
+            stkWell.balanceOf(userAddress),
+            input.stkwellAmount,
+            "incorrect stkwell balance"
+        );
+
+        assertEq(
+            well.balanceOf(userAddress),
+            input.wellAmount,
+            "incorrect well balance"
+        );
         vm.warp(block.timestamp + 1);
         vm.roll(block.number + 1);
 
         // check vote amount for users
-        // TODO why this is not matching?
         assertEq(
             governor.getVotes(
-                input.user,
+                userAddress,
                 block.timestamp - 1,
                 block.number - 1
             ),
@@ -383,10 +416,14 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             "incorrect state, not active"
         );
 
-        vm.prank(input.user);
+        vm.prank(userAddress);
         governor.castVote(proposalId, input.voteValue);
-        (bool hasVoted, , ) = governor.getReceipt(proposalId, input.user);
+        (bool hasVoted, , uint256 votes) = governor.getReceipt(
+            proposalId,
+            userAddress
+        );
         assertTrue(hasVoted, "user did not vote");
+        assertEq(votes, totalVoteAmount, "incorrect vote amount");
 
         (
             uint256 totalVotes,
@@ -427,6 +464,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             xWELL(token).delegate(user);
         } else {
             deal(address(xwell), user, voteAmount);
+
             vm.startPrank(user);
             xwell.approve(address(stkWell), voteAmount);
             stkWell.stake(user, voteAmount);
