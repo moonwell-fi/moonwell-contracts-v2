@@ -4,7 +4,7 @@ import "@forge-std/Test.sol";
 
 import {MoonwellViewsV1} from "@protocol/views/MoonwellViewsV1.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 

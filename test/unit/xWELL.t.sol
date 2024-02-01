@@ -2,6 +2,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 import "@test/helper/BaseTest.t.sol";
+import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract xWELLUnitTest is BaseTest {
     function setUp() public override {
