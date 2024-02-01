@@ -21,26 +21,15 @@ contract mipm18a is ChainIds, HybridProposal, MultichainGovernorDeploy {
     }
 
     function deploy(Addresses addresses, address) public override {
-        address proxyAdmin = addresses.getAddress(
-            "MOONBEAM_PROXY_ADMIN",
-            moonBeamChainId
-        );
+        address proxyAdmin = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
 
         (
             address governorProxy,
             address governorImpl
         ) = deployMultichainGovernor(proxyAdmin);
 
-        addresses.addAddress(
-            "MULTICHAIN_GOVERNOR_PROXY",
-            governorProxy,
-            moonBeamChainId
-        );
-        addresses.addAddress(
-            "MULTICHAIN_GOVERNOR_IMPL",
-            governorImpl,
-            moonBeamChainId
-        );
+        addresses.addAddress("MULTICHAIN_GOVERNOR_PROXY", governorProxy);
+        addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", governorImpl);
     }
 
     function afterDeploy(Addresses, address) public override {}
@@ -57,9 +46,9 @@ contract mipm18a is ChainIds, HybridProposal, MultichainGovernorDeploy {
     function validate(Addresses addresses, address) public view override {
         validateProxy(
             vm,
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId),
-            addresses.getAddress("MULTICHAIN_GOVERNOR_IMPL", moonBeamChainId),
-            addresses.getAddress("MOONBEAM_PROXY_ADMIN", moonBeamChainId),
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
+            addresses.getAddress("MULTICHAIN_GOVERNOR_IMPL"),
+            addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
             "moonbeam proxies for multichain governor"
         );
     }

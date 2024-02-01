@@ -15,7 +15,9 @@ import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/Multic
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 
-/// Proposal to run on Moonbeam to initialize the Multichain Governor contract
+/// Proposal to run on Moonbeam to accept governance powers, finalizing
+/// the transfer of admin and owner from the current Artemis Timelock to the
+/// new Multichain Governor.
 contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     string public constant name = "MIP-M18E";
 
@@ -23,12 +25,6 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     function primaryForkId() public view override returns (uint256) {
         return moonbeamForkId;
     }
-
-    function deploy(Addresses, address) public override {}
-
-    function afterDeploy(Addresses addresses, address) public override {}
-
-    function afterDeploySetup(Addresses addresses) public override {}
 
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
@@ -63,7 +59,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             false
         );
 
-        /// begin transfer of ownership of the xwell token to the multichain governor
+        /// accept transfer of ownership of the xwell token to the multichain governor
         /// This one has to go through Temporal Governance
         _pushHybridAction(
             addresses.getAddress("xWELL_PROXY"),
@@ -72,7 +68,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
-        /// set pending admin of comptroller
+        /// accept admin of comptroller
         _pushHybridAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature("_acceptAdmin()"),
@@ -80,8 +76,9 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
-        /// set pending admin of .mad mTokens
+        /// accept admin of .mad mTokens
 
+        /// accept admin of MOONWELL_mwBTC
         _pushHybridAction(
             addresses.getAddress("MOONWELL_mwBTC"),
             abi.encodeWithSignature("_acceptAdmin()"),
@@ -89,6 +86,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
+        /// accept admin of MOONWELL_mETH
         _pushHybridAction(
             addresses.getAddress("MOONWELL_mETH"),
             abi.encodeWithSignature("_acceptAdmin()"),
@@ -96,6 +94,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
+        /// accept admin of MOONWELL_mUSDC
         _pushHybridAction(
             addresses.getAddress("MOONWELL_mUSDC"),
             abi.encodeWithSignature("_acceptAdmin()"),
@@ -103,6 +102,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
+        /// accept admin of mGLIMMER
         _pushHybridAction(
             addresses.getAddress("mGLIMMER"),
             abi.encodeWithSignature("_acceptAdmin()"),
@@ -110,6 +110,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
+        /// accept admin of mxcDOT
         _pushHybridAction(
             addresses.getAddress("mxcDOT"),
             abi.encodeWithSignature("_acceptAdmin()"),
@@ -117,6 +118,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
+        /// accept admin of mxcUSDT
         _pushHybridAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature("_acceptAdmin()"),
@@ -124,6 +126,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
+        /// accept admin of mFRAX
         _pushHybridAction(
             addresses.getAddress("mFRAX"),
             abi.encodeWithSignature("_acceptAdmin()"),
@@ -131,6 +134,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
+        /// accept admin of mUSDCwh
         _pushHybridAction(
             addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature("_acceptAdmin()"),
@@ -138,6 +142,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
+        /// accept admin of mxcUSDC
         _pushHybridAction(
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature("_acceptAdmin()"),
@@ -145,6 +150,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
+        /// accept admin of mETHwh
         _pushHybridAction(
             addresses.getAddress("mETHwh"),
             abi.encodeWithSignature("_acceptAdmin()"),
@@ -153,41 +159,13 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
     }
 
-    function teardown(Addresses addresses, address) public pure override {}
-
     function run(Addresses addresses, address) public override {
-        uint256 activeFork = vm.activeFork();
-
-        vm.selectFork(moonbeamForkId);
-
-        vm.startPrank(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
+        _run(
+            addresses,
+            moonbeamForkId,
+            baseForkId,
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
-        for (uint256 i = 0; i < moonbeamActions.length; i++) {
-            (bool success, ) = moonbeamActions[i].target.call{
-                value: moonbeamActions[i].value
-            }(moonbeamActions[i].data);
-
-            require(success, "moonbeam action failed");
-        }
-        vm.stopPrank();
-
-        /// base simulation
-
-        vm.selectFork(baseForkId);
-
-        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId));
-        for (uint256 i = 0; i < baseActions.length; i++) {
-            (bool success, ) = baseActions[i].target.call{
-                value: baseActions[i].value
-            }(baseActions[i].data);
-
-            require(success, "base action failed");
-        }
-        vm.stopPrank();
-
-        /// switch back to original fork
-        vm.selectFork(activeFork);
     }
 
     function validate(Addresses addresses, address) public override {

@@ -26,12 +26,6 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
         return moonbeamForkId;
     }
 
-    function deploy(Addresses, address) public override {}
-
-    function afterDeploy(Addresses addresses, address) public override {}
-
-    function afterDeploySetup(Addresses addresses) public override {}
-
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
         address multichainGovernorAddress = addresses.getAddress(
@@ -269,41 +263,13 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
     }
 
-    function teardown(Addresses addresses, address) public pure override {}
-
     function run(Addresses addresses, address) public override {
-        uint256 activeFork = vm.activeFork();
-
-        vm.selectFork(moonbeamForkId);
-
-        vm.startPrank(
-            addresses.getAddress("ARTEMIS_TIMELOCK", moonBeamChainId)
+        _run(
+            addresses,
+            moonbeamForkId,
+            baseForkId,
+            addresses.getAddress("ARTEMIS_TIMELOCK")
         );
-        for (uint256 i = 0; i < moonbeamActions.length; i++) {
-            (bool success, ) = moonbeamActions[i].target.call{
-                value: moonbeamActions[i].value
-            }(moonbeamActions[i].data);
-
-            require(success, "moonbeam action failed");
-        }
-        vm.stopPrank();
-
-        /// base simulation
-
-        vm.selectFork(baseForkId);
-
-        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId));
-        for (uint256 i = 0; i < baseActions.length; i++) {
-            (bool success, ) = baseActions[i].target.call{
-                value: baseActions[i].value
-            }(baseActions[i].data);
-
-            require(success, "base action failed");
-        }
-        vm.stopPrank();
-
-        /// switch back to original fork
-        vm.selectFork(activeFork);
     }
 
     function validate(Addresses addresses, address) public override {

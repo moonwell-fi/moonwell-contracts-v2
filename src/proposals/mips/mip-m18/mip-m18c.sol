@@ -114,9 +114,15 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 "publishMessage(uint32,bytes,uint8)",
                 1000,
                 abi.encode(
+                    /// target is temporal governor, this passes intended recipient check
                     temporalGovernanceTargets[0],
+                    /// sets temporal governor target to itself
                     temporalGovernanceTargets,
+                    /// sets values to array filled with 0 values
                     new uint256[](1),
+                    /// sets calldata to a call to the setTrustedSenders((uint16,address)[])
+                    /// function with artemis timelock as the address and moonbeam wormhole
+                    /// chain id as the chain id
                     temporalGovernanceCalldata
                 ),
                 200
@@ -124,11 +130,9 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
     }
 
-    function deploy(Addresses addresses, address) public override {
-        buildCalldata(addresses);
-    }
-
     function afterDeploy(Addresses addresses, address) public override {
+        buildCalldata(addresses);
+
         MultichainGovernor governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
         );
@@ -144,7 +148,6 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 1
             );
 
-        /// TODO give this extra review, ensure addresses and chainids are correct
         trustedSenders[0].addr = multichainVoteCollection;
         trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid];
 
@@ -174,17 +177,9 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             "WORMHOLE_BRIDGE_RELAYER"
         );
 
+        require(approvedCalldata.length != 0, "calldata not set");
+
         governor.initialize(initData, trustedSenders, approvedCalldata);
-    }
-
-    function afterDeploySetup(Addresses) public override {}
-
-    function build(Addresses) public override {}
-
-    function teardown(Addresses, address) public pure override {}
-
-    function run(Addresses, address) public override {
-        /// @dev enable debugging
     }
 
     function validate(Addresses addresses, address) public override {

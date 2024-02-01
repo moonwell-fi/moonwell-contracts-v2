@@ -42,10 +42,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
     }
 
     function deploy(Addresses addresses, address) public override {
-        address proxyAdmin = addresses.getAddress(
-            "MRD_PROXY_ADMIN",
-            baseChainId
-        );
+        address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
         /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
         (
@@ -66,13 +63,13 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         {
             (address stkWellProxy, address stkWellImpl) = deployStakedWell(
-                addresses.getAddress("xWELL_PROXY", baseChainId),
-                addresses.getAddress("xWELL_PROXY", baseChainId),
+                addresses.getAddress("xWELL_PROXY"),
+                addresses.getAddress("xWELL_PROXY"),
                 cooldownSeconds,
                 unstakeWindow,
                 ecosystemReserveProxy,
-                /// TODO, double check that emissions manager on Base should be temporal governor
-                addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId),
+                /// check that emissions manager on Moonbeam is the Artemis Timelock, so on Base it should be the temporal governor
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
                 /// TODO double check the distribution duration
                 distributionDuration,
                 address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
@@ -135,15 +132,6 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
             addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId)
         );
     }
-
-    function afterDeploySetup(Addresses) public override {}
-
-    function build(Addresses) public override {}
-
-    function teardown(Addresses, address) public pure override {}
-
-    /// nothing to run
-    function run(Addresses, address) public override {}
 
     function validate(Addresses addresses, address) public override {
         /// proxy validation
