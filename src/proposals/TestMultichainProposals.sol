@@ -43,6 +43,7 @@ contract TestMultichainProposals is Test, Initializable {
     function _initialize(address[] memory _proposals) internal initializer {
         for (uint256 i = 0; i < _proposals.length; i++) {
             proposals.push(Proposal(_proposals[i]));
+            vm.makePersistent(_proposals[i]);
         }
     }
 
@@ -58,12 +59,9 @@ contract TestMultichainProposals is Test, Initializable {
 
         addresses = new Addresses();
 
+        /// make the Addresses contract persistent so it can be accessed from other chains
         vm.makePersistent(address(addresses));
-
-        /// make proposals persistent across networks so they work on any chain
-        for (uint256 i = 0; i < proposals.length; i++) {
-            vm.makePersistent(address(proposals[i]));
-        }
+        vm.makePersistent(address(this));
     }
 
     function printCalldata(
@@ -102,9 +100,6 @@ contract TestMultichainProposals is Test, Initializable {
         }
 
         for (uint256 i = 0; i < proposals.length; i++) {
-            /// make proposals persistent across networks so they work on any chain
-            vm.makePersistent(address(proposals[i]));
-
             string memory name = IProposal(address(proposals[i])).name();
             uint256 forkId = IMultichainProposal(address(proposals[i]))
                 .primaryForkId();
@@ -116,8 +111,10 @@ contract TestMultichainProposals is Test, Initializable {
             if (deploy) {
                 if (debug) {
                     console.log("Proposal", name, "deploy()");
-                    addresses.resetRecordingAddresses();
                 }
+
+                addresses.resetRecordingAddresses(); /// reset the recorded addresses for the next proposal
+
                 proposals[i].deploy(addresses, address(proposals[i])); /// mip itself is the deployer
                 if (debug) {
                     (
