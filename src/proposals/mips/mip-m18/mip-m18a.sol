@@ -54,7 +54,7 @@ contract mipm18a is ChainIds, HybridProposal, MultichainGovernorDeploy {
     /// nothing to run
     function run(Addresses, address) public override {}
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         validateProxy(
             vm,
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId),

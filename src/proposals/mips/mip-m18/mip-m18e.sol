@@ -32,17 +32,6 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
-        address multichainGovernorAddress = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
-        // bytes memory wormholeTemporalGovPayload = abi.encodeWithSignature(
-        //     "publishMessage(uint32,bytes,uint8)",
-        //     nonce,
-        //     temporalGovCalldata,
-        //     consistencyLevel
-        // );
-        /// TODO add multichain governor as wormhole trusted sender in temporal governor
-
         /// Moonbeam actions
 
         /// transfer ownership of the wormhole bridge adapter on the moonbeam chain to the multichain governor
@@ -53,16 +42,25 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
-        /// TODO THIS IS COMPLETELY WRONG, FIX
+        ITemporalGovernor.TrustedSender[]
+            memory trustedSendersToRemove = new ITemporalGovernor.TrustedSender[](
+                1
+            );
+
+        trustedSendersToRemove[0].addr = addresses.getAddress(
+            "ARTEMIS_TIMELOCK"
+        );
+        trustedSendersToRemove[0].chainId = moonBeamWormholeChainId;
+
         /// remove the artemis timelock as a trusted sender in the wormhole bridge adapter on base
         _pushHybridAction(
-            addresses.getAddress("WORMHOLE_CORE"),
+            addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId),
             abi.encodeWithSignature(
-                "publishMessage(address)",
-                multichainGovernorAddress
+                "unSetTrustedSenders((uint16,address)[])",
+                trustedSendersToRemove
             ),
-            "Set the admin of the Wormhole Bridge Adapter as the multichain governor",
-            true
+            "Remove Artemis Timelock as a trusted sender in the Temporal Governor on base",
+            false
         );
 
         /// begin transfer of ownership of the xwell token to the multichain governor
@@ -158,8 +156,6 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     function teardown(Addresses addresses, address) public pure override {}
 
     function run(Addresses addresses, address) public override {
-        /// @dev enable debugging
-
         uint256 activeFork = vm.activeFork();
 
         vm.selectFork(moonbeamForkId);
@@ -168,9 +164,11 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
         );
         for (uint256 i = 0; i < moonbeamActions.length; i++) {
-            moonbeamActions[i].target.call{value: moonbeamActions[i].value}(
-                moonbeamActions[i].data
-            );
+            (bool success, ) = moonbeamActions[i].target.call{
+                value: moonbeamActions[i].value
+            }(moonbeamActions[i].data);
+
+            require(success, "moonbeam action failed");
         }
         vm.stopPrank();
 
@@ -180,9 +178,11 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId));
         for (uint256 i = 0; i < baseActions.length; i++) {
-            baseActions[i].target.call{value: baseActions[i].value}(
-                baseActions[i].data
-            );
+            (bool success, ) = baseActions[i].target.call{
+                value: baseActions[i].value
+            }(baseActions[i].data);
+
+            require(success, "base action failed");
         }
         vm.stopPrank();
 

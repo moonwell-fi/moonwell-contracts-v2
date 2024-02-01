@@ -272,8 +272,6 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
     function teardown(Addresses addresses, address) public pure override {}
 
     function run(Addresses addresses, address) public override {
-        /// @TODO fill this out with an actual governance flow later
-
         uint256 activeFork = vm.activeFork();
 
         vm.selectFork(moonbeamForkId);
@@ -282,9 +280,11 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
             addresses.getAddress("ARTEMIS_TIMELOCK", moonBeamChainId)
         );
         for (uint256 i = 0; i < moonbeamActions.length; i++) {
-            moonbeamActions[i].target.call{value: moonbeamActions[i].value}(
-                moonbeamActions[i].data
-            );
+            (bool success, ) = moonbeamActions[i].target.call{
+                value: moonbeamActions[i].value
+            }(moonbeamActions[i].data);
+
+            require(success, "moonbeam action failed");
         }
         vm.stopPrank();
 
@@ -294,9 +294,11 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId));
         for (uint256 i = 0; i < baseActions.length; i++) {
-            baseActions[i].target.call{value: baseActions[i].value}(
-                baseActions[i].data
-            );
+            (bool success, ) = baseActions[i].target.call{
+                value: baseActions[i].value
+            }(baseActions[i].data);
+
+            require(success, "base action failed");
         }
         vm.stopPrank();
 
