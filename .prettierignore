@@ -1,0 +1,24 @@
+# directories
+broadcast
+cache
+coverage
+lib
+out
+artifacts
+.github
+.husky
+
+# files
+*.env
+*.log
+.DS_Store
+lcov.info
+*.txt
+*.toml
+LICENSE
+.solhintrc
+.prettierrc
+.prettierignore
+*.svg
+.gitmodules
+.gitignore
