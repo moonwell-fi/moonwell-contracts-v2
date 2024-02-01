@@ -102,6 +102,9 @@ contract TestMultichainProposals is Test, Initializable {
         }
 
         for (uint256 i = 0; i < proposals.length; i++) {
+            /// make proposals persistent across networks so they work on any chain
+            vm.makePersistent(address(proposals[i]));
+
             string memory name = IProposal(address(proposals[i])).name();
             uint256 forkId = IMultichainProposal(address(proposals[i]))
                 .primaryForkId();
