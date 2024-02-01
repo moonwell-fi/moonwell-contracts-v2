@@ -134,7 +134,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
         buildCalldata(addresses);
 
         MultichainGovernor governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
 
         /// executing proposal on moonbeam, but this proposal needs an address from base
@@ -184,7 +184,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
     function validate(Addresses addresses, address) public override {
         MultichainGovernor governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
 
         assertEq(

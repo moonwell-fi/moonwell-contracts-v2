@@ -122,14 +122,14 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// approve stkWELL contract to spend xWELL from the ecosystem reserve contract
         ecosystemReserveController.approve(
-            addresses.getAddress("xWELL_PROXY", baseChainId),
+            addresses.getAddress("xWELL_PROXY"),
             addresses.getAddress("stkWELL_PROXY"),
             approvalAmount
         );
 
         /// transfer ownership of the ecosystem reserve controller to the temporal governor
         ecosystemReserveController.transferOwnership(
-            addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId)
+            addresses.getAddress("TEMPORAL_GOVERNOR")
         );
     }
 
@@ -140,7 +140,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 vm,
                 addresses.getAddress("VOTE_COLLECTION_PROXY"),
                 addresses.getAddress("VOTE_COLLECTION_IMPL"),
-                addresses.getAddress("MRD_PROXY_ADMIN", baseChainId),
+                addresses.getAddress("MRD_PROXY_ADMIN"),
                 "vote collection validation"
             );
 
@@ -148,7 +148,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 vm,
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"),
                 addresses.getAddress("ECOSYSTEM_RESERVE_IMPL"),
-                addresses.getAddress("MRD_PROXY_ADMIN", baseChainId),
+                addresses.getAddress("MRD_PROXY_ADMIN"),
                 "ecosystem reserve validation"
             );
 
@@ -156,15 +156,15 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 vm,
                 addresses.getAddress("stkWELL_PROXY"),
                 addresses.getAddress("stkWELL_IMPL"),
-                addresses.getAddress("MRD_PROXY_ADMIN", baseChainId),
+                addresses.getAddress("MRD_PROXY_ADMIN"),
                 "stkWELL_PROXY validation"
             );
 
             validateProxy(
                 vm,
-                addresses.getAddress("xWELL_PROXY", baseChainId),
-                addresses.getAddress("xWELL_LOGIC", baseChainId),
-                addresses.getAddress("MRD_PROXY_ADMIN", baseChainId),
+                addresses.getAddress("xWELL_PROXY"),
+                addresses.getAddress("xWELL_LOGIC"),
+                addresses.getAddress("MRD_PROXY_ADMIN"),
                 "xWELL_PROXY validation"
             );
         }
@@ -177,7 +177,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
             assertEq(
                 ecosystemReserveController.owner(),
-                addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId),
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
                 "ecosystem reserve controller owner not set correctly"
             );
             assertEq(
@@ -200,9 +200,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 "ecosystem reserve funds admin not set correctly"
             );
 
-            xWELL xWell = xWELL(
-                addresses.getAddress("xWELL_PROXY", baseChainId)
-            );
+            xWELL xWell = xWELL(addresses.getAddress("xWELL_PROXY"));
 
             assertEq(
                 xWell.allowance(

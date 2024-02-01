@@ -29,8 +29,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
         address multichainGovernorAddress = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY",
-            moonBeamChainId
+            "MULTICHAIN_GOVERNOR_PROXY"
         );
 
         ITemporalGovernor.TrustedSender[]
@@ -46,7 +45,11 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
         /// add the multichain governor as a trusted sender in the wormhole bridge adapter on base
         /// this is an action that takes place on base, not on moonbeam, so flag is flipped to false for isMoonbeam
         _pushHybridAction(
-            addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId),
+            addresses.getAddress(
+                "TEMPORAL_GOVERNOR",
+                /// TODO triple check this
+                sendingChainIdToReceivingChainId[block.chainid]
+            ),
             abi.encodeWithSignature(
                 "setTrustedSenders((uint16,address)[])",
                 temporalGovernanceTrustedSenders
@@ -59,10 +62,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// transfer ownership of the wormhole bridge adapter on the moonbeam chain to the multichain governor
         _pushHybridAction(
-            addresses.getAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                moonBeamChainId
-            ),
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
             abi.encodeWithSignature(
                 "transferOwnership(address)",
                 multichainGovernorAddress
@@ -73,7 +73,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// transfer ownership of proxy admin to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("MOONBEAM_PROXY_ADMIN", moonBeamChainId),
+            addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
             abi.encodeWithSignature(
                 "transferOwnership(address)",
                 multichainGovernorAddress
@@ -85,7 +85,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
         /// begin transfer of ownership of the xwell token to the multichain governor
         /// This one has to go through Temporal Governance
         _pushHybridAction(
-            addresses.getAddress("xWELL_PROXY", moonBeamChainId),
+            addresses.getAddress("xWELL_PROXY"),
             abi.encodeWithSignature(
                 "transferOwnership(address)",
                 multichainGovernorAddress
@@ -96,7 +96,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// transfer ownership of chainlink oracle
         _pushHybridAction(
-            addresses.getAddress("CHAINLINK_ORACLE", moonBeamChainId),
+            addresses.getAddress("CHAINLINK_ORACLE"),
             abi.encodeWithSignature(
                 "setAdmin(address)",
                 multichainGovernorAddress
@@ -107,7 +107,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// transfer emissions manager of safety module
         _pushHybridAction(
-            addresses.getAddress("stkWELL", moonBeamChainId),
+            addresses.getAddress("stkWELL"),
             abi.encodeWithSignature(
                 "setEmissionsManager(address)",
                 multichainGovernorAddress
@@ -118,7 +118,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of unitroller
         _pushHybridAction(
-            addresses.getAddress("UNITROLLER", moonBeamChainId),
+            addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
@@ -129,10 +129,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set funds admin of ecosystem reserve controller
         _pushHybridAction(
-            addresses.getAddress(
-                "ECOSYSTEM_RESERVE_CONTROLLER",
-                moonBeamChainId
-            ),
+            addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"),
             abi.encodeWithSignature(
                 "transferOwnership(address)",
                 multichainGovernorAddress
@@ -143,7 +140,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of MOONWELL_mwBTC to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("MOONWELL_mwBTC", moonBeamChainId),
+            addresses.getAddress("MOONWELL_mwBTC"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
@@ -154,7 +151,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of MOONWELL_mBUSD to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("MOONWELL_mBUSD", moonBeamChainId),
+            addresses.getAddress("MOONWELL_mBUSD"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
@@ -165,7 +162,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of MOONWELL_mETH to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("MOONWELL_mETH", moonBeamChainId),
+            addresses.getAddress("MOONWELL_mETH"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
@@ -176,7 +173,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of MOONWELL_mUSDC to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("MOONWELL_mUSDC", moonBeamChainId),
+            addresses.getAddress("MOONWELL_mUSDC"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
@@ -187,7 +184,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of mGLIMMER to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("mGLIMMER", moonBeamChainId),
+            addresses.getAddress("mGLIMMER"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
@@ -198,7 +195,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of mxcDOT to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("mxcDOT", moonBeamChainId),
+            addresses.getAddress("mxcDOT"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
@@ -209,7 +206,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of mxcUSDT to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("mxcUSDT", moonBeamChainId),
+            addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
@@ -220,7 +217,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of mFRAX to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("mFRAX", moonBeamChainId),
+            addresses.getAddress("mFRAX"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
@@ -231,7 +228,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of mUSDCwh to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("mUSDCwh", moonBeamChainId),
+            addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
@@ -242,7 +239,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of mxcUSDC to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("mxcUSDC", moonBeamChainId),
+            addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
@@ -253,7 +250,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set pending admin of mETHwh to the multichain governor
         _pushHybridAction(
-            addresses.getAddress("mETHwh", moonBeamChainId),
+            addresses.getAddress("mETHwh"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
@@ -273,27 +270,17 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
     }
 
     function validate(Addresses addresses, address) public override {
-        address governor = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY",
-            moonBeamChainId
-        );
+        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
 
         assertEq(
-            Ownable(
-                addresses.getAddress(
-                    "ECOSYSTEM_RESERVE_CONTROLLER",
-                    moonBeamChainId
-                )
-            ).owner(),
+            Ownable(addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"))
+                .owner(),
             governor,
             "ecosystem reserve controller owner incorrect"
         );
         assertEq(
             Ownable2StepUpgradeable(
-                addresses.getAddress(
-                    "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                    moonBeamChainId
-                )
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
             ).pendingOwner(),
             governor,
             "WORMHOLE_BRIDGE_ADAPTER_PROXY pending owner incorrect"
