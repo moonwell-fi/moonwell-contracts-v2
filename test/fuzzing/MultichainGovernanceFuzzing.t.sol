@@ -329,7 +329,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
     }
 
     // array of users enumerable
-    EnumerableSet.AddressSet internal usersSet;
+    EnumerableSet.AddressSet internal usersSetGovernor;
 
     function testGovernorVotingMultippleUsersMultipleTokensDifferentVoteValues(
         FuzzingInput[] memory inputs
@@ -353,7 +353,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
                 uint160(bound(uint256(input.user), 1, type(uint160).max))
             );
             // make sure user is unique
-            if (usersSet.contains(userAddress)) {
+            if (usersSetGovernor.contains(userAddress)) {
                 continue;
             }
 
@@ -403,8 +403,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             if (totalVoteAmount == 0) {
                 continue;
             } else {
-                usersSet.add(userAddress);
-                uint256 index = usersSet.length() - 1;
+                usersSetGovernor.add(userAddress);
+                uint256 index = usersSetGovernor.length() - 1;
                 voteAmounts[index] = totalVoteAmount;
                 voteValues[index] = input.voteValue;
             }
@@ -456,6 +456,11 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
                 input.wellAmount,
                 "incorrect well balance"
             );
+            assertEq(
+                distributor.balanceOf(userAddress),
+                input.vestingWellAmount,
+                "incorrect distributor balance"
+            );
         }
 
         vm.warp(block.timestamp + 1);
@@ -477,8 +482,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         uint256 totalVotesAbstain = 0;
 
         // loop over users to vote
-        for (uint256 i = 0; i < usersSet.length(); i++) {
-            address user = usersSet.at(i);
+        for (uint256 i = 0; i < usersSetGovernor.length(); i++) {
+            address user = usersSetGovernor.at(i);
             uint8 voteValue = voteValues[i];
             uint256 voteAmount = voteAmounts[i];
 
@@ -490,12 +495,6 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
                 totalVotesAbstain += voteAmount;
             }
             totalVotes += voteAmount;
-
-            console.log("user", user);
-            console.log(
-                governor.getVotes(user, block.timestamp - 1, block.number - 1)
-            );
-            console.log("expected vote amount", voteAmount);
 
             vm.prank(user);
             governor.castVote(proposalId, voteValue);
@@ -515,6 +514,154 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             uint256 votesAgainst,
             uint256 votesAbstain
         ) = governor.proposalVotes(proposalId);
+
+        assertEq(totalVotesFor, votesFor, "votes for incorrect");
+        assertEq(votesAgainst, totalVotesAgainst, "votes against incorrect");
+        assertEq(votesAbstain, totalVotesAbstain, "abstain votes incorrect");
+        assertEq(totalVotes, totalVotesGovernor, "total votes incorrect");
+    }
+
+    struct FuzzingInputVoteCollection {
+        uint160 user;
+        uint256 xwellAmount;
+        uint256 stkwellAmount;
+        uint8 voteValue;
+    }
+
+    // array of users enumerable
+    EnumerableSet.AddressSet internal usersSetVoteCollection;
+
+    function testVoteCollectionVotingMultippleUsersMultipleTokensDifferentVoteValues(
+        FuzzingInputVoteCollection[] memory inputs
+    ) public {
+        // array of vote amounts
+        uint256[] memory voteAmounts = new uint256[](inputs.length);
+        // array of vote values
+        uint8[] memory voteValues = new uint8[](inputs.length);
+
+        // staked well and xwell uses xwell balance
+        uint256 totalXWellRemaining = xwell.totalSupply();
+
+        for (uint256 i = 0; i < inputs.length; i++) {
+            FuzzingInputVoteCollection memory input = inputs[i];
+
+            input.voteValue = uint8(bound(input.voteValue, 0, 2));
+
+            address userAddress = address(
+                uint160(bound(uint256(input.user), 1, type(uint160).max))
+            );
+            // make sure user is unique
+            if (usersSetVoteCollection.contains(userAddress)) {
+                continue;
+            }
+
+            // if total xwell remaining is greater than 0, then we can have a
+            // range of 1 to total xwell remaining
+            input.xwellAmount = bound(
+                input.xwellAmount,
+                totalXWellRemaining > 0 ? 1 : 0,
+                totalXWellRemaining > 0 ? totalXWellRemaining : 0
+            );
+            // reduce total xwell remaining
+            totalXWellRemaining -= input.xwellAmount;
+
+            // if total xwell remaining is greater than 0, then we can have a
+            // range of 1 to total xwell remaining
+            input.stkwellAmount = bound(
+                input.stkwellAmount,
+                totalXWellRemaining > 0 ? 1 : 0,
+                totalXWellRemaining > 0 ? totalXWellRemaining : 0
+            );
+            totalXWellRemaining -= input.stkwellAmount;
+
+            uint256 totalVoteAmount = input.xwellAmount + input.stkwellAmount;
+
+            // only add to arrays if total vote amount is greater than 0
+            if (totalVoteAmount == 0) {
+                continue;
+            } else {
+                usersSetVoteCollection.add(userAddress);
+                uint256 index = usersSetVoteCollection.length() - 1;
+                voteAmounts[index] = totalVoteAmount;
+                voteValues[index] = input.voteValue;
+            }
+
+            if (input.stkwellAmount > 0) {
+                _delegateVoteAmountForUser(
+                    address(stkWell),
+                    userAddress,
+                    input.stkwellAmount
+                );
+            }
+            if (input.xwellAmount > 0) {
+                _delegateVoteAmountForUser(
+                    address(xwell),
+                    userAddress,
+                    input.xwellAmount
+                );
+            }
+            // check user balance to ensure it's correct
+            assertEq(
+                xwell.balanceOf(userAddress),
+                input.xwellAmount,
+                "incorrect xwell balance"
+            );
+
+            assertEq(
+                stkWell.balanceOf(userAddress),
+                input.stkwellAmount,
+                "incorrect stkwell balance"
+            );
+        }
+
+        vm.warp(block.timestamp + 1);
+
+        uint256 proposalId = _createProposalUpdateThreshold();
+
+        vm.warp(block.timestamp + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect state, not active"
+        );
+
+        uint256 totalVotes = 0;
+        uint256 totalVotesFor = 0;
+        uint256 totalVotesAgainst = 0;
+        uint256 totalVotesAbstain = 0;
+
+        // loop over users to vote
+        for (uint256 i = 0; i < usersSetVoteCollection.length(); i++) {
+            address user = usersSetVoteCollection.at(i);
+            uint8 voteValue = voteValues[i];
+            uint256 voteAmount = voteAmounts[i];
+
+            if (voteValue == Constants.VOTE_VALUE_YES) {
+                totalVotesFor += voteAmount;
+            } else if (voteValue == Constants.VOTE_VALUE_NO) {
+                totalVotesAgainst += voteAmount;
+            } else {
+                totalVotesAbstain += voteAmount;
+            }
+            totalVotes += voteAmount;
+
+            vm.prank(user);
+            voteCollection.castVote(proposalId, voteValue);
+            // get votes
+            (bool hasVoted, uint8 value, uint256 votes) = voteCollection
+                .getReceipt(proposalId, user);
+            assertTrue(hasVoted, "user did not vote");
+            assertEq(votes, voteAmount, "incorrect vote amount");
+            assertEq(voteValue, value, "incorrect vote value");
+        }
+
+        (
+            uint256 totalVotesGovernor,
+            uint256 votesFor,
+            uint256 votesAgainst,
+            uint256 votesAbstain
+        ) = voteCollection.proposalVotes(proposalId);
 
         assertEq(totalVotesFor, votesFor, "votes for incorrect");
         assertEq(votesAgainst, totalVotesAgainst, "votes against incorrect");
