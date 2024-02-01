@@ -21,17 +21,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
     event BridgeOutFailed(uint16 chainId, bytes payload);
 
-    function setUp() public override {
-        super.setUp();
-
-        xwell.delegate(address(this));
-        well.delegate(address(this));
-        distributor.delegate(address(this));
-
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + 1);
-    }
-
     function testSetup() public {
         assertEq(
             governor.getVotes(
@@ -74,6 +63,48 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     }
 
     /// Proposing on MultichainGovernor
+    function testProposeUpdateProposalThresholdSucceeds()
+        public
+        returns (uint256)
+    {
+        uint256 proposalId = _createProposalUpdateThreshold();
+
+        {
+            bool proposalFound;
+
+            uint256[] memory proposals = governor.liveProposals();
+
+            for (uint256 i = 0; i < proposals.length; i++) {
+                if (proposals[i] == proposalId) {
+                    proposalFound = true;
+                    break;
+                }
+            }
+
+            assertTrue(proposalFound, "proposal not found in live proposals");
+        }
+
+        {
+            bool proposalFound;
+            uint256[] memory proposals = governor.getUserLiveProposals(
+                address(this)
+            );
+
+            for (uint256 i = 0; i < proposals.length; i++) {
+                if (proposals[i] == proposalId) {
+                    proposalFound = true;
+                    break;
+                }
+            }
+
+            assertTrue(
+                proposalFound,
+                "proposal not found in user live proposals"
+            );
+        }
+
+        return proposalId;
+    }
 
     function testProposeInsufficientProposalThresholdFails() public {
         address[] memory targets = new address[](0);
@@ -181,81 +212,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             calldatas,
             description
         );
-    }
-
-    function testProposeUpdateProposalThresholdSucceeds()
-        public
-        returns (uint256)
-    {
-        address[] memory targets = new address[](1);
-        uint256[] memory values = new uint256[](1);
-        bytes[] memory calldatas = new bytes[](1);
-        string
-            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
-
-        targets[0] = address(governor);
-        values[0] = 0;
-        calldatas[0] = abi.encodeWithSignature(
-            "updateProposalThreshold(uint256)",
-            100_000_000 * 1e18
-        );
-
-        uint256 startProposalCount = governor.proposalCount();
-        uint256 bridgeCost = governor.bridgeCostAll();
-        vm.deal(address(this), bridgeCost);
-
-        uint256 proposalId = governor.propose{value: bridgeCost}(
-            targets,
-            values,
-            calldatas,
-            description
-        );
-
-        uint256 endProposalCount = governor.proposalCount();
-
-        assertEq(
-            startProposalCount + 1,
-            endProposalCount,
-            "proposal count incorrect"
-        );
-        assertEq(proposalId, endProposalCount, "proposal id incorrect");
-        assertTrue(governor.proposalActive(proposalId), "proposal not active");
-
-        {
-            bool proposalFound;
-
-            uint256[] memory proposals = governor.liveProposals();
-
-            for (uint256 i = 0; i < proposals.length; i++) {
-                if (proposals[i] == proposalId) {
-                    proposalFound = true;
-                    break;
-                }
-            }
-
-            assertTrue(proposalFound, "proposal not found in live proposals");
-        }
-
-        {
-            bool proposalFound;
-            uint256[] memory proposals = governor.getUserLiveProposals(
-                address(this)
-            );
-
-            for (uint256 i = 0; i < proposals.length; i++) {
-                if (proposals[i] == proposalId) {
-                    proposalFound = true;
-                    break;
-                }
-            }
-
-            assertTrue(
-                proposalFound,
-                "proposal not found in user live proposals"
-            );
-        }
-
-        return proposalId;
     }
 
     /// rebroadcasting
@@ -439,8 +395,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.expectRevert("WormholeBridge: total cost not equal to quote");
         governor.rebroadcastProposal{value: cost}(proposalId);
     }
-
-    /// Voting on MultichainGovernor
 
     function testVotingValidProposalIdSucceeds()
         public

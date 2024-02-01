@@ -219,11 +219,55 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         uint256 amountToStake = 2_000_000_000 * 1e18;
         xwell.approve(address(stkWell), amountToStake);
         stkWell.stake(address(this), amountToStake);
+
+        xwell.delegate(address(this));
+        well.delegate(address(this));
+        distributor.delegate(address(this));
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
+    }
+
+    function _createProposalUpdateThreshold() internal returns (uint256) {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 startProposalCount = governor.proposalCount();
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        uint256 endProposalCount = governor.proposalCount();
+
+        assertEq(
+            startProposalCount + 1,
+            endProposalCount,
+            "proposal count incorrect"
+        );
+        assertEq(proposalId, endProposalCount, "proposal id incorrect");
+        assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        return proposalId;
     }
 
     // helper functions
-
-    function getVoteCollectionProposalInformation(
+    function _getVoteCollectionProposalInformation(
         uint256 proposalId
     )
         internal
