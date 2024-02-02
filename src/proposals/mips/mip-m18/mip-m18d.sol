@@ -10,6 +10,7 @@ import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
@@ -385,6 +386,18 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
             Timelock(addresses.getAddress("UNITROLLER")).pendingAdmin(),
             governor,
             "UNITROLLER pending admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("CHAINLINK_ORACLE")).admin(),
+            governor,
+            "Chainlink oracle admin incorrect"
+        );
+        assertEq(
+            IStakedWellUplift(addresses.getAddress("stkWELL"))
+                .EMISSION_MANAGER(),
+            governor,
+            "stkWELL EMISSIONS MANAGER"
         );
     }
 }

@@ -86,6 +86,14 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
+        /// accept admin of MOONWELL_mBUSD
+        _pushHybridAction(
+            addresses.getAddress("MOONWELL_mBUSD"),
+            abi.encodeWithSignature("_acceptAdmin()"),
+            "Accept admin of MOONWELL_mBUSD as the multichain governor",
+            true
+        );
+
         /// accept admin of MOONWELL_mETH
         _pushHybridAction(
             addresses.getAddress("MOONWELL_mETH"),
@@ -114,7 +122,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("mxcDOT"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Set Accept admin mxcDOT to as multichain governor",
+            "Accept admin of mxcDOT as multichain governor",
             true
         );
 
@@ -122,7 +130,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Set Accept admin mxcUSDT to as multichain governor",
+            "Accept admin of mxcUSDT as multichain governor",
             true
         );
 
@@ -130,7 +138,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("mFRAX"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Set Accept admin mFRAX to as multichain governor",
+            "Accept admin of mFRAX as multichain governor",
             true
         );
 
@@ -138,7 +146,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Set Accept admin mUSDCwh to as multichain governor",
+            "Accept admin of mUSDCwh as multichain governor",
             true
         );
 
@@ -307,6 +315,17 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             Timelock(addresses.getAddress("MOONWELL_mwBTC")).admin(),
             governor,
             "MOONWELL_mwBTC admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mBUSD")).pendingAdmin(),
+            address(0),
+            "MOONWELL_mBUSD pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mBUSD")).admin(),
+            governor,
+            "MOONWELL_mBUSD admin incorrect"
         );
 
         assertEq(
