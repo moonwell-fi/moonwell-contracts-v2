@@ -17,8 +17,8 @@ Find this contract on Cookbook: https://www.cookbook.dev/contracts/0x4fed5491693
 
 pragma solidity ^0.8.0;
 
-import { IOwnable } from './IOwnable.sol';
-import { IContractIdentifier } from './IContractIdentifier.sol';
+import { IOwnable } from "./IOwnable.sol";
+import { IContractIdentifier } from "./IContractIdentifier.sol";
 
 // General interface for upgradable contracts
 interface IUpgradable is IOwnable, IContractIdentifier {

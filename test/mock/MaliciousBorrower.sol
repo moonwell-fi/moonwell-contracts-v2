@@ -3,8 +3,6 @@ pragma solidity 0.8.19;
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
-import {MToken} from "@protocol/MToken.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
 
 contract MaliciousBorrower {
     /// @notice mWETH contract

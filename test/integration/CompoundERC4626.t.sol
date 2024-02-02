@@ -7,7 +7,6 @@ import "@forge-std/Test.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
-import {MockERC20} from "@test/mock/MockERC20.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {LibCompound} from "@protocol/4626/LibCompound.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";

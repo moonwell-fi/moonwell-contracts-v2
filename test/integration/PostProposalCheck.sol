@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Test} from "@forge-std/Test.sol";
-
 import {Addresses} from "@proposals/Addresses.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {StringUtils} from "@proposals/utils/StringUtils.sol";
@@ -19,7 +17,7 @@ contract PostProposalCheck is CreateCode {
         // Run all pending proposals before doing e2e tests
         address[] memory mips = new address[](1);
 
-        if (keccak256(bytes(path)) == '""' || bytes(path).length == 0) {
+        if (keccak256(bytes(path)) == "''" || bytes(path).length == 0) {
             /// empty string on both mac and unix, no proposals to run
             mips = new address[](0);
 

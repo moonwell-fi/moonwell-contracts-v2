@@ -17,7 +17,7 @@ Find this contract on Cookbook: https://www.cookbook.dev/contracts/0x4fed5491693
 
 pragma solidity ^0.8.0;
 
-import { IGovernable } from './IGovernable.sol';
+import { IGovernable } from "./IGovernable.sol";
 
 interface IAxelarGateway is IGovernable {
     /**********\

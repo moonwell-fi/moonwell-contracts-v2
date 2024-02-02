@@ -1,14 +1,9 @@
 pragma solidity 0.8.19;
 
-import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
-import {ERC20VotesUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
-import {Initializable} from "@openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
 import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
-import {ConfigurablePause} from "@protocol/xWELL/ConfigurablePause.sol";
-import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 
 abstract contract xERC20 is IXERC20, MintLimits {
     using SafeCast for uint256;

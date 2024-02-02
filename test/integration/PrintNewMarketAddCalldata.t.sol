@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Configs} from "@proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {mip0x as mip} from "@proposals/mips/examples/mip-market-listing/mip-market-listing.sol";

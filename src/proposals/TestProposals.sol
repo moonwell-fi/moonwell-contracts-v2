@@ -8,9 +8,6 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 
-import {mipb00} from "@proposals/mips/mip-b00/mip-b00.sol";
-import {mipb01} from "@proposals/mips/mip-b01/mip-b01.sol";
-
 /*
 How to use:
 forge test --fork-url $ETH_RPC_URL --match-contract TestProposals -vvv
@@ -113,12 +110,12 @@ contract TestProposals is Test {
                     ) = addresses.getRecordedAddresses();
                     for (uint256 j = 0; j < recordedNames.length; j++) {
                         console.log(
-                            '{\n        "addr": "%s", ',
+                            "{\n        'addr': '%s', ",
                             recordedAddresses[j]
                         );
-                        console.log('        "chainId": %d,', block.chainid);
+                        console.log("        'chainId': %d,", block.chainid);
                         console.log(
-                            '        "name": "%s"\n}%s',
+                            "        'name': '%s'\'}%s",
                             recordedNames[j],
                             j < recordedNames.length - 1 ? "," : ""
                         );

@@ -4,14 +4,12 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 import "@forge-std/console.sol";
 
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {StringUtils} from "@proposals/utils/StringUtils.sol";
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MoonwellArtemisGovernor, IERC20} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
+import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 import {mipm16} from "@protocol/proposals/mips/mip-m16/mip-m16.sol";
 
 /// @notice run this on a chainforked moonbeam node.
