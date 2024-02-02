@@ -10,9 +10,9 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
-import {StringUtils} from "@proposals/utils/StringUtils.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
@@ -32,8 +32,6 @@ contract MultichainProposalTest is
     CreateCode,
     TestMultichainProposals
 {
-    using StringUtils for string;
-
     MultichainVoteCollection public voteCollection;
     MoonwellArtemisGovernor public governor;
     IWormhole public wormhole;
@@ -121,6 +119,38 @@ contract MultichainProposalTest is
             addresses.getAddress("stkWELL_PROXY"),
             "incorrect xWELL contract"
         );
+    }
+
+    function testRetrieveGasPriceMoonbeamSucceeds() public {
+        vm.selectFork(moonbeamForkId);
+
+        uint256 gasCost = MultichainGovernor(
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+        ).bridgeCost(baseWormholeChainId);
+
+        assertTrue(gasCost != 0, "gas cost is 0 bridgeCost");
+
+        gasCost = MultichainGovernor(
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+        ).bridgeCostAll();
+
+        assertTrue(gasCost != 0, "gas cost is 0 gas cost all");
+    }
+
+    function testRetrieveGasPriceBaseSucceeds() public {
+        vm.selectFork(baseForkId);
+
+        uint256 gasCost = MultichainVoteCollection(
+            addresses.getAddress("VOTE_COLLECTION_PROXY")
+        ).bridgeCost(baseWormholeChainId);
+
+        assertTrue(gasCost != 0, "gas cost is 0 bridgeCost");
+
+        gasCost = MultichainVoteCollection(
+            addresses.getAddress("VOTE_COLLECTION_PROXY")
+        ).bridgeCostAll();
+
+        assertTrue(gasCost != 0, "gas cost is 0 gas cost all");
     }
 
     function testVotingOnBasexWellSucceeds() public {}
