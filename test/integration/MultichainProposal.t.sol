@@ -153,6 +153,8 @@ contract MultichainProposalTest is
         assertTrue(gasCost != 0, "gas cost is 0 gas cost all");
     }
 
+    function testProposeOnMoonbeamWellSucceeds() public {}
+
     function testVotingOnBasexWellSucceeds() public {}
 
     function testVotingOnBasestkWellSucceeds() public {}
