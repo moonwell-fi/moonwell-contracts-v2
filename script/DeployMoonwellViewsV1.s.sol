@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
@@ -33,8 +31,6 @@ contract DeployMoonwellViewsV1 is Script, Test {
     }
 
     function run() public {
-        address deployerAddress = vm.addr(PRIVATE_KEY);
-
         vm.startBroadcast(PRIVATE_KEY);
 
         address unitroller = addresses.getAddress("UNITROLLER");
@@ -58,7 +54,7 @@ contract DeployMoonwellViewsV1 is Script, Test {
 
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+        new TransparentUpgradeableProxy(
             address(viewsContract),
             address(proxyAdmin),
             initdata
