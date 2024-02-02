@@ -1,21 +1,19 @@
-{"extends": "solhint:recommended",
-    "rules": {
-        "compiler-version": ["warning", ">=0.8.19"],
-        "func-name-mixedcase": "off",
-        "func-visibility": ["error", { "ignoreConstructors": true }],
-        "max-line-length": "off",
-        "named-parameters-mapping": "warn",
-        "no-console": "off",
-        "not-rely-on-time": "off",
-        "one-contract-per-file": "off",
-	"no-inline-assembly": "off",
-	"custom-errors": "off",
-	"no-empty-blocks": "off",
-	"var-name-mixedcase": "off",
-	"no-global-import": "off",
-	"reason-string": "off",
-	"immutable-vars-naming": "off",
-	"avoid-low-level-calls": "off",
-	"contract-name-camelcase": "off"
+{
+  "printWidth": 80,
+  "proseWrap": "always",
+  "plugins": ["prettier-plugin-solidity"],
+  "overrides": [
+    {
+      "files": "*.sol",
+      "options": {
+        "parser": "solidity-parse",
+        "printWidth": 80,
+        "tabWidth": 4,
+        "useTabs": false,
+        "singleQuote": false,
+        "bracketSpacing": false
+      }
     }
+  ]
 }
+
