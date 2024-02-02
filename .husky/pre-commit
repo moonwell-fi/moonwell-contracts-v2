@@ -1,2 +1,2 @@
 npx solhint --config ./.solhintrc **/*.sol --ignore-path .solhintignore
-
+npx prettier **/* --ignore-path .prettierignore -w
