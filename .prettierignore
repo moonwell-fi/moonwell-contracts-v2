@@ -26,6 +26,8 @@ LICENSE
 package-lock.json
 Makefile
 *.sh
+*.pdf
+*.lock
 
 # temporarily
 test/unit/SystemUpgrade.t.sol
