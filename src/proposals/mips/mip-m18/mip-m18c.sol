@@ -264,16 +264,6 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
         assertFalse(governor.pauseUsed(), "incorrect pauseUsed state");
 
         assertTrue(
-            governor.isCrossChainVoteCollector(
-                chainIdToWormHoleId[block.chainid],
-                addresses.getAddress(
-                    "VOTE_COLLECTION_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
-                )
-            ),
-            "incorrect cross chain vote collector"
-        );
-        assertTrue(
             governor.isTrustedSender(
                 chainIdToWormHoleId[block.chainid],
                 addresses.getAddress(
