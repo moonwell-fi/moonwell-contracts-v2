@@ -1,5 +1,7 @@
 pragma solidity 0.8.19;
 
+import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+
 /// @notice pauseable by the guardian
 /// @notice upgradeable, constructor disables implementation
 interface IMultichainGovernor {
@@ -27,8 +29,8 @@ interface IMultichainGovernor {
         address[] targets,
         uint256[] values,
         bytes[] calldatas,
-        uint256 startTimestamp,
-        uint256 endTimestamp,
+        uint256 votingStartTime,
+        uint256 votingEndTime,
         string description
     );
 
@@ -40,6 +42,13 @@ interface IMultichainGovernor {
 
     /// @notice An event emitted when a proposal has been executed in the Timelock
     event ProposalExecuted(uint256 id);
+
+    /// @notice An event emitted when the guardian breaks glass
+    event BreakGlassExecuted(
+        address breakGlassGuardian,
+        address[] targets,
+        bytes[] calldatas
+    );
 
     /// @notice An event emitted when thee quorum votes is changed.
     event QuroumVotesChanged(uint256 oldValue, uint256 newValue);
@@ -118,14 +127,12 @@ interface IMultichainGovernor {
     struct ProposalInformation {
         /// @notice Creator of the proposal
         address proposer;
-        /// @notice The ordered list of calldata to be passed to each call
-        bytes[] calldatas;
         /// @notice The timestamp at which vote snapshots are taken at
-        uint256 snapshotStartTimestamp;
+        uint256 voteSnapshotTimestamp;
         /// @notice the timestamp at which users can begin voting
         uint256 votingStartTime;
         /// @notice The timestamp at which voting ends: votes must be cast prior to this time
-        uint256 endTimestamp;
+        uint256 votingEndTime;
         /// @notice The timestamp at which cross chain voting collection ends:
         /// votes must be registered prior to this time
         uint256 crossChainVoteCollectionEndTimestamp;
@@ -150,17 +157,18 @@ interface IMultichainGovernor {
         uint256[] values;
         /// @notice The ordered list of calldata to be passed to each call
         bytes[] calldatas;
+        /// TODO on naming here
         /// @notice The timestamp at which vote snapshots are taken at
         uint256 voteSnapshotTimestamp;
         /// @notice the timestamp at which users can begin voting
         uint256 votingStartTime;
         /// @notice The timestamp at which voting ends: votes must be cast prior to this time
-        uint256 endTimestamp;
+        uint256 votingEndTime;
         /// @notice The timestamp at which cross chain voting collection ends:
-        /// votes must be registered prior to this time
+        /// votes must be registered prior to or by this time
         uint256 crossChainVoteCollectionEndTimestamp;
         /// @notice The block at which voting snapshot is taken: holders must have delegated their votes prior to this block
-        uint256 startBlock;
+        uint256 voteSnapshotBlock;
         /// @notice Current number of votes in favor of this proposal
         uint256 forVotes;
         /// @notice Current number of votes in opposition to this proposal
@@ -219,13 +227,6 @@ interface IMultichainGovernor {
 
     /// break glass guardian
     function breakGlassGuardian() external view returns (address);
-
-    /// returns whether or not the user is a vote collector contract
-    /// and can vote on a given chain
-    function isCrossChainVoteCollector(
-        uint16 chainId,
-        address voteCollector
-    ) external view returns (bool);
 
     /// @notice The total number of proposals
     function state(uint256 proposalId) external view returns (ProposalState);
@@ -317,9 +318,29 @@ interface IMultichainGovernor {
         uint256 newCrossChainVoteCollectionPeriod
     ) external;
 
+    /// @notice sets the break glass guardian address
+    /// @param newGuardian the new break glass guardian address
     function setBreakGlassGuardian(address newGuardian) external;
 
-    /// @notice add and remove calldata from the whitelist
+    /// @notice remove trusted senders from external chains
+    /// can only remove trusted senders from a chain that is already stored
+    /// if the chain doesn't already exist in storage, revert
+    /// @param _trustedSenders array of trusted senders to remove
+    function removeExternalChainConfigs(
+        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
+    ) external;
+
+    /// @notice add trusted senders from external chains
+    /// can only add one trusted sender per chain,
+    /// if more than one trusted sender per chain is added, revert
+    /// @param _trustedSenders array of trusted senders to add
+    function addExternalChainConfigs(
+        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
+    ) external;
+
+    /// @notice updates the approval for calldata to be used by break glass guardian
+    /// @param data the calldata to update approval for
+    /// @param approved whether or not the calldata is approved
     function updateApprovedCalldata(
         bytes calldata data,
         bool approved
@@ -331,5 +352,10 @@ interface IMultichainGovernor {
     function executeBreakGlass(
         address[] calldata targets,
         bytes[] calldata calldatas
-    ) external payable;
+    ) external;
+
+    /// @notice set a gas limit for the relayer on the external chain
+    /// should only be called if there is a change in gas prices on the external chain
+    /// @param newGasLimit new gas limit to set
+    function setGasLimit(uint96 newGasLimit) external;
 }
