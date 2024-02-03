@@ -870,8 +870,6 @@ contract MultichainGovernor is
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
 
-    /// TODO add all of these functions to the interface
-
     /// @notice updates the approval for calldata to be used by break glass guardian
     /// @param data the calldata to update approval for
     /// @param approved whether or not the calldata is approved
