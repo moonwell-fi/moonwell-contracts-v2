@@ -12,10 +12,16 @@ import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Well} from "@protocol/Governance/Well.sol";
+import {ChainIds} from "@test/utils/ChainIds.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
-contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
+contract MultichainBaseTest is
+    Test,
+    MultichainGovernorDeploy,
+    xWELLDeploy,
+    ChainIds
+{
     /// @notice reference to the mock wormhole trusted sender contract
     WormholeRelayerAdapter public wormholeRelayerAdapter;
 
@@ -64,12 +70,6 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     /// @notice duration of the pause
     uint128 public constant pauseDuration = 10 days;
 
-    /// @notice moonbeam wormhole chain id
-    uint16 public constant moonbeamChainId = 16;
-
-    /// @notice base wormhole chain id
-    uint16 public constant baseChainId = 30;
-
     /// @notice pause guardian
     address public pauseGuardian = address(this);
 
@@ -91,7 +91,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     constructor() {
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
-                chainId: moonbeamChainId,
+                chainId: moonBeamWormholeChainId,
                 addr: address(this) /// TODO this is incorrect and should be the artemis timelock contract
             })
         );
@@ -219,8 +219,8 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
                 initData,
                 approvedCalldata,
                 proxyAdmin, // proxyAdmin
-                moonbeamChainId, // wormhole moonbeam chain id
-                baseChainId, // wormhole base chain id
+                moonBeamWormholeChainId, // wormhole moonbeam chain id
+                baseWormholeChainId, // wormhole base chain id
                 address(this), // voteCollectionOwner
                 address(stkWellBase)
             );
