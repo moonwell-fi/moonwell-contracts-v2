@@ -1106,6 +1106,7 @@ contract MultichainGovernor is
                 Constants.MAX_CROSS_CHAIN_VOTE_COLLECTION_PERIOD,
             "MultichainGovernor: invalid vote collection period"
         );
+
         uint256 oldVal = crossChainVoteCollectionPeriod;
         crossChainVoteCollectionPeriod = _crossChainVoteCollectionPeriod;
 
