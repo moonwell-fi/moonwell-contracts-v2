@@ -288,7 +288,6 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
                     gasLimit
                 )
             {
-                /// TODO test that the event is emitted in success
                 emit BridgeOutSuccess(
                     targetChain,
                     cost,

@@ -354,6 +354,31 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.executeBreakGlass(new address[](1), new bytes[](1));
     }
 
+    function testExecuteBreakGlassTryToGiveBGGToSelfFails() public {
+        bytes memory setBreakGlassCalldata = abi.encodeWithSignature(
+            "setBreakGlassGuardian(address)",
+            address(this)
+        );
+
+        vm.prank(address(governor));
+        governor.updateApprovedCalldata(setBreakGlassCalldata, true);
+
+        assertTrue(
+            governor.whitelistedCalldatas(setBreakGlassCalldata),
+            "calldata not whitelisted"
+        );
+
+        address[] memory targets = new address[](1);
+        targets[0] = address(governor);
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = setBreakGlassCalldata;
+
+        vm.prank(governor.breakGlassGuardian());
+        vm.expectRevert("MultichainGovernor: break glass guardian not null");
+        governor.executeBreakGlass(targets, calldatas);
+    }
+
     function testExecuteBreakGlassBreakGlassGuardianSucceeds() public {
         address[] memory targets = new address[](1);
         targets[0] = address(new MockTimelock());
