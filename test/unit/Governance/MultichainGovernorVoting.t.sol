@@ -21,6 +21,25 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
     event BridgeOutFailed(uint16 chainId, bytes payload);
 
+    event ProposalCreated(
+        uint id,
+        address proposer,
+        address[] targets,
+        uint[] values,
+        string[] signatures,
+        bytes[] calldatas,
+        uint startTimestamp,
+        uint endTimestamp,
+        string description
+    );
+
+    event BridgeOutSuccess(
+        uint16 dstWormholeChainId,
+        uint256 cost,
+        address dst,
+        bytes payload
+    );
+
     function setUp() public override {
         super.setUp();
 
@@ -434,6 +453,57 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         vm.expectRevert("WormholeBridge: total cost not equal to quote");
         governor.rebroadcastProposal{value: cost}(proposalId);
+    }
+
+    function testProposeAndRebroadcastProduceSameCalldata() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 startTimestamp = block.timestamp;
+        uint256 endTimestamp = startTimestamp + governor.votingPeriod();
+        uint256 crossChainVoteCollectionEndTimestamp = endTimestamp +
+            governor.crossChainVoteCollectionPeriod();
+
+        bytes memory payload = abi.encode(
+            1,
+            startTimestamp - 1,
+            startTimestamp,
+            endTimestamp,
+            crossChainVoteCollectionEndTimestamp
+        );
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BridgeOutSuccess(
+            baseWormholeChainId,
+            uint96(bridgeCost),
+            address(voteCollection),
+            payload
+        );
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        vm.deal(address(this), bridgeCost);
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit ProposalRebroadcasted(proposalId, payload);
+        governor.rebroadcastProposal{value: bridgeCost}(proposalId);
     }
 
     /// Voting on MultichainGovernor

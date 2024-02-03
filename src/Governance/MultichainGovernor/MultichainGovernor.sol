@@ -681,8 +681,6 @@ contract MultichainGovernor is
             newProposal
                 .crossChainVoteCollectionEndTimestamp = crossChainVoteCollectionEndTimestamp;
 
-            /// TODO test that the exact same calldata is produced here as the rebroadcastProposal function
-            /// this can be done using the vm.expectEmit function from event BridgeOutSuccess
             payload = abi.encode(
                 proposalCount,
                 voteSnapshotTimestamp,
