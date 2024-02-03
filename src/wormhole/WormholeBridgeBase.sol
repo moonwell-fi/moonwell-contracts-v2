@@ -49,6 +49,8 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
 
     /// @notice set of target chains to bridge out to
     /// @dev values are less or equal to 2^16 - 1, as add function takes uint16 as parameter
+    /// should be impossible to ever have duplicate values in this set
+    /// the reason being that the add function only adds if the value is not already in the set
     EnumerableSet.UintSet internal _targetChains;
 
     /// ---------------------------------------------------------
@@ -127,6 +129,8 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             targetAddress[chainId] == address(0),
             "WormholeBridge: chain already added"
         );
+        /// TODO test this branch
+        require(addr != address(0), "WormholeBridge: invalid target address");
 
         /// this code should be unreachable
         require(
@@ -169,6 +173,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             address(wormholeRelayer) == address(0),
             "WormholeBridge: relayer already set"
         );
+
         wormholeRelayer = IWormholeRelayer(_wormholeRelayer);
     }
 
@@ -179,7 +184,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// --------------------------------------------------------
 
     /// @notice returns all target wormhole chain ids for this contract instance
-    function getAllTargetChains() public view returns (uint16[] memory) {
+    function getAllTargetChains() external view returns (uint16[] memory) {
         uint256 chainsLength = _targetChains.length();
         uint16[] memory chains = new uint16[](chainsLength);
 
@@ -244,6 +249,9 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         return isTrustedSender(chainId, fromWormholeFormat(addr));
     }
 
+    /// TODO test converting an address to bytes32, calling isTrustedSender, and then converting back to address
+    /// call isTrustedSender with the converted address from calling fromWormholeFormat
+
     /// @notice returns whether or not the address is in the trusted senders list for a given chain
     /// @param chainId The wormhole chain id to check
     /// @param addr The address to check
@@ -267,56 +275,37 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             bridgeCostAll() == msg.value,
             "WormholeBridge: total cost not equal to quote"
         );
+
         uint256 chainsLength = _targetChains.length();
+
         for (uint256 i = 0; i < chainsLength; ) {
-            _bridgeOutInternal(uint16(_targetChains.at(i)), payload);
+            uint16 targetChain = uint16(_targetChains.at(i));
+            uint256 cost = bridgeCost(targetChain);
+
+            try
+                wormholeRelayer.sendPayloadToEvm{value: cost}(
+                    targetChain,
+                    targetAddress[targetChain],
+                    payload,
+                    /// no receiver value allowed, only message passing
+                    0,
+                    gasLimit
+                )
+            {
+                /// TODO test that the event is emitted in success
+                emit BridgeOutSuccess(
+                    targetChain,
+                    gasLimit,
+                    targetAddress[targetChain],
+                    payload
+                );
+            } catch {
+                emit BridgeOutFailed(targetChain, payload);
+            }
+
             unchecked {
                 i++;
             }
-        }
-    }
-
-    /// @notice Bridge Out Funds to an external chain.
-    /// @param targetChain Destination chain id
-    /// @param payload Payload to send to the external chain
-    function _bridgeOut(uint16 targetChain, bytes memory payload) internal {
-        uint256 cost = bridgeCost(targetChain);
-        require(msg.value == cost, "WormholeBridge: cost not equal to quote");
-        _bridgeOutInternal(targetChain, payload);
-    }
-
-    /// @notice Bridge Out Funds to an external chain.
-    /// @param targetChain Destination chain id
-    /// @param payload Payload to send to the external chain
-    function _bridgeOutInternal(
-        uint16 targetChain,
-        bytes memory payload
-    ) internal {
-        require(
-            targetAddress[targetChain] != address(0),
-            "WormholeBridge: invalid target chain"
-        );
-
-        uint256 cost = bridgeCost(targetChain);
-
-        try
-            wormholeRelayer.sendPayloadToEvm{value: cost}(
-                targetChain,
-                targetAddress[targetChain],
-                payload,
-                0,
-                /// no receiver value allowed, only message passing
-                gasLimit
-            )
-        {
-            emit BridgeOutSuccess(
-                targetChain,
-                gasLimit,
-                targetAddress[targetChain],
-                payload
-            );
-        } catch {
-            emit BridgeOutFailed(targetChain, payload);
         }
     }
 
