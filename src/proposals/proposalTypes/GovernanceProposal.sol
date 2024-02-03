@@ -163,7 +163,6 @@ abstract contract GovernanceProposal is Proposal {
     /// @notice Simulate governance proposal
     /// @param timelockAddress address of the timelock
     /// @param governorAddress address of the artemis governor
-    /// @param proposerAddress address of the proposer
     function _simulateGovernanceActions(
         address timelockAddress,
         address governorAddress,
