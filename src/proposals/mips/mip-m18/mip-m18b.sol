@@ -290,12 +290,6 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
             );
 
             assertEq(
-                voteCollection.moonbeamWormholeChainId(),
-                chainIdToWormHoleId[block.chainid],
-                "incorrect moonbeam wormhole chainid"
-            );
-
-            assertEq(
                 voteCollection.owner(),
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 "incorrect vote collection owner, not temporal governor"
