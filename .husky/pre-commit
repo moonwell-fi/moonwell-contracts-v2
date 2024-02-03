@@ -1,2 +1,4 @@
-npx solhint --config ./.solhintrc **/*.sol --ignore-path .solhintignore
-npx prettier **/* --ignore-path .prettierignore -w
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+./.husky/.pre-commit.sh

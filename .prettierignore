@@ -26,3 +26,7 @@ LICENSE
 package-lock.json
 Makefile
 *.sh
+
+# temporarily
+test/unit/SystemUpgrade.t.sol
+test/integration/LiveSystem.t.sol
