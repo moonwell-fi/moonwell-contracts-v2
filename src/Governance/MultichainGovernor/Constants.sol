@@ -44,9 +44,6 @@ library Constants {
     /// start storage at 2
     uint256 public constant MAX_USER_PROPOSAL_COUNT = 5;
 
-    /// @notice MAX VOTING DELAY should be 14 days
-    uint256 public constant MAX_VOTING_DELAY = 14 days;
-
     /// @notice maximum quorum value is 2.5b
     uint256 public constant MAX_QUORUM = 2_500_000_000 * 1e18;
 
