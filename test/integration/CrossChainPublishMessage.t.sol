@@ -139,9 +139,9 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             ).getArtemisGovernorCalldata(
                     addresses.getAddress("TEMPORAL_GOVERNOR"), /// call temporal gov on base
                     addresses.getAddress( /// call wormhole on moonbeam
-                        "WORMHOLE_CORE",
-                        sendingChainIdToReceivingChainId[block.chainid]
-                    )
+                            "WORMHOLE_CORE",
+                            sendingChainIdToReceivingChainId[block.chainid]
+                        )
                 );
 
             console.log("artemis governor queue governance calldata");

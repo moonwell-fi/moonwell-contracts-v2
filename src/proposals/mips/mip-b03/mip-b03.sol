@@ -382,7 +382,10 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public override(CrossChainProposal, MIPProposal) {
+    function run(
+        Addresses addresses,
+        address
+    ) public override(CrossChainProposal, MIPProposal) {
         printCalldata(addresses);
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }

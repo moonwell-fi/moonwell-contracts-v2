@@ -17,7 +17,7 @@ Find this contract on Cookbook: https://www.cookbook.dev/contracts/0x4fed5491693
 
 pragma solidity ^0.8.0;
 
-import { IGovernable } from "./IGovernable.sol";
+import {IGovernable} from "./IGovernable.sol";
 
 interface IAxelarGateway is IGovernable {
     /**********\
@@ -171,15 +171,21 @@ interface IAxelarGateway is IGovernable {
 
     function tokenDeployer() external view returns (address);
 
-    function tokenMintLimit(string memory symbol) external view returns (uint256);
+    function tokenMintLimit(
+        string memory symbol
+    ) external view returns (uint256);
 
-    function tokenMintAmount(string memory symbol) external view returns (uint256);
+    function tokenMintAmount(
+        string memory symbol
+    ) external view returns (uint256);
 
     function allTokensFrozen() external view returns (bool);
 
     function implementation() external view returns (address);
 
-    function tokenAddresses(string memory symbol) external view returns (address);
+    function tokenAddresses(
+        string memory symbol
+    ) external view returns (address);
 
     function tokenFrozen(string memory symbol) external view returns (bool);
 
@@ -195,7 +201,10 @@ interface IAxelarGateway is IGovernable {
     |* Admin Functions *|
     \*******************/
 
-    function setTokenMintLimits(string[] calldata symbols, uint256[] calldata limits) external;
+    function setTokenMintLimits(
+        string[] calldata symbols,
+        uint256[] calldata limits
+    ) external;
 
     function upgrade(
         address newImplementation,

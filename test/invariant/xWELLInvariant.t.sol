@@ -152,8 +152,9 @@ contract xWELLInvariant is BaseTest {
 
     function invariant_bufferLteBufferCap() public {
         {
-            (, uint112 bufferCap, , , ) = xwellProxy
-                .rateLimits(address(handler));
+            (, uint112 bufferCap, , , ) = xwellProxy.rateLimits(
+                address(handler)
+            );
 
             assertTrue(
                 xwellProxy.buffer(address(handler)) <= bufferCap,
@@ -161,8 +162,9 @@ contract xWELLInvariant is BaseTest {
             );
         }
         {
-            (, uint112 bufferCap, , , ) = xwellProxy
-                .rateLimits(address(xerc20Lockbox));
+            (, uint112 bufferCap, , , ) = xwellProxy.rateLimits(
+                address(xerc20Lockbox)
+            );
 
             assertTrue(
                 xwellProxy.buffer(address(xerc20Lockbox)) <= bufferCap,

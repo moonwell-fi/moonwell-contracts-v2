@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "./PriceOracle.sol";
 import "../MErc20.sol";
 import "../EIP20Interface.sol";
-import  "../SafeMath.sol";
+import "../SafeMath.sol";
 import "./AggregatorV3Interface.sol";
 
 /// @notice contract that stores all chainlink oracle addresses for each respective underlying asset
@@ -20,11 +20,11 @@ contract ChainlinkOracle is PriceOracle {
     bytes32 public nativeToken;
 
     /// @notice overridden prices for assets, not used if unset
-    mapping (address => uint256) internal prices;
+    mapping(address => uint256) internal prices;
 
     /// @notice chainlink feeds for assets, maps the hash of a
     /// token symbol to the corresponding chainlink feed
-    mapping (bytes32 => AggregatorV3Interface) internal feeds;
+    mapping(bytes32 => AggregatorV3Interface) internal feeds;
 
     /// @notice emitted when a new price override by admin is posted
     event PricePosted(
@@ -59,7 +59,8 @@ contract ChainlinkOracle is PriceOracle {
         MToken mToken
     ) public view override returns (uint256) {
         string memory symbol = mToken.symbol();
-        if (keccak256(abi.encodePacked(symbol)) == nativeToken) { /// @dev this branch should never get called as native tokens are not supported on this deployment
+        if (keccak256(abi.encodePacked(symbol)) == nativeToken) {
+            /// @dev this branch should never get called as native tokens are not supported on this deployment
             return getChainlinkPrice(getFeed(symbol));
         } else {
             return getPrice(mToken);

@@ -5,14 +5,19 @@ import "./InterestRateModel.sol";
 import "../SafeMath.sol";
 
 /**
-  * @title Moonwell's JumpRateModel Contract
-  * @author Compound
-  * @author Moonwell
-  */
+ * @title Moonwell's JumpRateModel Contract
+ * @author Compound
+ * @author Moonwell
+ */
 contract JumpRateModel is InterestRateModel {
     using SafeMath for uint;
 
-    event NewInterestParams(uint baseRatePerTimestamp, uint multiplierPerTimestamp, uint jumpMultiplierPerTimestamp, uint kink);
+    event NewInterestParams(
+        uint baseRatePerTimestamp,
+        uint multiplierPerTimestamp,
+        uint jumpMultiplierPerTimestamp,
+        uint kink
+    );
 
     /**
      * @notice The approximate number of timestamps per year that is assumed by the interest rate model
@@ -49,13 +54,32 @@ contract JumpRateModel is InterestRateModel {
      * @param jumpMultiplierPerYear The multiplierPerTimestamp after hitting a specified utilization point
      * @param kink_ The utilization point at which the jump multiplier is applied
      */
-    constructor(uint baseRatePerYear, uint multiplierPerYear, uint jumpMultiplierPerYear, uint kink_) {
-        baseRatePerTimestamp = baseRatePerYear.mul(1e18).div(timestampsPerYear).div(1e18);
-        multiplierPerTimestamp = multiplierPerYear.mul(1e18).div(timestampsPerYear).div(1e18);
-        jumpMultiplierPerTimestamp = jumpMultiplierPerYear.mul(1e18).div(timestampsPerYear).div(1e18);
+    constructor(
+        uint baseRatePerYear,
+        uint multiplierPerYear,
+        uint jumpMultiplierPerYear,
+        uint kink_
+    ) {
+        baseRatePerTimestamp = baseRatePerYear
+            .mul(1e18)
+            .div(timestampsPerYear)
+            .div(1e18);
+        multiplierPerTimestamp = multiplierPerYear
+            .mul(1e18)
+            .div(timestampsPerYear)
+            .div(1e18);
+        jumpMultiplierPerTimestamp = jumpMultiplierPerYear
+            .mul(1e18)
+            .div(timestampsPerYear)
+            .div(1e18);
         kink = kink_;
 
-        emit NewInterestParams(baseRatePerTimestamp, multiplierPerTimestamp, jumpMultiplierPerTimestamp, kink);
+        emit NewInterestParams(
+            baseRatePerTimestamp,
+            multiplierPerTimestamp,
+            jumpMultiplierPerTimestamp,
+            kink
+        );
     }
 
     /**
@@ -65,7 +89,11 @@ contract JumpRateModel is InterestRateModel {
      * @param reserves The amount of reserves in the market (currently unused)
      * @return The utilization rate as a mantissa between [0, 1e18]
      */
-    function utilizationRate(uint cash, uint borrows, uint reserves) public pure returns (uint) {
+    function utilizationRate(
+        uint cash,
+        uint borrows,
+        uint reserves
+    ) public pure returns (uint) {
         // Utilization rate is 0 when there are no borrows
         if (borrows == 0) {
             return 0;
@@ -81,15 +109,27 @@ contract JumpRateModel is InterestRateModel {
      * @param reserves The amount of reserves in the market
      * @return The borrow rate percentage per timestamp as a mantissa (scaled by 1e18)
      */
-    function getBorrowRate(uint cash, uint borrows, uint reserves) override public view returns (uint) {
+    function getBorrowRate(
+        uint cash,
+        uint borrows,
+        uint reserves
+    ) public view override returns (uint) {
         uint util = utilizationRate(cash, borrows, reserves);
 
         if (util <= kink) {
-            return util.mul(multiplierPerTimestamp).div(1e18).add(baseRatePerTimestamp);
+            return
+                util.mul(multiplierPerTimestamp).div(1e18).add(
+                    baseRatePerTimestamp
+                );
         } else {
-            uint normalRate = kink.mul(multiplierPerTimestamp).div(1e18).add(baseRatePerTimestamp);
+            uint normalRate = kink.mul(multiplierPerTimestamp).div(1e18).add(
+                baseRatePerTimestamp
+            );
             uint excessUtil = util.sub(kink);
-            return excessUtil.mul(jumpMultiplierPerTimestamp).div(1e18).add(normalRate);
+            return
+                excessUtil.mul(jumpMultiplierPerTimestamp).div(1e18).add(
+                    normalRate
+                );
         }
     }
 
@@ -101,10 +141,16 @@ contract JumpRateModel is InterestRateModel {
      * @param reserveFactorMantissa The current reserve factor for the market
      * @return The supply rate percentage per timestamp as a mantissa (scaled by 1e18)
      */
-    function getSupplyRate(uint cash, uint borrows, uint reserves, uint reserveFactorMantissa) override public view returns (uint) {
+    function getSupplyRate(
+        uint cash,
+        uint borrows,
+        uint reserves,
+        uint reserveFactorMantissa
+    ) public view override returns (uint) {
         uint oneMinusReserveFactor = uint(1e18).sub(reserveFactorMantissa);
         uint borrowRate = getBorrowRate(cash, borrows, reserves);
         uint rateToPool = borrowRate.mul(oneMinusReserveFactor).div(1e18);
-        return utilizationRate(cash, borrows, reserves).mul(rateToPool).div(1e18);
+        return
+            utilizationRate(cash, borrows, reserves).mul(rateToPool).div(1e18);
     }
 }

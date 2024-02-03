@@ -63,7 +63,9 @@ contract RecoveryDeploy is Test {
     }
 
     /// @notice deploy, then verify the address is correct
-    function mainnetDeployAndVerifyScript(address owner) public returns (Recovery) {
+    function mainnetDeployAndVerifyScript(
+        address owner
+    ) public returns (Recovery) {
         Recovery recover = mainnetDeployScript(owner);
         require(verifyDeploy(recover), "incorrect deploy address");
 

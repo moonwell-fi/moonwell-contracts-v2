@@ -206,10 +206,12 @@ contract ChainlinkCompositeOracle {
     ) public pure returns (int256) {
         if (priceDecimals < expectedDecimals) {
             return
-                price * (10 ** uint256(expectedDecimals - priceDecimals)).toInt256();
+                price *
+                (10 ** uint256(expectedDecimals - priceDecimals)).toInt256();
         } else if (priceDecimals > expectedDecimals) {
             return
-                price / (10 ** uint256(priceDecimals - expectedDecimals)).toInt256();
+                price /
+                (10 ** uint256(priceDecimals - expectedDecimals)).toInt256();
         }
 
         /// if priceDecimals == expectedDecimals, return price without any changes

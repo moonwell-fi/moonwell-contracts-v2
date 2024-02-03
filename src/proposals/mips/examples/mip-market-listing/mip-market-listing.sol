@@ -415,9 +415,9 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                 uint256 supplyCap = comptroller.supplyCaps(
                     addresses.getAddress(config.addressesString)
                 );
-                
+
                 uint256 maxBorrowCap = (supplyCap * 10) / 9;
-                
+
                 /// validate borrow cap is always lte 90% of supply cap
                 assertTrue(
                     borrowCap <= maxBorrowCap,

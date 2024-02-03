@@ -7,7 +7,6 @@ import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
 import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 
-
 contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     event ProposalCanceled(uint256 proposalId);
 

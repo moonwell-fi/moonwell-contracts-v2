@@ -7,6 +7,7 @@ out
 artifacts
 .github
 .husky
+other
 
 # files
 *.env
@@ -22,3 +23,6 @@ LICENSE
 *.svg
 .gitmodules
 .gitignore
+package-lock.json
+Makefile
+*.sh

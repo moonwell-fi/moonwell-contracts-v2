@@ -17,14 +17,27 @@ import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
 import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
 
 interface InstrumentedExternalEvents {
-    event PricePosted(address asset, uint previousPriceMantissa, uint requestedPriceMantissa, uint newPriceMantissa);
-    event NewCollateralFactor(MToken mToken, uint oldCollateralFactorMantissa, uint newCollateralFactorMantissa);
+    event PricePosted(
+        address asset,
+        uint previousPriceMantissa,
+        uint requestedPriceMantissa,
+        uint newPriceMantissa
+    );
+    event NewCollateralFactor(
+        MToken mToken,
+        uint oldCollateralFactorMantissa,
+        uint newCollateralFactorMantissa
+    );
     event Transfer(address indexed from, address indexed to, uint amount);
     event Mint(address minter, uint mintAmount, uint mintTokens);
     event Approval(address indexed owner, address indexed spender, uint amount);
 }
 
-contract MErc20DelegateUnitTest is Test, InstrumentedExternalEvents, ComptrollerErrorReporter {
+contract MErc20DelegateUnitTest is
+    Test,
+    InstrumentedExternalEvents,
+    ComptrollerErrorReporter
+{
     Comptroller comptroller;
     SimplePriceOracle oracle;
     FaucetTokenWithPermit faucetToken;

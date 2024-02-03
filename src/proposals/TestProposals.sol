@@ -115,7 +115,7 @@ contract TestProposals is Test {
                         );
                         console.log("        'chainId': %d,", block.chainid);
                         console.log(
-                            "        'name': '%s'\'}%s",
+                            "        'name': '%s''}%s",
                             recordedNames[j],
                             j < recordedNames.length - 1 ? "," : ""
                         );
