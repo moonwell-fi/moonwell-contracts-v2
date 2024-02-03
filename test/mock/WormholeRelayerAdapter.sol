@@ -1,14 +1,18 @@
 pragma solidity 0.8.19;
 
+import "@forge-std/Test.sol";
+
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 
 /// @notice Wormhole xERC20 Token Bridge adapter
-contract WormholeRelayerAdapter {
+contract WormholeRelayerAdapter is Test {
     uint256 public nonce;
 
     bool public shouldRevert;
+
+    uint256 public nativePriceQuote = 0.01 ether;
 
     function setShouldRevert(bool _shouldRevert) external {
         shouldRevert = _shouldRevert;
@@ -31,6 +35,12 @@ contract WormholeRelayerAdapter {
         if (shouldRevert) {
             revert("revert");
         }
+
+        require(
+            msg.value == nativePriceQuote,
+            "WormholeRelayerAdapter: incorrect payment"
+        );
+
         /// immediately call the target
         IWormholeReceiver(targetAddress).receiveWormholeMessages(
             payload,
@@ -52,13 +62,10 @@ contract WormholeRelayerAdapter {
         uint256
     )
         external
-        pure
-        returns (
-            uint256 nativePriceQuote,
-            uint256 targetChainRefundPerGasUnused
-        )
+        view
+        returns (uint256 nativePrice, uint256 targetChainRefundPerGasUnused)
     {
-        nativePriceQuote = 0.01 ether;
+        nativePrice = nativePriceQuote;
         targetChainRefundPerGasUnused = 0;
     }
 }
