@@ -2,7 +2,6 @@ pragma solidity 0.8.19;
 
 import {IMultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/IMultichainVoteCollection.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
@@ -37,10 +36,8 @@ contract MultichainVoteCollection is
     xWELL public xWell;
 
     /// @notice reference to the stkWELL token
+    /// this stkWELL version uses timestamps instead of block number
     SnapshotInterface public stkWell;
-
-    /// @notice Moonbeam Wormhole Chain Id
-    uint16 public moonbeamWormholeChainId;
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -50,48 +47,6 @@ contract MultichainVoteCollection is
 
     /// @notice mapping from proposalId to MultichainProposal
     mapping(uint256 proposalId => MultichainProposal) public proposals;
-
-    /// --------------------------------------------------------- ///
-    /// --------------------------------------------------------- ///
-    /// ------------------------- EVENTS ------------------------ ///
-    /// --------------------------------------------------------- ///
-    /// --------------------------------------------------------- ///
-
-    /// @notice An event emitted when a proposal is created
-    /// @param proposalId the id of the proposal
-    /// @param votingStartTime the timestamp when voting starts
-    /// @param votingEndTime the timestamp when voting ends
-    /// @param votingCollectionEndTime the timestamp when voting collection ends
-    event ProposalCreated(
-        uint256 proposalId,
-        uint256 votingStartTime,
-        uint256 votingEndTime,
-        uint256 votingCollectionEndTime
-    );
-
-    /// @notice emitted when votes are emitted to the Moonbeam chain
-    /// @param proposalId the proposal id
-    /// @param forVotes number of votes for the proposal
-    /// @param againstVotes number of votes against the proposal
-    /// @param abstainVotes number of votes abstaining the proposal
-    event VotesEmitted(
-        uint256 proposalId,
-        uint256 forVotes,
-        uint256 againstVotes,
-        uint256 abstainVotes
-    );
-
-    /// @notice event emitted when a vote has been cast on a proposal
-    /// @param voter the address of the voter
-    /// @param proposalId the id of the proposal
-    /// @param voteValue the value of the vote
-    /// @param votes the number of votes cast
-    event VoteCast(
-        address voter,
-        uint256 proposalId,
-        uint8 voteValue,
-        uint256 votes
-    );
 
     /// @notice disable the initializer to stop governance hijacking
     /// and avoid selfdestruct attacks.
@@ -117,16 +72,13 @@ contract MultichainVoteCollection is
         xWell = xWELL(_xWell);
         stkWell = SnapshotInterface(_stkWell);
 
-        moonbeamWormholeChainId = _moonbeamWormholeChainId;
-
         _addTargetAddress(_moonbeamWormholeChainId, _moonbeamGovernor);
 
         _setWormholeRelayer(_wormholeRelayer);
 
-        __Ownable_init();
-
         _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
 
+        __Ownable_init();
         _transferOwnership(_owner); /// directly set the new owner without waiting for pending owner to accept
     }
 
@@ -142,7 +94,7 @@ contract MultichainVoteCollection is
     function getReceipt(
         uint256 proposalId,
         address voter
-    ) public view returns (bool hasVoted, uint8 voteValue, uint256 votes) {
+    ) external view returns (bool hasVoted, uint8 voteValue, uint256 votes) {
         MultichainProposal storage proposal = proposals[proposalId];
         Receipt storage receipt = proposal.receipts[voter];
 
@@ -156,12 +108,12 @@ contract MultichainVoteCollection is
     function proposalInformation(
         uint256 proposalId
     )
-        public
+        external
         view
         returns (
-            uint256 snapshotStartTimestamp,
+            uint256 voteSnapshotTimestamp,
             uint256 votingStartTime,
-            uint256 endTimestamp,
+            uint256 votingEndTime,
             uint256 crossChainVoteCollectionEndTimestamp,
             uint256 totalVotes,
             uint256 forVotes,
@@ -172,9 +124,9 @@ contract MultichainVoteCollection is
         MultichainProposal storage proposal = proposals[proposalId];
 
         /// timestamps
-        snapshotStartTimestamp = proposal.voteSnapshotTimestamp;
+        voteSnapshotTimestamp = proposal.voteSnapshotTimestamp;
         votingStartTime = proposal.votingStartTime;
-        endTimestamp = proposal.votingEndTime;
+        votingEndTime = proposal.votingEndTime;
         crossChainVoteCollectionEndTimestamp = proposal
             .crossChainVoteCollectionEndTimestamp;
 
@@ -191,7 +143,7 @@ contract MultichainVoteCollection is
     function proposalVotes(
         uint256 proposalId
     )
-        public
+        external
         view
         returns (
             uint256 totalVotes,
@@ -219,7 +171,7 @@ contract MultichainVoteCollection is
         /// Maintain require statments below pairing with the artemis governor behavior
         /// Check if proposal start time has passed
         require(
-            proposal.votingStartTime < block.timestamp,
+            proposal.votingStartTime <= block.timestamp,
             "MultichainVoteCollection: Voting has not started yet"
         );
 
@@ -313,8 +265,9 @@ contract MultichainVoteCollection is
             "MultichainVoteCollection: Voting collection phase has ended"
         );
 
-        _bridgeOut(
-            moonbeamWormholeChainId,
+        /// should ever only have a single trusted sender on the wormhole bridge base
+        /// TODO check this invariant
+        _bridgeOutAll(
             abi.encode(
                 proposalId,
                 votes.forVotes,
@@ -343,7 +296,7 @@ contract MultichainVoteCollection is
         /// Parse the payload and do the corresponding actions!
         (
             uint256 proposalId,
-            uint256 votingSnapshotTime,
+            uint256 voteSnapshotTimestamp,
             uint256 votingStartTime,
             uint256 votingEndTime,
             uint256 crossChainVoteCollectionEndTimestamp
@@ -355,9 +308,15 @@ contract MultichainVoteCollection is
             "MultichainVoteCollection: proposal already exists"
         );
 
-        /// Ensure votingSnapshotTime is less than votingStartTime
+        /// Ensure votingEndTime is in the future so there is time for users to vote
         require(
-            votingSnapshotTime < votingStartTime,
+            votingEndTime > block.timestamp,
+            "MultichainVoteCollection: end time must be in the future"
+        );
+
+        /// Ensure voteSnapshotTimestamp is less than votingStartTime
+        require(
+            voteSnapshotTimestamp < votingStartTime,
             "MultichainVoteCollection: snapshot time must be before start time"
         );
 
@@ -367,10 +326,10 @@ contract MultichainVoteCollection is
             "MultichainVoteCollection: start time must be before end time"
         );
 
-        /// Ensure votingEndTime is in the future
+        /// Ensure votingStartTime is less than votingEndTime
         require(
-            votingEndTime > block.timestamp,
-            "MultichainVoteCollection: end time must be in the future"
+            votingEndTime < crossChainVoteCollectionEndTimestamp,
+            "MultichainVoteCollection: end time must be before vote collection end"
         );
 
         /// Create the proposal
@@ -379,7 +338,7 @@ contract MultichainVoteCollection is
         proposal.votingEndTime = votingEndTime;
         proposal
             .crossChainVoteCollectionEndTimestamp = crossChainVoteCollectionEndTimestamp;
-        proposal.voteSnapshotTimestamp = votingSnapshotTime;
+        proposal.voteSnapshotTimestamp = voteSnapshotTimestamp;
 
         /// Emit the ProposalCreated event
         emit ProposalCreated(
