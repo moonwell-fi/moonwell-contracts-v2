@@ -85,7 +85,8 @@ contract MultichainGovernorDeploy is Test {
         address proxyAdmin,
         uint16 moonbeamChainId,
         uint16 baseChainId,
-        address voteCollectionOwner
+        address voteCollectionOwner,
+        address baseStkWell
     ) public returns (MultichainAddresses memory addresses) {
         proxyAdmin = proxyAdmin == address(0)
             ? address(new ProxyAdmin())
@@ -100,7 +101,7 @@ contract MultichainGovernorDeploy is Test {
         // deploy vote collection
         (address vProxy, ) = deployVoteCollection(
             initializeData.xWell,
-            initializeData.stkWell,
+            baseStkWell,
             gProxy,
             wormholeRelayerAdapter,
             moonbeamChainId,
@@ -135,6 +136,46 @@ contract MultichainGovernorDeploy is Test {
         addresses.proxyAdmin = proxyAdmin;
     }
 
+    /// @notice for testing purposes only, not to be used in production
+    /// THIS DEPLOYS A TEST CONTRACT THAT USES BLOCK NUMBER
+    /// DO NOT USE THIS FOR DEPLOYING A PRODUCTION CONTRACT
+    function deployStakedWellMock(
+        address stakedToken,
+        address rewardToken,
+        uint256 cooldownSeconds,
+        uint256 unstakeWindow,
+        address rewardsVault,
+        address emissionManager,
+        uint128 distributionDuration,
+        address governance,
+        address proxyAdmin
+    ) public returns (address proxy, address implementation) {
+        // deploy mock implementation
+        implementation = deployCode("MockStakedWell.sol:MockStakedWell");
+
+        // generate init calldata
+        bytes memory initData = abi.encodeWithSignature(
+            "initialize(address,address,uint256,uint256,address,address,uint128,address)",
+            stakedToken,
+            rewardToken,
+            cooldownSeconds,
+            unstakeWindow,
+            rewardsVault,
+            emissionManager,
+            distributionDuration,
+            governance
+        );
+
+        // deploy proxy
+        proxy = address(
+            new TransparentUpgradeableProxy(
+                implementation,
+                proxyAdmin,
+                initData
+            )
+        );
+    }
+
     function deployStakedWell(
         address stakedToken,
         address rewardToken,
@@ -146,7 +187,7 @@ contract MultichainGovernorDeploy is Test {
         address governance,
         address proxyAdmin
     ) public returns (address proxy, address implementation) {
-        // deploy implementation
+        // deploy actual stkWELL implementation for Base
         implementation = deployCode("StakedWell.sol:StakedWell");
 
         // generate init calldata
