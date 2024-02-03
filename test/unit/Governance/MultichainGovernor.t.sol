@@ -89,7 +89,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
         /// TODO fill these in
         assertEq(
-            address(governor.targetAddress(baseChainId)),
+            address(governor.targetAddress(baseWormholeChainId)),
             address(voteCollection),
             "target address on moonbeam incorrect"
         );
@@ -101,11 +101,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
         assertEq(
             governor.getAllTargetChains()[0],
-            baseChainId,
+            baseWormholeChainId,
             "getAllTargetChains chainid incorrect"
         );
         assertEq(
-            governor.bridgeCost(moonbeamChainId),
+            governor.bridgeCost(moonBaseWormholeChainId),
             0.01 ether,
             "bridgecost incorrect"
         );
@@ -123,8 +123,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             "xWell address"
         );
         assertTrue(
-            voteCollection.isTrustedSender(moonbeamChainId, address(governor)),
-            "governor address is trusted sender"
+            voteCollection.isTrustedSender(
+                moonBeamWormholeChainId,
+                address(governor)
+            ),
+            "governor address not trusted sender"
         );
         assertEq(
             address(voteCollection.wormholeRelayer()),

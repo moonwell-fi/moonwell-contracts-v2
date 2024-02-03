@@ -69,11 +69,17 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect wormhole relayer"
         );
         assertTrue(
-            voteCollection.isTrustedSender(moonbeamChainId, address(governor)),
+            voteCollection.isTrustedSender(
+                moonBeamWormholeChainId,
+                address(governor)
+            ),
             "governor not whitelisted to send messages in"
         );
         assertTrue(
-            governor.isTrustedSender(baseChainId, address(voteCollection)),
+            governor.isTrustedSender(
+                baseWormholeChainId,
+                address(voteCollection)
+            ),
             "voteCollection not whitelisted to send messages in"
         );
 
@@ -221,6 +227,10 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
 
+        (, uint256 votingStartTime, , , , , , ) = voteCollection
+            .proposalInformation(proposalId);
+
+        vm.warp(votingStartTime - 1);
         vm.expectRevert("MultichainVoteCollection: Voting has not started yet");
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
     }
@@ -797,7 +807,9 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             .proposalInformationStruct(proposalId);
 
         {
-            uint256 bridgeCost = voteCollection.bridgeCost(moonbeamChainId);
+            uint256 bridgeCost = voteCollection.bridgeCost(
+                moonBeamWormholeChainId
+            );
 
             vm.deal(address(this), bridgeCost);
 
@@ -862,12 +874,10 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         // test at the last timestamp of vote period
         vm.warp(endTimestamp + 1);
 
-        uint256 cost = voteCollection.bridgeCost(
-            voteCollection.moonbeamWormholeChainId()
-        ) - 1;
+        uint256 cost = voteCollection.bridgeCost(moonBeamWormholeChainId) - 1;
         vm.deal(address(this), cost);
 
-        vm.expectRevert("WormholeBridge: cost not equal to quote");
+        vm.expectRevert("WormholeBridge: total cost not equal to quote");
         voteCollection.emitVotes{value: cost}(proposalId);
     }
 
@@ -936,7 +946,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.prank(address(governor));
         vm.expectRevert("WormholeBridge: sender not trusted");
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            moonbeamChainId, // pass moonbeam as the target chain so that relayer adapter do the flip
+            moonBeamWormholeChainId, // pass moonbeam as the target chain so that relayer adapter do the flip
             address(voteCollection),
             payload,
             0,
@@ -952,7 +962,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.prank(address(governor));
         vm.expectRevert("MultichainVoteCollection: invalid payload length");
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            baseChainId,
+            baseWormholeChainId,
             address(voteCollection),
             payload,
             0,
@@ -970,7 +980,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.prank(address(governor));
         vm.expectRevert("MultichainVoteCollection: proposal already exists");
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            baseChainId,
+            baseWormholeChainId,
             address(voteCollection),
             payload,
             0,
@@ -978,8 +988,10 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         );
     }
 
-    function testBridgeInVotingSnapshotTimeGreatherThanStartTime() public {
-        bytes memory payload = abi.encode(0, 1, 0, 0, 0);
+    function testBridgeInVotingSnapshotTimeGreaterThanStartTime() public {
+        vm.warp(1);
+
+        bytes memory payload = abi.encode(0, 4, 3, 3, 4);
         uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
 
         vm.deal(address(governor), gasCost);
@@ -996,8 +1008,67 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         );
     }
 
-    function testBridgeInVotingStartTimeGreatherThanVoteEndTime() public {
-        bytes memory payload = abi.encode(0, 0, 1, 0, 0);
+    function testBridgeInVotingSnapshotTimeEqStartTime() public {
+        vm.warp(1);
+
+        bytes memory payload = abi.encode(0, 4, 4, 3, 4);
+        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+
+        vm.deal(address(governor), gasCost);
+        vm.prank(address(governor));
+        vm.expectRevert(
+            "MultichainVoteCollection: snapshot time must be before start time"
+        );
+        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
+            30,
+            address(voteCollection),
+            payload,
+            0,
+            0
+        );
+    }
+
+    function testBridgeInVotingStartTimeGreaterThanVoteEndTime() public {
+        vm.warp(1);
+        bytes memory payload = abi.encode(0, 2, 3, 2, 0);
+        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+
+        vm.deal(address(governor), gasCost);
+        vm.prank(address(governor));
+        vm.expectRevert(
+            "MultichainVoteCollection: start time must be before end time"
+        );
+        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
+            30,
+            address(voteCollection),
+            payload,
+            0,
+            0
+        );
+    }
+
+    function testBridgeInVoteCollectionEndLtThanVoteEndTime() public {
+        vm.warp(1);
+        bytes memory payload = abi.encode(0, 2, 3, 4, 0);
+        uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+
+        vm.deal(address(governor), gasCost);
+        vm.prank(address(governor));
+        vm.expectRevert(
+            "MultichainVoteCollection: end time must be before vote collection end"
+        );
+        wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
+            30,
+            address(voteCollection),
+            payload,
+            0,
+            0
+        );
+    }
+
+    function testBridgeInVotingStartTimeEqVoteEndTime() public {
+        vm.warp(1);
+        bytes memory payload = abi.encode(0, 1, 2, 2, 0);
         uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
 
         vm.deal(address(governor), gasCost);
@@ -1043,7 +1114,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.prank(address(voteCollection));
         vm.expectRevert("MultichainGovernor: vote already collected");
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            moonbeamChainId,
+            moonBeamWormholeChainId,
             address(governor),
             payload,
             0,

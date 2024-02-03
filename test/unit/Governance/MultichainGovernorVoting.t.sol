@@ -54,7 +54,10 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect wormhole relayer"
         );
         assertTrue(
-            governor.isTrustedSender(baseChainId, address(voteCollection)),
+            governor.isTrustedSender(
+                baseWormholeChainId,
+                address(voteCollection)
+            ),
             "voteCollection not whitelisted to send messages in"
         );
 
@@ -284,7 +287,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         wormholeRelayerAdapter.setShouldRevert(true);
         vm.expectEmit(true, true, true, true, address(governor));
-        emit BridgeOutFailed(baseChainId, payload);
+        emit BridgeOutFailed(baseWormholeChainId, payload);
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -2009,7 +2012,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.prank(address(voteCollection));
         vm.expectRevert("MultichainGovernor: invalid payload length");
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            moonbeamChainId,
+            moonBeamWormholeChainId,
             address(governor),
             payload,
             0,
@@ -2029,7 +2032,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "MultichainGovernor: proposal not in cross chain vote collection period"
         );
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            moonbeamChainId,
+            moonBeamWormholeChainId,
             address(governor),
             payload,
             0,

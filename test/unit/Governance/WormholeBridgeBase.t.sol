@@ -43,14 +43,20 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
 
     function testTrustedSenderCorrectInGovernor() public {
         assertTrue(
-            governor.isTrustedSender(baseChainId, address(voteCollection)),
+            governor.isTrustedSender(
+                baseWormholeChainId,
+                address(voteCollection)
+            ),
             "vote collection contract should be trusted sender from base"
         );
     }
 
     function testTrustedSenderCorrectInVoteCollector() public {
         assertTrue(
-            voteCollection.isTrustedSender(moonbeamChainId, address(governor)),
+            voteCollection.isTrustedSender(
+                moonBeamWormholeChainId,
+                address(governor)
+            ),
             "governor contract should be trusted sender from moonbeam"
         );
     }
@@ -65,7 +71,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             "",
             new bytes[](0),
             addressToBytes(address(this)),
-            moonbeamChainId,
+            moonBeamWormholeChainId,
             bytes32(type(uint256).max)
         );
 
@@ -74,7 +80,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             "",
             new bytes[](0),
             addressToBytes(address(this)),
-            moonbeamChainId,
+            moonBeamWormholeChainId,
             bytes32(type(uint256).max)
         );
     }
@@ -86,7 +92,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             "",
             new bytes[](0),
             addressToBytes(address(this)),
-            moonbeamChainId,
+            moonBeamWormholeChainId,
             bytes32(type(uint256).max)
         );
 
@@ -95,7 +101,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             "",
             new bytes[](0),
             addressToBytes(address(this)),
-            baseChainId,
+            baseWormholeChainId,
             bytes32(type(uint256).max)
         );
     }
@@ -112,7 +118,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             payloadVoteCollection,
             new bytes[](0), /// field unchecked in contract
             addressToBytes(address(governor)),
-            moonbeamChainId,
+            moonBeamWormholeChainId,
             bytes32(type(uint256).max)
         );
 
@@ -122,7 +128,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             payloadGovernor,
             new bytes[](0), /// field unchecked in contract
             addressToBytes(address(voteCollection)),
-            baseChainId,
+            baseWormholeChainId,
             bytes32(type(uint256).max)
         );
     }
@@ -141,7 +147,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             payload,
             new bytes[](0), /// field unchecked in contract
             addressToBytes(address(voteCollection)),
-            baseChainId,
+            baseWormholeChainId,
             bytes32(type(uint256).max)
         );
     }
