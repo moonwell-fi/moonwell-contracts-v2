@@ -1,6 +1,6 @@
 {"extends": "solhint:recommended",
     "rules": {
-    "compiler-version": ["warn", "^0.8.0"],
+    "compiler-version": "off",
     "func-name-mixedcase": "off",
     "func-visibility": ["error", { "ignoreConstructors": true }],
     "max-line-length": "off",
@@ -21,6 +21,7 @@
     "explicit-types": "off",
     "const-name-snakecase": "off",
     "visibility-modifier-order": "off",
-    "max-states-count": "off"
+    "max-states-count": "off",
+    "no-complex-fallback": "off"
     }
 }

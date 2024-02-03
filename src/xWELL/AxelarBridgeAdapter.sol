@@ -4,7 +4,6 @@ import {xERC20BridgeAdapter} from "@protocol/xWELL/xERC20BridgeAdapter.sol";
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 import {IAxelarGateway} from "@protocol/xWELL/axelar-interfaces/IAxelarGateway.sol";
 import {IAxelarGasService} from "@protocol/xWELL/axelar-interfaces/IAxelarGasService.sol";
 import {AddressToString, StringToAddress} from "@protocol/xWELL/axelar-interfaces/AddressString.sol";

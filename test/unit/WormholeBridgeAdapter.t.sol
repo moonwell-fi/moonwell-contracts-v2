@@ -5,6 +5,7 @@ import "@forge-std/Test.sol";
 import "@test/helper/BaseTest.t.sol";
 
 import {MockWormholeReceiver} from "@test/mock/MockWormholeReceiver.sol";
+import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 
 contract WormholeBridgeAdapterUnitTest is BaseTest {
     /// xerc20 bridge adapter events

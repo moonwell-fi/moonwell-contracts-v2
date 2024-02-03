@@ -1,12 +1,7 @@
 pragma solidity 0.8.19;
 
 import {xERC20BridgeAdapter} from "@protocol/xWELL/xERC20BridgeAdapter.sol";
-import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-
-import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
-import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";

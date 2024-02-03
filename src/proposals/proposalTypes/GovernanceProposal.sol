@@ -1,6 +1,5 @@
 pragma solidity 0.8.19;
 
-import {Test} from "@forge-std/Test.sol";
 import {console} from "@forge-std/console.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
@@ -63,16 +62,14 @@ abstract contract GovernanceProposal is Proposal {
     }
 
     /// @notice print the actions that will be executed by the proposal
-    function printActions(address governorAddress) public {
+    function printActions(address) public {
         (
             address[] memory targets,
             uint256[] memory values,
             string[] memory signatures,
             bytes[] memory calldatas
         ) = _getActions();
-        MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(
-            governorAddress
-        );
+
         bytes memory governorCalldata = abi.encodeWithSignature(
             "propose(address[],uint256[],string[],bytes[],string)",
             targets,
@@ -170,7 +167,7 @@ abstract contract GovernanceProposal is Proposal {
     function _simulateGovernanceActions(
         address timelockAddress,
         address governorAddress,
-        address proposerAddress
+        address
     ) internal {
         uint256 actionsLength = actions.length;
         require(actionsLength > 0, "Empty governance operation");

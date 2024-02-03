@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {WETH9} from "@protocol/router/IWETH.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";

@@ -5,8 +5,6 @@ import {Script} from "@forge-std/Script.sol";
 
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
-
 /*
  to simulate:
   base:
