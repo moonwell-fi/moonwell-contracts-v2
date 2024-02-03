@@ -201,12 +201,25 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.removeExternalChainConfigs(_trustedSenders);
     }
 
-    function testaddExternalChainConfigsNonGovernorFails() public {
+    function testAddExternalChainConfigsNonGovernorFails() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
             );
         vm.expectRevert("MultichainGovernor: only governor");
+        governor.addExternalChainConfigs(_trustedSenders);
+    }
+
+    function testAddExternalChainConfigsAddressZeroFails() public {
+        WormholeTrustedSender.TrustedSender[]
+            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                1
+            );
+        _trustedSenders[0].chainId = 1;
+        _trustedSenders[0].addr = address(0);
+
+        vm.expectRevert("WormholeBridge: invalid target address");
+        vm.prank(address(governor));
         governor.addExternalChainConfigs(_trustedSenders);
     }
 

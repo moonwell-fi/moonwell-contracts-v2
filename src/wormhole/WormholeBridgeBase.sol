@@ -129,7 +129,6 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             targetAddress[chainId] == address(0),
             "WormholeBridge: chain already added"
         );
-        /// TODO test this branch
         require(addr != address(0), "WormholeBridge: invalid target address");
 
         /// this code should be unreachable
@@ -248,9 +247,6 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     ) public view returns (bool) {
         return isTrustedSender(chainId, fromWormholeFormat(addr));
     }
-
-    /// TODO test converting an address to bytes32, calling isTrustedSender, and then converting back to address
-    /// call isTrustedSender with the converted address from calling fromWormholeFormat
 
     /// @notice returns whether or not the address is in the trusted senders list for a given chain
     /// @param chainId The wormhole chain id to check
