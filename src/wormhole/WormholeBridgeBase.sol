@@ -162,9 +162,9 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         }
     }
 
-    /// @notice add wormhole relayer contract
+    /// @notice sets the wormhole relayer contract
     /// @param _wormholeRelayer address of the wormhole relayer
-    function _addWormholeRelayer(address _wormholeRelayer) internal {
+    function _setWormholeRelayer(address _wormholeRelayer) internal {
         require(
             address(wormholeRelayer) == address(0),
             "WormholeBridge: relayer already set"
