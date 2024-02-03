@@ -36,6 +36,17 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
     function testGovernorSetup() public {
         assertEq(
+            governor.gasLimit(),
+            Constants.MIN_GAS_LIMIT,
+            "incorrect gas limit vote collection"
+        );
+        assertEq(governor.proposalCount(), 0, "proposalCount");
+        assertEq(
+            governor.breakGlassGuardian(),
+            breakGlassGuardian,
+            "breakGlassGuardian"
+        );
+        assertEq(
             governor.proposalThreshold(),
             proposalThreshold,
             "proposalThreshold"
@@ -57,10 +68,52 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             maxUserLiveProposals,
             "maxUserLiveProposals"
         );
+        assertEq(governor.pauseStartTime(), 0, "pauseStartTime");
         assertEq(governor.pauseDuration(), pauseDuration, "pauseDuration");
         assertEq(governor.pauseGuardian(), pauseGuardian, "pauseGuardian");
         assertFalse(governor.paused(), "paused");
         assertFalse(governor.pauseUsed(), "paused used");
+
+        assertEq(address(governor.well()), address(well), "well address");
+        assertEq(address(governor.xWell()), address(xwell), "xwell");
+        assertEq(
+            address(governor.stkWell()),
+            address(stkWellMoonbeam),
+            "stkwell"
+        );
+        assertEq(
+            address(governor.distributor()),
+            address(distributor),
+            "distributor"
+        );
+
+        /// TODO fill these in
+        assertEq(
+            address(governor.targetAddress(baseChainId)),
+            address(voteCollection),
+            "target address on moonbeam incorrect"
+        );
+
+        assertEq(
+            governor.getAllTargetChains().length,
+            1,
+            "getAllTargetChains length incorrect"
+        );
+        assertEq(
+            governor.getAllTargetChains()[0],
+            baseChainId,
+            "getAllTargetChains chainid incorrect"
+        );
+        assertEq(
+            governor.bridgeCost(moonbeamChainId),
+            0.01 ether,
+            "bridgecost incorrect"
+        );
+        assertEq(
+            governor.bridgeCostAll(),
+            0.01 ether,
+            "bridgecostall incorrect"
+        );
     }
 
     function testVoteCollectionSetup() public {
@@ -136,22 +189,22 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.updateApprovedCalldata("", false);
     }
 
-    function testRemoveExternalChainConfigNonGovernorFails() public {
+    function testremoveExternalChainConfigsNonGovernorFails() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
             );
         vm.expectRevert("MultichainGovernor: only governor");
-        governor.removeExternalChainConfig(_trustedSenders);
+        governor.removeExternalChainConfigs(_trustedSenders);
     }
 
-    function testAddExternalChainConfigNonGovernorFails() public {
+    function testaddExternalChainConfigsNonGovernorFails() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
             );
         vm.expectRevert("MultichainGovernor: only governor");
-        governor.addExternalChainConfig(_trustedSenders);
+        governor.addExternalChainConfigs(_trustedSenders);
     }
 
     function testUpdateProposalThresholdNonGovernorFails() public {
@@ -326,12 +379,12 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function testRemoveExternalChainConfigGovernorSucceeds() public {
+    function testremoveExternalChainConfigsGovernorSucceeds() public {
         WormholeTrustedSender.TrustedSender[]
-            memory _trustedSenders = testAddExternalChainConfigGovernorSucceeds();
+            memory _trustedSenders = testaddExternalChainConfigsGovernorSucceeds();
 
         vm.prank(address(governor));
-        governor.removeExternalChainConfig(_trustedSenders);
+        governor.removeExternalChainConfigs(_trustedSenders);
 
         assertFalse(
             governor.isTrustedSender(
@@ -353,10 +406,10 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
         vm.prank(address(governor));
         vm.expectRevert("WormholeBridge: chain not added");
-        governor.removeExternalChainConfig(_trustedSenders);
+        governor.removeExternalChainConfigs(_trustedSenders);
     }
 
-    function testAddExternalChainConfigGovernorSucceeds()
+    function testaddExternalChainConfigsGovernorSucceeds()
         public
         returns (WormholeTrustedSender.TrustedSender[] memory)
     {
@@ -369,7 +422,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         _trustedSenders[0].addr = address(this);
 
         vm.prank(address(governor));
-        governor.addExternalChainConfig(_trustedSenders);
+        governor.addExternalChainConfigs(_trustedSenders);
         assertTrue(
             governor.isTrustedSender(
                 _trustedSenders[0].chainId,
@@ -381,13 +434,13 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         return _trustedSenders;
     }
 
-    function testAddExternalChainConfigGovernorTwiceFails() public {
+    function testaddExternalChainConfigsGovernorTwiceFails() public {
         WormholeTrustedSender.TrustedSender[]
-            memory _trustedSenders = testAddExternalChainConfigGovernorSucceeds();
+            memory _trustedSenders = testaddExternalChainConfigsGovernorSucceeds();
 
         vm.prank(address(governor));
         vm.expectRevert("WormholeBridge: chain already added");
-        governor.addExternalChainConfig(_trustedSenders);
+        governor.addExternalChainConfigs(_trustedSenders);
     }
 
     function testUpdateProposalThresholdGovernorSucceeds() public {
@@ -551,12 +604,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
     // VIEW FUNCTIONS
 
-    function testIsCrosschainVoteCollector() public {
-        testAddExternalChainConfigGovernorSucceeds();
-        assertEq(
-            governor.isCrossChainVoteCollector(1, address(this)),
-            true,
-            "incorrect is crosschain vote collector"
+    function testVoteCollectorIsTrustedSender() public {
+        testaddExternalChainConfigsGovernorSucceeds();
+        assertTrue(
+            governor.isTrustedSender(1, address(this)),
+            "vote collector not trusted"
         );
     }
 }
