@@ -121,7 +121,7 @@ contract MultichainVoteCollection is
 
         _addTargetAddress(_moonbeamWormholeChainId, _moonbeamGovernor);
 
-        _addWormholeRelayer(_wormholeRelayer);
+        _setWormholeRelayer(_wormholeRelayer);
 
         __Ownable_init();
 
