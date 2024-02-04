@@ -93,7 +93,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         public
         returns (uint256)
     {
-        uint256 proposalId = _createProposalUpdateThreshold();
+        uint256 proposalId = _createProposalUpdateThreshold(address(this));
 
         {
             bool proposalFound;
@@ -2237,23 +2237,10 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     function testUserCanCreateAsManyProposalWantsAsLongNeverExceedsMaxUserLiveProposals()
         public
     {
-        testProposeUpdateProposalThresholdSucceeds();
-
-        vm.warp(block.timestamp + 1);
-
-        testProposeUpdateProposalThresholdSucceeds();
-
-        vm.warp(block.timestamp + 1);
-
-        testProposeUpdateProposalThresholdSucceeds();
-
-        vm.warp(block.timestamp + 1);
-
-        testProposeUpdateProposalThresholdSucceeds();
-
-        vm.warp(block.timestamp + 1);
-
-        testProposeUpdateProposalThresholdSucceeds();
+        for (uint256 i = 0; i < 5; i++) {
+            testProposeUpdateProposalThresholdSucceeds();
+            vm.warp(block.timestamp + 1);
+        }
 
         assertEq(
             governor.currentUserLiveProposals(address(this)),
@@ -2315,5 +2302,223 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
     }
 
-    /// TODO try another test like this where multiple users try to hit the max proposal count
+    function testMultipleUsersCanCreateAsManyProposalWantsAsLongNeverExceedsMaxUserLiveProposals()
+        public
+    {
+        address user1 = address(1);
+        address user2 = address(2);
+        address user3 = address(3);
+        address user4 = address(4);
+
+        uint256 amount = governor.proposalThreshold();
+        uint256 bridgeCost = governor.bridgeCostAll();
+
+        _delegateVoteAmountForUser(address(well), user1, amount);
+        vm.deal(user1, bridgeCost);
+
+        _delegateVoteAmountForUser(address(stkWellMoonbeam), user2, amount);
+        vm.deal(user2, bridgeCost);
+
+        _delegateVoteAmountForUser(address(xwell), user3, amount);
+        vm.deal(user3, bridgeCost);
+
+        _delegateVoteAmountForUser(address(distributor), user4, amount);
+        vm.deal(user4, bridgeCost);
+
+        vm.warp(block.timestamp + 1);
+        vm.roll(block.number + 1);
+
+        vm.startPrank(user1);
+        for (uint256 i = 0; i < 5; i++) {
+            _createProposalUpdateThreshold(user1);
+            vm.warp(block.timestamp + 1);
+        }
+        vm.stopPrank();
+        assertEq(
+            governor.currentUserLiveProposals(user1),
+            5,
+            "incorrect num live proposals"
+        );
+        assertEq(
+            governor.liveProposals().length,
+            5,
+            "incorrect num live proposals"
+        );
+
+        vm.startPrank(user2);
+        for (uint256 i = 0; i < 5; i++) {
+            _createProposalUpdateThreshold(user2);
+            vm.warp(block.timestamp + 1);
+        }
+        vm.stopPrank();
+        assertEq(
+            governor.currentUserLiveProposals(user2),
+            5,
+            "incorrect num live proposals"
+        );
+        assertEq(
+            governor.liveProposals().length,
+            10,
+            "incorrect num live proposals"
+        );
+
+        vm.startPrank(user3);
+        for (uint256 i = 0; i < 5; i++) {
+            _createProposalUpdateThreshold(user3);
+            vm.warp(block.timestamp + 1);
+        }
+        vm.stopPrank();
+        assertEq(
+            governor.currentUserLiveProposals(user3),
+            5,
+            "incorrect num live proposals"
+        );
+        assertEq(
+            governor.liveProposals().length,
+            15,
+            "incorrect num live proposals"
+        );
+
+        vm.startPrank(user4);
+        for (uint256 i = 0; i < 5; i++) {
+            _createProposalUpdateThreshold(user4);
+            vm.warp(block.timestamp + 1);
+        }
+        vm.stopPrank();
+        assertEq(
+            governor.currentUserLiveProposals(user4),
+            5,
+            "incorrect num live proposals"
+        );
+        assertEq(
+            governor.liveProposals().length,
+            20,
+            "incorrect num live proposals"
+        );
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory description = "Mock Proposal MIP-M00";
+
+        // no user can create more proposals
+        vm.expectRevert(
+            "MultichainGovernor: too many live proposals for this user"
+        );
+        vm.prank(user1);
+        governor.propose(targets, values, calldatas, description);
+
+        vm.expectRevert(
+            "MultichainGovernor: too many live proposals for this user"
+        );
+        vm.prank(user2);
+        governor.propose(targets, values, calldatas, description);
+
+        vm.expectRevert(
+            "MultichainGovernor: too many live proposals for this user"
+        );
+        vm.prank(user3);
+        governor.propose(targets, values, calldatas, description);
+
+        vm.expectRevert(
+            "MultichainGovernor: too many live proposals for this user"
+        );
+        vm.prank(user4);
+        governor.propose(targets, values, calldatas, description);
+
+        // cancel proposal 1, 6, 11, 16
+        // 17 live proposals
+        vm.prank(user1);
+        governor.cancel(1);
+
+        assertEq(
+            governor.currentUserLiveProposals(user1),
+            4,
+            "incorrect num live proposals"
+        );
+        assertEq(
+            governor.liveProposals().length,
+            19,
+            "incorrect num live proposals"
+        );
+
+        vm.prank(user2);
+        governor.cancel(6);
+
+        assertEq(
+            governor.currentUserLiveProposals(user2),
+            4,
+            "incorrect num live proposals"
+        );
+        assertEq(
+            governor.liveProposals().length,
+            18,
+            "incorrect num live proposals"
+        );
+
+        vm.prank(user3);
+        governor.cancel(11);
+        assertEq(
+            governor.currentUserLiveProposals(user3),
+            4,
+            "incorrect num live proposals"
+        );
+        assertEq(
+            governor.liveProposals().length,
+            17,
+            "incorrect num live proposals"
+        );
+
+        vm.prank(user4);
+        governor.cancel(16);
+        assertEq(
+            governor.currentUserLiveProposals(user4),
+            4,
+            "incorrect num live proposals"
+        );
+        assertEq(
+            governor.liveProposals().length,
+            16,
+            "incorrect num live proposals"
+        );
+
+        //  pass proposal 2, 7
+        _castVotes(2, Constants.VOTE_VALUE_YES, address(this));
+
+        // user 1 has 4 live proposals
+        assertEq(
+            governor.currentUserLiveProposals(user1),
+            4,
+            "incorrect num live proposals"
+        );
+        assertEq(
+            governor.liveProposals().length,
+            16,
+            "incorrect num live proposals"
+        );
+
+        _castVotes(7, Constants.VOTE_VALUE_NO, address(this));
+
+        _warpPastProposalEnd(7);
+
+        // user 1 has 0 live proposals
+        assertEq(
+            governor.currentUserLiveProposals(user1),
+            0,
+            "incorrect num live proposals"
+        );
+
+        // user 2 has 3 live proposals
+        assertEq(
+            governor.currentUserLiveProposals(user2),
+            3,
+            "incorrect num live proposals"
+        );
+
+        assertEq(
+            governor.liveProposals().length,
+            11,
+            "incorrect num live proposals"
+        );
+    }
 }

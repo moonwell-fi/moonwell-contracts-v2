@@ -261,7 +261,9 @@ contract MultichainBaseTest is
         vm.warp(block.timestamp + 1);
     }
 
-    function _createProposalUpdateThreshold() internal returns (uint256) {
+    function _createProposalUpdateThreshold(
+        address creator
+    ) internal returns (uint256) {
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
         bytes[] memory calldatas = new bytes[](1);
@@ -277,8 +279,8 @@ contract MultichainBaseTest is
 
         uint256 startProposalCount = governor.proposalCount();
         uint256 bridgeCost = governor.bridgeCostAll();
-        vm.deal(address(this), bridgeCost);
 
+        vm.deal(creator, bridgeCost);
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -319,5 +321,29 @@ contract MultichainBaseTest is
             proposalInformation.againstVotes,
             proposalInformation.abstainVotes
         ) = voteCollection.proposalInformation(proposalId);
+    }
+
+    // token can be xWELL, WELL or stkWELL
+    function _delegateVoteAmountForUser(
+        address token,
+        address user,
+        uint256 voteAmount
+    ) internal {
+        if (
+            token != address(stkWellMoonbeam) && token != address(stkWellBase)
+        ) {
+            deal(token, user, voteAmount);
+
+            // users xWell interface but this can also be well
+            vm.prank(user);
+            xWELL(token).delegate(user);
+        } else {
+            deal(address(xwell), user, voteAmount);
+
+            vm.startPrank(user);
+            xwell.approve(token, voteAmount);
+            IStakedWell(token).stake(user, voteAmount);
+            vm.stopPrank();
+        }
     }
 }

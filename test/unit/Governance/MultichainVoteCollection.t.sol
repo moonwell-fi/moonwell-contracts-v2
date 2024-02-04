@@ -178,7 +178,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         public
         returns (uint256 proposalId)
     {
-        proposalId = _createProposalUpdateThreshold();
+        proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
         vm.roll(block.number + 1);
@@ -214,7 +214,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         public
         returns (uint256 proposalId)
     {
-        proposalId = _createProposalUpdateThreshold();
+        proposalId = _createProposalUpdateThreshold(address(this));
 
         (, uint256 votingStartTime, , , , , , ) = voteCollection
             .proposalInformation(proposalId);
@@ -226,7 +226,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
     // voter has no votes
     function testVotingVoterHasNoVotes() public {
-        uint256 proposalId = _createProposalUpdateThreshold();
+        uint256 proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
 
@@ -252,7 +252,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         public
         returns (uint256 proposalId)
     {
-        proposalId = _createProposalUpdateThreshold();
+        proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
 
@@ -270,7 +270,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         public
         returns (uint256 proposalId)
     {
-        proposalId = _createProposalUpdateThreshold();
+        proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
 
@@ -287,7 +287,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         public
         returns (uint256 proposalId)
     {
-        proposalId = _createProposalUpdateThreshold();
+        proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + governor.votingPeriod() + 1);
 
@@ -305,7 +305,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         public
         returns (uint256 proposalId)
     {
-        proposalId = _createProposalUpdateThreshold();
+        proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
 
@@ -320,7 +320,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testVotingNoVotesFails() public returns (uint256 proposalId) {
-        proposalId = _createProposalUpdateThreshold();
+        proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
 
@@ -362,7 +362,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.roll(block.number + 1);
 
         uint256 snapshotTimestamp = block.timestamp - 1;
-        uint256 proposalId = _createProposalUpdateThreshold();
+        uint256 proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
         vm.roll(block.number + 1);
@@ -482,7 +482,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.warp(block.timestamp + 1);
 
-        uint256 proposalId = _createProposalUpdateThreshold();
+        uint256 proposalId = _createProposalUpdateThreshold(address(this));
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -583,7 +583,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         /// include users before snapshot timestamp
         vm.warp(block.timestamp + 1);
 
-        uint256 proposalId = _createProposalUpdateThreshold();
+        uint256 proposalId = _createProposalUpdateThreshold(address(this));
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -693,7 +693,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.warp(block.timestamp + 1);
 
-        uint256 proposalId = _createProposalUpdateThreshold();
+        uint256 proposalId = _createProposalUpdateThreshold(address(this));
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -831,7 +831,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testEmitVotesProposalHasNoVotes() public {
-        _createProposalUpdateThreshold();
+        _createProposalUpdateThreshold(address(this));
 
         uint256 proposalId = governor.proposalCount();
 
@@ -960,7 +960,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testBridgeInProposalAlreadyExist() public {
-        uint256 proposalId = _createProposalUpdateThreshold();
+        uint256 proposalId = _createProposalUpdateThreshold(address(this));
 
         bytes memory payload = abi.encode(proposalId, 0, 0, 0, 0);
         uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
