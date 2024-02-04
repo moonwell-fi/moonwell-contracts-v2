@@ -2232,19 +2232,28 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             0,
             "incorrect state, not active"
         );
-
-        /// TODO assert that as many of the state transitions that happened are correct
-        /// - totalLiveProposals
-        /// - current live proposals returned from getter functions
-        /// - user live proposals returned from getter functions
     }
 
     function testUserCanCreateAsManyProposalWantsAsLongNeverExceedsMaxUserLiveProposals()
         public
     {
-        for (uint256 i = 0; i < 5; i++) {
-            testProposeUpdateProposalThresholdSucceeds();
-        }
+        testProposeUpdateProposalThresholdSucceeds();
+
+        vm.warp(block.timestamp + 1);
+
+        testProposeUpdateProposalThresholdSucceeds();
+
+        vm.warp(block.timestamp + 1);
+
+        testProposeUpdateProposalThresholdSucceeds();
+
+        vm.warp(block.timestamp + 1);
+
+        testProposeUpdateProposalThresholdSucceeds();
+
+        vm.warp(block.timestamp + 1);
+
+        testProposeUpdateProposalThresholdSucceeds();
 
         assertEq(
             governor.currentUserLiveProposals(address(this)),
@@ -2278,7 +2287,33 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "incorrect num live proposals"
         );
 
-        /// TODO vote/execute proposals here, see that the number decreases
-        /// TODO try another test like this where multiple users try to hit the max proposal count
+        uint256 proposalId = 2;
+
+        _castVotes(proposalId, Constants.VOTE_VALUE_YES, address(this));
+
+        _warpPastProposalEnd(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            4,
+            "incorrect state, not succeeded"
+        );
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            4,
+            "incorrect num live proposals"
+        );
+
+        // execute
+        governor.execute(proposalId);
+
+        assertEq(
+            governor.currentUserLiveProposals(address(this)),
+            4,
+            "incorrect num live proposals"
+        );
     }
+
+    /// TODO try another test like this where multiple users try to hit the max proposal count
 }
