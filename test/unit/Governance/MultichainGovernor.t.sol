@@ -201,12 +201,25 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.removeExternalChainConfigs(_trustedSenders);
     }
 
-    function testaddExternalChainConfigsNonGovernorFails() public {
+    function testAddExternalChainConfigsNonGovernorFails() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
                 0
             );
         vm.expectRevert("MultichainGovernor: only governor");
+        governor.addExternalChainConfigs(_trustedSenders);
+    }
+
+    function testAddExternalChainConfigsAddressZeroFails() public {
+        WormholeTrustedSender.TrustedSender[]
+            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                1
+            );
+        _trustedSenders[0].chainId = 1;
+        _trustedSenders[0].addr = address(0);
+
+        vm.expectRevert("WormholeBridge: invalid target address");
+        vm.prank(address(governor));
         governor.addExternalChainConfigs(_trustedSenders);
     }
 
@@ -339,6 +352,31 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         vm.prank(governor.breakGlassGuardian());
         vm.expectRevert("MultichainGovernor: calldata not whitelisted");
         governor.executeBreakGlass(new address[](1), new bytes[](1));
+    }
+
+    function testExecuteBreakGlassTryToGiveBGGToSelfFails() public {
+        bytes memory setBreakGlassCalldata = abi.encodeWithSignature(
+            "setBreakGlassGuardian(address)",
+            address(this)
+        );
+
+        vm.prank(address(governor));
+        governor.updateApprovedCalldata(setBreakGlassCalldata, true);
+
+        assertTrue(
+            governor.whitelistedCalldatas(setBreakGlassCalldata),
+            "calldata not whitelisted"
+        );
+
+        address[] memory targets = new address[](1);
+        targets[0] = address(governor);
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = setBreakGlassCalldata;
+
+        vm.prank(governor.breakGlassGuardian());
+        vm.expectRevert("MultichainGovernor: break glass guardian not null");
+        governor.executeBreakGlass(targets, calldatas);
     }
 
     function testExecuteBreakGlassBreakGlassGuardianSucceeds() public {

@@ -681,8 +681,6 @@ contract MultichainGovernor is
             newProposal
                 .crossChainVoteCollectionEndTimestamp = crossChainVoteCollectionEndTimestamp;
 
-            /// TODO test that the exact same calldata is produced here as the rebroadcastProposal function
-            /// this can be done using the vm.expectEmit function from event BridgeOutSuccess
             payload = abi.encode(
                 proposalCount,
                 voteSnapshotTimestamp,
@@ -1005,8 +1003,6 @@ contract MultichainGovernor is
             }
         }
 
-        /// TODO add test here where executeBreakGlass calldata is whitelisted and the guardian tries
-        /// to reenter and grant itself BGG role again
         require(
             breakGlassGuardian == address(0),
             "MultichainGovernor: break glass guardian not null"

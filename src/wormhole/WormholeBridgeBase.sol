@@ -79,12 +79,12 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
 
     /// @notice event emitted when a bridge out succeeds
     /// @param dstWormholeChainId destination wormhole chain id to send tokens to
-    /// @param gasLimit gas limit used to send tokens
+    /// @param cost cost of the bridge out
     /// @param dst destination address to send tokens to
     /// @param payload payload that was sent
     event BridgeOutSuccess(
         uint16 dstWormholeChainId,
-        uint96 gasLimit,
+        uint256 cost,
         address dst,
         bytes payload
     );
@@ -129,7 +129,6 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             targetAddress[chainId] == address(0),
             "WormholeBridge: chain already added"
         );
-        /// TODO test this branch
         require(addr != address(0), "WormholeBridge: invalid target address");
 
         /// this code should be unreachable
@@ -249,9 +248,6 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         return isTrustedSender(chainId, fromWormholeFormat(addr));
     }
 
-    /// TODO test converting an address to bytes32, calling isTrustedSender, and then converting back to address
-    /// call isTrustedSender with the converted address from calling fromWormholeFormat
-
     /// @notice returns whether or not the address is in the trusted senders list for a given chain
     /// @param chainId The wormhole chain id to check
     /// @param addr The address to check
@@ -292,10 +288,9 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
                     gasLimit
                 )
             {
-                /// TODO test that the event is emitted in success
                 emit BridgeOutSuccess(
                     targetChain,
-                    gasLimit,
+                    cost,
                     targetAddress[targetChain],
                     payload
                 );
