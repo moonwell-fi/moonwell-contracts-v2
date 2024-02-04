@@ -6,17 +6,18 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
+import {Well} from "@protocol/Governance/Well.sol";
 
 /*
- Utility to deploy a ProxyAdmin contract on a testnet
+ Utility to deploy Well contract on a testnet
  to simulate:
-     forge script script/DeployProxyAdmin.s.sol:DeployProxyAdminScript -vvvv --rpc-url moonbase/baseGoerli
+     forge script script/DeployWell.s.sol:DeployWell -vvvv --rpc-url moonbase/baseGoerli
 
  to run:
-    forge script script/DeployProxyAdmin.s.sol:DeployProxyAdminScript -vvvv \ 
+    forge script script/DeployWell.s.sol:DeployWell -vvvv \ 
     --rpc-url moonbase/baseGoerli --broadcast --etherscan-api-key moonbase/baseGoerli --verify
 */
-contract DeployProxyAdminScript is Script, ChainIds {
+contract DeployWell is Script, ChainIds {
     /// @notice addresses contract
     Addresses addresses;
 
@@ -24,25 +25,20 @@ contract DeployProxyAdminScript is Script, ChainIds {
     uint256 private PRIVATE_KEY;
 
     constructor() {
-        // Default behavior: use Anvil 0 private key
         PRIVATE_KEY = uint256(vm.envBytes32("ETH_PRIVATE_KEY"));
 
         addresses = new Addresses();
     }
 
     function run() public {
+        // get address from pk
+        address owner = vm.addr(PRIVATE_KEY);
+
         vm.startBroadcast(PRIVATE_KEY);
-        address proxyAdmin = address(new ProxyAdmin());
+        Well well = new Well(owner);
         vm.stopBroadcast();
 
-        // add proxy admin to addresses
-        if (block.chainid == moonBaseChainId) {
-            addresses.addAddress("MOONBEAM_PROXY_ADMIN", proxyAdmin);
-        } else if (block.chainid == baseChainId) {
-            addresses.addAddress("BASE_PROXY_ADMIN", proxyAdmin);
-        } else {
-            revert("chain not supported");
-        }
+        addresses.addAddress("WELL", address(well));
 
         printAddresses();
     }
