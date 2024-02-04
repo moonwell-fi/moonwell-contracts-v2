@@ -138,12 +138,10 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         bytes[] memory calldatas = new bytes[](0);
         string memory description = "Mock Proposal MIP-M00";
 
-        vm.roll(block.number - 1);
-        vm.warp(block.timestamp - 1);
         vm.expectRevert(
             "MultichainGovernor: proposer votes below proposal threshold"
         );
-
+        vm.prank(address(1));
         governor.propose(targets, values, calldatas, description);
     }
 
