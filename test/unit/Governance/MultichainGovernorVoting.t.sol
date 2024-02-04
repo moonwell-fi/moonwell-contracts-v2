@@ -1515,6 +1515,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             totalValue,
             "incorrect weth eth balance"
         );
+        assertEq(address(this).balance, 0, "incorrect eth balance");
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -2101,63 +2102,39 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         // is 104
 
         // proposal1 and proposal2 are active at this stage
-
         {
             // check live proposals
             uint256[] memory proposals = governor.liveProposals();
-
-            bool proposal1Found;
-            bool proposal2Found;
-
-            for (uint256 i = 0; i < proposals.length; i++) {
-                if (proposal1Found && proposal2Found) {
-                    break;
-                }
-                if (proposals[i] == proposalId1) {
-                    proposal1Found = true;
-                }
-                if (proposals[i] == proposalId2) {
-                    proposal2Found = true;
-                }
-            }
-
-            assertTrue(
-                proposal1Found,
-                "proposal 1 not found in live proposals"
+            assertEq(proposals.length, 2, "incorrect live proposals length");
+            assertEq(
+                proposals[0],
+                proposalId1,
+                "incorrect live proposal at index 0"
             );
-            assertTrue(
-                proposal2Found,
-                "proposal 2 not found in live proposals"
+            assertEq(
+                proposals[1],
+                proposalId2,
+                "incorrect live proposal at index 1"
             );
-        }
-        {
+
             // check user proposals
             uint256[] memory userProposals = governor.getUserLiveProposals(
                 address(this)
             );
-
-            bool proposal1Found;
-            bool proposal2Found;
-
-            for (uint256 i = 0; i < userProposals.length; i++) {
-                if (proposal1Found && proposal2Found) {
-                    break;
-                }
-                if (userProposals[i] == proposalId1) {
-                    proposal1Found = true;
-                }
-                if (userProposals[i] == proposalId2) {
-                    proposal2Found = true;
-                }
-            }
-            assertTrue(
-                proposal1Found,
-                "proposal 1 not found in user live proposals"
+            assertEq(
+                userProposals.length,
+                2,
+                "incorrect user live proposals length"
             );
-
-            assertTrue(
-                proposal2Found,
-                "proposal 2 not found in user live proposals"
+            assertEq(
+                userProposals[0],
+                proposalId1,
+                "incorrect user live proposal at index 0"
+            );
+            assertEq(
+                userProposals[1],
+                proposalId2,
+                "incorrect user live proposal at index 1"
             );
         }
 
@@ -2168,81 +2145,37 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         uint256 proposalId3 = testProposeUpdateProposalThresholdSucceeds();
 
-        // Proposal 1 is defetead, proposal2 active, proposal 3 active
         {
-            bool proposal1Found;
-            bool proposal2Found;
-            bool proposal3Found;
-
             uint256[] memory proposals = governor.liveProposals();
-
-            for (uint256 i = 0; i < proposals.length; i++) {
-                if (proposal1Found && proposal2Found && proposal3Found) {
-                    break;
-                }
-                if (proposals[i] == proposalId1) {
-                    proposal1Found = true;
-                }
-                if (proposals[i] == proposalId2) {
-                    proposal2Found = true;
-                }
-                if (proposals[i] == proposalId3) {
-                    proposal3Found = true;
-                }
-            }
-
-            assertFalse(proposal1Found, "proposal 1 found in live proposals");
-            assertTrue(
-                proposal2Found,
-                "proposal 2 not found in live proposals"
+            assertEq(proposals.length, 2, "incorrect live proposals length");
+            assertEq(
+                proposals[0],
+                proposalId2,
+                "incorrect live proposal at index 0"
             );
-            assertTrue(
-                proposal3Found,
-                "proposal 3 not found in live proposals"
+            assertEq(
+                proposals[1],
+                proposalId3,
+                "incorrect live proposal at index 1"
             );
-        }
 
-        {
-            // check user live proposals
-            bool proposal1Found;
-            bool proposal2Found;
-            bool proposal3Found;
-
-            /// TODO check array length here
-            /// you could probably also get away with removing the for loop
-            /// and just accessing array elements directly
             uint256[] memory userProposals = governor.getUserLiveProposals(
                 address(this)
             );
-
-            for (uint256 i = 0; i < userProposals.length; i++) {
-                if (proposal1Found && proposal2Found && proposal3Found) {
-                    break;
-                }
-                if (userProposals[i] == proposalId1) {
-                    proposal1Found = true;
-                }
-                if (userProposals[i] == proposalId2) {
-                    proposal2Found = true;
-                }
-                if (userProposals[i] == proposalId3) {
-                    proposal3Found = true;
-                }
-            }
-
-            assertFalse(
-                proposal1Found,
-                "proposal 1 found in user live proposals"
+            assertEq(
+                userProposals.length,
+                2,
+                "incorrect user live proposals length"
             );
-
-            assertTrue(
-                proposal2Found,
-                "proposal 2 not found in user live proposals"
+            assertEq(
+                userProposals[0],
+                proposalId2,
+                "incorrect user live proposal at index 0"
             );
-
-            assertTrue(
-                proposal3Found,
-                "proposal 3 not found in user live proposals"
+            assertEq(
+                userProposals[1],
+                proposalId3,
+                "incorrect user live proposal at index 1"
             );
         }
 
@@ -2253,96 +2186,25 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         uint256 proposalId4 = testProposeUpdateProposalThresholdSucceeds();
 
-        // only proposal 4 is active
         {
-            bool proposal1Found;
-            bool proposal2Found;
-            bool proposal3Found;
-            bool proposal4Found;
-
+            // check live proposals
             uint256[] memory proposals = governor.liveProposals();
+            assertEq(proposals.length, 1, "incorrect live proposals length");
+            assertEq(proposals[0], proposalId4, "incorrect live proposal");
 
-            for (uint256 i = 0; i < proposals.length; i++) {
-                if (
-                    proposal1Found &&
-                    proposal2Found &&
-                    proposal3Found &&
-                    proposal4Found
-                ) {
-                    break;
-                }
-                if (proposals[i] == proposalId1) {
-                    proposal1Found = true;
-                }
-                if (proposals[i] == proposalId2) {
-                    proposal2Found = true;
-                }
-                if (proposals[i] == proposalId3) {
-                    proposal3Found = true;
-                }
-                if (proposals[i] == proposalId4) {
-                    proposal4Found = true;
-                }
-            }
-
-            assertFalse(proposal1Found, "proposal 1 found in live proposals");
-            assertFalse(proposal2Found, "proposal 2 found in live proposals");
-            assertFalse(proposal3Found, "proposal 3 found in live proposals");
-            assertTrue(
-                proposal4Found,
-                "proposal 4 not found in live proposals"
-            );
-        }
-
-        // check user live proposals
-        {
-            bool proposal1Found;
-            bool proposal2Found;
-            bool proposal3Found;
-            bool proposal4Found;
-
+            // check user live proposals
             uint256[] memory userProposals = governor.getUserLiveProposals(
                 address(this)
             );
-
-            for (uint256 i = 0; i < userProposals.length; i++) {
-                if (
-                    proposal1Found &&
-                    proposal2Found &&
-                    proposal3Found &&
-                    proposal4Found
-                ) {
-                    break;
-                }
-                if (userProposals[i] == proposalId1) {
-                    proposal1Found = true;
-                }
-                if (userProposals[i] == proposalId2) {
-                    proposal2Found = true;
-                }
-                if (userProposals[i] == proposalId3) {
-                    proposal3Found = true;
-                }
-                if (userProposals[i] == proposalId4) {
-                    proposal4Found = true;
-                }
-            }
-
-            assertFalse(
-                proposal1Found,
-                "proposal 1 found in user live proposals"
+            assertEq(
+                userProposals.length,
+                1,
+                "incorrect user live proposals length"
             );
-            assertFalse(
-                proposal2Found,
-                "proposal 2 found in user live proposals"
-            );
-            assertFalse(
-                proposal3Found,
-                "proposal 3 found in user live proposals"
-            );
-            assertTrue(
-                proposal4Found,
-                "proposal 4 not found in user live proposals"
+            assertEq(
+                userProposals[0],
+                proposalId4,
+                "incorrect user live proposal at index 0"
             );
         }
 
