@@ -87,7 +87,6 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             "distributor"
         );
 
-        /// TODO fill these in
         assertEq(
             address(governor.targetAddress(baseWormholeChainId)),
             address(voteCollection),

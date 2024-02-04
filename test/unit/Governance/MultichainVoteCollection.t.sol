@@ -15,17 +15,6 @@ import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 
 contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
-    function setUp() public override {
-        super.setUp();
-
-        xwell.delegate(address(this));
-        well.delegate(address(this));
-        distributor.delegate(address(this));
-
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + 1);
-    }
-
     function testSetup() public {
         assertEq(
             governor.getVotes(
@@ -189,7 +178,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         public
         returns (uint256 proposalId)
     {
-        proposalId = testProposeUpdateProposalThresholdSucceeds();
+        proposalId = _createProposalUpdateThreshold();
 
         vm.warp(block.timestamp + 1);
         vm.roll(block.number + 1);
@@ -225,7 +214,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         public
         returns (uint256 proposalId)
     {
-        proposalId = testProposeUpdateProposalThresholdSucceeds();
+        proposalId = _createProposalUpdateThreshold();
 
         (, uint256 votingStartTime, , , , , , ) = voteCollection
             .proposalInformation(proposalId);
@@ -237,7 +226,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
     // voter has no votes
     function testVotingVoterHasNoVotes() public {
-        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        uint256 proposalId = _createProposalUpdateThreshold();
 
         vm.warp(block.timestamp + 1);
 
@@ -263,7 +252,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         public
         returns (uint256 proposalId)
     {
-        proposalId = testProposeUpdateProposalThresholdSucceeds();
+        proposalId = _createProposalUpdateThreshold();
 
         vm.warp(block.timestamp + 1);
 
@@ -281,7 +270,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         public
         returns (uint256 proposalId)
     {
-        proposalId = testProposeUpdateProposalThresholdSucceeds();
+        proposalId = _createProposalUpdateThreshold();
 
         vm.warp(block.timestamp + 1);
 
@@ -298,7 +287,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         public
         returns (uint256 proposalId)
     {
-        proposalId = testProposeUpdateProposalThresholdSucceeds();
+        proposalId = _createProposalUpdateThreshold();
 
         vm.warp(block.timestamp + governor.votingPeriod() + 1);
 
@@ -316,7 +305,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         public
         returns (uint256 proposalId)
     {
-        proposalId = testProposeUpdateProposalThresholdSucceeds();
+        proposalId = _createProposalUpdateThreshold();
 
         vm.warp(block.timestamp + 1);
 
@@ -331,7 +320,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testVotingNoVotesFails() public returns (uint256 proposalId) {
-        proposalId = testProposeUpdateProposalThresholdSucceeds();
+        proposalId = _createProposalUpdateThreshold();
 
         vm.warp(block.timestamp + 1);
 
@@ -373,7 +362,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.roll(block.number + 1);
 
         uint256 snapshotTimestamp = block.timestamp - 1;
-        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        uint256 proposalId = _createProposalUpdateThreshold();
 
         vm.warp(block.timestamp + 1);
         vm.roll(block.number + 1);
@@ -428,7 +417,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         {
             IMultichainGovernor.ProposalInformation
-                memory voteCollectionInfo = getVoteCollectionProposalInformation(
+                memory voteCollectionInfo = _getVoteCollectionProposalInformation(
                     proposalId
                 );
 
@@ -493,7 +482,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.warp(block.timestamp + 1);
 
-        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        uint256 proposalId = _createProposalUpdateThreshold();
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -541,7 +530,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         }
 
         IMultichainGovernor.ProposalInformation
-            memory voteCollectionInfo = getVoteCollectionProposalInformation(
+            memory voteCollectionInfo = _getVoteCollectionProposalInformation(
                 proposalId
             );
 
@@ -594,7 +583,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         /// include users before snapshot timestamp
         vm.warp(block.timestamp + 1);
 
-        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        uint256 proposalId = _createProposalUpdateThreshold();
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -704,7 +693,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.warp(block.timestamp + 1);
 
-        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        uint256 proposalId = _createProposalUpdateThreshold();
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -790,7 +779,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         proposalId = governor.proposalCount();
 
         IMultichainGovernor.ProposalInformation
-            memory proposalVoteCollection = getVoteCollectionProposalInformation(
+            memory proposalVoteCollection = _getVoteCollectionProposalInformation(
                 proposalId
             );
 
@@ -842,7 +831,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testEmitVotesProposalHasNoVotes() public {
-        testProposeUpdateProposalThresholdSucceeds();
+        _createProposalUpdateThreshold();
 
         uint256 proposalId = governor.proposalCount();
 
@@ -885,7 +874,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
 
         IMultichainGovernor.ProposalInformation
-            memory voteCollectionInfo = getVoteCollectionProposalInformation(
+            memory voteCollectionInfo = _getVoteCollectionProposalInformation(
                 proposalId
             );
 
@@ -971,7 +960,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testBridgeInProposalAlreadyExist() public {
-        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        uint256 proposalId = _createProposalUpdateThreshold();
 
         bytes memory payload = abi.encode(proposalId, 0, 0, 0, 0);
         uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
