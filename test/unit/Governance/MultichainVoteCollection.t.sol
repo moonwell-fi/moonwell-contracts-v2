@@ -125,7 +125,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         {
             IMultichainGovernor.ProposalInformation
-                memory voteCollectionInfo = getVoteCollectionProposalInformation(
+                memory voteCollectionInfo = _getVoteCollectionProposalInformation(
                     proposalId
                 );
 
