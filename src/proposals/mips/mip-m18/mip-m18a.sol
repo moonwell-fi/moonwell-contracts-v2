@@ -11,6 +11,9 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 import {validateProxy, _IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
 
 /// Proposal to run on Moonbeam to create the Multichain Governor contract
+/// to simulate:
+///     DO_DEPLOY=true DO_PRINT=true forge script src/proposals/mips/mip-m18/mip-m18a.sol
+///     --rpc-url {chainName}
 contract mipm18a is ChainIds, HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment name
     string public constant name = "MIP-M18A";
