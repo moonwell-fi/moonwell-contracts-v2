@@ -1504,10 +1504,17 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         uint256 totalValue = 200 * 1e18;
 
-        /// TODO why did this test not fail?
-        /// TODO assert balances of ETH went to the right addresses
+        uint256 wethEthBalanceBefore = address(weth).balance;
+
         vm.deal(address(this), totalValue);
         governor.execute{value: totalValue}(proposalId);
+
+        uint256 wethEthBalanceAfter = address(weth).balance;
+        assertEq(
+            wethEthBalanceAfter - wethEthBalanceBefore,
+            totalValue,
+            "incorrect weth eth balance"
+        );
 
         assertEq(
             uint256(governor.state(proposalId)),
