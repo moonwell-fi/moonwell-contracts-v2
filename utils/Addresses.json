@@ -30,6 +30,11 @@
     "name": "MOONBEAM_PROXY_ADMIN"
   },
   {
+    "addr": "0x093e8F4d8f267d2CeEc9eB889E2054710d187beD",
+    "chainId": 1287,
+    "name": "MOONBEAM_PROXY_ADMIN"
+  },
+  {
     "addr": "0x511aB53F793683763E5a8829738301368a2411E3",
     "chainId": 1284,
     "name": "WELL"
