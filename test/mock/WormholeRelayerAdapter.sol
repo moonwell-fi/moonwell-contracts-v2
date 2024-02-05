@@ -11,11 +11,16 @@ contract WormholeRelayerAdapter is Test {
     uint256 public nonce;
 
     bool public shouldRevert;
+    bool public shouldRevertQuote;
 
     uint256 public nativePriceQuote = 0.01 ether;
 
     function setShouldRevert(bool _shouldRevert) external {
         shouldRevert = _shouldRevert;
+    }
+
+    function setShouldRevertQuote(bool _shouldRevertQuote) external {
+        shouldRevertQuote = _shouldRevertQuote;
     }
 
     /// @notice Publishes an instruction for the default delivery provider
@@ -65,19 +70,10 @@ contract WormholeRelayerAdapter is Test {
         view
         returns (uint256 nativePrice, uint256 targetChainRefundPerGasUnused)
     {
+        if (shouldRevertQuote) {
+            revert("revert");
+        }
         nativePrice = nativePriceQuote;
         targetChainRefundPerGasUnused = 0;
-    }
-}
-
-contract WormholeRelayerAdapterRevert {
-    function sendPayloadToEvm(
-        uint16,
-        address,
-        bytes memory,
-        uint256,
-        uint256
-    ) external payable returns (uint64) {
-        revert("revert");
     }
 }
