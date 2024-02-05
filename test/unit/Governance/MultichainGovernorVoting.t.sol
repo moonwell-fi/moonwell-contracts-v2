@@ -2238,13 +2238,10 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         for (uint256 i = 0; i < 5; i++) {
             testProposeUpdateProposalThresholdSucceeds();
             vm.warp(block.timestamp + 1);
-        }
 
-        assertEq(
-            governor.currentUserLiveProposals(address(this)),
-            5,
-            "incorrect num live proposals"
-        );
+            assertEq(governor.currentUserLiveProposals(address(this)), i + 1);
+            assertEq(governor.liveProposals().length, i + 1);
+        }
 
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
@@ -2263,6 +2260,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             4,
             "incorrect num live proposals"
         );
+        assertEq(governor.liveProposals().length, 4);
 
         testProposeUpdateProposalThresholdSucceeds();
 
@@ -2271,6 +2269,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             5,
             "incorrect num live proposals"
         );
+        assertEq(governor.liveProposals().length, 5);
 
         uint256 proposalId = 2;
 
@@ -2289,15 +2288,22 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             4,
             "incorrect num live proposals"
         );
+        assertEq(governor.liveProposals().length, 4);
 
         // execute
         governor.execute(proposalId);
+        assertEq(
+            uint256(governor.state(proposalId)),
+            5,
+            "incorrect state, not executed"
+        );
 
         assertEq(
             governor.currentUserLiveProposals(address(this)),
             4,
             "incorrect num live proposals"
         );
+        assertEq(governor.liveProposals().length, 4);
     }
 
     function testMultipleUsersCanCreateAsManyProposalWantsAsLongNeverExceedsMaxUserLiveProposals()
