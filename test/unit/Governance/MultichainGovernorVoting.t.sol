@@ -19,7 +19,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
     event ProposalRebroadcasted(uint256 proposalId, bytes data);
 
-    event BridgeOutFailed(uint16 chainId, bytes payload);
+    event BridgeOutFailed(uint16 chainId, bytes payload, uint256 refundAmount);
 
     event ProposalCreated(
         uint id,
@@ -256,9 +256,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             100_000_000 * 1e18
         );
 
-        uint256 bridgeCost = governor.bridgeCostAll();
-        vm.deal(address(this), bridgeCost);
-
         uint256 startTimestamp = block.timestamp;
         uint256 endTimestamp = startTimestamp + governor.votingPeriod();
         bytes memory payload = abi.encode(
@@ -269,15 +266,44 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             endTimestamp + governor.crossChainVoteCollectionPeriod()
         );
 
+        address proposer = address(2);
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(proposer, bridgeCost);
+
+        uint256 proposerBalance = proposer.balance;
+
         wormholeRelayerAdapter.setShouldRevert(true);
+
+        _delegateVoteAmountForUser(
+            address(well),
+            proposer,
+            governor.proposalThreshold()
+        );
+
+        vm.roll(block.number + 1);
+
         vm.expectEmit(true, true, true, true, address(governor));
-        emit BridgeOutFailed(baseWormholeChainId, payload);
+        emit BridgeOutFailed(baseWormholeChainId, payload, bridgeCost);
+
+        vm.prank(proposer);
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
             calldatas,
             description
         );
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect state, not active"
+        );
+
+        uint256 proposerBalanceAfter = proposer.balance;
+
+        // bridge out failed so proposer balance should not change
+        assertEq(proposerBalanceAfter, proposerBalance, "incorrect balance");
+        assertEq(proposerBalanceAfter, bridgeCost, "incorrect balance");
 
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
 
@@ -298,7 +324,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
     }
 
     function testRebroadcastProposalSucceedsProposalActive() public {
-        uint256 proposalId = testProposeUpdateProposalThresholdSucceeds();
+        uint256 proposalId = _createProposalUpdateThreshold(address(this));
         (
             ,
             uint256 voteSnapshotTimestamp,
@@ -325,6 +351,18 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.expectEmit(true, true, true, true, address(governor));
         emit ProposalRebroadcasted(proposalId, payload);
 
+        vm.expectEmit(true, true, true, true, address(voteCollection));
+        emit ProposalCreated(
+            proposalId,
+            address(this),
+            new address[](0),
+            new uint256[](0),
+            new string[](0),
+            new bytes[](0),
+            voteSnapshotTimestamp,
+            endTimestamp,
+            "Proposal MIP-M00 - Update Proposal Threshold"
+        );
         governor.rebroadcastProposal{value: cost}(proposalId);
     }
 

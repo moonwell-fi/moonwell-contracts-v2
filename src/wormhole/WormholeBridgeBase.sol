@@ -75,7 +75,11 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @notice emitted when a bridge out fails
     /// @param dstChainId destination chain id to send tokens to
     /// @param payload payload that failed to send
-    event BridgeOutFailed(uint16 dstChainId, bytes payload);
+    event BridgeOutFailed(
+        uint16 dstChainId,
+        bytes payload,
+        uint256 refundAmount
+    );
 
     /// @notice event emitted when a bridge out succeeds
     /// @param dstWormholeChainId destination wormhole chain id to send tokens to
@@ -277,6 +281,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         for (uint256 i = 0; i < chainsLength; ) {
             uint16 targetChain = uint16(_targetChains.at(i));
             uint256 cost = bridgeCost(targetChain);
+            uint256 initialGas = gasleft(); // Gas at the start
 
             try
                 wormholeRelayer.sendPayloadToEvm{value: cost}(
@@ -295,7 +300,20 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
                     payload
                 );
             } catch {
-                emit BridgeOutFailed(targetChain, payload);
+                uint256 gasUsed = initialGas - gasleft(); // Calculate gas used until the point of revert
+                uint256 nonRefundedCost = gasUsed * tx.gasprice; // Calculate the non-refunded cost
+
+                // Calculate the refund amount as the original cost minus the non-refunded cost
+                uint256 refundAmount = cost > nonRefundedCost
+                    ? cost - nonRefundedCost
+                    : 0;
+
+                emit BridgeOutFailed(targetChain, payload, refundAmount);
+
+                if (refundAmount > 0) {
+                    // send bridge funds back to sender
+                    payable(msg.sender).transfer(refundAmount);
+                }
             }
 
             unchecked {
