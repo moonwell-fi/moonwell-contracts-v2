@@ -12,10 +12,16 @@ import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Well} from "@protocol/Governance/Well.sol";
+import {ChainIds} from "@test/utils/ChainIds.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
-contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
+contract MultichainBaseTest is
+    Test,
+    MultichainGovernorDeploy,
+    xWELLDeploy,
+    ChainIds
+{
     /// @notice reference to the mock wormhole trusted sender contract
     WormholeRelayerAdapter public wormholeRelayerAdapter;
 
@@ -38,7 +44,10 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     Well public distributor;
 
     /// @notice reference to the staked well contract
-    IStakedWell public stkWell;
+    IStakedWell public stkWellMoonbeam;
+
+    /// @notice reference to the staked well contract
+    IStakedWell public stkWellBase;
 
     /// @notice threshold of tokens required to create a proposal
     uint256 public constant proposalThreshold = 100_000_000 * 1e18;
@@ -61,12 +70,6 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     /// @notice duration of the pause
     uint128 public constant pauseDuration = 10 days;
 
-    /// @notice moonbeam wormhole chain id
-    uint16 public constant moonbeamChainId = 16;
-
-    /// @notice base wormhole chain id
-    uint16 public constant baseChainId = 30;
-
     /// @notice pause guardian
     address public pauseGuardian = address(this);
 
@@ -82,11 +85,14 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     /// @notice whitelisted calldata for MultichainGovernor
     bytes[] public approvedCalldata;
 
+    /// @notice break glass guardian
+    address public constant breakGlassGuardian = address(123);
+
     constructor() {
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
-                chainId: moonbeamChainId,
-                addr: address(this)
+                chainId: moonBeamWormholeChainId,
+                addr: address(this) /// TODO this is incorrect and should be the artemis timelock contract
             })
         );
 
@@ -157,21 +163,43 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         );
 
         address proxyAdmin = address(new ProxyAdmin());
-        (address stkWellProxy, ) = deployStakedWell(
-            address(xwellProxy),
-            address(xwellProxy),
-            1 days,
-            1 weeks,
-            address(this), // rewardsVault
-            address(this), // emissionManager
-            1 days, // distributionDuration
-            address(0), // governance
-            proxyAdmin // proxyAdmin
-        );
+        {
+            /// deploy staked well with Block numbers instead of timestamps
+            /// to mock the system on moonbeam
+            (address stkWellProxy, ) = deployStakedWellMock(
+                address(xwellProxy),
+                address(xwellProxy),
+                1 days,
+                1 weeks,
+                address(this), // rewardsVault
+                address(this), // emissionManager
+                1 days, // distributionDuration
+                address(0), // governance
+                proxyAdmin // proxyAdmin
+            );
+            stkWellMoonbeam = IStakedWell(stkWellProxy);
+        }
 
-        stkWell = IStakedWell(stkWellProxy);
+        {
+            /// deploy staked well with Block timestamps
+            /// to mock the system on moonbeam
+            (address stkWellProxy, ) = deployStakedWell(
+                address(xwellProxy),
+                address(xwellProxy),
+                1 days,
+                1 weeks,
+                address(this), // rewardsVault
+                address(this), // emissionManager
+                1 days, // distributionDuration
+                address(0), // governance
+                proxyAdmin // proxyAdmin
+            );
+
+            stkWellBase = IStakedWell(stkWellProxy);
+        }
 
         MultichainGovernor.InitializeData memory initData;
+
         initData.proposalThreshold = proposalThreshold;
         initData.votingPeriodSeconds = votingPeriodSeconds;
         initData
@@ -180,10 +208,10 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         initData.maxUserLiveProposals = maxUserLiveProposals;
         initData.pauseDuration = pauseDuration;
         initData.pauseGuardian = pauseGuardian;
-        initData.breakGlassGuardian = address(123);
+        initData.breakGlassGuardian = breakGlassGuardian;
         initData.xWell = xwellProxy;
         initData.well = address(well);
-        initData.stkWell = address(stkWell);
+        initData.stkWell = address(stkWellMoonbeam);
         initData.distributor = address(distributor);
 
         MultichainGovernorDeploy.MultichainAddresses
@@ -191,9 +219,10 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
                 initData,
                 approvedCalldata,
                 proxyAdmin, // proxyAdmin
-                moonbeamChainId, // wormhole moonbeam chain id
-                baseChainId, // wormhole base chain id
-                address(this) // voteCollectionOwner
+                moonBeamWormholeChainId, // wormhole moonbeam chain id
+                baseWormholeChainId, // wormhole base chain id
+                address(this), // voteCollectionOwner
+                address(stkWellBase)
             );
 
         governor = MultichainGovernor(addresses.governorProxy);
@@ -214,11 +243,15 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             })
         );
 
+        /// 3b xWELL left over
         xwell.mint(address(this), 5_000_000_000 * 1e18);
 
-        uint256 amountToStake = 2_000_000_000 * 1e18;
-        xwell.approve(address(stkWell), amountToStake);
-        stkWell.stake(address(this), amountToStake);
+        uint256 amountToStake = 1_000_000_000 * 1e18;
+
+        xwell.approve(address(stkWellMoonbeam), amountToStake);
+        xwell.approve(address(stkWellBase), amountToStake);
+        stkWellMoonbeam.stake(address(this), amountToStake);
+        stkWellBase.stake(address(this), amountToStake);
 
         xwell.delegate(address(this));
         well.delegate(address(this));
@@ -277,9 +310,9 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         )
     {
         (
-            proposalInformation.snapshotStartTimestamp,
+            proposalInformation.voteSnapshotTimestamp,
             proposalInformation.votingStartTime,
-            proposalInformation.endTimestamp,
+            proposalInformation.votingEndTime,
             proposalInformation.crossChainVoteCollectionEndTimestamp,
             proposalInformation.totalVotes,
             proposalInformation.forVotes,

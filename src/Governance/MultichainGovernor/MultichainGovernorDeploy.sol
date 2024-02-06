@@ -2,14 +2,18 @@ pragma solidity 0.8.19;
 
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
-import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
-import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
-import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
-import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+
 import "@forge-std/Test.sol";
 
+import {IStakedWell} from "@protocol/IStakedWell.sol";
+import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
+import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
+
+/// Helper contract to deploy MultichainGovernor, MultichainVoteCollection,
+/// Ecosystem Reserve, Ecosystem Reserve Controller and StakedWell contracts
 contract MultichainGovernorDeploy is Test {
     function deployMultichainGovernor(
         address proxyAdmin
@@ -39,7 +43,7 @@ contract MultichainGovernorDeploy is Test {
         address stkWell,
         address moonbeamGovernor,
         address relayer,
-        uint16 moonbeamChainId,
+        uint16 moonbeamWormholeChainId,
         address proxyAdmin,
         address owner
     ) public returns (address proxy, address voteCollectionImpl) {
@@ -49,7 +53,7 @@ contract MultichainGovernorDeploy is Test {
             stkWell,
             moonbeamGovernor,
             relayer,
-            moonbeamChainId,
+            moonbeamWormholeChainId,
             owner
         );
 
@@ -73,13 +77,16 @@ contract MultichainGovernorDeploy is Test {
         address proxyAdmin;
     }
 
+    /// @notice for testing purposes only, not to be used in production as both
+    /// contracts are deployed on the same chain
     function deployGovernorRelayerAndVoteCollection(
         MultichainGovernor.InitializeData memory initializeData,
         bytes[] memory whitelistedCalldata,
         address proxyAdmin,
         uint16 moonbeamChainId,
         uint16 baseChainId,
-        address voteCollectionOwner
+        address voteCollectionOwner,
+        address baseStkWell
     ) public returns (MultichainAddresses memory addresses) {
         proxyAdmin = proxyAdmin == address(0)
             ? address(new ProxyAdmin())
@@ -94,7 +101,7 @@ contract MultichainGovernorDeploy is Test {
         // deploy vote collection
         (address vProxy, ) = deployVoteCollection(
             initializeData.xWell,
-            initializeData.stkWell,
+            baseStkWell,
             gProxy,
             wormholeRelayerAdapter,
             moonbeamChainId,
@@ -129,6 +136,46 @@ contract MultichainGovernorDeploy is Test {
         addresses.proxyAdmin = proxyAdmin;
     }
 
+    /// @notice for testing purposes only, not to be used in production
+    /// THIS DEPLOYS A TEST CONTRACT THAT USES BLOCK NUMBER
+    /// DO NOT USE THIS FOR DEPLOYING A PRODUCTION CONTRACT
+    function deployStakedWellMock(
+        address stakedToken,
+        address rewardToken,
+        uint256 cooldownSeconds,
+        uint256 unstakeWindow,
+        address rewardsVault,
+        address emissionManager,
+        uint128 distributionDuration,
+        address governance,
+        address proxyAdmin
+    ) public returns (address proxy, address implementation) {
+        // deploy mock implementation
+        implementation = deployCode("MockStakedWell.sol:MockStakedWell");
+
+        // generate init calldata
+        bytes memory initData = abi.encodeWithSignature(
+            "initialize(address,address,uint256,uint256,address,address,uint128,address)",
+            stakedToken,
+            rewardToken,
+            cooldownSeconds,
+            unstakeWindow,
+            rewardsVault,
+            emissionManager,
+            distributionDuration,
+            governance
+        );
+
+        // deploy proxy
+        proxy = address(
+            new TransparentUpgradeableProxy(
+                implementation,
+                proxyAdmin,
+                initData
+            )
+        );
+    }
+
     function deployStakedWell(
         address stakedToken,
         address rewardToken,
@@ -140,7 +187,7 @@ contract MultichainGovernorDeploy is Test {
         address governance,
         address proxyAdmin
     ) public returns (address proxy, address implementation) {
-        // deploy implementation
+        // deploy actual stkWELL implementation for Base
         implementation = deployCode("StakedWell.sol:StakedWell");
 
         // generate init calldata
@@ -162,6 +209,36 @@ contract MultichainGovernorDeploy is Test {
                 implementation,
                 proxyAdmin,
                 initData
+            )
+        );
+    }
+
+    function deployEcosystemReserve(
+        address proxyAdmin
+    )
+        public
+        returns (
+            address ecosystemReserveProxy,
+            address ecosystemReserveImplementation,
+            address ecosystemReserveController
+        )
+    {
+        ecosystemReserveImplementation = deployCode(
+            "EcosystemReserve.sol:EcosystemReserve"
+        );
+
+        ecosystemReserveController = deployCode(
+            "EcosystemReserveController.sol:EcosystemReserveController"
+        );
+
+        ecosystemReserveProxy = address(
+            new TransparentUpgradeableProxy(
+                ecosystemReserveImplementation,
+                proxyAdmin,
+                abi.encodeWithSignature(
+                    "initialize(address)",
+                    ecosystemReserveController
+                )
             )
         );
     }

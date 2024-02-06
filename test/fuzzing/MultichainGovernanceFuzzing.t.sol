@@ -14,6 +14,7 @@ import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {IStakedWell} from "@protocol/IStakedWell.sol";
 
 contract MultichainGovernanceFuzzing is MultichainBaseTest {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -42,7 +43,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             } else if (random == 1) {
                 tokenToVote = address(xwell);
             } else {
-                tokenToVote = address(stkWell);
+                tokenToVote = address(stkWellMoonbeam);
             }
 
             address user = address(uint160(i + 1));
@@ -125,11 +126,9 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
             // random pick of token to delegate
             uint256 random = i % 3;
-            address tokenToVote = random == 0
-                ? address(well)
-                : random == 1
-                    ? address(xwell)
-                    : address(stkWell);
+            address tokenToVote = random == 0 ? address(well) : random == 1
+                ? address(xwell)
+                : address(stkWellMoonbeam);
 
             address user = address(uint160(i + 1));
             users[i] = user;
@@ -195,7 +194,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             uint256 random = i % 2;
             address tokenToVote = random == 0
                 ? address(xwell)
-                : address(stkWell);
+                : address(stkWellBase);
 
             address user = address(uint160(i + 1));
             users[i] = user;
@@ -276,7 +275,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             uint256 random = i % 2;
             address tokenToVote = random == 0
                 ? address(xwell)
-                : address(stkWell);
+                : address(stkWellBase);
             address user = address(uint160(i + 1));
             users[i] = user;
 
@@ -331,7 +330,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
     // array of users enumerable
     EnumerableSet.AddressSet internal usersSetGovernor;
 
-    function testGovernorVotingMultippleUsersMultipleTokensDifferentVoteValues(
+    function testGovernorVotingMultipleUsersMultipleTokensDifferentVoteValues(
         FuzzingInput[] memory inputs
     ) public {
         // array of vote amounts
@@ -411,7 +410,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
             if (input.stkwellAmount > 0) {
                 _delegateVoteAmountForUser(
-                    address(stkWell),
+                    address(stkWellMoonbeam),
                     userAddress,
                     input.stkwellAmount
                 );
@@ -446,7 +445,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             );
 
             assertEq(
-                stkWell.balanceOf(userAddress),
+                stkWellMoonbeam.balanceOf(userAddress),
                 input.stkwellAmount,
                 "incorrect stkwell balance"
             );
@@ -588,7 +587,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
             if (input.stkwellAmount > 0) {
                 _delegateVoteAmountForUser(
-                    address(stkWell),
+                    address(stkWellBase),
                     userAddress,
                     input.stkwellAmount
                 );
@@ -608,7 +607,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             );
 
             assertEq(
-                stkWell.balanceOf(userAddress),
+                stkWellBase.balanceOf(userAddress),
                 input.stkwellAmount,
                 "incorrect stkwell balance"
             );
@@ -675,7 +674,9 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         address user,
         uint256 voteAmount
     ) internal {
-        if (token != address(stkWell)) {
+        if (
+            token != address(stkWellMoonbeam) && token != address(stkWellBase)
+        ) {
             deal(token, user, voteAmount);
 
             // users xWell interface but this can also be well
@@ -685,8 +686,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             deal(address(xwell), user, voteAmount);
 
             vm.startPrank(user);
-            xwell.approve(address(stkWell), voteAmount);
-            stkWell.stake(user, voteAmount);
+            xwell.approve(token, voteAmount);
+            IStakedWell(token).stake(user, voteAmount);
             vm.stopPrank();
         }
     }

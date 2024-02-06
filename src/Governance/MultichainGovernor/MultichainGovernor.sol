@@ -15,6 +15,10 @@ import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardi
 /// Break glass guardian can roll back governance to the previous ArtemisTimelock and Governor
 /// @notice upgradeable, constructor disables implementation contract from working
 /// to prevent governance hijacking.
+/// Write out liveliness assumptions of wormhole here, showing why wormhole can go down, and
+/// the system continue working.
+/// Explain why we allow proposals to pass even if wormhole is down or votes from a vote
+/// collection contract on another chain are not relayed.
 contract MultichainGovernor is
     IMultichainGovernor,
     ConfigurablePauseGuardian,
@@ -30,7 +34,14 @@ contract MultichainGovernor is
     /// --------------------------------------------------------- ///
 
     /// @notice The total number of proposals
+    /// proposal ID 0 is invalid and should never be 0
     uint256 public proposalCount;
+
+    /// Invariant: _liveProposals.length == _userLiveProposals[allUsers].length
+
+    /// Invariant: _liveProposals[x] is in the _userLiveProposals[_liveProposals[x].proposer] set
+    /// if that is broken, the contract is bricked because _syncTotalLiveProposals will fail,
+    /// causing pause, propose and execute to be bricked.
 
     /// @notice all live proposals, executed and cancelled proposals are removed
     /// when a new proposal is created, it is added to this set and any stale
@@ -65,16 +76,16 @@ contract MultichainGovernor is
     /// --------------------- VOTING TOKENS --------------------- ///
     /// --------------------------------------------------------- ///
 
-    /// @notice reference to the xWELL token
+    /// @notice reference to the xWELL token, uses block.timestamp for voting checkpoints
     xWELL public xWell;
 
-    /// @notice reference to the WELL token
+    /// @notice reference to the WELL token, uses block number for voting checkpoints
     SnapshotInterface public well;
 
-    /// @notice reference to the stkWELL token
+    /// @notice reference to the stkWELL token, uses block number for voting checkpoints
     SnapshotInterface public stkWell;
 
-    /// @notice reference to the WELL token distributor contract
+    /// @notice reference to the WELL token distributor contract, uses block number for voting checkpoints
     SnapshotInterface public distributor;
 
     /// --------------------------------------------------------- ///
@@ -97,21 +108,21 @@ contract MultichainGovernor is
     /// @notice quorum needed for a proposal to pass
     /// if multiple governance proposals are in flight, and the first one to execute
     /// changes quorum, then this new quorum will go into effect on the next proposal.
+    /// TODO check that tests cover reaching exactly quorum and quorum being met is acknowledged
     uint256 public override quorum;
 
     /// @notice the minimum number of votes needed to propose
+    /// possible to cancel a proposal if proposal threshold increases during a live proposal
+    /// where user has less than the new proposal threshold
     uint256 public override proposalThreshold;
 
-    /// @notice the voting period
+    /// @notice the voting period in seconds
     /// changing this variable only affects the proposals created after the change
     uint256 public override votingPeriod;
 
     /// --------------------------------------------------------- ///
     /// ------------------------- SAFETY ------------------------ ///
     /// --------------------------------------------------------- ///
-
-    /// @notice the governance rollback address
-    address public override governanceRollbackAddress;
 
     /// @notice the break glass guardian address
     /// can only break glass one time, and then role is revoked
@@ -184,9 +195,12 @@ contract MultichainGovernor is
         /// set the pause guardian
         _grantGuardian(initData.pauseGuardian);
 
-        _addWormholeRelayer(address(initData.wormholeRelayer));
+        _setWormholeRelayer(address(initData.wormholeRelayer));
 
+        /// sets vote collection contracts
         _addTargetAddresses(trustedSenders);
+
+        _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
 
         unchecked {
             for (uint256 i = 0; i < calldatas.length; i++) {
@@ -235,6 +249,7 @@ contract MultichainGovernor is
     /// @notice returns a user's vote receipt on a given proposal
     /// @param proposalId the id of the proposal to check
     /// @param voter the address of the voter to check
+    /// if hasVoted is false, this implies that vote value and votes are both 0
     function getReceipt(
         uint256 proposalId,
         address voter
@@ -255,9 +270,9 @@ contract MultichainGovernor is
         Proposal storage proposal = proposals[proposalId];
 
         proposalInfo.proposer = proposal.proposer;
-        proposalInfo.snapshotStartTimestamp = proposal.voteSnapshotTimestamp;
+        proposalInfo.voteSnapshotTimestamp = proposal.voteSnapshotTimestamp;
         proposalInfo.votingStartTime = proposal.votingStartTime;
-        proposalInfo.endTimestamp = proposal.endTimestamp;
+        proposalInfo.votingEndTime = proposal.votingEndTime;
         proposalInfo.crossChainVoteCollectionEndTimestamp = proposal
             .crossChainVoteCollectionEndTimestamp;
         proposalInfo.totalVotes = proposal.totalVotes;
@@ -275,7 +290,7 @@ contract MultichainGovernor is
         view
         returns (
             address proposer,
-            uint256 snapshotStartTimestamp,
+            uint256 voteSnapshotTimestamp,
             uint256 votingStartTime,
             uint256 endTimestamp,
             uint256 crossChainVoteCollectionEndTimestamp,
@@ -288,9 +303,9 @@ contract MultichainGovernor is
         Proposal storage proposal = proposals[proposalId];
 
         proposer = proposal.proposer;
-        snapshotStartTimestamp = proposal.voteSnapshotTimestamp;
+        voteSnapshotTimestamp = proposal.voteSnapshotTimestamp;
         votingStartTime = proposal.votingStartTime;
-        endTimestamp = proposal.endTimestamp;
+        endTimestamp = proposal.votingEndTime;
         crossChainVoteCollectionEndTimestamp = proposal
             .crossChainVoteCollectionEndTimestamp;
         totalVotes = proposal.totalVotes;
@@ -369,13 +384,11 @@ contract MultichainGovernor is
     function getNumLiveProposals() public view returns (uint256 count) {
         uint256[] memory allProposals = _liveProposals.values();
 
-        for (uint256 i = 0; i < allProposals.length; ) {
-            if (proposalActive(allProposals[i])) {
-                count++;
-            }
-
-            unchecked {
-                i++;
+        unchecked {
+            for (uint256 i = 0; i < allProposals.length; i++) {
+                if (proposalActive(allProposals[i])) {
+                    count++;
+                }
             }
         }
     }
@@ -388,6 +401,7 @@ contract MultichainGovernor is
     /// If failed it is not considered counted as a live proposal as it can never be executed
     /// If executed it is not considered counted as a live proposal as it can never be executed again
     /// @param user The address of the user to check
+    /// this number should never be greater than the constant MAX_USER_LIVE_PROPOSALS
     function currentUserLiveProposals(
         address user
     ) public view returns (uint256) {
@@ -410,7 +424,7 @@ contract MultichainGovernor is
     /// @param user The address of the user to check
     function getUserLiveProposals(
         address user
-    ) public view returns (uint256[] memory) {
+    ) external view returns (uint256[] memory) {
         uint256[] memory userProposals = new uint256[](
             currentUserLiveProposals(user)
         );
@@ -439,7 +453,7 @@ contract MultichainGovernor is
         uint256 blockNumber
     ) public view returns (uint256) {
         uint256 wellVotes = well.getPriorVotes(account, blockNumber);
-        uint256 stkWellVotes = stkWell.getPriorVotes(account, timestamp);
+        uint256 stkWellVotes = stkWell.getPriorVotes(account, blockNumber);
         uint256 distributorVotes = distributor.getPriorVotes(
             account,
             blockNumber
@@ -473,41 +487,45 @@ contract MultichainGovernor is
     }
 
     /// @notice return the votes for a particular chain and proposal
+    /// @param proposalId the id of the proposal to check
+    /// @param wormholeChainId the chain id to check votes from
     function chainAddressVotes(
         uint256 proposalId,
-        uint16 chainId
+        uint16 wormholeChainId
     )
         external
         view
         returns (uint256 forVotes, uint256 againstVotes, uint256 abstainVotes)
     {
-        VoteCounts storage voteCounts = chainVoteCollectorVotes[chainId][
-            proposalId
-        ];
+        VoteCounts storage voteCounts = chainVoteCollectorVotes[
+            wormholeChainId
+        ][proposalId];
         forVotes = voteCounts.forVotes;
         againstVotes = voteCounts.againstVotes;
         abstainVotes = voteCounts.abstainVotes;
     }
 
-    /// @notice returns whether or not the user is a vote collector contract
-    /// and can vote on a given chain
-    /// @param chainId the chain id to check
-    /// @param voteCollector the vote collector address to check
-    function isCrossChainVoteCollector(
-        uint16 chainId,
-        address voteCollector
-    ) external view override returns (bool) {
-        return isTrustedSender(chainId, voteCollector);
-    }
-
-    /// @notice The total state of a given proposal
-    /// distinct states:
-    ///      canceled                              -> means proposer canceled, proposer votes fell below threshold and was canceled, or contract was paused and vote was canceled
-    ///      active                                -> means block timestamp is greater than the start timestamp
-    ///      cross chain vote collection period    -> block timestamp is greater than the end timestamp and less than or equal to the cross chain vote collection end timestamp
-    ///      succeeded                             -> block timestamp is past the cross chain vote collection period and yay votes are greater than nay votes
-    ///      defeated                              -> block timestamp is past the cross chain vote collection period and nay votes are greater than or equal to yay votes
-    ///      invalid                               -> state should not be reachable
+    /// @notice The current state of a given proposal
+    ///
+    /// valid proposal states:
+    ///
+    ///      canceled                              -> means proposer canceled during active period, proposer votes fell below threshold and was canceled during active period,
+    ///                                               or contract was paused while proposal was in state Active, CrossChainVoteCollection or Succeeded
+    ///
+    ///      active                                -> means block timestamp is greater than or equal to the start timestamp and less than or equal to the end timestamp. Users
+    ///                                               can cast votes during this period.
+    ///
+    ///      cross chain vote collection period    -> block timestamp is greater than the end timestamp and less than or equal to the cross chain vote collection end timestamp.
+    ///                                               Votes from other chains can be registered during this period.
+    ///
+    ///      succeeded                             -> block timestamp is greater the cross chain vote collection period and yay votes are greater than nay votes, total votes meet
+    ///                                               or exceed quorum.
+    ///
+    ///      defeated                              -> block timestamp is past the cross chain vote collection period and nay votes are greater than or equal to yay votes or
+    ///                                               total votes are less than quorum
+    ///
+    ///      executed                              -> reached succeeded state, and proposal was successfully executed
+    ///
     /// @param proposalId The id of the proposal to check
     function state(uint256 proposalId) public view returns (ProposalState) {
         require(
@@ -522,7 +540,7 @@ contract MultichainGovernor is
         if (proposal.canceled) {
             return ProposalState.Canceled;
             // Then check if the proposal is pending or active, in which case nothing else can be determined at this time.
-        } else if (block.timestamp <= proposal.endTimestamp) {
+        } else if (block.timestamp <= proposal.votingEndTime) {
             return ProposalState.Active;
             // Then, check if the proposal is in cross chain vote collection period
         } else if (
@@ -571,7 +589,7 @@ contract MultichainGovernor is
             proposalId,
             proposal.voteSnapshotTimestamp,
             proposal.votingStartTime,
-            proposal.endTimestamp,
+            proposal.votingEndTime,
             proposal.crossChainVoteCollectionEndTimestamp
         );
 
@@ -658,8 +676,8 @@ contract MultichainGovernor is
             newProposal.calldatas = calldatas;
             newProposal.voteSnapshotTimestamp = voteSnapshotTimestamp;
             newProposal.votingStartTime = startTimestamp;
-            newProposal.startBlock = block.number - 1;
-            newProposal.endTimestamp = endTimestamp;
+            newProposal.voteSnapshotBlock = block.number - 1;
+            newProposal.votingEndTime = endTimestamp;
             newProposal
                 .crossChainVoteCollectionEndTimestamp = crossChainVoteCollectionEndTimestamp;
 
@@ -777,14 +795,16 @@ contract MultichainGovernor is
         ProposalState proposalState = state(proposalId);
 
         require(
-            proposalState != ProposalState.Canceled &&
-                proposalState != ProposalState.Defeated &&
-                proposalState != ProposalState.Executed,
-            "MultichainGovernor: cannot cancel executed, defeated or canceled proposal"
+            proposalState == ProposalState.Active,
+            "MultichainGovernor: cannot cancel non active proposal"
         );
 
         Proposal storage proposal = proposals[proposalId];
         proposal.canceled = true;
+
+        /// remove the proposal that is canceled from all proposals,
+        /// and remove it from inactive proposals in the user list
+        _syncTotalLiveProposals();
 
         emit ProposalCanceled(proposalId);
     }
@@ -796,7 +816,50 @@ contract MultichainGovernor is
         uint256 proposalId,
         uint8 voteValue
     ) external override whenNotPaused {
-        _castVote(msg.sender, proposalId, voteValue);
+        require(
+            state(proposalId) == ProposalState.Active,
+            "MultichainGovernor: proposal not active"
+        );
+        require(
+            voteValue <= Constants.VOTE_VALUE_ABSTAIN,
+            "MultichainGovernor: invalid vote value"
+        );
+
+        Proposal storage proposal = proposals[proposalId];
+        Receipt storage receipt = proposal.receipts[msg.sender];
+
+        require(
+            receipt.hasVoted == false,
+            "MultichainGovernor: voter already voted"
+        );
+
+        /// if a user tries to vote at the start timestamp or the start block, then it will fail,
+        /// but that is not possible because both of those are in the past as set in the propose
+        /// function.
+        uint256 votes = getVotes(
+            msg.sender,
+            proposal.voteSnapshotTimestamp,
+            proposal.voteSnapshotBlock
+        );
+
+        require(votes != 0, "MultichainGovernor: voter has no votes");
+
+        if (voteValue == Constants.VOTE_VALUE_YES) {
+            proposal.forVotes += votes;
+        } else if (voteValue == Constants.VOTE_VALUE_NO) {
+            proposal.againstVotes += votes;
+        } else if (voteValue == Constants.VOTE_VALUE_ABSTAIN) {
+            proposal.abstainVotes += votes;
+        }
+
+        // Increase total votes
+        proposal.totalVotes += votes;
+
+        receipt.hasVoted = true;
+        receipt.voteValue = voteValue;
+        receipt.votes = votes;
+
+        emit VoteCast(msg.sender, proposalId, voteValue, votes);
     }
 
     //// ---------------------------------------------- ////
@@ -819,7 +882,7 @@ contract MultichainGovernor is
     /// can only remove trusted senders from a chain that is already stored
     /// if the chain doesn't already exist in storage, revert
     /// @param _trustedSenders array of trusted senders to remove
-    function removeExternalChainConfig(
+    function removeExternalChainConfigs(
         WormholeTrustedSender.TrustedSender[] memory _trustedSenders
     ) external onlyGovernor {
         _removeTargetAddresses(_trustedSenders);
@@ -829,7 +892,7 @@ contract MultichainGovernor is
     /// can only add one trusted sender per chain,
     /// if more than one trusted sender per chain is added, revert
     /// @param _trustedSenders array of trusted senders to add
-    function addExternalChainConfig(
+    function addExternalChainConfigs(
         WormholeTrustedSender.TrustedSender[] memory _trustedSenders
     ) external onlyGovernor {
         _addTargetAddresses(_trustedSenders);
@@ -883,17 +946,42 @@ contract MultichainGovernor is
         _setBreakGlassGuardian(newGuardian);
     }
 
+    /// @notice set a gas limit for the relayer on the external chain
+    /// should only be called if there is a change in gas prices on the external chain
+    /// @param newGasLimit new gas limit to set
+    function setGasLimit(uint96 newGasLimit) external onlyGovernor {
+        require(
+            newGasLimit >= Constants.MIN_GAS_LIMIT,
+            "MultichainGovernor: gas limit too low"
+        );
+
+        _setGasLimit(newGasLimit);
+    }
+
     //// @notice array lengths must add up
     /// calldata must be whitelisted
     /// only break glass guardian can call, once, and when they do, their role is revoked
     /// before any external functions are called. This prevents reentrancy/multiple uses
     /// by a single guardian.
+    /// can be called in any pause state (paused or unpaused)
+    /// potential attack vector:
+    ///    - gov proposal passes that whitelists calldata to change some parameter on Governor
+    ///    or governance owned contracts that it shouldn't. Now, break glass guardian can call
+    ///    functions that it was not originally intended to call, once.
+    ///    - if one of the calldatas is to change the break glass guardian, then it could
+    ///    theoretically grant itself the role again. This is mitigated by the check at post effects
+    ///    that the break glass guardian is address(0).
+    ///    - reentrancy is allowed, but no advantage could be gained from it by a malicious break
+    ///    glass guardian because at the end of the function, the break glass guardian must be
+    ///    address(0), so you're only constrained by whitelisted calldata and the gas limit for
+    ///    transactions which is 13m currently on Moonbeam.
+    ///    - assumption that any executeBreakGlassGuardian calls will not require any msg.value
     /// @param targets the targets to call
     /// @param calldatas the calldatas to call
     function executeBreakGlass(
         address[] calldata targets,
         bytes[] calldata calldatas
-    ) external payable override onlyBreakGlassGuardian {
+    ) external override onlyBreakGlassGuardian {
         require(
             targets.length == calldatas.length,
             "MultichainGovernor: arity mismatch"
@@ -915,7 +1003,12 @@ contract MultichainGovernor is
             }
         }
 
-        emit ProposalExecuted(uint256(uint160(msg.sender)));
+        require(
+            breakGlassGuardian == address(0),
+            "MultichainGovernor: break glass guardian not null"
+        );
+
+        emit BreakGlassExecuted(msg.sender, targets, calldatas);
     }
 
     /// @notice only callable by the pause guardian when not paused
@@ -928,13 +1021,20 @@ contract MultichainGovernor is
 
         for (uint256 i = 0; i < allProposals.length; ) {
             ProposalState proposalState = state(allProposals[i]);
-            /// if proposal isn't canceled or executed, cancel it
+            ///
+            ///         Cancellation
+            ///
             /// if proposal is in the active state, it could be Succeeded once xchain vote collection period ends
-            /// if proposal is in the CrossChainVoteCollection state, it could be Succeeded on this period ends
-            /// if proposal is in the Succeeded state, it could be executed or cancelled
+            /// if proposal is in the active state it will be cancelled
+            /// if proposal is in the CrossChainVoteCollection state it will be cancelled
+            /// if proposal is in the Succeeded state it will be cancelled
+            ///
+            ///         Non Cancellation
+            ///
             /// if proposal is in the Defeated state, it cannot be executed, so it can not be cancelled
-            /// if proposal is in the Canceled state, it cannot be executed or cancelled
-            /// if proposal is in the Executed state, it cannot be executed or cancelled
+            /// if proposal is in the Canceled state, it cannot be executed or cancelled again
+            /// if proposal is in the Executed state, it cannot be cancelled because it was already executed
+            ///
             if (
                 proposalState != ProposalState.Executed &&
                 proposalState != ProposalState.Defeated &&
@@ -950,21 +1050,9 @@ contract MultichainGovernor is
             }
         }
 
-        /// remove all inactive proposals from all proposals,
+        /// remove all canceled and now inactive proposals from all proposals,
         /// and remove from inactive proposals from user list
         _syncTotalLiveProposals();
-    }
-
-    /// @notice set a gas limit for the relayer on the external chain
-    /// should only be called if there is a change in gas prices on the external chain
-    /// @param newGasLimit new gas limit to set
-    function setGasLimit(uint96 newGasLimit) external onlyGovernor {
-        require(
-            newGasLimit >= Constants.MIN_GAS_LIMIT,
-            "MultichainGovernor: gas limit too low"
-        );
-
-        _setGasLimit(newGasLimit);
     }
 
     /// --------------------------------------------------------- ///
@@ -1001,6 +1089,9 @@ contract MultichainGovernor is
         emit CalldataApprovalUpdated(data, approved);
     }
 
+    /// @notice helper function to set the cross chain vote collection period
+    /// upper and lower bounds are enforced to ensure that the period is within
+    /// reasonable bounds.
     function _setCrossChainVoteCollectionPeriod(
         uint256 _crossChainVoteCollectionPeriod
     ) private {
@@ -1011,6 +1102,7 @@ contract MultichainGovernor is
                 Constants.MAX_CROSS_CHAIN_VOTE_COLLECTION_PERIOD,
             "MultichainGovernor: invalid vote collection period"
         );
+
         uint256 oldVal = crossChainVoteCollectionPeriod;
         crossChainVoteCollectionPeriod = _crossChainVoteCollectionPeriod;
 
@@ -1036,7 +1128,7 @@ contract MultichainGovernor is
         emit UserMaxProposalsChanged(_oldValue, _maxUserLiveProposals);
     }
 
-    /// minimum quorum is 0
+    /// @dev minimum quorum is 0, maximum quorum value is enforced
     /// @param _quorum the new quorum
     function _setQuorum(uint256 _quorum) private {
         require(
@@ -1050,6 +1142,8 @@ contract MultichainGovernor is
         emit QuroumVotesChanged(_oldValue, _quorum);
     }
 
+    /// @dev lower and upper bounds are enforced to prevent a proposal from
+    /// continuing indefinitely and breaking governance
     /// @param _votingPeriod the new voting period
     function _setVotingPeriod(uint256 _votingPeriod) private {
         require(
@@ -1065,6 +1159,8 @@ contract MultichainGovernor is
         emit VotingPeriodChanged(_oldValue, _votingPeriod);
     }
 
+    /// @dev upper and lower bounds enforced to prevent a scenario
+    /// where users cannot propose to the governor
     /// @param _proposalThreshold the new proposal threshold
     function _setProposalThreshold(uint256 _proposalThreshold) private {
         require(
@@ -1079,6 +1175,7 @@ contract MultichainGovernor is
         emit ProposalThresholdChanged(oldValue, _proposalThreshold);
     }
 
+    /// @dev valid state for break glass guardian to be address(0)
     /// @param newGuardian the new guardian address
     function _setBreakGlassGuardian(address newGuardian) private {
         address oldGuardian = breakGlassGuardian;
@@ -1087,61 +1184,11 @@ contract MultichainGovernor is
         emit BreakGlassGuardianChanged(oldGuardian, newGuardian);
     }
 
-    /// @notice helper function to cast votes in governance
-    /// @param voter address of the voter
-    /// @param proposalId id of the proposal to vote on
-    /// @param voteValue the value of the vote, can be either YES, NO, or ABSTAIN
-    function _castVote(
-        address voter,
-        uint256 proposalId,
-        uint8 voteValue
-    ) internal {
-        require(
-            state(proposalId) == ProposalState.Active,
-            "MultichainGovernor: proposal not active"
-        );
-        require(
-            voteValue <= Constants.VOTE_VALUE_ABSTAIN,
-            "MultichainGovernor: invalid vote value"
-        );
-
-        Proposal storage proposal = proposals[proposalId];
-        Receipt storage receipt = proposal.receipts[voter];
-
-        require(
-            receipt.hasVoted == false,
-            "MultichainGovernor: voter already voted"
-        );
-
-        /// if a user tries to vote at the start timestamp or the start block, then it will fail
-        uint256 votes = getVotes(
-            voter,
-            proposal.voteSnapshotTimestamp,
-            proposal.startBlock
-        );
-
-        require(votes != 0, "MultichainGovernor: voter has no votes");
-
-        if (voteValue == Constants.VOTE_VALUE_YES) {
-            proposal.forVotes += votes;
-        } else if (voteValue == Constants.VOTE_VALUE_NO) {
-            proposal.againstVotes += votes;
-        } else if (voteValue == Constants.VOTE_VALUE_ABSTAIN) {
-            proposal.abstainVotes += votes;
-        }
-
-        // Increase total votes
-        proposal.totalVotes += votes;
-
-        receipt.hasVoted = true;
-        receipt.voteValue = voteValue;
-        receipt.votes = votes;
-
-        emit VoteCast(voter, proposalId, voteValue, votes);
-    }
-
-    /// we must sync the user live proposals before we sync the total live
-    /// proposals. This way a single function call syncs all values in both sets
+    /// Helper function to sync all values in both sets.
+    /// if the proposal is Defeated, Canceled, or Executed state,
+    /// remove it from the _liveProposals and _userLiveProposals
+    /// sets to remove unused values from storage and decrease
+    /// loop length in getter functions.
     function _syncTotalLiveProposals() private {
         uint256[] memory allProposals = _liveProposals.values();
 
@@ -1186,19 +1233,24 @@ contract MultichainGovernor is
     }
 
     /// @notice allows votes from external chains to be counted
-    /// ensures validity of sender
+    /// ensures validity of sender, and only allows one vote tally to be received
+    /// per wormhole chainid per proposal.
+    /// this means that votes cannot be updated from a given chain and proposal
+    /// once they are received.
     /// @param sourceChain the chain id of the source chain
     /// @param payload contains proposalId, forVotes, againstVotes, abstainVotes
     function _bridgeIn(
         uint16 sourceChain,
         bytes memory payload
     ) internal override {
+        /// TODO verify the finding from Dominik, and if correct, increase size from 128 to 160
         /// payload should be 4 uint256s
         require(
             payload.length == 128,
             "MultichainGovernor: invalid payload length"
         );
 
+        /// TODO verify the finding from Dominik, and if correct, add sender chain to this payload
         (
             uint256 proposalId,
             uint256 forVotes,
