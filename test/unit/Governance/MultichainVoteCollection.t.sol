@@ -181,7 +181,6 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
-        vm.roll(block.number + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),
@@ -189,13 +188,31 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
 
+        // get proposal vote snapshot timestamp from proposal information
+        (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection
+            .proposalInformation(proposalId);
+
+        // get user vote power
+        uint256 votePower = voteCollection.getVotes(
+            address(this),
+            voteSnapshotTimestamp
+        );
+
+        // get proposal votes before voting
+        (
+            uint256 totalVotesBefore,
+            uint256 votesForBefore,
+            uint256 votesAgainstBefore,
+            uint256 votesAbstainBefore
+        ) = voteCollection.proposalVotes(proposalId);
+
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
 
-        (bool hasVoted, , ) = voteCollection.getReceipt(
-            proposalId,
-            address(this)
-        );
+        (bool hasVoted, uint256 voteValue, uint256 voteAmount) = voteCollection
+            .getReceipt(proposalId, address(this));
         assertTrue(hasVoted, "user did not vote");
+        assertEq(voteValue, Constants.VOTE_VALUE_YES, "vote value incorrect");
+        assertEq(voteAmount, votePower, "vote amount incorrect");
 
         (
             uint256 totalVotes,
@@ -205,8 +222,14 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         ) = voteCollection.proposalVotes(proposalId);
 
         assertEq(votesFor, 4_000_000_000 * 1e18, "votes for incorrect");
-        assertEq(votesAgainst, 0, "votes against incorrect");
-        assertEq(votesAbstain, 0, "abstain votes incorrect");
+        assertEq(votesFor - votesForBefore, voteAmount, "votes for incorrect");
+        assertEq(votesAgainst, votesAgainstBefore, "votes against incorrect");
+        assertEq(votesAbstain, votesAbstainBefore, "abstain votes incorrect");
+        assertEq(
+            totalVotes,
+            totalVotesBefore + votePower,
+            "total votes incorrect"
+        );
         assertEq(votesFor, totalVotes, "total votes incorrect");
     }
 
@@ -280,7 +303,44 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
 
+        // get proposal votes before cast
+        (
+            uint256 totalVotesBefore,
+            uint256 votesForBefore,
+            uint256 votesAgainstBefore,
+            uint256 votesAbstainBefore
+        ) = voteCollection.proposalVotes(proposalId);
+
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
+
+        (bool hasVoted, uint256 voteValue, uint256 voteAmount) = voteCollection
+            .getReceipt(proposalId, address(this));
+
+        assertTrue(hasVoted, "user did not vote");
+        assertEq(voteValue, Constants.VOTE_VALUE_NO, "vote value incorrect");
+        assertEq(voteAmount, 4_000_000_000 * 1e18, "vote amount incorrect");
+
+        (
+            uint256 totalVotes,
+            uint256 votesFor,
+            uint256 votesAgainst,
+            uint256 votesAbstain
+        ) = voteCollection.proposalVotes(proposalId);
+
+        assertEq(votesAgainst, 4_000_000_000 * 1e18, "votes against incorrect");
+        assertEq(
+            votesAgainst - votesAgainstBefore,
+            4_000_000_000 * 1e18,
+            "votes against incorrect"
+        );
+        assertEq(votesFor, votesForBefore, "votes for incorrect");
+        assertEq(votesAbstain, votesAbstainBefore, "abstain votes incorrect");
+        assertEq(
+            totalVotes,
+            totalVotesBefore + 4_000_000_000 * 1e18,
+            "total votes incorrect"
+        );
+        assertEq(votesAgainst, totalVotes, "total votes incorrect");
     }
 
     function testVotingPastVoteEndTimeProposalFails()
@@ -364,17 +424,51 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         uint256 snapshotTimestamp = block.timestamp - 1;
         uint256 proposalId = _createProposalUpdateThreshold(address(this));
 
+        // get proposal votes before
+        (
+            uint256 totalVotesBefore,
+            uint256 votesForBefore,
+            uint256 votesAgainstBefore,
+            uint256 votesAbstainBefore
+        ) = voteCollection.proposalVotes(proposalId);
+
         vm.warp(block.timestamp + 1);
         vm.roll(block.number + 1);
 
-        vm.prank(user1);
-        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
+        {
+            vm.prank(user1);
+            voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
 
-        vm.prank(user2);
-        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
+            // check proposal votes after
+            (
+                uint256 totalVotes,
+                uint256 votesFor,
+                uint256 votesAgainst,
+                uint256 votesAbstain
+            ) = voteCollection.proposalVotes(proposalId);
 
-        vm.prank(user3);
-        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_ABSTAIN);
+            assertEq(votesFor, voteAmount, "votes for incorrect");
+            assertEq(
+                votesFor - votesForBefore,
+                voteAmount,
+                "votes for incorrect"
+            );
+            assertEq(
+                votesAgainst,
+                votesAgainstBefore,
+                "votes against incorrect"
+            );
+            assertEq(
+                votesAbstain,
+                votesAbstainBefore,
+                "abstain votes incorrect"
+            );
+            assertEq(
+                totalVotes,
+                totalVotesBefore + voteAmount,
+                "total votes incorrect"
+            );
+        }
 
         {
             (bool hasVoted, uint8 voteValue, uint256 votes) = voteCollection
@@ -390,6 +484,37 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         }
 
         {
+            vm.prank(user2);
+            voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
+
+            // check proposal votes after
+            (
+                uint256 totalVotes,
+                uint256 votesFor,
+                uint256 votesAgainst,
+                uint256 votesAbstain
+            ) = voteCollection.proposalVotes(proposalId);
+
+            assertEq(votesAgainst, voteAmount, "votes against incorrect");
+            assertEq(
+                votesAgainst - votesAgainstBefore,
+                voteAmount,
+                "votes against incorrect"
+            );
+            assertEq(votesFor, voteAmount, "votes for incorrect");
+            assertEq(
+                votesAbstain,
+                votesAbstainBefore,
+                "abstain votes incorrect"
+            );
+            assertEq(
+                totalVotes,
+                totalVotesBefore + voteAmount * 2,
+                "total votes incorrect"
+            );
+        }
+
+        {
             (bool hasVoted, uint8 voteValue, uint256 votes) = voteCollection
                 .getReceipt(proposalId, user2);
 
@@ -399,6 +524,33 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
                 voteValue,
                 Constants.VOTE_VALUE_NO,
                 "user2 did not vote no"
+            );
+        }
+
+        {
+            vm.prank(user3);
+            voteCollection.castVote(proposalId, Constants.VOTE_VALUE_ABSTAIN);
+
+            // check proposal votes after
+            (
+                uint256 totalVotes,
+                uint256 votesFor,
+                uint256 votesAgainst,
+                uint256 votesAbstain
+            ) = voteCollection.proposalVotes(proposalId);
+
+            assertEq(votesAbstain, voteAmount, "abstain votes incorrect");
+            assertEq(
+                votesAbstain - votesAbstainBefore,
+                voteAmount,
+                "abstain votes incorrect"
+            );
+            assertEq(votesFor, voteAmount, "votes for incorrect");
+            assertEq(votesAgainst, voteAmount, "votes against incorrect");
+            assertEq(
+                totalVotes,
+                totalVotesBefore + voteAmount * 3,
+                "total votes incorrect"
             );
         }
 
@@ -439,31 +591,10 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
                     voteCollectionInfo.abstainVotes,
                 "incorrect total votes"
             );
-
-            assertEq(
-                voteCollectionInfo.totalVotes,
-                3 * voteAmount,
-                "incorrect total votes"
-            );
-            assertEq(
-                voteCollectionInfo.forVotes,
-                voteAmount,
-                "incorrect for votes"
-            );
-            assertEq(
-                voteCollectionInfo.againstVotes,
-                voteAmount,
-                "incorrect against votes"
-            );
-            assertEq(
-                voteCollectionInfo.abstainVotes,
-                voteAmount,
-                "incorrect abstain votes"
-            );
         }
     }
 
-    function testMultipleUserVoteWithWellDelegationSucceeds() public {
+    function testMultipleUserVoteWithXWellDelegationSucceeds() public {
         uint256 voteAmount = 1_000_000 * 1e18;
 
         address user1 = address(1);
@@ -471,8 +602,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         address user3 = address(3);
         address user4 = address(4);
 
-        xwell.transfer(address(user1), 1_000_000 * 1e18);
-        xwell.transfer(address(user3), 1_000_000 * 1e18);
+        xwell.transfer(address(user1), voteAmount);
+        xwell.transfer(address(user3), voteAmount);
 
         vm.prank(user1);
         xwell.delegate(user2);
@@ -490,20 +621,44 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
 
-        vm.warp(block.timestamp + 1);
+        // get proposal votes before
+        (
+            uint256 totalVotesBefore,
+            uint256 votesForBefore,
+            uint256 votesAgainstBefore,
+            uint256 votesAbstainBefore
+        ) = voteCollection.proposalVotes(proposalId);
 
-        assertEq(
-            uint256(governor.state(proposalId)),
-            0,
-            "incorrect state, not active"
-        );
+        {
+            vm.prank(user2);
+            voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
 
-        vm.prank(user2);
-        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
+            // check proposal votes after
+            (
+                uint256 totalVotes,
+                uint256 votesFor,
+                uint256 votesAgainst,
+                uint256 votesAbstain
+            ) = voteCollection.proposalVotes(proposalId);
 
-        vm.prank(user4);
-        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_ABSTAIN);
-
+            assertEq(votesAgainst, voteAmount, "votes against incorrect");
+            assertEq(
+                votesAgainst - votesAgainstBefore,
+                voteAmount,
+                "votes against incorrect"
+            );
+            assertEq(votesFor, votesForBefore, "votes for incorrect");
+            assertEq(
+                votesAbstain,
+                votesAbstainBefore,
+                "abstain votes incorrect"
+            );
+            assertEq(
+                totalVotes,
+                totalVotesBefore + voteAmount,
+                "total votes incorrect"
+            );
+        }
         {
             (bool hasVoted, uint8 voteValue, uint256 votes) = voteCollection
                 .getReceipt(proposalId, user2);
@@ -516,6 +671,38 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
                 "user2 did not vote no"
             );
         }
+
+        {
+            vm.prank(user4);
+            voteCollection.castVote(proposalId, Constants.VOTE_VALUE_ABSTAIN);
+
+            // check proposal votes after
+            (
+                uint256 totalVotes,
+                uint256 votesFor,
+                uint256 votesAgainst,
+                uint256 votesAbstain
+            ) = voteCollection.proposalVotes(proposalId);
+
+            assertEq(votesAbstain, voteAmount, "abstain votes incorrect");
+            assertEq(
+                votesAbstain - votesAbstainBefore,
+                voteAmount,
+                "abstain votes incorrect"
+            );
+            assertEq(votesFor, votesForBefore, "votes for incorrect");
+            assertEq(
+                votesAgainst - votesAgainstBefore,
+                voteAmount,
+                "votes against incorrect"
+            );
+            assertEq(
+                totalVotes,
+                totalVotesBefore + voteAmount * 2,
+                "total votes incorrect"
+            );
+        }
+
         {
             (bool hasVoted, uint8 voteValue, uint256 votes) = voteCollection
                 .getReceipt(proposalId, user4);
@@ -591,22 +778,14 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "incorrect state, not active"
         );
 
-        vm.warp(block.timestamp + 1);
-
-        assertEq(
-            uint256(governor.state(proposalId)),
-            0,
-            "incorrect state, not active"
-        );
-
         vm.prank(user1);
-        governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
 
         vm.prank(user2);
-        governor.castVote(proposalId, Constants.VOTE_VALUE_NO);
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
 
         vm.prank(user3);
-        governor.castVote(proposalId, Constants.VOTE_VALUE_ABSTAIN);
+        voteCollection.castVote(proposalId, Constants.VOTE_VALUE_ABSTAIN);
 
         {
             (bool hasVoted, uint8 voteValue, uint256 votes) = governor
