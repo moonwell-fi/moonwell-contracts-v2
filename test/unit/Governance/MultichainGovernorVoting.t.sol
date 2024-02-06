@@ -1,15 +1,17 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
+import {stdError} from "@forge-std/StdError.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {MockWeth} from "@test/mock/MockWeth.sol";
 import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
+import {SnapshotInterface} from "@protocol/Governance/MultichainGovernor/SnapshotInterface.sol";
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
-import {MockWeth} from "@test/mock/MockWeth.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
@@ -169,10 +171,49 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         bytes[] memory calldatas = new bytes[](0);
         string memory description = "Mock Proposal MIP-M00";
 
+        assertEq(
+            well.getPriorVotes(address(this), 0),
+            0,
+            "well incorrect votes"
+        );
+        assertEq(
+            distributor.getPriorVotes(address(this), 0),
+            0,
+            "distributor incorrect votes"
+        );
+        assertEq(
+            SnapshotInterface(address(stkWellMoonbeam)).getPriorVotes(
+                address(this),
+                0
+            ),
+            0,
+            "stkWellMoonbeam incorrect votes"
+        );
+        assertEq(
+            xwell.getPastVotes(address(this), 0),
+            0,
+            "xwell incorrect votes"
+        );
+
+        vm.warp(1);
+        vm.roll(1);
+
         vm.expectRevert(
             "MultichainGovernor: proposer votes below proposal threshold"
         );
-        vm.prank(address(1));
+        governor.propose(targets, values, calldatas, description);
+    }
+
+    function testProposeExcessiveValueFails() public {
+        address[] memory targets = new address[](2);
+        uint256[] memory values = new uint256[](2);
+        bytes[] memory calldatas = new bytes[](2);
+        string memory description = "Mock Proposal MIP-M00";
+
+        values[0] = type(uint256).max;
+        values[1] = 1;
+
+        vm.expectRevert(stdError.arithmeticError);
         governor.propose(targets, values, calldatas, description);
     }
 
