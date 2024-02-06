@@ -22,6 +22,13 @@ contract MultichainBaseTest is
     xWELLDeploy,
     ChainIds
 {
+    event BridgeOutSuccess(
+        uint16 dstWormholeChainId,
+        uint256 cost,
+        address dst,
+        bytes payload
+    );
+
     /// @notice reference to the mock wormhole trusted sender contract
     WormholeRelayerAdapter public wormholeRelayerAdapter;
 
@@ -48,6 +55,8 @@ contract MultichainBaseTest is
 
     /// @notice reference to the staked well contract
     IStakedWell public stkWellBase;
+
+    address public proxyAdmin;
 
     /// @notice threshold of tokens required to create a proposal
     uint256 public constant proposalThreshold = 100_000_000 * 1e18;
@@ -162,7 +171,7 @@ contract MultichainBaseTest is
             pauseGuardian
         );
 
-        address proxyAdmin = address(new ProxyAdmin());
+        proxyAdmin = address(new ProxyAdmin());
         {
             /// deploy staked well with Block numbers instead of timestamps
             /// to mock the system on moonbeam

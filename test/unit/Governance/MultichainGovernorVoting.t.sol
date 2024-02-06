@@ -33,13 +33,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         string description
     );
 
-    event BridgeOutSuccess(
-        uint16 dstWormholeChainId,
-        uint256 cost,
-        address dst,
-        bytes payload
-    );
-
     function setUp() public override {
         super.setUp();
 

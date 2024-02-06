@@ -13,6 +13,8 @@ contract WormholeRelayerAdapter is Test {
     bool public shouldRevert;
     bool public shouldRevertQuote;
 
+    uint16 public senderChainId;
+
     uint256 public nativePriceQuote = 0.01 ether;
 
     function setShouldRevert(bool _shouldRevert) external {
@@ -21,6 +23,10 @@ contract WormholeRelayerAdapter is Test {
 
     function setShouldRevertQuote(bool _shouldRevertQuote) external {
         shouldRevertQuote = _shouldRevertQuote;
+    }
+
+    function setSenderChainId(uint16 _senderChainId) external {
+        senderChainId = _senderChainId;
     }
 
     /// @notice Publishes an instruction for the default delivery provider
@@ -46,15 +52,26 @@ contract WormholeRelayerAdapter is Test {
             "WormholeRelayerAdapter: incorrect payment"
         );
 
-        /// immediately call the target
-        IWormholeReceiver(targetAddress).receiveWormholeMessages(
-            payload,
-            new bytes[](0),
-            bytes32(uint256(uint160(msg.sender))),
-            chainId == 16 ? 30 : 16, // flip chainId since this has to be the sender
-            // chain not the target chain
-            bytes32(++nonce)
-        );
+        if (senderChainId != 0) {
+            /// immediately call the target
+            IWormholeReceiver(targetAddress).receiveWormholeMessages(
+                payload,
+                new bytes[](0),
+                bytes32(uint256(uint160(msg.sender))),
+                senderChainId, // chain not the target chain
+                bytes32(++nonce)
+            );
+        } else {
+            /// immediately call the target
+            IWormholeReceiver(targetAddress).receiveWormholeMessages(
+                payload,
+                new bytes[](0),
+                bytes32(uint256(uint160(msg.sender))),
+                chainId == 16 ? 30 : 16, // flip chainId since this has to be the sender
+                // chain not the target chain
+                bytes32(++nonce)
+            );
+        }
 
         return uint64(nonce);
     }
