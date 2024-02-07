@@ -14,6 +14,8 @@ methods {
         uint256,
         address
     ) external returns (bool, uint8, uint256) envfree;
+    function quorum() external returns (uint256) envfree;
+    function maxUserLiveProposals() external returns (uint256) envfree;
 
     /// requires environment as this function reads block timestamp
     /// state is an enum so is type uint8
@@ -22,13 +24,15 @@ methods {
     /// requires environment as these functions call state which reads block timestamp
     function liveProposals() external returns (uint256[] memory);
     function getNumLiveProposals() external returns (uint256);
+    function proposalValid(uint256 proposalId) external returns (bool) envfree;
+    function userHasProposal(
+        uint256 proposalId,
+        address proposer
+    ) external returns (bool) envfree;
 
     function proposalThreshold() external returns (uint256) envfree;
     function votingPeriod() external returns (uint256) envfree;
     function crossChainVoteCollectionPeriod() external returns (uint256) envfree;
-
-    function quorum() external returns (uint256) envfree;
-    function maxUserLiveProposals() external returns (uint256) envfree;
     function currentUserLiveProposals(address) external returns (uint256);
     function getVotes(address account,uint256 timestamp,uint256 blockNumber) external returns (uint256);
 
@@ -132,6 +136,21 @@ invariant minGasLimit(env e)
     to_mathint(gasLimit()) >= to_mathint(400000) {
         preserved {
             require _initialized == 1;
+        }
+    }
+
+invariant proposalIdValid(env e, uint256 proposalId) 
+    to_mathint(proposalId) <= to_mathint(proposalCount()) &&
+     to_mathint(proposalId) > to_mathint(0) {
+        preserved {
+            require _initialized == 1;
+        }
+    }
+
+invariant proposalIdImpliesUserProposal(env e, uint256 proposalId, address proposer) 
+    proposalValid(proposalId) <=> userHasProposal(proposalId, proposer) {
+        preserved {
+            requireInvariant proposalIdValid(e, proposalId);
         }
     }
 
