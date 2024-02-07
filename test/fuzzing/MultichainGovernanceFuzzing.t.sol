@@ -97,6 +97,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         assertEq(votesAgainst, 0, "votes against incorrect");
         assertEq(votesAbstain, 0, "abstain votes incorrect");
         assertEq(votesFor, totalVotes, "total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 
     /// Voting on MultichainGovernor with different vote amounts per user
@@ -178,6 +180,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
         assertEq(votesFor, totalVoteAmount, "Votes for incorrect");
         assertEq(totalVotes, totalVoteAmount, "Total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 
     /// Voting on MultichainGovernor
@@ -245,6 +249,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         assertEq(votesAgainst, 0, "votes against incorrect");
         assertEq(votesAbstain, 0, "abstain votes incorrect");
         assertEq(votesFor, totalVotes, "total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 
     /// Voting on MultichainGovernor with different vote amounts per user
@@ -318,6 +324,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
         assertEq(votesFor, totalVoteAmount, "Votes for incorrect");
         assertEq(totalVotes, totalVoteAmount, "Total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 
     struct FuzzingInput {
@@ -520,6 +528,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         assertEq(votesAgainst, totalVotesAgainst, "votes against incorrect");
         assertEq(votesAbstain, totalVotesAbstain, "abstain votes incorrect");
         assertEq(totalVotes, totalVotesGovernor, "total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 
     struct FuzzingInputVoteCollection {
@@ -668,5 +678,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         assertEq(votesAgainst, totalVotesAgainst, "votes against incorrect");
         assertEq(votesAbstain, totalVotesAbstain, "abstain votes incorrect");
         assertEq(totalVotes, totalVotesGovernor, "total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 }

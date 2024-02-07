@@ -467,12 +467,25 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         vm.expectRevert("WormholeBridge: refund failed");
         vm.prank(proposer);
-        governor.propose{value: bridgeCost}(
+        uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
             calldatas,
             description
         );
+
+        uint256[] memory proposals = governor.liveProposals();
+
+        bool proposalFound;
+
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (proposals[i] == proposalId) {
+                proposalFound = true;
+                break;
+            }
+        }
+
+        assertFalse(proposalFound, "proposal found in live proposals");
 
         uint256 proposerBalanceAfter = proposer.balance;
 
@@ -582,11 +595,19 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.deal(caller, cost);
 
         vm.expectEmit(true, true, true, true, address(governor));
+        emit BridgeOutFailed(baseWormholeChainId, payload, cost);
+
+        vm.expectEmit(true, true, true, true, address(governor));
         emit ProposalRebroadcasted(proposalId, payload);
+
         vm.prank(caller);
         governor.rebroadcastProposal{value: cost}(proposalId);
 
         vm.deal(caller, cost);
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BridgeOutFailed(baseWormholeChainId, payload, cost);
+
         vm.expectEmit(true, true, true, true, address(governor));
         emit ProposalRebroadcasted(proposalId, payload);
 
@@ -721,8 +742,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         returns (uint256 proposalId)
     {
         proposalId = testProposeUpdateProposalThresholdSucceeds();
-
-        vm.warp(block.timestamp + 1);
 
         assertEq(
             uint256(governor.state(proposalId)),

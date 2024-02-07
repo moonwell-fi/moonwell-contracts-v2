@@ -1527,6 +1527,23 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             description
         );
 
+        {
+            // vote collections should have the proposal
+            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection
+                .proposalInformation(1);
+            assertGt(voteSnapshotTimestamp, 0, "proposal id incorrect");
+        }
+
+        {
+            MultichainVoteCollection voteCollection2 = MultichainVoteCollection(
+                proxyVoteCollection2
+            );
+            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection2
+                .proposalInformation(1);
+
+            assertGt(voteSnapshotTimestamp, 1, "proposal id incorrect");
+        }
+
         _assertGovernanceBalance();
         assertEq(proxyVoteCollection2.balance, 0, "balance should be zero");
     }
