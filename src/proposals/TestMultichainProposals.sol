@@ -31,6 +31,7 @@ Or, from another Solidity file (for post-proposal integration testing):
 contract TestMultichainProposals is Test, Initializable {
     Addresses public addresses;
     Proposal[] public proposals;
+
     bool public DEBUG;
     bool public DO_DEPLOY;
     bool public DO_AFTER_DEPLOY;
