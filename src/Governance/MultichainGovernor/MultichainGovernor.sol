@@ -63,10 +63,16 @@ contract MultichainGovernor is
 
     /// @notice whether or not a calldata bytes is allowed for break glass guardian
     /// whether or not the calldata is whitelisted for break glass guardian
-    /// functions to whitelist are:
-    /// - transferOwnership to rollback address
-    /// - setPendingAdmin to rollback address
-    /// - setAdmin to rollback address
+    /// functions to whitelist are based on previous whitelisted functions in the
+    /// Artemis Governor contracts.
+    /// Artemis Governor Break Glass calldata:
+    /// - transferOwnership
+    /// - _setPendingAdmin
+    /// - setPendingAdmin
+    /// - setAdmin
+    /// - changeAdmin
+    /// - setEmissionsManager
+    /// new calldata:
     /// - publishMessage that adds rollback address as trusted sender in TemporalGovernor, with calldata for each chain
     mapping(bytes whitelistedCalldata => bool)
         public
