@@ -355,4 +355,14 @@ contract MultichainBaseTest is
             vm.stopPrank();
         }
     }
+
+    function _assertGovernanceBalance() public {
+        // governor and vote collection should never have ether at the end of a test
+        assertEq(address(governor).balance, 0, "governor has ether");
+        assertEq(
+            address(voteCollection).balance,
+            0,
+            "vote collection has ether"
+        );
+    }
 }

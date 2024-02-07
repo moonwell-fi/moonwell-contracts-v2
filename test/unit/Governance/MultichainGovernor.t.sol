@@ -399,6 +399,8 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             address(0),
             "break glass guardian not reset"
         );
+
+        _assertGovernanceBalance();
     }
 
     /// PAUSE GUARDIAN
@@ -419,7 +421,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function testremoveExternalChainConfigsGovernorSucceeds() public {
+    function testRemoveExternalChainConfigsGovernorSucceeds() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = testaddExternalChainConfigsGovernorSucceeds();
 

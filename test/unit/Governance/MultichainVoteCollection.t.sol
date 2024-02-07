@@ -170,6 +170,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         assertTrue(proposalFound, "proposal not found in live proposals");
 
+        _assertGovernanceBalance();
+
         return proposalId;
     }
 
@@ -232,6 +234,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "total votes incorrect"
         );
         assertEq(votesFor, totalVotes, "total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 
     function testVotingValidProposalIdBeforeStartFails()
@@ -262,6 +266,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.prank(address(1));
         vm.expectRevert("MultichainVoteCollection: voter has no votes");
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
+
+        _assertGovernanceBalance();
     }
 
     /// cannot vote twice on the same proposal
@@ -270,6 +276,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.expectRevert("MultichainVoteCollection: voter already voted");
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
+
+        _assertGovernanceBalance();
     }
 
     function testVotingValidProposalIdInvalidVoteValueFails()
@@ -288,6 +296,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.expectRevert("MultichainVoteCollection: invalid vote value");
         voteCollection.castVote(proposalId, 3);
+
+        _assertGovernanceBalance();
     }
 
     function testVotingActiveProposalIdSucceeds()
@@ -342,6 +352,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "total votes incorrect"
         );
         assertEq(votesAgainst, totalVotes, "total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 
     function testVotingPastVoteEndTimeProposalFails()
@@ -360,6 +372,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.expectRevert("MultichainVoteCollection: Voting has ended");
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_NO);
+
+        _assertGovernanceBalance();
     }
 
     function testVotingInvalidVoteValueFails()
@@ -378,6 +392,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.expectRevert("MultichainVoteCollection: invalid vote value");
         voteCollection.castVote(proposalId, 3);
+
+        _assertGovernanceBalance();
     }
 
     function testVotingNoVotesFails() public returns (uint256 proposalId) {
@@ -394,6 +410,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.expectRevert("MultichainVoteCollection: voter has no votes");
         vm.prank(address(1));
         voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
+
+        _assertGovernanceBalance();
     }
 
     /// Multiple users all voting on the same proposal
@@ -593,6 +611,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
                 "incorrect total votes"
             );
         }
+
+        _assertGovernanceBalance();
     }
 
     function testMultipleUserVoteWithXWellDelegationSucceeds() public {
@@ -746,6 +766,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             voteAmount,
             "incorrect abstain votes"
         );
+
+        _assertGovernanceBalance();
     }
 
     /// xWELL
@@ -961,6 +983,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             voteAmount,
             "incorrect abstain votes"
         );
+
+        _assertGovernanceBalance();
     }
 
     function testMultipleUserVoteWithxWellDelegationSucceeds() public {
@@ -1071,6 +1095,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
                 "total votes"
             );
         }
+
+        _assertGovernanceBalance();
     }
 
     // Emit votes to Governor
@@ -1132,6 +1158,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             proposalBefore.abstainVotes + proposalVoteCollection.abstainVotes,
             "incorrect abstain votes"
         );
+
+        _assertGovernanceBalance();
     }
 
     function testEmitVotesProposalHasNoVotes() public {
@@ -1141,6 +1169,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.expectRevert("MultichainVoteCollection: proposal has no votes");
         voteCollection.emitVotes(proposalId);
+
+        _assertGovernanceBalance();
     }
 
     function testEmitVotesProposalEndTimeHasNotPassed() public {
@@ -1154,6 +1184,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.expectRevert("MultichainVoteCollection: Voting has not ended");
         voteCollection.emitVotes(proposalId);
+
+        _assertGovernanceBalance();
     }
 
     function testEmitVotesProposalEndTimeHasPassedBridgeOutIncorrectAmount()
@@ -1172,6 +1204,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
         vm.expectRevert("WormholeBridge: total cost not equal to quote");
         voteCollection.emitVotes{value: cost}(proposalId);
+
+        _assertGovernanceBalance();
     }
 
     function testEmitVotesProposalCollectionEndTimeHasPassed() public {
@@ -1188,6 +1222,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             "MultichainVoteCollection: Voting collection phase has ended"
         );
         voteCollection.emitVotes(proposalId);
+
+        _assertGovernanceBalance();
     }
 
     /// Only Owner
@@ -1490,6 +1526,9 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             calldatas,
             description
         );
+
+        _assertGovernanceBalance();
+        assertEq(proxyVoteCollection2.balance, 0, "balance should be zero");
     }
 
     function testCollectVotesFromMultipleVoteCollections() public {
@@ -1677,5 +1716,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
                 );
             }
         }
+
+        _assertGovernanceBalance();
+        assertEq(proxyVoteCollection2.balance, 0, "balance should be zero");
     }
 }
