@@ -42,7 +42,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
     address[] public temporalGovernanceTargets;
 
     /// @notice threshold of tokens required to create a proposal
-    uint256 public constant proposalThreshold = 100_000_000 * 1e18;
+    uint256 public constant proposalThreshold = 10_000_000 * 1e18;
 
     /// @notice duration of the cross chain vote collection period
     uint256 public constant crossChainVoteCollectionPeriod = 1 days;
