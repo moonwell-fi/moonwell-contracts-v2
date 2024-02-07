@@ -23,6 +23,8 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice deployment of the Multichain Vote Collection Contract to Base
     string public constant name = "MIP-M18B";
 
+    /// TODO review these parameters with Luke pre-deployment
+
     /// @notice cooldown window to withdraw staked WELL to xWELL
     uint256 public constant cooldownSeconds = 10 days;
 
@@ -45,6 +47,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
         /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
+        /// TODO add integration tests that the stkWELL contract on base is paying out rewards
         (
             address ecosystemReserveProxy,
             address ecosystemReserveImplementation,
@@ -104,7 +107,11 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
             );
 
-        assertEq(ecosystemReserveController.owner(), address(this), "01021");
+        assertEq(
+            ecosystemReserveController.owner(),
+            address(this),
+            "incorrect owner"
+        );
         assertEq(
             address(ecosystemReserveController.ECOSYSTEM_RESERVE()),
             address(0),
@@ -117,8 +124,6 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// set the ecosystem reserve
         ecosystemReserveController.setEcosystemReserve(ecosystemReserve);
-
-        console.log("block chain id: ", block.chainid);
 
         /// approve stkWELL contract to spend xWELL from the ecosystem reserve contract
         ecosystemReserveController.approve(
