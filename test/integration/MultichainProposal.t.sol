@@ -11,10 +11,14 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
+import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
+import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 
@@ -398,7 +402,208 @@ contract MultichainProposalTest is
 
     /// upgrading contract logic
 
-    function testUpgradeMultichainGovernorThroughGovProposal() public {}
+    function testUpgradeMultichainGovernorThroughGovProposal() public {
+        vm.selectFork(moonbeamForkId);
+        vm.roll(block.number + 1);
+
+        MockMultichainGovernor newGovernor = new MockMultichainGovernor();
+
+        /// mint whichever is greater, the proposal threshold or the quorum
+        uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
+            ? governor.proposalThreshold()
+            : governor.quorum();
+
+        deal(address(well), address(this), mintAmount);
+        well.transfer(address(this), mintAmount);
+        well.delegate(address(this));
+
+        vm.roll(block.number + 1);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "upgrade(address,address)",
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
+            address(newGovernor)
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertEq(proposalId, 1, "incorrect proposal id");
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect proposal state"
+        );
+
+        assertTrue(
+            governor.userHasProposal(proposalId, address(this)),
+            "user has proposal"
+        );
+        assertTrue(
+            governor.proposalValid(proposalId),
+            "user does not have proposal"
+        );
+
+        {
+            (
+                uint256 totalVotes,
+                uint256 forVotes,
+                uint256 againstVotes,
+                uint256 abstainVotes
+            ) = governor.proposalVotes(proposalId);
+
+            assertEq(totalVotes, 0, "incorrect total votes");
+            assertEq(forVotes, 0, "incorrect for votes");
+            assertEq(againstVotes, 0, "incorrect against votes");
+            assertEq(abstainVotes, 0, "incorrect abstain votes");
+        }
+
+        /// vote yes on proposal
+        governor.castVote(proposalId, 0);
+
+        {
+            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+                .getReceipt(proposalId, address(this));
+            assertTrue(hasVoted, "has voted incorrect");
+            assertEq(voteValue, 0, "vote value incorrect");
+            assertEq(votes, governor.getCurrentVotes(address(this)), "votes");
+
+            (
+                uint256 totalVotes,
+                uint256 forVotes,
+                uint256 againstVotes,
+                uint256 abstainVotes
+            ) = governor.proposalVotes(proposalId);
+
+            assertEq(
+                totalVotes,
+                governor.getCurrentVotes(address(this)),
+                "incorrect total votes"
+            );
+            assertEq(
+                forVotes,
+                governor.getCurrentVotes(address(this)),
+                "incorrect for votes"
+            );
+            assertEq(againstVotes, 0, "incorrect against votes");
+            assertEq(abstainVotes, 0, "incorrect abstain votes");
+        }
+        {
+            (
+                ,
+                ,
+                ,
+                ,
+                uint256 crossChainVoteCollectionEndTimestamp,
+                ,
+                ,
+                ,
+
+            ) = governor.proposalInformation(proposalId);
+
+            vm.warp(crossChainVoteCollectionEndTimestamp - 1);
+
+            assertEq(
+                uint256(governor.state(proposalId)),
+                1,
+                "not in xchain vote collection period"
+            );
+
+            vm.warp(crossChainVoteCollectionEndTimestamp);
+            assertEq(
+                uint256(governor.state(proposalId)),
+                1,
+                "not in xchain vote collection period at end"
+            );
+
+            vm.warp(block.timestamp + 1);
+            assertEq(
+                uint256(governor.state(proposalId)),
+                4,
+                "not in succeeded at end"
+            );
+        }
+
+        {
+            governor.execute(proposalId);
+
+            assertEq(
+                address(governor).balance,
+                0,
+                "incorrect governor balance"
+            );
+            assertEq(uint256(governor.state(proposalId)), 5, "not in executed");
+            assertEq(
+                MockMultichainGovernor(address(governor)).newFeature(),
+                1,
+                "incorrectly upgraded"
+            );
+
+            validateProxy(
+                vm,
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
+                address(newGovernor),
+                addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
+                "moonbeam new logic contract for multichain governor"
+            );
+        }
+    }
 
     function testUpgradeMultichainVoteCollection() public {}
+
+    /// staking
+
+    /// - assert assets in ecosystem reserve deplete when rewards are claimed
+
+    function testStakestkWellBaseSucceedsAndReceiveRewards() public {
+        vm.selectFork(baseForkId);
+
+        /// prank as the wormhole bridge adapter contract
+        ///
+        uint256 mintAmount = 1_000_000 * 1e18;
+        IStakedWellUplift stkwell = IStakedWellUplift(
+            addresses.getAddress("stkWELL_PROXY")
+        );
+        xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
+
+        vm.startPrank(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
+        xwell.mint(address(this), mintAmount);
+        xwell.mint(addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"), mintAmount);
+        vm.stopPrank();
+
+        xwell.approve(address(stkwell), mintAmount);
+        stkwell.stake(address(this), mintAmount);
+
+        vm.warp(10 days);
+
+        assertEq(
+            stkwell.balanceOf(address(this)),
+            mintAmount,
+            "incorrect stkWELL balance"
+        );
+        assertEq(xwell.balanceOf(address(this)), 0, "incorrect xWELL balance");
+
+        uint256 userxWellBalance = xwell.balanceOf(address(this));
+        stkwell.claimRewards(address(this), type(uint256).max);
+        assertGt(
+            xwell.balanceOf(address(this)),
+            userxWellBalance,
+            "incorrect xWELL balance after claiming rewards"
+        );
+    }
 }

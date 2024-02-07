@@ -136,6 +136,13 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         ecosystemReserveController.transferOwnership(
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
+
+        IEcosystemReserveUplift ecosystemReserveContract = IEcosystemReserveUplift(
+                addresses.getAddress("ECOSYSTEM_RESERVE_IMPL")
+            );
+
+        /// take ownership of the ecosystem reserve impl to prevent any further changes or hijacking
+        ecosystemReserveContract.initialize(address(1));
     }
 
     function validate(Addresses addresses, address) public override {
@@ -215,6 +222,15 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 approvalAmount,
                 "ecosystem reserve not approved to give stkWELL_PROXY approvalAmount"
             );
+
+            ecosystemReserve = IEcosystemReserveUplift(
+                addresses.getAddress("ECOSYSTEM_RESERVE_IMPL")
+            );
+            assertEq(
+                ecosystemReserve.getFundsAdmin(),
+                address(1),
+                "funds admin on impl incorrect"
+            );
         }
 
         /// validate stkWELL contract
@@ -249,6 +265,11 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 stkWell.COOLDOWN_SECONDS(),
                 cooldownSeconds,
                 "incorrect cooldown seconds"
+            );
+            assertEq(
+                stkWell.DISTRIBUTION_END(),
+                block.timestamp + distributionDuration,
+                "incorrect distribution duration"
             );
             assertEq(
                 stkWell.EMISSION_MANAGER(),
