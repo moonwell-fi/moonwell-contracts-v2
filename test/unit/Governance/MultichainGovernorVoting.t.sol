@@ -617,6 +617,116 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         _assertGovernanceBalance();
     }
 
+    function testRebroadcastFirstCallRevertsSecondCallPass() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 startTimestamp = block.timestamp;
+        uint256 endTimestamp = startTimestamp + governor.votingPeriod();
+        bytes memory payload = abi.encode(
+            1,
+            startTimestamp - 1,
+            startTimestamp,
+            endTimestamp,
+            endTimestamp + governor.crossChainVoteCollectionPeriod()
+        );
+
+        address proposer = address(2);
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(proposer, bridgeCost);
+
+        uint256 proposerBalance = proposer.balance;
+
+        wormholeRelayerAdapter.setShouldRevert(true);
+
+        _delegateVoteAmountForUser(
+            address(well),
+            proposer,
+            governor.proposalThreshold()
+        );
+
+        vm.roll(block.number + 1);
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BridgeOutFailed(baseWormholeChainId, payload, bridgeCost);
+
+        vm.prank(proposer);
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect state, not active"
+        );
+
+        uint256 proposerBalanceAfter = proposer.balance;
+
+        // bridge out failed so proposer balance should not change
+        assertEq(proposerBalanceAfter, proposerBalance, "incorrect balance");
+        assertEq(proposerBalanceAfter, bridgeCost, "incorrect balance");
+
+        assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        uint256[] memory proposals = governor.liveProposals();
+
+        bool proposalFound;
+
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (proposals[i] == proposalId) {
+                proposalFound = true;
+                break;
+            }
+        }
+
+        assertTrue(proposalFound, "proposal not found in live proposals");
+
+        _assertGovernanceBalance();
+
+        {
+            // proposal should not exist on vote collection
+            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection
+                .proposalInformation(proposalId);
+            assertEq(voteSnapshotTimestamp, 0, "proposal id incorrect");
+        }
+
+        wormholeRelayerAdapter.setShouldRevert(false);
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BridgeOutSuccess(
+            baseWormholeChainId,
+            uint96(bridgeCost),
+            address(voteCollection),
+            payload
+        );
+
+        // rebroadcast
+        governor.rebroadcastProposal{value: bridgeCost}(proposalId);
+
+        {
+            // proposal should exist on vote collection
+            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection
+                .proposalInformation(proposalId);
+            assertGt(voteSnapshotTimestamp, 0, "proposal id incorrect");
+        }
+
+        _assertGovernanceBalance();
+    }
+
     function testRebroadcastProposalFailsInvalidProposalId() public {
         uint256 proposalId = 100;
 
