@@ -2001,6 +2001,70 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         _assertGovernanceBalance();
     }
 
+    function testMovingFromActiveToExecuted() public {
+        uint256 proposalId = _createProposalUpdateThreshold(address(this));
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect state, not active"
+        );
+
+        _castVotes(proposalId, Constants.VOTE_VALUE_YES, address(this));
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect state, not active"
+        );
+
+        _warpPastProposalEnd(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            4,
+            "incorrect state, not succeeded"
+        );
+
+        governor.execute(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            5,
+            "incorrect state, not executed"
+        );
+
+        _assertGovernanceBalance();
+    }
+
+    function testMovingFromActiveToDefeated() public {
+        uint256 proposalId = _createProposalUpdateThreshold(address(this));
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect state, not active"
+        );
+
+        _castVotes(proposalId, Constants.VOTE_VALUE_NO, address(this));
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect state, not active"
+        );
+
+        _warpPastProposalEnd(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            3,
+            "incorrect state, not defeated"
+        );
+
+        _assertGovernanceBalance();
+    }
+
     function testStateMovesToExecutedStateAfterExecution()
         public
         returns (uint256 proposalId)
