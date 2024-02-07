@@ -16,6 +16,14 @@ import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 
 contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
+    event CrossChainVoteCollected(
+        uint256 proposalId,
+        uint16 sourceChain,
+        uint256 forVotes,
+        uint256 againstVotes,
+        uint256 abstainVotes
+    );
+
     function testSetup() public {
         assertEq(
             governor.getVotes(
@@ -1548,6 +1556,149 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(proxyVoteCollection2.balance, 0, "balance should be zero");
     }
 
+    function testEmitToMultipleVoteCollectionsSomeFails() public {
+        (address proxyVoteCollection2, ) = deployVoteCollection(
+            address(xwell),
+            address(stkWellBase),
+            address(governor),
+            address(wormholeRelayerAdapter),
+            moonBeamWormholeChainId,
+            proxyAdmin,
+            address(this)
+        );
+
+        (address proxyVoteCollection3, ) = deployVoteCollection(
+            address(xwell),
+            address(stkWellBase),
+            address(governor),
+            address(wormholeRelayerAdapter),
+            moonBeamWormholeChainId,
+            proxyAdmin,
+            address(this)
+        );
+
+        (address proxyVoteCollection4, ) = deployVoteCollection(
+            address(xwell),
+            address(stkWellBase),
+            address(governor),
+            address(wormholeRelayerAdapter),
+            moonBeamWormholeChainId,
+            proxyAdmin,
+            address(this)
+        );
+
+        WormholeTrustedSender.TrustedSender[]
+            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
+                3
+            );
+
+        _trustedSenders[0].chainId = 2;
+        _trustedSenders[0].addr = address(proxyVoteCollection2);
+
+        _trustedSenders[1].chainId = 3;
+        _trustedSenders[1].addr = address(proxyVoteCollection3);
+
+        _trustedSenders[2].chainId = 4;
+        _trustedSenders[2].addr = address(proxyVoteCollection4);
+
+        vm.prank(address(governor));
+        governor.addExternalChainConfigs(_trustedSenders);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 startTimestamp = block.timestamp;
+        uint256 endTimestamp = startTimestamp + governor.votingPeriod();
+        bytes memory payload = abi.encode(
+            1,
+            startTimestamp - 1,
+            startTimestamp,
+            endTimestamp,
+            endTimestamp + governor.crossChainVoteCollectionPeriod()
+        );
+
+        wormholeRelayerAdapter.setShouldRevertChain(2, true);
+        wormholeRelayerAdapter.setShouldRevertChain(4, true);
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BridgeOutSuccess(
+            baseWormholeChainId,
+            bridgeCost / 4,
+            address(voteCollection),
+            payload
+        );
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BridgeOutFailed(2, payload, bridgeCost / 4);
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BridgeOutSuccess(3, bridgeCost / 4, proxyVoteCollection3, payload);
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BridgeOutFailed(4, payload, bridgeCost / 4);
+
+        governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        {
+            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection
+                .proposalInformation(1);
+            assertGt(voteSnapshotTimestamp, 0, "proposal doesn't exist");
+        }
+
+        {
+            MultichainVoteCollection voteCollection2 = MultichainVoteCollection(
+                proxyVoteCollection2
+            );
+            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection2
+                .proposalInformation(1);
+
+            assertEq(voteSnapshotTimestamp, 0, "proposal exist");
+        }
+
+        {
+            MultichainVoteCollection voteCollection3 = MultichainVoteCollection(
+                proxyVoteCollection3
+            );
+            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection3
+                .proposalInformation(1);
+
+            assertGt(voteSnapshotTimestamp, 0, "proposal doesn't exist");
+        }
+
+        {
+            MultichainVoteCollection voteCollection4 = MultichainVoteCollection(
+                proxyVoteCollection4
+            );
+            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection4
+                .proposalInformation(1);
+
+            assertEq(voteSnapshotTimestamp, 0, "proposal exist");
+        }
+
+        _assertGovernanceBalance();
+        assertEq(proxyVoteCollection2.balance, 0, "balance should be zero");
+        assertEq(proxyVoteCollection3.balance, 0, "balance should be zero");
+        assertEq(proxyVoteCollection4.balance, 0, "balance should be zero");
+    }
+
     function testCollectVotesFromMultipleVoteCollections() public {
         address proxyVoteCollection2 = testEmitToMultipleVoteCollections();
         uint256 proposalId = 1;
@@ -1661,7 +1812,32 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
                 vm.deal(address(this), bridgeCost);
 
+                vm.expectEmit(true, true, true, true, address(governor));
+                emit CrossChainVoteCollected(
+                    proposalId,
+                    baseWormholeChainId,
+                    0,
+                    voteAmount,
+                    0
+                );
+
                 voteCollection.emitVotes{value: bridgeCost}(proposalId);
+
+                {
+                    // check chainVoteCollectorVotes
+                    (
+                        uint256 forVotes,
+                        uint256 againstVotes,
+                        uint256 abstainVotes
+                    ) = governor.chainVoteCollectorVotes(
+                            baseWormholeChainId,
+                            proposalId
+                        );
+
+                    assertEq(againstVotes, voteAmount, "chain votes incorrect");
+                    assertEq(forVotes, 0, "chain votes incorrect");
+                    assertEq(abstainVotes, 0, "chain votes incorrect");
+                }
 
                 // check proposal votes after
                 (
@@ -1701,7 +1877,23 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
                 vm.deal(address(this), bridgeCost);
 
                 wormholeRelayerAdapter.setSenderChainId(2);
+                vm.expectEmit(true, true, true, true, address(governor));
+                emit CrossChainVoteCollected(proposalId, 2, voteAmount, 0, 0);
+
                 voteCollection2.emitVotes{value: bridgeCost}(proposalId);
+
+                {
+                    // check chainVoteCollectorVotes
+                    (
+                        uint256 forVotes,
+                        uint256 againstVotes,
+                        uint256 abstainVotes
+                    ) = governor.chainVoteCollectorVotes(2, proposalId);
+
+                    assertEq(againstVotes, 0, "chain votes incorrect");
+                    assertEq(forVotes, voteAmount, "chain votes incorrect");
+                    assertEq(abstainVotes, 0, "chain votes incorrect");
+                }
 
                 // check proposal votes after
                 (

@@ -29,6 +29,8 @@ contract MultichainBaseTest is
         bytes payload
     );
 
+    event BridgeOutFailed(uint16 chainId, bytes payload, uint256 refundAmount);
+
     /// @notice reference to the mock wormhole trusted sender contract
     WormholeRelayerAdapter public wormholeRelayerAdapter;
 

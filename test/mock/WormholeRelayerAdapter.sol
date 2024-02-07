@@ -17,12 +17,21 @@ contract WormholeRelayerAdapter is Test {
 
     uint256 public nativePriceQuote = 0.01 ether;
 
+    mapping(uint16 chainId => bool shouldRevert) public shouldRevertChain;
+
     function setShouldRevert(bool _shouldRevert) external {
         shouldRevert = _shouldRevert;
     }
 
     function setShouldRevertQuote(bool _shouldRevertQuote) external {
         shouldRevertQuote = _shouldRevertQuote;
+    }
+
+    function setShouldRevertChain(
+        uint16 _senderChainId,
+        bool _shouldRevert
+    ) external {
+        shouldRevertChain[_senderChainId] = _shouldRevert;
     }
 
     function setSenderChainId(uint16 _senderChainId) external {
@@ -43,7 +52,7 @@ contract WormholeRelayerAdapter is Test {
         uint256, /// shhh
         uint256 /// shhh
     ) external payable returns (uint64) {
-        if (shouldRevert) {
+        if (shouldRevert || shouldRevertChain[chainId]) {
             revert("revert");
         }
 

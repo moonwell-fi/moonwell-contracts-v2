@@ -21,8 +21,6 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
     event ProposalRebroadcasted(uint256 proposalId, bytes data);
 
-    event BridgeOutFailed(uint16 chainId, bytes payload, uint256 refundAmount);
-
     event ProposalCreated(
         uint id,
         address proposer,
@@ -920,8 +918,131 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         _assertGovernanceBalance();
     }
 
-    /// cannot vote twice on the same proposal
+    /// Voting on MultichainGovernor
+    function testVotingForAgainstSameAmount()
+        public
+        returns (uint256 proposalId)
+    {
+        address user1 = address(1);
+        address user2 = address(2);
+        uint256 voteAmount = governor.quorum() / 2;
 
+        _delegateVoteAmountForUser(address(well), user1, voteAmount);
+        _delegateVoteAmountForUser(address(xwell), user2, voteAmount);
+
+        vm.warp(block.timestamp + 1);
+        vm.roll(block.number + 1);
+
+        proposalId = testProposeUpdateProposalThresholdSucceeds();
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect state, not active"
+        );
+
+        (
+            uint256 totalVotesBefore,
+            uint256 votesForBefore,
+            uint256 votesAgainstBefore,
+            uint256 votesAbstainBefore
+        ) = governor.proposalVotes(proposalId);
+
+        assertEq(totalVotesBefore, 0, "proposal has votes");
+        assertEq(votesForBefore, 0, "proposal has votes");
+        assertEq(votesAgainstBefore, 0, "proposal has votes");
+        assertEq(votesAbstainBefore, 0, "proposal has votes");
+
+        {
+            vm.prank(user1);
+            governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
+
+            {
+                (bool hasVoted, uint256 voteValue, uint256 votes) = governor
+                    .getReceipt(proposalId, user1);
+                assertTrue(hasVoted, "user did not vote");
+                assertEq(
+                    voteValue,
+                    Constants.VOTE_VALUE_YES,
+                    "user did not vote yes"
+                );
+                assertEq(
+                    votes,
+                    governor.getVotes(
+                        user1,
+                        block.timestamp - 1,
+                        block.number - 1
+                    ),
+                    "user votes incorrect"
+                );
+            }
+
+            (
+                uint256 totalVotes,
+                uint256 votesFor,
+                uint256 votesAgainst,
+                uint256 votesAbstain
+            ) = governor.proposalVotes(proposalId);
+
+            assertEq(votesFor, voteAmount, "votes for incorrect");
+            assertEq(votesAgainst, 0, "votes against incorrect");
+            assertEq(votesAbstain, 0, "abstain votes incorrect");
+            assertEq(votesFor, totalVotes, "total votes incorrect");
+        }
+
+        {
+            vm.prank(user2);
+            governor.castVote(proposalId, Constants.VOTE_VALUE_NO);
+
+            {
+                (bool hasVoted, uint256 voteValue, uint256 votes) = governor
+                    .getReceipt(proposalId, user2);
+                assertTrue(hasVoted, "user did not vote");
+                assertEq(
+                    voteValue,
+                    Constants.VOTE_VALUE_NO,
+                    "user did not vote yes"
+                );
+                assertEq(
+                    votes,
+                    governor.getVotes(
+                        user2,
+                        block.timestamp - 1,
+                        block.number - 1
+                    ),
+                    "user votes incorrect"
+                );
+            }
+
+            (
+                uint256 totalVotes,
+                uint256 votesFor,
+                uint256 votesAgainst,
+                uint256 votesAbstain
+            ) = governor.proposalVotes(proposalId);
+
+            assertEq(votesFor, voteAmount, "votes for incorrect");
+            assertEq(votesAgainst, voteAmount, "votes against incorrect");
+            assertEq(votesAbstain, 0, "abstain votes incorrect");
+            assertEq(
+                votesFor + votesAgainst,
+                totalVotes,
+                "total votes incorrect"
+            );
+
+            _warpPastProposalEnd(proposalId);
+
+            assertEq(
+                uint256(governor.state(proposalId)),
+                3,
+                "incorrect state, not defeated"
+            );
+        }
+
+        _assertGovernanceBalance();
+    }
+
+    /// cannot vote twice on the same proposal
     function testVotingTwiceSameProposalFails() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
 
