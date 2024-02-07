@@ -1604,6 +1604,23 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.prank(address(governor));
         governor.addExternalChainConfigs(_trustedSenders);
 
+        wormholeRelayerAdapter.setShouldRevertChain(2, true);
+        wormholeRelayerAdapter.setShouldRevertChain(4, true);
+
+        address proposer = address(1);
+
+        _delegateVoteAmountForUser(
+            address(well),
+            proposer,
+            governor.proposalThreshold()
+        );
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(proposer, bridgeCost);
+
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
         bytes[] memory calldatas = new bytes[](1);
@@ -1627,12 +1644,6 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
             endTimestamp + governor.crossChainVoteCollectionPeriod()
         );
 
-        wormholeRelayerAdapter.setShouldRevertChain(2, true);
-        wormholeRelayerAdapter.setShouldRevertChain(4, true);
-
-        uint256 bridgeCost = governor.bridgeCostAll();
-        vm.deal(address(this), bridgeCost);
-
         vm.expectEmit(true, true, true, true, address(governor));
         emit BridgeOutSuccess(
             baseWormholeChainId,
@@ -1650,6 +1661,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.expectEmit(true, true, true, true, address(governor));
         emit BridgeOutFailed(4, payload, bridgeCost / 4);
 
+        vm.prank(proposer);
         governor.propose{value: bridgeCost}(
             targets,
             values,
