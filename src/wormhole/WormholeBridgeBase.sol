@@ -75,6 +75,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @notice emitted when a bridge out fails
     /// @param dstChainId destination chain id to send tokens to
     /// @param payload payload that failed to send
+    /// @param refundAmount amount to refund
     event BridgeOutFailed(
         uint16 dstChainId,
         bytes payload,
@@ -313,7 +314,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         if (totalRefundAmount > 0) {
             // send bridge funds back to sender using call
             (bool success, ) = msg.sender.call{value: totalRefundAmount}("");
-            require(success, "Transfer failed.");
+            require(success, "WormholeBridge: refund failed");
         }
     }
 

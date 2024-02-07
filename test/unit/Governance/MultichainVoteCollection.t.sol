@@ -596,12 +596,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testMultipleUserVoteWithXWellDelegationSucceeds() public {
-        uint256 voteAmount = 1_000_000 * 1e18;
-
         address user1 = address(1);
         address user2 = address(2);
         address user3 = address(3);
         address user4 = address(4);
+
+        uint256 voteAmount = 1_000_000 * 1e18;
 
         xwell.transfer(address(user1), voteAmount);
         xwell.transfer(address(user3), voteAmount);
@@ -964,13 +964,12 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     }
 
     function testMultipleUserVoteWithxWellDelegationSucceeds() public {
-        uint256 voteAmount = 1_000_000 * 1e18;
-
         address user1 = address(1);
         address user2 = address(2);
         address user3 = address(3);
         address user4 = address(4);
 
+        uint256 voteAmount = 1_000_000 * 1e18;
         xwell.transfer(user1, voteAmount);
         xwell.transfer(user3, voteAmount);
 

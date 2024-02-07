@@ -395,6 +395,66 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         return proposalId;
     }
 
+    function testBridgeFailOutRefundFail() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 startTimestamp = block.timestamp;
+        uint256 endTimestamp = startTimestamp + governor.votingPeriod();
+        bytes memory payload = abi.encode(
+            1,
+            startTimestamp - 1,
+            startTimestamp,
+            endTimestamp,
+            endTimestamp + governor.crossChainVoteCollectionPeriod()
+        );
+
+        // address(this) doesn't have fallback function
+        address proposer = address(this);
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(proposer, bridgeCost);
+
+        uint256 proposerBalance = proposer.balance;
+
+        wormholeRelayerAdapter.setShouldRevert(true);
+
+        _delegateVoteAmountForUser(
+            address(well),
+            proposer,
+            governor.proposalThreshold()
+        );
+
+        vm.roll(block.number + 1);
+
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit BridgeOutFailed(baseWormholeChainId, payload, bridgeCost);
+
+        vm.expectRevert("WormholeBridge: refund failed");
+        vm.prank(proposer);
+        governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        uint256 proposerBalanceAfter = proposer.balance;
+
+        // call revert so proposer balance should not change
+        assertEq(proposerBalanceAfter, proposerBalance, "incorrect balance");
+        assertEq(proposerBalanceAfter, bridgeCost, "incorrect balance");
+    }
+
     function testBridgeOutQuoteEVMPriceRevert() public {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
