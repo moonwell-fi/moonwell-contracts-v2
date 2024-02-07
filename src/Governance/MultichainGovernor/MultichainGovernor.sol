@@ -246,6 +246,20 @@ contract MultichainGovernor is
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
 
+    function proposalValid(uint256 proposalId) external view returns (bool) {
+        return
+            proposalCount >= proposalId &&
+            proposalId > 0 &&
+            proposals[proposalId].proposer != address(0);
+    }
+
+    function userHasProposal(
+        uint256 proposalId,
+        address proposer
+    ) external view returns (bool) {
+        return _userLiveProposals[proposer].contains(proposalId);
+    }
+
     /// @notice returns a user's vote receipt on a given proposal
     /// @param proposalId the id of the proposal to check
     /// @param voter the address of the voter to check
@@ -1243,14 +1257,12 @@ contract MultichainGovernor is
         uint16 sourceChain,
         bytes memory payload
     ) internal override {
-        /// TODO verify the finding from Dominik, and if correct, increase size from 128 to 160
         /// payload should be 4 uint256s
         require(
             payload.length == 128,
             "MultichainGovernor: invalid payload length"
         );
 
-        /// TODO verify the finding from Dominik, and if correct, add sender chain to this payload
         (
             uint256 proposalId,
             uint256 forVotes,
