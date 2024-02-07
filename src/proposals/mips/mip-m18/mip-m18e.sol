@@ -26,18 +26,10 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         return moonbeamForkId;
     }
 
+    /// TODO make plain english description of all the actions this proposal does, present to Luke
+
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
-        /// Moonbeam actions
-
-        /// transfer ownership of the wormhole bridge adapter on the moonbeam chain to the multichain governor
-        _pushHybridAction(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-            abi.encodeWithSignature("acceptOwnership()"),
-            "Accept admin of the Wormhole Bridge Adapter as multichain governor",
-            true
-        );
-
         ITemporalGovernor.TrustedSender[]
             memory trustedSendersToRemove = new ITemporalGovernor.TrustedSender[](
                 1
@@ -48,6 +40,8 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
         trustedSendersToRemove[0].chainId = moonBeamWormholeChainId;
 
+        /// Base action
+
         /// remove the artemis timelock as a trusted sender in the wormhole bridge adapter on base
         _pushHybridAction(
             addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId),
@@ -55,16 +49,26 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 "unSetTrustedSenders((uint16,address)[])",
                 trustedSendersToRemove
             ),
-            "Remove Artemis Timelock as a trusted sender in the Temporal Governor on base",
+            "Remove Artemis Timelock as a trusted sender in the Temporal Governor on Base",
             false
         );
 
-        /// accept transfer of ownership of the xwell token to the multichain governor
+        /// Moonbeam actions
+
+        /// transfer ownership of the wormhole bridge adapter on the moonbeam chain to the Multichain Governor
+        _pushHybridAction(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+            abi.encodeWithSignature("acceptOwnership()"),
+            "Accept admin of the Wormhole Bridge Adapter as Multichain Governor",
+            true
+        );
+
+        /// accept transfer of ownership of the xwell token to the Multichain Governor
         /// This one has to go through Temporal Governance
         _pushHybridAction(
             addresses.getAddress("xWELL_PROXY"),
             abi.encodeWithSignature("acceptOwnership()"),
-            "Accept owner of the xWELL Token as the multichain governor",
+            "Accept owner of the xWELL Token as the Multichain Governor",
             true
         );
 
@@ -72,7 +76,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of the comptroller as multichain governor",
+            "Accept admin of the comptroller as Multichain Governor",
             true
         );
 
@@ -82,7 +86,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("MOONWELL_mwBTC"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of MOONWELL_mwBTC as the multichain governor",
+            "Accept admin of MOONWELL_mwBTC as the Multichain Governor",
             true
         );
 
@@ -90,7 +94,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("MOONWELL_mBUSD"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of MOONWELL_mBUSD as the multichain governor",
+            "Accept admin of MOONWELL_mBUSD as the Multichain Governor",
             true
         );
 
@@ -98,7 +102,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("MOONWELL_mETH"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of MOONWELL_mETH as the multichain governor",
+            "Accept admin of MOONWELL_mETH as the Multichain Governor",
             true
         );
 
@@ -106,7 +110,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("MOONWELL_mUSDC"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of MOONWELL_mUSDC as the multichain governor",
+            "Accept admin of MOONWELL_mUSDC as the Multichain Governor",
             true
         );
 
@@ -114,7 +118,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("mGLIMMER"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of mGLIMMER as the multichain governor",
+            "Accept admin of mGLIMMER as the Multichain Governor",
             true
         );
 
@@ -122,7 +126,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("mxcDOT"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of mxcDOT as multichain governor",
+            "Accept admin of mxcDOT as Multichain Governor",
             true
         );
 
@@ -130,7 +134,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of mxcUSDT as multichain governor",
+            "Accept admin of mxcUSDT as Multichain Governor",
             true
         );
 
@@ -138,7 +142,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("mFRAX"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of mFRAX as multichain governor",
+            "Accept admin of mFRAX as Multichain Governor",
             true
         );
 
@@ -146,7 +150,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of mUSDCwh as multichain governor",
+            "Accept admin of mUSDCwh as Multichain Governor",
             true
         );
 
@@ -154,7 +158,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of mxcUSDC as the multichain governor",
+            "Accept admin of mxcUSDC as the Multichain Governor",
             true
         );
 
@@ -162,7 +166,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         _pushHybridAction(
             addresses.getAddress("mETHwh"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of mETHwh as the multichain governor",
+            "Accept admin of mETHwh as the Multichain Governor",
             true
         );
     }
@@ -177,6 +181,9 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     }
 
     function validate(Addresses addresses, address) public override {
+        /// TODO check that the temporal governor now has only Multichain Governor as a trusted sender
+        /// and that the timelock is no longer a trusted sender
+
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
 
         assertEq(
