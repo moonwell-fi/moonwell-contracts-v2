@@ -116,6 +116,7 @@ contract MultichainProposalTest is
     }
 
     function testSetup() public {
+        /// TODO validate temporal governor on base only has a single owner
         vm.selectFork(baseForkId);
         voteCollection = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY")
@@ -565,6 +566,10 @@ contract MultichainProposalTest is
     }
 
     function testUpgradeMultichainVoteCollection() public {}
+
+    function testBreakGlassGuardianSucceedsSettingPendingAdminAndOwners()
+        public
+    {}
 
     /// staking
 
