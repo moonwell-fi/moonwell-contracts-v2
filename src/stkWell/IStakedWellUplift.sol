@@ -29,5 +29,16 @@ interface IStakedWellUplift {
 
     function stake(address, uint256) external;
 
+    function stakerRewardsToClaim(address) external view returns (uint256);
+
     function claimRewards(address, uint256) external;
+    
+    function getTotalRewardsBalance(address) external view returns (uint256);
+    
+    function assets(address) external view returns (uint128, uint128, uint256);
+
+    function configureAsset(
+        uint128 emissionsPerSecond,
+        address underlyingAsset
+    ) external;
 }

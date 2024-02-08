@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
+import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
+
 import "@forge-std/Test.sol";
 
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
@@ -21,6 +24,7 @@ import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
+import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 
 import {mipm18a} from "@proposals/mips/mip-m18/mip-m18a.sol";
 import {mipm18b} from "@proposals/mips/mip-m18/mip-m18b.sol";
@@ -72,14 +76,20 @@ contract MultichainProposalTest is
 
     address public constant voter = address(100_000_000);
 
+    mipm18a public proposalA;
+    mipm18b public proposalB;
+    mipm18c public proposalC;
+    mipm18d public proposalD;
+    mipm18e public proposalE;
+
     function setUp() public override {
         super.setUp();
 
-        mipm18a proposalA = new mipm18a();
-        mipm18b proposalB = new mipm18b();
-        mipm18c proposalC = new mipm18c();
-        mipm18d proposalD = new mipm18d();
-        mipm18e proposalE = new mipm18e();
+        proposalA = new mipm18a();
+        proposalB = new mipm18b();
+        proposalC = new mipm18c();
+        proposalD = new mipm18d();
+        proposalE = new mipm18e();
 
         address[] memory proposalsArray = new address[](5);
         proposalsArray[0] = address(proposalA);
@@ -569,7 +579,336 @@ contract MultichainProposalTest is
 
     function testBreakGlassGuardianSucceedsSettingPendingAdminAndOwners()
         public
-    {}
+    {
+        vm.selectFork(baseForkId);
+        TemporalGovernor temporalGov = TemporalGovernor(
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
+        /// artemis timelock does not start off as trusted sender
+        assertFalse(
+            temporalGov.isTrustedSender(
+                moonBeamChainId,
+                addresses.getAddress(
+                    "ARTEMIS_TIMELOCK", sendingChainIdToReceivingChainId[block.chainid]
+                )
+            ),
+            "artemis timelock not added as a trusted sender"
+        );
+        vm.selectFork(moonbeamForkId);
+        address artemisTimelockAddress = addresses.getAddress(
+            "ARTEMIS_TIMELOCK"
+        );
+        
+        /// calldata to transfer system ownership back to artemis timelock
+        bytes memory transferOwnershipCalldata = abi.encodeWithSignature(
+            "transferOwnership(address)",
+            artemisTimelockAddress
+        );
+        bytes memory changeAdminCalldata = abi.encodeWithSignature(
+            "setAdmin(address)",
+            artemisTimelockAddress
+        );
+        bytes memory setEmissionsManagerCalldata = abi.encodeWithSignature(
+            "setEmissionsManager(address)",
+            artemisTimelockAddress
+        );
+        bytes memory _setPendingAdminCalldata = abi.encodeWithSignature(
+            "_setPendingAdmin(address)",
+            artemisTimelockAddress
+        );
+        
+        /// skip wormhole for now, circle back to that later and make array size 18
+
+        /// targets
+        address[] memory targets = new address[](19);
+        bytes[] memory calldatas = new bytes[](19);
+
+        targets[0] = addresses.getAddress("WORMHOLE_CORE");
+        calldatas[0] = proposalC.approvedCalldata(0);
+
+        targets[1] = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
+        calldatas[1] = transferOwnershipCalldata;
+
+        targets[2] = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
+        calldatas[2] = transferOwnershipCalldata;
+
+        targets[3] = addresses.getAddress("xWELL_PROXY");
+        calldatas[3] = transferOwnershipCalldata;
+
+        targets[4] = addresses.getAddress("CHAINLINK_ORACLE");
+        calldatas[4] = changeAdminCalldata;
+
+        targets[5] = addresses.getAddress("stkWELL");
+        calldatas[5] = setEmissionsManagerCalldata;
+
+        targets[6] = addresses.getAddress("UNITROLLER");
+        calldatas[6] = _setPendingAdminCalldata;
+
+        targets[7] = addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER");
+        calldatas[7] = transferOwnershipCalldata;
+
+        targets[8] = addresses.getAddress("MOONWELL_mwBTC");
+        calldatas[8] = _setPendingAdminCalldata;
+
+        targets[9] = addresses.getAddress("MOONWELL_mBUSD");
+        calldatas[9] = _setPendingAdminCalldata;
+
+        targets[10] = addresses.getAddress("MOONWELL_mETH");
+        calldatas[10] = _setPendingAdminCalldata;
+
+        targets[11] = addresses.getAddress("MOONWELL_mUSDC");
+        calldatas[11] = _setPendingAdminCalldata;
+
+        targets[12] = addresses.getAddress("mGLIMMER");
+        calldatas[12] = _setPendingAdminCalldata;
+
+        targets[13] = addresses.getAddress("mxcDOT");
+        calldatas[13] = _setPendingAdminCalldata;
+
+        targets[14] = addresses.getAddress("mxcUSDT");
+        calldatas[14] = _setPendingAdminCalldata;
+
+        targets[15] = addresses.getAddress("mFRAX");
+        calldatas[15] = _setPendingAdminCalldata;
+
+        targets[16] = addresses.getAddress("mUSDCwh");
+        calldatas[16] = _setPendingAdminCalldata;
+
+        targets[17] = addresses.getAddress("mxcUSDC");
+        calldatas[17] = _setPendingAdminCalldata;
+
+        targets[18] = addresses.getAddress("mETHwh");
+        calldatas[18] = _setPendingAdminCalldata;
+
+        address temporalGovAddress = addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId);
+        address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
+        uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
+            artemisTimelockAddress
+        );
+        address[] memory temporalGovTargets = new address[](1);
+        temporalGovTargets[0] = temporalGovAddress;
+
+        bytes memory temporalGovExecData = abi.encode(
+            temporalGovAddress,
+            temporalGovTargets,
+            new uint256[](1), /// 0 value
+            proposalC.temporalGovernanceCalldata(0)
+        );
+
+        vm.prank(addresses.getAddress("BREAK_GLASS_GUARDIAN"));
+        vm.expectEmit(true, true, true, true, wormholeCore);
+        emit LogMessagePublished(
+            address(governor),
+            nextSequence,
+            1000, /// nonce is hardcoded to 1000 in mip-m18c.sol
+            temporalGovExecData,
+            200 /// consistency level is hardcoded at 200 in mip-m18c.sol
+        );
+        governor.executeBreakGlass(targets, calldatas);
+
+        assertEq(
+            IStakedWellUplift(addresses.getAddress("stkWELL"))
+                .EMISSION_MANAGER(),
+                artemisTimelockAddress,
+            "stkWELL EMISSIONS MANAGER"
+        );
+        assertEq(
+            Ownable(addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"))
+                .owner(),
+                artemisTimelockAddress,
+            "ecosystem reserve controller owner incorrect"
+        );
+        assertEq(
+            Ownable2StepUpgradeable(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ).pendingOwner(),
+            artemisTimelockAddress,
+            "WORMHOLE_BRIDGE_ADAPTER_PROXY pending owner incorrect"
+        );
+        /// governor still owns, pending is artemis timelock
+        assertEq(
+            Ownable2StepUpgradeable(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ).owner(),
+            address(governor),
+            "WORMHOLE_BRIDGE_ADAPTER_PROXY owner incorrect"
+        );
+        assertEq(
+            Ownable(addresses.getAddress("MOONBEAM_PROXY_ADMIN")).owner(),
+            artemisTimelockAddress,
+            "MOONBEAM_PROXY_ADMIN owner incorrect"
+        );
+        assertEq(
+            Ownable2StepUpgradeable(addresses.getAddress("xWELL_PROXY"))
+                .owner(),
+            address(governor),
+            "xWELL_PROXY owner incorrect"
+        );
+        assertEq(
+            Ownable2StepUpgradeable(addresses.getAddress("xWELL_PROXY"))
+                .pendingOwner(),
+                artemisTimelockAddress,
+            "xWELL_PROXY pending owner incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("mETHwh")).pendingAdmin(),
+            artemisTimelockAddress,
+            "mETHwh pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("mETHwh")).admin(),
+            address(governor),
+            "mETHwh admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("mxcUSDC")).pendingAdmin(),
+            artemisTimelockAddress,
+            "mxcUSDC pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("mxcUSDC")).admin(),
+            address(governor),
+            "mxcUSDC admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("mUSDCwh")).pendingAdmin(),
+            artemisTimelockAddress,
+            "mUSDCwh pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("mUSDCwh")).admin(),
+            address(governor),
+            "mUSDCwh admin incorrect"
+        );
+        
+        assertEq(
+            Timelock(addresses.getAddress("mFRAX")).pendingAdmin(),
+            artemisTimelockAddress,
+            "mFRAX pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("mFRAX")).admin(),
+            address(governor),
+            "mFRAX admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("mxcUSDT")).pendingAdmin(),
+            artemisTimelockAddress,
+            "mxcUSDT pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("mxcUSDT")).admin(),
+            address(governor),
+            "mxcUSDT admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("mxcDOT")).pendingAdmin(),
+            artemisTimelockAddress,
+            "mxcDOT pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("mxcDOT")).admin(),
+            address(governor),
+            "mxcDOT admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("mGLIMMER")).pendingAdmin(),
+            artemisTimelockAddress,
+            "mGLIMMER pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("mGLIMMER")).admin(),
+            address(governor),
+            "mGLIMMER admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mUSDC")).pendingAdmin(),
+            artemisTimelockAddress,
+            "MOONWELL_mUSDC pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mUSDC")).admin(),
+            address(governor),
+            "MOONWELL_mUSDC admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mBUSD")).pendingAdmin(),
+            artemisTimelockAddress,
+            "MOONWELL_mBUSD pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mBUSD")).admin(),
+            address(governor),
+            "MOONWELL_mBUSD admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mwBTC")).pendingAdmin(),
+            artemisTimelockAddress,
+            "MOONWELL_mwBTC pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mwBTC")).admin(),
+            address(governor),
+            "MOONWELL_mwBTC admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mETH")).pendingAdmin(),
+            artemisTimelockAddress,
+            "MOONWELL_mETH pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mETH")).admin(),
+            address(governor),
+            "MOONWELL_mETH admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("UNITROLLER")).pendingAdmin(),
+            artemisTimelockAddress,
+            "UNITROLLER pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("UNITROLLER")).admin(),
+            address(governor),
+            "UNITROLLER admin incorrect"
+        );
+
+        assertEq(
+            Timelock(addresses.getAddress("CHAINLINK_ORACLE")).admin(),
+            artemisTimelockAddress,
+            "Chainlink oracle admin incorrect"
+        );
+
+        assertEq(governor.breakGlassGuardian(), address(0), "break glass guardian not revoked");
+
+        /// Base simulation, LFG!
+
+        vm.selectFork(baseForkId);
+        temporalGov = TemporalGovernor(
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
+        vm.startPrank(address(temporalGov));
+
+        (bool success, ) = temporalGov.call(temporalGovExecData);
+        require(success, "temporal gov call failed");
+
+        vm.stopPrank();
+
+        assertTrue(
+            temporalGov.isTrustedSender(moonBeamChainId, artemisTimelockAddress),
+            "artemis timelock not added as a trusted sender"
+        );
+    }
 
     /// staking
 
@@ -584,7 +923,15 @@ contract MultichainProposalTest is
         IStakedWellUplift stkwell = IStakedWellUplift(
             addresses.getAddress("stkWELL_PROXY")
         );
+        assertGt(stkwell.DISTRIBUTION_END(), block.timestamp, "distribution end incorrect");
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
+
+        vm.startPrank(stkwell.EMISSION_MANAGER());
+        /// distribute 1e18 xWELL per second
+        stkwell.configureAsset(1e18, address(xwell));
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 1);
 
         vm.startPrank(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
         xwell.mint(address(this), mintAmount);
@@ -594,7 +941,7 @@ contract MultichainProposalTest is
         xwell.approve(address(stkwell), mintAmount);
         stkwell.stake(address(this), mintAmount);
 
-        vm.warp(10 days);
+        vm.warp(block.timestamp + 10 days);
 
         assertEq(
             stkwell.balanceOf(address(this)),
@@ -605,6 +952,19 @@ contract MultichainProposalTest is
 
         uint256 userxWellBalance = xwell.balanceOf(address(this));
         stkwell.claimRewards(address(this), type(uint256).max);
+
+        console.log(
+            "staker rewards to claim: ",
+            stkwell.stakerRewardsToClaim(address(this))
+        );
+        console.log(
+            "staker getTotalRewardsBalance: ",
+            stkwell.getTotalRewardsBalance(address(this))
+        );
+
+        (uint128 emissionsPerSecond, uint128 lastUpdateTimestamp, uint256 index) = stkwell
+            .assets(address(this));
+
         assertGt(
             xwell.balanceOf(address(this)),
             userxWellBalance,
