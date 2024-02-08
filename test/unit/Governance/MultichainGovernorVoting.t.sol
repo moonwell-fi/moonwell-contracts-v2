@@ -366,9 +366,12 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         uint256 proposerBalance = proposer.balance;
 
-        uint256[] memory shouldRevertAtCall = new uint256[](1);
-        shouldRevertAtCall[0] = 1;
-        wormholeRelayerAdapter.setShouldRevertAtIndex(shouldRevertAtCall, true);
+        uint16[] memory shouldRevertAtChain = new uint16[](1);
+        shouldRevertAtChain[0] = baseWormholeChainId;
+        wormholeRelayerAdapter.setShouldRevertAtChain(
+            shouldRevertAtChain,
+            true
+        );
 
         _delegateVoteAmountForUser(
             address(well),
@@ -452,9 +455,12 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         uint256 proposerBalance = proposer.balance;
 
-        uint256[] memory shouldRevertAtCall = new uint256[](1);
-        shouldRevertAtCall[0] = 1;
-        wormholeRelayerAdapter.setShouldRevertAtIndex(shouldRevertAtCall, true);
+        uint16[] memory shouldRevertAtChain = new uint16[](1);
+        shouldRevertAtChain[0] = baseWormholeChainId;
+        wormholeRelayerAdapter.setShouldRevertAtChain(
+            shouldRevertAtChain,
+            true
+        );
 
         _delegateVoteAmountForUser(
             address(well),
@@ -652,9 +658,12 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         uint256 proposerBalance = proposer.balance;
 
-        uint256[] memory shouldRevertAtCall = new uint256[](1);
-        shouldRevertAtCall[0] = 1;
-        wormholeRelayerAdapter.setShouldRevertAtIndex(shouldRevertAtCall, true);
+        uint16[] memory shouldRevertAtChain = new uint16[](1);
+        shouldRevertAtChain[0] = baseWormholeChainId;
+        wormholeRelayerAdapter.setShouldRevertAtChain(
+            shouldRevertAtChain,
+            true
+        );
 
         _delegateVoteAmountForUser(
             address(well),
@@ -711,8 +720,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             assertEq(voteSnapshotTimestamp, 0, "proposal id incorrect");
         }
 
-        wormholeRelayerAdapter.setShouldRevertAtIndex(
-            shouldRevertAtCall,
+        wormholeRelayerAdapter.setShouldRevertAtChain(
+            shouldRevertAtChain,
             false
         );
 

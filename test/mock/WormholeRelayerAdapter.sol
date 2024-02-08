@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
+import {console} from "@forge-std/console.sol";
 
 /// @notice Wormhole Token Relayer Adapter
 contract WormholeRelayerAdapter {
@@ -16,8 +17,6 @@ contract WormholeRelayerAdapter {
 
     mapping(uint256 chainId => bool shouldRevert) public shouldRevertAtChain;
 
-    mapping(uint256 index => bool shouldRevert) public shouldRevertAtIndex;
-
     mapping(uint16 chainId => bool shouldRevert)
         public shouldRevertQuoteAtChain;
 
@@ -30,20 +29,13 @@ contract WormholeRelayerAdapter {
         }
     }
 
-    function setShouldRevertAtIndex(
-        uint256[] memory indexes,
-        bool shouldRevert
-    ) external {
-        for (uint256 i = 0; i < indexes.length; i++) {
-            shouldRevertAtIndex[indexes[i]] = shouldRevert;
-        }
-    }
-
     function setShouldRevertAtChain(
-        uint16 _senderChainId,
+        uint16[] memory chainIds,
         bool _shouldRevert
     ) external {
-        shouldRevertAtChain[_senderChainId] = _shouldRevert;
+        for (uint16 i = 0; i < chainIds.length; i++) {
+            shouldRevertAtChain[chainIds[i]] = _shouldRevert;
+        }
     }
 
     function setSenderChainId(uint16 _senderChainId) external {
@@ -64,7 +56,7 @@ contract WormholeRelayerAdapter {
         uint256, /// shhh
         uint256 /// shhh
     ) external payable returns (uint64) {
-        if (shouldRevertAtIndex[++callCounter]) {
+        if (shouldRevertAtChain[chainId]) {
             revert("WormholeBridgeAdapter: sendPayloadToEvm revert");
         }
 

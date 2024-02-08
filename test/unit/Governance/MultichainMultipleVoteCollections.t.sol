@@ -235,11 +235,11 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         vm.prank(address(governor));
         governor.addExternalChainConfigs(_trustedSenders);
 
-        uint256[] memory shouldRevertAt = new uint256[](2);
+        uint16[] memory shouldRevertAt = new uint16[](2);
         shouldRevertAt[0] = 2;
         shouldRevertAt[1] = 4;
 
-        wormholeRelayerAdapter.setShouldRevertAtIndex(shouldRevertAt, true);
+        wormholeRelayerAdapter.setShouldRevertAtChain(shouldRevertAt, true);
 
         address proposer = address(1);
 
