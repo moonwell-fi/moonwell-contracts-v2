@@ -491,6 +491,7 @@ contract MultichainProposalTest is
 
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
+        uint256 startingProposalId = governor.proposalCount();
 
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
@@ -499,7 +500,7 @@ contract MultichainProposalTest is
             description
         );
 
-        assertEq(proposalId, 1, "incorrect proposal id");
+        assertEq(proposalId, startingProposalId + 1, "incorrect proposal id");
         assertEq(
             uint256(governor.state(proposalId)),
             0,
@@ -566,7 +567,11 @@ contract MultichainProposalTest is
         governor.rebroadcastProposal{value: bridgeCost}(proposalId);
 
         assertEq(address(this).balance, 0, "balance not 0 after broadcasting");
-        assertEq(address(governor).balance, 0, "balance not 0 after broadcasting");
+        assertEq(
+            address(governor).balance,
+            0,
+            "balance not 0 after broadcasting"
+        );
     }
 
     function testEmittingVotesMultipleTimesVoteCollectionPeriodSucceeds()
@@ -613,6 +618,7 @@ contract MultichainProposalTest is
 
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
+        uint256 startingProposalId = governor.proposalCount();
 
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
@@ -621,7 +627,7 @@ contract MultichainProposalTest is
             description
         );
 
-        assertEq(proposalId, 1, "incorrect proposal id");
+        assertEq(proposalId, startingProposalId + 1, "incorrect proposal id");
         assertEq(
             uint256(governor.state(proposalId)),
             0,
