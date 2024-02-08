@@ -75,7 +75,12 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @notice emitted when a bridge out fails
     /// @param dstChainId destination chain id to send tokens to
     /// @param payload payload that failed to send
-    event BridgeOutFailed(uint16 dstChainId, bytes payload);
+    /// @param refundAmount amount to refund
+    event BridgeOutFailed(
+        uint16 dstChainId,
+        bytes payload,
+        uint256 refundAmount
+    );
 
     /// @notice event emitted when a bridge out succeeds
     /// @param dstWormholeChainId destination wormhole chain id to send tokens to
@@ -274,6 +279,8 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
 
         uint256 chainsLength = _targetChains.length();
 
+        uint256 totalRefundAmount = 0;
+
         for (uint256 i = 0; i < chainsLength; ) {
             uint16 targetChain = uint16(_targetChains.at(i));
             uint256 cost = bridgeCost(targetChain);
@@ -295,12 +302,19 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
                     payload
                 );
             } catch {
-                emit BridgeOutFailed(targetChain, payload);
+                totalRefundAmount += cost;
+                emit BridgeOutFailed(targetChain, payload, cost);
             }
 
             unchecked {
                 i++;
             }
+        }
+
+        if (totalRefundAmount > 0) {
+            // send bridge funds back to sender using call
+            (bool success, ) = msg.sender.call{value: totalRefundAmount}("");
+            require(success, "WormholeBridge: refund failed");
         }
     }
 

@@ -1,21 +1,45 @@
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
-
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
+import {console} from "@forge-std/console.sol";
 
-/// @notice Wormhole xERC20 Token Bridge adapter
-contract WormholeRelayerAdapter is Test {
+/// @notice Wormhole Token Relayer Adapter
+contract WormholeRelayerAdapter {
     uint256 public nonce;
 
-    bool public shouldRevert;
+    uint16 public senderChainId;
 
     uint256 public nativePriceQuote = 0.01 ether;
 
-    function setShouldRevert(bool _shouldRevert) external {
-        shouldRevert = _shouldRevert;
+    uint256 public callCounter;
+
+    mapping(uint256 chainId => bool shouldRevert) public shouldRevertAtChain;
+
+    mapping(uint16 chainId => bool shouldRevert)
+        public shouldRevertQuoteAtChain;
+
+    function setShouldRevertQuoteAtChain(
+        uint16[] memory chainIds,
+        bool shouldRevert
+    ) external {
+        for (uint16 i = 0; i < chainIds.length; i++) {
+            shouldRevertQuoteAtChain[chainIds[i]] = shouldRevert;
+        }
+    }
+
+    function setShouldRevertAtChain(
+        uint16[] memory chainIds,
+        bool _shouldRevert
+    ) external {
+        for (uint16 i = 0; i < chainIds.length; i++) {
+            shouldRevertAtChain[chainIds[i]] = _shouldRevert;
+        }
+    }
+
+    function setSenderChainId(uint16 _senderChainId) external {
+        senderChainId = _senderChainId;
     }
 
     /// @notice Publishes an instruction for the default delivery provider
@@ -32,24 +56,32 @@ contract WormholeRelayerAdapter is Test {
         uint256, /// shhh
         uint256 /// shhh
     ) external payable returns (uint64) {
-        if (shouldRevert) {
-            revert("revert");
+        if (shouldRevertAtChain[chainId]) {
+            revert("WormholeBridgeAdapter: sendPayloadToEvm revert");
         }
 
-        require(
-            msg.value == nativePriceQuote,
-            "WormholeRelayerAdapter: incorrect payment"
-        );
+        require(msg.value == nativePriceQuote, "incorrect value");
 
-        /// immediately call the target
-        IWormholeReceiver(targetAddress).receiveWormholeMessages(
-            payload,
-            new bytes[](0),
-            bytes32(uint256(uint160(msg.sender))),
-            chainId == 16 ? 30 : 16, // flip chainId since this has to be the sender
-            // chain not the target chain
-            bytes32(++nonce)
-        );
+        if (senderChainId != 0) {
+            /// immediately call the target
+            IWormholeReceiver(targetAddress).receiveWormholeMessages(
+                payload,
+                new bytes[](0),
+                bytes32(uint256(uint160(msg.sender))),
+                senderChainId, // chain not the target chain
+                bytes32(++nonce)
+            );
+        } else {
+            /// immediately call the target
+            IWormholeReceiver(targetAddress).receiveWormholeMessages(
+                payload,
+                new bytes[](0),
+                bytes32(uint256(uint160(msg.sender))),
+                chainId == 16 ? 30 : 16, // flip chainId since this has to be the sender
+                // chain not the target chain
+                bytes32(++nonce)
+            );
+        }
 
         return uint64(nonce);
     }
@@ -57,27 +89,19 @@ contract WormholeRelayerAdapter is Test {
     /// @notice Retrieve the price for relaying messages to another chain
     /// currently hardcoded to 0.01 ether
     function quoteEVMDeliveryPrice(
-        uint16,
+        uint16 targetChain,
         uint256,
         uint256
     )
-        external
+        public
         view
         returns (uint256 nativePrice, uint256 targetChainRefundPerGasUnused)
     {
+        if (shouldRevertQuoteAtChain[targetChain]) {
+            revert("WormholeBridgeAdapter: quoteEVMDeliveryPrice revert");
+        }
+
         nativePrice = nativePriceQuote;
         targetChainRefundPerGasUnused = 0;
-    }
-}
-
-contract WormholeRelayerAdapterRevert {
-    function sendPayloadToEvm(
-        uint16,
-        address,
-        bytes memory,
-        uint256,
-        uint256
-    ) external payable returns (uint64) {
-        revert("revert");
     }
 }

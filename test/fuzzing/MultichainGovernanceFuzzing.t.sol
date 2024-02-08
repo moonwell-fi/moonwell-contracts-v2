@@ -68,7 +68,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             );
         }
 
-        proposalId = _createProposalUpdateThreshold();
+        proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
 
@@ -97,6 +97,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         assertEq(votesAgainst, 0, "votes against incorrect");
         assertEq(votesAbstain, 0, "abstain votes incorrect");
         assertEq(votesFor, totalVotes, "total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 
     /// Voting on MultichainGovernor with different vote amounts per user
@@ -126,9 +128,11 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
             // random pick of token to delegate
             uint256 random = i % 3;
-            address tokenToVote = random == 0 ? address(well) : random == 1
-                ? address(xwell)
-                : address(stkWellMoonbeam);
+            address tokenToVote = random == 0
+                ? address(well)
+                : random == 1
+                    ? address(xwell)
+                    : address(stkWellMoonbeam);
 
             address user = address(uint160(i + 1));
             users[i] = user;
@@ -152,7 +156,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             );
         }
 
-        proposalId = _createProposalUpdateThreshold();
+        proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
         assertEq(
@@ -176,6 +180,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
         assertEq(votesFor, totalVoteAmount, "Votes for incorrect");
         assertEq(totalVotes, totalVoteAmount, "Total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 
     /// Voting on MultichainGovernor
@@ -214,7 +220,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             );
         }
 
-        proposalId = _createProposalUpdateThreshold();
+        proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
 
@@ -243,6 +249,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         assertEq(votesAgainst, 0, "votes against incorrect");
         assertEq(votesAbstain, 0, "abstain votes incorrect");
         assertEq(votesFor, totalVotes, "total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 
     /// Voting on MultichainGovernor with different vote amounts per user
@@ -293,7 +301,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             );
         }
 
-        proposalId = _createProposalUpdateThreshold();
+        proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
         assertEq(
@@ -316,6 +324,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
         assertEq(votesFor, totalVoteAmount, "Votes for incorrect");
         assertEq(totalVotes, totalVoteAmount, "Total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 
     struct FuzzingInput {
@@ -465,7 +475,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         vm.warp(block.timestamp + 1);
         vm.roll(block.number + 1);
 
-        uint256 proposalId = _createProposalUpdateThreshold();
+        uint256 proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
 
@@ -518,6 +528,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         assertEq(votesAgainst, totalVotesAgainst, "votes against incorrect");
         assertEq(votesAbstain, totalVotesAbstain, "abstain votes incorrect");
         assertEq(totalVotes, totalVotesGovernor, "total votes incorrect");
+
+        _assertGovernanceBalance();
     }
 
     struct FuzzingInputVoteCollection {
@@ -615,7 +627,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
         vm.warp(block.timestamp + 1);
 
-        uint256 proposalId = _createProposalUpdateThreshold();
+        uint256 proposalId = _createProposalUpdateThreshold(address(this));
 
         vm.warp(block.timestamp + 1);
 
@@ -666,29 +678,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         assertEq(votesAgainst, totalVotesAgainst, "votes against incorrect");
         assertEq(votesAbstain, totalVotesAbstain, "abstain votes incorrect");
         assertEq(totalVotes, totalVotesGovernor, "total votes incorrect");
-    }
 
-    // token can be xWELL, WELL or stkWELL
-    function _delegateVoteAmountForUser(
-        address token,
-        address user,
-        uint256 voteAmount
-    ) internal {
-        if (
-            token != address(stkWellMoonbeam) && token != address(stkWellBase)
-        ) {
-            deal(token, user, voteAmount);
-
-            // users xWell interface but this can also be well
-            vm.prank(user);
-            xWELL(token).delegate(user);
-        } else {
-            deal(address(xwell), user, voteAmount);
-
-            vm.startPrank(user);
-            xwell.approve(token, voteAmount);
-            IStakedWell(token).stake(user, voteAmount);
-            vm.stopPrank();
-        }
+        _assertGovernanceBalance();
     }
 }
