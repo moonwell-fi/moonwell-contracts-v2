@@ -1,37 +1,49 @@
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
-
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 
-/// @notice Wormhole xERC20 Token Bridge adapter
-contract WormholeRelayerAdapter is Test {
+/// @notice Wormhole Token Relayer Adapter
+contract WormholeRelayerAdapter {
     uint256 public nonce;
-
-    bool public shouldRevert;
-    bool public shouldRevertQuote;
 
     uint16 public senderChainId;
 
     uint256 public nativePriceQuote = 0.01 ether;
 
-    mapping(uint16 chainId => bool shouldRevert) public shouldRevertChain;
+    uint256 public callCounter;
 
-    function setShouldRevert(bool _shouldRevert) external {
-        shouldRevert = _shouldRevert;
+    mapping(uint256 chainId => bool shouldRevert) public shouldRevertAtChain;
+
+    mapping(uint256 index => bool shouldRevert) public shouldRevertAtIndex;
+
+    mapping(uint16 chainId => bool shouldRevert)
+        public shouldRevertQuoteAtChain;
+
+    function setShouldRevertQuoteAtChain(
+        uint16[] memory chainIds,
+        bool shouldRevert
+    ) external {
+        for (uint16 i = 0; i < chainIds.length; i++) {
+            shouldRevertQuoteAtChain[chainIds[i]] = shouldRevert;
+        }
     }
 
-    function setShouldRevertQuote(bool _shouldRevertQuote) external {
-        shouldRevertQuote = _shouldRevertQuote;
+    function setShouldRevertAtIndex(
+        uint256[] memory indexes,
+        bool shouldRevert
+    ) external {
+        for (uint256 i = 0; i < indexes.length; i++) {
+            shouldRevertAtIndex[indexes[i]] = shouldRevert;
+        }
     }
 
-    function setShouldRevertChain(
+    function setShouldRevertAtChain(
         uint16 _senderChainId,
         bool _shouldRevert
     ) external {
-        shouldRevertChain[_senderChainId] = _shouldRevert;
+        shouldRevertAtChain[_senderChainId] = _shouldRevert;
     }
 
     function setSenderChainId(uint16 _senderChainId) external {
@@ -52,14 +64,10 @@ contract WormholeRelayerAdapter is Test {
         uint256, /// shhh
         uint256 /// shhh
     ) external payable returns (uint64) {
-        if (shouldRevert || shouldRevertChain[chainId]) {
-            revert("revert");
+        if (shouldRevertAtIndex[callCounter]) {
+            revert("WormholeBridgeAdapter: sendPayloadToEvm revert");
         }
-
-        require(
-            msg.value == nativePriceQuote,
-            "WormholeRelayerAdapter: incorrect payment"
-        );
+        callCounter++;
 
         if (senderChainId != 0) {
             /// immediately call the target
@@ -88,7 +96,7 @@ contract WormholeRelayerAdapter is Test {
     /// @notice Retrieve the price for relaying messages to another chain
     /// currently hardcoded to 0.01 ether
     function quoteEVMDeliveryPrice(
-        uint16,
+        uint16 targetChain,
         uint256,
         uint256
     )
@@ -96,9 +104,10 @@ contract WormholeRelayerAdapter is Test {
         view
         returns (uint256 nativePrice, uint256 targetChainRefundPerGasUnused)
     {
-        if (shouldRevertQuote) {
-            revert("revert");
+        if (shouldRevertQuoteAtChain[targetChain]) {
+            revert("WormholeBridgeAdapter: quoteEVMDeliveryPrice revert");
         }
+
         nativePrice = nativePriceQuote;
         targetChainRefundPerGasUnused = 0;
     }

@@ -366,7 +366,9 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         uint256 proposerBalance = proposer.balance;
 
-        wormholeRelayerAdapter.setShouldRevert(true);
+        uint256[] memory shouldRevertAtCall = new uint256[](1);
+        shouldRevertAtCall[0] = 1;
+        wormholeRelayerAdapter.setShouldRevertAtIndex(shouldRevertAtCall, true);
 
         _delegateVoteAmountForUser(
             address(well),
@@ -450,7 +452,9 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         uint256 proposerBalance = proposer.balance;
 
-        wormholeRelayerAdapter.setShouldRevert(true);
+        uint256[] memory shouldRevertAtCall = new uint256[](1);
+        shouldRevertAtCall[0] = 1;
+        wormholeRelayerAdapter.setShouldRevertAtIndex(shouldRevertAtCall, true);
 
         _delegateVoteAmountForUser(
             address(well),
@@ -498,7 +502,10 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
-        wormholeRelayerAdapter.setShouldRevertQuote(true);
+        uint16[] memory chainToRevert = new uint16[](1);
+        chainToRevert[0] = baseWormholeChainId;
+        wormholeRelayerAdapter.setShouldRevertQuoteAtChain(chainToRevert, true);
+
         vm.expectRevert("WormholeBridge: total cost not equal to quote");
         governor.propose{value: bridgeCost}(
             new address[](1),
@@ -645,7 +652,9 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         uint256 proposerBalance = proposer.balance;
 
-        wormholeRelayerAdapter.setShouldRevert(true);
+        uint256[] memory shouldRevertAtCall = new uint256[](1);
+        shouldRevertAtCall[0] = 1;
+        wormholeRelayerAdapter.setShouldRevertAtIndex(shouldRevertAtCall, true);
 
         _delegateVoteAmountForUser(
             address(well),
@@ -702,7 +711,10 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             assertEq(voteSnapshotTimestamp, 0, "proposal id incorrect");
         }
 
-        wormholeRelayerAdapter.setShouldRevert(false);
+        wormholeRelayerAdapter.setShouldRevertAtIndex(
+            shouldRevertAtCall,
+            false
+        );
 
         vm.expectEmit(true, true, true, true, address(governor));
         emit BridgeOutSuccess(
@@ -1029,15 +1041,20 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
                 totalVotes,
                 "total votes incorrect"
             );
-
-            _warpPastProposalEnd(proposalId);
-
-            assertEq(
-                uint256(governor.state(proposalId)),
-                3,
-                "incorrect state, not defeated"
-            );
         }
+
+        _warpPastProposalEnd(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            3,
+            "incorrect state, not defeated"
+        );
+
+        vm.expectRevert(
+            "MultichainGovernor: proposal can only be executed if it is Succeeded"
+        );
+        governor.execute(proposalId);
 
         _assertGovernanceBalance();
     }
