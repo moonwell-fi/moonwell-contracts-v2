@@ -62,9 +62,33 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
     }
 
     function testStake() public {
+        uint256 userBalanceBefore = xwellProxy.balanceOf(user);
+        uint256 userStkWellBalanceBefore = stakedWell.balanceOf(user);
+        uint256 stkWellSupplyBefore = stakedWell.totalSupply();
+
         vm.prank(user);
         stakedWell.stake(user, amount);
         assertEq(stakedWell.balanceOf(user), amount, "Wrong staked amount");
+
+        uint256 userBalanceAfter = xwellProxy.balanceOf(user);
+        uint256 userStkWellBalanceAfter = stakedWell.balanceOf(user);
+        uint256 stkWellSupplyAfter = stakedWell.totalSupply();
+
+        assertEq(
+            userBalanceBefore - amount,
+            userBalanceAfter,
+            "Wrong user balance"
+        );
+        assertEq(
+            userStkWellBalanceBefore + amount,
+            userStkWellBalanceAfter,
+            "Wrong user staked balance"
+        );
+        assertEq(
+            stkWellSupplyBefore + amount,
+            stkWellSupplyAfter,
+            "Wrong total supply"
+        );
     }
 
     function testGetPriorVotes() public {
@@ -83,10 +107,24 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
     function testRedeem() public {
         testStake();
 
+        uint256 userBalanceBefore = xwellProxy.balanceOf(user);
+        uint256 stkWellSupplyBefore = stakedWell.totalSupply();
+
         vm.warp(block.timestamp + cooldown + 1);
         vm.prank(user);
         stakedWell.redeem(user, amount);
+
         assertEq(stakedWell.balanceOf(user), 0, "Wrong staked amount");
+        assertEq(
+            xwellProxy.balanceOf(user),
+            userBalanceBefore + amount,
+            "Wrong user balance"
+        );
+        assertEq(
+            stkWellSupplyBefore - amount,
+            stakedWell.totalSupply(),
+            "Wrong total supply"
+        );
     }
 
     function testRedeemBeforeCooldown() public {
