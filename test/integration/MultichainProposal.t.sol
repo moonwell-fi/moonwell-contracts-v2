@@ -154,6 +154,31 @@ contract MultichainProposalTest is
             addresses.getAddress("stkWELL_PROXY"),
             "incorrect xWELL contract"
         );
+
+        temporalGov = TemporalGovernor(
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
+        /// artemis timelock does not start off as trusted sender
+        assertFalse(
+            temporalGov.isTrustedSender(
+                uint16(moonBeamWormholeChainId),
+                addresses.getAddress(
+                    "ARTEMIS_TIMELOCK",
+                    sendingChainIdToReceivingChainId[block.chainid]
+                )
+            ),
+            "artemis timelock should not be trusted sender"
+        );
+        assertTrue(
+            temporalGov.isTrustedSender(
+                uint16(moonBeamWormholeChainId),
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    sendingChainIdToReceivingChainId[block.chainid]
+                )
+            ),
+            "multichain governor should be trusted sender"
+        );
     }
 
     function testInitializeVoteCollectionFails() public {
