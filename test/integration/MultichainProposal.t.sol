@@ -577,6 +577,7 @@ contract MultichainProposalTest is
         }
     }
 
+    /// this requires a new mock relayer contract
     function testUpgradeMultichainVoteCollection() public {}
 
     function testBreakGlassGuardianSucceedsSettingPendingAdminAndOwners()
@@ -956,9 +957,21 @@ contract MultichainProposalTest is
         );
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
 
+        {
+            (
+                uint128 emissionsPerSecond,
+                uint128 lastUpdateTimestamp,
+                uint256 index
+            ) = stkwell.assets(address(stkwell));
+
+            console.log("emissions per second: ", emissionsPerSecond);
+            console.log("last update timestamp: ", lastUpdateTimestamp);
+            console.log("index: ", index);
+        }
+
         vm.startPrank(stkwell.EMISSION_MANAGER());
         /// distribute 1e18 xWELL per second
-        stkwell.configureAsset(1e18, address(xwell));
+        stkwell.configureAsset(1e18, address(stkwell));
         vm.stopPrank();
 
         vm.warp(block.timestamp + 1);
@@ -970,6 +983,18 @@ contract MultichainProposalTest is
 
         xwell.approve(address(stkwell), mintAmount);
         stkwell.stake(address(this), mintAmount);
+
+        {
+            (
+                uint128 emissionsPerSecond,
+                uint128 lastUpdateTimestamp,
+                uint256 index
+            ) = stkwell.assets(address(stkwell));
+
+            console.log("emissions per second: ", emissionsPerSecond);
+            console.log("last update timestamp: ", lastUpdateTimestamp);
+            console.log("index: ", index);
+        }
 
         vm.warp(block.timestamp + 10 days);
 
@@ -992,11 +1017,17 @@ contract MultichainProposalTest is
             stkwell.getTotalRewardsBalance(address(this))
         );
 
-        (
-            uint128 emissionsPerSecond,
-            uint128 lastUpdateTimestamp,
-            uint256 index
-        ) = stkwell.assets(address(this));
+        {
+            (
+                uint128 emissionsPerSecond,
+                uint128 lastUpdateTimestamp,
+                uint256 index
+            ) = stkwell.assets(address(stkwell));
+
+            console.log("emissions per second: ", emissionsPerSecond);
+            console.log("last update timestamp: ", lastUpdateTimestamp);
+            console.log("index: ", index);
+        }
 
         assertGt(
             xwell.balanceOf(address(this)),

@@ -30,7 +30,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
     uint256 public constant votingPeriodSeconds = 3 days;
 
     /// @notice minimum number of votes cast required for a proposal to pass
-    uint256 public constant quorum = 1_000_000 * 1e18;
+    uint256 public constant quorum = 100_000_000 * 1e18;
 
     /// @notice maximum number of live proposals that a user can have
     uint256 public constant maxUserLiveProposals = 5;
@@ -42,7 +42,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
     address[] public temporalGovernanceTargets;
 
     /// @notice threshold of tokens required to create a proposal
-    uint256 public constant proposalThreshold = 10_000_000 * 1e18;
+    uint256 public constant proposalThreshold = 1_000_000 * 1e18;
 
     /// @notice duration of the cross chain vote collection period
     uint256 public constant crossChainVoteCollectionPeriod = 1 days;
@@ -127,14 +127,12 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             )
         );
 
+        /// for chainlink oracle
         approvedCalldata.push(
             abi.encodeWithSignature("setAdmin(address)", artemisTimelock)
         );
 
-        approvedCalldata.push(
-            abi.encodeWithSignature("setPendingAdmin(address)", artemisTimelock)
-        );
-
+        /// for stkWELL
         approvedCalldata.push(
             abi.encodeWithSignature(
                 "setEmissionsManager(address)",
@@ -142,6 +140,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             )
         );
 
+        /// for stkWELL
         approvedCalldata.push(
             abi.encodeWithSignature("changeAdmin(address)", artemisTimelock)
         );
@@ -203,7 +202,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             "WORMHOLE_BRIDGE_RELAYER"
         );
 
-        require(approvedCalldata.length == 7, "calldata not set");
+        require(approvedCalldata.length == 6, "calldata not set");
 
         governor.initialize(initData, trustedSenders, approvedCalldata);
     }
@@ -260,6 +259,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             addresses.getAddress("stkWELL"),
             "incorrect stkWell address"
         );
+        /// TODO change ownership of the distributor proxy
         assertEq(
             address(governor.distributor()),
             addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY"),

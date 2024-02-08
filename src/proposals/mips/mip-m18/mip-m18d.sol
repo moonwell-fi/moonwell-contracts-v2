@@ -62,6 +62,8 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
         /// Moonbeam actions
 
+        /// TODO change ownership of the distributor proxy
+
         /// transfer ownership of the wormhole bridge adapter on the moonbeam chain to the Multichain Governor
         _pushHybridAction(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
