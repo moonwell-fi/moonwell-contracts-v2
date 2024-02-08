@@ -1,12 +1,6 @@
 pragma solidity 0.8.19;
 
 interface IStakedWell {
-    struct AssetConfigInput {
-        uint128 emissionPerSecond;
-        uint256 totalStaked;
-        address underlyingAsset;
-    }
-
     function initialize(
         address _stakedToken,
         address _rewardToken,
