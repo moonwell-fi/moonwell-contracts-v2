@@ -403,6 +403,144 @@ contract MultichainProposalTest is
 
     function testVotingOnBasestkWellPostVotingPeriodFails() public {}
 
+    function testRebroadcatingVotesMultipleTimesVotePeriodMultichainGovernorSucceeds()
+        public
+    {
+        /// propose, then rebroadcast
+        vm.selectFork(moonbeamForkId);
+        vm.roll(block.number + 1);
+
+        /// mint whichever is greater, the proposal threshold or the quorum
+        uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
+            ? governor.proposalThreshold()
+            : governor.quorum();
+
+        deal(address(well), address(this), mintAmount);
+        well.transfer(address(this), mintAmount);
+        well.delegate(address(this));
+
+        vm.roll(block.number + 1);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertEq(proposalId, 1, "incorrect proposal id");
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect proposal state"
+        );
+
+        assertTrue(
+            governor.userHasProposal(proposalId, address(this)),
+            "user has proposal"
+        );
+        assertTrue(
+            governor.proposalValid(proposalId),
+            "user does not have proposal"
+        );
+
+        {
+            (
+                uint256 totalVotes,
+                uint256 forVotes,
+                uint256 againstVotes,
+                uint256 abstainVotes
+            ) = governor.proposalVotes(proposalId);
+
+            assertEq(totalVotes, 0, "incorrect total votes");
+            assertEq(forVotes, 0, "incorrect for votes");
+            assertEq(againstVotes, 0, "incorrect against votes");
+            assertEq(abstainVotes, 0, "incorrect abstain votes");
+        }
+
+        /// vote yes on proposal
+        governor.castVote(proposalId, 0);
+
+        {
+            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+                .getReceipt(proposalId, address(this));
+            assertTrue(hasVoted, "has voted incorrect");
+            assertEq(voteValue, 0, "vote value incorrect");
+            assertEq(votes, governor.getCurrentVotes(address(this)), "votes");
+
+            (
+                uint256 totalVotes,
+                uint256 forVotes,
+                uint256 againstVotes,
+                uint256 abstainVotes
+            ) = governor.proposalVotes(proposalId);
+
+            assertEq(
+                totalVotes,
+                governor.getCurrentVotes(address(this)),
+                "incorrect total votes"
+            );
+            assertEq(
+                forVotes,
+                governor.getCurrentVotes(address(this)),
+                "incorrect for votes"
+            );
+            assertEq(againstVotes, 0, "incorrect against votes");
+            assertEq(abstainVotes, 0, "incorrect abstain votes");
+        }
+        {
+            (
+                ,
+                ,
+                ,
+                ,
+                uint256 crossChainVoteCollectionEndTimestamp,
+                ,
+                ,
+                ,
+
+            ) = governor.proposalInformation(proposalId);
+
+            vm.warp(crossChainVoteCollectionEndTimestamp - 1);
+
+            assertEq(
+                uint256(governor.state(proposalId)),
+                1,
+                "not in xchain vote collection period"
+            );
+
+            vm.warp(crossChainVoteCollectionEndTimestamp);
+            assertEq(
+                uint256(governor.state(proposalId)),
+                1,
+                "not in xchain vote collection period at end"
+            );
+
+            vm.warp(block.timestamp + 1);
+            assertEq(
+                uint256(governor.state(proposalId)),
+                4,
+                "not in succeeded at end"
+            );
+        }
+    }
+
     function testEmittingVotesMultipleTimesVoteCollectionPeriodSucceeds()
         public
     {}
@@ -941,6 +1079,7 @@ contract MultichainProposalTest is
 
     /// - assert assets in ecosystem reserve deplete when rewards are claimed
 
+    /// TODO add another test to stake with 2 or 3 users
     function testStakestkWellBaseSucceedsAndReceiveRewards() public {
         vm.selectFork(baseForkId);
 
@@ -964,9 +1103,9 @@ contract MultichainProposalTest is
                 uint256 index
             ) = stkwell.assets(address(stkwell));
 
-            console.log("emissions per second: ", emissionsPerSecond);
-            console.log("last update timestamp: ", lastUpdateTimestamp);
-            console.log("index: ", index);
+            assertEq(0, lastUpdateTimestamp, "lastUpdateTimestamp");
+            assertEq(0, emissionsPerSecond, "emissions per second");
+            assertEq(0, index, "rewards per second");
         }
 
         vm.startPrank(stkwell.EMISSION_MANAGER());
@@ -991,9 +1130,13 @@ contract MultichainProposalTest is
                 uint256 index
             ) = stkwell.assets(address(stkwell));
 
-            console.log("emissions per second: ", emissionsPerSecond);
-            console.log("last update timestamp: ", lastUpdateTimestamp);
-            console.log("index: ", index);
+            assertEq(1e18, emissionsPerSecond, "emissions per second");
+            assertEq(0, index, "rewards per second");
+            assertEq(
+                block.timestamp,
+                lastUpdateTimestamp,
+                "last update timestamp"
+            );
         }
 
         vm.warp(block.timestamp + 10 days);
@@ -1024,9 +1167,13 @@ contract MultichainProposalTest is
                 uint256 index
             ) = stkwell.assets(address(stkwell));
 
-            console.log("emissions per second: ", emissionsPerSecond);
-            console.log("last update timestamp: ", lastUpdateTimestamp);
-            console.log("index: ", index);
+            assertEq(1e18, emissionsPerSecond, "emissions per second");
+            assertEq(864000000000000000, index, "rewards per second");
+            assertEq(
+                block.timestamp,
+                lastUpdateTimestamp,
+                "last update timestamp"
+            );
         }
 
         assertGt(
