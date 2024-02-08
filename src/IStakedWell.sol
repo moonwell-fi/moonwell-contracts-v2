@@ -36,7 +36,8 @@ interface IStakedWell {
     function claimRewards(address to, uint256 amount) external;
 
     // from IDistributionManager
-    function configureAssets(
-        AssetConfigInput[] calldata assetsConfigInput
+    function configureAsset(
+        uint128 emissionPerSecond,
+        address underlyingAsset
     ) external;
 }

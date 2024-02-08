@@ -214,19 +214,8 @@ contract MultichainGovernorDeploy is Test {
         );
 
         // configure assets
-        IStakedWell.AssetConfigInput memory input = IStakedWell
-            .AssetConfigInput({
-                emissionPerSecond: emissionPerSecond,
-                totalStaked: 0, // TODO check this
-                underlyingAsset: proxy
-            });
-
-        IStakedWell.AssetConfigInput[]
-            memory assets = new IStakedWell.AssetConfigInput[](1);
-        assets[0] = input;
-
         vm.prank(emissionManager);
-        IStakedWell(proxy).configureAssets(assets);
+        IStakedWell(proxy).configureAsset(emissionPerSecond, proxy);
     }
 
     function deployEcosystemReserve(

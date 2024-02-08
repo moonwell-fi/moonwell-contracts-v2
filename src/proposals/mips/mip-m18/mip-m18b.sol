@@ -35,7 +35,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
     // @notice emission per second of stkWELL
     // TODO chek this value
-    uint128 public constant emissionPerSecond = 1 * 1e18;
+    uint128 public constant emissionPerSecond = 1e18;
 
     /// @notice approval amount for ecosystem reserve to give stkWELL in xWELL xD
     uint256 public constant approvalAmount = 5_000_000_000 * 1e18;
