@@ -26,4 +26,12 @@ interface IStakedWell {
     function mint(address to, uint256 amount) external;
 
     function totalSupply() external view returns (uint256);
+
+    function claimRewards(address to, uint256 amount) external;
+
+    // from IDistributionManager
+    function configureAsset(
+        uint128 emissionPerSecond,
+        address underlyingAsset
+    ) external;
 }
