@@ -185,8 +185,7 @@ contract MultichainGovernorDeploy is Test {
         address emissionManager,
         uint128 distributionDuration,
         address governance,
-        address proxyAdmin,
-        uint128 emissionPerSecond
+        address proxyAdmin
     ) public returns (address proxy, address implementation) {
         // deploy actual stkWELL implementation for Base
         implementation = deployCode("StakedWell.sol:StakedWell");
@@ -212,10 +211,6 @@ contract MultichainGovernorDeploy is Test {
                 initData
             )
         );
-
-        // configure assets
-        vm.prank(emissionManager);
-        IStakedWell(proxy).configureAsset(emissionPerSecond, proxy);
     }
 
     function deployEcosystemReserve(

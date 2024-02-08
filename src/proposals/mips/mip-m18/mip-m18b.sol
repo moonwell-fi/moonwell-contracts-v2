@@ -33,10 +33,6 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice duration that Safety Module will distribute rewards for Base
     uint128 public constant distributionDuration = 100 * 365 days;
 
-    // @notice emission per second of stkWELL
-    // TODO chek this value
-    uint128 public constant emissionPerSecond = 1e18;
-
     /// @notice approval amount for ecosystem reserve to give stkWELL in xWELL xD
     uint256 public constant approvalAmount = 5_000_000_000 * 1e18;
 
@@ -77,9 +73,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 /// TODO double check the distribution duration
                 distributionDuration,
                 address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
-                proxyAdmin,
-                // TODO check this value
-                emissionPerSecond
+                proxyAdmin
             );
             addresses.addAddress("stkWELL_PROXY", stkWellProxy);
             addresses.addAddress("stkWELL_IMPL", stkWellImpl);

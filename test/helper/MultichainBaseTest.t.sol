@@ -203,8 +203,7 @@ contract MultichainBaseTest is
                 address(this), // emissionManager
                 1 days, // distributionDuration
                 address(0), // governance
-                proxyAdmin, // proxyAdmin
-                1e18 // emission per second
+                proxyAdmin // proxyAdmin
             );
 
             stkWellBase = IStakedWell(stkWellProxy);
