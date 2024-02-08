@@ -111,7 +111,7 @@ contract MultichainProposalTest is
         _initialize(proposalsArray);
 
         vm.selectFork(moonbeamForkId);
-        runProposals();
+        runProposals(false, true, true, true, true, true, true, true);
 
         voteCollection = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY", baseChainId)
