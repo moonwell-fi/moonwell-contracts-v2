@@ -8,10 +8,7 @@ import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.
 import "@forge-std/Test.sol";
 
 /// @notice Wormhole Token Relayer Adapter
-abstract contract CrossChainWormholeRelayerAdapter is
-    IMultichainProposal,
-    Test
-{
+contract CrossChainWormholeRelayerAdapter is IMultichainProposal, Test {
     /// @notice fork ID for base
     uint256 public baseForkId;
 
