@@ -35,7 +35,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
             address(this), // emissionManager
             1 days, // distributionDuration
             address(0), // governance
-            proxyAdmin // proxyAdmin,
+            proxyAdmin // proxyAdmin
         );
 
         stakedWell = IStakedWell(stkWellProxy);
