@@ -64,10 +64,11 @@ contract WormholeRelayerAdapter {
         uint256, /// shhh
         uint256 /// shhh
     ) external payable returns (uint64) {
-        if (shouldRevertAtIndex[callCounter]) {
+        if (shouldRevertAtIndex[++callCounter]) {
             revert("WormholeBridgeAdapter: sendPayloadToEvm revert");
         }
-        callCounter++;
+
+        require(msg.value == nativePriceQuote, "incorrect value");
 
         if (senderChainId != 0) {
             /// immediately call the target
@@ -100,7 +101,7 @@ contract WormholeRelayerAdapter {
         uint256,
         uint256
     )
-        external
+        public
         view
         returns (uint256 nativePrice, uint256 targetChainRefundPerGasUnused)
     {
