@@ -22,6 +22,15 @@ contract MultichainBaseTest is
     xWELLDeploy,
     ChainIds
 {
+    event BridgeOutSuccess(
+        uint16 dstWormholeChainId,
+        uint256 cost,
+        address dst,
+        bytes payload
+    );
+
+    event BridgeOutFailed(uint16 chainId, bytes payload, uint256 refundAmount);
+
     /// @notice reference to the mock wormhole trusted sender contract
     WormholeRelayerAdapter public wormholeRelayerAdapter;
 
@@ -48,6 +57,8 @@ contract MultichainBaseTest is
 
     /// @notice reference to the staked well contract
     IStakedWell public stkWellBase;
+
+    address public proxyAdmin;
 
     /// @notice threshold of tokens required to create a proposal
     uint256 public constant proposalThreshold = 100_000_000 * 1e18;
@@ -162,7 +173,7 @@ contract MultichainBaseTest is
             pauseGuardian
         );
 
-        address proxyAdmin = address(new ProxyAdmin());
+        proxyAdmin = address(new ProxyAdmin());
         {
             /// deploy staked well with Block numbers instead of timestamps
             /// to mock the system on moonbeam
@@ -261,7 +272,9 @@ contract MultichainBaseTest is
         vm.warp(block.timestamp + 1);
     }
 
-    function _createProposalUpdateThreshold() internal returns (uint256) {
+    function _createProposalUpdateThreshold(
+        address creator
+    ) internal returns (uint256) {
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
         bytes[] memory calldatas = new bytes[](1);
@@ -277,8 +290,8 @@ contract MultichainBaseTest is
 
         uint256 startProposalCount = governor.proposalCount();
         uint256 bridgeCost = governor.bridgeCostAll();
-        vm.deal(address(this), bridgeCost);
 
+        vm.deal(creator, bridgeCost);
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -319,5 +332,39 @@ contract MultichainBaseTest is
             proposalInformation.againstVotes,
             proposalInformation.abstainVotes
         ) = voteCollection.proposalInformation(proposalId);
+    }
+
+    // token can be xWELL, WELL or stkWELL
+    function _delegateVoteAmountForUser(
+        address token,
+        address user,
+        uint256 voteAmount
+    ) internal {
+        if (
+            token != address(stkWellMoonbeam) && token != address(stkWellBase)
+        ) {
+            deal(token, user, voteAmount);
+
+            // users xWell interface but this can also be well
+            vm.prank(user);
+            xWELL(token).delegate(user);
+        } else {
+            deal(address(xwell), user, voteAmount);
+
+            vm.startPrank(user);
+            xwell.approve(token, voteAmount);
+            IStakedWell(token).stake(user, voteAmount);
+            vm.stopPrank();
+        }
+    }
+
+    function _assertGovernanceBalance() public {
+        // governor and vote collection should never have ether at the end of a test
+        assertEq(address(governor).balance, 0, "governor has ether");
+        assertEq(
+            address(voteCollection).balance,
+            0,
+            "vote collection has ether"
+        );
     }
 }
