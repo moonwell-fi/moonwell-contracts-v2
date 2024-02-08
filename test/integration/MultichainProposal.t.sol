@@ -82,6 +82,8 @@ contract MultichainProposalTest is
     mipm18d public proposalD;
     mipm18e public proposalE;
 
+    TemporalGovernor public temporalGov;
+
     function setUp() public override {
         super.setUp();
 
@@ -580,25 +582,29 @@ contract MultichainProposalTest is
     function testBreakGlassGuardianSucceedsSettingPendingAdminAndOwners()
         public
     {
-        vm.selectFork(baseForkId);
-        TemporalGovernor temporalGov = TemporalGovernor(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
-        );
-        /// artemis timelock does not start off as trusted sender
-        assertFalse(
-            temporalGov.isTrustedSender(
-                moonBeamChainId,
-                addresses.getAddress(
-                    "ARTEMIS_TIMELOCK", sendingChainIdToReceivingChainId[block.chainid]
-                )
-            ),
-            "artemis timelock not added as a trusted sender"
-        );
+        {
+            vm.selectFork(baseForkId);
+            temporalGov = TemporalGovernor(
+                addresses.getAddress("TEMPORAL_GOVERNOR")
+            );
+            /// artemis timelock does not start off as trusted sender
+            assertFalse(
+                temporalGov.isTrustedSender(
+                    uint16(moonBeamWormholeChainId),
+                    addresses.getAddress(
+                        "ARTEMIS_TIMELOCK",
+                        sendingChainIdToReceivingChainId[block.chainid]
+                    )
+                ),
+                "artemis timelock should not be trusted sender"
+            );
+        }
+
         vm.selectFork(moonbeamForkId);
         address artemisTimelockAddress = addresses.getAddress(
             "ARTEMIS_TIMELOCK"
         );
-        
+
         /// calldata to transfer system ownership back to artemis timelock
         bytes memory transferOwnershipCalldata = abi.encodeWithSignature(
             "transferOwnership(address)",
@@ -616,7 +622,7 @@ contract MultichainProposalTest is
             "_setPendingAdmin(address)",
             artemisTimelockAddress
         );
-        
+
         /// skip wormhole for now, circle back to that later and make array size 18
 
         /// targets
@@ -680,42 +686,51 @@ contract MultichainProposalTest is
         targets[18] = addresses.getAddress("mETHwh");
         calldatas[18] = _setPendingAdminCalldata;
 
-        address temporalGovAddress = addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId);
-        address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
-        uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
-            artemisTimelockAddress
-        );
-        address[] memory temporalGovTargets = new address[](1);
-        temporalGovTargets[0] = temporalGovAddress;
+        bytes[] memory temporalGovCalldatas = new bytes[](1);
+        bytes memory temporalGovExecData;
+        {
+            address temporalGovAddress = addresses.getAddress(
+                "TEMPORAL_GOVERNOR",
+                baseChainId
+            );
+            address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
+            uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
+                address(governor)
+            );
+            address[] memory temporalGovTargets = new address[](1);
+            temporalGovTargets[0] = temporalGovAddress;
 
-        bytes memory temporalGovExecData = abi.encode(
-            temporalGovAddress,
-            temporalGovTargets,
-            new uint256[](1), /// 0 value
-            proposalC.temporalGovernanceCalldata(0)
-        );
+            temporalGovCalldatas[0] = proposalC.temporalGovernanceCalldata(0);
 
-        vm.prank(addresses.getAddress("BREAK_GLASS_GUARDIAN"));
-        vm.expectEmit(true, true, true, true, wormholeCore);
-        emit LogMessagePublished(
-            address(governor),
-            nextSequence,
-            1000, /// nonce is hardcoded to 1000 in mip-m18c.sol
-            temporalGovExecData,
-            200 /// consistency level is hardcoded at 200 in mip-m18c.sol
-        );
+            temporalGovExecData = abi.encode(
+                temporalGovAddress,
+                temporalGovTargets,
+                new uint256[](1), /// 0 value
+                temporalGovCalldatas
+            );
+
+            vm.prank(addresses.getAddress("BREAK_GLASS_GUARDIAN"));
+            vm.expectEmit(true, true, true, true, wormholeCore);
+            emit LogMessagePublished(
+                address(governor),
+                nextSequence,
+                1000, /// nonce is hardcoded to 1000 in mip-m18c.sol
+                temporalGovExecData,
+                200 /// consistency level is hardcoded at 200 in mip-m18c.sol
+            );
+        }
         governor.executeBreakGlass(targets, calldatas);
 
         assertEq(
             IStakedWellUplift(addresses.getAddress("stkWELL"))
                 .EMISSION_MANAGER(),
-                artemisTimelockAddress,
+            artemisTimelockAddress,
             "stkWELL EMISSIONS MANAGER"
         );
         assertEq(
             Ownable(addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"))
                 .owner(),
-                artemisTimelockAddress,
+            artemisTimelockAddress,
             "ecosystem reserve controller owner incorrect"
         );
         assertEq(
@@ -747,7 +762,7 @@ contract MultichainProposalTest is
         assertEq(
             Ownable2StepUpgradeable(addresses.getAddress("xWELL_PROXY"))
                 .pendingOwner(),
-                artemisTimelockAddress,
+            artemisTimelockAddress,
             "xWELL_PROXY pending owner incorrect"
         );
 
@@ -783,7 +798,7 @@ contract MultichainProposalTest is
             address(governor),
             "mUSDCwh admin incorrect"
         );
-        
+
         assertEq(
             Timelock(addresses.getAddress("mFRAX")).pendingAdmin(),
             artemisTimelockAddress,
@@ -889,7 +904,11 @@ contract MultichainProposalTest is
             "Chainlink oracle admin incorrect"
         );
 
-        assertEq(governor.breakGlassGuardian(), address(0), "break glass guardian not revoked");
+        assertEq(
+            governor.breakGlassGuardian(),
+            address(0),
+            "break glass guardian not revoked"
+        );
 
         /// Base simulation, LFG!
 
@@ -899,13 +918,20 @@ contract MultichainProposalTest is
         );
         vm.startPrank(address(temporalGov));
 
-        (bool success, ) = temporalGov.call(temporalGovExecData);
-        require(success, "temporal gov call failed");
+        {
+            (bool success, ) = address(temporalGov).call(
+                temporalGovCalldatas[0]
+            );
+            require(success, "temporal gov call failed");
+        }
 
         vm.stopPrank();
 
         assertTrue(
-            temporalGov.isTrustedSender(moonBeamChainId, artemisTimelockAddress),
+            temporalGov.isTrustedSender(
+                uint16(moonBeamWormholeChainId),
+                artemisTimelockAddress
+            ),
             "artemis timelock not added as a trusted sender"
         );
     }
@@ -923,7 +949,11 @@ contract MultichainProposalTest is
         IStakedWellUplift stkwell = IStakedWellUplift(
             addresses.getAddress("stkWELL_PROXY")
         );
-        assertGt(stkwell.DISTRIBUTION_END(), block.timestamp, "distribution end incorrect");
+        assertGt(
+            stkwell.DISTRIBUTION_END(),
+            block.timestamp,
+            "distribution end incorrect"
+        );
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
 
         vm.startPrank(stkwell.EMISSION_MANAGER());
@@ -962,8 +992,11 @@ contract MultichainProposalTest is
             stkwell.getTotalRewardsBalance(address(this))
         );
 
-        (uint128 emissionsPerSecond, uint128 lastUpdateTimestamp, uint256 index) = stkwell
-            .assets(address(this));
+        (
+            uint128 emissionsPerSecond,
+            uint128 lastUpdateTimestamp,
+            uint256 index
+        ) = stkwell.assets(address(this));
 
         assertGt(
             xwell.balanceOf(address(this)),
