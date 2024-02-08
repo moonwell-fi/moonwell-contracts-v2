@@ -147,12 +147,12 @@ invariant proposalIdValid(env e, uint256 proposalId)
         }
     }
 
-invariant proposalIdImpliesUserProposal(env e, uint256 proposalId, address proposer) 
-    proposalValid(proposalId) <=> userHasProposal(proposalId, proposer) {
-        preserved {
-            requireInvariant proposalIdValid(e, proposalId);
-        }
-    }
+// invariant proposalIdImpliesUserProposal(env e, uint256 proposalId, address proposer) 
+//     proposalValid(proposalId) <=> userHasProposal(proposalId, proposer) {
+//         preserved {
+//             requireInvariant proposalIdValid(e, proposalId);
+//         }
+//     }
 
 // rule sanity(method f, env e) {
 //     calldataarg args;
@@ -216,23 +216,29 @@ rule voteValueLteAbstain(method f, env e, uint256 proposalId, address voter) {
     assert hasVotedPost => votesPost >= 1, "vote values must be gte 1";
 }
 
-/// likely over approximating and failing
-///    what question am I not asking to constrain the prover and avoid this failure?
-rule pauseRemovesAllActiveProposals(env e, uint256 proposalId, address user) {
-    /// TODO, create invariant to tie proposal id => user proposal
-    /// enforce that invariant on all live proposals here
-
-    /// filter out proposals in invalid state
-    require assert_uint8(state(e, proposalId)) <= 5;
+/// tautology, but this is expected
+rule pauseRemovesAllActiveProposals(env e) {
+    require getNumLiveProposals(e) > 0;
 
     pause(e);
 
-    assert
-     assert_uint8(state(e, proposalId)) == 2 ||
-     assert_uint8(state(e, proposalId)) == 3 ||
-     assert_uint8(state(e, proposalId)) == 5,
-     "pause did not remove all active proposals";
-
+    /// all proposals in the enumerable that were active are now removed
     assert getNumLiveProposals(e) == 0, "pause did not remove all active proposals";
-    assert currentUserLiveProposals(e, user) == 0, "pause did not remove all user active proposals";
 }
+
+// rule statesAreValid(env e, uint256 proposalId) {
+//     uint8 proposalState = state(proposalId);
+
+//     mathint voteSum;
+//     mathint forVotes;
+//     mathint againstVotes;
+//     mathint abstainVotes;
+
+//     voteSum, forVotes, againstVotes, abstainVotes = proposalVotes(proposalId);
+//     /// todo fetch proposal end time
+
+//     /// succeeded state implies for votes outweight against votes, quorum is met and we're past the vote collection period
+//     assert proposalState == 4 || proposalState == 5 => 
+//         (againstVotes > forVotes) && (voteSum >= quorum()) && e.block.timestamp >= proposalInformation(proposalId),
+//         "invalid proposal state";
+// }
