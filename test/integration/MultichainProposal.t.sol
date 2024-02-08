@@ -128,7 +128,6 @@ contract MultichainProposalTest is
     }
 
     function testSetup() public {
-        /// TODO validate temporal governor on base only has a single owner
         vm.selectFork(baseForkId);
         voteCollection = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY")
@@ -161,7 +160,7 @@ contract MultichainProposalTest is
         /// artemis timelock does not start off as trusted sender
         assertFalse(
             temporalGov.isTrustedSender(
-                uint16(moonBeamWormholeChainId),
+                moonBeamWormholeChainId,
                 addresses.getAddress(
                     "ARTEMIS_TIMELOCK",
                     sendingChainIdToReceivingChainId[block.chainid]
@@ -171,13 +170,19 @@ contract MultichainProposalTest is
         );
         assertTrue(
             temporalGov.isTrustedSender(
-                uint16(moonBeamWormholeChainId),
+                moonBeamWormholeChainId,
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
                     sendingChainIdToReceivingChainId[block.chainid]
                 )
             ),
             "multichain governor should be trusted sender"
+        );
+
+        assertEq(
+            temporalGov.allTrustedSenders(moonBeamWormholeChainId).length,
+            1,
+            "incorrect amount of trusted senders post proposal"
         );
     }
 
