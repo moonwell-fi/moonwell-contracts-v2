@@ -33,6 +33,10 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice duration that Safety Module will distribute rewards for Base
     uint128 public constant distributionDuration = 100 * 365 days;
 
+    // @notice emission per second of stkWELL
+    // TODO chek this value
+    uint128 public constant emissionPerSecond = 1 * 1e18;
+
     /// @notice approval amount for ecosystem reserve to give stkWELL in xWELL xD
     uint256 public constant approvalAmount = 5_000_000_000 * 1e18;
 
@@ -73,7 +77,9 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 /// TODO double check the distribution duration
                 distributionDuration,
                 address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
-                proxyAdmin
+                proxyAdmin,
+                // TODO check this value
+                emissionPerSecond
             );
             addresses.addAddress("stkWELL_PROXY", stkWellProxy);
             addresses.addAddress("stkWELL_IMPL", stkWellImpl);
@@ -86,9 +92,9 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 addresses.getAddress("xWELL_PROXY"),
                 addresses.getAddress("stkWELL_PROXY"),
                 addresses.getAddress( /// fetch multichain governor address on Moonbeam
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
-                ),
+                        "MULTICHAIN_GOVERNOR_PROXY",
+                        sendingChainIdToReceivingChainId[block.chainid]
+                    ),
                 addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
                 chainIdToWormHoleId[block.chainid],
                 proxyAdmin,

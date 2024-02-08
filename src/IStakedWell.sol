@@ -1,6 +1,12 @@
 pragma solidity 0.8.19;
 
 interface IStakedWell {
+    struct AssetConfigInput {
+        uint128 emissionPerSecond;
+        uint256 totalStaked;
+        address underlyingAsset;
+    }
+
     function initialize(
         address _stakedToken,
         address _rewardToken,
@@ -26,4 +32,11 @@ interface IStakedWell {
     function mint(address to, uint256 amount) external;
 
     function totalSupply() external view returns (uint256);
+
+    function claimRewards(address to, uint256 amount) external;
+
+    // from IDistributionManager
+    function configureAssets(
+        AssetConfigInput[] calldata assetsConfigInput
+    ) external;
 }

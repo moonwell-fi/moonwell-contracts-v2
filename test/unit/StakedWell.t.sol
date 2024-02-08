@@ -12,8 +12,14 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
     uint256 cooldown;
     uint256 unstakePeriod;
     uint256 amount;
+    address user;
+    // mint amount for vault
+    uint256 mintAmount;
+
     function setUp() public override {
         super.setUp();
+
+        user = address(1);
 
         address proxyAdmin = address(new ProxyAdmin());
 
@@ -29,24 +35,34 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
             address(this), // emissionManager
             1 days, // distributionDuration
             address(0), // governance
-            proxyAdmin // proxyAdmin
+            proxyAdmin, // proxyAdmin,
+            1e18 // emission per second
         );
 
         stakedWell = IStakedWell(stkWellProxy);
 
-        amount = xwellProxy.MAX_SUPPLY();
+        amount = 1_000_000_000 * 1e18;
+
         vm.prank(address(xerc20Lockbox));
-        xwellProxy.mint(address(this), amount);
-        xwellProxy.approve(address(stakedWell), amount);
+        xwellProxy.mint(user, amount);
+        vm.prank(user);
+        xwellProxy.approve(stkWellProxy, amount);
+
+        mintAmount = cooldown * 1e18;
+
+        vm.prank(address(xerc20Lockbox));
+
+        // vault must have token to distribute on rewards
+        xwellProxy.mint(address(this), mintAmount);
+
+        // approve stkWell to spend vault tokens
+        xwellProxy.approve(stkWellProxy, mintAmount);
     }
 
     function testStake() public {
-        stakedWell.stake(address(this), amount);
-        assertEq(
-            stakedWell.balanceOf(address(this)),
-            amount,
-            "Wrong staked amount"
-        );
+        vm.prank(user);
+        stakedWell.stake(user, amount);
+        assertEq(stakedWell.balanceOf(user), amount, "Wrong staked amount");
     }
 
     function testGetPriorVotes() public {
@@ -56,7 +72,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
 
         vm.warp(block.timestamp + 1);
         assertEq(
-            stakedWell.getPriorVotes(address(this), blockTimestamp),
+            stakedWell.getPriorVotes(user, blockTimestamp),
             amount,
             "Wrong prior votes"
         );
@@ -66,8 +82,9 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         testStake();
 
         vm.warp(block.timestamp + cooldown + 1);
-        stakedWell.redeem(address(this), amount);
-        assertEq(stakedWell.balanceOf(address(this)), 0, "Wrong staked amount");
+        vm.prank(user);
+        stakedWell.redeem(user, amount);
+        assertEq(stakedWell.balanceOf(user), 0, "Wrong staked amount");
     }
 
     function testRedeemBeforeCooldown() public {
@@ -75,7 +92,9 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
 
         vm.warp(block.timestamp + cooldown - 1);
         vm.expectRevert("INSUFFICIENT_COOLDOWN");
-        stakedWell.redeem(address(this), amount);
+
+        vm.prank(user);
+        stakedWell.redeem(user, amount);
     }
 
     function testRedeemAfterUnstakePeriod() public {
@@ -83,6 +102,34 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
 
         vm.warp(block.timestamp + cooldown + unstakePeriod + 1);
         vm.expectRevert("UNSTAKE_WINDOW_FINISHED");
-        stakedWell.redeem(address(this), amount);
+        vm.prank(user);
+        stakedWell.redeem(user, amount);
+    }
+
+    function testClaimRewards() public {
+        testStake();
+
+        vm.warp(block.timestamp + cooldown + 1);
+
+        // user balance before
+        uint256 userBalanceBefore = xwellProxy.balanceOf(user);
+        uint256 vaultBalanceBefore = xwellProxy.balanceOf(address(this));
+
+        uint256 expectedRewardAmount = cooldown * 1e18;
+        vm.prank(user);
+
+        stakedWell.claimRewards(user, type(uint256).max);
+
+        uint256 userBalanceAfter = xwellProxy.balanceOf(user);
+        uint256 vaultBalanceAfter = xwellProxy.balanceOf(address(this));
+
+        assertTrue(
+            userBalanceBefore + expectedRewardAmount == userBalanceAfter,
+            "User balance should increase"
+        );
+        assertTrue(
+            vaultBalanceBefore - expectedRewardAmount == vaultBalanceAfter,
+            "Vault balance should decrease"
+        );
     }
 }
