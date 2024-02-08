@@ -559,41 +559,14 @@ contract MultichainProposalTest is
             assertEq(againstVotes, 0, "incorrect against votes");
             assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
-        {
-            (
-                ,
-                ,
-                ,
-                ,
-                uint256 crossChainVoteCollectionEndTimestamp,
-                ,
-                ,
-                ,
 
-            ) = governor.proposalInformation(proposalId);
+        vm.deal(address(this), bridgeCost * 3);
+        governor.rebroadcastProposal{value: bridgeCost}(proposalId);
+        governor.rebroadcastProposal{value: bridgeCost}(proposalId);
+        governor.rebroadcastProposal{value: bridgeCost}(proposalId);
 
-            vm.warp(crossChainVoteCollectionEndTimestamp - 1);
-
-            assertEq(
-                uint256(governor.state(proposalId)),
-                1,
-                "not in xchain vote collection period"
-            );
-
-            vm.warp(crossChainVoteCollectionEndTimestamp);
-            assertEq(
-                uint256(governor.state(proposalId)),
-                1,
-                "not in xchain vote collection period at end"
-            );
-
-            vm.warp(block.timestamp + 1);
-            assertEq(
-                uint256(governor.state(proposalId)),
-                4,
-                "not in succeeded at end"
-            );
-        }
+        assertEq(address(this).balance, 0, "balance not 0 after broadcasting");
+        assertEq(address(governor).balance, 0, "balance not 0 after broadcasting");
     }
 
     function testEmittingVotesMultipleTimesVoteCollectionPeriodSucceeds()
@@ -1133,7 +1106,6 @@ contract MultichainProposalTest is
 
     /// - assert assets in ecosystem reserve deplete when rewards are claimed
 
-    /// TODO add another test to stake with 2 or 3 users
     function testStakestkWellBaseSucceedsAndReceiveRewards() public {
         vm.selectFork(baseForkId);
 
@@ -1221,13 +1193,10 @@ contract MultichainProposalTest is
         uint256 userxWellBalance = xwell.balanceOf(address(this));
         stkwell.claimRewards(address(this), type(uint256).max);
 
-        console.log(
-            "staker rewards to claim: ",
-            stkwell.stakerRewardsToClaim(address(this))
-        );
-        console.log(
-            "staker getTotalRewardsBalance: ",
-            stkwell.getTotalRewardsBalance(address(this))
+        assertEq(
+            xwell.balanceOf(address(this)),
+            userxWellBalance + (10 days * 1e18),
+            "incorrect xWELL balance after claiming rewards"
         );
 
         {
@@ -1245,11 +1214,205 @@ contract MultichainProposalTest is
                 "last update timestamp"
             );
         }
+    }
 
+    function testStakestkWellBaseSucceedsAndReceiveRewardsThreeUsers() public {
+        vm.selectFork(baseForkId);
+
+        address userOne = address(1);
+        address userTwo = address(2);
+        address userThree = address(3);
+
+        uint256 userOneAmount = 1_000_000 * 1e18;
+        uint256 userTwoAmount = 2_000_000 * 1e18;
+        uint256 userThreeAmount = 3_000_000 * 1e18;
+
+        /// prank as the wormhole bridge adapter contract
+        ///
+        uint256 mintAmount = 1_000_000 * 1e18;
+        IStakedWellUplift stkwell = IStakedWellUplift(
+            addresses.getAddress("stkWELL_PROXY")
+        );
         assertGt(
-            xwell.balanceOf(address(this)),
-            userxWellBalance,
-            "incorrect xWELL balance after claiming rewards"
+            stkwell.DISTRIBUTION_END(),
+            block.timestamp,
+            "distribution end incorrect"
+        );
+        xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
+
+        {
+            (
+                uint128 emissionsPerSecond,
+                uint128 lastUpdateTimestamp,
+                uint256 index
+            ) = stkwell.assets(address(stkwell));
+
+            assertEq(0, lastUpdateTimestamp, "lastUpdateTimestamp");
+            assertEq(0, emissionsPerSecond, "emissions per second");
+            assertEq(0, index, "rewards per second");
+        }
+
+        vm.startPrank(stkwell.EMISSION_MANAGER());
+        /// distribute 1e18 xWELL per second
+        stkwell.configureAsset(1e18, address(stkwell));
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 1);
+
+        vm.startPrank(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
+        xwell.mint(userOne, userOneAmount);
+        xwell.mint(userTwo, userTwoAmount);
+        xwell.mint(userThree, userThreeAmount);
+        xwell.mint(addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"), mintAmount);
+        vm.stopPrank();
+
+        {
+            uint256 prestkBalance = stkwell.balanceOf(userOne);
+            uint256 prexwellBalance = xwell.balanceOf(userOne);
+            uint256 preSTKWellTotalSupply = stkwell.totalSupply();
+
+            vm.startPrank(userOne);
+            xwell.approve(address(stkwell), userOneAmount);
+            stkwell.stake(userOne, userOneAmount);
+            vm.stopPrank();
+
+            assertEq(
+                preSTKWellTotalSupply + userOneAmount,
+                stkwell.totalSupply()
+            );
+            assertEq(
+                stkwell.balanceOf(userOne),
+                prestkBalance + userOneAmount,
+                "incorrect stkWELL balance"
+            );
+            assertEq(
+                xwell.balanceOf(userOne),
+                prexwellBalance - userOneAmount,
+                "incorrect xWELL balance"
+            );
+        }
+        {
+            uint256 prestkBalance = stkwell.balanceOf(userTwo);
+            uint256 prexwellBalance = xwell.balanceOf(userTwo);
+            uint256 preSTKWellTotalSupply = stkwell.totalSupply();
+
+            vm.startPrank(userTwo);
+            xwell.approve(address(stkwell), userTwoAmount);
+            stkwell.stake(userTwo, userTwoAmount);
+            vm.stopPrank();
+
+            assertEq(
+                preSTKWellTotalSupply + userTwoAmount,
+                stkwell.totalSupply()
+            );
+            assertEq(
+                stkwell.balanceOf(userTwo),
+                prestkBalance + userTwoAmount,
+                "incorrect stkWELL balance"
+            );
+            assertEq(
+                xwell.balanceOf(userTwo),
+                prexwellBalance - userTwoAmount,
+                "incorrect xWELL balance"
+            );
+        }
+        {
+            uint256 prestkBalance = stkwell.balanceOf(userThree);
+            uint256 prexwellBalance = xwell.balanceOf(userThree);
+            uint256 preSTKWellTotalSupply = stkwell.totalSupply();
+
+            vm.startPrank(userThree);
+            xwell.approve(address(stkwell), userThreeAmount);
+            stkwell.stake(userThree, userThreeAmount);
+            vm.stopPrank();
+
+            assertEq(
+                preSTKWellTotalSupply + userThreeAmount,
+                stkwell.totalSupply()
+            );
+            assertEq(
+                stkwell.balanceOf(userThree),
+                prestkBalance + userThreeAmount,
+                "incorrect stkWELL balance"
+            );
+            assertEq(
+                xwell.balanceOf(userThree),
+                prexwellBalance - userThreeAmount,
+                "incorrect xWELL balance"
+            );
+        }
+
+        {
+            (
+                uint128 emissionsPerSecond,
+                uint128 lastUpdateTimestamp,
+                uint256 index
+            ) = stkwell.assets(address(stkwell));
+
+            assertEq(1e18, emissionsPerSecond, "emissions per second");
+            assertEq(0, index, "rewards per second");
+            assertEq(
+                block.timestamp,
+                lastUpdateTimestamp,
+                "last update timestamp"
+            );
+        }
+
+        vm.warp(block.timestamp + 10 days);
+
+        assertEq(stkwell.getTotalRewardsBalance(userOne), (10 days * 1e18) / 6);
+        assertEq(stkwell.getTotalRewardsBalance(userTwo), (10 days * 1e18) / 3);
+        assertEq(
+            stkwell.getTotalRewardsBalance(userThree),
+            (10 days * 1e18) / 2
+        );
+
+        uint256 startingxWELLAmount = xwell.balanceOf(
+            addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
+        );
+        {
+            uint256 startingUserxWellBalance = xwell.balanceOf(userOne);
+
+            vm.prank(userOne);
+            stkwell.claimRewards(userOne, type(uint256).max);
+
+            assertEq(
+                xwell.balanceOf(userOne),
+                startingUserxWellBalance + ((10 days * 1e18) / 6),
+                "incorrect xWELL balance after claiming rewards"
+            );
+        }
+
+        {
+            uint256 startingUserxWellBalance = xwell.balanceOf(userTwo);
+
+            vm.prank(userTwo);
+            stkwell.claimRewards(userTwo, type(uint256).max);
+
+            assertEq(
+                xwell.balanceOf(userTwo),
+                startingUserxWellBalance + ((10 days * 1e18) / 3),
+                "incorrect xWELL balance after claiming rewards"
+            );
+        }
+
+        {
+            uint256 startingUserxWellBalance = xwell.balanceOf(userThree);
+
+            vm.prank(userThree);
+            stkwell.claimRewards(userThree, type(uint256).max);
+
+            assertEq(
+                xwell.balanceOf(userThree),
+                startingUserxWellBalance + ((10 days * 1e18) / 2),
+                "incorrect xWELL balance after claiming rewards"
+            );
+        }
+
+        assertEq(
+            xwell.balanceOf(addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")),
+            startingxWELLAmount - 10 days * 1e18,
+            "did not deplete ecosystem reserve"
         );
     }
 }
