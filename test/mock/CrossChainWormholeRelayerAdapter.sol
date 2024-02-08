@@ -12,6 +12,12 @@ abstract contract CrossChainWormholeRelayerAdapter is
     IMultichainProposal,
     Test
 {
+    /// @notice fork ID for base
+    uint256 public baseForkId;
+
+    /// @notice fork ID for moonbeam
+    uint256 public moonbeamForkId;
+
     uint256 public nonce;
 
     uint16 public senderChainId;
@@ -47,20 +53,26 @@ abstract contract CrossChainWormholeRelayerAdapter is
         senderChainId = _senderChainId;
     }
 
-    /// fork ID for base
-    function baseForkId() public view override returns (uint256) {}
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
 
-    /// fork ID for moonbeam
-    function moonbeamForkId() public view override returns (uint256) {}
+    function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) external {
+        require(
+            baseForkId == 0 && moonbeamForkId == 0,
+            "setForkIds: fork IDs already set"
+        );
+        require(
+            _baseForkId != _moonbeamForkId,
+            "setForkIds: fork IDs cannot be the same"
+        );
 
-    /// primary fork id for this proposal
-    function primaryForkId() external view virtual returns (uint256);
+        baseForkId = _baseForkId;
+        moonbeamForkId = _moonbeamForkId;
 
-    /// set fork ID's for base and moonbeam
-    function setForkIds(
-        uint256 baseForkId,
-        uint256 moonbeamForkId
-    ) external virtual;
+        /// no events as this is tooling and never deployed onchain
+    }
 
     /// @notice Publishes an instruction for the default delivery provider
     /// to relay a payload to the address `targetAddress`
@@ -83,32 +95,21 @@ abstract contract CrossChainWormholeRelayerAdapter is
         require(msg.value == nativePriceQuote, "incorrect value");
 
         uint256 senderFork = vm.activeFork();
-        uint16 senderChain = senderFork == moonbeamForkId() ? 16 : 30;
-        uint256 flipFork = senderFork == moonbeamForkId()
-            ? baseForkId()
-            : moonbeamForkId();
+        uint16 senderChain = senderFork == moonbeamForkId ? 16 : 30;
+        uint256 flipFork = senderFork == moonbeamForkId
+            ? baseForkId
+            : moonbeamForkId;
 
         vm.selectFork(flipFork);
 
-        if (senderChainId != 0) {
-            /// immediately call the target
-            IWormholeReceiver(targetAddress).receiveWormholeMessages(
-                payload,
-                new bytes[](0),
-                bytes32(uint256(uint160(msg.sender))),
-                senderChain, // chain not the target chain
-                bytes32(++nonce)
-            );
-        } else {
-            /// immediately call the target
-            IWormholeReceiver(targetAddress).receiveWormholeMessages(
-                payload,
-                new bytes[](0),
-                bytes32(uint256(uint160(msg.sender))),
-                senderChain, // chain not the target chain
-                bytes32(++nonce)
-            );
-        }
+        /// immediately call the target
+        IWormholeReceiver(targetAddress).receiveWormholeMessages(
+            payload,
+            new bytes[](0),
+            bytes32(uint256(uint160(msg.sender))),
+            senderChain, // chain not the target chain
+            bytes32(++nonce)
+        );
 
         vm.selectFork(senderFork);
 
