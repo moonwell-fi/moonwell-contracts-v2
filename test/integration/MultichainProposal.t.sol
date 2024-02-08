@@ -25,6 +25,7 @@ import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
+import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 
 import {mipm18a} from "@proposals/mips/mip-m18/mip-m18a.sol";
 import {mipm18b} from "@proposals/mips/mip-m18/mip-m18b.sol";
@@ -244,6 +245,31 @@ contract MultichainProposalTest is
         );
     }
 
+    function testInitializeEcosystemReserveFails() public {
+        vm.selectFork(baseForkId);
+
+        IEcosystemReserveControllerUplift ecosystemReserveController = IEcosystemReserveControllerUplift(
+                addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
+            );
+
+        vm.prank(ecosystemReserveController.owner());
+        vm.expectRevert("ECOSYSTEM_RESERVE has been initialized");
+        ecosystemReserveController.setEcosystemReserve(address(0));
+
+        IEcosystemReserveUplift ecosystemReserve = IEcosystemReserveUplift(
+            addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
+        );
+
+        vm.expectRevert("Initializable: contract is already initialized");
+        ecosystemReserve.initialize(address(1));
+
+        ecosystemReserve = IEcosystemReserveUplift(
+            addresses.getAddress("ECOSYSTEM_RESERVE_IMPL")
+        );
+        vm.expectRevert("Initializable: contract is already initialized");
+        ecosystemReserve.initialize(address(1));
+    }
+
     function testRetrieveGasPriceMoonbeamSucceeds() public {
         vm.selectFork(moonbeamForkId);
 
@@ -278,7 +304,6 @@ contract MultichainProposalTest is
 
     function testProposeOnMoonbeamWellSucceeds() public {
         vm.selectFork(moonbeamForkId);
-        vm.roll(block.number + 1);
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -304,6 +329,7 @@ contract MultichainProposalTest is
             100_000_000 * 1e18
         );
 
+        uint256 startingProposalId = governor.proposalCount();
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
@@ -314,7 +340,7 @@ contract MultichainProposalTest is
             description
         );
 
-        assertEq(proposalId, 1, "incorrect proposal id");
+        assertEq(proposalId, startingProposalId + 1, "incorrect proposal id");
         assertEq(
             uint256(governor.state(proposalId)),
             0,
@@ -438,7 +464,6 @@ contract MultichainProposalTest is
     {
         /// propose, then rebroadcast
         vm.selectFork(moonbeamForkId);
-        vm.roll(block.number + 1);
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -585,7 +610,6 @@ contract MultichainProposalTest is
 
     function testUpgradeMultichainGovernorThroughGovProposal() public {
         vm.selectFork(moonbeamForkId);
-        vm.roll(block.number + 1);
 
         MockMultichainGovernor newGovernor = new MockMultichainGovernor();
 
@@ -1150,8 +1174,24 @@ contract MultichainProposalTest is
         xwell.mint(addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"), mintAmount);
         vm.stopPrank();
 
+        uint256 prestkBalance = stkwell.balanceOf(address(this));
+        uint256 prexwellBalance = xwell.balanceOf(address(this));
+        uint256 preSTKWellTotalSupply = stkwell.totalSupply();
+
         xwell.approve(address(stkwell), mintAmount);
         stkwell.stake(address(this), mintAmount);
+
+        assertEq(preSTKWellTotalSupply + mintAmount, stkwell.totalSupply());
+        assertEq(
+            stkwell.balanceOf(address(this)),
+            prestkBalance + mintAmount,
+            "incorrect stkWELL balance"
+        );
+        assertEq(
+            xwell.balanceOf(address(this)),
+            prexwellBalance - mintAmount,
+            "incorrect xWELL balance"
+        );
 
         {
             (

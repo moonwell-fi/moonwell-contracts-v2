@@ -26,8 +26,6 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
         return moonbeamForkId;
     }
 
-    /// TODO make plain english description of all the actions this proposal does, present to Luke
-
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
         ITemporalGovernor.TrustedSender[]
@@ -181,9 +179,6 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     }
 
     function validate(Addresses addresses, address) public override {
-        /// TODO check that the temporal governor now has only Multichain Governor as a trusted sender
-        /// and that the timelock is no longer a trusted sender
-
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
 
         assertEq(

@@ -114,7 +114,6 @@ contract MultichainGovernor is
     /// @notice quorum needed for a proposal to pass
     /// if multiple governance proposals are in flight, and the first one to execute
     /// changes quorum, then this new quorum will go into effect on the next proposal.
-    /// TODO check that tests cover reaching exactly quorum and quorum being met is acknowledged
     uint256 public override quorum;
 
     /// @notice the minimum number of votes needed to propose

@@ -24,8 +24,6 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice trusted senders for the temporal governor
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
-    /// TODO verify these params with Luke before code freeze
-
     /// @notice duration of the voting period for a proposal
     uint256 public constant votingPeriodSeconds = 3 days;
 

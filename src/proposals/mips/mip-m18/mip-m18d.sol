@@ -27,8 +27,6 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
         return moonbeamForkId;
     }
 
-    /// TODO make plain english description of all the actions this proposal does, present to Luke
-
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
         address multichainGovernorAddress = addresses.getAddress(
@@ -61,8 +59,6 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
         );
 
         /// Moonbeam actions
-
-        /// TODO change ownership of the distributor proxy
 
         /// transfer ownership of the wormhole bridge adapter on the moonbeam chain to the Multichain Governor
         _pushHybridAction(

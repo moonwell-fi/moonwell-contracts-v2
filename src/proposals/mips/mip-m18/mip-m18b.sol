@@ -23,8 +23,6 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice deployment of the Multichain Vote Collection Contract to Base
     string public constant name = "MIP-M18B";
 
-    /// TODO review these parameters with Luke pre-deployment
-
     /// @notice cooldown window to withdraw staked WELL to xWELL
     uint256 public constant cooldownSeconds = 10 days;
 
@@ -47,7 +45,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
         /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
-        /// TODO add integration tests that the stkWELL contract on base is paying out rewards
+
         (
             address ecosystemReserveProxy,
             address ecosystemReserveImplementation,
@@ -73,7 +71,6 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 ecosystemReserveProxy,
                 /// check that emissions manager on Moonbeam is the Artemis Timelock, so on Base it should be the temporal governor
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
-                /// TODO double check the distribution duration
                 distributionDuration,
                 address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
                 proxyAdmin
@@ -89,9 +86,9 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 addresses.getAddress("xWELL_PROXY"),
                 addresses.getAddress("stkWELL_PROXY"),
                 addresses.getAddress( /// fetch multichain governor address on Moonbeam
-                        "MULTICHAIN_GOVERNOR_PROXY",
-                        sendingChainIdToReceivingChainId[block.chainid]
-                    ),
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    sendingChainIdToReceivingChainId[block.chainid]
+                ),
                 addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
                 chainIdToWormHoleId[block.chainid],
                 proxyAdmin,
