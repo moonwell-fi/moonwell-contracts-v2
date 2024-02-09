@@ -129,9 +129,11 @@ contract MultichainProposalTest is
         );
         well = Well(addresses.getAddress("WELL", moonBeamChainId));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY", moonBeamChainId));
-        stakedWellMoonbeam = IStakedWell(
-            addresses.getAddress("stkWELL_PROXY", moonBeamWormholeChainId)
-        );
+        // make xwell persistent so votes are valid on both chains
+        vm.makePersistent(address(xwell));
+        //   stakedWellMoonbeam = IStakedWell(
+        //       addresses.getAddress("stkWELL_PROXY", moonBeamChainId)
+        //   );
         // TODO check if we have correct bytecode
         //        stakedWellBase = IStakedWell(
         //            addresses.getAddress("stkWELL_PROXY", stakedWellBase)
