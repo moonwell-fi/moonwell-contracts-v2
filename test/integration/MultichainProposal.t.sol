@@ -65,6 +65,13 @@ contract MultichainProposalTest is
     IStakedWell public stakedWellMoonbeam;
     IStakedWell public stakedWellBase;
 
+    event ProposalCreated(
+        uint256 proposalId,
+        uint256 votingStartTime,
+        uint256 votingEndTime,
+        uint256 votingCollectionEndTime
+    );
+
     event LogMessagePublished(
         address indexed sender,
         uint64 sequence,
@@ -1054,7 +1061,129 @@ contract MultichainProposalTest is
         voteCollection.emitVotes{value: bridgeCost}(proposalId);
     }
 
-    function testReceiveProposalFromRelayersSucceeds() public {}
+    function testReceiveProposalFromRelayersSucceeds() public {
+        vm.selectFork(moonbeamForkId);
+
+        /// mint whichever is greater, the proposal threshold or the quorum
+        uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
+            ? governor.proposalThreshold()
+            : governor.quorum();
+
+        deal(address(well), address(this), mintAmount);
+        well.transfer(address(this), mintAmount);
+        well.delegate(address(this));
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect proposal state"
+        );
+
+        assertTrue(
+            governor.userHasProposal(proposalId, address(this)),
+            "user has proposal"
+        );
+        assertTrue(
+            governor.proposalValid(proposalId),
+            "user does not have proposal"
+        );
+
+        {
+            uint256 startTimestamp = block.timestamp;
+            uint256 endTimestamp = startTimestamp + governor.votingPeriod();
+            uint256 crossChainPeriod = endTimestamp +
+                governor.crossChainVoteCollectionPeriod();
+            bytes memory payload = abi.encode(
+                1,
+                startTimestamp - 1,
+                startTimestamp,
+                endTimestamp,
+                crossChainPeriod
+            );
+
+            vm.selectFork(baseForkId);
+
+            uint256 gasCost = wormholeRelayerAdapterBase.nativePriceQuote();
+
+            vm.deal(address(governor), gasCost);
+
+            vm.expectEmit(true, true, true, true, address(voteCollection));
+            emit ProposalCreated(
+                proposalId,
+                startTimestamp,
+                endTimestamp,
+                crossChainPeriod
+            );
+
+            vm.prank(address(governor));
+            wormholeRelayerAdapterBase.sendPayloadToEvm{value: gasCost}(
+                30,
+                address(voteCollection),
+                payload,
+                0,
+                0
+            );
+
+            (
+                uint256 voteSnapshotTimestamp,
+                uint256 votingStartTime,
+                uint256 votingEndTime,
+                uint256 crossChainVoteCollectionEndTimestamp,
+                uint256 totalVotes,
+                uint256 forVotes,
+                uint256 againstVotes,
+                uint256 abstainVotes
+            ) = voteCollection.proposalInformation(proposalId);
+
+            assertEq(
+                voteSnapshotTimestamp,
+                startTimestamp - 1,
+                "incorrect snapshot"
+            );
+            assertEq(
+                votingStartTime,
+                startTimestamp,
+                "incorrect voting start time"
+            );
+            assertEq(votingEndTime, endTimestamp, "incorrect voting end time");
+            assertEq(
+                crossChainVoteCollectionEndTimestamp,
+                crossChainPeriod,
+                "incorrect cross chain vote collection end time"
+            );
+
+            assertEq(totalVotes, 0, "incorrect total votes");
+            assertEq(forVotes, 0, "incorrect for votes");
+            assertEq(againstVotes, 0, "incorrect against votes");
+            assertEq(abstainVotes, 0, "incorrect abstain votes");
+        }
+    }
 
     function testReceiveSameProposalFromRelayersTwiceFails() public {}
 
