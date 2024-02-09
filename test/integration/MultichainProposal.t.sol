@@ -501,11 +501,11 @@ contract MultichainProposalTest is
             ? governor.proposalThreshold()
             : governor.quorum();
 
-        deal(address(well), address(this), mintAmount);
+        deal(address(xwell), address(this), mintAmount);
         well.transfer(address(this), mintAmount);
         well.delegate(address(this));
 
-        vm.roll(block.number + 1);
+        vm.roll(block.timestamp + 1);
 
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
