@@ -652,7 +652,10 @@ contract MultichainProposalTest is
         }
     }
 
-    function testVotingOnBasexWellSucceeds() public {
+    function testVotingOnBasexWellSucceeds()
+        public
+        returns (uint256 proposalId)
+    {
         vm.selectFork(moonbeamForkId);
 
         /// mint whichever is greater, the proposal threshold or the quorum
@@ -690,7 +693,7 @@ contract MultichainProposalTest is
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
-        uint256 proposalId = governor.propose{value: bridgeCost}(
+        proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
             calldatas,
@@ -1041,7 +1044,37 @@ contract MultichainProposalTest is
 
     function testReceiveSameProposalFromRelayersTwiceFails() public {}
 
-    function testEmittingVotesPostVoteCollectionPeriodFails() public {}
+    function testEmittingVotesPostVoteCollectionPeriodFails() public {
+        uint256 proposalId = testVotingOnBasexWellSucceeds();
+
+        vm.selectFork(baseForkId);
+
+        (
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
+
+        ) = voteCollection.proposalInformation(proposalId);
+
+        // vm.expectEmit()
+        // VotesEmitted(proposalId);
+
+        uint256 cost = voteCollection.bridgeCostAll();
+        vm.deal(address(this), cost);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp);
+        voteCollection.emitVotes{value: cost}(proposalId);
+
+        vm.warp(block.timestamp + 1);
+        vm.expectRevert(
+            "MultichainVoteCollection: Voting collection phase has ended"
+        );
+        voteCollection.emitVotes(proposalId);
+    }
 
     /// upgrading contract logic
 
