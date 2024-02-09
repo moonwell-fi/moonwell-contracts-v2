@@ -3,6 +3,8 @@ pragma solidity 0.8.19;
 
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import "@forge-std/Test.sol";
 
@@ -23,6 +25,7 @@ import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.so
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
+import {MockVoteCollection} from "@test/mock/MockVoteCollection.sol";
 import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
@@ -33,6 +36,8 @@ import {mipm18b} from "@proposals/mips/mip-m18/mip-m18b.sol";
 import {mipm18c} from "@proposals/mips/mip-m18/mip-m18c.sol";
 import {mipm18d} from "@proposals/mips/mip-m18/mip-m18d.sol";
 import {mipm18e} from "@proposals/mips/mip-m18/mip-m18e.sol";
+
+import {_IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -1511,7 +1516,25 @@ contract MultichainProposalTest is
     }
 
     /// this requires a new mock relayer contract
-    function testUpgradeMultichainVoteCollection() public {}
+    function testUpgradeMultichainVoteCollection() public {
+        vm.selectFork(baseForkId);
+
+        MockVoteCollection newVoteCollection = new MockVoteCollection();
+
+        address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
+
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        ProxyAdmin(proxyAdmin).upgrade(
+            ITransparentUpgradeableProxy(address(voteCollection)),
+            address(newVoteCollection)
+        );
+
+        bytes32 data = vm.load(
+            addresses.getAddress("VOTE_COLLECTION_PROXY"),
+            _IMPLEMENTATION_SLOT
+        );
+        assertEq(bytes32(uint256(uint160(address(newVoteCollection)))), data);
+    }
 
     function testBreakGlassGuardianSucceedsSettingPendingAdminAndOwners()
         public
