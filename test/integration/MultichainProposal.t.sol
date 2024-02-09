@@ -1063,13 +1063,7 @@ contract MultichainProposalTest is
         // vm.expectEmit()
         // VotesEmitted(proposalId);
 
-        uint256 cost = voteCollection.bridgeCostAll();
-        vm.deal(address(this), cost);
-
-        vm.warp(crossChainVoteCollectionEndTimestamp);
-        voteCollection.emitVotes{value: cost}(proposalId);
-
-        vm.warp(block.timestamp + 1);
+        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
         vm.expectRevert(
             "MultichainVoteCollection: Voting collection phase has ended"
         );
