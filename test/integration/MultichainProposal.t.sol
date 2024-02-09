@@ -127,6 +127,7 @@ contract MultichainProposalTest is
         wormhole = IWormhole(
             addresses.getAddress("WORMHOLE_CORE", moonBeamChainId)
         );
+
         well = Well(addresses.getAddress("WELL", moonBeamChainId));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY", moonBeamChainId));
         // make xwell persistent so votes are valid on both chains
@@ -136,9 +137,6 @@ contract MultichainProposalTest is
         //        );
         // TODO check if we have correct bytecode
 
-        // stakedWellBase = IStakedWell(
-        //     addresses.getAddress("stkWELL_PROXY", stakedWellBase)
-        // );
         timelock = Timelock(
             addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)
         );
@@ -164,6 +162,12 @@ contract MultichainProposalTest is
         {
             vm.selectFork(baseForkId);
 
+            assertEq(
+                address(voteCollection.wormholeRelayer()),
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+                "incorrect wormhole relayer"
+            );
+
             wormholeRelayerAdapterBase = new WormholeRelayerAdapter();
 
             // encode gasLimit and relayer address since is stored in a single slot
@@ -176,6 +180,14 @@ contract MultichainProposalTest is
             vm.store(address(voteCollection), bytes32(uint256(0)), encodedData);
 
             vm.makePersistent(address(wormholeRelayerAdapterBase));
+
+            assertEq(
+                address(voteCollection.wormholeRelayer()),
+                address(wormholeRelayerAdapterBase),
+                "incorrect wormhole relayer"
+            );
+
+            stakedWellBase = IStakedWell(addresses.getAddress("stkWELL_PROXY"));
         }
     }
 
@@ -189,11 +201,6 @@ contract MultichainProposalTest is
             voteCollection.gasLimit(),
             Constants.MIN_GAS_LIMIT,
             "incorrect gas limit vote collection"
-        );
-        assertEq(
-            address(voteCollection.wormholeRelayer()),
-            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-            "incorrect wormhole relayer"
         );
         assertEq(
             address(voteCollection.xWell()),
@@ -674,6 +681,7 @@ contract MultichainProposalTest is
             "user does not have proposal"
         );
 
+        uint256 xwellMintAmount;
         {
             uint256 startTimestamp = block.timestamp;
             uint256 endTimestamp = startTimestamp + governor.votingPeriod();
@@ -686,6 +694,19 @@ contract MultichainProposalTest is
             );
 
             vm.selectFork(baseForkId);
+
+            vm.warp(startTimestamp - 5);
+            xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
+            xwellMintAmount = xwell.buffer(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            );
+
+            vm.prank(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
+            xwell.mint(address(this), xwellMintAmount);
+
+            xwell.delegate(address(this));
+
+            vm.warp(block.timestamp + 10);
 
             uint256 gasCost = wormholeRelayerAdapterBase.nativePriceQuote();
 
@@ -725,8 +746,8 @@ contract MultichainProposalTest is
                 uint256 abstainVotes
             ) = voteCollection.proposalVotes(proposalId);
 
-            assertEq(totalVotes, mintAmount, "incorrect total votes");
-            assertEq(forVotes, mintAmount, "incorrect for votes");
+            assertEq(totalVotes, xwellMintAmount, "incorrect total votes");
+            assertEq(forVotes, xwellMintAmount, "incorrect for votes");
             assertEq(againstVotes, 0, "incorrect against votes");
             assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
