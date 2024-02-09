@@ -6,6 +6,8 @@ import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 
+import {console} from "@forge-std/console.sol";
+
 /// @notice Wormhole Bridge Base Contract
 /// Useful or when you want to send to and receive from the same addresses
 /// on many different chains
@@ -337,6 +339,8 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         bytes32 nonce
     ) external payable override {
         require(msg.value == 0, "WormholeBridge: no value allowed");
+        console.log("msg.sender", msg.sender);
+        console.log("relayer", address(wormholeRelayer));
         require(
             msg.sender == address(wormholeRelayer),
             "WormholeBridge: only relayer allowed"
