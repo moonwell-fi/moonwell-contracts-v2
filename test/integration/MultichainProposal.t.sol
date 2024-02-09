@@ -30,6 +30,7 @@ import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposa
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
+import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 
 import {mipm18a} from "@proposals/mips/mip-m18/mip-m18a.sol";
 import {mipm18b} from "@proposals/mips/mip-m18/mip-m18b.sol";
@@ -69,7 +70,7 @@ contract MultichainProposalTest is
     xWELL public xwell;
     IStakedWell public stakedWellMoonbeam;
     IStakedWell public stakedWellBase;
-    Well public distributor;
+    TokenSaleDistributorInterfaceV1 public distributor;
 
     event ProposalCreated(
         uint256 proposalId,
@@ -157,12 +158,13 @@ contract MultichainProposalTest is
             addresses.getAddress("stkWELL", moonBeamChainId)
         );
 
-        distributor = Well(
+        distributor = TokenSaleDistributorInterfaceV1(
             addresses.getAddress(
                 "TOKEN_SALE_DISTRIBUTOR_PROXY",
                 moonBeamChainId
             )
         );
+        console.log("distributor: ", address(distributor));
 
         timelock = Timelock(
             addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)

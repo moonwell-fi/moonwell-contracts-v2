@@ -12,4 +12,8 @@ interface TokenSaleDistributorInterfaceV1 {
     function totalClaimed(address recipient) external view returns (uint);
 
     function delegates(address recipient) external view returns (address);
+
+    function delegate(address delegatee) external;
+
+    function balanceOf(address account) external view returns (uint);
 }
