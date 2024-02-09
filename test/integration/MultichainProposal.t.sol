@@ -164,7 +164,6 @@ contract MultichainProposalTest is
                 moonBeamChainId
             )
         );
-        console.log("distributor: ", address(distributor));
 
         timelock = Timelock(
             addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)
@@ -172,6 +171,7 @@ contract MultichainProposalTest is
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
         );
+
         // make governor persistent so we can call receiveWormholeMessage on
         // governor from base
         vm.makePersistent(address(governor));
@@ -202,11 +202,12 @@ contract MultichainProposalTest is
 
             wormholeRelayerAdapterBase = new WormholeRelayerAdapter();
 
+            uint256 oldGasLimit = voteCollection.gasLimit();
             // encode gasLimit and relayer address since is stored in a single slot
             // relayer is first due to how evm pack values into a single storage
             bytes32 encodedData = bytes32(
                 (uint256(uint160(address(wormholeRelayerAdapterBase))) << 96) |
-                    uint256(voteCollection.gasLimit())
+                    uint256(oldGasLimit)
             );
 
             vm.store(address(voteCollection), bytes32(uint256(0)), encodedData);
@@ -217,6 +218,11 @@ contract MultichainProposalTest is
                 address(voteCollection.wormholeRelayer()),
                 address(wormholeRelayerAdapterBase),
                 "incorrect wormhole relayer"
+            );
+            assertEq(
+                voteCollection.gasLimit(),
+                oldGasLimit,
+                "incorrect gas limit vote collection"
             );
 
             stakedWellBase = IStakedWell(addresses.getAddress("stkWELL_PROXY"));
@@ -551,19 +557,56 @@ contract MultichainProposalTest is
         uint256 mintAmount = governor.quorum() / 4;
 
         address user = address(1);
+
+        {
+            address[] memory recipients = new address[](1);
+            recipients[0] = user;
+
+            bool[] memory isLinear = new bool[](1);
+            isLinear[0] = true;
+
+            uint[] memory epochs = new uint[](1);
+            epochs[0] = 1;
+
+            uint[] memory vestingDurations = new uint[](1);
+            vestingDurations[0] = 1;
+
+            uint[] memory cliffs = new uint[](1);
+            cliffs[0] = 0;
+
+            uint[] memory cliffPercentages = new uint[](1);
+            cliffPercentages[0] = 0;
+
+            uint[] memory amounts = new uint[](1);
+            amounts[0] = mintAmount;
+
+            // prank as admin
+            vm.prank(address(distributor.admin()));
+            distributor.setAllocations(
+                recipients,
+                isLinear,
+                epochs,
+                vestingDurations,
+                cliffs,
+                cliffPercentages,
+                amounts
+            );
+        }
+
         vm.startPrank(user);
+
+        distributor.delegate(user);
+
         deal(address(well), user, mintAmount);
         well.approve(address(stakedWellMoonbeam), mintAmount);
         stakedWellMoonbeam.stake(user, mintAmount);
 
         deal(address(well), user, mintAmount);
+        deal(address(well), user, mintAmount);
         well.delegate(user);
 
         deal(address(xwell), user, mintAmount);
         xwell.delegate(user);
-
-        deal(address(distributor), user, mintAmount);
-        distributor.delegate(user);
 
         vm.stopPrank();
 
@@ -636,9 +679,11 @@ contract MultichainProposalTest is
             assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
 
+        uint256 totalMintAmount = governor.quorum();
+
         assertEq(
             governor.getCurrentVotes(user),
-            mintAmount,
+            totalMintAmount,
             "incorrect current votes"
         );
 
@@ -651,7 +696,7 @@ contract MultichainProposalTest is
                 .getReceipt(proposalId, user);
             assertTrue(hasVoted, "has voted incorrect");
             assertEq(voteValue, 0, "vote value incorrect");
-            assertEq(votes, mintAmount, "votes");
+            assertEq(votes, totalMintAmount, "votes");
 
             (
                 uint256 totalVotes,

@@ -15,5 +15,15 @@ interface TokenSaleDistributorInterfaceV1 {
 
     function delegate(address delegatee) external;
 
-    function balanceOf(address account) external view returns (uint);
+    function admin() external view returns (address);
+
+    function setAllocations(
+        address[] memory recipients,
+        bool[] memory isLinear,
+        uint[] memory epochs,
+        uint[] memory vestingDurations,
+        uint[] memory cliffs,
+        uint[] memory cliffPercentages,
+        uint[] memory amounts
+    ) external;
 }
