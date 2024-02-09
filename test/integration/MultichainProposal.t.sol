@@ -131,13 +131,14 @@ contract MultichainProposalTest is
         xwell = xWELL(addresses.getAddress("xWELL_PROXY", moonBeamChainId));
         // make xwell persistent so votes are valid on both chains
         vm.makePersistent(address(xwell));
-        //   stakedWellMoonbeam = IStakedWell(
-        //       addresses.getAddress("stkWELL_PROXY", moonBeamChainId)
-        //   );
-        // TODO check if we have correct bytecode
-        //        stakedWellBase = IStakedWell(
-        //            addresses.getAddress("stkWELL_PROXY", stakedWellBase)
+        //        stakedWellMoonbeam = IStakedWell(
+        //            addresses.getAddress("stkWELL_PROXY", moonBeamChainId)
         //        );
+        // TODO check if we have correct bytecode
+
+        // stakedWellBase = IStakedWell(
+        //     addresses.getAddress("stkWELL_PROXY", stakedWellBase)
+        // );
         timelock = Timelock(
             addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)
         );
@@ -199,11 +200,11 @@ contract MultichainProposalTest is
             addresses.getAddress("xWELL_PROXY"),
             "incorrect xWELL contract"
         );
-        //        assertEq(
-        //            address(voteCollection.stkWell()),
-        //            addresses.getAddress("stkWELL_PROXY"),
-        //            "incorrect xWELL contract"
-        //        );
+        assertEq(
+            address(voteCollection.stkWell()),
+            addresses.getAddress("stkWELL_PROXY"),
+            "incorrect xWELL contract"
+        );
 
         temporalGov = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")
