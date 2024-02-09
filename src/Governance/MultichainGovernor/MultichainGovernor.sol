@@ -63,10 +63,16 @@ contract MultichainGovernor is
 
     /// @notice whether or not a calldata bytes is allowed for break glass guardian
     /// whether or not the calldata is whitelisted for break glass guardian
-    /// functions to whitelist are:
-    /// - transferOwnership to rollback address
-    /// - setPendingAdmin to rollback address
-    /// - setAdmin to rollback address
+    /// functions to whitelist are based on previous whitelisted functions in the
+    /// Artemis Governor contracts.
+    /// Artemis Governor Break Glass calldata:
+    /// - transferOwnership
+    /// - _setPendingAdmin
+    /// - setPendingAdmin
+    /// - setAdmin
+    /// - changeAdmin
+    /// - setEmissionsManager
+    /// new calldata:
     /// - publishMessage that adds rollback address as trusted sender in TemporalGovernor, with calldata for each chain
     mapping(bytes whitelistedCalldata => bool)
         public
@@ -108,7 +114,6 @@ contract MultichainGovernor is
     /// @notice quorum needed for a proposal to pass
     /// if multiple governance proposals are in flight, and the first one to execute
     /// changes quorum, then this new quorum will go into effect on the next proposal.
-    /// TODO check that tests cover reaching exactly quorum and quorum being met is acknowledged
     uint256 public override quorum;
 
     /// @notice the minimum number of votes needed to propose
@@ -245,6 +250,20 @@ contract MultichainGovernor is
     /// -------------------- VIEW FUNCTIONS --------------------- ///
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
+
+    function proposalValid(uint256 proposalId) external view returns (bool) {
+        return
+            proposalCount >= proposalId &&
+            proposalId > 0 &&
+            proposals[proposalId].proposer != address(0);
+    }
+
+    function userHasProposal(
+        uint256 proposalId,
+        address proposer
+    ) external view returns (bool) {
+        return _userLiveProposals[proposer].contains(proposalId);
+    }
 
     /// @notice returns a user's vote receipt on a given proposal
     /// @param proposalId the id of the proposal to check
@@ -1243,14 +1262,12 @@ contract MultichainGovernor is
         uint16 sourceChain,
         bytes memory payload
     ) internal override {
-        /// TODO verify the finding from Dominik, and if correct, increase size from 128 to 160
         /// payload should be 4 uint256s
         require(
             payload.length == 128,
             "MultichainGovernor: invalid payload length"
         );
 
-        /// TODO verify the finding from Dominik, and if correct, add sender chain to this payload
         (
             uint256 proposalId,
             uint256 forVotes,

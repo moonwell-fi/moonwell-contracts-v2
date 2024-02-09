@@ -157,7 +157,6 @@ interface IMultichainGovernor {
         uint256[] values;
         /// @notice The ordered list of calldata to be passed to each call
         bytes[] calldatas;
-        /// TODO on naming here
         /// @notice The timestamp at which vote snapshots are taken at
         uint256 voteSnapshotTimestamp;
         /// @notice the timestamp at which users can begin voting

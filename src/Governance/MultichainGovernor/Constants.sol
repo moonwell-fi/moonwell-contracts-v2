@@ -18,8 +18,6 @@ library Constants {
     /// @notice value for an abstain vote
     uint8 public constant VOTE_VALUE_ABSTAIN = 2;
 
-    /// TODO review these constants before deployment
-
     /// @notice the minimum amount of time for cross chain vote collection.
     /// This ensures that votes cast on other chains have the ability to
     /// be registered even if Wormhole experiences downtime or delays.

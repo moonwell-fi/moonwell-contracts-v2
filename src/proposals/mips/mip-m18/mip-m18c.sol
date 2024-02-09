@@ -24,13 +24,11 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice trusted senders for the temporal governor
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
-    /// TODO verify these params with Luke before code freeze
-
     /// @notice duration of the voting period for a proposal
     uint256 public constant votingPeriodSeconds = 3 days;
 
     /// @notice minimum number of votes cast required for a proposal to pass
-    uint256 public constant quorum = 1_000_000 * 1e18;
+    uint256 public constant quorum = 100_000_000 * 1e18;
 
     /// @notice maximum number of live proposals that a user can have
     uint256 public constant maxUserLiveProposals = 5;
@@ -42,7 +40,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
     address[] public temporalGovernanceTargets;
 
     /// @notice threshold of tokens required to create a proposal
-    uint256 public constant proposalThreshold = 100_000_000 * 1e18;
+    uint256 public constant proposalThreshold = 1_000_000 * 1e18;
 
     /// @notice duration of the cross chain vote collection period
     uint256 public constant crossChainVoteCollectionPeriod = 1 days;
@@ -56,6 +54,18 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
         require(
             temporalGovernanceTargets.length == 0,
             "calldata already set in mip-18-c"
+        );
+        require(
+            temporalGovernanceTrustedSenders.length == 0,
+            "temporal gov trusted sender already set in mip-18-c"
+        );
+        require(
+            approvedCalldata.length == 0,
+            "approved calldata already set in mip-18-c"
+        );
+        require(
+            temporalGovernanceCalldata.length == 0,
+            "temporal gov calldata already set in mip-18-c"
         );
 
         address artemisTimelock = addresses.getAddress("ARTEMIS_TIMELOCK");
@@ -74,6 +84,8 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             })
         );
 
+        /// new break glass guardian call for adding artemis as an owner of the Temporal Governor
+
         /// roll back trusted senders to artemis timelock
         /// in reality this just adds the artemis timelock as a trusted sender
         /// a second proposal is needed to revoke the Multichain Governor as a trusted sender
@@ -81,31 +93,6 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             abi.encodeWithSignature(
                 "setTrustedSenders((uint16,address)[])",
                 temporalGovernanceTrustedSenders
-            )
-        );
-
-        approvedCalldata.push(
-            abi.encodeWithSignature(
-                "transferOwnership(address)",
-                artemisTimelock
-            )
-        );
-
-        approvedCalldata.push(
-            abi.encodeWithSignature("changeAdmin(address)", artemisTimelock)
-        );
-
-        approvedCalldata.push(
-            abi.encodeWithSignature(
-                "setEmissionsManager(address)",
-                artemisTimelock
-            )
-        );
-
-        approvedCalldata.push(
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                artemisTimelock
             )
         );
 
@@ -128,6 +115,42 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 200
             )
         );
+
+        /// old break glass guardian calls from Artemis Governor
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "_setPendingAdmin(address)",
+                artemisTimelock
+            )
+        );
+
+        /// for chainlink oracle
+        approvedCalldata.push(
+            abi.encodeWithSignature("setAdmin(address)", artemisTimelock)
+        );
+
+        /// for stkWELL
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "setEmissionsManager(address)",
+                artemisTimelock
+            )
+        );
+
+        /// for stkWELL
+        approvedCalldata.push(
+            abi.encodeWithSignature("changeAdmin(address)", artemisTimelock)
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "transferOwnership(address)",
+                artemisTimelock
+            )
+        );
+
+        /// TODO add setPendingAdmin(address) ?
     }
 
     function afterDeploy(Addresses addresses, address) public override {
@@ -140,7 +163,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
         /// executing proposal on moonbeam, but this proposal needs an address from base
         address multichainVoteCollection = addresses.getAddress(
             "VOTE_COLLECTION_PROXY",
-            baseChainId
+            sendingChainIdToReceivingChainId[block.chainid]
         );
 
         WormholeTrustedSender.TrustedSender[]
@@ -149,7 +172,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             );
 
         trustedSenders[0].addr = multichainVoteCollection;
-        trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid];
+        trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid]; /// base wormhole chain id
 
         MultichainGovernor.InitializeData memory initData;
 
@@ -177,7 +200,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             "WORMHOLE_BRIDGE_RELAYER"
         );
 
-        require(approvedCalldata.length != 0, "calldata not set");
+        require(approvedCalldata.length == 6, "calldata not set");
 
         governor.initialize(initData, trustedSenders, approvedCalldata);
     }
@@ -234,6 +257,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             addresses.getAddress("stkWELL"),
             "incorrect stkWell address"
         );
+        /// TODO change ownership of the distributor proxy
         assertEq(
             address(governor.distributor()),
             addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY"),
@@ -250,6 +274,16 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             "incorrect live proposals count"
         );
         assertEq(
+            address(governor.wormholeRelayer()),
+            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+            "incorrect wormholeRelayer"
+        );
+        assertEq(
+            governor.breakGlassGuardian(),
+            addresses.getAddress("BREAK_GLASS_GUARDIAN"),
+            "incorrect break glass guardian"
+        );
+        assertEq(
             governor.pauseGuardian(),
             addresses.getAddress("MOONBEAM_PAUSE_GUARDIAN_MULTISIG"),
             "incorrect moonbeam pause guardian"
@@ -263,6 +297,24 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
         assertFalse(governor.paused(), "incorrect paused state");
         assertFalse(governor.pauseUsed(), "incorrect pauseUsed state");
 
+        assertEq(
+            governor.targetAddress(chainIdToWormHoleId[block.chainid]),
+            addresses.getAddress(
+                "VOTE_COLLECTION_PROXY",
+                sendingChainIdToReceivingChainId[block.chainid]
+            ),
+            "vote collection proxy not in target address"
+        );
+        assertEq(
+            governor.getAllTargetChainsLength(),
+            1,
+            "incorrect target chains length"
+        );
+        assertEq(
+            governor.getAllTargetChains()[0],
+            chainIdToWormHoleId[block.chainid],
+            "incorrect target chains length"
+        );
         assertTrue(
             governor.isTrustedSender(
                 chainIdToWormHoleId[block.chainid],

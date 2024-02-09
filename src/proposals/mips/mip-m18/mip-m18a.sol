@@ -8,7 +8,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 
-import {validateProxy, _IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
+import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 
 /// Proposal to run on Moonbeam to create the Multichain Governor contract
 contract mipm18a is ChainIds, HybridProposal, MultichainGovernorDeploy {

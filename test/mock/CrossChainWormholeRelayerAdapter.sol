@@ -4,14 +4,15 @@ import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
+import {console} from "@forge-std/console.sol";
 
-import "@forge-std/Test.sol";
+import {Vm} from "@forge-std/Vm.sol";
 
 /// @notice Wormhole Token Relayer Adapter
-abstract contract CrossChainWormholeRelayerAdapter is
-    IMultichainProposal,
-    Test
-{
+contract CrossChainWormholeRelayerAdapter is IMultichainProposal {
+    Vm private constant vm =
+        Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
     /// @notice fork ID for base
     uint256 public baseForkId;
 
@@ -59,6 +60,8 @@ abstract contract CrossChainWormholeRelayerAdapter is
     }
 
     function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) external {
+        console.log("baseForkId", baseForkId);
+        console.log("moonbeamForkId", moonbeamForkId);
         require(
             baseForkId == 0 && moonbeamForkId == 0,
             "setForkIds: fork IDs already set"
@@ -88,30 +91,46 @@ abstract contract CrossChainWormholeRelayerAdapter is
         uint256, /// shhh
         uint256 /// shhh
     ) external payable returns (uint64) {
+        console.log("sendPayloadToEvm called");
         if (shouldRevertAtChain[chainId]) {
             revert("WormholeBridgeAdapter: sendPayloadToEvm revert");
         }
 
         require(msg.value == nativePriceQuote, "incorrect value");
 
-        uint256 senderFork = vm.activeFork();
+        console.log("targetAddress", targetAddress);
+        console.log("chainId", chainId);
+        uint256 senderFork = chainId == 16 ? moonbeamForkId : baseForkId;
+
         uint16 senderChain = senderFork == moonbeamForkId ? 16 : 30;
+
         uint256 flipFork = senderFork == moonbeamForkId
             ? baseForkId
             : moonbeamForkId;
 
+        console.log("msg.sender before flip chain", msg.sender);
+
         vm.selectFork(flipFork);
 
+        console.log("senderFork", senderFork);
+        console.log("senderChain", senderChain);
+
+        ++nonce;
+        console.log("msg.sender after flip chain", msg.sender);
         /// immediately call the target
         IWormholeReceiver(targetAddress).receiveWormholeMessages(
             payload,
             new bytes[](0),
             bytes32(uint256(uint160(msg.sender))),
             senderChain, // chain not the target chain
-            bytes32(++nonce)
+            bytes32(nonce)
         );
 
+        console.log("nonce after call", nonce);
+
         vm.selectFork(senderFork);
+
+        console.log("senderFork after call", senderFork);
 
         return uint64(nonce);
     }

@@ -45,6 +45,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
         /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
+
         (
             address ecosystemReserveProxy,
             address ecosystemReserveImplementation,
@@ -70,7 +71,6 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 ecosystemReserveProxy,
                 /// check that emissions manager on Moonbeam is the Artemis Timelock, so on Base it should be the temporal governor
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
-                /// TODO double check the distribution duration
                 distributionDuration,
                 address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
                 proxyAdmin
@@ -86,9 +86,9 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 addresses.getAddress("xWELL_PROXY"),
                 addresses.getAddress("stkWELL_PROXY"),
                 addresses.getAddress( /// fetch multichain governor address on Moonbeam
-                        "MULTICHAIN_GOVERNOR_PROXY",
-                        sendingChainIdToReceivingChainId[block.chainid]
-                    ),
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    sendingChainIdToReceivingChainId[block.chainid]
+                ),
                 addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
                 chainIdToWormHoleId[block.chainid],
                 proxyAdmin,
@@ -104,7 +104,11 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
             );
 
-        assertEq(ecosystemReserveController.owner(), address(this), "01021");
+        assertEq(
+            ecosystemReserveController.owner(),
+            address(this),
+            "incorrect owner"
+        );
         assertEq(
             address(ecosystemReserveController.ECOSYSTEM_RESERVE()),
             address(0),
@@ -118,8 +122,6 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         /// set the ecosystem reserve
         ecosystemReserveController.setEcosystemReserve(ecosystemReserve);
 
-        console.log("block chain id: ", block.chainid);
-
         /// approve stkWELL contract to spend xWELL from the ecosystem reserve contract
         ecosystemReserveController.approve(
             addresses.getAddress("xWELL_PROXY"),
@@ -131,6 +133,13 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         ecosystemReserveController.transferOwnership(
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
+
+        IEcosystemReserveUplift ecosystemReserveContract = IEcosystemReserveUplift(
+                addresses.getAddress("ECOSYSTEM_RESERVE_IMPL")
+            );
+
+        /// take ownership of the ecosystem reserve impl to prevent any further changes or hijacking
+        ecosystemReserveContract.initialize(address(1));
     }
 
     function validate(Addresses addresses, address) public override {
@@ -210,6 +219,15 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 approvalAmount,
                 "ecosystem reserve not approved to give stkWELL_PROXY approvalAmount"
             );
+
+            ecosystemReserve = IEcosystemReserveUplift(
+                addresses.getAddress("ECOSYSTEM_RESERVE_IMPL")
+            );
+            assertEq(
+                ecosystemReserve.getFundsAdmin(),
+                address(1),
+                "funds admin on impl incorrect"
+            );
         }
 
         /// validate stkWELL contract
@@ -244,6 +262,11 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 stkWell.COOLDOWN_SECONDS(),
                 cooldownSeconds,
                 "incorrect cooldown seconds"
+            );
+            assertEq(
+                stkWell.DISTRIBUTION_END(),
+                block.timestamp + distributionDuration,
+                "incorrect distribution duration"
             );
             assertEq(
                 stkWell.EMISSION_MANAGER(),
