@@ -73,6 +73,13 @@ contract MultichainProposalTest is
         uint8 consistencyLevel
     );
 
+    event VotesEmitted(
+        uint256 proposalId,
+        uint256 forVotes,
+        uint256 againstVotes,
+        uint256 abstainVotes
+    );
+
     uint256 public baseForkId = vm.createFork("https://mainnet.base.org");
 
     uint256 public moonbeamForkId =
@@ -524,13 +531,6 @@ contract MultichainProposalTest is
         well.transfer(address(this), mintAmount);
         well.delegate(address(this));
 
-        vm.selectFork(baseForkId);
-        deal(address(stakedWellBase), address(this), mintAmount);
-
-        vm.warp(block.timestamp + 1);
-
-        vm.selectFork(moonbeamForkId);
-
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
 
@@ -667,13 +667,6 @@ contract MultichainProposalTest is
         well.transfer(address(this), mintAmount);
         well.delegate(address(this));
 
-        vm.selectFork(baseForkId);
-        deal(address(stakedWellBase), address(this), mintAmount);
-
-        vm.warp(block.timestamp + 1);
-
-        vm.selectFork(moonbeamForkId);
-
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
 
@@ -798,13 +791,6 @@ contract MultichainProposalTest is
         deal(address(well), address(this), mintAmount);
         well.transfer(address(this), mintAmount);
         well.delegate(address(this));
-
-        vm.selectFork(baseForkId);
-        deal(address(stakedWellBase), address(this), mintAmount);
-
-        vm.warp(block.timestamp + 1);
-
-        vm.selectFork(moonbeamForkId);
 
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
@@ -1038,7 +1024,29 @@ contract MultichainProposalTest is
 
     function testEmittingVotesMultipleTimesVoteCollectionPeriodSucceeds()
         public
-    {}
+    {
+        uint256 proposalId = testVotingOnBasexWellSucceeds();
+
+        vm.selectFork(baseForkId);
+
+        (
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            uint256 forVotes,
+            uint256 againstVotes,
+            uint256 abstainVotes
+        ) = voteCollection.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp);
+
+        vm.expectEmit(true, true, true, true, address(voteCollection));
+        emit VotesEmitted(proposalId, forVotes, againstVotes, abstainVotes);
+
+        voteCollection.emitVotes(proposalId);
+    }
 
     function testReceiveProposalFromRelayersSucceeds() public {}
 
