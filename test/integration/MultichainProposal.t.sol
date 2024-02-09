@@ -93,49 +93,6 @@ contract MultichainProposalTest is
     function setUp() public override {
         super.setUp();
 
-        {
-            vm.selectFork(moonbeamForkId);
-
-            CrossChainWormholeRelayerAdapter relayerAdapter = new CrossChainWormholeRelayerAdapter();
-            vm.makePersistent(address(relayerAdapter));
-
-            wormholeRelayerAdapterMoonbeam = CrossChainWormholeRelayerAdapter(
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER", moonBeamChainId)
-            );
-
-            vm.etch(
-                address(wormholeRelayerAdapterMoonbeam),
-                address(relayerAdapter).code
-            );
-
-            vm.makePersistent(address(wormholeRelayerAdapterMoonbeam));
-
-            wormholeRelayerAdapterMoonbeam.setForkIds(
-                baseForkId,
-                moonbeamForkId
-            );
-        }
-
-        {
-            vm.selectFork(baseForkId);
-
-            CrossChainWormholeRelayerAdapter relayerAdapter = new CrossChainWormholeRelayerAdapter();
-            vm.makePersistent(address(relayerAdapter));
-
-            wormholeRelayerAdapterBase = CrossChainWormholeRelayerAdapter(
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER", baseChainId)
-            );
-
-            vm.etch(
-                address(wormholeRelayerAdapterBase),
-                address(relayerAdapter).code
-            );
-
-            vm.makePersistent(address(wormholeRelayerAdapterBase));
-
-            wormholeRelayerAdapterBase.setForkIds(baseForkId, moonbeamForkId);
-        }
-
         vm.selectFork(moonbeamForkId);
 
         proposalA = new mipm18a();
@@ -175,6 +132,36 @@ contract MultichainProposalTest is
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
         );
+
+        {
+            vm.selectFork(moonbeamForkId);
+
+            CrossChainWormholeRelayerAdapter relayerAdapter = new CrossChainWormholeRelayerAdapter();
+
+            relayerAdapter.setForkIds(baseForkId, moonbeamForkId);
+
+            vm.store(
+                address(governor),
+                bytes32(uint256(103)),
+                bytes32(uint256(uint160(address(relayerAdapter))))
+            );
+
+            vm.makePersistent(address(relayerAdapter));
+        }
+
+        {
+            vm.selectFork(baseForkId);
+
+            CrossChainWormholeRelayerAdapter relayerAdapter = new CrossChainWormholeRelayerAdapter();
+
+            wormholeRelayerAdapterBase = CrossChainWormholeRelayerAdapter(
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER", baseChainId)
+            );
+
+            vm.makePersistent(address(wormholeRelayerAdapterBase));
+
+            // wormholeRelayerAdapterBase.setForkIds(baseForkId, moonbeamForkId);
+        }
     }
 
     function testSetup() public {
