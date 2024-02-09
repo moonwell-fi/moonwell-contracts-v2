@@ -162,6 +162,7 @@ invariant proposalIdValid(env e, uint256 proposalId)
     }
 
 // invariant proposalIdImpliesUserProposal(env e, uint256 proposalId, address proposer) 
+/// TODO try using proposalInformationStruct here to get the proposer address
 //     proposalValid(proposalId) <=> userHasProposal(proposalId, proposer) {
 //         preserved {
 //             requireInvariant proposalIdValid(e, proposalId);

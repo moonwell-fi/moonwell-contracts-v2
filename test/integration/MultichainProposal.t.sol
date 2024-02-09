@@ -1055,16 +1055,8 @@ contract MultichainProposalTest is
                 uint256 abstainVotes
             ) = voteCollection.proposalVotes(proposalId);
 
-            assertEq(
-                totalVotes,
-                stakedWellBase.balanceOf(address(this)),
-                "incorrect total votes"
-            );
-            assertEq(
-                forVotes,
-                stakedWellBase.balanceOf(address(this)),
-                "incorrect for votes"
-            );
+            assertEq(totalVotes, xwellMintAmount, "incorrect total votes");
+            assertEq(forVotes, xwellMintAmount, "incorrect for votes");
             assertEq(againstVotes, 0, "incorrect against votes");
             assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
