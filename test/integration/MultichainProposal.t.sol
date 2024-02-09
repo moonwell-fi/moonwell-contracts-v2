@@ -302,8 +302,9 @@ contract MultichainProposalTest is
         IEcosystemReserveControllerUplift ecosystemReserveController = IEcosystemReserveControllerUplift(
                 addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
             );
+        address ownerAddress = ecosystemReserveController.owner();
 
-        vm.prank(ecosystemReserveController.owner());
+        vm.prank(ownerAddress);
         vm.expectRevert("ECOSYSTEM_RESERVE has been initialized");
         ecosystemReserveController.setEcosystemReserve(address(0));
 
@@ -312,6 +313,7 @@ contract MultichainProposalTest is
         );
 
         vm.expectRevert("Initializable: contract is already initialized");
+        ecosystemReserve.initialize(address(1));
 
         ecosystemReserve = IEcosystemReserveUplift(
             addresses.getAddress("ECOSYSTEM_RESERVE_IMPL")
