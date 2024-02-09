@@ -1,7 +1,7 @@
 // SPDX-License-Iden`fier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
@@ -10,7 +10,6 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {mipb06 as mip} from "@proposals/mips/mip-b06/mip-b06.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
