@@ -150,6 +150,9 @@ contract MultichainProposalTest is
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
         );
+        // make governor persistent so we can call receiveWormholeMessage on
+        // governor from base
+        vm.makePersistent(address(governor));
         {
             vm.selectFork(moonbeamForkId);
 
@@ -1042,10 +1045,13 @@ contract MultichainProposalTest is
 
         vm.warp(crossChainVoteCollectionEndTimestamp);
 
+        uint256 bridgeCost = voteCollection.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
         vm.expectEmit(true, true, true, true, address(voteCollection));
         emit VotesEmitted(proposalId, forVotes, againstVotes, abstainVotes);
 
-        voteCollection.emitVotes(proposalId);
+        voteCollection.emitVotes{value: bridgeCost}(proposalId);
     }
 
     function testReceiveProposalFromRelayersSucceeds() public {}
@@ -1067,9 +1073,6 @@ contract MultichainProposalTest is
             ,
 
         ) = voteCollection.proposalInformation(proposalId);
-
-        // vm.expectEmit()
-        // VotesEmitted(proposalId);
 
         vm.warp(crossChainVoteCollectionEndTimestamp + 1);
         vm.expectRevert(
