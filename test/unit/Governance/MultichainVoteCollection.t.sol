@@ -1413,6 +1413,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         vm.expectRevert(
             "MultichainVoteCollection: start time must be before end time"
         );
+
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
             30,
             address(voteCollection),
