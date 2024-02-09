@@ -69,6 +69,7 @@ contract MultichainProposalTest is
     xWELL public xwell;
     IStakedWell public stakedWellMoonbeam;
     IStakedWell public stakedWellBase;
+    Well public distributor;
 
     event ProposalCreated(
         uint256 proposalId,
@@ -151,10 +152,17 @@ contract MultichainProposalTest is
         xwell = xWELL(addresses.getAddress("xWELL_PROXY", moonBeamChainId));
         // make xwell persistent so votes are valid on both chains
         vm.makePersistent(address(xwell));
-        //        stakedWellMoonbeam = IStakedWell(
-        //            addresses.getAddress("stkWELL_PROXY", moonBeamChainId)
-        //        );
-        // TODO check if we have correct bytecode
+
+        stakedWellMoonbeam = IStakedWell(
+            addresses.getAddress("stkWELL", moonBeamChainId)
+        );
+
+        distributor = Well(
+            addresses.getAddress(
+                "TOKEN_SALE_DISTRIBUTOR_PROXY",
+                moonBeamChainId
+            )
+        );
 
         timelock = Timelock(
             addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)
@@ -532,6 +540,399 @@ contract MultichainProposalTest is
             );
             assertEq(uint256(governor.state(proposalId)), 5, "not in executed");
         }
+    }
+
+    function testVotingOnMoonbeamAllTokens() public {
+        vm.selectFork(moonbeamForkId);
+
+        // mint 1/4 of the amount for each token
+        uint256 mintAmount = governor.quorum() / 4;
+
+        address user = address(1);
+        vm.startPrank(user);
+        deal(address(well), user, mintAmount);
+        well.approve(address(stakedWellMoonbeam), mintAmount);
+        stakedWellMoonbeam.stake(user, mintAmount);
+
+        deal(address(well), user, mintAmount);
+        well.delegate(user);
+
+        deal(address(xwell), user, mintAmount);
+        xwell.delegate(user);
+
+        deal(address(distributor), user, mintAmount);
+        distributor.delegate(user);
+
+        vm.stopPrank();
+
+        // mint threshold for proposer
+        deal(address(well), address(this), governor.proposalThreshold());
+        well.delegate(address(this));
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
+
+        uint256 proposalId;
+
+        {
+            address[] memory targets = new address[](1);
+            uint256[] memory values = new uint256[](1);
+            bytes[] memory calldatas = new bytes[](1);
+            string
+                memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+            targets[0] = address(governor);
+            values[0] = 0;
+            calldatas[0] = abi.encodeWithSignature(
+                "updateProposalThreshold(uint256)",
+                100_000_000 * 1e18
+            );
+
+            uint256 startingProposalId = governor.proposalCount();
+            uint256 bridgeCost = governor.bridgeCostAll();
+            vm.deal(address(this), bridgeCost);
+
+            proposalId = governor.propose{value: bridgeCost}(
+                targets,
+                values,
+                calldatas,
+                description
+            );
+
+            assertEq(
+                proposalId,
+                startingProposalId + 1,
+                "incorrect proposal id"
+            );
+            assertEq(
+                uint256(governor.state(proposalId)),
+                0,
+                "incorrect proposal state"
+            );
+
+            assertTrue(
+                governor.userHasProposal(proposalId, address(this)),
+                "user has proposal"
+            );
+            assertTrue(
+                governor.proposalValid(proposalId),
+                "user does not have proposal"
+            );
+        }
+
+        {
+            (
+                uint256 totalVotes,
+                uint256 forVotes,
+                uint256 againstVotes,
+                uint256 abstainVotes
+            ) = governor.proposalVotes(proposalId);
+
+            assertEq(totalVotes, 0, "incorrect total votes");
+            assertEq(forVotes, 0, "incorrect for votes");
+            assertEq(againstVotes, 0, "incorrect against votes");
+            assertEq(abstainVotes, 0, "incorrect abstain votes");
+        }
+
+        assertEq(
+            governor.getCurrentVotes(user),
+            mintAmount,
+            "incorrect current votes"
+        );
+
+        /// vote yes on proposal
+        vm.prank(user);
+        governor.castVote(proposalId, 0);
+
+        {
+            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+                .getReceipt(proposalId, user);
+            assertTrue(hasVoted, "has voted incorrect");
+            assertEq(voteValue, 0, "vote value incorrect");
+            assertEq(votes, mintAmount, "votes");
+
+            (
+                uint256 totalVotes,
+                uint256 forVotes,
+                uint256 againstVotes,
+                uint256 abstainVotes
+            ) = governor.proposalVotes(proposalId);
+
+            assertEq(
+                totalVotes,
+                governor.getCurrentVotes(user),
+                "incorrect total votes"
+            );
+            assertEq(
+                forVotes,
+                governor.getCurrentVotes(user),
+                "incorrect for votes"
+            );
+            assertEq(againstVotes, 0, "incorrect against votes");
+            assertEq(abstainVotes, 0, "incorrect abstain votes");
+        }
+        {
+            (
+                ,
+                ,
+                ,
+                ,
+                uint256 crossChainVoteCollectionEndTimestamp,
+                ,
+                ,
+                ,
+
+            ) = governor.proposalInformation(proposalId);
+
+            vm.warp(crossChainVoteCollectionEndTimestamp - 1);
+
+            assertEq(
+                uint256(governor.state(proposalId)),
+                1,
+                "not in xchain vote collection period"
+            );
+
+            vm.warp(crossChainVoteCollectionEndTimestamp);
+            assertEq(
+                uint256(governor.state(proposalId)),
+                1,
+                "not in xchain vote collection period at end"
+            );
+
+            vm.warp(block.timestamp + 1);
+            assertEq(
+                uint256(governor.state(proposalId)),
+                4,
+                "not in succeeded at end"
+            );
+        }
+
+        {
+            governor.execute(proposalId);
+
+            assertEq(
+                address(governor).balance,
+                0,
+                "incorrect governor balance"
+            );
+            assertEq(
+                governor.proposalThreshold(),
+                100_000_000 * 1e18,
+                "incorrect new proposal threshold"
+            );
+            assertEq(uint256(governor.state(proposalId)), 5, "not in executed");
+        }
+    }
+
+    function testProposeOnMoonbeamDefeat() public {
+        vm.selectFork(moonbeamForkId);
+
+        /// mint whichever is greater, the proposal threshold or the quorum
+        uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
+            ? governor.proposalThreshold()
+            : governor.quorum();
+
+        deal(address(well), address(this), mintAmount);
+        well.transfer(address(this), mintAmount);
+        well.delegate(address(this));
+
+        vm.roll(block.number + 1);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 startingProposalId = governor.proposalCount();
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertEq(proposalId, startingProposalId + 1, "incorrect proposal id");
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect proposal state"
+        );
+
+        assertTrue(
+            governor.userHasProposal(proposalId, address(this)),
+            "user has proposal"
+        );
+        assertTrue(
+            governor.proposalValid(proposalId),
+            "user does not have proposal"
+        );
+
+        {
+            (
+                uint256 totalVotes,
+                uint256 forVotes,
+                uint256 againstVotes,
+                uint256 abstainVotes
+            ) = governor.proposalVotes(proposalId);
+
+            assertEq(totalVotes, 0, "incorrect total votes");
+            assertEq(forVotes, 0, "incorrect for votes");
+            assertEq(againstVotes, 0, "incorrect against votes");
+            assertEq(abstainVotes, 0, "incorrect abstain votes");
+        }
+
+        /// vote yes on proposal
+        governor.castVote(proposalId, 1);
+
+        {
+            (bool hasVoted, uint8 voteValue, uint256 votes) = governor
+                .getReceipt(proposalId, address(this));
+            assertTrue(hasVoted, "has voted incorrect");
+            assertEq(voteValue, 1, "vote value incorrect");
+            assertEq(votes, governor.getCurrentVotes(address(this)), "votes");
+
+            (
+                uint256 totalVotes,
+                uint256 forVotes,
+                uint256 againstVotes,
+                uint256 abstainVotes
+            ) = governor.proposalVotes(proposalId);
+
+            assertEq(
+                totalVotes,
+                governor.getCurrentVotes(address(this)),
+                "incorrect total votes"
+            );
+            assertEq(forVotes, 0, "incorrect for votes");
+            assertEq(
+                againstVotes,
+                governor.getCurrentVotes(address(this)),
+                "incorrect against votes"
+            );
+            assertEq(abstainVotes, 0, "incorrect abstain votes");
+        }
+        {
+            (
+                ,
+                ,
+                ,
+                ,
+                uint256 crossChainVoteCollectionEndTimestamp,
+                ,
+                ,
+                ,
+
+            ) = governor.proposalInformation(proposalId);
+
+            vm.warp(crossChainVoteCollectionEndTimestamp - 1);
+
+            assertEq(
+                uint256(governor.state(proposalId)),
+                1,
+                "not in xchain vote collection period"
+            );
+
+            vm.warp(crossChainVoteCollectionEndTimestamp);
+            assertEq(
+                uint256(governor.state(proposalId)),
+                1,
+                "not in xchain vote collection period at end"
+            );
+
+            vm.warp(block.timestamp + 1);
+            assertEq(
+                uint256(governor.state(proposalId)),
+                3,
+                "not in succeeded at end"
+            );
+        }
+
+        {
+            vm.expectRevert(
+                "MultichainGovernor: proposal can only be executed if it is Succeeded"
+            );
+            governor.execute(proposalId);
+
+            assertEq(
+                address(governor).balance,
+                0,
+                "incorrect governor balance"
+            );
+        }
+    }
+
+    function testProposeMoonbeamCancel() public {
+        vm.selectFork(moonbeamForkId);
+
+        /// mint whichever is greater, the proposal threshold or the quorum
+        uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
+            ? governor.proposalThreshold()
+            : governor.quorum();
+
+        deal(address(well), address(this), mintAmount);
+        well.transfer(address(this), mintAmount);
+        well.delegate(address(this));
+
+        vm.roll(block.number + 1);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 startingProposalId = governor.proposalCount();
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertEq(proposalId, startingProposalId + 1, "incorrect proposal id");
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect proposal state"
+        );
+
+        assertTrue(
+            governor.userHasProposal(proposalId, address(this)),
+            "user has proposal"
+        );
+        assertTrue(
+            governor.proposalValid(proposalId),
+            "user does not have proposal"
+        );
+
+        governor.cancel(proposalId);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            2,
+            "not in canceled state"
+        );
     }
 
     function testVotingOnBasestkWellSucceeds() public {
