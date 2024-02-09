@@ -38,7 +38,7 @@ import {mipm18c} from "@proposals/mips/mip-m18/mip-m18c.sol";
 import {mipm18d} from "@proposals/mips/mip-m18/mip-m18d.sol";
 import {mipm18e} from "@proposals/mips/mip-m18/mip-m18e.sol";
 
-import {_IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
+import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -1504,6 +1504,13 @@ contract MultichainProposalTest is
         emit VotesEmitted(proposalId, forVotes, againstVotes, abstainVotes);
 
         voteCollection.emitVotes{value: bridgeCost}(proposalId);
+
+        vm.deal(address(this), bridgeCost);
+
+        vm.expectEmit(true, true, true, true, address(voteCollection));
+        emit VotesEmitted(proposalId, forVotes, againstVotes, abstainVotes);
+
+        voteCollection.emitVotes{value: bridgeCost}(proposalId);
     }
 
     function testReceiveProposalFromRelayersSucceeds() public {
@@ -1969,11 +1976,13 @@ contract MultichainProposalTest is
             address(newVoteCollection)
         );
 
-        bytes32 data = vm.load(
+        validateProxy(
+            vm,
             addresses.getAddress("VOTE_COLLECTION_PROXY"),
-            _IMPLEMENTATION_SLOT
+            address(newVoteCollection),
+            addresses.getAddress("MRD_PROXY_ADMIN"),
+            "vote collection validation"
         );
-        assertEq(bytes32(uint256(uint160(address(newVoteCollection)))), data);
     }
 
     function testBreakGlassGuardianSucceedsSettingPendingAdminAndOwners()
