@@ -625,13 +625,13 @@ contract MultichainProposalTest is
 
         vm.selectFork(baseForkId);
         deal(address(stakedWellBase), address(this), mintAmount);
-        xwell.delegate(address(this));
 
         vm.warp(block.timestamp + 1);
 
         vm.selectFork(moonbeamForkId);
 
         vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
 
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
@@ -724,8 +724,8 @@ contract MultichainProposalTest is
 
             assertEq(totalVotes, mintAmount, "incorrect total votes");
             assertEq(forVotes, mintAmount, "incorrect for votes");
-            assertEq(againstVotes, mintAmount, "incorrect against votes");
-            assertEq(abstainVotes, mintAmount, "incorrect abstain votes");
+            assertEq(againstVotes, 0, "incorrect against votes");
+            assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
     }
 
