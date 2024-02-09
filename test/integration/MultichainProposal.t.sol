@@ -3,6 +3,8 @@ pragma solidity 0.8.19;
 
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import "@forge-std/Test.sol";
 
@@ -23,6 +25,7 @@ import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.so
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
+import {MockVoteCollection} from "@test/mock/MockVoteCollection.sol";
 import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
@@ -33,6 +36,8 @@ import {mipm18b} from "@proposals/mips/mip-m18/mip-m18b.sol";
 import {mipm18c} from "@proposals/mips/mip-m18/mip-m18c.sol";
 import {mipm18d} from "@proposals/mips/mip-m18/mip-m18d.sol";
 import {mipm18e} from "@proposals/mips/mip-m18/mip-m18e.sol";
+
+import {_IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -65,12 +70,26 @@ contract MultichainProposalTest is
     IStakedWell public stakedWellMoonbeam;
     IStakedWell public stakedWellBase;
 
+    event ProposalCreated(
+        uint256 proposalId,
+        uint256 votingStartTime,
+        uint256 votingEndTime,
+        uint256 votingCollectionEndTime
+    );
+
     event LogMessagePublished(
         address indexed sender,
         uint64 sequence,
         uint32 nonce,
         bytes payload,
         uint8 consistencyLevel
+    );
+
+    event VotesEmitted(
+        uint256 proposalId,
+        uint256 forVotes,
+        uint256 againstVotes,
+        uint256 abstainVotes
     );
 
     uint256 public baseForkId = vm.createFork("https://mainnet.base.org");
@@ -143,6 +162,9 @@ contract MultichainProposalTest is
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
         );
+        // make governor persistent so we can call receiveWormholeMessage on
+        // governor from base
+        vm.makePersistent(address(governor));
         {
             vm.selectFork(moonbeamForkId);
 
@@ -652,13 +674,6 @@ contract MultichainProposalTest is
         well.transfer(address(this), mintAmount);
         well.delegate(address(this));
 
-        vm.selectFork(baseForkId);
-        deal(address(stakedWellBase), address(this), mintAmount);
-
-        vm.warp(block.timestamp + 1);
-
-        vm.selectFork(moonbeamForkId);
-
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
 
@@ -783,13 +798,6 @@ contract MultichainProposalTest is
         deal(address(well), address(this), mintAmount);
         well.transfer(address(this), mintAmount);
         well.delegate(address(this));
-
-        vm.selectFork(baseForkId);
-        deal(address(stakedWellBase), address(this), mintAmount);
-
-        vm.warp(block.timestamp + 1);
-
-        vm.selectFork(moonbeamForkId);
 
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
@@ -1023,11 +1031,294 @@ contract MultichainProposalTest is
 
     function testEmittingVotesMultipleTimesVoteCollectionPeriodSucceeds()
         public
-    {}
+    {
+        uint256 proposalId = testVotingOnBasexWellSucceeds();
 
-    function testReceiveProposalFromRelayersSucceeds() public {}
+        vm.selectFork(baseForkId);
 
-    function testReceiveSameProposalFromRelayersTwiceFails() public {}
+        (
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            uint256 forVotes,
+            uint256 againstVotes,
+            uint256 abstainVotes
+        ) = voteCollection.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp);
+
+        uint256 bridgeCost = voteCollection.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        vm.expectEmit(true, true, true, true, address(voteCollection));
+        emit VotesEmitted(proposalId, forVotes, againstVotes, abstainVotes);
+
+        voteCollection.emitVotes{value: bridgeCost}(proposalId);
+    }
+
+    function testReceiveProposalFromRelayersSucceeds() public {
+        vm.selectFork(moonbeamForkId);
+
+        /// mint whichever is greater, the proposal threshold or the quorum
+        uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
+            ? governor.proposalThreshold()
+            : governor.quorum();
+
+        deal(address(well), address(this), mintAmount);
+        well.transfer(address(this), mintAmount);
+        well.delegate(address(this));
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect proposal state"
+        );
+
+        assertTrue(
+            governor.userHasProposal(proposalId, address(this)),
+            "user has proposal"
+        );
+        assertTrue(
+            governor.proposalValid(proposalId),
+            "user does not have proposal"
+        );
+
+        {
+            uint256 startTimestamp = block.timestamp;
+            uint256 endTimestamp = startTimestamp + governor.votingPeriod();
+            uint256 crossChainPeriod = endTimestamp +
+                governor.crossChainVoteCollectionPeriod();
+            bytes memory payload = abi.encode(
+                1,
+                startTimestamp - 1,
+                startTimestamp,
+                endTimestamp,
+                crossChainPeriod
+            );
+
+            vm.selectFork(baseForkId);
+
+            uint256 gasCost = wormholeRelayerAdapterBase.nativePriceQuote();
+
+            vm.deal(address(governor), gasCost);
+
+            vm.expectEmit(true, true, true, true, address(voteCollection));
+            emit ProposalCreated(
+                proposalId,
+                startTimestamp,
+                endTimestamp,
+                crossChainPeriod
+            );
+
+            vm.prank(address(governor));
+            wormholeRelayerAdapterBase.sendPayloadToEvm{value: gasCost}(
+                30,
+                address(voteCollection),
+                payload,
+                0,
+                0
+            );
+
+            (
+                uint256 voteSnapshotTimestamp,
+                uint256 votingStartTime,
+                uint256 votingEndTime,
+                uint256 crossChainVoteCollectionEndTimestamp,
+                uint256 totalVotes,
+                uint256 forVotes,
+                uint256 againstVotes,
+                uint256 abstainVotes
+            ) = voteCollection.proposalInformation(proposalId);
+
+            assertEq(
+                voteSnapshotTimestamp,
+                startTimestamp - 1,
+                "incorrect snapshot"
+            );
+            assertEq(
+                votingStartTime,
+                startTimestamp,
+                "incorrect voting start time"
+            );
+            assertEq(votingEndTime, endTimestamp, "incorrect voting end time");
+            assertEq(
+                crossChainVoteCollectionEndTimestamp,
+                crossChainPeriod,
+                "incorrect cross chain vote collection end time"
+            );
+
+            assertEq(totalVotes, 0, "incorrect total votes");
+            assertEq(forVotes, 0, "incorrect for votes");
+            assertEq(againstVotes, 0, "incorrect against votes");
+            assertEq(abstainVotes, 0, "incorrect abstain votes");
+        }
+    }
+
+    function testReceiveSameProposalFromRelayersTwiceFails() public {
+        vm.selectFork(moonbeamForkId);
+
+        /// mint whichever is greater, the proposal threshold or the quorum
+        uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
+            ? governor.proposalThreshold()
+            : governor.quorum();
+
+        deal(address(well), address(this), mintAmount);
+        well.transfer(address(this), mintAmount);
+        well.delegate(address(this));
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect proposal state"
+        );
+
+        assertTrue(
+            governor.userHasProposal(proposalId, address(this)),
+            "user has proposal"
+        );
+        assertTrue(
+            governor.proposalValid(proposalId),
+            "user does not have proposal"
+        );
+
+        {
+            uint256 startTimestamp = block.timestamp;
+            uint256 endTimestamp = startTimestamp + governor.votingPeriod();
+            uint256 crossChainPeriod = endTimestamp +
+                governor.crossChainVoteCollectionPeriod();
+            bytes memory payload = abi.encode(
+                1,
+                startTimestamp - 1,
+                startTimestamp,
+                endTimestamp,
+                crossChainPeriod
+            );
+
+            vm.selectFork(baseForkId);
+
+            uint256 gasCost = wormholeRelayerAdapterBase.nativePriceQuote();
+
+            vm.deal(address(governor), gasCost);
+
+            vm.expectEmit(true, true, true, true, address(voteCollection));
+            emit ProposalCreated(
+                proposalId,
+                startTimestamp,
+                endTimestamp,
+                crossChainPeriod
+            );
+
+            vm.prank(address(governor));
+            wormholeRelayerAdapterBase.sendPayloadToEvm{value: gasCost}(
+                30,
+                address(voteCollection),
+                payload,
+                0,
+                0
+            );
+
+            (
+                uint256 voteSnapshotTimestamp,
+                uint256 votingStartTime,
+                uint256 votingEndTime,
+                uint256 crossChainVoteCollectionEndTimestamp,
+                uint256 totalVotes,
+                uint256 forVotes,
+                uint256 againstVotes,
+                uint256 abstainVotes
+            ) = voteCollection.proposalInformation(proposalId);
+
+            assertEq(
+                voteSnapshotTimestamp,
+                startTimestamp - 1,
+                "incorrect snapshot"
+            );
+            assertEq(
+                votingStartTime,
+                startTimestamp,
+                "incorrect voting start time"
+            );
+            assertEq(votingEndTime, endTimestamp, "incorrect voting end time");
+            assertEq(
+                crossChainVoteCollectionEndTimestamp,
+                crossChainPeriod,
+                "incorrect cross chain vote collection end time"
+            );
+
+            assertEq(totalVotes, 0, "incorrect total votes");
+            assertEq(forVotes, 0, "incorrect for votes");
+            assertEq(againstVotes, 0, "incorrect against votes");
+            assertEq(abstainVotes, 0, "incorrect abstain votes");
+
+            vm.deal(address(governor), gasCost);
+
+            vm.expectRevert(
+                "MultichainVoteCollection: proposal already exists"
+            );
+            vm.prank(address(governor));
+            wormholeRelayerAdapterBase.sendPayloadToEvm{value: gasCost}(
+                30,
+                address(voteCollection),
+                payload,
+                0,
+                0
+            );
+        }
+    }
 
     function testEmittingVotesPostVoteCollectionPeriodFails() public {
         uint256 proposalId = testVotingOnBasexWellSucceeds();
@@ -1044,9 +1335,6 @@ contract MultichainProposalTest is
             ,
 
         ) = voteCollection.proposalInformation(proposalId);
-
-        // vm.expectEmit()
-        // VotesEmitted(proposalId);
 
         vm.warp(crossChainVoteCollectionEndTimestamp + 1);
         vm.expectRevert(
@@ -1220,7 +1508,25 @@ contract MultichainProposalTest is
     }
 
     /// this requires a new mock relayer contract
-    function testUpgradeMultichainVoteCollection() public {}
+    function testUpgradeMultichainVoteCollection() public {
+        vm.selectFork(baseForkId);
+
+        MockVoteCollection newVoteCollection = new MockVoteCollection();
+
+        address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
+
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        ProxyAdmin(proxyAdmin).upgrade(
+            ITransparentUpgradeableProxy(address(voteCollection)),
+            address(newVoteCollection)
+        );
+
+        bytes32 data = vm.load(
+            addresses.getAddress("VOTE_COLLECTION_PROXY"),
+            _IMPLEMENTATION_SLOT
+        );
+        assertEq(bytes32(uint256(uint160(address(newVoteCollection)))), data);
+    }
 
     function testBreakGlassGuardianSucceedsSettingPendingAdminAndOwners()
         public
