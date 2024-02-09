@@ -1,3 +1,5 @@
+using MultichainVoteCollection as t;
+
 methods {
     function gasLimit() external returns (uint96) envfree;
     function getAllTargetChainsLength() external returns (uint256) envfree;
@@ -21,6 +23,7 @@ methods {
     function castVote(uint256 proposalId, uint8 voteValue) external;
 
     function setGasLimit(uint96) external;
+    function rewardsVault() external returns (address);
 }
 
 function oneEth() returns uint256 {
@@ -31,8 +34,11 @@ function oneDay() returns uint256 {
     return 86400;
 }
 
+
 /// ensure that the contract is initialized before asserting invariants, otherwise values will be 0
-ghost uint8 _initialized;
+ghost uint8 _initialized {
+    init_state axiom _initialized == 0;
+}
 
 hook Sstore _initialized uint8 newInitialized (uint8 oldInitialized) STORAGE {
     /// only valid state transition for _initialized is from 0 -> 1
@@ -42,21 +48,97 @@ hook Sstore _initialized uint8 newInitialized (uint8 oldInitialized) STORAGE {
     _initialized = newInitialized;
 }
 
-invariant minGasLimit(env e)
-    to_mathint(gasLimit()) >= to_mathint(400000) {
+ghost transfer(address,uint256) returns bool {
+    axiom forall address x. forall uint256 y. transfer(x, y) == true;
+}
+
+ghost approve(address,uint256) returns bool {
+    axiom forall address x. forall uint256 y. approve(x, y) == true;
+}
+
+invariant ghostMirrorsStorage()
+    _initialized == t._initialized {
         preserved {
-            require _initialized == 1;
+            requireInvariant ghostStorageLteOne();
         }
     }
 
-invariant targetChainsLengthAlwaysOne(env e)
-    to_mathint(getAllTargetChainsLength()) == to_mathint(1) {
+invariant ghostStorageLteOne()
+    to_mathint(_initialized) <= to_mathint(1) {
         preserved {
-            require _initialized == 1;
+            requireInvariant ghostMirrorsStorage();
         }
     }
 
-rule totalVotesSumAllVotes(method f, env e, uint256 proposalId) {
+rule minGasLimit(method f, env e)
+filtered {
+    f ->
+    f.selector == sig:initialize(address,address,address,address,uint16,address).selector ||
+    f.selector == sig:castVote(uint256,uint8).selector ||
+    f.selector == sig:emitVotes(uint256).selector ||
+    f.selector == sig:transferOwnership(address).selector ||
+    f.selector == sig:renounceOwnership().selector ||
+    f.selector == sig:acceptOwnership().selector ||
+    f.selector == sig:receiveWormholeMessages(bytes memory,bytes[] memory,bytes32,uint16,bytes32).selector ||
+    f.selector == sig:setGasLimit(uint96).selector
+} {
+
+    require _initialized == 1;
+    require to_mathint(gasLimit()) >= to_mathint(400000);
+    
+    calldataarg args;
+
+    f(e, args);
+
+    assert to_mathint(gasLimit()) >= to_mathint(400000), "gas limit below min";
+}
+
+rule targetChainsLengthAlwaysOne(method f, env e)
+filtered {
+    f ->
+    f.selector == sig:initialize(address,address,address,address,uint16,address).selector ||
+    f.selector == sig:castVote(uint256,uint8).selector ||
+    f.selector == sig:emitVotes(uint256).selector ||
+    f.selector == sig:transferOwnership(address).selector ||
+    f.selector == sig:renounceOwnership().selector ||
+    f.selector == sig:acceptOwnership().selector ||
+    f.selector == sig:receiveWormholeMessages(bytes memory,bytes[] memory,bytes32,uint16,bytes32).selector ||
+    f.selector == sig:setGasLimit(uint96).selector
+} {
+
+    require (_initialized == 0) => (to_mathint(getAllTargetChainsLength()) == to_mathint(0));
+    require (_initialized == 1) => (to_mathint(getAllTargetChainsLength()) == to_mathint(1));
+
+    requireInvariant ghostMirrorsStorage();
+    require to_mathint(getAllTargetChainsLength()) <= to_mathint(1);
+
+    calldataarg args;
+
+    f(e, args);
+
+    assert
+     to_mathint(getAllTargetChainsLength()) <= to_mathint(1),
+     "incorrect target chain length";
+
+    assert _initialized == t._initialized, "ghost incorrectly updated";
+
+    assert (_initialized == 0) => (to_mathint(getAllTargetChainsLength()) == to_mathint(0)), "incorrect target chain length, not initialized";
+    assert (_initialized == 1) => (to_mathint(getAllTargetChainsLength()) == to_mathint(1)), "incorrect target chain length, initialized";
+
+}
+
+rule totalVotesSumAllVotes(method f, env e, uint256 proposalId)
+filtered {
+    f ->
+    f.selector == sig:initialize(address,address,address,address,uint16,address).selector ||
+    f.selector == sig:castVote(uint256,uint8).selector ||
+    f.selector == sig:emitVotes(uint256).selector ||
+    f.selector == sig:transferOwnership(address).selector ||
+    f.selector == sig:renounceOwnership().selector ||
+    f.selector == sig:acceptOwnership().selector ||
+    f.selector == sig:receiveWormholeMessages(bytes memory,bytes[] memory,bytes32,uint16,bytes32).selector ||
+    f.selector == sig:setGasLimit(uint96).selector
+} {
     mathint voteSum;
     mathint forVotes;
     mathint againstVotes;
@@ -82,7 +164,18 @@ rule totalVotesSumAllVotes(method f, env e, uint256 proposalId) {
     assert voteSumPost == forVotesPost + againstVotesPost + abstainVotesPost, "proposal votes incorrect";
 }
 
-rule voteValueLteAbstain(method f, env e, uint256 proposalId, address voter) {
+rule voteValueLteAbstain(method f, env e, uint256 proposalId, address voter)
+filtered {
+    f ->
+    f.selector == sig:initialize(address,address,address,address,uint16,address).selector ||
+    f.selector == sig:castVote(uint256,uint8).selector ||
+    f.selector == sig:emitVotes(uint256).selector ||
+    f.selector == sig:transferOwnership(address).selector ||
+    f.selector == sig:renounceOwnership().selector ||
+    f.selector == sig:acceptOwnership().selector ||
+    f.selector == sig:receiveWormholeMessages(bytes memory,bytes[] memory,bytes32,uint16,bytes32).selector ||
+    f.selector == sig:setGasLimit(uint96).selector
+} {
     bool hasVoted;
     uint8 voteValue;
     uint256 votes;

@@ -1,3 +1,5 @@
+using MultichainGovernor as t;
+
 methods {
     function whitelistedCalldatas(bytes) external returns (bool) envfree;
     function proposalCount() external returns (uint256) envfree;
@@ -91,12 +93,18 @@ hook Sstore _initialized uint8 newInitialized (uint8 oldInitialized) STORAGE {
     _initialized = newInitialized;
 }
 
+
+invariant ghostMirrorsStorage(env e)
+    _initialized == t._initialized;
+
+
 /// Constants min and max invariants
 
 invariant maxQuorum(env e)
     to_mathint(quorum()) <= to_mathint(2500000000 * oneEth()) {
         preserved {
             require _initialized == 1;
+            requireInvariant ghostMirrorsStorage(e);
         }
     }
 
@@ -105,6 +113,7 @@ invariant maxProposalThreshold(env e)
      to_mathint(proposalThreshold()) >= to_mathint(1000000 * oneEth()) {
         preserved {
             require _initialized == 1;
+            requireInvariant ghostMirrorsStorage(e);
         }
     }
 
@@ -113,6 +122,7 @@ invariant minMaxVotingPeriod(env e)
      to_mathint(votingPeriod()) >= to_mathint(60 * 60) {
         preserved {
             require _initialized == 1;
+            requireInvariant ghostMirrorsStorage(e);
         }
     }
 
@@ -121,6 +131,7 @@ invariant maxCrossChainVoteCollectionPeriod(env e)
      to_mathint(crossChainVoteCollectionPeriod()) >= to_mathint(60 * 60) {
         preserved {
             require _initialized == 1;
+            requireInvariant ghostMirrorsStorage(e);
         }
     }
 
@@ -129,6 +140,7 @@ invariant minMaxUserLiveProposals(env e)
      to_mathint(maxUserLiveProposals()) >= to_mathint(1) {
         preserved {
             require _initialized == 1;
+            requireInvariant ghostMirrorsStorage(e);
         }
     }
 
@@ -136,6 +148,7 @@ invariant minGasLimit(env e)
     to_mathint(gasLimit()) >= to_mathint(400000) {
         preserved {
             require _initialized == 1;
+            requireInvariant ghostMirrorsStorage(e);
         }
     }
 
@@ -144,6 +157,7 @@ invariant proposalIdValid(env e, uint256 proposalId)
      to_mathint(proposalId) > to_mathint(0) {
         preserved {
             require _initialized == 1;
+            requireInvariant ghostMirrorsStorage(e);
         }
     }
 
