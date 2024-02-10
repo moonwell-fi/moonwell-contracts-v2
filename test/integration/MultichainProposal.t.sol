@@ -423,7 +423,7 @@ contract MultichainProposalTest is
         values[0] = 0;
         calldatas[0] = abi.encodeWithSignature(
             "updateProposalThreshold(uint256)",
-            100_000_000 * 1e18
+            40_000_000 * 1e18
         );
 
         uint256 startingProposalId = governor.proposalCount();
@@ -543,7 +543,7 @@ contract MultichainProposalTest is
             );
             assertEq(
                 governor.proposalThreshold(),
-                100_000_000 * 1e18,
+                40_000_000 * 1e18,
                 "incorrect new proposal threshold"
             );
             assertEq(uint256(governor.state(proposalId)), 5, "not in executed");
@@ -630,7 +630,7 @@ contract MultichainProposalTest is
             values[0] = 0;
             calldatas[0] = abi.encodeWithSignature(
                 "updateProposalThreshold(uint256)",
-                100_000_000 * 1e18
+                40_000_000 * 1e18
             );
 
             uint256 startingProposalId = governor.proposalCount();
@@ -764,7 +764,7 @@ contract MultichainProposalTest is
             );
             assertEq(
                 governor.proposalThreshold(),
-                100_000_000 * 1e18,
+                40_000_000 * 1e18,
                 "incorrect new proposal threshold"
             );
             assertEq(uint256(governor.state(proposalId)), 5, "not in executed");

@@ -512,7 +512,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testUpdateQuorumGovernorSucceeds() public {
-        uint256 newQuorum = 2_500_000_000 * 1e18;
+        uint256 newQuorum = 400_000_000 * 1e18;
 
         vm.prank(address(governor));
         governor.updateQuorum(newQuorum);

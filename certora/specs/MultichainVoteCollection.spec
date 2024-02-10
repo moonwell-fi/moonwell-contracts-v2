@@ -1,4 +1,5 @@
 using MultichainVoteCollection as t;
+using StakedWell as st;
 
 methods {
     function gasLimit() external returns (uint96) envfree;
@@ -24,6 +25,20 @@ methods {
 
     function setGasLimit(uint96) external;
     function rewardsVault() external returns (address);
+
+    //// summarize these functions to avoid havoc on calls
+
+    /// stkwell + xwell
+    function _.transferFrom(address sender, address recipient, uint256 amount) external => ALWAYS(true);
+    function _.transfer(address recipient, uint256 amount) external => ALWAYS(true);
+
+    /// ecosystem reserve contract
+    function EcosystemReserve._ external => NONDET;
+
+    /// stkWell ontransfer hook
+    function StakedWell.claimRewards(address to, uint256 amount) external => NONDET;
+    function StakedWell.redeem(address to, uint256 amount) external => NONDET;
+    function StakedWell.stake(address onBehalfOf, uint256 amount) external => NONDET;
 }
 
 function oneEth() returns uint256 {
@@ -66,6 +81,7 @@ invariant ghostMirrorsStorage()
 invariant ghostStorageLteOne()
     to_mathint(_initialized) <= to_mathint(1) {
         preserved {
+            require st._governance == 0;
             requireInvariant ghostMirrorsStorage();
         }
     }

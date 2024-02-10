@@ -34,7 +34,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
     uint256 public constant maxUserLiveProposals = 5;
 
     /// @notice duration of the pause
-    uint128 public constant pauseDuration = 10 days;
+    uint128 public constant pauseDuration = 30 days;
 
     /// @notice address of the temporal governor
     address[] public temporalGovernanceTargets;

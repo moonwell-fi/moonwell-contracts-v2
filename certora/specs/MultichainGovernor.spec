@@ -72,6 +72,10 @@ methods {
         bytes[] calldata
     ) external;
     function setGasLimit(uint96) external;
+
+    function proposalInformationStruct(
+        uint256 proposalId
+    ) external returns (IMultichainGovernor.ProposalInformation memory) envfree;
 }
 
 function oneEth() returns uint256 {
@@ -83,7 +87,9 @@ function oneDay() returns uint256 {
 }
 
 /// ensure that the contract is initialized before asserting invariants, otherwise values will be 0
-ghost uint8 _initialized;
+ghost uint8 _initialized {
+    init_state axiom _initialized == 0;
+}
 
 hook Sstore _initialized uint8 newInitialized (uint8 oldInitialized) STORAGE {
     /// only valid state transition for _initialized is from 0 -> 1
@@ -93,15 +99,20 @@ hook Sstore _initialized uint8 newInitialized (uint8 oldInitialized) STORAGE {
     _initialized = newInitialized;
 }
 
-
 invariant ghostMirrorsStorage(env e)
     _initialized == t._initialized;
 
+invariant ghostStorageLteOne(env e)
+    to_mathint(_initialized) <= to_mathint(1) {
+        preserved {
+            requireInvariant ghostMirrorsStorage(e);
+        }
+    }
 
 /// Constants min and max invariants
 
 invariant maxQuorum(env e)
-    to_mathint(quorum()) <= to_mathint(2500000000 * oneEth()) {
+    to_mathint(quorum()) <= to_mathint(500000000 * oneEth()) {
         preserved {
             require _initialized == 1;
             requireInvariant ghostMirrorsStorage(e);
@@ -109,8 +120,8 @@ invariant maxQuorum(env e)
     }
 
 invariant maxProposalThreshold(env e)
-    to_mathint(proposalThreshold()) <= to_mathint(500000000 * oneEth()) &&
-     to_mathint(proposalThreshold()) >= to_mathint(1000000 * oneEth()) {
+    to_mathint(proposalThreshold()) <= to_mathint(50000000 * oneEth()) &&
+     to_mathint(proposalThreshold()) >= to_mathint(400000 * oneEth()) {
         preserved {
             require _initialized == 1;
             requireInvariant ghostMirrorsStorage(e);
@@ -136,7 +147,7 @@ invariant maxCrossChainVoteCollectionPeriod(env e)
     }
 
 invariant minMaxUserLiveProposals(env e)
-    to_mathint(maxUserLiveProposals()) <= to_mathint(5) &&
+    to_mathint(maxUserLiveProposals()) <= to_mathint(20) &&
      to_mathint(maxUserLiveProposals()) >= to_mathint(1) {
         preserved {
             require _initialized == 1;
@@ -161,21 +172,23 @@ invariant proposalIdValid(env e, uint256 proposalId)
         }
     }
 
+invariant totalVotesSumAllVote(env e, uint256 proposalId)
+    proposalInformationStruct(proposalId).forVotes +
+     proposalInformationStruct(proposalId).againstVotes +
+     proposalInformationStruct(proposalId).abstainVotes == to_mathint(proposalInformationStruct(proposalId).totalVotes) {
+        preserved {
+            require _initialized == 1;
+            requireInvariant ghostMirrorsStorage(e); 
+        }
+      }
+
 // invariant proposalIdImpliesUserProposal(env e, uint256 proposalId, address proposer) 
-/// TODO try using proposalInformationStruct here to get the proposer address
-//     proposalValid(proposalId) <=> userHasProposal(proposalId, proposer) {
+//     proposalValid(proposalId) <=> userHasProposal(proposalId, proposalInformationStruct(proposalId).proposer) {
 //         preserved {
-//             requireInvariant proposalIdValid(e, proposalId);
+//             require _initialized == 1;
+//             requireInvariant ghostMirrorsStorage(e);
 //         }
 //     }
-
-// rule sanity(method f, env e) {
-//     calldataarg args;
-
-//     f(e, args);
-
-//     assert false;
-// }
 
 rule totalVotesSumAllVotes(method f, env e, uint256 proposalId) {
     mathint voteSum;
