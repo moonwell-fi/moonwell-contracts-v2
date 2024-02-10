@@ -61,7 +61,7 @@ contract MultichainBaseTest is
     address public proxyAdmin;
 
     /// @notice threshold of tokens required to create a proposal
-    uint256 public constant proposalThreshold = 100_000_000 * 1e18;
+    uint256 public constant proposalThreshold = 50_000_000 * 1e18;
 
     /// @notice duration of the cross chain vote collection period
     uint256 public constant crossChainVoteCollectionPeriod = 1 days;
@@ -285,7 +285,7 @@ contract MultichainBaseTest is
         values[0] = 0;
         calldatas[0] = abi.encodeWithSignature(
             "updateProposalThreshold(uint256)",
-            100_000_000 * 1e18
+            40_000_000 * 1e18
         );
 
         uint256 startProposalCount = governor.proposalCount();

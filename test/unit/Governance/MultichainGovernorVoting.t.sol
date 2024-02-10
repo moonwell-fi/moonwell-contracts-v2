@@ -2667,7 +2667,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             calldatas[0],
             abi.encodeWithSignature(
                 "updateProposalThreshold(uint256)",
-                100_000_000 * 1e18
+                40_000_000 * 1e18
             ),
             "incorrect calldata"
         );
