@@ -141,7 +141,7 @@ abstract contract CrossChainProposal is
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory payloads
-    ) public returns (bytes memory timelockCalldata) {
+    ) public pure returns (bytes memory timelockCalldata) {
         require(
             temporalGovernor != address(0),
             "getTemporalGovCalldata: Invalid temporal governor"
@@ -192,7 +192,7 @@ abstract contract CrossChainProposal is
         address temporalGovernor,
         address wormholeCore,
         bytes memory temporalGovCalldata
-    ) public returns (bytes memory) {
+    ) public view returns (bytes memory) {
         require(
             temporalGovernor != address(0),
             "getArtemisGovernorCalldata: Invalid temporal governor"

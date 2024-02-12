@@ -2,7 +2,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
