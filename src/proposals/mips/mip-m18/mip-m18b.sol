@@ -19,6 +19,11 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 /// The Ecosystem Reserve custodies the xWELL that is used to pay rewards for
 /// the safety module (stkWELL).
 /// All contracts deployed are proxies.
+/// to simulate: DO_DEPLOY=true DO_VALIDATE=true forge script
+/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b -f $FORK_URL_BASE
+/// to deploy: DO_DEPLOY=true DO_VALIDATE=true forge script
+/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b -f $FORK_URL_BASE
+/// --broadcast --slow
 contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice deployment of the Multichain Vote Collection Contract to Base
     string public constant name = "MIP-M18B";
@@ -44,7 +49,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
     function deploy(Addresses addresses, address) public override {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
-        /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
+        /// deploy EcosystemReserve proxy and implementation and EcosystemReserve Controller
         (
             address ecosystemReserveProxy,
             address ecosystemReserveImplementation,

@@ -12,6 +12,10 @@ import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
+/// to simulate: DO_VALIDATE=true DO_BUILD=true DO_AFTER_DEPLOY=true DO_PRINT=true DEBUG=true DO_RUN=true forge script  src/proposals/mips/mip-m18/mip-m18c.sol:mipm18c -f $URL_FORK_MOONBEAM
+/// to run: DO_VALIDATE=true DO_BUILD=true DO_AFTER_DEPLOY=true DO_PRINT=true
+/// DEBUG=true DO_RUN=true forge script
+/// src/proposals/mips/mip-m18/mip-m18c.sol:mipm18c -f $URL_FORK_MOONBEAM --slow --broadcast
 contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
     string public constant name = "MIP-M18C";
 
@@ -133,6 +137,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
     function afterDeploy(Addresses addresses, address) public override {
         buildCalldata(addresses);
 
+        // TODO why this and ECOSSYSTEM_REVERSE_CONTROLLER have the same address?
         MultichainGovernor governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );

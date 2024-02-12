@@ -81,18 +81,18 @@ abstract contract MIPProposal is Script {
                 ,
                 address[] memory recordedAddresses
             ) = addresses.getRecordedAddresses();
-            for (uint256 i = 0; i < recordedNames.length; i++) {
-                console.log("Deployed", recordedAddresses[i], recordedNames[i]);
-            }
+            console.log("New addresses after deploy:");
 
             console.log();
 
-            for (uint256 i = 0; i < recordedNames.length; i++) {
-                console.log('_addAddress("%s",', recordedNames[i]);
-                console.log(block.chainid);
-                console.log(", ");
-                console.log(recordedAddresses[i]);
-                console.log(");");
+            for (uint256 j = 0; j < recordedNames.length; j++) {
+                console.log('{\n        "addr": "%s", ', recordedAddresses[j]);
+                console.log('        "chainId": %d,', block.chainid);
+                console.log(
+                    '        "name": "%s"\n}%s',
+                    recordedNames[j],
+                    j < recordedNames.length - 1 ? "," : ""
+                );
             }
         }
     }
