@@ -12,6 +12,7 @@ contract Addresses is IAddresses, Test {
         address addr;
         bool isContract;
     }
+
     /// @notice mapping from contract name to network chain id to address
     mapping(string name => mapping(uint256 chainId => Address))
         public _addresses;
@@ -22,10 +23,10 @@ contract Addresses is IAddresses, Test {
         address addr;
         /// chain id of network to store for
         uint256 chainId;
-        /// name of contract to store
-        string name;
         /// whether the address is a contract
         bool isContract;
+        /// name of contract to store
+        string name;
     }
 
     /// @notice struct to record addresses deployed during a proposal
@@ -50,18 +51,16 @@ contract Addresses is IAddresses, Test {
     string public addressesPath = "./utils/Addresses.json";
 
     constructor() {
-        string memory addressesData = string(
-            abi.encodePacked(vm.readFile(addressesPath))
-        );
-
-        bytes memory parsedJson = vm.parseJson(addressesData);
+        string memory data = vm.readFile(addressesPath);
+        bytes memory parsedJson = vm.parseJson(data);
 
         SavedAddresses[] memory savedAddresses = abi.decode(
             parsedJson,
             (SavedAddresses[])
         );
 
-        for (uint256 i = 0; i < savedAddresses.length; i++) {
+        uint256 length = savedAddresses.length;
+        for (uint256 i = 0; i < length; i++) {
             _addAddress(
                 savedAddresses[i].name,
                 savedAddresses[i].addr,
@@ -92,6 +91,10 @@ contract Addresses is IAddresses, Test {
             )
         );
 
+        if (isContract) {
+            require(addr.code.length > 0, "Address is not a contract");
+        }
+
         currentAddress.addr = addr;
         currentAddress.isContract = isContract;
 
@@ -119,10 +122,6 @@ contract Addresses is IAddresses, Test {
                     )
                 )
             );
-        }
-
-        if (data.isContract) {
-            require(data.addr.code.length > 0, "Address is not a contract");
         }
     }
 
