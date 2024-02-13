@@ -88,14 +88,16 @@ contract xwellDeployBase is Proposal, CrossChainProposal, Configs, xWELLDeploy {
 
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                wormholeAdapter
+                wormholeAdapter,
+                true
             );
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
-                wormholeAdapterLogic
+                wormholeAdapterLogic,
+                true
             );
-            addresses.addAddress("xWELL_LOGIC", xwellLogic);
-            addresses.addAddress("xWELL_PROXY", xwellProxy);
+            addresses.addAddress("xWELL_LOGIC", xwellLogic, true);
+            addresses.addAddress("xWELL_PROXY", xwellProxy, true);
 
             printAddresses(addresses);
             addresses.resetRecordingAddresses();

@@ -86,7 +86,11 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 addresses.changeAddress("TEMPORAL_GOVERNOR", address(governor));
                 /// TEMPORAL_GOVERNOR already exists
             } catch {
-                addresses.addAddress("TEMPORAL_GOVERNOR", address(governor));
+                addresses.addAddress(
+                    "TEMPORAL_GOVERNOR",
+                    address(governor),
+                    true
+                );
             }
         }
 
@@ -99,7 +103,8 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             MultiRewardDistributor distributor = new MultiRewardDistributor();
             addresses.addAddress(
                 "MULTI_REWARD_DISTRIBUTOR",
-                address(distributor)
+                address(distributor),
+                true
             );
         }
 
@@ -112,8 +117,8 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             unitroller._setPendingImplementation(address(comptroller));
             comptroller._become(unitroller);
 
-            addresses.addAddress("COMPTROLLER", address(comptroller));
-            addresses.addAddress("UNITROLLER", address(unitroller));
+            addresses.addAddress("COMPTROLLER", address(comptroller), true);
+            addresses.addAddress("UNITROLLER", address(unitroller), true);
 
             ProxyAdmin proxyAdmin = new ProxyAdmin();
 
@@ -129,15 +134,19 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                     initData
                 );
 
-            addresses.addAddress("MRD_PROXY", address(mrdProxy));
-            addresses.addAddress("MRD_PROXY_ADMIN", address(proxyAdmin));
+            addresses.addAddress("MRD_PROXY", address(mrdProxy), true);
+            addresses.addAddress("MRD_PROXY_ADMIN", address(proxyAdmin), true);
         }
 
         /// ------ MTOKENS -------
 
         {
             MErc20Delegate mTokenLogic = new MErc20Delegate();
-            addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
+            addresses.addAddress(
+                "MTOKEN_IMPLEMENTATION",
+                address(mTokenLogic),
+                true
+            );
         }
 
         Configs.CTokenConfiguration[]
@@ -167,7 +176,8 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel)
+                        address(irModel),
+                        true
                     );
                 }
 
@@ -208,7 +218,11 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                     ""
                 );
 
-                addresses.addAddress(config.addressesString, address(mToken));
+                addresses.addAddress(
+                    config.addressesString,
+                    address(mToken),
+                    true
+                );
             }
         }
 
@@ -218,11 +232,11 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             WETH9(addresses.getAddress("WETH")),
             MErc20(addresses.getAddress("MOONWELL_WETH"))
         );
-        addresses.addAddress("WETH_ROUTER", address(router));
+        addresses.addAddress("WETH_ROUTER", address(router), true);
 
         /// deploy oracle, set price oracle
         ChainlinkOracle oracle = new ChainlinkOracle("null_asset");
-        addresses.addAddress("CHAINLINK_ORACLE", address(oracle));
+        addresses.addAddress("CHAINLINK_ORACLE", address(oracle), true);
     }
 
     function afterDeploy(Addresses addresses, address) public override {

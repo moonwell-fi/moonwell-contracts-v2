@@ -31,8 +31,8 @@ contract Compound4626Deploy {
             IComptroller(addresses.getAddress("UNITROLLER"))
         );
 
-        addresses.addAddress("USDBC_VAULT", address(usdcVault));
-        addresses.addAddress("WETH_VAULT", address(wethVault));
-        addresses.addAddress("cbETH_VAULT", address(cbethVault));
+        addresses.addAddress("USDBC_VAULT", address(usdcVault), true);
+        addresses.addAddress("WETH_VAULT", address(wethVault), true);
+        addresses.addAddress("cbETH_VAULT", address(cbethVault), true);
     }
 }

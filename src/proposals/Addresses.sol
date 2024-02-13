@@ -8,8 +8,12 @@ import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 contract Addresses is IAddresses, Test {
     using Strings for uint256;
 
+    struct Address {
+        address addr;
+        bool isContract;
+    }
     /// @notice mapping from contract name to network chain id to address
-    mapping(string name => mapping(uint256 chainId => address addr))
+    mapping(string name => mapping(uint256 chainId => Address))
         public _addresses;
 
     /// @notice json structure to read addresses into storage from file
@@ -20,6 +24,8 @@ contract Addresses is IAddresses, Test {
         uint256 chainId;
         /// name of contract to store
         string name;
+        /// whether the address is a contract
+        bool isContract;
     }
 
     /// @notice struct to record addresses deployed during a proposal
@@ -59,7 +65,8 @@ contract Addresses is IAddresses, Test {
             _addAddress(
                 savedAddresses[i].name,
                 savedAddresses[i].addr,
-                savedAddresses[i].chainId
+                savedAddresses[i].chainId,
+                savedAddresses[i].isContract
             );
         }
     }
@@ -68,12 +75,13 @@ contract Addresses is IAddresses, Test {
     function _addAddress(
         string memory name,
         address addr,
-        uint256 _chainId
+        uint256 _chainId,
+        bool isContract
     ) private {
-        address currentAddress = _addresses[name][_chainId];
+        Address storage currentAddress = _addresses[name][_chainId];
 
         require(
-            currentAddress == address(0),
+            currentAddress.addr == address(0),
             string(
                 abi.encodePacked(
                     "Address: ",
@@ -84,7 +92,9 @@ contract Addresses is IAddresses, Test {
             )
         );
 
-        _addresses[name][_chainId] = addr;
+        currentAddress.addr = addr;
+        currentAddress.isContract = isContract;
+
         vm.label(addr, name);
     }
 
@@ -94,12 +104,12 @@ contract Addresses is IAddresses, Test {
     ) private view returns (address addr) {
         require(_chainId != 0, "ChainId cannot be 0");
 
-        addr = _addresses[name][_chainId];
+        Address memory data = _addresses[name][_chainId];
 
         // ignore localnet
         if (_chainId != 31337) {
             require(
-                addr != address(0),
+                data.addr != address(0),
                 string(
                     abi.encodePacked(
                         "Address: ",
@@ -109,6 +119,10 @@ contract Addresses is IAddresses, Test {
                     )
                 )
             );
+        }
+
+        if (data.isContract) {
+            require(data.addr.code.length > 0, "Address is not a contract");
         }
     }
 
@@ -126,8 +140,12 @@ contract Addresses is IAddresses, Test {
     }
 
     /// @notice add an address for the current chainId
-    function addAddress(string memory name, address addr) public {
-        _addAddress(name, addr, block.chainid);
+    function addAddress(
+        string memory name,
+        address addr,
+        bool isContract
+    ) public {
+        _addAddress(name, addr, block.chainid, isContract);
 
         recordedAddresses.push(
             RecordedAddress({name: name, chainId: block.chainid})
@@ -138,9 +156,10 @@ contract Addresses is IAddresses, Test {
     function addAddress(
         string memory name,
         address addr,
-        uint256 _chainId
+        uint256 _chainId,
+        bool isContract
     ) public {
-        _addAddress(name, addr, _chainId);
+        _addAddress(name, addr, _chainId, isContract);
 
         recordedAddresses.push(
             RecordedAddress({name: name, chainId: _chainId})
@@ -153,9 +172,9 @@ contract Addresses is IAddresses, Test {
         address _addr,
         uint256 _chainId
     ) public {
-        address addr = _addresses[name][_chainId];
+        Address storage data = _addresses[name][_chainId];
         require(
-            addr != address(0),
+            data.addr != address(0),
             string(
                 abi.encodePacked(
                     "Address: ",
@@ -168,7 +187,7 @@ contract Addresses is IAddresses, Test {
         );
 
         require(
-            addr != _addr,
+            data.addr != _addr,
             string(
                 abi.encodePacked(
                     "Address: ",
@@ -180,10 +199,14 @@ contract Addresses is IAddresses, Test {
         );
 
         changedAddresses.push(
-            ChangedAddress({name: name, chainId: _chainId, oldAddress: addr})
+            ChangedAddress({
+                name: name,
+                chainId: _chainId,
+                oldAddress: data.addr
+            })
         );
 
-        _addresses[name][_chainId] = _addr;
+        data.addr = _addr;
         vm.label(_addr, name);
     }
 
@@ -217,7 +240,7 @@ contract Addresses is IAddresses, Test {
             chainIds[i] = recordedAddresses[i].chainId;
             addresses[i] = _addresses[recordedAddresses[i].name][
                 recordedAddresses[i].chainId
-            ];
+            ].addr;
         }
     }
 
@@ -249,7 +272,7 @@ contract Addresses is IAddresses, Test {
             oldAddresses[i] = changedAddresses[i].oldAddress;
             newAddresses[i] = _addresses[changedAddresses[i].name][
                 changedAddresses[i].chainId
-            ];
+            ].addr;
         }
     }
 }
