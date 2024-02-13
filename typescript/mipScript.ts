@@ -87,8 +87,6 @@ contract ${contractName} is Proposal, CrossChainProposal, Configs, ParameterVali
 
     function teardown(Addresses addresses, address) public pure override {}
 
-    /// @notice assert that the new interest rate model is set correctly
-    /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public override {
         ${collateralUpdates
           .map(
