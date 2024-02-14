@@ -108,11 +108,12 @@ contract Addresses is IAddresses, Test {
         require(_chainId != 0, "ChainId cannot be 0");
 
         Address memory data = _addresses[name][_chainId];
+        addr = data.addr;
 
         // ignore localnet
         if (_chainId != 31337) {
             require(
-                data.addr != address(0),
+                addr != address(0),
                 string(
                     abi.encodePacked(
                         "Address: ",
