@@ -315,7 +315,7 @@ contract Addresses is IAddresses, Test {
         bool isContract,
         string memory name,
         uint256 _chainId
-    ) private {
+    ) private view {
         if (_chainId == block.chainid) {
             if (isContract) {
                 require(
