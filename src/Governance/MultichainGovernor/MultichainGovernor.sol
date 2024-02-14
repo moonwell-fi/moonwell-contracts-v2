@@ -91,6 +91,9 @@ contract MultichainGovernor is
     /// @notice reference to the stkWELL token, uses block number for voting checkpoints
     SnapshotInterface public stkWell;
 
+    /// @notice reference to the new stkWELL token, uses block timestamps for voting checkpoints
+    SnapshotInterface public newStkWell;
+
     /// @notice reference to the WELL token distributor contract, uses block number for voting checkpoints
     SnapshotInterface public distributor;
 
@@ -471,16 +474,29 @@ contract MultichainGovernor is
         uint256 timestamp,
         uint256 blockNumber
     ) public view returns (uint256) {
+        uint256 newStkWellVotes;
+        uint256 oldStkWellVotes;
+
         uint256 wellVotes = well.getPriorVotes(account, blockNumber);
-        uint256 stkWellVotes = stkWell.getPriorVotes(account, blockNumber);
         uint256 distributorVotes = distributor.getPriorVotes(
             account,
             blockNumber
         );
-
         uint256 xWellVotes = xWell.getPastVotes(account, timestamp);
 
-        return xWellVotes + stkWellVotes + distributorVotes + wellVotes;
+        if (address(stkWell) != address(0)) {
+            oldStkWellVotes = stkWell.getPriorVotes(account, blockNumber);
+        }
+        if (address(newStkWell) != address(0)) {
+            newStkWellVotes = newStkWell.getPastVotes(account, timestamp);
+        }
+
+        return
+            xWellVotes +
+            oldStkWellVotes +
+            distributorVotes +
+            wellVotes +
+            newStkWellVotes;
     }
 
     /// @notice returns the current voting power for an address across well, xWell, stkWell and distributor
@@ -886,6 +902,26 @@ contract MultichainGovernor is
     /// ---------- governance only functions ---------- ////
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
+
+    /// @notice set the new stkWell token address
+    /// @param newStakedWell the new stkWell token address
+    function setNewStakedWell(address newStakedWell) external onlyGovernor {
+        newStkWell = SnapshotInterface(newStakedWell);
+
+        emit NewStakedWellSet(newStakedWell);
+    }
+
+    /// @notice unset the old stkWell token address
+    /// callable only if the new staked well token is set
+    function unsetOldStakedWell() external onlyGovernor {
+        require(
+            address(newStkWell) != address(0),
+            "MultichainVoteCollection: new stkWell not set yet"
+        );
+        stkWell = SnapshotInterface(address(0));
+
+        emit OldStakedWellUnset();
+    }
 
     /// @notice updates the approval for calldata to be used by break glass guardian
     /// @param data the calldata to update approval for

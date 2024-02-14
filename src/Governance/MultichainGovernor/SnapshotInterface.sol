@@ -15,4 +15,10 @@ interface SnapshotInterface {
         address account,
         uint256 blockNumber
     ) external view returns (uint256);
+
+    /// for retrieving new stkWell votes
+    function getPastVotes(
+        address account,
+        uint256 timestamp
+    ) external view returns (uint256);
 }

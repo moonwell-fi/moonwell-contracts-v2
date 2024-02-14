@@ -39,6 +39,10 @@ contract MultichainVoteCollection is
     /// this stkWELL version uses timestamps instead of block number
     SnapshotInterface public stkWell;
 
+    /// @notice reference to the new stkWELL token
+    /// this stkWELL version uses timestamps instead of block numbers
+    SnapshotInterface public newStkWell;
+
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
     /// ----------------------- MAPPINGS ------------------------
@@ -168,9 +172,24 @@ contract MultichainVoteCollection is
         address account,
         uint256 timestamp
     ) public view returns (uint256) {
+        uint256 stakedWellVotes;
+        uint256 newStakedWellVotes;
+
+        /// if new stkWell is set, use it
+        if (address(newStkWell) != address(0)) {
+            newStakedWellVotes = newStkWell.getPastVotes(account, timestamp);
+        }
+
+        /// if stkWell is set, use it
+        if (address(stkWell) != address(0)) {
+            stakedWellVotes = stkWell.getPriorVotes(account, timestamp);
+        }
+
+        /// if new stkWell is not set, do not use it
         return
             xWell.getPastVotes(account, timestamp) +
-            stkWell.getPriorVotes(account, timestamp);
+            stakedWellVotes +
+            newStakedWellVotes;
     }
 
     /// --------------------------------------------------------- ///
@@ -375,5 +394,25 @@ contract MultichainVoteCollection is
         );
 
         _setGasLimit(newGasLimit);
+    }
+
+    /// @notice set the new stkWell token address
+    /// @param newStakedWell the new stkWell token address
+    function setNewStakedWell(address newStakedWell) external onlyOwner {
+        newStkWell = SnapshotInterface(newStakedWell);
+
+        emit NewStakedWellSet(newStakedWell);
+    }
+
+    /// @notice unset the old stkWell token address
+    /// callable only if the new staked well token is set
+    function unsetOldStakedWell() external onlyOwner {
+        require(
+            address(newStkWell) != address(0),
+            "MultichainVoteCollection: new stkWell not set yet"
+        );
+        stkWell = SnapshotInterface(address(0));
+
+        emit OldStakedWellUnset();
     }
 }
