@@ -92,7 +92,17 @@ contract Addresses is IAddresses, Test {
         );
 
         if (isContract && _chainId == block.chainid) {
-            require(addr.code.length > 0, "Address is not a contract");
+            require(
+                addr.code.length > 0,
+                string(
+                    abi.encodePacked(
+                        "Address: ",
+                        name,
+                        " is not a contract on chain: ",
+                        _chainId.toString()
+                    )
+                )
+            );
         }
 
         currentAddress.addr = addr;

@@ -31,7 +31,7 @@ contract CompoundERC4626LiveSystemBaseTest is Test, Compound4626Deploy {
     function setUp() public {
         addresses = new Addresses();
 
-        addresses.addAddress("REWARDS_RECEIVER", rewardRecipient, true);
+        addresses.addAddress("REWARDS_RECEIVER", rewardRecipient, false);
         deployVaults(addresses, rewardRecipient);
 
         vault = CompoundERC4626(addresses.getAddress("USDBC_VAULT"));
