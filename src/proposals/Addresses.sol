@@ -91,7 +91,7 @@ contract Addresses is IAddresses, Test {
             )
         );
 
-        if (isContract) {
+        if (isContract && _chainId == block.chainid) {
             require(addr.code.length > 0, "Address is not a contract");
         }
 

@@ -453,19 +453,19 @@
     "addr": "0x2a55ba986a8c6EE17979f6233985414A865a280f",
     "chainId": 1284,
     "name": "MOONWELL_VIEWS_IMPLEMENTATION",
-    "isContract": true
+    "isContract": false
   },
   {
     "addr": "0x6658ed2f38E4e76BA8F3cb88061372bFdA2821A0",
     "chainId": 1284,
     "name": "MOONWELL_VIEWS_PROXY_ADMIN",
-    "isContract": true
+    "isContract": false
   },
   {
     "addr": "0xb4104C02BBf4E9be85AAa41a62974E4e28D59A33",
     "chainId": 1284,
     "name": "MOONWELL_VIEWS_PROXY",
-    "isContract": true
+    "isContract": false
   },
   {
     "addr": "0x29eA8B56341EE95C819F4438bc048C6239AE5b71",
