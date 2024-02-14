@@ -261,12 +261,22 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
     }
 
     function run(Addresses addresses, address) public override {
+        uint256 activeFork = vm.activeFork();
+
+        vm.selectFork(moonbeamForkId);
+
         _run(
             addresses,
-            moonbeamForkId,
-            baseForkId,
-            addresses.getAddress("ARTEMIS_TIMELOCK")
+            addresses.getAddress("ARTEMIS_TIMELOCK"),
+            moonbeamActions
         );
+
+        vm.selectFork(baseForkId);
+
+        _run(addresses, addresses.getAddress("TEMPORAL_GOVERNOR"), baseActions);
+
+        // switch back to the original fork
+        vm.selectFork(activeFork);
     }
 
     function validate(Addresses addresses, address) public override {
