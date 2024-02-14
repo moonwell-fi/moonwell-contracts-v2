@@ -301,8 +301,43 @@ abstract contract HybridProposal is
 
     function teardown(Addresses, address) public pure virtual override {}
 
-    function run(Addresses, address) public virtual override {
-        /// @dev enable debugging
+    function run(Addresses, address) public virtual override {}
+
+    function _run(
+        Addresses addresses,
+        address prankAddress,
+        bool isMoonbeam
+    ) internal {
+        vm.startPrank(prankAddress);
+
+        if (isMoonbeam) {
+            _verifyActionsPreRunHybrid(moonbeamActions);
+
+            for (uint256 i = 0; i < moonbeamActions.length; i++) {
+                (bool success, ) = moonbeamActions[i].target.call{
+                    value: moonbeamActions[i].value
+                }(moonbeamActions[i].data);
+
+                require(success, "moonbeam action failed");
+            }
+        } else {
+            _verifyActionsPreRunHybrid(baseActions);
+
+            vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+            for (uint256 i = 0; i < baseActions.length; i++) {
+                (bool success, ) = baseActions[i].target.call{
+                    value: baseActions[i].value
+                }(baseActions[i].data);
+
+                require(success, "base action failed");
+            }
+        }
+        vm.stopPrank();
+
+        _verifyMTokensPostRun();
+
+        delete createdMTokens;
+        comptroller = address(0);
     }
 
     /// runs the proposal on moonbeam and base, verifying the actions through the hook
@@ -320,44 +355,13 @@ abstract contract HybridProposal is
 
         vm.selectFork(_moonbeamForkId);
 
-        _verifyActionsPreRunHybrid(moonbeamActions);
-
-        vm.startPrank(moonbeamGovernor);
-        for (uint256 i = 0; i < moonbeamActions.length; i++) {
-            (bool success, ) = moonbeamActions[i].target.call{
-                value: moonbeamActions[i].value
-            }(moonbeamActions[i].data);
-
-            require(success, "moonbeam action failed");
-        }
-
-        _verifyMTokensPostRun();
-
-        vm.stopPrank();
-
-        delete createdMTokens;
-        comptroller = address(0);
+        _run(addresses, moonbeamGovernor, true);
 
         /// base simulation
 
         vm.selectFork(_baseForkId);
 
-        _verifyActionsPreRunHybrid(baseActions);
-
-        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        for (uint256 i = 0; i < baseActions.length; i++) {
-            (bool success, ) = baseActions[i].target.call{
-                value: baseActions[i].value
-            }(baseActions[i].data);
-
-            require(success, "base action failed");
-        }
-        vm.stopPrank();
-
-        _verifyMTokensPostRun();
-
-        delete createdMTokens;
-        comptroller = address(0);
+        _run(addresses, addresses.getAddress("TEMPORAL_GOVERNOR"), false);
 
         /// switch back to original fork
         vm.selectFork(activeFork);

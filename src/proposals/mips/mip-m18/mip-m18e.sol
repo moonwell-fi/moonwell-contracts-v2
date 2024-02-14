@@ -170,12 +170,20 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     }
 
     function run(Addresses addresses, address) public override {
-        _run(
-            addresses,
-            moonbeamForkId,
-            baseForkId,
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        );
+        if (vm.envOr("FROM_CLI", true)) {
+            bool isMoonbeam = block.chainid == moonBeamChainId;
+            address prankAddress = isMoonbeam
+                ? addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+                : addresses.getAddress("TEMPORAL_GOVERNOR");
+            _run(addresses, prankAddress, isMoonbeam);
+        } else {
+            _run(
+                addresses,
+                moonbeamForkId,
+                baseForkId,
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            );
+        }
     }
 
     function validate(Addresses addresses, address) public override {
