@@ -91,19 +91,7 @@ contract Addresses is IAddresses, Test {
             )
         );
 
-        if (isContract && _chainId == block.chainid) {
-            require(
-                addr.code.length > 0,
-                string(
-                    abi.encodePacked(
-                        "Address: ",
-                        name,
-                        " is not a contract on chain: ",
-                        _chainId.toString()
-                    )
-                )
-            );
-        }
+        _checkAddress(addr, isContract, name, _chainId);
 
         currentAddress.addr = addr;
         currentAddress.isContract = isContract;
@@ -174,6 +162,42 @@ contract Addresses is IAddresses, Test {
         recordedAddresses.push(
             RecordedAddress({name: name, chainId: _chainId})
         );
+    }
+
+    /// @notice change an address for an specific chainId and change the isContract flag
+    function changeAddress(
+        string memory name,
+        address _addr,
+        uint256 _chainId,
+        bool isContract
+    ) public {
+        Address storage data = _addresses[name][_chainId];
+        require(
+            data.addr != address(0),
+            string(
+                abi.encodePacked(
+                    "Address: ",
+                    name,
+                    " doesn't exist on chain: ",
+                    _chainId.toString(),
+                    ". Use addAddress instead"
+                )
+            )
+        );
+
+        _checkAddress(_addr, isContract, name, _chainId);
+
+        changedAddresses.push(
+            ChangedAddress({
+                name: name,
+                chainId: _chainId,
+                oldAddress: data.addr
+            })
+        );
+
+        data.addr = _addr;
+        data.isContract = isContract;
+        vm.label(_addr, name);
     }
 
     /// @notice change an address for a specific chainId
@@ -283,6 +307,41 @@ contract Addresses is IAddresses, Test {
             newAddresses[i] = _addresses[changedAddresses[i].name][
                 changedAddresses[i].chainId
             ].addr;
+        }
+    }
+
+    function _checkAddress(
+        address _addr,
+        bool isContract,
+        string memory name,
+        uint256 _chainId
+    ) private {
+        if (_chainId == block.chainid) {
+            if (isContract) {
+                require(
+                    _addr.code.length > 0,
+                    string(
+                        abi.encodePacked(
+                            "Address: ",
+                            name,
+                            " is not a contract on chain: ",
+                            _chainId.toString()
+                        )
+                    )
+                );
+            } else {
+                require(
+                    _addr.code.length == 0,
+                    string(
+                        abi.encodePacked(
+                            "Address: ",
+                            name,
+                            " is a contract on chain: ",
+                            _chainId.toString()
+                        )
+                    )
+                );
+            }
         }
     }
 }

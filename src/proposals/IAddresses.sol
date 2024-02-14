@@ -39,6 +39,14 @@ interface IAddresses {
         uint256 _chainId
     ) external;
 
+    /// @notice change an address for an specific chainId and change the isContract flag
+    function changeAddress(
+        string memory name,
+        address _addr,
+        uint256 _chainId,
+        bool isContract
+    ) external;
+
     /// @notice remove recorded addresses
     function resetRecordingAddresses() external;
 
