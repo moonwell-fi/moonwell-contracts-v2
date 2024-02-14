@@ -697,39 +697,39 @@
   },
   {
     "addr": "0xf0A4a985254F5D419E70e52f634B75D36e668D1a",
-    "chainId": 1285,
+    "chainId": 1284,
     "name": "MOONWELL_VIEWS_IMPLEMENTATION",
     "isContract": true
   },
   {
     "addr": "0xAb9AAdace66937185AD9345E6AC291aF82386d4E",
-    "chainId": 1285,
+    "chainId": 1284,
     "name": "MOONWELL_VIEWS_PROXY_ADMIN",
     "isContract": true
   },
   {
     "addr": "0xe76C8B8706faC85a8Fbdcac3C42e3E7823c73994",
-    "chainId": 1285,
+    "chainId": 1284,
     "name": "MOONWELL_VIEWS_PROXY",
     "isContract": true
   },
   {
     "addr": "0x2a55ba986a8c6EE17979f6233985414A865a280f",
-    "chainId": 1284,
+    "chainId": 1285,
     "name": "MOONWELL_VIEWS_IMPLEMENTATION",
-    "isContract": false
+    "isContract": true
   },
   {
     "addr": "0x6658ed2f38E4e76BA8F3cb88061372bFdA2821A0",
-    "chainId": 1284,
+    "chainId": 1285,
     "name": "MOONWELL_VIEWS_PROXY_ADMIN",
-    "isContract": false
+    "isContract": true
   },
   {
     "addr": "0xb4104C02BBf4E9be85AAa41a62974E4e28D59A33",
-    "chainId": 1284,
+    "chainId": 1285,
     "name": "MOONWELL_VIEWS_PROXY",
-    "isContract": false
+    "isContract": true
   },
   {
     "addr": "0x29eA8B56341EE95C819F4438bc048C6239AE5b71",
