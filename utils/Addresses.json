@@ -411,7 +411,7 @@
     "addr": "0xD791292655A1d382FcC1a6Cb9171476cf91F2caa",
     "chainId": 8453,
     "name": "EMISSIONS_ADMIN",
-    "isContract": true
+    "isContract": false
   },
   {
     "addr": "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
