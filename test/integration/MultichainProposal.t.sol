@@ -443,14 +443,7 @@ contract MultichainProposalTest is
             "incorrect proposal state"
         );
 
-        // assertTrue(
-        //     governor.userHasProposal(proposalId, address(this)),
-        //     "user has proposal"
-        // );
-        // assertTrue(
-        //     governor.proposalValid(proposalId),
-        //     "user does not have proposal"
-        // );
+        _assertProposalCreated(proposalId, address(this));
 
         {
             (
@@ -815,14 +808,7 @@ contract MultichainProposalTest is
             "incorrect proposal state"
         );
 
-        // assertTrue(
-        //     governor.userHasProposal(proposalId, address(this)),
-        //     "user has proposal"
-        // );
-        // assertTrue(
-        //     governor.proposalValid(proposalId),
-        //     "user does not have proposal"
-        // );
+        _assertProposalCreated(proposalId, address(this));
 
         {
             (
@@ -963,14 +949,7 @@ contract MultichainProposalTest is
             "incorrect proposal state"
         );
 
-        // assertTrue(
-        //     governor.userHasProposal(proposalId, address(this)),
-        //     "user has proposal"
-        // );
-        // assertTrue(
-        //     governor.proposalValid(proposalId),
-        //     "user does not have proposal"
-        // );
+        _assertProposalCreated(proposalId, address(this));
 
         governor.cancel(proposalId);
 
@@ -1025,14 +1004,7 @@ contract MultichainProposalTest is
             "incorrect proposal state"
         );
 
-        // assertTrue(
-        //     governor.userHasProposal(proposalId, address(this)),
-        //     "user has proposal"
-        // );
-        // assertTrue(
-        //     governor.proposalValid(proposalId),
-        //     "user does not have proposal"
-        // );
+        _assertProposalCreated(proposalId, address(this));
 
         uint256 xwellMintAmount;
         {
@@ -1153,14 +1125,7 @@ contract MultichainProposalTest is
             "incorrect proposal state"
         );
 
-        // assertTrue(
-        //     governor.userHasProposal(proposalId, address(this)),
-        //     "user has proposal"
-        // );
-        // assertTrue(
-        //     governor.proposalValid(proposalId),
-        //     "user does not have proposal"
-        // );
+        _assertProposalCreated(proposalId, address(this));
 
         uint256 xwellMintAmount;
         {
@@ -1278,14 +1243,7 @@ contract MultichainProposalTest is
             "incorrect proposal state"
         );
 
-        // assertTrue(
-        //     governor.userHasProposal(proposalId, address(this)),
-        //     "user has proposal"
-        // );
-        // assertTrue(
-        //     governor.proposalValid(proposalId),
-        //     "user does not have proposal"
-        // );
+        _assertProposalCreated(proposalId, address(this));
 
         uint256 xwellMintAmount;
         {
@@ -1409,14 +1367,7 @@ contract MultichainProposalTest is
             "incorrect proposal state"
         );
 
-        // assertTrue(
-        //     governor.userHasProposal(proposalId, address(this)),
-        //     "user has proposal"
-        // );
-        // assertTrue(
-        //     governor.proposalValid(proposalId),
-        //     "user does not have proposal"
-        // );
+        _assertProposalCreated(proposalId, address(this));
 
         {
             (
@@ -1556,14 +1507,7 @@ contract MultichainProposalTest is
             "incorrect proposal state"
         );
 
-        // assertTrue(
-        //     governor.userHasProposal(proposalId, address(this)),
-        //     "user has proposal"
-        // );
-        // assertTrue(
-        //     governor.proposalValid(proposalId),
-        //     "user does not have proposal"
-        // );
+        _assertProposalCreated(proposalId, address(this));
 
         {
             uint256 startTimestamp = block.timestamp;
@@ -1680,14 +1624,7 @@ contract MultichainProposalTest is
             "incorrect proposal state"
         );
 
-        // assertTrue(
-        //     governor.userHasProposal(proposalId, address(this)),
-        //     "user has proposal"
-        // );
-        // assertTrue(
-        //     governor.proposalValid(proposalId),
-        //     "user does not have proposal"
-        // );
+        _assertProposalCreated(proposalId, address(this));
 
         {
             uint256 startTimestamp = block.timestamp;
@@ -1847,14 +1784,7 @@ contract MultichainProposalTest is
             "incorrect proposal state"
         );
 
-        // assertTrue(
-        //     governor.userHasProposal(proposalId, address(this)),
-        //     "user has proposal"
-        // );
-        // assertTrue(
-        //     governor.proposalValid(proposalId),
-        //     "user does not have proposal"
-        // );
+        _assertProposalCreated(proposalId, address(this));
 
         {
             (
@@ -2653,5 +2583,33 @@ contract MultichainProposalTest is
             startingxWELLAmount - 10 days * 1e18,
             "did not deplete ecosystem reserve"
         );
+    }
+
+    function _assertProposalCreated(
+        uint256 proposalid,
+        address proposer
+    ) private {
+        uint256[] memory liveProposals = governor.liveProposals();
+        bool proposalFound = false;
+
+        for (uint256 i = 0; i < liveProposals.length; i++) {
+            if (liveProposals[i] == proposalid) {
+                proposalFound = true;
+                break;
+            }
+        }
+
+        require(proposalFound, "proposal not created");
+
+        uint256[] memory currentUserLiveProposals = governor
+            .getUserLiveProposals(proposer);
+        bool userProposalFound = false;
+
+        for (uint256 i = 0; i < currentUserLiveProposals.length; i++) {
+            if (currentUserLiveProposals[i] == proposalid) {
+                userProposalFound = true;
+                break;
+            }
+        }
     }
 }
