@@ -1,6 +1,6 @@
 /**
  *Submitted for verification at Etherscan.io on 2017-12-12
-*/
+ */
 
 // Copyright (C) 2015, 2016, 2017 Dapphub
 
@@ -33,7 +33,9 @@ interface WETH9 {
 
     function transfer(address dst, uint wad) external returns (bool);
 
-    function transferFrom(address src, address dst, uint wad)
-        external
-        returns (bool);
+    function transferFrom(
+        address src,
+        address dst,
+        uint wad
+    ) external returns (bool);
 }

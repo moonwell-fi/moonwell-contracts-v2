@@ -142,7 +142,9 @@ contract WormholeTrustedSender is IWormholeTrustedSender {
     /// then to a bytes32 *left* aligns it, so we right shift to get the proper data
     /// @param addr The address to convert
     /// @return The address as a bytes32
-    function addressToBytes(address addr) public pure override returns (bytes32) {
+    function addressToBytes(
+        address addr
+    ) public pure override returns (bytes32) {
         return bytes32(bytes20(addr)) >> 96;
     }
 }

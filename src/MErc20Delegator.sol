@@ -8,7 +8,11 @@ import "./MTokenInterfaces.sol";
  * @notice MTokens which wrap an EIP-20 underlying and delegate to an implementation
  * @author Moonwell
  */
-contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterface {
+contract MErc20Delegator is
+    MTokenInterface,
+    MErc20Interface,
+    MDelegatorInterface
+{
     /**
      * @notice Construct a new money market
      * @param underlying_ The address of the underlying asset
@@ -22,28 +26,35 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param implementation_ The address of the implementation the contract delegates to
      * @param becomeImplementationData The encoded args for becomeImplementation
      */
-    constructor(address underlying_,
-                ComptrollerInterface comptroller_,
-                InterestRateModel interestRateModel_,
-                uint initialExchangeRateMantissa_,
-                string memory name_,
-                string memory symbol_,
-                uint8 decimals_,
-                address payable admin_,
-                address implementation_,
-                bytes memory becomeImplementationData) {
+    constructor(
+        address underlying_,
+        ComptrollerInterface comptroller_,
+        InterestRateModel interestRateModel_,
+        uint initialExchangeRateMantissa_,
+        string memory name_,
+        string memory symbol_,
+        uint8 decimals_,
+        address payable admin_,
+        address implementation_,
+        bytes memory becomeImplementationData
+    ) {
         // Creator of the contract is admin during initialization
         admin = payable(msg.sender);
 
         // First delegate gets to initialize the delegator (i.e. storage contract)
-        delegateTo(implementation_, abi.encodeWithSignature("initialize(address,address,address,uint256,string,string,uint8)",
-                                                            underlying_,
-                                                            comptroller_,
-                                                            interestRateModel_,
-                                                            initialExchangeRateMantissa_,
-                                                            name_,
-                                                            symbol_,
-                                                            decimals_));
+        delegateTo(
+            implementation_,
+            abi.encodeWithSignature(
+                "initialize(address,address,address,uint256,string,string,uint8)",
+                underlying_,
+                comptroller_,
+                interestRateModel_,
+                initialExchangeRateMantissa_,
+                name_,
+                symbol_,
+                decimals_
+            )
+        );
 
         // New implementations always get set via the settor (post-initialize)
         _setImplementation(implementation_, false, becomeImplementationData);
@@ -58,17 +69,31 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param allowResign Flag to indicate whether to call _resignImplementation on the old implementation
      * @param becomeImplementationData The encoded bytes data to be passed to _becomeImplementation
      */
-    function _setImplementation(address implementation_, bool allowResign, bytes memory becomeImplementationData) override public {
-        require(msg.sender == admin, "MErc20Delegator::_setImplementation: Caller must be admin");
+    function _setImplementation(
+        address implementation_,
+        bool allowResign,
+        bytes memory becomeImplementationData
+    ) public override {
+        require(
+            msg.sender == admin,
+            "MErc20Delegator::_setImplementation: Caller must be admin"
+        );
 
         if (allowResign) {
-            delegateToImplementation(abi.encodeWithSignature("_resignImplementation()"));
+            delegateToImplementation(
+                abi.encodeWithSignature("_resignImplementation()")
+            );
         }
 
         address oldImplementation = implementation;
         implementation = implementation_;
 
-        delegateToImplementation(abi.encodeWithSignature("_becomeImplementation(bytes)", becomeImplementationData));
+        delegateToImplementation(
+            abi.encodeWithSignature(
+                "_becomeImplementation(bytes)",
+                becomeImplementationData
+            )
+        );
 
         emit NewImplementation(oldImplementation, implementation);
     }
@@ -79,8 +104,10 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param mintAmount The amount of the underlying asset to supply
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function mint(uint mintAmount) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("mint(uint256)", mintAmount));
+    function mint(uint mintAmount) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("mint(uint256)", mintAmount)
+        );
         return abi.decode(data, (uint));
     }
 
@@ -97,12 +124,18 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
     function mintWithPermit(
         uint mintAmount,
         uint deadline,
-        uint8 v, bytes32 r, bytes32 s
-    ) override external returns (uint) {
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external override returns (uint) {
         bytes memory data = delegateToImplementation(
             abi.encodeWithSignature(
                 "mintWithPermit(uint256,uint256,uint8,bytes32,bytes32)",
-                mintAmount, deadline, v, r, s
+                mintAmount,
+                deadline,
+                v,
+                r,
+                s
             )
         );
         return abi.decode(data, (uint));
@@ -114,8 +147,10 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param redeemTokens The number of mTokens to redeem into underlying
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function redeem(uint redeemTokens) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("redeem(uint256)", redeemTokens));
+    function redeem(uint redeemTokens) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("redeem(uint256)", redeemTokens)
+        );
         return abi.decode(data, (uint));
     }
 
@@ -125,18 +160,24 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param redeemAmount The amount of underlying to redeem
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function redeemUnderlying(uint redeemAmount) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("redeemUnderlying(uint256)", redeemAmount));
+    function redeemUnderlying(
+        uint redeemAmount
+    ) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("redeemUnderlying(uint256)", redeemAmount)
+        );
         return abi.decode(data, (uint));
     }
 
     /**
-      * @notice Sender borrows assets from the protocol to their own address
-      * @param borrowAmount The amount of the underlying asset to borrow
-      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
-      */
-    function borrow(uint borrowAmount) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("borrow(uint256)", borrowAmount));
+     * @notice Sender borrows assets from the protocol to their own address
+     * @param borrowAmount The amount of the underlying asset to borrow
+     * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
+     */
+    function borrow(uint borrowAmount) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("borrow(uint256)", borrowAmount)
+        );
         return abi.decode(data, (uint));
     }
 
@@ -145,8 +186,10 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param repayAmount The amount to repay, or uint.max for the full outstanding amount
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function repayBorrow(uint repayAmount) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("repayBorrow(uint256)", repayAmount));
+    function repayBorrow(uint repayAmount) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("repayBorrow(uint256)", repayAmount)
+        );
         return abi.decode(data, (uint));
     }
 
@@ -156,8 +199,17 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param repayAmount The amount to repay, or uint.max for the full outstanding amount
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function repayBorrowBehalf(address borrower, uint repayAmount) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("repayBorrowBehalf(address,uint256)", borrower, repayAmount));
+    function repayBorrowBehalf(
+        address borrower,
+        uint repayAmount
+    ) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature(
+                "repayBorrowBehalf(address,uint256)",
+                borrower,
+                repayAmount
+            )
+        );
         return abi.decode(data, (uint));
     }
 
@@ -169,8 +221,19 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param repayAmount The amount of the underlying borrowed asset to repay
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function liquidateBorrow(address borrower, uint repayAmount, MTokenInterface mTokenCollateral) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("liquidateBorrow(address,uint256,address)", borrower, repayAmount, mTokenCollateral));
+    function liquidateBorrow(
+        address borrower,
+        uint repayAmount,
+        MTokenInterface mTokenCollateral
+    ) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature(
+                "liquidateBorrow(address,uint256,address)",
+                borrower,
+                repayAmount,
+                mTokenCollateral
+            )
+        );
         return abi.decode(data, (uint));
     }
 
@@ -180,8 +243,13 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param amount The number of tokens to transfer
      * @return Whether or not the transfer succeeded
      */
-    function transfer(address dst, uint amount) override external returns (bool) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("transfer(address,uint256)", dst, amount));
+    function transfer(
+        address dst,
+        uint amount
+    ) external override returns (bool) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("transfer(address,uint256)", dst, amount)
+        );
         return abi.decode(data, (bool));
     }
 
@@ -192,8 +260,19 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param amount The number of tokens to transfer
      * @return Whether or not the transfer succeeded
      */
-    function transferFrom(address src, address dst, uint256 amount) override external returns (bool) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("transferFrom(address,address,uint256)", src, dst, amount));
+    function transferFrom(
+        address src,
+        address dst,
+        uint256 amount
+    ) external override returns (bool) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature(
+                "transferFrom(address,address,uint256)",
+                src,
+                dst,
+                amount
+            )
+        );
         return abi.decode(data, (bool));
     }
 
@@ -205,8 +284,13 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param amount The number of tokens that are approved (uint.max means infinite)
      * @return Whether or not the approval succeeded
      */
-    function approve(address spender, uint256 amount) override external returns (bool) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("approve(address,uint256)", spender, amount));
+    function approve(
+        address spender,
+        uint256 amount
+    ) external override returns (bool) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("approve(address,uint256)", spender, amount)
+        );
         return abi.decode(data, (bool));
     }
 
@@ -216,8 +300,17 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param spender The address of the account which may transfer tokens
      * @return The number of tokens allowed to be spent (uint.max means infinite)
      */
-    function allowance(address owner, address spender) override external view returns (uint) {
-        bytes memory data = delegateToViewImplementation(abi.encodeWithSignature("allowance(address,address)", owner, spender));
+    function allowance(
+        address owner,
+        address spender
+    ) external view override returns (uint) {
+        bytes memory data = delegateToViewImplementation(
+            abi.encodeWithSignature(
+                "allowance(address,address)",
+                owner,
+                spender
+            )
+        );
         return abi.decode(data, (uint));
     }
 
@@ -226,8 +319,10 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param owner The address of the account to query
      * @return The number of tokens owned by `owner`
      */
-    function balanceOf(address owner) override external view returns (uint) {
-        bytes memory data = delegateToViewImplementation(abi.encodeWithSignature("balanceOf(address)", owner));
+    function balanceOf(address owner) external view override returns (uint) {
+        bytes memory data = delegateToViewImplementation(
+            abi.encodeWithSignature("balanceOf(address)", owner)
+        );
         return abi.decode(data, (uint));
     }
 
@@ -237,8 +332,12 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param owner The address of the account to query
      * @return The amount of underlying owned by `owner`
      */
-    function balanceOfUnderlying(address owner) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("balanceOfUnderlying(address)", owner));
+    function balanceOfUnderlying(
+        address owner
+    ) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("balanceOfUnderlying(address)", owner)
+        );
         return abi.decode(data, (uint));
     }
 
@@ -248,8 +347,12 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param account Address of the account to snapshot
      * @return (possible error, token balance, borrow balance, exchange rate mantissa)
      */
-    function getAccountSnapshot(address account) override external view returns (uint, uint, uint, uint) {
-        bytes memory data = delegateToViewImplementation(abi.encodeWithSignature("getAccountSnapshot(address)", account));
+    function getAccountSnapshot(
+        address account
+    ) external view override returns (uint, uint, uint, uint) {
+        bytes memory data = delegateToViewImplementation(
+            abi.encodeWithSignature("getAccountSnapshot(address)", account)
+        );
         return abi.decode(data, (uint, uint, uint, uint));
     }
 
@@ -257,8 +360,10 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @notice Returns the current per-timestamp borrow interest rate for this mToken
      * @return The borrow interest rate per timestamp, scaled by 1e18
      */
-    function borrowRatePerTimestamp() override external view returns (uint) {
-        bytes memory data = delegateToViewImplementation(abi.encodeWithSignature("borrowRatePerTimestamp()"));
+    function borrowRatePerTimestamp() external view override returns (uint) {
+        bytes memory data = delegateToViewImplementation(
+            abi.encodeWithSignature("borrowRatePerTimestamp()")
+        );
         return abi.decode(data, (uint));
     }
 
@@ -266,8 +371,10 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @notice Returns the current per-timestamp supply interest rate for this mToken
      * @return The supply interest rate per timestamp, scaled by 1e18
      */
-    function supplyRatePerTimestamp() override external view returns (uint) {
-        bytes memory data = delegateToViewImplementation(abi.encodeWithSignature("supplyRatePerTimestamp()"));
+    function supplyRatePerTimestamp() external view override returns (uint) {
+        bytes memory data = delegateToViewImplementation(
+            abi.encodeWithSignature("supplyRatePerTimestamp()")
+        );
         return abi.decode(data, (uint));
     }
 
@@ -275,8 +382,10 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @notice Returns the current total borrows plus accrued interest
      * @return The total borrows with interest
      */
-    function totalBorrowsCurrent() override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("totalBorrowsCurrent()"));
+    function totalBorrowsCurrent() external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("totalBorrowsCurrent()")
+        );
         return abi.decode(data, (uint));
     }
 
@@ -285,8 +394,12 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param account The address whose balance should be calculated after updating borrowIndex
      * @return The calculated balance
      */
-    function borrowBalanceCurrent(address account) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("borrowBalanceCurrent(address)", account));
+    function borrowBalanceCurrent(
+        address account
+    ) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("borrowBalanceCurrent(address)", account)
+        );
         return abi.decode(data, (uint));
     }
 
@@ -295,17 +408,23 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param account The address whose balance should be calculated
      * @return The calculated balance
      */
-    function borrowBalanceStored(address account) override public view returns (uint) {
-        bytes memory data = delegateToViewImplementation(abi.encodeWithSignature("borrowBalanceStored(address)", account));
+    function borrowBalanceStored(
+        address account
+    ) public view override returns (uint) {
+        bytes memory data = delegateToViewImplementation(
+            abi.encodeWithSignature("borrowBalanceStored(address)", account)
+        );
         return abi.decode(data, (uint));
     }
 
-   /**
+    /**
      * @notice Accrue interest then return the up-to-date exchange rate
      * @return Calculated exchange rate scaled by 1e18
      */
-    function exchangeRateCurrent() override public returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("exchangeRateCurrent()"));
+    function exchangeRateCurrent() public override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("exchangeRateCurrent()")
+        );
         return abi.decode(data, (uint));
     }
 
@@ -314,8 +433,10 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @dev This function does not accrue interest before calculating the exchange rate
      * @return Calculated exchange rate scaled by 1e18
      */
-    function exchangeRateStored() override public view returns (uint) {
-        bytes memory data = delegateToViewImplementation(abi.encodeWithSignature("exchangeRateStored()"));
+    function exchangeRateStored() public view override returns (uint) {
+        bytes memory data = delegateToViewImplementation(
+            abi.encodeWithSignature("exchangeRateStored()")
+        );
         return abi.decode(data, (uint));
     }
 
@@ -323,18 +444,22 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @notice Get cash balance of this mToken in the underlying asset
      * @return The quantity of underlying asset owned by this contract
      */
-    function getCash() override external view returns (uint) {
-        bytes memory data = delegateToViewImplementation(abi.encodeWithSignature("getCash()"));
+    function getCash() external view override returns (uint) {
+        bytes memory data = delegateToViewImplementation(
+            abi.encodeWithSignature("getCash()")
+        );
         return abi.decode(data, (uint));
     }
 
     /**
-      * @notice Applies accrued interest to total borrows and reserves.
-      * @dev This calculates interest accrued from the last checkpointed block
-      *      up to the current block and writes new checkpoint to storage.
-      */
-    function accrueInterest() override public returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("accrueInterest()"));
+     * @notice Applies accrued interest to total borrows and reserves.
+     * @dev This calculates interest accrued from the last checkpointed block
+     *      up to the current block and writes new checkpoint to storage.
+     */
+    function accrueInterest() public override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("accrueInterest()")
+        );
         return abi.decode(data, (uint));
     }
 
@@ -347,8 +472,19 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param seizeTokens The number of mTokens to seize
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function seize(address liquidator, address borrower, uint seizeTokens) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("seize(address,address,uint256)", liquidator, borrower, seizeTokens));
+    function seize(
+        address liquidator,
+        address borrower,
+        uint seizeTokens
+    ) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature(
+                "seize(address,address,uint256)",
+                liquidator,
+                borrower,
+                seizeTokens
+            )
+        );
         return abi.decode(data, (uint));
     }
 
@@ -356,51 +492,72 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @notice A public function to sweep accidental ERC-20 transfers to this contract. Tokens are sent to admin (timelock)
      * @param token The address of the ERC-20 token to sweep
      */
-    function sweepToken(EIP20NonStandardInterface token) override external {
-        delegateToImplementation(abi.encodeWithSignature("sweepToken(address)", token));
+    function sweepToken(EIP20NonStandardInterface token) external override {
+        delegateToImplementation(
+            abi.encodeWithSignature("sweepToken(address)", token)
+        );
     }
-
 
     /*** Admin Functions ***/
 
     /**
-      * @notice Begins transfer of admin rights. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
-      * @dev Admin function to begin change of admin. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
-      * @param newPendingAdmin New pending admin.
-      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
-      */
-    function _setPendingAdmin(address payable newPendingAdmin) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("_setPendingAdmin(address)", newPendingAdmin));
+     * @notice Begins transfer of admin rights. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
+     * @dev Admin function to begin change of admin. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
+     * @param newPendingAdmin New pending admin.
+     * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
+     */
+    function _setPendingAdmin(
+        address payable newPendingAdmin
+    ) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature(
+                "_setPendingAdmin(address)",
+                newPendingAdmin
+            )
+        );
         return abi.decode(data, (uint));
     }
 
     /**
-      * @notice Sets a new comptroller for the market
-      * @dev Admin function to set a new comptroller
-      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
-      */
-    function _setComptroller(ComptrollerInterface newComptroller) override public returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("_setComptroller(address)", newComptroller));
+     * @notice Sets a new comptroller for the market
+     * @dev Admin function to set a new comptroller
+     * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
+     */
+    function _setComptroller(
+        ComptrollerInterface newComptroller
+    ) public override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("_setComptroller(address)", newComptroller)
+        );
         return abi.decode(data, (uint));
     }
 
     /**
-      * @notice accrues interest and sets a new reserve factor for the protocol using _setReserveFactorFresh
-      * @dev Admin function to accrue interest and set a new reserve factor
-      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
-      */
-    function _setReserveFactor(uint newReserveFactorMantissa) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("_setReserveFactor(uint256)", newReserveFactorMantissa));
+     * @notice accrues interest and sets a new reserve factor for the protocol using _setReserveFactorFresh
+     * @dev Admin function to accrue interest and set a new reserve factor
+     * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
+     */
+    function _setReserveFactor(
+        uint newReserveFactorMantissa
+    ) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature(
+                "_setReserveFactor(uint256)",
+                newReserveFactorMantissa
+            )
+        );
         return abi.decode(data, (uint));
     }
 
     /**
-      * @notice Accepts transfer of admin rights. msg.sender must be pendingAdmin
-      * @dev Admin function for pending admin to accept role and update admin
-      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
-      */
-    function _acceptAdmin() override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("_acceptAdmin()"));
+     * @notice Accepts transfer of admin rights. msg.sender must be pendingAdmin
+     * @dev Admin function for pending admin to accept role and update admin
+     * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
+     */
+    function _acceptAdmin() external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("_acceptAdmin()")
+        );
         return abi.decode(data, (uint));
     }
 
@@ -409,8 +566,10 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param addAmount Amount of reserves to add
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function _addReserves(uint addAmount) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("_addReserves(uint256)", addAmount));
+    function _addReserves(uint addAmount) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("_addReserves(uint256)", addAmount)
+        );
         return abi.decode(data, (uint));
     }
 
@@ -419,8 +578,12 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param reduceAmount Amount of reduction to reserves
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function _reduceReserves(uint reduceAmount) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("_reduceReserves(uint256)", reduceAmount));
+    function _reduceReserves(
+        uint reduceAmount
+    ) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature("_reduceReserves(uint256)", reduceAmount)
+        );
         return abi.decode(data, (uint));
     }
 
@@ -430,18 +593,32 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param newInterestRateModel the new interest rate model to use
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function _setInterestRateModel(InterestRateModel newInterestRateModel) override public returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("_setInterestRateModel(address)", newInterestRateModel));
+    function _setInterestRateModel(
+        InterestRateModel newInterestRateModel
+    ) public override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature(
+                "_setInterestRateModel(address)",
+                newInterestRateModel
+            )
+        );
         return abi.decode(data, (uint));
     }
 
     /**
-      * @notice accrues interest and sets a new protocol seize share for the protocol using _setProtocolSeizeShareFresh
-      * @dev Admin function to accrue interest and set a new protocol seize share
-      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
-      */
-    function _setProtocolSeizeShare(uint newProtocolSeizeShareMantissa) override external returns (uint) {
-        bytes memory data = delegateToImplementation(abi.encodeWithSignature("_setProtocolSeizeShare(uint256)", newProtocolSeizeShareMantissa));
+     * @notice accrues interest and sets a new protocol seize share for the protocol using _setProtocolSeizeShareFresh
+     * @dev Admin function to accrue interest and set a new protocol seize share
+     * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
+     */
+    function _setProtocolSeizeShare(
+        uint newProtocolSeizeShareMantissa
+    ) external override returns (uint) {
+        bytes memory data = delegateToImplementation(
+            abi.encodeWithSignature(
+                "_setProtocolSeizeShare(uint256)",
+                newProtocolSeizeShareMantissa
+            )
+        );
         return abi.decode(data, (uint));
     }
 
@@ -452,7 +629,10 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param data The raw data to delegatecall
      * @return The returned bytes from the delegatecall
      */
-    function delegateTo(address callee, bytes memory data) internal returns (bytes memory) {
+    function delegateTo(
+        address callee,
+        bytes memory data
+    ) internal returns (bytes memory) {
         (bool success, bytes memory returnData) = callee.delegatecall(data);
         assembly {
             if eq(success, 0) {
@@ -468,7 +648,9 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param data The raw data to delegatecall
      * @return The returned bytes from the delegatecall
      */
-    function delegateToImplementation(bytes memory data) public returns (bytes memory) {
+    function delegateToImplementation(
+        bytes memory data
+    ) public returns (bytes memory) {
         return delegateTo(implementation, data);
     }
 
@@ -479,8 +661,12 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @param data The raw data to delegatecall
      * @return The returned bytes from the delegatecall
      */
-    function delegateToViewImplementation(bytes memory data) public view returns (bytes memory) {
-        (bool success, bytes memory returnData) = address(this).staticcall(abi.encodeWithSignature("delegateToImplementation(bytes)", data));
+    function delegateToViewImplementation(
+        bytes memory data
+    ) public view returns (bytes memory) {
+        (bool success, bytes memory returnData) = address(this).staticcall(
+            abi.encodeWithSignature("delegateToImplementation(bytes)", data)
+        );
         assembly {
             if eq(success, 0) {
                 revert(add(returnData, 0x20), returndatasize())
@@ -493,8 +679,11 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
      * @notice Delegates execution to an implementation contract
      * @dev It returns to the external caller whatever the implementation returns or forwards reverts
      */
-    fallback () external payable {
-        require(msg.value == 0,"MErc20Delegator:fallback: cannot send value to fallback");
+    fallback() external payable {
+        require(
+            msg.value == 0,
+            "MErc20Delegator:fallback: cannot send value to fallback"
+        );
 
         // delegate all other functions to current implementation
         (bool success, ) = implementation.delegatecall(msg.data);
@@ -504,8 +693,12 @@ contract MErc20Delegator is MTokenInterface, MErc20Interface, MDelegatorInterfac
             returndatacopy(free_mem_ptr, 0, returndatasize())
 
             switch success
-            case 0 { revert(free_mem_ptr, returndatasize()) }
-            default { return(free_mem_ptr, returndatasize()) }
+            case 0 {
+                revert(free_mem_ptr, returndatasize())
+            }
+            default {
+                return(free_mem_ptr, returndatasize())
+            }
         }
     }
 }

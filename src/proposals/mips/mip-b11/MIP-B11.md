@@ -28,6 +28,8 @@ A proposal to adjust 2 IR curves:
 | Multiplier                 | 0.045   | 0.05        |
 | Jump Multiplier            | 8.6     | 8.6         |
 
-Our recommendation post is located in the forums with further analysis and supporting data.
+Our recommendation post is located in the forums with further analysis and
+supporting data.
 
-_By approving this proposal, you agree that any services provided by Gauntlet shall be governed by the terms of service available at gauntlet.network/tos._
+_By approving this proposal, you agree that any services provided by Gauntlet
+shall be governed by the terms of service available at gauntlet.network/tos._
