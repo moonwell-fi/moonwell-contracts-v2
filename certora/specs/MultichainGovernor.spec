@@ -1,4 +1,4 @@
-using MultichainGovernor as t;
+using MockMultichainGovernor as t;
 
 methods {
     function whitelistedCalldatas(bytes) external returns (bool) envfree;

@@ -376,4 +376,12 @@ contract MultichainVoteCollection is
 
         _setGasLimit(newGasLimit);
     }
+
+    /// @notice update the stkWell token address
+    /// @param newStakedWell the new stkWell token address
+    function setNewStakedWell(address newStakedWell) external onlyOwner {
+        stkWell = SnapshotInterface(newStakedWell);
+
+        emit NewStakedWellSet(newStakedWell);
+    }
 }

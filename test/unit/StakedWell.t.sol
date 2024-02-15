@@ -172,4 +172,80 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
             "Vault balance should decrease"
         );
     }
+
+    function testSetCoolDownSeconds() public {
+        uint256 newCooldown = 0;
+
+        vm.prank(address(stakedWell.EMISSION_MANAGER()));
+        stakedWell.setCoolDownSeconds(newCooldown);
+
+        assertEq(stakedWell.COOLDOWN_SECONDS(), newCooldown, "Wrong cooldown");
+    }
+
+    function testSetUnstakeWindow() public {
+        uint256 newUnstakeWindow = 0;
+
+        vm.prank(address(stakedWell.EMISSION_MANAGER()));
+        stakedWell.setUnstakeWindow(newUnstakeWindow);
+
+        assertEq(
+            stakedWell.UNSTAKE_WINDOW(),
+            newUnstakeWindow,
+            "Wrong cooldown"
+        );
+    }
+
+    function testSetCoolDownSeconds(uint256 newCooldown) public {
+        vm.prank(address(stakedWell.EMISSION_MANAGER()));
+        stakedWell.setCoolDownSeconds(newCooldown);
+
+        assertEq(stakedWell.COOLDOWN_SECONDS(), newCooldown, "Wrong cooldown");
+    }
+
+    function testSetUnstakeWindow(uint256 newUnstakeWindow) public {
+        vm.prank(address(stakedWell.EMISSION_MANAGER()));
+        stakedWell.setUnstakeWindow(newUnstakeWindow);
+
+        assertEq(
+            stakedWell.UNSTAKE_WINDOW(),
+            newUnstakeWindow,
+            "Wrong cooldown"
+        );
+    }
+
+    function testStakeSetCooldownToZeroUnstakeImmediately() public {
+        testStake();
+        testSetCoolDownSeconds();
+        testSetUnstakeWindow(1000 days);
+
+        uint256 startingUserxWellBalance = xwellProxy.balanceOf(user);
+
+        vm.startPrank(user);
+
+        stakedWell.cooldown(); /// start the cooldown
+
+        vm.warp(block.timestamp + 1); /// fast forward 1 second to get around gt INSUFFICIENT_COOLDOWN check
+
+        stakedWell.redeem(user, amount); /// withdraw
+
+        vm.stopPrank();
+
+        assertEq(
+            xwellProxy.balanceOf(user),
+            startingUserxWellBalance + amount,
+            "User should have received xWell"
+        );
+    }
+
+    function testSetCoolDownSecondsNonEmissionsManagerFails() public {
+        vm.expectRevert("Only emissions manager can call this function");
+        vm.prank(address(111));
+        stakedWell.setCoolDownSeconds(0);
+    }
+
+    function testSetUnstakeWindowNonEmissionsManagerFails() public {
+        vm.expectRevert("Only emissions manager can call this function");
+        vm.prank(address(111));
+        stakedWell.setUnstakeWindow(0);
+    }
 }
