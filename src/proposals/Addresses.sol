@@ -122,6 +122,8 @@ contract Addresses is IAddresses, Test {
                 )
             );
         }
+
+        _checkAddress(addr, data.isContract, name, _chainId);
     }
 
     /// @notice get an address for the current chainId
