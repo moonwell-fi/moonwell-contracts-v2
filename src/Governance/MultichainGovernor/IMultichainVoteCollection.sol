@@ -48,9 +48,6 @@ interface IMultichainVoteCollection {
     /// @notice event emitted when the new staked well is set
     event NewStakedWellSet(address newStakedWell);
 
-    /// @notice event emitted when the old staked well is unset
-    event OldStakedWellUnset();
-
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
     /// ----------------------- DATA TYPES ---------------------- ///
