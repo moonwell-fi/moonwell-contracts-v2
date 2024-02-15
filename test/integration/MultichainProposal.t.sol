@@ -2611,5 +2611,6 @@ contract MultichainProposalTest is
                 break;
             }
         }
+        require(userProposalFound, "proposal not created");
     }
 }
