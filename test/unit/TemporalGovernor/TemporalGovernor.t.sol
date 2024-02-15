@@ -61,7 +61,10 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
 
     function testSetupCorrectly() public {
         assertTrue(
-            governor.isTrustedSender(block.chainid.toUint16(), governor.addressToBytes(admin))
+            governor.isTrustedSender(
+                block.chainid.toUint16(),
+                governor.addressToBytes(admin)
+            )
         );
         assertEq(address(governor.wormholeBridge()), wormholeCore);
     }
@@ -70,7 +73,9 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         TemporalGovernor.TrustedSender[]
             memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        vm.expectRevert("TemporalGovernor: Only this contract can update trusted senders");
+        vm.expectRevert(
+            "TemporalGovernor: Only this contract can update trusted senders"
+        );
         governor.setTrustedSenders(trustedSenders);
     }
 
@@ -125,10 +130,16 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         governor.setTrustedSenders(trustedSenders);
 
         assertTrue(
-            governor.isTrustedSender(block.chainid.toUint16(), governor.addressToBytes(newAdmin))
+            governor.isTrustedSender(
+                block.chainid.toUint16(),
+                governor.addressToBytes(newAdmin)
+            )
         );
         assertTrue(
-            governor.isTrustedSender(block.chainid.toUint16(), governor.addressToBytes(admin))
+            governor.isTrustedSender(
+                block.chainid.toUint16(),
+                governor.addressToBytes(admin)
+            )
         );
     }
 
@@ -145,10 +156,16 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         governor.unSetTrustedSenders(trustedSenders);
 
         assertFalse(
-            governor.isTrustedSender(block.chainid.toUint16(), governor.addressToBytes(newAdmin))
+            governor.isTrustedSender(
+                block.chainid.toUint16(),
+                governor.addressToBytes(newAdmin)
+            )
         );
         assertTrue(
-            governor.isTrustedSender(block.chainid.toUint16(), governor.addressToBytes(admin))
+            governor.isTrustedSender(
+                block.chainid.toUint16(),
+                governor.addressToBytes(admin)
+            )
         );
     }
 
@@ -156,12 +173,16 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         TemporalGovernor.TrustedSender[]
             memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        vm.expectRevert("TemporalGovernor: Only this contract can update trusted senders");
+        vm.expectRevert(
+            "TemporalGovernor: Only this contract can update trusted senders"
+        );
         governor.unSetTrustedSenders(trustedSenders);
     }
 
     function testGrantGuardiansPauseNotTemporalGovernorFails() public {
-        vm.expectRevert("TemporalGovernor: Only this contract can update grant guardian pause");
+        vm.expectRevert(
+            "TemporalGovernor: Only this contract can update grant guardian pause"
+        );
         governor.grantGuardiansPause();
     }
 

@@ -7,28 +7,27 @@ import "./MultiRewardDistributor/MultiRewardDistributor.sol";
 
 contract UnitrollerAdminStorage {
     /**
-    * @notice Administrator for this contract
-    */
+     * @notice Administrator for this contract
+     */
     address public admin;
 
     /**
-    * @notice Pending administrator for this contract
-    */
+     * @notice Pending administrator for this contract
+     */
     address public pendingAdmin;
 
     /**
-    * @notice Active brains of Unitroller
-    */
+     * @notice Active brains of Unitroller
+     */
     address public comptrollerImplementation;
 
     /**
-    * @notice Pending brains of Unitroller
-    */
+     * @notice Pending brains of Unitroller
+     */
     address public pendingComptrollerImplementation;
 }
 
 contract ComptrollerVXStorage is UnitrollerAdminStorage {
-
     /**
      * @notice Oracle which gives the price of any given asset
      */
@@ -52,14 +51,12 @@ contract ComptrollerVXStorage is UnitrollerAdminStorage {
     struct Market {
         /// @notice Whether or not this market is listed
         bool isListed;
-
         /**
          * @notice Multiplier representing the most one can borrow against their collateral in this market.
          *  For instance, 0.9 to allow borrowing 90% of collateral value.
          *  Must be between 0 and 1, and stored as a mantissa.
          */
         uint collateralFactorMantissa;
-
         /// @notice Per-market mapping of "accounts in this asset"
         mapping(address => bool) accountMembership;
     }
@@ -93,7 +90,6 @@ contract ComptrollerVXStorage is UnitrollerAdminStorage {
     struct RewardMarketState {
         /// @notice The market's last updated rewardBorrowIndex or rewardSupplyIndex
         uint224 index;
-
         /// @notice The block timestamp the index was last updated at
         uint32 timestamp;
     }

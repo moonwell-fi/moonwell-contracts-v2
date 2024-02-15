@@ -1,0 +1,34 @@
+# directories
+broadcast
+cache
+coverage
+lib
+out
+artifacts
+.github
+.husky
+other
+
+# files
+*.env
+*.log
+.DS_Store
+lcov.info
+*.txt
+*.toml
+LICENSE
+.solhintrc
+.prettierrc
+.prettierignore
+*.svg
+.gitmodules
+.gitignore
+package-lock.json
+Makefile
+*.sh
+*.pdf
+*.lock
+
+# temporarily
+test/unit/SystemUpgrade.t.sol
+test/integration/LiveSystem.t.sol
