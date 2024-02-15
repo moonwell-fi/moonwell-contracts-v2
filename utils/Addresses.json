@@ -798,10 +798,5 @@
     "addr": "0x949D6a0E3b1064d498D529a388B953b344CD13F7",
     "chainId": 1284,
     "name": "NOMAD_REALLOCATION_MULTISIG"
-  },
-  {
-    "addr": "0x8b621804a7637b781e2BbD58e256a591F2dF7d51",
-    "chainId": 1284,
-    "name": "TEMPORAL_GOVERNOR"
   }
 ]
