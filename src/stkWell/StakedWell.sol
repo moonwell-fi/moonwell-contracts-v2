@@ -15,7 +15,21 @@ contract StakedWell is StakedToken {
     string internal constant SYMBOL = "stkWELL";
     uint8 internal constant DECIMALS = 18;
 
+    /// @notice emitted when the cooldown seconds are updated
+    event CooldownSecondsUpdated(uint256 newCooldownSeconds);
+
+    /// @notice emitted when the unstake window is updated
+    event UnstakeWindowUpdated(uint256 newUnstakeWindow);
+
     constructor() public initializer {}
+
+    modifier onlyEmissionsManager() {
+        require(
+            msg.sender == EMISSION_MANAGER,
+            "Only emissions manager can call this function"
+        );
+        _;
+    }
 
     /**
      * @dev Called by the proxy contract
@@ -43,5 +57,25 @@ contract StakedWell is StakedToken {
             DECIMALS,
             governance
         );
+    }
+
+    /// @notice update the cooldown seconds
+    /// @param cooldownSeconds the new cooldown seconds
+    function setCoolDownSeconds(
+        uint256 cooldownSeconds
+    ) external onlyEmissionsManager {
+        COOLDOWN_SECONDS = cooldownSeconds;
+
+        emit CooldownSecondsUpdated(cooldownSeconds);
+    }
+
+    /// @notice update the unstake window
+    /// @param unstakeWindow the new unstake window
+    function setUnstakeWindow(
+        uint256 unstakeWindow
+    ) external onlyEmissionsManager {
+        UNSTAKE_WINDOW = unstakeWindow;
+
+        emit UnstakeWindowUpdated(unstakeWindow);
     }
 }
