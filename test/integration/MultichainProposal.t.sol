@@ -13,7 +13,6 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
-import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
