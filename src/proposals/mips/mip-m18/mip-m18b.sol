@@ -20,10 +20,13 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 /// the safety module (stkWELL).
 /// All contracts deployed are proxies.
 /// to simulate: DO_DEPLOY=true DO_VALIDATE=true forge script
-/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b -f $FORK_URL_BASE
+/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b
 /// to deploy: DO_DEPLOY=true DO_VALIDATE=true forge script
-/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b -f $FORK_URL_BASE
+/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b
 /// --broadcast --slow
+/// Once the proposal is execute, VOTE_COLLECTION_PROXY, VOTE_COLLECTION_IMPL,
+/// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, stkWELL_PROXY, stkWELL_IMPL
+/// and xWELL_PROXY must be added to the addresses.json file.
 contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
     /// @notice deployment of the Multichain Vote Collection Contract to Base
     string public constant name = "MIP-M18B";

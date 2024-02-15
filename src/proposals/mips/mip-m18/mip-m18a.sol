@@ -11,9 +11,9 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 import {validateProxy, _IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
 
 /// Proposal to run on Moonbeam to create the Multichain Governor contract
-/// to simulate: DO_DEPLOY=true DO_VALIDATE=true forge script  src/proposals/mips/mip-m18/mip-m18a.sol:mipm18a -f $FORK_URL_MOONBEAM
+/// to simulate: DO_DEPLOY=true DO_VALIDATE=true forge script  src/proposals/mips/mip-m18/mip-m18a.sol:mipm18a
 /// to execute: DO_DEPLOY=true DO_VALIDATE=true forge script \
-/// src/proposals/mips/mip-m18/mip-m18a.sol:mipm18a -f $FORK_URL_MOONBEAM
+/// src/proposals/mips/mip-m18/mip-m18a.sol:mipm18a
 /// --broadcast --slow
 /// Once the proposal is execute, MULTICHAIN_GOVERNOR_PROXY and
 /// MULTICHAIN_GOVERNOR_IMPL must be added to the addresses.json file
