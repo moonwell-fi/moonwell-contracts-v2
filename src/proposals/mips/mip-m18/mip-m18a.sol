@@ -28,8 +28,8 @@ contract mipm18a is ChainIds, HybridProposal, MultichainGovernorDeploy {
             address governorImpl
         ) = deployMultichainGovernor(proxyAdmin);
 
-        addresses.addAddress("MULTICHAIN_GOVERNOR_PROXY", governorProxy);
-        addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", governorImpl);
+        addresses.addAddress("MULTICHAIN_GOVERNOR_PROXY", governorProxy, true);
+        addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", governorImpl, true);
     }
 
     function validate(Addresses addresses, address) public view override {

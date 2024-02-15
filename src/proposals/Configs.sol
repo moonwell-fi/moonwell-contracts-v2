@@ -102,8 +102,8 @@ contract Configs is Test {
             /// create mock wormhole core for local testing
             MockWormholeCore wormholeCore = new MockWormholeCore();
 
-            addresses.addAddress("WORMHOLE_CORE", address(wormholeCore));
-            addresses.addAddress("PAUSE_GUARDIAN", address(this));
+            addresses.addAddress("WORMHOLE_CORE", address(wormholeCore), true);
+            addresses.addAddress("PAUSE_GUARDIAN", address(this), true);
         }
     }
 
@@ -121,7 +121,7 @@ contract Configs is Test {
                 try addresses.getAddress("USDBC") returns (address) {
                     addresses.changeAddress("USDBC", address(token));
                 } catch {
-                    addresses.addAddress("USDBC", address(token));
+                    addresses.addAddress("USDBC", address(token), true);
                 }
 
                 token.allocateTo(
@@ -152,7 +152,7 @@ contract Configs is Test {
                     initialMintAmount
                 );
 
-                addresses.addAddress("WBTC", address(token));
+                addresses.addAddress("WBTC", address(token), true);
             }
 
             {
@@ -167,7 +167,7 @@ contract Configs is Test {
                     initialMintAmount
                 );
 
-                addresses.addAddress("cbETH", address(token));
+                addresses.addAddress("cbETH", address(token), true);
             }
 
             {
@@ -182,7 +182,7 @@ contract Configs is Test {
                     initialMintAmount
                 );
 
-                addresses.addAddress("wstETH", address(token));
+                addresses.addAddress("wstETH", address(token), true);
             }
         }
     }
@@ -214,9 +214,9 @@ contract Configs is Test {
                     initialMintAmount
                 );
 
-                addresses.addAddress("USDBC", address(token));
-                addresses.addAddress("USDC_ORACLE", address(usdcOracle));
-                addresses.addAddress("ETH_ORACLE", address(ethOracle));
+                addresses.addAddress("USDBC", address(token), true);
+                addresses.addAddress("USDC_ORACLE", address(usdcOracle), true);
+                addresses.addAddress("ETH_ORACLE", address(ethOracle), true);
 
                 JumpRateModelConfiguration
                     memory jrmConfig = JumpRateModelConfiguration(
@@ -250,7 +250,7 @@ contract Configs is Test {
                     addresses.getAddress("TEMPORAL_GOVERNOR"),
                     initialMintAmount
                 );
-                addresses.addAddress("WETH", address(token));
+                addresses.addAddress("WETH", address(token), true);
 
                 JumpRateModelConfiguration
                     memory jrmConfig = JumpRateModelConfiguration(
@@ -379,7 +379,11 @@ contract Configs is Test {
                             address(0)
                         );
 
-                    addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
+                    addresses.addAddress(
+                        "cbETH_ORACLE",
+                        address(cbEthOracle),
+                        true
+                    );
                 }
 
                 JumpRateModelConfiguration
@@ -430,7 +434,8 @@ contract Configs is Test {
 
                     addresses.addAddress(
                         "wstETH_ORACLE",
-                        address(wstETHOracle)
+                        address(wstETHOracle),
+                        true
                     );
                 }
 
@@ -471,7 +476,11 @@ contract Configs is Test {
                         address(0)
                     );
 
-                addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
+                addresses.addAddress(
+                    "cbETH_ORACLE",
+                    address(cbEthOracle),
+                    true
+                );
             }
 
             return;
@@ -496,7 +505,7 @@ contract Configs is Test {
 
             token.allocateTo(addresses.getAddress("MRD_PROXY"), 100_000_000e18);
 
-            addresses.addAddress("WELL", address(token));
+            addresses.addAddress("WELL", address(token), true);
         }
 
         //// create reward configuration for all mTokens

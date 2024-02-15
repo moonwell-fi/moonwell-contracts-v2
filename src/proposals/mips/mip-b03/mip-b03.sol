@@ -154,7 +154,8 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel)
+                        address(irModel),
+                        true
                     );
                 }
 
@@ -195,7 +196,11 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                     ""
                 );
 
-                addresses.addAddress(config.addressesString, address(mToken));
+                addresses.addAddress(
+                    config.addressesString,
+                    address(mToken),
+                    true
+                );
             }
         }
     }
@@ -382,7 +387,10 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public override(CrossChainProposal, MIPProposal) {
+    function run(
+        Addresses addresses,
+        address
+    ) public override(CrossChainProposal, MIPProposal) {
         printCalldata(addresses);
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }

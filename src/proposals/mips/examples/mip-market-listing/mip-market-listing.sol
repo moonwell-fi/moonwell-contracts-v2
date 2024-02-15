@@ -161,7 +161,8 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel)
+                        address(irModel),
+                        true
                     );
                 }
 
@@ -202,7 +203,11 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                     ""
                 );
 
-                addresses.addAddress(config.addressesString, address(mToken));
+                addresses.addAddress(
+                    config.addressesString,
+                    address(mToken),
+                    true
+                );
             }
         }
     }
@@ -423,9 +428,9 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                 uint256 supplyCap = comptroller.supplyCaps(
                     addresses.getAddress(config.addressesString)
                 );
-                
+
                 uint256 maxBorrowCap = (supplyCap * 10) / 9;
-                
+
                 /// validate borrow cap is always lte 90% of supply cap
                 assertTrue(
                     borrowCap <= maxBorrowCap,
