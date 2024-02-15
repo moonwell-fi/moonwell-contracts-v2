@@ -15,7 +15,11 @@ contract OracleUnitTest is Test {
         chainlinkOracleA = new MockChainlinkOracle(1.1e18, 18);
         chainlinkOracleB = new MockChainlinkOracle(1.2e18, 18);
         chainlinkOracleC = new MockChainlinkOracle(1.3e18, 18);
-        oracle = new ChainlinkCompositeOracle(address(chainlinkOracleA), address(chainlinkOracleB), address(chainlinkOracleC));
+        oracle = new ChainlinkCompositeOracle(
+            address(chainlinkOracleA),
+            address(chainlinkOracleB),
+            address(chainlinkOracleC)
+        );
     }
 
     function testSetup() public {
@@ -28,22 +32,40 @@ contract OracleUnitTest is Test {
 
     function testOracleReadFailsInvalidDecimalsOver18() public {
         vm.expectRevert("CLCOracle: Invalid expected decimals");
-        oracle.getDerivedPrice(address(chainlinkOracleA), address(chainlinkOracleB), 19);
+        oracle.getDerivedPrice(
+            address(chainlinkOracleA),
+            address(chainlinkOracleB),
+            19
+        );
     }
 
     function testOracleReadFailsInvalidDecimalsEq0() public {
         vm.expectRevert("CLCOracle: Invalid expected decimals");
-        oracle.getDerivedPrice(address(chainlinkOracleA), address(chainlinkOracleB), 0);
+        oracle.getDerivedPrice(
+            address(chainlinkOracleA),
+            address(chainlinkOracleB),
+            0
+        );
     }
 
     function test3OracleReadFailsInvalidDecimalsOver18() public {
         vm.expectRevert("CLCOracle: Invalid expected decimals");
-        oracle.getDerivedPriceThreeOracles(address(chainlinkOracleA), address(chainlinkOracleB), address(chainlinkOracleC), 19);
+        oracle.getDerivedPriceThreeOracles(
+            address(chainlinkOracleA),
+            address(chainlinkOracleB),
+            address(chainlinkOracleC),
+            19
+        );
     }
 
     function test3OracleReadFailsInvalidDecimalsEq0() public {
         vm.expectRevert("CLCOracle: Invalid expected decimals");
-        oracle.getDerivedPriceThreeOracles(address(chainlinkOracleA), address(chainlinkOracleB), address(chainlinkOracleC), 0);
+        oracle.getDerivedPriceThreeOracles(
+            address(chainlinkOracleA),
+            address(chainlinkOracleB),
+            address(chainlinkOracleC),
+            0
+        );
     }
 
     function testCompositeOracleTwoAddresses() public {
@@ -53,7 +75,7 @@ contract OracleUnitTest is Test {
             18
         );
         assertTrue(price > 0, "Price should be greater than 0");
-        assertEq(price, 1e18 * 1.1e18 / 1e18 * 1.2e18 / 1e18);
+        assertEq(price, (((1e18 * 1.1e18) / 1e18) * 1.2e18) / 1e18);
     }
 
     function testCompositeOracleThreeAddresses() public {
@@ -64,7 +86,10 @@ contract OracleUnitTest is Test {
             18
         );
         assertTrue(price > 0, "Price should be greater than 0");
-        assertEq(price, 1e18 * 1.1e18 / 1e18 * 1.2e18 / 1e18 * 1.3e18 / 1e18);
+        assertEq(
+            price,
+            (((((1e18 * 1.1e18) / 1e18) * 1.2e18) / 1e18) * 1.3e18) / 1e18
+        );
     }
 
     function testTestLatestRoundData() public {
@@ -93,7 +118,11 @@ contract OracleUnitTest is Test {
     }
 
     function testTestLatestRoundDataTwoOracles() public {
-        oracle = new ChainlinkCompositeOracle(address(chainlinkOracleA), address(chainlinkOracleB), address(0));
+        oracle = new ChainlinkCompositeOracle(
+            address(chainlinkOracleA),
+            address(chainlinkOracleB),
+            address(0)
+        );
         (
             uint80 roundId, /// always 0, value unused in ChainlinkOracle.sol
             int256 answer, /// the composite price
@@ -116,19 +145,31 @@ contract OracleUnitTest is Test {
         assertEq(startedAt, 0);
         assertEq(answeredInRound, 0);
 
-        assertEq(price, (1e18 * 1.1e18 / 1e18) * 1.2e18 / 1e18);
+        assertEq(price, (((1e18 * 1.1e18) / 1e18) * 1.2e18) / 1e18);
     }
 
-    function testGetPriceAndDecimalsFailsInvalidChainlinkDataPriceZero() public {
+    function testGetPriceAndDecimalsFailsInvalidChainlinkDataPriceZero()
+        public
+    {
         chainlinkOracleA.set(10, 0, 0, 0, 10); /// invalid because price is 0
         vm.expectRevert("CLCOracle: Oracle data is invalid");
-        oracle.getDerivedPrice(address(chainlinkOracleA), address(chainlinkOracleB), 18);
+        oracle.getDerivedPrice(
+            address(chainlinkOracleA),
+            address(chainlinkOracleB),
+            18
+        );
     }
 
-    function testGetPriceAndDecimalsFailsInvalidChainlinkDataRoundsIncorrect() public {
+    function testGetPriceAndDecimalsFailsInvalidChainlinkDataRoundsIncorrect()
+        public
+    {
         chainlinkOracleA.set(11, 1, 0, 0, 10); /// invalid because rounds are desynced
         vm.expectRevert("CLCOracle: Oracle data is invalid");
-        oracle.getDerivedPrice(address(chainlinkOracleA), address(chainlinkOracleB), 18);
+        oracle.getDerivedPrice(
+            address(chainlinkOracleA),
+            address(chainlinkOracleB),
+            18
+        );
     }
 
     function testScalePrice(
@@ -177,7 +218,6 @@ contract OracleUnitTest is Test {
         ); /// bound price multiplier between 1e18 and 10_000e18
         /// scaling factor is between 1 and 1e18
         uint256 scalingFactor = 10 ** uint256(_bound(decimals, 0, 18)); /// bound decimals between 0 and 18
-        
 
         assertEq(
             oracle.calculatePrice(
