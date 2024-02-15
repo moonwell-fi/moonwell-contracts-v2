@@ -2588,7 +2588,7 @@ contract MultichainProposalTest is
     function _assertProposalCreated(
         uint256 proposalid,
         address proposer
-    ) private {
+    ) private view {
         uint256[] memory liveProposals = governor.liveProposals();
         bool proposalFound = false;
 
