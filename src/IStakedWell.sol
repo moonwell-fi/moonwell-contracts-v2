@@ -16,6 +16,14 @@ interface IStakedWell {
 
     function balanceOf(address account) external view returns (uint256);
 
+    function stakersCooldowns(address account) external view returns (uint256);
+
+    function UNSTAKE_WINDOW() external view returns (uint256);
+
+    function COOLDOWN_SECONDS() external view returns (uint256);
+
+    function EMISSION_MANAGER() external view returns (address);
+
     function getPriorVotes(
         address account,
         uint256 blockNumber
@@ -29,9 +37,19 @@ interface IStakedWell {
 
     function claimRewards(address to, uint256 amount) external;
 
+    function cooldown() external;
+
     // from IDistributionManager
     function configureAsset(
         uint128 emissionPerSecond,
         address underlyingAsset
     ) external;
+
+    /// @notice update the unstake window
+    /// @param unstakeWindow the new unstake window
+    function setUnstakeWindow(uint256 unstakeWindow) external;
+
+    /// @notice update the cooldown seconds
+    /// @param cooldownSeconds the new cooldown seconds
+    function setCoolDownSeconds(uint256 cooldownSeconds) external;
 }
