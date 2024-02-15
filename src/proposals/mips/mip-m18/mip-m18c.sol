@@ -137,7 +137,6 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
     function afterDeploy(Addresses addresses, address) public override {
         buildCalldata(addresses);
 
-        // TODO why this and ECOSSYSTEM_REVERSE_CONTROLLER have the same address?
         MultichainGovernor governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
