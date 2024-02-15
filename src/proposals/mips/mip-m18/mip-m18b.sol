@@ -86,9 +86,9 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 addresses.getAddress("xWELL_PROXY"),
                 addresses.getAddress("stkWELL_PROXY"),
                 addresses.getAddress( /// fetch multichain governor address on Moonbeam
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
-                ),
+                        "MULTICHAIN_GOVERNOR_PROXY",
+                        sendingChainIdToReceivingChainId[block.chainid]
+                    ),
                 addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
                 chainIdToWormHoleId[block.chainid],
                 proxyAdmin,

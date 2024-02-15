@@ -1,5 +1,6 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
+import {console} from "@forge-std/console.sol";
 
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
@@ -263,17 +264,16 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
     function run(Addresses addresses, address) public override {
         vm.selectFork(moonbeamForkId);
 
-        string memory addressName = "MOONBEAM_TIMELOCK";
-        _run(addresses, addressName, moonbeamActions);
+        address timelock = addresses.getAddress("MOONBEAM_TIMELOCK");
+        _run(timelock, moonbeamActions);
 
         vm.selectFork(baseForkId);
 
-        string memory addressNameBase = "TEMPORAL_GOVERNOR";
-
-        _run(addresses, addressNameBase, baseActions);
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        _run(temporalGovernor, baseActions);
 
         // switch back to the moonbeam fork so we can run the validations
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public override {
