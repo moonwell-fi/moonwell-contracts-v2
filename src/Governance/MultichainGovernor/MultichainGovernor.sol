@@ -46,13 +46,13 @@ contract MultichainGovernor is
     /// @notice all live proposals, executed and cancelled proposals are removed
     /// when a new proposal is created, it is added to this set and any stale
     /// items are removed
-    EnumerableSet.UintSet private _liveProposals;
+    EnumerableSet.UintSet internal _liveProposals;
 
     /// @notice active proposals user has proposed
     /// will automatically clear executed or cancelled
     /// proposals from set when called by user
     mapping(address user => EnumerableSet.UintSet userProposals)
-        private _userLiveProposals;
+        internal _userLiveProposals;
 
     /// @notice the number of votes for a given proposal on a given chainid
     mapping(uint16 wormholeChainId => mapping(uint256 proposalId => VoteCounts))
@@ -91,11 +91,11 @@ contract MultichainGovernor is
     /// @notice reference to the stkWELL token, uses block number for voting checkpoints
     SnapshotInterface public stkWell;
 
-    /// @notice reference to the new stkWELL token, uses block timestamps for voting checkpoints
-    SnapshotInterface public newStkWell;
-
     /// @notice reference to the WELL token distributor contract, uses block number for voting checkpoints
     SnapshotInterface public distributor;
+
+    /// @notice whether or not the stkWell contract uses timestamps or block numbers
+    bool public useTimestamps;
 
     /// --------------------------------------------------------- ///
     /// --------------------- VOTING PARAMS --------------------- ///
@@ -254,20 +254,6 @@ contract MultichainGovernor is
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
 
-    function proposalValid(uint256 proposalId) external view returns (bool) {
-        return
-            proposalCount >= proposalId &&
-            proposalId > 0 &&
-            proposals[proposalId].proposer != address(0);
-    }
-
-    function userHasProposal(
-        uint256 proposalId,
-        address proposer
-    ) external view returns (bool) {
-        return _userLiveProposals[proposer].contains(proposalId);
-    }
-
     /// @notice returns a user's vote receipt on a given proposal
     /// @param proposalId the id of the proposal to check
     /// @param voter the address of the voter to check
@@ -282,25 +268,6 @@ contract MultichainGovernor is
         hasVoted = receipt.hasVoted;
         voteValue = receipt.voteValue;
         votes = receipt.votes;
-    }
-
-    /// @notice returns information on a proposal in a struct format
-    /// @param proposalId the id of the proposal to check
-    function proposalInformationStruct(
-        uint256 proposalId
-    ) external view returns (ProposalInformation memory proposalInfo) {
-        Proposal storage proposal = proposals[proposalId];
-
-        proposalInfo.proposer = proposal.proposer;
-        proposalInfo.voteSnapshotTimestamp = proposal.voteSnapshotTimestamp;
-        proposalInfo.votingStartTime = proposal.votingStartTime;
-        proposalInfo.votingEndTime = proposal.votingEndTime;
-        proposalInfo.crossChainVoteCollectionEndTimestamp = proposal
-            .crossChainVoteCollectionEndTimestamp;
-        proposalInfo.totalVotes = proposal.totalVotes;
-        proposalInfo.forVotes = proposal.forVotes;
-        proposalInfo.againstVotes = proposal.againstVotes;
-        proposalInfo.abstainVotes = proposal.abstainVotes;
     }
 
     /// @notice returns information on a proposal
@@ -474,29 +441,18 @@ contract MultichainGovernor is
         uint256 timestamp,
         uint256 blockNumber
     ) public view returns (uint256) {
-        uint256 newStkWellVotes;
-        uint256 oldStkWellVotes;
-
         uint256 wellVotes = well.getPriorVotes(account, blockNumber);
         uint256 distributorVotes = distributor.getPriorVotes(
             account,
             blockNumber
         );
         uint256 xWellVotes = xWell.getPastVotes(account, timestamp);
+        uint256 stkWellVotes = stkWell.getPriorVotes(
+            account,
+            useTimestamps ? timestamp : blockNumber
+        );
 
-        if (address(stkWell) != address(0)) {
-            oldStkWellVotes = stkWell.getPriorVotes(account, blockNumber);
-        }
-        if (address(newStkWell) != address(0)) {
-            newStkWellVotes = newStkWell.getPastVotes(account, timestamp);
-        }
-
-        return
-            xWellVotes +
-            oldStkWellVotes +
-            distributorVotes +
-            wellVotes +
-            newStkWellVotes;
+        return xWellVotes + stkWellVotes + distributorVotes + wellVotes;
     }
 
     /// @notice returns the current voting power for an address across well, xWell, stkWell and distributor
@@ -904,23 +860,21 @@ contract MultichainGovernor is
     //// ---------------------------------------------- ////
 
     /// @notice set the new stkWell token address
+    /// if the new staked well token does not conform to the new interface, then
+    /// this governor contract is bricked and will need to be rolled back via
+    /// the break glass guardian.
+    /// use this function with extreme caution and thoroughly integration test
+    /// making proposals and voting on them after calling this function.
     /// @param newStakedWell the new stkWell token address
-    function setNewStakedWell(address newStakedWell) external onlyGovernor {
-        newStkWell = SnapshotInterface(newStakedWell);
+    /// @param toUseTimestamps whether or not to use timestamps for voting
+    function setNewStakedWell(
+        address newStakedWell,
+        bool toUseTimestamps
+    ) external onlyGovernor {
+        stkWell = SnapshotInterface(newStakedWell);
+        useTimestamps = toUseTimestamps;
 
-        emit NewStakedWellSet(newStakedWell);
-    }
-
-    /// @notice unset the old stkWell token address
-    /// callable only if the new staked well token is set
-    function unsetOldStakedWell() external onlyGovernor {
-        require(
-            address(newStkWell) != address(0),
-            "MultichainVoteCollection: new stkWell not set yet"
-        );
-        stkWell = SnapshotInterface(address(0));
-
-        emit OldStakedWellUnset();
+        emit NewStakedWellSet(newStakedWell, toUseTimestamps);
     }
 
     /// @notice updates the approval for calldata to be used by break glass guardian
