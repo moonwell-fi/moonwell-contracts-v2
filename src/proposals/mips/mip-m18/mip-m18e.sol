@@ -34,7 +34,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             );
 
         trustedSendersToRemove[0].addr = addresses.getAddress(
-            "ARTEMIS_TIMELOCK"
+            "MOONBEAM_TIMELOCK"
         );
         trustedSendersToRemove[0].chainId = moonBeamWormholeChainId;
 
@@ -170,22 +170,19 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     }
 
     function run(Addresses addresses, address) public override {
-        uint256 activeFork = vm.activeFork();
-
         vm.selectFork(moonbeamForkId);
 
-        _run(
-            addresses,
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
-            moonbeamActions
-        );
+        string memory addressName = "MULTICHAIN_GOVERNOR_PROXY";
+        _run(addresses, addressName, moonbeamActions);
 
         vm.selectFork(baseForkId);
 
-        _run(addresses, addresses.getAddress("TEMPORAL_GOVERNOR"), baseActions);
+        string memory addressNameBase = "TEMPORAL_GOVERNOR";
 
-        // switch back to the original fork
-        vm.selectFork(activeFork);
+        _run(addresses, addressNameBase, baseActions);
+
+        // switch back to the moonbeam fork so we can run the validations
+        vm.selectFork(moonbeamForkId);
     }
 
     function validate(Addresses addresses, address) public override {

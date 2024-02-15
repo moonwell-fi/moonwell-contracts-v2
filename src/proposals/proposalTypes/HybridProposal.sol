@@ -314,16 +314,23 @@ abstract contract HybridProposal is
 
     /// runs the proposal on moonbeam or base, verifying the actions through the hook
     /// @param addresses the addresses contract
-    /// @param prankAddress the address to prank
+    /// @param caller the name of the caller address
     /// @param actions the actions to run
     function _run(
         Addresses addresses,
-        address prankAddress,
+        string memory caller,
         ProposalAction[] memory actions
     ) internal {
-        vm.startPrank(prankAddress);
-
         _verifyActionsPreRunHybrid(actions);
+
+        address caller = addresses.getAddress(caller);
+
+        // we can broadcast only if caller is not a contract
+        if (caller.code.length > 0) {
+            vm.startPrank(caller);
+        } else {
+            vm.startBroadcast(caller);
+        }
 
         for (uint256 i = 0; i < actions.length; i++) {
             (bool success, ) = actions[i].target.call{value: actions[i].value}(
@@ -333,7 +340,11 @@ abstract contract HybridProposal is
             require(success, "moonbeam action failed");
         }
 
-        vm.stopPrank();
+        if (caller.code.length > 0) {
+            vm.stopPrank();
+        } else {
+            vm.stopBroadcast();
+        }
 
         _verifyMTokensPostRun();
 

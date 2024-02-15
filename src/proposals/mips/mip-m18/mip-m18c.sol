@@ -68,7 +68,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             "temporal gov calldata already set in mip-18-c"
         );
 
-        address artemisTimelock = addresses.getAddress("ARTEMIS_TIMELOCK");
+        address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
             sendingChainIdToReceivingChainId[block.chainid]
