@@ -7,6 +7,7 @@ import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
@@ -38,10 +39,10 @@ contract MultichainBaseTest is
     MultichainVoteCollection public voteCollection;
 
     /// @notice reference to the Multichain governor logic contract
-    MultichainGovernor public governorLogic;
+    MockMultichainGovernor public governorLogic;
 
     /// @notice reference to the Multichain governor proxy contract
-    MultichainGovernor public governor;
+    MockMultichainGovernor public governor;
 
     /// @notice reference to the xWELL token
     xWELL public xwell;
@@ -236,8 +237,10 @@ contract MultichainBaseTest is
                 address(stkWellBase)
             );
 
-        governor = MultichainGovernor(addresses.governorProxy);
-        governorLogic = MultichainGovernor(addresses.governorImplementation);
+        governor = MockMultichainGovernor(addresses.governorProxy);
+        governorLogic = MockMultichainGovernor(
+            addresses.governorImplementation
+        );
         xwell = xWELL(xwellProxy);
         wormholeRelayerAdapter = WormholeRelayerAdapter(
             addresses.wormholeRelayerAdapter
