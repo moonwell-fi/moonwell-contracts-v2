@@ -1,7 +1,7 @@
 {
     "name": "moonwell-contracts-v2",
     "version": "1.0.0",
-    "description": "The Moonwell Protocol is a fork of Compound v2 with features like borrow/supply caps, cross-chain governance, and multi-token emissions.",
+    "description": "The Moonwell Protocol is a cross-chain lending and borrowing protocol.",
     "directories": {
         "doc": "docs",
         "lib": "lib",
