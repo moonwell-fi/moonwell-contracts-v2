@@ -18,10 +18,8 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 /// Proposal to run on Moonbeam to accept governance powers, finalizing
 /// the transfer of admin and owner from the current Artemis Timelock to the
 /// new Multichain Governor.
-/// to simulate: DO_BUILD=true DO_VALIDATE=true DO_RUN=true DO_PRINT=true forge script
+/// DO_VALIDATE=true DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRINT=true forge script
 /// src/proposals/mips/mip-m18/mip-m18e.sol:mipm18e
-/// to execute: DO_BUILD=true DO_VALIDATE=true DO_RUN=true DO_PRINT=true forge script
-/// src/proposals/mips/mip-m18/mip-m18e.sol:mipm18e --slow --broadcast
 contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     string public constant name = "MIP-M18E";
 

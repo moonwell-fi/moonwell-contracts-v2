@@ -12,10 +12,11 @@ import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
-/// to simulate: DO_VALIDATE=true DO_BUILD=true DO_AFTER_DEPLOY=true DO_PRINT=true DEBUG=true DO_RUN=true forge script  src/proposals/mips/mip-m18/mip-m18c.sol:mipm18c
-/// to run: DO_VALIDATE=true DO_BUILD=true DO_AFTER_DEPLOY=true DO_PRINT=true
-/// DEBUG=true DO_RUN=true forge script
-/// src/proposals/mips/mip-m18/mip-m18c.sol:mipm18c --slow --broadcast
+/// to simulate: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
+/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b --fork-url $BASE_RPC_URL
+/// to execute: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
+/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b --broadcast --slow --fork-url
+/// $BASE_RPC_URL
 contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
     string public constant name = "MIP-M18C";
 

@@ -19,11 +19,11 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 /// The Ecosystem Reserve custodies the xWELL that is used to pay rewards for
 /// the safety module (stkWELL).
 /// All contracts deployed are proxies.
-/// to simulate: DO_DEPLOY=true DO_VALIDATE=true forge script
+/// to simulate: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
+/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b --fork-url $BASE_RPC_URL
+/// to deploy: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
 /// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b
-/// to deploy: DO_DEPLOY=true DO_VALIDATE=true forge script
-/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b
-/// --broadcast --slow
+/// --broadcast --slow --fork-url $BASE_RPC_URL
 /// Once the proposal is execute, VOTE_COLLECTION_PROXY, VOTE_COLLECTION_IMPL,
 /// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, stkWELL_PROXY, stkWELL_IMPL
 /// and xWELL_PROXY must be added to the addresses.json file.
