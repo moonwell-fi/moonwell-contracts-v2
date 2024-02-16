@@ -44,12 +44,10 @@ method to simulate the execution of MIP-M18e is through testnet deployment.
 BASE_RPC_URL=http://127.0.0.1:8545 MOONBEAM_RPC_URL=http://127.0.0.1:8555
 ```
 
-4. Run
-
 ```bash
-   DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
-      src/proposals/mips/mip-m18/mip-m18a.sol:mipm18a --broadcast --slow --fork-url
-      $MOONBEAM_RPC_URL
+DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
+src/proposals/mips/mip-m18/mip-m18a.sol:mipm18a --broadcast --slow --fork-url
+$MOONBEAM_RPC_URL
 ```
 
 5. Copy new MULTICHAIN_GOVERNOR_PROXY and MULTICHAIN_GOVERNOR_IMPL from the
@@ -71,11 +69,15 @@ $BASE_RPC_URL
 8. Run
 
 ```bash
-DO_VALIDATE=true DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRINT=true forge script src/proposals/mips/mip-m18/mip-m18c.sol:mipm18c --slow --broadcast --fork-url $MOONBEAM_BASE_URL
+DO_VALIDATE=true DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRINT=true
+forge script src/proposals/mips/mip-m18/mip-m18c.sol:mipm18c --slow --broadcast
+--fork-url $MOONBEAM_BASE_URL
 ```
 
 9. Run
 
-   ```bash
-    DO_VALIDATE=true DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRINT=true forge script src/proposals/mips/mip-m18/mip-m18d.sol:mipm18d --fork-url $MOONBEAM_BASE_URL
-   ```
+```bash
+DO_VALIDATE=true DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRINT=true
+forge script src/proposals/mips/mip-m18/mip-m18d.sol:mipm18d
+--fork-url $MOONBEAM_BASE_URL
+```
