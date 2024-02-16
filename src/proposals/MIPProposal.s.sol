@@ -22,7 +22,7 @@ to verify after deploy:
 */
 
 abstract contract MIPProposal is Script {
-    uint256 internal PRIVATE_KEY;
+    uint256 private PRIVATE_KEY;
     Addresses private addresses;
 
     bool private DEBUG;
