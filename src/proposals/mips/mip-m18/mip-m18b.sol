@@ -52,14 +52,20 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
             address ecosystemReserveController
         ) = deployEcosystemReserve(proxyAdmin);
 
-        addresses.addAddress("ECOSYSTEM_RESERVE_PROXY", ecosystemReserveProxy);
+        addresses.addAddress(
+            "ECOSYSTEM_RESERVE_PROXY",
+            ecosystemReserveProxy,
+            true
+        );
         addresses.addAddress(
             "ECOSYSTEM_RESERVE_IMPL",
-            ecosystemReserveImplementation
+            ecosystemReserveImplementation,
+            true
         );
         addresses.addAddress(
             "ECOSYSTEM_RESERVE_CONTROLLER",
-            ecosystemReserveController
+            ecosystemReserveController,
+            true
         );
 
         {
@@ -75,8 +81,8 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
                 proxyAdmin
             );
-            addresses.addAddress("stkWELL_PROXY", stkWellProxy);
-            addresses.addAddress("stkWELL_IMPL", stkWellImpl);
+            addresses.addAddress("stkWELL_PROXY", stkWellProxy, true);
+            addresses.addAddress("stkWELL_IMPL", stkWellImpl, true);
         }
 
         (
@@ -95,8 +101,8 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 addresses.getAddress("TEMPORAL_GOVERNOR")
             );
 
-        addresses.addAddress("VOTE_COLLECTION_PROXY", collectionProxy);
-        addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl);
+        addresses.addAddress("VOTE_COLLECTION_PROXY", collectionProxy, true);
+        addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl, true);
     }
 
     function afterDeploy(Addresses addresses, address) public override {

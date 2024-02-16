@@ -18,10 +18,7 @@ contract WethUnwrapperUnitTest is Test {
     }
 
     function testSetup() public {
-        assertEq(
-            unwrapper.mToken(),
-            mToken
-        );
+        assertEq(unwrapper.mToken(), mToken);
         assertEq(unwrapper.weth(), address(weth));
     }
 

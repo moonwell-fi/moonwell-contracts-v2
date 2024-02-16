@@ -15,13 +15,18 @@ interface IAddresses {
     ) external view returns (address);
 
     /// @notice add an address for the current chainId
-    function addAddress(string memory name, address addr) external;
+    function addAddress(
+        string memory name,
+        address addr,
+        bool isContract
+    ) external;
 
     /// @notice add an address for a specific chainId
     function addAddress(
         string memory name,
         address addr,
-        uint256 _chainId
+        uint256 _chainId,
+        bool isContract
     ) external;
 
     /// @notice change an address for the current chainId
@@ -32,6 +37,14 @@ interface IAddresses {
         string memory name,
         address _addr,
         uint256 _chainId
+    ) external;
+
+    /// @notice change an address for an specific chainId and change the isContract flag
+    function changeAddress(
+        string memory name,
+        address _addr,
+        uint256 _chainId,
+        bool isContract
     ) external;
 
     /// @notice remove recorded addresses

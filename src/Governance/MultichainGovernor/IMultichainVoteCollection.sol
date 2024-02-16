@@ -45,6 +45,9 @@ interface IMultichainVoteCollection {
         uint256 votes
     );
 
+    /// @notice event emitted when the new staked well is set
+    event NewStakedWellSet(address newStakedWell);
+
     /// --------------------------------------------------------- ///
     /// --------------------------------------------------------- ///
     /// ----------------------- DATA TYPES ---------------------- ///

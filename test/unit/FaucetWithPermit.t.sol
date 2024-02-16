@@ -42,9 +42,13 @@ contract FaucetWithPermitUnitTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
 
         token.permit(
-            permit.owner, permit.spender,
-            permit.value, permit.deadline,
-            v, r, s
+            permit.owner,
+            permit.spender,
+            permit.value,
+            permit.deadline,
+            v,
+            r,
+            s
         );
 
         assertEq(token.allowance(owner, spender), 1e18);

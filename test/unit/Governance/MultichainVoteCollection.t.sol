@@ -1242,6 +1242,22 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         assertEq(voteCollection.gasLimit(), gasLimit, "incorrect gas limit");
     }
 
+    function testSetStkWellOwnerSucceeds() public {
+        address newstkWell = address(1);
+        voteCollection.setNewStakedWell(newstkWell);
+        assertEq(
+            address(voteCollection.stkWell()),
+            newstkWell,
+            "stkwell not updated"
+        );
+    }
+
+    function testSetStkWellNonOwnerFails() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(1));
+        voteCollection.setNewStakedWell(address(0));
+    }
+
     function testSetGasLimitTooLow() public {
         uint96 gasLimit = Constants.MIN_GAS_LIMIT - 1;
         vm.expectRevert("MultichainVoteCollection: gas limit too low");

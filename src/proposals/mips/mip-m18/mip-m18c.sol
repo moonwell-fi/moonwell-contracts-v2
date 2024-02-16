@@ -210,6 +210,11 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
 
+        assertFalse(
+            governor.useTimestamps(),
+            "multichain governor should not be using timestamps on initialization"
+        );
+
         assertEq(
             governor.gasLimit(),
             400_000,

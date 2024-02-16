@@ -117,7 +117,10 @@ contract CompoundERC4626 is ERC4626 {
     function sweepRewards(address[] calldata tokens) external {
         require(msg.sender == rewardRecipient, "CompoundERC4626: forbidden");
         for (uint256 i = 0; i < tokens.length; i++) {
-            require(tokens[i] != address(mToken), "CompoundERC4626: cannot sweep mToken");
+            require(
+                tokens[i] != address(mToken),
+                "CompoundERC4626: cannot sweep mToken"
+            );
 
             ERC20 token = ERC20(tokens[i]);
             uint256 amount = token.balanceOf(address(this));
@@ -187,7 +190,7 @@ contract CompoundERC4626 is ERC4626 {
             uint256 currentExchangeRate = mToken.viewExchangeRate();
             uint256 _totalSupply = MToken(address(mToken)).totalSupply();
             uint256 totalSupplies = (_totalSupply * currentExchangeRate) / 1e18; /// exchange rate is scaled up by 1e18, so needs to be divided off to get accurate total supply
-    
+
             // uint256 totalCash = MToken(address(mToken)).getCash();
             // uint256 totalBorrows = MToken(address(mToken)).totalBorrows();
             // uint256 totalReserves = MToken(address(mToken)).totalReserves();

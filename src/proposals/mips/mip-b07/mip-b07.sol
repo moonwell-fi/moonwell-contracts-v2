@@ -23,7 +23,6 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
     function afterDeploySetup(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-
         string memory descriptionPath = vm.envString("LISTING_PATH");
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(descriptionPath)

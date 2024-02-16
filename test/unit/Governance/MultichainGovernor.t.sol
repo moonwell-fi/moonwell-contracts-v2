@@ -35,6 +35,10 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testGovernorSetup() public {
+        assertFalse(
+            governor.useTimestamps(),
+            "useTimestamps should start off false after initialization"
+        );
         assertEq(
             governor.gasLimit(),
             Constants.MIN_GAS_LIMIT,
@@ -166,6 +170,12 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     /// ACL Negative Tests
 
     /// GOVERNOR
+
+    function testSetNewStkWellNonGovernorFails() public {
+        vm.expectRevert("MultichainGovernor: only governor");
+        governor.setNewStakedWell(address(0), true);
+    }
+
     function testUpdateApprovedCalldataNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateApprovedCalldata("", true);
@@ -419,6 +429,47 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             governor.whitelistedCalldatas(""),
             "calldata not whitelisted"
         );
+    }
+
+    function testSetNewStakedWellGovernorSucceeds() public {
+        address newStakedWell = address(1);
+        assertFalse(governor.useTimestamps(), "timestamps incorrectly in use");
+
+        vm.prank(address(governor));
+        governor.setNewStakedWell(newStakedWell, true);
+
+        assertEq(
+            address(governor.stkWell()),
+            newStakedWell,
+            "new stkwell not set"
+        );
+        assertTrue(governor.useTimestamps(), "timestamps not in use");
+    }
+
+    function testSetNewStakedWellBaseWellGovernorSucceeds() public {
+        uint256 startingVotes = governor.getVotes(
+            address(this),
+            block.timestamp - 1,
+            block.number - 1
+        );
+        address newStakedWell = address(stkWellBase);
+        assertFalse(governor.useTimestamps(), "timestamps incorrectly in use");
+
+        vm.prank(address(governor));
+        governor.setNewStakedWell(newStakedWell, true);
+
+        uint256 endingVotes = governor.getVotes(
+            address(this),
+            block.timestamp - 1,
+            block.number - 1
+        );
+        assertEq(endingVotes, startingVotes, "votes incorrect");
+        assertEq(
+            address(governor.stkWell()),
+            newStakedWell,
+            "new stkwell not set"
+        );
+        assertTrue(governor.useTimestamps(), "timestamps not in use");
     }
 
     function testRemoveExternalChainConfigsGovernorSucceeds() public {
