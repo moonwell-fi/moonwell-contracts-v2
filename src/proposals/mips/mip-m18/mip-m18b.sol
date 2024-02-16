@@ -52,21 +52,27 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
     function deploy(Addresses addresses, address) public override {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
-        /// deploy EcosystemReserve proxy and implementation and EcosystemReserve Controller
+        /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
         (
             address ecosystemReserveProxy,
             address ecosystemReserveImplementation,
             address ecosystemReserveController
         ) = deployEcosystemReserve(proxyAdmin);
 
-        addresses.addAddress("ECOSYSTEM_RESERVE_PROXY", ecosystemReserveProxy);
+        addresses.addAddress(
+            "ECOSYSTEM_RESERVE_PROXY",
+            ecosystemReserveProxy,
+            true
+        );
         addresses.addAddress(
             "ECOSYSTEM_RESERVE_IMPL",
-            ecosystemReserveImplementation
+            ecosystemReserveImplementation,
+            true
         );
         addresses.addAddress(
             "ECOSYSTEM_RESERVE_CONTROLLER",
-            ecosystemReserveController
+            ecosystemReserveController,
+            true
         );
 
         {
@@ -78,13 +84,12 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 ecosystemReserveProxy,
                 /// check that emissions manager on Moonbeam is the Artemis Timelock, so on Base it should be the temporal governor
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
-                /// TODO double check the distribution duration
                 distributionDuration,
                 address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
                 proxyAdmin
             );
-            addresses.addAddress("stkWELL_PROXY", stkWellProxy);
-            addresses.addAddress("stkWELL_IMPL", stkWellImpl);
+            addresses.addAddress("stkWELL_PROXY", stkWellProxy, true);
+            addresses.addAddress("stkWELL_IMPL", stkWellImpl, true);
         }
 
         (
@@ -103,8 +108,8 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 addresses.getAddress("TEMPORAL_GOVERNOR")
             );
 
-        addresses.addAddress("VOTE_COLLECTION_PROXY", collectionProxy);
-        addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl);
+        addresses.addAddress("VOTE_COLLECTION_PROXY", collectionProxy, true);
+        addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl, true);
     }
 
     function afterDeploy(Addresses addresses, address) public override {
@@ -112,7 +117,11 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
             );
 
-        assertEq(ecosystemReserveController.owner(), address(this), "01021");
+        assertEq(
+            ecosystemReserveController.owner(),
+            address(this),
+            "incorrect owner"
+        );
         assertEq(
             address(ecosystemReserveController.ECOSYSTEM_RESERVE()),
             address(0),
@@ -126,8 +135,6 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         /// set the ecosystem reserve
         ecosystemReserveController.setEcosystemReserve(ecosystemReserve);
 
-        console.log("block chain id: ", block.chainid);
-
         /// approve stkWELL contract to spend xWELL from the ecosystem reserve contract
         ecosystemReserveController.approve(
             addresses.getAddress("xWELL_PROXY"),
@@ -139,6 +146,13 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         ecosystemReserveController.transferOwnership(
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
+
+        IEcosystemReserveUplift ecosystemReserveContract = IEcosystemReserveUplift(
+                addresses.getAddress("ECOSYSTEM_RESERVE_IMPL")
+            );
+
+        /// take ownership of the ecosystem reserve impl to prevent any further changes or hijacking
+        ecosystemReserveContract.initialize(address(1));
     }
 
     function validate(Addresses addresses, address) public override {
@@ -218,6 +232,15 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 approvalAmount,
                 "ecosystem reserve not approved to give stkWELL_PROXY approvalAmount"
             );
+
+            ecosystemReserve = IEcosystemReserveUplift(
+                addresses.getAddress("ECOSYSTEM_RESERVE_IMPL")
+            );
+            assertEq(
+                ecosystemReserve.getFundsAdmin(),
+                address(1),
+                "funds admin on impl incorrect"
+            );
         }
 
         /// validate stkWELL contract
@@ -252,6 +275,11 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
                 stkWell.COOLDOWN_SECONDS(),
                 cooldownSeconds,
                 "incorrect cooldown seconds"
+            );
+            assertEq(
+                stkWell.DISTRIBUTION_END(),
+                block.timestamp + distributionDuration,
+                "incorrect distribution duration"
             );
             assertEq(
                 stkWell.EMISSION_MANAGER(),

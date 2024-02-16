@@ -46,13 +46,13 @@ contract MultichainGovernor is
     /// @notice all live proposals, executed and cancelled proposals are removed
     /// when a new proposal is created, it is added to this set and any stale
     /// items are removed
-    EnumerableSet.UintSet private _liveProposals;
+    EnumerableSet.UintSet internal _liveProposals;
 
     /// @notice active proposals user has proposed
     /// will automatically clear executed or cancelled
     /// proposals from set when called by user
     mapping(address user => EnumerableSet.UintSet userProposals)
-        private _userLiveProposals;
+        internal _userLiveProposals;
 
     /// @notice the number of votes for a given proposal on a given chainid
     mapping(uint16 wormholeChainId => mapping(uint256 proposalId => VoteCounts))
@@ -63,10 +63,16 @@ contract MultichainGovernor is
 
     /// @notice whether or not a calldata bytes is allowed for break glass guardian
     /// whether or not the calldata is whitelisted for break glass guardian
-    /// functions to whitelist are:
-    /// - transferOwnership to rollback address
-    /// - setPendingAdmin to rollback address
-    /// - setAdmin to rollback address
+    /// functions to whitelist are based on previous whitelisted functions in the
+    /// Artemis Governor contracts.
+    /// Artemis Governor Break Glass calldata:
+    /// - transferOwnership
+    /// - _setPendingAdmin
+    /// - setPendingAdmin
+    /// - setAdmin
+    /// - changeAdmin
+    /// - setEmissionsManager
+    /// new calldata:
     /// - publishMessage that adds rollback address as trusted sender in TemporalGovernor, with calldata for each chain
     mapping(bytes whitelistedCalldata => bool)
         public
@@ -88,6 +94,9 @@ contract MultichainGovernor is
     /// @notice reference to the WELL token distributor contract, uses block number for voting checkpoints
     SnapshotInterface public distributor;
 
+    /// @notice whether or not the stkWell contract uses timestamps or block numbers
+    bool public useTimestamps;
+
     /// --------------------------------------------------------- ///
     /// --------------------- VOTING PARAMS --------------------- ///
     /// --------------------------------------------------------- ///
@@ -108,7 +117,6 @@ contract MultichainGovernor is
     /// @notice quorum needed for a proposal to pass
     /// if multiple governance proposals are in flight, and the first one to execute
     /// changes quorum, then this new quorum will go into effect on the next proposal.
-    /// TODO check that tests cover reaching exactly quorum and quorum being met is acknowledged
     uint256 public override quorum;
 
     /// @notice the minimum number of votes needed to propose
@@ -260,25 +268,6 @@ contract MultichainGovernor is
         hasVoted = receipt.hasVoted;
         voteValue = receipt.voteValue;
         votes = receipt.votes;
-    }
-
-    /// @notice returns information on a proposal in a struct format
-    /// @param proposalId the id of the proposal to check
-    function proposalInformationStruct(
-        uint256 proposalId
-    ) external view returns (ProposalInformation memory proposalInfo) {
-        Proposal storage proposal = proposals[proposalId];
-
-        proposalInfo.proposer = proposal.proposer;
-        proposalInfo.voteSnapshotTimestamp = proposal.voteSnapshotTimestamp;
-        proposalInfo.votingStartTime = proposal.votingStartTime;
-        proposalInfo.votingEndTime = proposal.votingEndTime;
-        proposalInfo.crossChainVoteCollectionEndTimestamp = proposal
-            .crossChainVoteCollectionEndTimestamp;
-        proposalInfo.totalVotes = proposal.totalVotes;
-        proposalInfo.forVotes = proposal.forVotes;
-        proposalInfo.againstVotes = proposal.againstVotes;
-        proposalInfo.abstainVotes = proposal.abstainVotes;
     }
 
     /// @notice returns information on a proposal
@@ -453,13 +442,15 @@ contract MultichainGovernor is
         uint256 blockNumber
     ) public view returns (uint256) {
         uint256 wellVotes = well.getPriorVotes(account, blockNumber);
-        uint256 stkWellVotes = stkWell.getPriorVotes(account, blockNumber);
         uint256 distributorVotes = distributor.getPriorVotes(
             account,
             blockNumber
         );
-
         uint256 xWellVotes = xWell.getPastVotes(account, timestamp);
+        uint256 stkWellVotes = stkWell.getPriorVotes(
+            account,
+            useTimestamps ? timestamp : blockNumber
+        );
 
         return xWellVotes + stkWellVotes + distributorVotes + wellVotes;
     }
@@ -868,6 +859,24 @@ contract MultichainGovernor is
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
 
+    /// @notice set the new stkWell token address
+    /// if the new staked well token does not conform to the new interface, then
+    /// this governor contract is bricked and will need to be rolled back via
+    /// the break glass guardian.
+    /// use this function with extreme caution and thoroughly integration test
+    /// making proposals and voting on them after calling this function.
+    /// @param newStakedWell the new stkWell token address
+    /// @param toUseTimestamps whether or not to use timestamps for voting
+    function setNewStakedWell(
+        address newStakedWell,
+        bool toUseTimestamps
+    ) external onlyGovernor {
+        stkWell = SnapshotInterface(newStakedWell);
+        useTimestamps = toUseTimestamps;
+
+        emit NewStakedWellSet(newStakedWell, toUseTimestamps);
+    }
+
     /// @notice updates the approval for calldata to be used by break glass guardian
     /// @param data the calldata to update approval for
     /// @param approved whether or not the calldata is approved
@@ -1243,14 +1252,12 @@ contract MultichainGovernor is
         uint16 sourceChain,
         bytes memory payload
     ) internal override {
-        /// TODO verify the finding from Dominik, and if correct, increase size from 128 to 160
         /// payload should be 4 uint256s
         require(
             payload.length == 128,
             "MultichainGovernor: invalid payload length"
         );
 
-        /// TODO verify the finding from Dominik, and if correct, add sender chain to this payload
         (
             uint256 proposalId,
             uint256 forVotes,

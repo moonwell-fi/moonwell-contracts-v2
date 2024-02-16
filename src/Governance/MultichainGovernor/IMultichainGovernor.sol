@@ -88,16 +88,6 @@ interface IMultichainGovernor {
         uint256 abstainVotes
     );
 
-    /// @notice emitted when a chain config is updated
-    /// @param chainId the chain id of the chain config
-    /// @param destinationAddress the destination address of the chain config
-    /// @param removed whether or not the chain config was removed
-    event ChainConfigUpdated(
-        uint16 chainId,
-        address destinationAddress,
-        bool removed
-    );
-
     /// @notice emitted when a calldata approval is changed for break glass guardian
     /// @param data the calldata that was approved or unapproved
     /// @param approved whether or not the calldata was approved or unapproved
@@ -107,6 +97,9 @@ interface IMultichainGovernor {
     /// @param proposalId the proposal id
     /// @param data the calldata that was rebroadcasted
     event ProposalRebroadcasted(uint256 proposalId, bytes data);
+
+    /// @notice event emitted when the new staked well is set
+    event NewStakedWellSet(address newStakedWell, bool toUseTimestamps);
 
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
@@ -157,7 +150,6 @@ interface IMultichainGovernor {
         uint256[] values;
         /// @notice The ordered list of calldata to be passed to each call
         bytes[] calldatas;
-        /// TODO on naming here
         /// @notice The timestamp at which vote snapshots are taken at
         uint256 voteSnapshotTimestamp;
         /// @notice the timestamp at which users can begin voting

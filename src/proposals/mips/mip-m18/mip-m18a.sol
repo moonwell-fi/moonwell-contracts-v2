@@ -8,7 +8,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 
-import {validateProxy, _IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
+import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 
 /// Proposal to run on Moonbeam to create the Multichain Governor contract
 /// to simulate: DO_DEPLOY=true DO_VALIDATE=true forge script  src/proposals/mips/mip-m18/mip-m18a.sol:mipm18a
@@ -35,7 +35,6 @@ contract mipm18a is ChainIds, HybridProposal, MultichainGovernorDeploy {
             address governorImpl
         ) = deployMultichainGovernor(proxyAdmin);
 
-        // TODO this shouldn't be broadcasted
         addresses.addAddress("MULTICHAIN_GOVERNOR_PROXY", governorProxy);
         addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", governorImpl);
     }

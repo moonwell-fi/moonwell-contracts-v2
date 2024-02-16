@@ -7,6 +7,7 @@ import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
@@ -38,10 +39,10 @@ contract MultichainBaseTest is
     MultichainVoteCollection public voteCollection;
 
     /// @notice reference to the Multichain governor logic contract
-    MultichainGovernor public governorLogic;
+    MockMultichainGovernor public governorLogic;
 
     /// @notice reference to the Multichain governor proxy contract
-    MultichainGovernor public governor;
+    MockMultichainGovernor public governor;
 
     /// @notice reference to the xWELL token
     xWELL public xwell;
@@ -61,7 +62,7 @@ contract MultichainBaseTest is
     address public proxyAdmin;
 
     /// @notice threshold of tokens required to create a proposal
-    uint256 public constant proposalThreshold = 100_000_000 * 1e18;
+    uint256 public constant proposalThreshold = 50_000_000 * 1e18;
 
     /// @notice duration of the cross chain vote collection period
     uint256 public constant crossChainVoteCollectionPeriod = 1 days;
@@ -236,8 +237,10 @@ contract MultichainBaseTest is
                 address(stkWellBase)
             );
 
-        governor = MultichainGovernor(addresses.governorProxy);
-        governorLogic = MultichainGovernor(addresses.governorImplementation);
+        governor = MockMultichainGovernor(addresses.governorProxy);
+        governorLogic = MockMultichainGovernor(
+            addresses.governorImplementation
+        );
         xwell = xWELL(xwellProxy);
         wormholeRelayerAdapter = WormholeRelayerAdapter(
             addresses.wormholeRelayerAdapter
@@ -285,7 +288,7 @@ contract MultichainBaseTest is
         values[0] = 0;
         calldatas[0] = abi.encodeWithSignature(
             "updateProposalThreshold(uint256)",
-            100_000_000 * 1e18
+            40_000_000 * 1e18
         );
 
         uint256 startProposalCount = governor.proposalCount();
@@ -358,7 +361,7 @@ contract MultichainBaseTest is
         }
     }
 
-    function _assertGovernanceBalance() public {
+    function _assertGovernanceBalance() internal {
         // governor and vote collection should never have ether at the end of a test
         assertEq(address(governor).balance, 0, "governor has ether");
         assertEq(

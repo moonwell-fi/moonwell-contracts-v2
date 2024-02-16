@@ -27,6 +27,8 @@ A proposal to adjust cbETH's IR curve:
 | Multiplier          | **0.07** | **0.06**    |
 | Jump Multiplier     | 3.15     | 3.15        |
 
-Our recommendation post is located in the forums with further analysis and supporting data.
+Our recommendation post is located in the forums with further analysis and
+supporting data.
 
-_By approving this proposal, you agree that any services provided by Gauntlet shall be governed by the terms of service available at gauntlet.network/tos._
+_By approving this proposal, you agree that any services provided by Gauntlet
+shall be governed by the terms of service available at gauntlet.network/tos._

@@ -202,6 +202,11 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         return chains;
     }
 
+    /// @notice returns the length of the target chains set
+    function getAllTargetChainsLength() external view returns (uint256) {
+        return _targetChains.length();
+    }
+
     /// @notice Estimate bridge cost to bridge out to a destination chain
     /// @dev this function returns 0 if the quote fails.
     /// in all other cases, the value returned should be non zero.

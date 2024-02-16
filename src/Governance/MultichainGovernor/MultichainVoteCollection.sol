@@ -160,6 +160,25 @@ contract MultichainVoteCollection is
         abstainVotes = proposal.votes.abstainVotes;
     }
 
+    /// @notice returns the total voting power for an address at a given block number and timestamp
+    /// returns the sum of votes across both xWELL and stkWELL at the given timestamp
+    /// @param account The address of the account to check
+    /// @param timestamp The unix timestamp in seconds to check the balance at
+    function getVotes(
+        address account,
+        uint256 timestamp
+    ) public view returns (uint256) {
+        return
+            xWell.getPastVotes(account, timestamp) +
+            stkWell.getPriorVotes(account, timestamp);
+    }
+
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------- PERMISSIONLESS -------------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+
     /// @notice allows user to cast vote for a proposal
     /// @param proposalId the id of the proposal to vote on
     /// @param voteValue the value of the vote
@@ -225,19 +244,6 @@ contract MultichainVoteCollection is
         emit VoteCast(msg.sender, proposalId, voteValue, userVotes);
     }
 
-    /// @notice returns the total voting power for an address at a given block number and timestamp
-    /// returns the sum of votes across both xWELL and stkWELL at the given timestamp
-    /// @param account The address of the account to check
-    /// @param timestamp The unix timestamp in seconds to check the balance at
-    function getVotes(
-        address account,
-        uint256 timestamp
-    ) public view returns (uint256) {
-        return
-            xWell.getPastVotes(account, timestamp) +
-            stkWell.getPriorVotes(account, timestamp);
-    }
-
     /// @notice Emits votes to be contabilized on Moonbeam Governor contract
     /// @param proposalId the proposal id
     function emitVotes(uint256 proposalId) external payable override {
@@ -265,8 +271,6 @@ contract MultichainVoteCollection is
             "MultichainVoteCollection: Voting collection phase has ended"
         );
 
-        /// should ever only have a single trusted sender on the wormhole bridge base
-        /// TODO check this invariant
         _bridgeOutAll(
             abi.encode(
                 proposalId,
@@ -283,6 +287,12 @@ contract MultichainVoteCollection is
             votes.abstainVotes
         );
     }
+
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
+    /// -------------------- INTERNAL RECEIVE ------------------- ///
+    /// --------------------------------------------------------- ///
+    /// --------------------------------------------------------- ///
 
     /// @notice bridge proposals from moonbeam
     /// @param payload the payload of the message, contains proposalId, votingStartTime, votingEndTime and voteCollectionEndTime
@@ -365,5 +375,13 @@ contract MultichainVoteCollection is
         );
 
         _setGasLimit(newGasLimit);
+    }
+
+    /// @notice update the stkWell token address
+    /// @param newStakedWell the new stkWell token address
+    function setNewStakedWell(address newStakedWell) external onlyOwner {
+        stkWell = SnapshotInterface(newStakedWell);
+
+        emit NewStakedWellSet(newStakedWell);
     }
 }

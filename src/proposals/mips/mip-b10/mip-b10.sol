@@ -165,7 +165,8 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel)
+                        address(irModel),
+                        true
                     );
                 }
 
@@ -206,7 +207,11 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                     ""
                 );
 
-                addresses.addAddress(config.addressesString, address(mToken));
+                addresses.addAddress(
+                    config.addressesString,
+                    address(mToken),
+                    true
+                );
             }
         }
     }

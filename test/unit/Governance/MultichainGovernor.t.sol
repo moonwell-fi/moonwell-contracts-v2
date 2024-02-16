@@ -35,6 +35,10 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testGovernorSetup() public {
+        assertFalse(
+            governor.useTimestamps(),
+            "useTimestamps should start off false after initialization"
+        );
         assertEq(
             governor.gasLimit(),
             Constants.MIN_GAS_LIMIT,
@@ -166,6 +170,12 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     /// ACL Negative Tests
 
     /// GOVERNOR
+
+    function testSetNewStkWellNonGovernorFails() public {
+        vm.expectRevert("MultichainGovernor: only governor");
+        governor.setNewStakedWell(address(0), true);
+    }
+
     function testUpdateApprovedCalldataNonGovernorFails() public {
         vm.expectRevert("MultichainGovernor: only governor");
         governor.updateApprovedCalldata("", true);
@@ -421,6 +431,47 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
+    function testSetNewStakedWellGovernorSucceeds() public {
+        address newStakedWell = address(1);
+        assertFalse(governor.useTimestamps(), "timestamps incorrectly in use");
+
+        vm.prank(address(governor));
+        governor.setNewStakedWell(newStakedWell, true);
+
+        assertEq(
+            address(governor.stkWell()),
+            newStakedWell,
+            "new stkwell not set"
+        );
+        assertTrue(governor.useTimestamps(), "timestamps not in use");
+    }
+
+    function testSetNewStakedWellBaseWellGovernorSucceeds() public {
+        uint256 startingVotes = governor.getVotes(
+            address(this),
+            block.timestamp - 1,
+            block.number - 1
+        );
+        address newStakedWell = address(stkWellBase);
+        assertFalse(governor.useTimestamps(), "timestamps incorrectly in use");
+
+        vm.prank(address(governor));
+        governor.setNewStakedWell(newStakedWell, true);
+
+        uint256 endingVotes = governor.getVotes(
+            address(this),
+            block.timestamp - 1,
+            block.number - 1
+        );
+        assertEq(endingVotes, startingVotes, "votes incorrect");
+        assertEq(
+            address(governor.stkWell()),
+            newStakedWell,
+            "new stkwell not set"
+        );
+        assertTrue(governor.useTimestamps(), "timestamps not in use");
+    }
+
     function testRemoveExternalChainConfigsGovernorSucceeds() public {
         WormholeTrustedSender.TrustedSender[]
             memory _trustedSenders = testaddExternalChainConfigsGovernorSucceeds();
@@ -512,7 +563,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
     }
 
     function testUpdateQuorumGovernorSucceeds() public {
-        uint256 newQuorum = 2_500_000_000 * 1e18;
+        uint256 newQuorum = 400_000_000 * 1e18;
 
         vm.prank(address(governor));
         governor.updateQuorum(newQuorum);

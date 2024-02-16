@@ -9,6 +9,7 @@ import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 
@@ -19,6 +20,16 @@ contract MultichainGovernorDeploy is Test {
         address proxyAdmin
     ) public returns (address proxy, address governorImpl) {
         governorImpl = address(new MultichainGovernor());
+
+        proxy = address(
+            new TransparentUpgradeableProxy(governorImpl, proxyAdmin, "")
+        );
+    }
+
+    function deployMockMultichainGovernor(
+        address proxyAdmin
+    ) public returns (address proxy, address governorImpl) {
+        governorImpl = address(new MockMultichainGovernor());
 
         proxy = address(
             new TransparentUpgradeableProxy(governorImpl, proxyAdmin, "")
@@ -93,9 +104,10 @@ contract MultichainGovernorDeploy is Test {
             : proxyAdmin;
 
         // deploy governor
-        (address gProxy, address gImplementation) = deployMultichainGovernor(
-            proxyAdmin
-        );
+        (
+            address gProxy,
+            address gImplementation
+        ) = deployMockMultichainGovernor(proxyAdmin);
         address wormholeRelayerAdapter = address(new WormholeRelayerAdapter());
 
         // deploy vote collection
