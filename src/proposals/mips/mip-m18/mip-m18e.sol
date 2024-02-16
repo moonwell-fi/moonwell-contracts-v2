@@ -9,6 +9,7 @@ import "@forge-std/Test.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
+
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
@@ -34,7 +35,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
             );
 
         trustedSendersToRemove[0].addr = addresses.getAddress(
-            "ARTEMIS_TIMELOCK"
+            "MOONBEAM_TIMELOCK"
         );
         trustedSendersToRemove[0].chainId = moonBeamWormholeChainId;
 
@@ -170,12 +171,19 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     }
 
     function run(Addresses addresses, address) public override {
-        _run(
-            addresses,
-            moonbeamForkId,
-            baseForkId,
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        );
+        vm.selectFork(moonbeamForkId);
+
+        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        _run(governor, moonbeamActions);
+
+        vm.selectFork(baseForkId);
+
+        address temporal = addresses.getAddress("TEMPORAL_GOVERNOR");
+
+        _run(temporal, baseActions);
+
+        // switch back to the moonbeam fork so we can run the validations
+        vm.selectFork(moonbeamForkId);
     }
 
     function validate(Addresses addresses, address) public override {

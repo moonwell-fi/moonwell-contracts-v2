@@ -65,12 +65,7 @@
         "name": "MOONBEAM_TIMELOCK",
         "isContract": true
     },
-    {
-        "addr": "0x3a9249d70dCb4A4E9ef4f3AF99a3A130452ec19B",
-        "chainId": 1284,
-        "name": "ARTEMIS_TIMELOCK",
-        "isContract": true
-    },
+
     {
         "addr": "0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78",
         "chainId": 11155111,
@@ -504,7 +499,7 @@
         "isContract": true
     },
     {
-        "addr": "0x32f3A6134590fc2d9440663d35a2F0a6265F04c4",
+        "addr": "0x24bdAcf6bbEBAf567123Da16CDb79A266597e92B",
         "chainId": 8453,
         "name": "JUMP_RATE_IRM_MOONWELL_USDC",
         "isContract": true
@@ -528,7 +523,7 @@
         "isContract": true
     },
     {
-        "addr": "0x1Cdb984008dcEe9d06c28654ed31cf82680EeA62",
+        "addr": "0xE1Dd796dBEB5A67CE37CbC52dCD164D0535c901E",
         "chainId": 8453,
         "name": "JUMP_RATE_IRM_MOONWELL_cbETH",
         "isContract": true

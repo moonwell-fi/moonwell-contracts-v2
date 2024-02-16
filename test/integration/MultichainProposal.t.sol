@@ -93,11 +93,6 @@ contract MultichainProposalTest is
         uint256 abstainVotes
     );
 
-    uint256 public baseForkId = vm.createFork("https://mainnet.base.org");
-
-    uint256 public moonbeamForkId =
-        vm.createFork("https://rpc.api.moonbeam.network");
-
     address public constant voter = address(100_000_000);
 
     mipm18a public proposalA;
@@ -111,6 +106,19 @@ contract MultichainProposalTest is
     WormholeRelayerAdapter public wormholeRelayerAdapterMoonbeam;
 
     WormholeRelayerAdapter wormholeRelayerAdapterBase;
+
+    string public constant DEFAULT_BASE_RPC_URL = "https://mainnet.base.org";
+
+    /// @notice fork ID for base
+    uint256 public baseForkId =
+        vm.createFork(vm.envOr("BASE_RPC_URL", DEFAULT_BASE_RPC_URL));
+
+    string public constant DEFAULT_MOONBEAM_RPC_URL =
+        "https://rpc.api.moonbeam.network";
+
+    /// @notice fork ID for moonbeam
+    uint256 public moonbeamForkId =
+        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", DEFAULT_MOONBEAM_RPC_URL));
 
     function setUp() public override {
         super.setUp();
@@ -258,7 +266,7 @@ contract MultichainProposalTest is
             temporalGov.isTrustedSender(
                 moonBeamWormholeChainId,
                 addresses.getAddress(
-                    "ARTEMIS_TIMELOCK",
+                    "MOONBEAM_TIMELOCK",
                     sendingChainIdToReceivingChainId[block.chainid]
                 )
             ),
@@ -1927,7 +1935,7 @@ contract MultichainProposalTest is
                 temporalGov.isTrustedSender(
                     uint16(moonBeamWormholeChainId),
                     addresses.getAddress(
-                        "ARTEMIS_TIMELOCK",
+                        "MOONBEAM_TIMELOCK",
                         sendingChainIdToReceivingChainId[block.chainid]
                     )
                 ),
@@ -1937,7 +1945,7 @@ contract MultichainProposalTest is
 
         vm.selectFork(moonbeamForkId);
         address artemisTimelockAddress = addresses.getAddress(
-            "ARTEMIS_TIMELOCK"
+            "MOONBEAM_TIMELOCK"
         );
 
         /// calldata to transfer system ownership back to artemis timelock

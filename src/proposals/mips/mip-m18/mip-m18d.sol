@@ -261,19 +261,24 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
     }
 
     function run(Addresses addresses, address) public override {
-        _run(
-            addresses,
-            moonbeamForkId,
-            baseForkId,
-            addresses.getAddress("ARTEMIS_TIMELOCK")
-        );
+        vm.selectFork(moonbeamForkId);
+
+        address timelock = addresses.getAddress("MOONBEAM_TIMELOCK");
+        _run(timelock, moonbeamActions);
+
+        vm.selectFork(baseForkId);
+
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        _run(temporalGovernor, baseActions);
+
+        // switch back to the moonbeam fork so we can run the validations
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public override {
         /// TODO validate the proxy admin for the ecosystem reserve proxy
-
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
-        address timelock = addresses.getAddress("ARTEMIS_TIMELOCK");
+        address timelock = addresses.getAddress("MOONBEAM_TIMELOCK");
 
         assertEq(
             IStakedWellUplift(addresses.getAddress("stkWELL"))

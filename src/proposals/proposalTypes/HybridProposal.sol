@@ -15,6 +15,7 @@ import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 /// two different proposal types. One for moonbeam and one for base.
 /// We also need to have references to both networks in the proposal
 /// to switch between forks.
+
 abstract contract HybridProposal is
     IHybridProposal,
     IMultichainProposal,
@@ -33,14 +34,21 @@ abstract contract HybridProposal is
     /// @notice actions to run against contracts live on base
     ProposalAction[] public baseActions;
 
-    /// @notice fork ID for base
-    uint256 public baseForkId;
-
-    /// @notice fork ID for moonbeam
-    uint256 public moonbeamForkId;
-
     /// @notice hex encoded description of the proposal
     bytes public PROPOSAL_DESCRIPTION;
+
+    string public constant DEFAULT_BASE_RPC_URL = "https://mainnet.base.org";
+
+    /// @notice fork ID for base
+    uint256 public baseForkId =
+        vm.createFork(vm.envOr("BASE_RPC_URL", DEFAULT_BASE_RPC_URL));
+
+    string public constant DEFAULT_MOONBEAM_RPC_URL =
+        "https://rpc.api.moonbeam.network";
+
+    /// @notice fork ID for moonbeam
+    uint256 public moonbeamForkId =
+        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", DEFAULT_MOONBEAM_RPC_URL));
 
     /// @notice set the governance proposal's description
     function _setProposalDescription(
@@ -272,10 +280,6 @@ abstract contract HybridProposal is
 
     function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) external {
         require(
-            baseForkId == 0 && moonbeamForkId == 0,
-            "setForkIds: fork IDs already set"
-        );
-        require(
             _baseForkId != _moonbeamForkId,
             "setForkIds: fork IDs cannot be the same"
         );
@@ -301,65 +305,28 @@ abstract contract HybridProposal is
 
     function teardown(Addresses, address) public pure virtual override {}
 
-    function run(Addresses, address) public virtual override {
-        /// @dev enable debugging
-    }
+    function run(Addresses, address) public virtual override {}
 
-    /// runs the proposal on moonbeam and base, verifying the actions through the hook
-    /// @param addresses the addresses contract
-    /// @param _moonbeamForkId the fork ID for moonbeam
-    /// @param _baseForkId the fork ID for base
-    /// @param moonbeamGovernor the moonbeam governor address
-    function _run(
-        Addresses addresses,
-        uint256 _moonbeamForkId,
-        uint256 _baseForkId,
-        address moonbeamGovernor
-    ) internal {
-        uint256 activeFork = vm.activeFork();
+    /// runs the proposal on moonbeam or base, verifying the actions through the hook
+    /// @param caller the name of the caller address
+    /// @param actions the actions to run
+    function _run(address caller, ProposalAction[] memory actions) internal {
+        _verifyActionsPreRunHybrid(actions);
 
-        vm.selectFork(_moonbeamForkId);
+        vm.startPrank(caller);
 
-        _verifyActionsPreRunHybrid(moonbeamActions);
-
-        vm.startPrank(moonbeamGovernor);
-        for (uint256 i = 0; i < moonbeamActions.length; i++) {
-            (bool success, ) = moonbeamActions[i].target.call{
-                value: moonbeamActions[i].value
-            }(moonbeamActions[i].data);
+        for (uint256 i = 0; i < actions.length; i++) {
+            (bool success, ) = actions[i].target.call{value: actions[i].value}(
+                actions[i].data
+            );
 
             require(success, "moonbeam action failed");
         }
 
-        _verifyMTokensPostRun();
-
         vm.stopPrank();
-
-        delete createdMTokens;
-        comptroller = address(0);
-
-        /// base simulation
-
-        vm.selectFork(_baseForkId);
-
-        _verifyActionsPreRunHybrid(baseActions);
-
-        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        for (uint256 i = 0; i < baseActions.length; i++) {
-            (bool success, ) = baseActions[i].target.call{
-                value: baseActions[i].value
-            }(baseActions[i].data);
-
-            require(success, "base action failed");
-        }
-        vm.stopPrank();
-
         _verifyMTokensPostRun();
 
         delete createdMTokens;
         comptroller = address(0);
-
-        /// switch back to original fork
-        vm.selectFork(activeFork);
     }
 }
