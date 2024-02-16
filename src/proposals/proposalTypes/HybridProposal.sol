@@ -14,8 +14,7 @@ import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 /// what happens on two different networks. So we need to have
 /// two different proposal types. One for moonbeam and one for base.
 /// We also need to have references to both networks in the proposal
-
-/// to switch between
+/// to switch between forks.
 
 abstract contract HybridProposal is
     IHybridProposal,
