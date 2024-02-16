@@ -281,10 +281,6 @@ abstract contract HybridProposal is
 
     function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) external {
         require(
-            baseForkId == 0 && moonbeamForkId == 0,
-            "setForkIds: fork IDs already set"
-        );
-        require(
             _baseForkId != _moonbeamForkId,
             "setForkIds: fork IDs cannot be the same"
         );

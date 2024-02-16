@@ -139,6 +139,12 @@ contract MultichainProposalTest is
         proposalsArray[3] = address(proposalD);
         proposalsArray[4] = address(proposalE);
 
+        proposalA.setForkIds(baseForkId, moonbeamForkId);
+        proposalB.setForkIds(baseForkId, moonbeamForkId);
+        proposalC.setForkIds(baseForkId, moonbeamForkId);
+        proposalD.setForkIds(baseForkId, moonbeamForkId);
+        proposalE.setForkIds(baseForkId, moonbeamForkId);
+
         /// load proposals up into the TestMultichainProposal contract
         _initialize(proposalsArray);
 
