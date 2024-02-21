@@ -10,6 +10,9 @@ contract ChainIds {
     uint256 public constant baseGoerliChainId = 84531;
     uint16 public constant baseGoerliWormholeChainId = 30;
 
+    uint256 public constant baseSepoliaChainId = 84532;
+    uint16 public constant baseSepoliaWormholeChainId = 10004;
+    
     /// ------------ MOONBEAM ------------
 
     uint256 public constant moonRiverChainId = 1285;
@@ -51,6 +54,7 @@ contract ChainIds {
         chainIdToWormHoleId[moonBeamChainId] = baseWormholeChainId; /// moonbeam goes to base
 
         sendingChainIdToReceivingChainId[baseGoerliChainId] = moonBaseChainId; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
+        sendingChainIdToReceivingChainId[baseSepoliaChainId] = moonBaseChainId; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
         sendingChainIdToReceivingChainId[baseChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking base, and sending from moonbeam
         sendingChainIdToReceivingChainId[moonBeamChainId] = baseChainId;
 

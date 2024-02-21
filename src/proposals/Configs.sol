@@ -109,7 +109,9 @@ contract Configs is Test {
     }
 
     function deployAndMint(Addresses addresses) public {
-        if (block.chainid == _baseGoerliChainId) {
+        if (
+            block.chainid == _baseGoerliChainId
+        ) {
             console.log("\n----- deploy and mint on base goerli -----\n");
             {
                 FaucetTokenWithPermit token = new FaucetTokenWithPermit(
@@ -197,6 +199,13 @@ contract Configs is Test {
                 initialMintAmount
             );
 
+            // cbETH
+            address cbeth = addresses.getAddress("cbETH");
+            FaucetTokenWithPermit(cbeth).allocateTo(
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                initialMintAmount
+            );
+
             // WETH
             WETH9 weth = WETH9(addresses.getAddress("WETH"));
             vm.deal(address(this), 0.00001e18);
@@ -204,13 +213,6 @@ contract Configs is Test {
             weth.transfer(
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 0.00001e18
-            );
-
-            // cbETH
-            address cbeth = addresses.getAddress("cbETH");
-            FaucetTokenWithPermit(cbeth).allocateTo(
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                initialMintAmount
             );
         }
     }
