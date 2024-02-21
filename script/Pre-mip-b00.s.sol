@@ -3,27 +3,20 @@ pragma solidity 0.8.19;
 
 import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
 import "@forge-std/Test.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
-import {MoonwellViewsV2} from "@protocol/views/MoonwellViewsV2.sol";
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
-
 import {ChainlinkCompositeOracle} from "@protocol/Oracles/ChainlinkCompositeOracle.sol";
 
 /*
 to run:
-forge script script/PreMip00Script.s.sol:PreMip00Script -vvvv --rpc-url {rpc}  --broadcast --etherscan-api-key {key}
+forge script script/Pre-mip-b00.s.sol -vvvv --rpc-url baseSepolia --broadcast --etherscan-api-key baseSepolia --slow
 */
 // Script for deploying mock ERC20 tokens and Chainlik oracle that are need on
-contract PreMip00Script is Script, Test {
+contract PreMipB00Script is Script, Test {
     uint256 public constant initialMintAmount = 1 ether;
 
     uint256 public PRIVATE_KEY;
@@ -56,11 +49,6 @@ contract PreMip00Script is Script, Test {
             "cbETH"
         );
 
-        cbETH.allocateTo(
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            initialMintAmount
-        );
-
         MockWeth weth = new MockWeth();
 
         // Chainlink oracles
@@ -76,10 +64,9 @@ contract PreMip00Script is Script, Test {
 
         addresses.addAddress("USDC_ORACLE", address(usdcOracle), true);
         addresses.addAddress("ETH_ORACLE", address(ethOracle), true);
-        addresses.addAddress("USDC_ORACLE", address(usdcOracle), true);
 
         vm.startBroadcast(PRIVATE_KEY);
-        
+
         // cbETH is a composite oracle
         MockChainlinkOracle oracle = new MockChainlinkOracle(1.04296945e18, 18);
         ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
@@ -91,5 +78,26 @@ contract PreMip00Script is Script, Test {
         vm.stopBroadcast();
 
         addresses.addAddress("cbETH_ORACLE", address(cbEthOracle), true);
+
+        (
+            string[] memory recordedNames,
+            ,
+            address[] memory recordedAddresses
+        ) = addresses.getRecordedAddresses();
+        for (uint256 i = 0; i < recordedNames.length; i++) {
+            console.log("Deployed", recordedAddresses[i], recordedNames[i]);
+        }
+
+        console.log("New addresses after deploy:");
+
+        for (uint256 j = 0; j < recordedNames.length; j++) {
+            console.log('{\n        "addr": "%s", ', recordedAddresses[j]);
+            console.log('        "chainId": %d,', block.chainid);
+            console.log(
+                "        'name': '%s'\n}%s",
+                recordedNames[j],
+                j < recordedNames.length - 1 ? "," : ""
+            );
+        }
     }
 }
