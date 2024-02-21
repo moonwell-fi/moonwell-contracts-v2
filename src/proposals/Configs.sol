@@ -48,6 +48,7 @@ contract Configs is Test {
     mapping(uint256 => EmissionConfig[]) public emissions;
 
     uint256 public constant _baseGoerliChainId = 84531;
+    uint256 public constant _baseSepoliaChainId = 84532; 
     uint256 public constant _localChainId = 31337;
     uint256 public constant _baseChainId = 8453;
 
@@ -184,6 +185,29 @@ contract Configs is Test {
 
                 addresses.addAddress("wstETH", address(token), true);
             }
+        }
+        if (block.chainid == _baseSepoliaChainId) {
+            
+            // allocate tokens to temporal governor
+            address usdbc = addresses.getAddress("USDBC");
+            FaucetTokenWithPermit(usdbc).allocateTo(
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                initialMintAmount
+            );
+
+            WETH9 weth = WETH9(addresses.getAddress("WETH"));
+            vm.deal(address(this), 0.00001e18);
+            weth.deposit{value: 0.00001e18}();
+            weth.transfer(
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                0.00001e18
+            );
+
+            address cbeth = addresses.getAddress("cbETH");
+            FaucetTokenWithPermit(cbeth).allocateTo(
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                initialMintAmount
+            );
         }
     }
 
