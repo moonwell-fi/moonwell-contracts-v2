@@ -14,14 +14,16 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
+import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 
+import {ChainlinkCompositeOracle} from "@protocol/Oracles/ChainlinkCompositeOracle.sol";
 
 /*
 to run:
-forge script script/DeployMoonwellViewsV2.s.sol:DeployMoonwellViewsV2 -vvvv --rpc-url {rpc}  --broadcast --etherscan-api-key {key}
+forge script script/PreMip00Script.s.sol:PreMip00Script -vvvv --rpc-url {rpc}  --broadcast --etherscan-api-key {key}
 */
-// Script for deploying mock ERC20 tokens and Chainlik oracle that are need on 
-contract DeployUnderlyingTokens is Script, Test {
+// Script for deploying mock ERC20 tokens and Chainlik oracle that are need on
+contract PreMip00Script is Script, Test {
     uint256 public constant initialMintAmount = 1 ether;
 
     uint256 public PRIVATE_KEY;
@@ -41,25 +43,53 @@ contract DeployUnderlyingTokens is Script, Test {
     function run() public {
         vm.startBroadcast(PRIVATE_KEY);
 
-        FaucetTokenWithPermit usdc = new FaucetTokenWithPermit(1e18, "USDBC", 6, "USDBC");
+        FaucetTokenWithPermit usdc = new FaucetTokenWithPermit(
+            1e18,
+            "USDBC",
+            6,
+            "USDBC"
+        );
         FaucetTokenWithPermit cbETH = new FaucetTokenWithPermit(
-                    1e18,
-                    "Coinbase Wrapped Staked ETH",
-                    18, /// cbETH is 18 decimals
-                    "cbETH"
-                );
+            1e18,
+            "Coinbase Wrapped Staked ETH",
+            18, /// cbETH is 18 decimals
+            "cbETH"
+        );
 
-                cbETH.allocateTo(
-                    addresses.getAddress("TEMPORAL_GOVERNOR"),
-                    initialMintAmount
-                );
+        cbETH.allocateTo(
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
+            initialMintAmount
+        );
 
         MockWeth weth = new MockWeth();
+
+        // Chainlink oracles
+
+        MockChainlinkOracle usdcOracle = new MockChainlinkOracle(1e18, 6);
+        MockChainlinkOracle ethOracle = new MockChainlinkOracle(2_000e18, 18);
 
         vm.stopBroadcast();
 
         addresses.addAddress("USDBC", address(usdc), true);
         addresses.addAddress("cbETH", address(cbETH), true);
         addresses.addAddress("WETH", address(weth), true);
+
+        addresses.addAddress("USDC_ORACLE", address(usdcOracle), true);
+        addresses.addAddress("ETH_ORACLE", address(ethOracle), true);
+        addresses.addAddress("USDC_ORACLE", address(usdcOracle), true);
+
+        vm.startBroadcast(PRIVATE_KEY);
+        
+        // cbETH is a composite oracle
+        MockChainlinkOracle oracle = new MockChainlinkOracle(1.04296945e18, 18);
+        ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
+            addresses.getAddress("ETH_ORACLE"),
+            address(oracle),
+            address(0)
+        );
+
+        vm.stopBroadcast();
+
+        addresses.addAddress("cbETH_ORACLE", address(cbEthOracle), true);
     }
 }
