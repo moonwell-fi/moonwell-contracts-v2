@@ -80,32 +80,38 @@
     {
         "addr": "0x4616975f7E6045FD9737e95bC527e9e14c727BD2",
         "chainId": 84532,
-        "name": "USDBC"
+        "name": "USDBC",
+        "isContract": true
     },
     {
         "addr": "0xdbc885569E711262926803184eC9Ff73816fc953",
         "chainId": 84532,
-        "name": "cbETH"
+        "name": "cbETH",
+        "isContract": true
     },
     {
         "addr": "0x663A6F02d547dFd639BF689FED298712f2FB69Fb",
         "chainId": 84532,
-        "name": "WETH"
+        "name": "WETH",
+        "isContract": true
     },
     {
         "addr": "0x21A36dE5734BE165f7bFa42a086a51C466Cb90EE",
         "chainId": 84532,
-        "name": "USDC_ORACLE"
+        "name": "USDC_ORACLE",
+        "isContract": true
     },
     {
         "addr": "0xbf7491f119bCC33E5a697D3528e7d8D64E35b3F2",
         "chainId": 84532,
-        "name": "ETH_ORACLE"
+        "name": "ETH_ORACLE",
+        "isContract": true
     },
     {
         "addr": "0x3E4589Ca47F41f6DEFC78929D210976678960754",
         "chainId": 84532,
-        "name": "cbETH_ORACLE"
+        "name": "cbETH_ORACLE",
+        "isContract": true
     },
     {
         "addr": "0x23908A62110e21C04F3A4e011d24F901F911744A",
