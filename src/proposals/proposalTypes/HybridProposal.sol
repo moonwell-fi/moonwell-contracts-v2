@@ -251,6 +251,13 @@ abstract contract HybridProposal is
         return (targets, values, payloads);
     }
 
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
+    /// ----------------- Helper Functions ------------------
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
+
+    /// @notice set the fork IDs for base and moonbeam
     function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) external {
         require(
             _baseForkId != _moonbeamForkId,
@@ -259,7 +266,6 @@ abstract contract HybridProposal is
 
         baseForkId = _baseForkId;
         moonbeamForkId = _moonbeamForkId;
-
     }
 
     /// -----------------------------------------------------
