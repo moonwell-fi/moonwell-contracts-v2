@@ -260,7 +260,6 @@ abstract contract HybridProposal is
         baseForkId = _baseForkId;
         moonbeamForkId = _moonbeamForkId;
 
-        /// no events as this is tooling and never deployed onchain
     }
 
     /// -----------------------------------------------------
