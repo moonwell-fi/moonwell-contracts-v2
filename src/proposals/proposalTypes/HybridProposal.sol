@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
@@ -116,6 +117,12 @@ abstract contract HybridProposal is
     ) internal {
         _pushHybridAction(target, 0, data, "", isMoonbeam);
     }
+
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
+    /// ------------------- VIEWS ---------------------------
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
 
     function getProposalActionSteps()
         public
@@ -244,6 +251,29 @@ abstract contract HybridProposal is
         return (targets, values, payloads);
     }
 
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
+    /// ----------------- Helper Functions ------------------
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
+
+    /// @notice set the fork IDs for base and moonbeam
+    function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) external {
+        require(
+            _baseForkId != _moonbeamForkId,
+            "setForkIds: fork IDs cannot be the same"
+        );
+
+        baseForkId = _baseForkId;
+        moonbeamForkId = _moonbeamForkId;
+    }
+
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
+    /// --------------------- Printing ----------------------
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
+
     function printProposalActionSteps() public override {
         console.log(
             "\n\nProposal Description:\n\n%s",
@@ -278,22 +308,31 @@ abstract contract HybridProposal is
         }
     }
 
-    function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) external {
-        require(
-            _baseForkId != _moonbeamForkId,
-            "setForkIds: fork IDs cannot be the same"
+    /// @notice print the actions that will be executed by the proposal
+    function printCalldata(Addresses addresses) public override {
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = getTargetsPayloadsValues(addresses);
+
+        bytes memory governorCalldata = abi.encodeWithSignature(
+            "propose(address[],uint256[],bytes[],string)",
+            targets,
+            values,
+            calldatas,
+            PROPOSAL_DESCRIPTION
         );
 
-        baseForkId = _baseForkId;
-        moonbeamForkId = _moonbeamForkId;
-
-        /// no events as this is tooling and never deployed onchain
+        console.log("governor calldata");
+        emit log_bytes(governorCalldata);
     }
 
-    /// @notice print out the proposal action steps and which chains they were run on
-    function printCalldata(Addresses) public override {
-        printProposalActionSteps();
-    }
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
+    /// -------------------- OVERRIDES ----------------------
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
 
     function deploy(Addresses, address) public virtual override {}
 
