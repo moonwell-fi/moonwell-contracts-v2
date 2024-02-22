@@ -250,26 +250,25 @@ abstract contract HybridProposal is
 
         return (targets, values, payloads);
     }
-    
+
     function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) external {
         require(
             _baseForkId != _moonbeamForkId,
             "setForkIds: fork IDs cannot be the same"
         );
-        
+
         baseForkId = _baseForkId;
         moonbeamForkId = _moonbeamForkId;
-        
+
         /// no events as this is tooling and never deployed onchain
     }
-    
+
     /// -----------------------------------------------------
     /// -----------------------------------------------------
     /// --------------------- Printing ----------------------
     /// -----------------------------------------------------
     /// -----------------------------------------------------
-    
-    
+
     function printProposalActionSteps() public override {
         console.log(
             "\n\nProposal Description:\n\n%s",
@@ -329,7 +328,6 @@ abstract contract HybridProposal is
     /// -------------------- OVERRIDES ----------------------
     /// -----------------------------------------------------
     /// -----------------------------------------------------
-
 
     function deploy(Addresses, address) public virtual override {}
 
