@@ -1136,9 +1136,9 @@
         "isContract": true
     },
     {
-        "addr": "0x13C0d0a89E7c3C747cc3A15234AB6942238d2ECb", 
-          "chainId": 84532,
-      "name": "WELL",
-      "isContract": true
+        "addr": "0x13C0d0a89E7c3C747cc3A15234AB6942238d2ECb",
+        "chainId": 84532,
+        "name": "WELL",
+        "isContract": true
     }
 ]
