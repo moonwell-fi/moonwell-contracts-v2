@@ -217,7 +217,7 @@ contract Configs is Test {
     }
 
     function init(Addresses addresses) public {
-        if (block.chainid == _localChainId) 
+        if (block.chainid == _localChainId) {
             console.log("\n----- deploying locally -----\n");
 
             /// cToken config for WETH, WBTC and USDBC on local
