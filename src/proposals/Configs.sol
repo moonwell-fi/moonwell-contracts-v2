@@ -57,7 +57,7 @@ contract Configs is Test {
 
     constructor() {
         string memory fileContents = vm.readFile(
-            "./src/proposals/mainnetMTokens.json"
+            "./src/proposals/mainnetMTokensExample.json"
         );
         bytes memory rawJson = vm.parseJson(fileContents);
 
@@ -65,6 +65,7 @@ contract Configs is Test {
             rawJson,
             (CTokenConfiguration[])
         );
+
 
         for (uint256 i = 0; i < decodedJson.length; i++) {
             require(
@@ -83,7 +84,7 @@ contract Configs is Test {
                 revert("borrow cap must be set with a supply cap");
             }
 
-            cTokenConfigurations[_baseChainId].push(decodedJson[i]);
+            cTokenConfigurations[block.chainid].push(decodedJson[i]);
         }
 
         fileContents = vm.readFile("./src/proposals/mainnetRewardStreams.json");
@@ -109,9 +110,7 @@ contract Configs is Test {
     }
 
     function deployAndMint(Addresses addresses) public {
-        if (
-            block.chainid == _baseGoerliChainId
-        ) {
+        if (block.chainid == _baseGoerliChainId) {
             console.log("\n----- deploy and mint on base goerli -----\n");
             {
                 FaucetTokenWithPermit token = new FaucetTokenWithPermit(
@@ -218,7 +217,7 @@ contract Configs is Test {
     }
 
     function init(Addresses addresses) public {
-        if (block.chainid == _localChainId) {
+        if (block.chainid == _localChainId) 
             console.log("\n----- deploying locally -----\n");
 
             /// cToken config for WETH, WBTC and USDBC on local

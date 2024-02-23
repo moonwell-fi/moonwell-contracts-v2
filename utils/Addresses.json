@@ -144,6 +144,12 @@
         "isContract": false
     },
     {
+        "addr": "0x8967d9F9fdD2be7A712d83dD15D79123BdAe872e",
+        "chainId": 84532,
+        "name": "PAUSE_GUARDIAN",
+        "isContract": false
+    },
+    {
         "addr": "0xc191A4db4E05e478778eDB6a201cb7F13A257C23",
         "chainId": 1287,
         "name": "PAUSE_GUARDIAN",

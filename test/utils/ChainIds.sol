@@ -12,7 +12,7 @@ contract ChainIds {
 
     uint256 public constant baseSepoliaChainId = 84532;
     uint16 public constant baseSepoliaWormholeChainId = 10004;
-    
+
     /// ------------ MOONBEAM ------------
 
     uint256 public constant moonRiverChainId = 1285;
