@@ -18,7 +18,6 @@ ethereum = "https://rpc.ankr.com/eth"
 optimism = "https://endpoints.omniatech.io/v1/op/mainnet/public"
 avalanche = "https://rpc.ankr.com/avalanche"
 base = "${BASE_RPC_URL}"
-baseGoerli = "${BASE_GOERLI_RPC_URL}"
 baseSepolia = "${BASE_SEPOLIA_RPC_URL}"
 local = "http://127.0.0.1:8545"
 
@@ -29,7 +28,6 @@ moonbase = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbase.moonscan.io
 goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/api" }
 sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
 base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
-baseGoerli = { key = "PLACEHOLDER_STRING", url= "https://api-goerli.basescan.org/api" }
 baseSepolia = { key = "${BASESCAN_API_KEY}", url= "https://sepolia.basescan.org/api" }
 
 [fuzz]

@@ -28,11 +28,6 @@ contract ChainIds {
     uint256 public constant sepoliaChainId = 11155111;
     uint16 public constant sepoliaWormholeChainId = 10002;
 
-    /// ------------ GOERLI ------------
-
-    uint256 public constant goerliChainId = 5;
-    uint16 public constant goerliWormholeChainId = 2;
-
     /// ------------ LOCAL ------------
     uint256 public constant localChainId = 31337;
 
@@ -47,7 +42,6 @@ contract ChainIds {
     mapping(uint256 => uint256) public chainIdTemporalGovTimelock;
 
     constructor() {
-        chainIdToWormHoleId[sepoliaChainId] = goerliWormholeChainId; /// sepolia deployment is owned by goerli
         chainIdToWormHoleId[baseGoerliChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
 
         chainIdToWormHoleId[baseChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance

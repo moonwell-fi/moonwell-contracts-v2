@@ -769,6 +769,37 @@
         "isContract": true
     },
     {
+        "addr": "0x93BAD53DDfB6132b0aC8E37f6029163E63372cEE",
+        "chainId": 84532,
+        "name": "WORMHOLE_BRIDGE_RELAYER",
+        "isContract": true
+    },
+    {
+        "addr": "0xd1e353f375d0cbD5Aa556f609b3Eda8dF65B13ae",
+        "chainId": 84532,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0x9E6b27E810aA08C6AF93b406Ec4C78DA7a4f7FDE",
+        "chainId": 84532,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0x27CA1824b663521C3EA7Db68b326023BF8B1AECF",
+        "chainId": 84532,
+        "name": "xWELL_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0x2C27f64d5c097dc78f9518aA7700Da79279dC603",
+        "chainId": 84532,
+        "name": "xWELL_PROXY",
+        "isContract": true
+    },
+
+    {
         "addr": "0x7793E08Eb4525309C46C9BA394cE33361A167ba4",
         "chainId": 1284,
         "name": "ECOSYSTEM_RESERVE",
