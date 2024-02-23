@@ -66,7 +66,6 @@ contract Configs is Test {
             (CTokenConfiguration[])
         );
 
-
         for (uint256 i = 0; i < decodedJson.length; i++) {
             require(
                 decodedJson[i].collateralFactor <= 0.95e18,
