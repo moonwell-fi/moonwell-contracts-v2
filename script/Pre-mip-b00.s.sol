@@ -15,7 +15,7 @@ import {ChainlinkCompositeOracle} from "@protocol/Oracles/ChainlinkCompositeOrac
 to run:
 forge script script/Pre-mip-b00.s.sol -vvvv --rpc-url baseSepolia --broadcast --etherscan-api-key baseSepolia --slow
 */
-// Script for deploying mock ERC20 tokens and Chainlik oracle that are need on
+// Script for deploying ERC20 tokens and oracles mocks to be used for MIP-B00 on base sepolia.
 contract PreMipB00Script is Script, Test {
     uint256 public constant initialMintAmount = 1 ether;
 
