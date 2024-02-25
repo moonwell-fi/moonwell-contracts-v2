@@ -7,7 +7,6 @@ contract ChainIds {
     uint256 public constant baseChainId = 8453;
     uint16 public constant baseWormholeChainId = 30;
 
-    uint256 public constant baseGoerliChainId = 84531;
     uint16 public constant baseGoerliWormholeChainId = 30;
 
     uint256 public constant baseSepoliaChainId = 84532;
@@ -42,19 +41,17 @@ contract ChainIds {
     mapping(uint256 => uint256) public chainIdTemporalGovTimelock;
 
     constructor() {
-        chainIdToWormHoleId[baseGoerliChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
+        chainIdToWormHoleId[baseSepoliaChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
 
         chainIdToWormHoleId[baseChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
         chainIdToWormHoleId[moonBeamChainId] = baseWormholeChainId; /// moonbeam goes to base
-
-        sendingChainIdToReceivingChainId[baseGoerliChainId] = moonBaseChainId; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
         sendingChainIdToReceivingChainId[baseSepoliaChainId] = moonBaseChainId; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
         sendingChainIdToReceivingChainId[baseChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking base, and sending from moonbeam
         sendingChainIdToReceivingChainId[moonBeamChainId] = baseChainId;
 
         sendingChainIdToReceivingChainId[localChainId] = localChainId; // unit tests
 
-        chainIdTemporalGovTimelock[baseGoerliChainId] = 0; /// no wait on testnet
+        chainIdTemporalGovTimelock[baseSepoliaChainId] = 0; /// no wait on testnet
         chainIdTemporalGovTimelock[baseChainId] = 1 days;
     }
 }
