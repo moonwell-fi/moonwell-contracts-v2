@@ -924,5 +924,23 @@
         "chainId": 84532,
         "name": "WELL",
         "isContract": true
+    },
+    {
+        "addr": "0x82444B6B58f1f65dBE228feBaf0ae6b59Eb55B59",
+        "chainId": 1287,
+        "name": "MOONBEAM_PROXY_ADMIN",
+        "isContract": true
+    },
+    {
+        "addr": "0x8967d9F9fdD2be7A712d83dD15D79123BdAe872e",
+        "chainId": 1287,
+        "name": "MOONBEAM_PAUSE_GUARDIAN_MULTISIG",
+        "isContract": false
+    },
+    {
+        "addr": "0x0591C25ebd0580E0d4F27A82Fc2e24E7489CB5e0",
+        "chainId": 1287,
+        "name": "WORMHOLE_BRIDGE_RELAYER",
+        "isContract": true
     }
 ]
