@@ -168,97 +168,6 @@
         "isContract": false
     },
     {
-        "addr": "0xef7Ba050C1B271700E47C9ad126D4d9bCF28FeA4",
-        "chainId": 84532,
-        "name": "TEMPORAL_GOVERNOR",
-        "isContract": true
-    },
-    {
-        "addr": "0x291947B23c4c628E1eB975cBb998CD2f2C456D8E",
-        "chainId": 84532,
-        "name": "MULTI_REWARD_DISTRIBUTOR",
-        "isContract": true
-    },
-    {
-        "addr": "0xbd5b728DF8b1BFfa10266F8f75358fD369D6b8dB",
-        "chainId": 84532,
-        "name": "COMPTROLLER",
-        "isContract": true
-    },
-    {
-        "addr": "0xf3b6f421888F82beABD18b92efD54A14ee577D8B",
-        "chainId": 84532,
-        "name": "UNITROLLER",
-        "isContract": true
-    },
-    {
-        "addr": "0x0DbDA99a7CD96Cf41dE3aB0953d453993cBD9860",
-        "chainId": 84532,
-        "name": "MRD_PROXY",
-        "isContract": true
-    },
-    {
-        "addr": "0x8D76786845C01b81aeC5526fD88DA1617130E3FF",
-        "chainId": 84532,
-        "name": "MRD_PROXY_ADMIN",
-        "isContract": true
-    },
-    {
-        "addr": "0x0dcC368EdB81b2ac94708A7cbabC939Fd426e617",
-        "chainId": 84532,
-        "name": "MTOKEN_IMPLEMENTATION",
-        "isContract": true
-    },
-    {
-        "addr": "0x0B49d54883464fe20C778bC3b4B4587fFf3aec62",
-        "chainId": 84532,
-        "name": "JUMP_RATE_IRM_MOONWELL_USDBC",
-        "isContract": true
-    },
-    {
-        "addr": "0x306FD3092D2E9FcBFd0069b50e9Bb6B0C0688Aa9",
-        "chainId": 84532,
-        "name": "MOONWELL_USDBC",
-        "isContract": true
-    },
-    {
-        "addr": "0x1c6C3fAd8EBb194bFcAa17adf0BD39d75e79175A",
-        "chainId": 84532,
-        "name": "JUMP_RATE_IRM_MOONWELL_WETH",
-        "isContract": true
-    },
-    {
-        "addr": "0xfB1AAE2c42b389268b765c583fB406F1fB8651d1",
-        "chainId": 84532,
-        "name": "MOONWELL_WETH",
-        "isContract": true
-    },
-    {
-        "addr": "0x42A2eA93b75Bd2A31148C04b91ef6A12Fb645900",
-        "chainId": 84532,
-        "name": "JUMP_RATE_IRM_MOONWELL_cbETH",
-        "isContract": true
-    },
-    {
-        "addr": "0x4FC8383728aCB65305b9330cb8B14f915Ba232C8",
-        "chainId": 84532,
-        "name": "MOONWELL_cbETH",
-        "isContract": true
-    },
-    {
-        "addr": "0x87D503E0a28605a7e9970E5965cE916a85423EED",
-        "chainId": 84532,
-        "name": "WETH_ROUTER",
-        "isContract": true
-    },
-    {
-        "addr": "0xbC86B6741F832C7bE03245404b4238F5de512238",
-        "chainId": 84532,
-        "name": "CHAINLINK_ORACLE",
-        "isContract": true
-    },
-
-    {
         "addr": "0xc191A4db4E05e478778eDB6a201cb7F13A257C23",
         "chainId": 1287,
         "name": "PAUSE_GUARDIAN",
@@ -558,31 +467,6 @@
         "name": "WORMHOLE_BRIDGE_RELAYER",
         "isContract": true
     },
-    {
-        "addr": "0xd1e353f375d0cbD5Aa556f609b3Eda8dF65B13ae",
-        "chainId": 84532,
-        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-        "isContract": true
-    },
-    {
-        "addr": "0x9E6b27E810aA08C6AF93b406Ec4C78DA7a4f7FDE",
-        "chainId": 84532,
-        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
-        "isContract": true
-    },
-    {
-        "addr": "0x27CA1824b663521C3EA7Db68b326023BF8B1AECF",
-        "chainId": 84532,
-        "name": "xWELL_LOGIC",
-        "isContract": true
-    },
-    {
-        "addr": "0x2C27f64d5c097dc78f9518aA7700Da79279dC603",
-        "chainId": 84532,
-        "name": "xWELL_PROXY",
-        "isContract": true
-    },
-
     {
         "addr": "0x7793E08Eb4525309C46C9BA394cE33361A167ba4",
         "chainId": 1284,
@@ -942,5 +826,151 @@
         "chainId": 1287,
         "name": "WORMHOLE_BRIDGE_RELAYER",
         "isContract": true
+    },
+    {
+        "addr": "0x96d50c8b4072A1246d40c4455D7b6D748f7D4BD3",
+        "chainId": 1287,
+        "name": "WELL",
+        "isContract": true
+    },
+    {
+        "addr": "0xD65dfd25053D6f41a11A5265C391207fb560a36d",
+        "chainId": 1287,
+        "name": "xWELL_LOCKBOX",
+        "isContract": true
+    },
+    {
+        "addr": "0x2525e310997DeCAC58D865Bf57310aD001924799",
+        "chainId": 1287,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0xBaEab0885b40F810abd286Aa7464c10568DF4528",
+        "chainId": 1287,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0x488c0BC057BCa1038dECbfea2443d1A5E33903C5",
+        "chainId": 1287,
+        "name": "xWELL_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0x9131412E5450533650E4777dB9a5DC49CEce314b",
+        "chainId": 1287,
+        "name": "xWELL_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0xDbFACEfA114f79B7aAa8676A9cae9dF6edb76e11",
+        "chainId": 84532,
+        "name": "MRD_PROXY_ADMIN",
+        "isContract": true
+    },
+    {
+        "addr": "0xc01EA381A64F8BE3bDBb01A7c34D809f80783662",
+        "chainId": 84532,
+        "name": "TEMPORAL_GOVERNOR",
+        "isContract": true
+    },
+    {
+        "addr": "0x778F1bc4865F60201Dd0adAb2a57e9495bA9B80f",
+        "chainId": 84532,
+        "name": "MULTI_REWARD_DISTRIBUTOR",
+        "isContract": true
+    },
+    {
+        "addr": "0xE193BE0A14D86BA554b11075b4235ab2Bd4F7D16",
+        "chainId": 84532,
+        "name": "COMPTROLLER",
+        "isContract": true
+    },
+    {
+        "addr": "0xC72ba45f2Ae134F21DAEb2b7B5fd5De0064Ee9bB",
+        "chainId": 84532,
+        "name": "UNITROLLER",
+        "isContract": true
+    },
+    {
+        "addr": "0xcdC49088c040f1209F1aa548b2Ae40d8E24B53A5",
+        "chainId": 84532,
+        "name": "MRD_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0x1c7b1689809F9f572e3DF9c1e063473549bdf37c",
+        "chainId": 84532,
+        "name": "MTOKEN_IMPLEMENTATION",
+        "isContract": true
+    },
+    {
+        "addr": "0x7073814cfF6c183010df4D2BEC895a04bdB7f8cd",
+        "chainId": 84532,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDBC",
+        "isContract": true
+    },
+    {
+        "addr": "0x876852425331a113d8E432eFFB3aC5BEf38f033a",
+        "chainId": 84532,
+        "name": "MOONWELL_USDBC",
+        "isContract": true
+    },
+    {
+        "addr": "0x2fdF038b9D09F7fA5E775cEF6787cdf0C780961c",
+        "chainId": 84532,
+        "name": "JUMP_RATE_IRM_MOONWELL_WETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x2F39a349A79492a70E152760ce7123A1933eCf28",
+        "chainId": 84532,
+        "name": "MOONWELL_WETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x38D292Adf50f0cceb12e06e1303d875F553D9b29",
+        "chainId": 84532,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x5302EbD8BC32435C823c2e22B04Cd6c45f593e89",
+        "chainId": 84532,
+        "name": "MOONWELL_cbETH",
+        "isContract": true
+    },
+    {
+        "addr": "0xB7eAfB1B503c189CA4E5f19bCe272029cD98Cf1F",
+        "chainId": 84532,
+        "name": "WETH_ROUTER",
+        "isContract": true
+    },
+    {
+        "addr": "0x1AbEA09b07276669de5BC3a11F820fdC4ba529d1",
+        "chainId": 84532,
+        "name": "CHAINLINK_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x3a80c6a44933EDb55537EB10B5AF8149720a662D",
+        "chainId": 84532,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY"
+    },
+    {
+        "addr": "0x5526aaCFe968c3c1df502cc665d19f5C4c2ae561",
+        "chainId": 84532,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
+    },
+    {
+        "addr": "0xd30E5cBfAdC75668A11eA8B20305C42B4388dEF1",
+        "chainId": 84532,
+        "name": "xWELL_LOGIC"
+    },
+    {
+        "addr": "0xC0F4F6Cf852E8f0Ba106D52fB6624fDFE3843947",
+        "chainId": 84532,
+        "name": "xWELL_PROXY"
     }
 ]

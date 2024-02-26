@@ -34,7 +34,7 @@ contract DeployProxyAdminScript is Script, ChainIds {
         address proxyAdmin = address(new ProxyAdmin());
         vm.stopBroadcast();
 
-        addresses.addAddress("MOONBEAM_PROXY_ADMIN", proxyAdmin, true);
+        addresses.addAddress("MRD_PROXY_ADMIN", proxyAdmin, true);
 
         printAddresses();
     }

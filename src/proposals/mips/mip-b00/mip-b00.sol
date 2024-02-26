@@ -120,7 +120,19 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             addresses.addAddress("COMPTROLLER", address(comptroller), true);
             addresses.addAddress("UNITROLLER", address(unitroller), true);
 
-            ProxyAdmin proxyAdmin = new ProxyAdmin();
+            ProxyAdmin proxyAdmin;
+            if (block.chainid != Configs._baseSepoliaChainId) {
+                proxyAdmin = new ProxyAdmin();
+                addresses.addAddress(
+                    "MRD_PROXY_ADMIN",
+                    address(proxyAdmin),
+                    true
+                );
+            } else {
+                proxyAdmin = ProxyAdmin(
+                    addresses.getAddress("MRD_PROXY_ADMIN")
+                );
+            }
 
             bytes memory initData = abi.encodeWithSignature(
                 "initialize(address,address)",
@@ -135,7 +147,6 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 );
 
             addresses.addAddress("MRD_PROXY", address(mrdProxy), true);
-            addresses.addAddress("MRD_PROXY_ADMIN", address(proxyAdmin), true);
         }
 
         /// ------ MTOKENS -------
