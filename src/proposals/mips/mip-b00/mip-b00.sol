@@ -290,11 +290,23 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                         MToken(addresses.getAddress(config.addressesString))
                     );
 
-                    /// set mint paused for all MTokens
-                    Comptroller(address(unitroller))._setMintPaused(
-                        MToken(addresses.getAddress(config.addressesString)),
-                        true
-                    );
+                    /// set mint unpaused for all MTokens if is on sepolia
+                    if (block.chainid == Configs._baseSepoliaChainId) {
+                        Comptroller(address(unitroller))._setMintPaused(
+                            MToken(
+                                addresses.getAddress(config.addressesString)
+                            ),
+                            false
+                        );
+                    } else {
+                        /// set mint paused for all MTokens
+                        Comptroller(address(unitroller))._setMintPaused(
+                            MToken(
+                                addresses.getAddress(config.addressesString)
+                            ),
+                            true
+                        );
+                    }
 
                     /// get the mToken
                     mTokens[i] = MToken(
