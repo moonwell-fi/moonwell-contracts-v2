@@ -924,55 +924,55 @@
         "isContract": true
     },
     {
-        "addr": "0xfe5EA1E997e41Af5d6f69B3f21EA7381d7Ec6A87",
+        "addr": "0x751E27d340EFe99e35C4E68f9c3dF94BB4BE2aEA",
         "chainId": 1287,
         "name": "xWELL_LOCKBOX",
         "isContract": true
     },
     {
-        "addr": "0x8D19E31ef5b0803246B714dC0b2791d084c64e48",
+        "addr": "0x6bD7f004Dda748dB47Eb764a816eD2AA26EB4e40",
         "chainId": 1287,
         "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY",
         "isContract": true
     },
     {
-        "addr": "0xa79f3631Edb7D16A114D62ca3B1F6C123c3694e0",
+        "addr": "0xF81d39f4F2f98B5D804FCCF3Db194D17c78145Ff",
         "chainId": 1287,
         "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
         "isContract": true
     },
     {
-        "addr": "0xf77BD954cF2a1718e32F4be643dfEBDAC3c0aAc1",
+        "addr": "0xd3e4bC4dEF4CfD0ddD67a8DaBA4C40644d63850a",
         "chainId": 1287,
         "name": "xWELL_LOGIC",
         "isContract": true
     },
     {
-        "addr": "0xbed0A90EB1f31B87b042819EE5260f1C85b5EFA7",
+        "addr": "0xE8F339C51cb2700113ec6ef552eE1D6cCA3BfB95",
         "chainId": 1287,
         "name": "xWELL_PROXY",
         "isContract": true
     },
     {
-        "addr": "0x8D19E31ef5b0803246B714dC0b2791d084c64e48",
+        "addr": "0x6bD7f004Dda748dB47Eb764a816eD2AA26EB4e40",
         "chainId": 84532,
         "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY",
         "isContract": true
     },
     {
-        "addr": "0xa79f3631Edb7D16A114D62ca3B1F6C123c3694e0",
+        "addr": "0xF81d39f4F2f98B5D804FCCF3Db194D17c78145Ff",
         "chainId": 84532,
         "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
         "isContract": true
     },
     {
-        "addr": "0xf77BD954cF2a1718e32F4be643dfEBDAC3c0aAc1",
+        "addr": "0xd3e4bC4dEF4CfD0ddD67a8DaBA4C40644d63850a",
         "chainId": 84532,
         "name": "xWELL_LOGIC",
         "isContract": true
     },
     {
-        "addr": "0xbed0A90EB1f31B87b042819EE5260f1C85b5EFA7",
+        "addr": "0xE8F339C51cb2700113ec6ef552eE1D6cCA3BfB95",
         "chainId": 84532,
         "name": "xWELL_PROXY",
         "isContract": true
