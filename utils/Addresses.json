@@ -834,36 +834,6 @@
         "isContract": true
     },
     {
-        "addr": "0xD65dfd25053D6f41a11A5265C391207fb560a36d",
-        "chainId": 1287,
-        "name": "xWELL_LOCKBOX",
-        "isContract": true
-    },
-    {
-        "addr": "0x2525e310997DeCAC58D865Bf57310aD001924799",
-        "chainId": 1287,
-        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-        "isContract": true
-    },
-    {
-        "addr": "0xBaEab0885b40F810abd286Aa7464c10568DF4528",
-        "chainId": 1287,
-        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
-        "isContract": true
-    },
-    {
-        "addr": "0x488c0BC057BCa1038dECbfea2443d1A5E33903C5",
-        "chainId": 1287,
-        "name": "xWELL_LOGIC",
-        "isContract": true
-    },
-    {
-        "addr": "0x9131412E5450533650E4777dB9a5DC49CEce314b",
-        "chainId": 1287,
-        "name": "xWELL_PROXY",
-        "isContract": true
-    },
-    {
         "addr": "0xDbFACEfA114f79B7aAa8676A9cae9dF6edb76e11",
         "chainId": 84532,
         "name": "MRD_PROXY_ADMIN",
@@ -954,23 +924,57 @@
         "isContract": true
     },
     {
-        "addr": "0x3a80c6a44933EDb55537EB10B5AF8149720a662D",
-        "chainId": 84532,
-        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY"
+        "addr": "0xfe5EA1E997e41Af5d6f69B3f21EA7381d7Ec6A87",
+        "chainId": 1287,
+        "name": "xWELL_LOCKBOX",
+        "isContract": true
     },
     {
-        "addr": "0x5526aaCFe968c3c1df502cc665d19f5C4c2ae561",
-        "chainId": 84532,
-        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
+        "addr": "0x8D19E31ef5b0803246B714dC0b2791d084c64e48",
+        "chainId": 1287,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+        "isContract": true
     },
     {
-        "addr": "0xd30E5cBfAdC75668A11eA8B20305C42B4388dEF1",
-        "chainId": 84532,
-        "name": "xWELL_LOGIC"
+        "addr": "0xa79f3631Edb7D16A114D62ca3B1F6C123c3694e0",
+        "chainId": 1287,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
+        "isContract": true
     },
     {
-        "addr": "0xC0F4F6Cf852E8f0Ba106D52fB6624fDFE3843947",
+        "addr": "0xf77BD954cF2a1718e32F4be643dfEBDAC3c0aAc1",
+        "chainId": 1287,
+        "name": "xWELL_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0xbed0A90EB1f31B87b042819EE5260f1C85b5EFA7",
+        "chainId": 1287,
+        "name": "xWELL_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0x8D19E31ef5b0803246B714dC0b2791d084c64e48",
         "chainId": 84532,
-        "name": "xWELL_PROXY"
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0xa79f3631Edb7D16A114D62ca3B1F6C123c3694e0",
+        "chainId": 84532,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0xf77BD954cF2a1718e32F4be643dfEBDAC3c0aAc1",
+        "chainId": 84532,
+        "name": "xWELL_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0xbed0A90EB1f31B87b042819EE5260f1C85b5EFA7",
+        "chainId": 84532,
+        "name": "xWELL_PROXY",
+        "isContract": true
     }
 ]
