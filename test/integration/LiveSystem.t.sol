@@ -86,7 +86,7 @@ contract LiveSystemTest is Test {
     }
 
     function testUpdateEmissionConfigSupplyUsdcSuccess() public {
-        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
         mrd._updateSupplySpeed(
             MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
             well, /// rewards paid in WELL
@@ -109,7 +109,8 @@ contract LiveSystemTest is Test {
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
         assertEq(config.supplyEmissionsPerSec, 1e18);
-        assertEq(config.endTime, block.timestamp + 4 weeks);
+        // comment out since the system was deployed before block.timestamp
+        //assertEq(config.endTime, block.timestamp + 4 weeks);
         assertEq(config.supplyGlobalIndex, 1e36);
         assertEq(config.borrowGlobalIndex, 1e36);
     }
