@@ -976,5 +976,11 @@
         "chainId": 84532,
         "name": "xWELL_PROXY",
         "isContract": true
+    },
+    {
+        "addr": "0xAE43805b6907f36edB386D053c57c0347e13afB5",
+        "chainId": 84532,
+        "name": "WETH_UNWRAPPER",
+        "isContract": true
     }
 ]
