@@ -22,15 +22,15 @@ baseSepolia = "https://sepolia.base.org"
 moonbaseAlpha = "https://moonbase-alpha.public.blastapi.io"
 local = "http://127.0.0.1:8545"
 
-[etherscan]
-moonriver = { key = "${MOONRIVER_API_KEY}", url= "https://api-moonriver.moonscan.io/api" }
-moonbeam = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbeam.moonscan.io/api" }
-moonbaseAlpha = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbeam.moonscan.io/api" }
-moonbase = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbase.moonscan.io/api" }
-goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/api" }
-sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
-base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
-baseSepolia = { key = "${BASESCAN_API_KEY}", url= "https://sepolia.basescan.org/api" }
+#[etherscan]
+#moonriver = { key = "${MOONRIVER_API_KEY}", url= "https://api-moonriver.moonscan.io/api" }
+#moonbeam = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbeam.moonscan.io/api" }
+#moonbaseAlpha = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbeam.moonscan.io/api" }
+#moonbase = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbase.moonscan.io/api" }
+#goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/api" }
+#sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
+#base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
+#baseSepolia = { key = "${BASESCAN_API_KEY}", url= "https://sepolia.basescan.org/api" }
 
 [fuzz]
 fail_on_revert = true
