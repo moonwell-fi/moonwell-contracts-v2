@@ -13,7 +13,6 @@ import {Configs} from "@proposals/Configs.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {mipb00 as mip} from "@proposals/mips/mip-b00/mip-b00.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
@@ -22,45 +21,16 @@ import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/Mul
 contract LiveSystemTest is Test {
     MultiRewardDistributor mrd;
     Comptroller comptroller;
-    TestProposals proposals;
     Addresses addresses;
     address public well;
 
     function setUp() public {
-        //    address[] memory mips = new address[](1);
-        //    mips[0] = address(new mip());
-
-        //    proposals = new TestProposals(mips);
-        //    proposals.setUp();
         addresses = new Addresses();
-        //    proposals.testProposals(
-        //        false,
-        //        true,
-        //        true,
-        //        true,
-        //        true,
-        //        true,
-        //        false,
-        //        false
-        //    ); /// do not debug, deploy, after deploy, build, and run, do not validate
-        console.log(block.chainid);
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         well = addresses.getAddress("WELL");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
     }
-
-    function testSetup() public {
-        Configs.EmissionConfig[] memory configs = Configs(
-            address(proposals.proposals(0))
-        ).getEmissionConfigurations(block.chainid);
-        Configs.CTokenConfiguration[] memory mTokenConfigs = Configs(
-            address(proposals.proposals(0))
-        ).getCTokenConfigurations(block.chainid);
-
-        assertEq(configs.length, 5); /// 5 configs on base goerli
-        assertEq(mTokenConfigs.length, 5); /// 5 mTokens on base goerli
-    }
-
+    
     function testGuardianCanPauseTemporalGovernor() public {
         TemporalGovernor gov = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")
@@ -138,10 +108,11 @@ contract LiveSystemTest is Test {
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
-        assertEq(config.borrowEmissionsPerSec, 1e18);
-        assertEq(config.endTime, block.timestamp + 4 weeks);
-        assertEq(config.supplyGlobalIndex, 1e36);
-        assertEq(config.borrowGlobalIndex, 1e36);
+        assertEq(config.borrowEmissionsPerSec, 1e18, "Borrow emissions incorrect");
+        // comment out since the system was deployed before block.timestamp
+        //assertEq(config.endTime, block.timestamp + 4 weeks, "End time incorrect"));
+        assertEq(config.supplyGlobalIndex, 1e36, "Supply global index incorrect");
+        assertEq(config.borrowGlobalIndex, 1e36, "Borrow global index incorrect");
     }
 
     function testMintMTokenSucceeds() public {
