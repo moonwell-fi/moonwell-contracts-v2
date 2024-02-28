@@ -1038,31 +1038,31 @@
         "isContract": true
     },
     {
-        "addr": "0x67Fa5902ce4e88634FA181c1237C97dAC34C1120",
+        "addr": "0xff2eEb2072593306b2846Bf5df8521533AEa4188",
         "chainId": 1287,
         "name": "stkWELL_IMPL",
         "isContract": true
     },
     {
-        "addr": "0x7402Dd5EE140598FA035F7084041d7d1d748A968",
+        "addr": "0xF9337938Ca47433CEfd9927f853Bb230E38d3f82",
         "chainId": 1287,
         "name": "stkWELL",
         "isContract": true
     },
     {
-        "addr": "0x7ac44E426Fe62572222F3bEc3636f087129cC2cf",
+        "addr": "0xb63744cc5B9f68Fcf30f6cF2AeBa0da46fBf9Ffb",
         "chainId": 1287,
         "name": "ECOSYSTEM_RESERVE",
         "isContract": true
     },
     {
-        "addr": "0x9cb9E23ec47F4Ae56A56BBCE4EB360ABFFEa3E5F",
+        "addr": "0x10278B896B9B5BCdb1bE7170453095c7bc7C28e3",
         "chainId": 1287,
         "name": "ECOSYSTEM_RESERVE_IMPL",
         "isContract": true
     },
     {
-        "addr": "0xe30967E548A18a5e0604b30a9c02b72cCA35feCd",
+        "addr": "0xB4184887521F9da525584a5110F0F4be56989e0b",
         "chainId": 1287,
         "name": "ECOSYSTEM_RESERVE_CONTROLLER",
         "isContract": true
