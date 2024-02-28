@@ -978,61 +978,55 @@
         "isContract": true
     },
     {
-        "addr": "0xAE43805b6907f36edB386D053c57c0347e13afB5",
-        "chainId": 84532,
-        "name": "WETH_UNWRAPPER",
-        "isContract": true
-    },
-    {
-        "addr": "0xC6F4F0BE35453806d048ec96C6d1645fc05558a7",
-        "chainId": 1287,
-        "name": "MULTICHAIN_GOVERNOR_PROXY",
-        "isContract": true
-    },
-    {
-        "addr": "0xF4aAF6624Cf3448dA7628FBD763142161CB87fF6",
+        "addr": "0xe196a66086F19c832C4FB123F8c81B2Ba035F2f0",
         "chainId": 1287,
         "name": "MULTICHAIN_GOVERNOR_IMPL",
         "isContract": true
     },
     {
-        "addr": "0xC6F4F0BE35453806d048ec96C6d1645fc05558a7",
+        "addr": "0x716ff5a3Acbcd6cA05e921a524b80B5B68FAca05",
+        "chainId": 1287,
+        "name": "MULTICHAIN_GOVERNOR_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0x3d9460D343Ad5833d3E971b7F9C0B69139e60B38",
         "chainId": 84532,
         "name": "ECOSYSTEM_RESERVE_PROXY",
         "isContract": true
     },
     {
-        "addr": "0x538EaFe91f8A8557b7103496777F2bE540B91784",
+        "addr": "0x6255D7DC1b4D7c38329e2daBa43Ec99A6Dc3092B",
         "chainId": 84532,
         "name": "ECOSYSTEM_RESERVE_IMPL",
         "isContract": true
     },
     {
-        "addr": "0xF4aAF6624Cf3448dA7628FBD763142161CB87fF6",
+        "addr": "0x4D80ED3627E508E70A9c74F66893420415667f99",
         "chainId": 84532,
         "name": "ECOSYSTEM_RESERVE_CONTROLLER",
         "isContract": true
     },
     {
-        "addr": "0xa551cD27d72664f47293B8110b9cae97A49Ff5b6",
+        "addr": "0x7Ac4Ecee0473241be79c842Fcab16e368eDc7CD4",
         "chainId": 84532,
         "name": "stkWELL_PROXY",
         "isContract": true
     },
     {
-        "addr": "0x50361eD6EEDe521203fC7d60d6244988C3D9FcCE",
+        "addr": "0x3bc9BAa5645Ed91a96F02bA30932eDc491ef3190",
         "chainId": 84532,
         "name": "stkWELL_IMPL",
         "isContract": true
     },
     {
-        "addr": "0x59c86F5c32d50f5adFB2bF0E5F02dd8deCe599b9",
+        "addr": "0x630Dd10Ad361b4A70d59FA85af6cA1d3E15F130F",
         "chainId": 84532,
         "name": "VOTE_COLLECTION_PROXY",
         "isContract": true
     },
     {
-        "addr": "0x659a054487118ad751f0cA76c06BE0B92d13cc89",
+        "addr": "0xBa7953435717704E28e698b1DaB9288f94f510c1",
         "chainId": 84532,
         "name": "VOTE_COLLECTION_IMPL",
         "isContract": true
