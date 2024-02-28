@@ -105,14 +105,17 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl, true);
     }
 
-    function afterDeploy(Addresses addresses, address) public override {
+    function afterDeploy(
+        Addresses addresses,
+        address deployer
+    ) public override {
         IEcosystemReserveControllerUplift ecosystemReserveController = IEcosystemReserveControllerUplift(
                 addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
             );
 
         assertEq(
             ecosystemReserveController.owner(),
-            address(this),
+            deployer,
             "incorrect owner"
         );
         assertEq(
