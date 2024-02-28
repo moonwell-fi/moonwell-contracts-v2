@@ -1,5 +1,7 @@
 pragma solidity 0.8.19;
 
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
 import {console} from "@forge-std/console.sol";
 import {Test} from "@forge-std/Test.sol";
 
@@ -7,14 +9,11 @@ import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-
-import {mipb00} from "@proposals/mips/mip-b00/mip-b00.sol";
-import {mipb01} from "@proposals/mips/mip-b01/mip-b01.sol";
+import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
 
 /*
 How to use:
 forge test --fork-url $ETH_RPC_URL --match-contract TestProposals -vvv
-
 Or, from another Solidity file (for post-proposal integration testing):
     TestProposals proposals = new TestProposals();
     proposals.setUp();
@@ -22,10 +21,10 @@ Or, from another Solidity file (for post-proposal integration testing):
     Addresses addresses = proposals.addresses();
 */
 
-contract TestProposals is Test {
+contract TestMultichainProposals is Test, Initializable {
     Addresses public addresses;
     Proposal[] public proposals;
-    uint256 public nProposals;
+
     bool public DEBUG;
     bool public DO_DEPLOY;
     bool public DO_AFTER_DEPLOY;
@@ -35,15 +34,14 @@ contract TestProposals is Test {
     bool public DO_TEARDOWN;
     bool public DO_VALIDATE;
 
-    constructor(address[] memory _proposals) {
+    function _initialize(address[] memory _proposals) internal initializer {
         for (uint256 i = 0; i < _proposals.length; i++) {
             proposals.push(Proposal(_proposals[i]));
+            vm.makePersistent(_proposals[i]);
         }
-
-        nProposals = _proposals.length;
     }
 
-    function setUp() public {
+    function setUp() public virtual {
         DEBUG = vm.envOr("DEBUG", true);
         DO_DEPLOY = vm.envOr("DO_DEPLOY", true);
         DO_AFTER_DEPLOY = vm.envOr("DO_AFTER_DEPLOY", true);
@@ -55,8 +53,9 @@ contract TestProposals is Test {
 
         addresses = new Addresses();
 
-        // proposals.push(Proposal(address(new mipb01())));
-        nProposals = proposals.length;
+        /// make the Addresses contract persistent so it can be accessed from other chains
+        vm.makePersistent(address(addresses));
+        vm.makePersistent(address(this));
     }
 
     function printCalldata(
@@ -76,7 +75,7 @@ contract TestProposals is Test {
         }
     }
 
-    function testProposals(
+    function runProposals(
         bool debug,
         bool deploy,
         bool afterDeploy,
@@ -85,7 +84,7 @@ contract TestProposals is Test {
         bool run,
         bool teardown,
         bool validate
-    ) public returns (uint256[] memory postProposalVmSnapshots) {
+    ) public {
         if (debug) {
             console.log(
                 "TestProposals: running",
@@ -94,21 +93,26 @@ contract TestProposals is Test {
             );
         }
 
-        postProposalVmSnapshots = new uint256[](proposals.length);
         for (uint256 i = 0; i < proposals.length; i++) {
             string memory name = IProposal(address(proposals[i])).name();
+            uint256 forkId = IMultichainProposal(address(proposals[i]))
+                .primaryForkId();
+
+            vm.selectFork(forkId);
 
             // Deploy step
             if (deploy) {
                 if (debug) {
                     console.log("Proposal", name, "deploy()");
-                    addresses.resetRecordingAddresses();
                 }
+
+                addresses.resetRecordingAddresses(); /// reset the recorded addresses for the next proposal
+
                 proposals[i].deploy(addresses, address(proposals[i])); /// mip itself is the deployer
                 if (debug) {
                     (
                         string[] memory recordedNames,
-                        ,
+                        uint256[] memory chainIds,
                         address[] memory recordedAddresses
                     ) = addresses.getRecordedAddresses();
                     for (uint256 j = 0; j < recordedNames.length; j++) {
@@ -116,7 +120,7 @@ contract TestProposals is Test {
                             '{\n        "addr": "%s", ',
                             recordedAddresses[j]
                         );
-                        console.log('        "chainId": %d,', block.chainid);
+                        console.log('        "chainId": %d,', chainIds[j]);
                         console.log(
                             '        "name": "%s"\n}%s',
                             recordedNames[j],
@@ -150,6 +154,9 @@ contract TestProposals is Test {
                 proposals[i].run(addresses, address(proposals[i]));
             }
 
+            /// snap back to original fork before running other functions just in case run moved to the wrong fork
+            vm.selectFork(forkId);
+
             // Teardown step
             if (teardown) {
                 if (debug) console.log("Proposal", name, "teardown()");
@@ -163,27 +170,19 @@ contract TestProposals is Test {
             }
 
             if (debug) console.log("Proposal", name, "done.");
-
-            postProposalVmSnapshots[i] = vm.snapshot();
         }
-
-        return postProposalVmSnapshots;
     }
 
-    function testProposals()
-        public
-        returns (uint256[] memory postProposalVmSnapshots)
-    {
-        return
-            testProposals(
-                DEBUG,
-                DO_DEPLOY,
-                DO_AFTER_DEPLOY,
-                DO_AFTER_DEPLOY_SETUP,
-                DO_BUILD,
-                DO_RUN,
-                DO_TEARDOWN,
-                DO_VALIDATE
-            );
+    function runProposals() public {
+        runProposals(
+            DEBUG,
+            DO_DEPLOY,
+            DO_AFTER_DEPLOY,
+            DO_AFTER_DEPLOY_SETUP,
+            DO_BUILD,
+            DO_RUN,
+            DO_TEARDOWN,
+            DO_VALIDATE
+        );
     }
 }

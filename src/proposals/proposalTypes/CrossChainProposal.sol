@@ -56,7 +56,7 @@ abstract contract CrossChainProposal is
     /// run pre and post proposal hooks to ensure that mToken markets created by the
     /// proposal are valid and mint at least 1 wei worth of mTokens to address 0
     function _simulateCrossChainActions(address temporalGovAddress) internal {
-        _verifyActionsPreRun(actions);
+        _verifyActionsPreRunMultisig(actions);
         _simulateMultisigActions(temporalGovAddress);
         _verifyMTokensPostRun();
     }
