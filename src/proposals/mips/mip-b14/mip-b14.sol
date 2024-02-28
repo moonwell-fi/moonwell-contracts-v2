@@ -36,9 +36,9 @@ contract mipb14 is HybridProposal, Configs, ParameterValidation {
 
     function deploy(Addresses addresses, address) public override {}
 
-    function afterDeploy(Addresses addresses, address) public override {}
-
-    function afterDeploySetup(Addresses addresses) public override {}
+    function run(Addresses addresses, address) public virtual override {
+        _run(addresses.getAddress("MOONBEAM_TIMELOCK"), moonbeamActions);
+    }
 
     function build(Addresses addresses) public override {
         _pushHybridAction(
@@ -52,8 +52,6 @@ contract mipb14 is HybridProposal, Configs, ParameterValidation {
             true
         );
     }
-
-    function teardown(Addresses addresses, address) public pure override {}
 
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
