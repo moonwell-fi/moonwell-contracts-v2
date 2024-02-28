@@ -21,10 +21,10 @@ baseGoerli = "${BASE_GOERLI_RPC_URL}"
 local = "http://127.0.0.1:8545"
 
 [etherscan]
-moonriver = { key = "${MOONRIVER_API_KEY}", url= "https://api-moonriver.moonscan.io/api" }
-moonbeam = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbeam.moonscan.io/api" }
-moonbase = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbase.moonscan.io/api" }
-goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/api" }
-sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
-base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
-baseGoerli = { key = "PLACEHOLDER_STRING", url= "https://api-goerli.basescan.org/api" }
+# moonriver = { key = "${MOONRIVER_API_KEY}", url= "https://api-moonriver.moonscan.io/api" }
+# moonbeam = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbeam.moonscan.io/api" }
+# moonbase = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbase.moonscan.io/api" }
+# goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/api" }
+# sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
+# base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
+# baseGoerli = { key = "PLACEHOLDER_STRING", url= "https://api-goerli.basescan.org/api" }
