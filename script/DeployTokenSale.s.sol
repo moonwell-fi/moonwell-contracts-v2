@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import {Addresses} from "@proposals/Addresses.sol";
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
-import { ITokenSaleDistributor } from "../src/tokensale/ITokenSaleDistributor.sol";
-import { ITokenSaleDistributorProxy } from "../src/tokensale/ITokenSaleDistributorProxy.sol";
+import {ITokenSaleDistributor} from "../src/tokensale/ITokenSaleDistributor.sol";
+import {ITokenSaleDistributorProxy} from "../src/tokensale/ITokenSaleDistributorProxy.sol";
 
 contract DeployTokenSale is Script {
     /// @notice addresses contract
@@ -27,20 +27,32 @@ contract DeployTokenSale is Script {
     function run() public {
         vm.startBroadcast(PRIVATE_KEY);
 
-        address implementation = deployCode("TokenSaleDistributor.sol:TokenSaleDistributor");
+        address implementation = deployCode(
+            "TokenSaleDistributor.sol:TokenSaleDistributor"
+        );
 
         address proxy = deployCode(
             "TokenSaleDistributorProxy.sol:TokenSaleDistributorProxy"
         );
 
-        ITokenSaleDistributorProxy(proxy).setPendingImplementation(implementation);
-        
+        ITokenSaleDistributorProxy(proxy).setPendingImplementation(
+            implementation
+        );
+
         ITokenSaleDistributor(implementation).becomeImplementation(proxy);
 
         vm.stopBroadcast();
 
-        addresses.addAddress("TOKEN_SALE_DISTRIBUTOR_PROXY", address(proxy), true);
-        addresses.addAddress("TOKEN_SALE_DISTRIBUTOR_IMPL", address(implementation), true);
+        addresses.addAddress(
+            "TOKEN_SALE_DISTRIBUTOR_PROXY",
+            address(proxy),
+            true
+        );
+        addresses.addAddress(
+            "TOKEN_SALE_DISTRIBUTOR_IMPL",
+            address(implementation),
+            true
+        );
 
         printAddresses();
     }

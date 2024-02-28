@@ -1067,16 +1067,22 @@
         "name": "ECOSYSTEM_RESERVE_CONTROLLER",
         "isContract": true
     },
-   {
-    "addr": "0xD2D73F763745777599b21F5725181B8ccD08B060",
-    "chainId": 1287,
-    "name": "TOKEN_SALE_DISTRIBUTOR_PROXY",
-    "isContract": true
-  },
-  {
-    "addr": "0x8cfFC77e13368A3E922dCB552878A21532EB439c",
-    "chainId": 1287,
-    "name": "TOKEN_SALE_DISTRIBUTOR_IMPL",
-    "isContract": true
-  }
+    {
+        "addr": "0xD2D73F763745777599b21F5725181B8ccD08B060",
+        "chainId": 1287,
+        "name": "TOKEN_SALE_DISTRIBUTOR_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0x8cfFC77e13368A3E922dCB552878A21532EB439c",
+        "chainId": 1287,
+        "name": "TOKEN_SALE_DISTRIBUTOR_IMPL",
+        "isContract": true
+    },
+      {
+        "addr": "0x8967d9F9fdD2be7A712d83dD15D79123BdAe872e",
+        "chainId": 1287,
+        "name": "BREAK_GLASS_GUARDIAN",
+        "isContract": false
+    }
 ]
