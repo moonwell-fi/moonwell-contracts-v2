@@ -15,7 +15,7 @@ import {TimelockProposal} from "@proposals/proposalTypes/TimelockProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 
-contract mipb13 is HybridProposal, Configs, ParameterValidation {
+contract mipb14 is HybridProposal, Configs, ParameterValidation {
     string public constant name = "MIP-b14";
 
     uint256 public constant BUSD_ORACLE_PRICE = 1e18;
