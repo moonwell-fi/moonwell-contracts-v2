@@ -1038,36 +1038,6 @@
         "isContract": true
     },
     {
-        "addr": "0xff2eEb2072593306b2846Bf5df8521533AEa4188",
-        "chainId": 1287,
-        "name": "stkWELL_IMPL",
-        "isContract": true
-    },
-    {
-        "addr": "0xF9337938Ca47433CEfd9927f853Bb230E38d3f82",
-        "chainId": 1287,
-        "name": "stkWELL",
-        "isContract": true
-    },
-    {
-        "addr": "0xb63744cc5B9f68Fcf30f6cF2AeBa0da46fBf9Ffb",
-        "chainId": 1287,
-        "name": "ECOSYSTEM_RESERVE",
-        "isContract": true
-    },
-    {
-        "addr": "0x10278B896B9B5BCdb1bE7170453095c7bc7C28e3",
-        "chainId": 1287,
-        "name": "ECOSYSTEM_RESERVE_IMPL",
-        "isContract": true
-    },
-    {
-        "addr": "0xB4184887521F9da525584a5110F0F4be56989e0b",
-        "chainId": 1287,
-        "name": "ECOSYSTEM_RESERVE_CONTROLLER",
-        "isContract": true
-    },
-    {
         "addr": "0xD2D73F763745777599b21F5725181B8ccD08B060",
         "chainId": 1287,
         "name": "TOKEN_SALE_DISTRIBUTOR_PROXY",
@@ -1084,5 +1054,35 @@
         "chainId": 1287,
         "name": "BREAK_GLASS_GUARDIAN",
         "isContract": false
-    }
+    },
+  {
+    "addr": "0xcD54d64186C775A934a81Bda11b56b3C749E2D0F",
+    "chainId": 1287,
+    "name": "stkWELL_IMPL",
+    "isContract": true
+  },
+  {
+    "addr": "0x679f6F96016dE47C85a0C8Be53056846E4301B3e",
+    "chainId": 1287,
+    "name": "stkWELL",
+    "isContract": true
+  },
+  {
+    "addr": "0xD095a1C9B4BBc9B1a3922a4656C5C4a8E601dF91",
+    "chainId": 1287,
+    "name": "ECOSYSTEM_RESERVE",
+    "isContract": true
+  },
+  {
+    "addr": "0x7e6F29dA0137706fcE97434f7125Af0886ef1Ab2",
+    "chainId": 1287,
+    "name": "ECOSYSTEM_RESERVE_IMPL",
+    "isContract": true
+  },
+  {
+    "addr": "0xfBF16f8aAfd1927a8D8EF8399b5E380b5E393B15",
+    "chainId": 1287,
+    "name": "ECOSYSTEM_RESERVE_CONTROLLER",
+    "isContract": true
+  }
 ]
