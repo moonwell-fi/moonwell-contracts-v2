@@ -122,7 +122,7 @@ contract BUSDOracle is Test, Configs, ComptrollerErrorReporter {
         vm.warp(block.timestamp + 300 days);
         vm.roll(block.number + 300 days / 12); /// roll forward by block numbers passing
 
-        for (uint256 i = 0; i < users.length; i++) {
+        for (uint256 i = 1; i < users.length; i++) {
             address user = users[i];
             uint256 balance = mBUSD.balanceOf(user);
 
@@ -142,12 +142,55 @@ contract BUSDOracle is Test, Configs, ComptrollerErrorReporter {
 
             liquidity[user] = 0;
             shortfall[user] = 0;
+
+            uint256 userBusdBalance = IERC20(
+                MErc20(address(mBUSD)).underlying()
+            ).balanceOf(user);
+            uint256 userBalanceOfUnderlying = mBUSD.balanceOfUnderlying(user);
+
+            vm.startPrank(user);
+
+            assertEq(
+                MErc20(address(mBUSD)).redeem(mBUSD.balanceOf(user)),
+                0,
+                "redeem failed"
+            );
+
+            vm.stopPrank();
+
+            assertEq(
+                IERC20(MErc20(address(mBUSD)).underlying()).balanceOf(user),
+                userBusdBalance + userBalanceOfUnderlying,
+                "redeem failed, underyling amt incorrect"
+            );
         }
 
         require(
             mBUSD.accrueInterest() == 0,
             "accrueInterest failed after warp"
         );
+    }
+
+    function testRedeemFirstUserSucceeds() public {
+        testWarpToFutureClBUSDCorrectAndPriceHardcodedByAdmin();
+
+        address user = users[0];
+
+        deal(MErc20(address(mBUSD)).underlying(), address(mBUSD), 100000000e18);
+
+        uint256 userBusdBalance = IERC20(MErc20(address(mBUSD)).underlying())
+            .balanceOf(user);
+        uint256 userBalanceOfUnderlying = mBUSD.balanceOfUnderlying(user);
+
+        vm.startPrank(user);
+
+        assertEq(
+            MErc20(address(mBUSD)).redeem(mBUSD.balanceOf(user)),
+            0,
+            "redeem failed"
+        );
+
+        vm.stopPrank();
     }
 
     function testGetAssetsIn() public {
