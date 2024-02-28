@@ -1055,34 +1055,34 @@
         "name": "BREAK_GLASS_GUARDIAN",
         "isContract": false
     },
-  {
-    "addr": "0xcD54d64186C775A934a81Bda11b56b3C749E2D0F",
-    "chainId": 1287,
-    "name": "stkWELL_IMPL",
-    "isContract": true
-  },
-  {
-    "addr": "0x679f6F96016dE47C85a0C8Be53056846E4301B3e",
-    "chainId": 1287,
-    "name": "stkWELL",
-    "isContract": true
-  },
-  {
-    "addr": "0xD095a1C9B4BBc9B1a3922a4656C5C4a8E601dF91",
-    "chainId": 1287,
-    "name": "ECOSYSTEM_RESERVE",
-    "isContract": true
-  },
-  {
-    "addr": "0x7e6F29dA0137706fcE97434f7125Af0886ef1Ab2",
-    "chainId": 1287,
-    "name": "ECOSYSTEM_RESERVE_IMPL",
-    "isContract": true
-  },
-  {
-    "addr": "0xfBF16f8aAfd1927a8D8EF8399b5E380b5E393B15",
-    "chainId": 1287,
-    "name": "ECOSYSTEM_RESERVE_CONTROLLER",
-    "isContract": true
-  }
+    {
+        "addr": "0xcD54d64186C775A934a81Bda11b56b3C749E2D0F",
+        "chainId": 1287,
+        "name": "stkWELL_IMPL",
+        "isContract": true
+    },
+    {
+        "addr": "0x679f6F96016dE47C85a0C8Be53056846E4301B3e",
+        "chainId": 1287,
+        "name": "stkWELL",
+        "isContract": true
+    },
+    {
+        "addr": "0xD095a1C9B4BBc9B1a3922a4656C5C4a8E601dF91",
+        "chainId": 1287,
+        "name": "ECOSYSTEM_RESERVE",
+        "isContract": true
+    },
+    {
+        "addr": "0x7e6F29dA0137706fcE97434f7125Af0886ef1Ab2",
+        "chainId": 1287,
+        "name": "ECOSYSTEM_RESERVE_IMPL",
+        "isContract": true
+    },
+    {
+        "addr": "0xfBF16f8aAfd1927a8D8EF8399b5E380b5E393B15",
+        "chainId": 1287,
+        "name": "ECOSYSTEM_RESERVE_CONTROLLER",
+        "isContract": true
+    }
 ]
