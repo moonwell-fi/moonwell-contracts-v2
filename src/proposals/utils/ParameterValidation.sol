@@ -76,4 +76,19 @@ contract ParameterValidation is Test {
             "collateral factor validation failed"
         );
     }
+
+    function _validateRF(
+        address tokenAddress,
+        uint256 reserveFactor
+    ) internal {
+        MToken token = MToken(tokenAddress);
+
+        uint256 reserveFactorMantissa = token.reserveFactorMantissa();
+
+        assertEq(
+            reserveFactorMantissa,
+            reserveFactor,
+            "reserve factor validation failed"
+        );
+    }
 }
