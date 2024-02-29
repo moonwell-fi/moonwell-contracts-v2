@@ -1,43 +1,47 @@
-# MIP-B13: Gauntlet's Base Recommendations
+# MIP-B14: Gauntlet's Base Recommendations
 
-# Simple Summary
+## Simple Summary
 
 ### Risk Parameters
 
-A proposal to adjust 5 risk parameters:
+A proposal to adjust 12 risk parameters:
 
-| Risk Parameter           | Current Value | Recommended Value |
-| ------------------------ | ------------- | ----------------- |
-| wstETH Collateral Factor | 77%           | 78%               |
-| rETH Collateral Factor   | 77%           | 78%               |
-| cbETH Collateral Factor  | 77%           | 78%               |
-| wstETH Supply Cap        | 800           | 1000              |
-| wstETH Borrow Cap        | 320           | 350               |
+| Risk Parameter        | Current Value | Recommended Value |
+| --------------------- | ------------- | ----------------- |
+| wstETH Reserve Factor | 25%           | 30%               |
+| rETH Reserve Factor   | 25%           | 30%               |
+| cbETH Reserve Factor  | 25%           | 30%               |
+| DAI Reserve Factor    | 15%           | 20%               |
+| wETH Supply Cap       | 10,500        | 12,500            |
+| wETH Borrow Cap       | 8000          | 10,500            |
+| DAI Supply Cap        | 4,500,000     | 2,500,000         |
+| DAI Borrow Cap        | 3,800,000     | 2,000,000         |
+| rETH Supply Cap       | 600           | 700               |
+| wstETH Supply Cap     | 1600          | 1800              |
+| wstETH Borrow Cap     | 700           | 800               |
+| USDC Borrow Cap       | 10,000,000    | 12,000,000        |
 
 <sub> \*Cap Recommendations will be implemented via Guardian </sub>
 
 ### IR Parameters
 
-A proposal to adjust cbETH's IR curve:
+A proposal to adjust wETH's IR curve:
 
-| cbETH IR Parameters | Current  | Recommended |
-| ------------------- | -------- | ----------- |
-| Base                | 0        | 0           |
-| Kink                | 0.45     | 0.45        |
-| Multiplier          | **0.06** | **0.05**    |
-| Jump Multiplier     | **3.15** | **3.00**    |
+| wETH IR Parameters | Current   | Recommended |
+| ------------------ | --------- | ----------- |
+| Base               | **0.01**  | **0**       |
+| Kink               | 0.8       | 0.8         |
+| Multiplier         | **0.037** | **0.032**   |
+| Jump Multiplier    | **4.8**   | **4.2**     |
 
-A proposal to adjust USDC's IR curve:
+A proposal to adjust DAI's IR curve:
 
-| USDC IR Parameters | Current  | Recommended |
-| ------------------ | -------- | ----------- |
-| Base               | 0        | 0           |
-| Kink               | 0.8      | 0.8         |
-| Multiplier         | **0.05** | **0.065**   |
-| Jump Multiplier    | 8.6      | 8.6         |
+| DAI IR Parameters | Current  | Recommended |
+| ----------------- | -------- | ----------- |
+| Base              | 0        | 0           |
+| Kink              | **0.8**  | **0.75**    |
+| Multiplier        | **0.05** | **0.067**   |
+| Jump Multiplier   | **8.6**  | **9.0**     |
 
----
-
-Our recommendation post is located in the forums with further analysis and supporting data.
-
-By approving this proposal, you agree that any services provided by Gauntlet shall be governed by the terms of service available at gauntlet.network/tos.
+Our recommendation post is located in the forums, please refer to this [link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-02-28/800).
+By approving this proposal, you agree that any services provided by Gauntlet shall be governed by the terms of service available at gauntlet.network/tos

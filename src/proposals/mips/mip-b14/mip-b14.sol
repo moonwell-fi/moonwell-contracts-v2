@@ -19,8 +19,11 @@ contract mipb14 is HybridProposal, Configs, ParameterValidation {
     string public constant name = "MIP-b14";
 
     uint256 public constant BUSD_ORACLE_PRICE = 1e18;
-    uint256 public constant rETH_NEW_CF = 0.78e18;
-    uint256 public constant cbETH_NEW_CF = 0.78e18;
+
+    uint256 public constant wstETH_NEW_RF = 0.3e18;
+    uint256 public constant rETH_NEW_RF = 0.3e18;
+    uint256 public constant cbETH_NEW_RF = 0.3e18;
+    uint256 public constant DAI_NEW_RF = 0.2e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -62,6 +65,46 @@ contract mipb14 is HybridProposal, Configs, ParameterValidation {
             "Override Chainlink and set BUSD oracle price to $1",
             true
         );
+
+        _pushHybridAction(
+            addresses.getAddress("MOONWELL_DAI"),
+            abi.encodeWithSignature(
+                "_setInterestRateModel(address)",
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI")
+            ),
+            "Set interest rate model for Moonwell DAI to updated rate model",
+            false
+        );
+
+        _pushHybridAction(
+            addresses.getAddress("MOONWELL_WETH"),
+            abi.encodeWithSignature(
+                "_setInterestRateModel(address)",
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH")
+            ),
+            "Set interest rate model for Moonwell WETH to updated rate model",
+            false
+        );
+
+        _pushHybridAction(
+            addresses.getAddress("MOONWELL_wstETH"),
+            abi.encodeWithSignature(
+                "_setReserveFactor(uint256)",
+                wstETH_NEW_RF
+            ),
+            "Set reserve factor for Moonwell wstETH to updated reserve factor",
+            false
+        );
+
+        _pushHybridAction(
+            addresses.getAddress("MOONWELL_rETH"),
+            abi.encodeWithSignature(
+                "_setReserveFactor(uint256)",
+                rETH_NEW_RF
+            ),
+            "Set reserve factor for Moonwell rETH to updated reserve factor",
+            false
+        );
     }
 
     /// @notice assert that the new interest rate model is set correctly
@@ -74,6 +117,48 @@ contract mipb14 is HybridProposal, Configs, ParameterValidation {
                 ),
             BUSD_ORACLE_PRICE,
             "BUSD oracle price not set correctly"
+        );
+
+        _validateJRM(
+            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI"),
+            addresses.getAddress("MOONWELL_DAI"),
+            IRParams({
+                kink: 0.75e18,
+                baseRatePerTimestamp: 0,
+                multiplierPerTimestamp: 0.067e18,
+                jumpMultiplierPerTimestamp: 9.0e18
+            })
+        );
+
+        _validateJRM(
+            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH"),
+            addresses.getAddress("MOONWELL_WETH"),
+            IRParams({
+                kink: 0.8e18,
+                baseRatePerTimestamp: 0,
+                multiplierPerTimestamp: 0.032e18,
+                jumpMultiplierPerTimestamp: 4.2e18
+            })
+        );
+
+        _validateRF(
+            addresses.getAddress("MOONWELL_wstETH"),
+            wstETH_NEW_RF
+        );
+
+        _validateRF(
+            addresses.getAddress("MOONWELL_rETH"),
+            rETH_NEW_RF
+        );
+
+        _validateRF(
+            addresses.getAddress("MOONWELL_DAI"),
+            DAI_NEW_RF
+        );
+
+        _validateRF(
+            addresses.getAddress("MOONWELL_cbETH"),
+            cbETH_NEW_RF
         );
     }
 }
