@@ -36,8 +36,19 @@ contract mipb14 is HybridProposal, Configs, ParameterValidation {
 
     function deploy(Addresses addresses, address) public override {}
 
-    function run(Addresses addresses, address) public virtual override {
-        _run(addresses.getAddress("MOONBEAM_TIMELOCK"), moonbeamActions);
+    function run(Addresses addresses, address) public override {
+        vm.selectFork(moonbeamForkId);
+
+        address timelock = addresses.getAddress("MOONBEAM_TIMELOCK");
+        _run(timelock, moonbeamActions);
+
+        vm.selectFork(baseForkId);
+
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        _run(temporalGovernor, baseActions);
+
+        // switch back to the primary fork so we can run the validations
+        vm.selectFork(primaryForkId());
     }
 
     function build(Addresses addresses) public override {
