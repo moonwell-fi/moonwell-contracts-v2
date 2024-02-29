@@ -43,5 +43,11 @@ A proposal to adjust DAI's IR curve:
 | Multiplier        | **0.05** | **0.067**   |
 | Jump Multiplier   | **8.6**  | **9.0**     |
 
+### BUSD-USDC price feed deprecation on Moonwell Moonbeam
+
+Chainlink has informed Moonwell contributors of their plans to deprecate the BUSD-USD price feed on the Moonbeam network. This follows the asset being de-listed by the asset issuer in 2023. Currently, the BUSD market on Moonwell is in a deprecated status with supplying, collateral and borrows disabled. Suppliers may still withdraw their supplied BUSD if they wish.
+
+When the price feed is deprecated by Chainlink, calls to `latestRoundData` will revert, which might cause unexpected results and prevent users from interacting with this market, even to withdraw supplied BUSD. For this reason, Moonwell contributors are recommending that the price feed for BUSD be hardcoded to $1 to prevent calls from reverting.
+
 Our recommendation post is located in the forums, please refer to this [link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-02-28/800).
 By approving this proposal, you agree that any services provided by Gauntlet shall be governed by the terms of service available at gauntlet.network/tos
