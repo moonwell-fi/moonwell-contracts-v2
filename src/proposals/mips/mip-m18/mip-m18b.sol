@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@protocol/proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
@@ -19,7 +18,7 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 /// The Ecosystem Reserve custodies the xWELL that is used to pay rewards for
 /// the safety module (stkWELL).
 /// All contracts deployed are proxies.
-contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
+contract mipm18b is HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment of the Multichain Vote Collection Contract to Base
     string public constant name = "MIP-M18B";
 

@@ -1,3 +1,4 @@
+//SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
@@ -7,6 +8,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {IHybridProposal} from "@proposals/proposalTypes/IHybridProposal.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
+import {ChainIds} from "@test/utils/ChainIds.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -20,7 +22,8 @@ abstract contract HybridProposal is
     IHybridProposal,
     IMultichainProposal,
     MarketCreationHook,
-    Proposal
+    Proposal,
+    ChainIds
 {
     /// @notice nonce for wormhole, unused by Temporal Governor
     uint32 private constant nonce = 0;
@@ -44,7 +47,7 @@ abstract contract HybridProposal is
         vm.createFork(vm.envOr("BASE_RPC_URL", DEFAULT_BASE_RPC_URL));
 
     string public constant DEFAULT_MOONBEAM_RPC_URL =
-        "https://rpc.api.moonbeam.network";
+        "https://rpc.api.moonbase.moonbeam.network";
 
     /// @notice fork ID for moonbeam
     uint256 public moonbeamForkId =
@@ -235,10 +238,10 @@ abstract contract HybridProposal is
 
         /// fill out final piece of proposal which is the call
         /// to publishMessage on the temporal governor
-        targets[proposalLength] = addresses.getAddress("TEMPORAL_GOVERNOR");
+        targets[proposalLength] = addresses.getAddress("MOONBEAM_TIMELOCK");
         values[proposalLength] = 0;
         payloads[proposalLength] = getTemporalGovCalldata(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
+           addresses.getAddress("TEMPORAL_GOVERNOR", sendingChainIdToReceivingChainId[block.chainid])
         );
 
         return (targets, values, payloads);

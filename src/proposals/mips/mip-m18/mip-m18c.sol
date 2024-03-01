@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
@@ -12,7 +11,7 @@ import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
-contract mipm18c is HybridProposal, MultichainGovernorDeploy, ChainIds {
+contract mipm18c is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18C";
 
     /// @notice whitelisted calldata for the break glass guardian

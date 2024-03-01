@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
@@ -11,7 +10,7 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 
 /// Proposal to run on Moonbeam to create the Multichain Governor contract
-contract mipm18a is ChainIds, HybridProposal, MultichainGovernorDeploy {
+contract mipm18a is HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment name
     string public constant name = "MIP-M18A";
 
@@ -26,10 +25,12 @@ contract mipm18a is ChainIds, HybridProposal, MultichainGovernorDeploy {
         (
             address governorProxy,
             address governorImpl
-        ) = deployMultichainGovernor(proxyAdmin);
+        ) = deployMultichainGovernor(
+                proxyAdmin
+            );
 
         addresses.addAddress("MULTICHAIN_GOVERNOR_PROXY", governorProxy, true);
-        addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", governorImpl, true);
+        //       addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", governorImpl, true);
     }
 
     function validate(Addresses addresses, address) public view override {

@@ -6,7 +6,6 @@ import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import "@forge-std/Test.sol";
 
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 
@@ -19,7 +18,7 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 /// Proposal to run on Moonbeam to accept governance powers, finalizing
 /// the transfer of admin and owner from the current Artemis Timelock to the
 /// new Multichain Governor.
-contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
+contract mipm18e is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18E";
 
     /// @notice proposal's actions mostly happen on moonbeam
