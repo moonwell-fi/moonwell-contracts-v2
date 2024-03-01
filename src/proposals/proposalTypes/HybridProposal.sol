@@ -159,7 +159,7 @@ abstract contract HybridProposal is
             targets[i + indexStart] = baseActions[i].target;
             values[i + indexStart] = baseActions[i].value;
             calldatas[i + indexStart] = baseActions[i].data;
-            descriptions[i + indexStart] = moonbeamActions[i].description;
+            descriptions[i + indexStart] = baseActions[i].description;
             isMoonbeam[i + indexStart] = false;
         }
 
