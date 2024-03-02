@@ -13,7 +13,7 @@ contract ExecuteCalldata is Script, Test {
 
     function run() public {
         bytes memory data = vm.envBytes("CALLDATA");
-        address memory target = vm.envAddress("TARGET");
+        address target = vm.envAddress("TARGET");
 
         vm.startBroadcast(PRIVATE_KEY);
         (bool success, ) = address(target).call(data);

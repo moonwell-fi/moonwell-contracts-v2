@@ -996,15 +996,16 @@
         "isContract": true
     },
     {
-        "addr": "0xe196a66086F19c832C4FB123F8c81B2Ba035F2f0",
-        "chainId": 1287,
-        "name": "MULTICHAIN_GOVERNOR_IMPL",
-        "isContract": true
-    },
-    {
-        "addr": "0x716ff5a3Acbcd6cA05e921a524b80B5B68FAca05",
+        "addr": "0x5630696b73A7DFdaDB1A1df682eaf53836E4bD3b",
         "chainId": 1287,
         "name": "MULTICHAIN_GOVERNOR_PROXY",
+        "isContract": true
+    },
+
+    {
+        "addr": "0xa2A2fFAf5f01AdC4BFC02532Ed3d91Cff478F25e",
+        "chainId": 1287,
+        "name": "MULTICHAIN_GOVERNOR_IMPL",
         "isContract": true
     },
     {
