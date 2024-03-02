@@ -7,7 +7,6 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
-
 contract DeployStkWell is Script, ChainIds, MultichainGovernorDeploy {
     /// @notice addresses contract
     Addresses addresses;
