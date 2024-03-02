@@ -714,6 +714,12 @@
         "isContract": true
     },
     {
+        "addr": "0x8e0BF5d4bc584A14f8F7300cfF03a186ef8b1201",
+        "chainId": 1287,
+        "name": "xWELL_ROUTER",
+        "isContract": true
+    },
+    {
         "addr": "0x933fCDf708481c57E9FD82f6BAA084f42e98B60e",
         "chainId": 1284,
         "name": "TOKEN_SALE_DISTRIBUTOR_PROXY",
