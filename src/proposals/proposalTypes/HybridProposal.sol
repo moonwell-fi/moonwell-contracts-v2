@@ -238,10 +238,13 @@ abstract contract HybridProposal is
 
         /// fill out final piece of proposal which is the call
         /// to publishMessage on the temporal governor
-        targets[proposalLength] = addresses.getAddress("MOONBEAM_TIMELOCK");
+        targets[proposalLength] = addresses.getAddress("WORMHOLE_CORE");
         values[proposalLength] = 0;
         payloads[proposalLength] = getTemporalGovCalldata(
-           addresses.getAddress("TEMPORAL_GOVERNOR", sendingChainIdToReceivingChainId[block.chainid])
+            addresses.getAddress(
+                "TEMPORAL_GOVERNOR",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
         );
 
         return (targets, values, payloads);

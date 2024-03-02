@@ -6,7 +6,6 @@ import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import "@forge-std/Test.sol";
 
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
@@ -19,7 +18,7 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the
 /// Multichain Governor and the Artemis Timelock
-contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
+contract mipm18d is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18D";
 
     /// @notice proposal's actions mostly happen on moonbeam
@@ -94,16 +93,16 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
-        /// transfer ownership of chainlink oracle
-        _pushHybridAction(
-            addresses.getAddress("CHAINLINK_ORACLE"),
-            abi.encodeWithSignature(
-                "setAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the admin of the Chainlink Oracle to the Multichain Governor",
-            true
-        );
+                /// transfer ownership of chainlink oracle
+                _pushHybridAction(
+                    addresses.getAddress("CHAINLINK_ORACLE"),
+                    abi.encodeWithSignature(
+                        "setAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the admin of the Chainlink Oracle to the Multichain Governor",
+                    true
+                );
 
         /// transfer emissions manager of safety module
         _pushHybridAction(
@@ -116,148 +115,148 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
             true
         );
 
-        /// set pending admin of unitroller
-        _pushHybridAction(
-            addresses.getAddress("UNITROLLER"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of the Unitroller to the Multichain Governor",
-            true
-        );
+                /// set pending admin of unitroller
+                _pushHybridAction(
+                    addresses.getAddress("UNITROLLER"),
+                    abi.encodeWithSignature(
+                        "_setPendingAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the pending admin of the Unitroller to the Multichain Governor",
+                    true
+                );
 
         /// set funds admin of ecosystem reserve controller
-        _pushHybridAction(
-            addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"),
-            abi.encodeWithSignature(
-                "transferOwnership(address)",
-                multichainGovernorAddress
-            ),
-            "Set the owner of the Ecosystem Reserve Controller to the Multichain Governor",
-            true
-        );
+                _pushHybridAction(
+                    addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"),
+                    abi.encodeWithSignature(
+                        "transferOwnership(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the owner of the Ecosystem Reserve Controller to the Multichain Governor",
+                    true
+                );
 
-        /// set pending admin of MOONWELL_mwBTC to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("MOONWELL_mwBTC"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of MOONWELL_mwBTC to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of MOONWELL_mBUSD to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("MOONWELL_mBUSD"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of MOONWELL_mBUSD to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of MOONWELL_mETH to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("MOONWELL_mETH"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of MOONWELL_mETH to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of MOONWELL_mUSDC to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("MOONWELL_mUSDC"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of MOONWELL_mUSDC to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of mGLIMMER to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("mGLIMMER"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of mGLIMMER to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of mxcDOT to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("mxcDOT"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of mxcDOT to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of mxcUSDT to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("mxcUSDT"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of mxcUSDT to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of mFRAX to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("mFRAX"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of mFRAX to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of mUSDCwh to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("mUSDCwh"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of mUSDCwh to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of mxcUSDC to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("mxcUSDC"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of mxcUSDC to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of mETHwh to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("mETHwh"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of mETHwh to the Multichain Governor",
-            true
-        );
+                /// set pending admin of MOONWELL_mwBTC to the Multichain Governor
+                _pushHybridAction(
+                    addresses.getAddress("MOONWELL_mwBTC"),
+                    abi.encodeWithSignature(
+                        "_setPendingAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the pending admin of MOONWELL_mwBTC to the Multichain Governor",
+                    true
+                );
+        
+                /// set pending admin of MOONWELL_mBUSD to the Multichain Governor
+                _pushHybridAction(
+                    addresses.getAddress("MOONWELL_mBUSD"),
+                    abi.encodeWithSignature(
+                        "_setPendingAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the pending admin of MOONWELL_mBUSD to the Multichain Governor",
+                    true
+                );
+        
+                /// set pending admin of MOONWELL_mETH to the Multichain Governor
+                _pushHybridAction(
+                    addresses.getAddress("MOONWELL_mETH"),
+                    abi.encodeWithSignature(
+                        "_setPendingAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the pending admin of MOONWELL_mETH to the Multichain Governor",
+                    true
+                );
+        
+                /// set pending admin of MOONWELL_mUSDC to the Multichain Governor
+                _pushHybridAction(
+                    addresses.getAddress("MOONWELL_mUSDC"),
+                    abi.encodeWithSignature(
+                        "_setPendingAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the pending admin of MOONWELL_mUSDC to the Multichain Governor",
+                    true
+                );
+        
+                /// set pending admin of mGLIMMER to the Multichain Governor
+                _pushHybridAction(
+                    addresses.getAddress("mGLIMMER"),
+                    abi.encodeWithSignature(
+                        "_setPendingAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the pending admin of mGLIMMER to the Multichain Governor",
+                    true
+                );
+        
+                /// set pending admin of mxcDOT to the Multichain Governor
+                _pushHybridAction(
+                    addresses.getAddress("mxcDOT"),
+                    abi.encodeWithSignature(
+                        "_setPendingAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the pending admin of mxcDOT to the Multichain Governor",
+                    true
+                );
+        
+                /// set pending admin of mxcUSDT to the Multichain Governor
+                _pushHybridAction(
+                    addresses.getAddress("mxcUSDT"),
+                    abi.encodeWithSignature(
+                        "_setPendingAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the pending admin of mxcUSDT to the Multichain Governor",
+                    true
+                );
+        
+                /// set pending admin of mFRAX to the Multichain Governor
+                _pushHybridAction(
+                    addresses.getAddress("mFRAX"),
+                    abi.encodeWithSignature(
+                        "_setPendingAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the pending admin of mFRAX to the Multichain Governor",
+                    true
+                );
+        
+                /// set pending admin of mUSDCwh to the Multichain Governor
+                _pushHybridAction(
+                    addresses.getAddress("mUSDCwh"),
+                    abi.encodeWithSignature(
+                        "_setPendingAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the pending admin of mUSDCwh to the Multichain Governor",
+                    true
+                );
+        
+                /// set pending admin of mxcUSDC to the Multichain Governor
+                _pushHybridAction(
+                    addresses.getAddress("mxcUSDC"),
+                    abi.encodeWithSignature(
+                        "_setPendingAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the pending admin of mxcUSDC to the Multichain Governor",
+                    true
+                );
+        
+                /// set pending admin of mETHwh to the Multichain Governor
+                _pushHybridAction(
+                    addresses.getAddress("mETHwh"),
+                    abi.encodeWithSignature(
+                        "_setPendingAdmin(address)",
+                        multichainGovernorAddress
+                    ),
+                    "Set the pending admin of mETHwh to the Multichain Governor",
+                    true
+                );
     }
 
     function run(Addresses addresses, address) public override {
@@ -287,16 +286,16 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
             "stkWELL EMISSIONS MANAGER"
         );
         assertEq(
-            Ownable(addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"))
-                .owner(),
-            governor,
-            "ecosystem reserve controller owner incorrect"
+                 Ownable(addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"))
+                 .owner(),
+                 governor,
+                 "ecosystem reserve controller owner incorrect"
         );
         assertEq(
-            Ownable2StepUpgradeable(
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-            ).pendingOwner(),
-            governor,
+                 Ownable2StepUpgradeable(
+                                         addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+                 ).pendingOwner(),
+                 governor,
             "WORMHOLE_BRIDGE_ADAPTER_PROXY pending owner incorrect"
         );
         assertEq(
@@ -445,22 +444,22 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
             "MOONWELL_mETH admin incorrect"
         );
 
-        assertEq(
-            Timelock(addresses.getAddress("UNITROLLER")).pendingAdmin(),
-            governor,
-            "UNITROLLER pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("UNITROLLER")).admin(),
-            timelock,
-            "UNITROLLER admin incorrect"
-        );
+       assertEq(
+           Timelock(addresses.getAddress("UNITROLLER")).pendingAdmin(),
+           governor,
+           "UNITROLLER pending admin incorrect"
+       );
+       assertEq(
+           Timelock(addresses.getAddress("UNITROLLER")).admin(),
+           timelock,
+           "UNITROLLER admin incorrect"
+       );
 
-        assertEq(
-            Timelock(addresses.getAddress("CHAINLINK_ORACLE")).admin(),
-            governor,
-            "Chainlink oracle admin incorrect"
-        );
+       assertEq(
+           Timelock(addresses.getAddress("CHAINLINK_ORACLE")).admin(),
+           governor,
+           "Chainlink oracle admin incorrect"
+       );
 
         /// TODO check that the temporal governor now has multichain governor as a trusted sender
         /// and that the timelock is still a trusted sender
