@@ -1009,43 +1009,43 @@
         "isContract": true
     },
     {
-        "addr": "0x3d9460D343Ad5833d3E971b7F9C0B69139e60B38",
+        "addr": "0xB09E02F3F3d330d894115f4A04c886ff7283A9B1",
         "chainId": 84532,
         "name": "ECOSYSTEM_RESERVE_PROXY",
         "isContract": true
     },
     {
-        "addr": "0x6255D7DC1b4D7c38329e2daBa43Ec99A6Dc3092B",
+        "addr": "0x67Fa5902ce4e88634FA181c1237C97dAC34C1120",
         "chainId": 84532,
         "name": "ECOSYSTEM_RESERVE_IMPL",
         "isContract": true
     },
     {
-        "addr": "0x4D80ED3627E508E70A9c74F66893420415667f99",
+        "addr": "0x7402Dd5EE140598FA035F7084041d7d1d748A968",
         "chainId": 84532,
         "name": "ECOSYSTEM_RESERVE_CONTROLLER",
         "isContract": true
     },
     {
-        "addr": "0x7Ac4Ecee0473241be79c842Fcab16e368eDc7CD4",
+        "addr": "0xff2eEb2072593306b2846Bf5df8521533AEa4188",
         "chainId": 84532,
         "name": "stkWELL_PROXY",
         "isContract": true
     },
     {
-        "addr": "0x3bc9BAa5645Ed91a96F02bA30932eDc491ef3190",
+        "addr": "0xb63744cc5B9f68Fcf30f6cF2AeBa0da46fBf9Ffb",
         "chainId": 84532,
         "name": "stkWELL_IMPL",
         "isContract": true
     },
     {
-        "addr": "0x630Dd10Ad361b4A70d59FA85af6cA1d3E15F130F",
+        "addr": "0xE2731edBBF77E6e722058160e6F92d7F3D0156F4",
         "chainId": 84532,
         "name": "VOTE_COLLECTION_PROXY",
         "isContract": true
     },
     {
-        "addr": "0xBa7953435717704E28e698b1DaB9288f94f510c1",
+        "addr": "0xD2D73F763745777599b21F5725181B8ccD08B060",
         "chainId": 84532,
         "name": "VOTE_COLLECTION_IMPL",
         "isContract": true
