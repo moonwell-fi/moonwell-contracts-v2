@@ -250,6 +250,26 @@ abstract contract HybridProposal is
         return (targets, values, payloads);
     }
 
+    function printTargetsPayloadsValues(Addresses addresses) public view {
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory payloads
+        ) = getTargetsPayloadsValues(addresses);
+
+        console.log(
+            "------------------ Proposal Targets, Values, Payloads ------------------"
+        );
+        for (uint256 i = 0; i < targets.length; i++) {
+            console.log(
+                "target: %s\nvalue: %d\npayload\n",
+                targets[i],
+                values[i]
+            );
+            console.logBytes(payloads[i]);
+        }
+    }
+
     function printProposalActionSteps() public override {
         console.log(
             "\n\nProposal Description:\n\n%s",
@@ -297,8 +317,9 @@ abstract contract HybridProposal is
     }
 
     /// @notice print out the proposal action steps and which chains they were run on
-    function printCalldata(Addresses) public override {
+    function printCalldata(Addresses addresses) public override {
         printProposalActionSteps();
+        printTargetsPayloadsValues(addresses);
     }
 
     function deploy(Addresses, address) public virtual override {}
