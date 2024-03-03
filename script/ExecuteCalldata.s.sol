@@ -14,9 +14,12 @@ contract ExecuteCalldata is Script, Test {
     function run() public {
         bytes memory data = vm.envBytes("CALLDATA");
         address target = vm.envAddress("TARGET");
+        uint256 value = vm.envUint("VALUE");
 
         vm.startBroadcast(PRIVATE_KEY);
-        (bool success, bytes memory result) = address(target).call(data);
+        (bool success, bytes memory result) = address(target).call{
+            value: value
+        }(data);
         vm.stopBroadcast();
 
         require(success, "Call failed");
