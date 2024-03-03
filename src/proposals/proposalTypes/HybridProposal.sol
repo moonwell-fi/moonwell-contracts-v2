@@ -250,17 +250,20 @@ abstract contract HybridProposal is
         return (targets, values, payloads);
     }
 
-    function printTargetsPayloadsValues(Addresses addresses) public view {
+    function printGovernorCalldata(Addresses addresses) public view {
         (
             address[] memory targets,
             uint256[] memory values,
             bytes[] memory payloads
         ) = getTargetsPayloadsValues(addresses);
 
+        string[] memory signatures = new string[](targets.length);
+
         console.log(
             "------------------ Proposal Targets, Values, Payloads ------------------"
         );
-        for (uint256 i = 0; i < targets.length; i++) {
+        for (uint256 i = 0; i < signatures.length; i++) {
+            signatures[i] = "";
             console.log(
                 "target: %s\nvalue: %d\npayload\n",
                 targets[i],
@@ -268,6 +271,29 @@ abstract contract HybridProposal is
             );
             console.logBytes(payloads[i]);
         }
+
+        bytes memory payloadArtemis = abi.encodeWithSignature(
+            "propose(address[],uint256[],string[],bytes[],string)",
+            targets,
+            values,
+            signatures,
+            payloads,
+            string(PROPOSAL_DESCRIPTION)
+        );
+
+        console.log("Governor artemis proposal calldata");
+        console.logBytes(payloadArtemis);
+
+        bytes memory payloadMultichainGovernor = abi.encodeWithSignature(
+            "propose(address[],uint256[],bytes[],string)",
+            targets,
+            values,
+            payloads,
+            string(PROPOSAL_DESCRIPTION)
+        );
+
+        console.log("Governor multichain proposal calldata");
+        console.logBytes(payloadMultichainGovernor);
     }
 
     function printProposalActionSteps() public override {
@@ -319,7 +345,7 @@ abstract contract HybridProposal is
     /// @notice print out the proposal action steps and which chains they were run on
     function printCalldata(Addresses addresses) public override {
         printProposalActionSteps();
-        printTargetsPayloadsValues(addresses);
+        printGovernorCalldata(addresses);
     }
 
     function deploy(Addresses, address) public virtual override {}

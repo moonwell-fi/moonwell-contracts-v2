@@ -16,8 +16,10 @@ contract ExecuteCalldata is Script, Test {
         address target = vm.envAddress("TARGET");
 
         vm.startBroadcast(PRIVATE_KEY);
-        (bool success, ) = address(target).call(data);
-        require(success, "Call failed");
+        (bool success, bytes memory result) = address(target).call(data);
         vm.stopBroadcast();
+
+        require(success, "Call failed");
+        console.log(string(result));
     }
 }
