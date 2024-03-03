@@ -47,7 +47,7 @@ abstract contract HybridProposal is
         vm.createFork(vm.envOr("BASE_RPC_URL", DEFAULT_BASE_RPC_URL));
 
     string public constant DEFAULT_MOONBEAM_RPC_URL =
-        "https://rpc.api.moonbase.moonbeam.network";
+        "https://rpc.api.moonbeam.network";
 
     /// @notice fork ID for moonbeam
     uint256 public moonbeamForkId =
