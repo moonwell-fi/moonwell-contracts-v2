@@ -21,6 +21,13 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 contract mipm18d is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18D";
 
+    constructor() {
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile("./src/proposals/mips/mip-m18/MIP-M18-D.md")
+        );
+        _setProposalDescription(proposalDescription);
+    }
+
     /// @notice proposal's actions mostly happen on moonbeam
     function primaryForkId() public view override returns (uint256) {
         return moonbeamForkId;
@@ -28,6 +35,8 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
 
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
+        vm.selectFork(moonbeamForkId);
+
         address multichainGovernorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );
