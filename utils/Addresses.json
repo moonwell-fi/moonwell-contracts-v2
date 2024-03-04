@@ -655,6 +655,16 @@
         "name": "xWELL_PROXY"
     },
     {
+        "addr": "0x1ceA84203673764244E05693e42E6Ace62bE9BA5",
+        "chainId": 8453,
+        "name": "WBTC"
+    },
+    {
+        "addr": "0xCCADC697c55bbB68dc5bCdf8d3CBe83CdD4E071E",
+        "chainId": 8453,
+        "name": "WBTC_ORACLE"
+    },
+    {
         "addr": "0x0D45033775b290D69462944289b7A402a651B460",
         "chainId": 1284,
         "name": "xWELL_LOCKBOX"
