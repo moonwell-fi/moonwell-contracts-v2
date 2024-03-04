@@ -1,7 +1,7 @@
 [
     {
         "addressesString": "MOONWELL_WBTC",
-        "supplyCap": 0.0001e8,
+        "supplyCap": 0.00010001e8,
         "borrowCap": 1,
         "collateralFactor": 0,
         "initialMintAmount": 0.0001e8,
