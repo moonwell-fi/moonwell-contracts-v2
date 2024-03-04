@@ -27,7 +27,7 @@ import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/Mul
 import {JumpRateModel, InterestRateModel} from "@protocol/IRModels/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
-/// @notice This lists all new markets provided in `mainnetMTokens.json`
+/// @notice This lists wBTC provided in `MTokens.json`
 /// This is a template of a MIP proposal that can be used to add new mTokens
 /// @dev be sure to include all necessary underlying and price feed addresses
 /// in the Addresses.sol contract for the network the MTokens are being deployed on.
