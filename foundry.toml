@@ -18,6 +18,7 @@ optimism = "https://endpoints.omniatech.io/v1/op/mainnet/public"
 avalanche = "https://rpc.ankr.com/avalanche"
 base = "${BASE_RPC_URL}"
 baseGoerli = "${BASE_GOERLI_RPC_URL}"
+baseSepolia = "https://sepolia.base.org"
 local = "http://127.0.0.1:8545"
 
 [etherscan]
@@ -28,3 +29,4 @@ goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/a
 sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
 base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
 baseGoerli = { key = "PLACEHOLDER_STRING", url= "https://api-goerli.basescan.org/api" }
+baseSepolia = { key = "PLACEHOLDER_STRING", url= "https://api-sepolia.basescan.org/api" }

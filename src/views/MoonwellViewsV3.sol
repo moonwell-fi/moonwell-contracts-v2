@@ -5,12 +5,13 @@ import {BaseMoonwellViews} from "@protocol/views/BaseMoonwellViews.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {IMultiRewardDistributor} from "@protocol/MultiRewardDistributor/IMultiRewardDistributor.sol";
 import {MToken} from "@protocol/MToken.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 
 /**
- * @title Moonwells Views Contract for V2 deployment (Basechain deployment)
+ * @title Moonwells Views Contract for V3 deployment (Post xWELL deployment)
  * @author Moonwell
  */
-contract MoonwellViewsV2 is BaseMoonwellViews {
+contract MoonwellViewsV3 is BaseMoonwellViews {
     function _getSupplyCaps(
         address _market
     ) internal view override returns (uint) {
@@ -114,4 +115,22 @@ contract MoonwellViewsV2 is BaseMoonwellViews {
 
         return _result;
     }
+
+    /// @notice A view to get the user voting power from the user holdings
+    function getUserTokensVotingPower(
+        address _user
+    ) public view override returns (Votes memory _result) {
+        if (address(governanceToken) != address(0)) {
+            uint _priorVotes = xWELL(address(governanceToken)).getVotes(
+                _user
+            );
+            address _delegates = governanceToken.delegates(_user);
+            _result = Votes(
+                _priorVotes,
+                governanceToken.balanceOf(_user),
+                _delegates
+            );
+        }
+    }
+
 }
