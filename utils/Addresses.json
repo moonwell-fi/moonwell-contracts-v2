@@ -612,18 +612,6 @@
         "isContract": true
     },
     {
-        "addr": "0x76871dE49ADBC457dcba809De8D95b4ECF938F51",
-        "chainId": 84531,
-        "name": "MOONWELL_VIEWS_PROXY_ADMIN",
-        "isContract": true
-    },
-    {
-        "addr": "0xFf0731337F615aC5403cb243623283BC04cDe121",
-        "chainId": 84531,
-        "name": "MOONWELL_VIEWS_PROXY",
-        "isContract": true
-    },
-    {
         "addr": "0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c",
         "chainId": 8453,
         "name": "rETH",
@@ -819,12 +807,6 @@
         "addr": "0x949D6a0E3b1064d498D529a388B953b344CD13F7",
         "chainId": 1284,
         "name": "NOMAD_REALLOCATION_MULTISIG",
-        "isContract": true
-    },
-    {
-        "addr": "0x13C0d0a89E7c3C747cc3A15234AB6942238d2ECb",
-        "chainId": 84532,
-        "name": "WELL",
         "isContract": true
     },
     {

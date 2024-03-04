@@ -12,10 +12,10 @@ import {Well} from "@protocol/Governance/Well.sol";
 /*
  Utility to deploy Well contract on a testnet
  to simulate:
-     forge script script/DeployWell.s.sol:DeployWell -vvvv --rpc-url moonbase/baseGoerli
+     forge script script/DeployWell.s.sol:DeployWell -vvvv --rpc-url moonbase
  to run:
     forge script script/DeployWell.s.sol:DeployWell -vvvv \ 
-    --rpc-url moonbase/baseGoerli --broadcast --etherscan-api-key moonbase/baseGoerli --verify
+    --rpc-url moonbase/baseGoerli --broadcast --etherscan-api-key moonbase --verify
 */
 contract DeployWell is Script, ChainIds {
     /// @notice addresses contract
