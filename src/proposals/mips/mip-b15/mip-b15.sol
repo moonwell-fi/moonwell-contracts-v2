@@ -400,7 +400,6 @@ contract mipb15 is Proposal, CrossChainProposal, Configs {
         Addresses addresses,
         address
     ) public override(CrossChainProposal, MIPProposal) {
-        printCalldata(addresses);
         _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
