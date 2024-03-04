@@ -1,0 +1,18 @@
+[
+    {
+        "borrowEmissionsPerSec": 1,
+        "emissionToken": "0xFF8adeC2221f9f4D8dfbAFa6B9a297d17603493D",
+        "endTime": 1711144800,
+        "mToken": "MOONWELL_WBTC",
+        "owner": "EMISSIONS_ADMIN",
+        "supplyEmissionPerSec": 0
+    },
+    {
+        "borrowEmissionsPerSec": 1,
+        "emissionToken": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "endTime": 1711144800,
+        "mToken": "MOONWELL_WBTC",
+        "owner": "EMISSIONS_ADMIN",
+        "supplyEmissionPerSec": 0
+    }
+]
