@@ -144,7 +144,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
                     )
                 );
 
-            console.log("artemis governor queue governance calldata");
+            console.log("artemis governor queue calldata");
             emit log_bytes(artemisQueuePayload);
 
             /// on moonbeam network so this should return proper addresses
