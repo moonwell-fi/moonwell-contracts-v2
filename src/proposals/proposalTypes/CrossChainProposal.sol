@@ -257,7 +257,7 @@ abstract contract CrossChainProposal is
             wormholeCore
         );
 
-        console.log("artemis governor queue governance calldata");
+        console.log("artemis governor queue calldata");
         emit log_bytes(artemisPayload);
     }
 
