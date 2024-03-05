@@ -69,7 +69,6 @@ abstract contract MIPProposal is Script {
         if (DO_RUN) run(addresses, deployerAddress);
         if (DO_TEARDOWN) teardown(addresses, deployerAddress);
         if (DO_VALIDATE) validate(addresses, deployerAddress);
-        /// todo print out actual proposal calldata
         if (DO_PRINT) {
             printCalldata(addresses);
             printProposalActionSteps();
