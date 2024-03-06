@@ -2,11 +2,11 @@
 
 ## Overview
 
-Moonwell is shifting to a multichain model. This proposal aims to migrate the
-protocol to the new governor system contracts. This proposal will deploy the new
-governor contracts to the Moonwell mainnet and base. After deployment, the
-proposal will transfer ownership of the Moonwell contracts from the current
-governor to the new governor.
+Moonwell is shifting to a multichain governance model. This proposal aims to
+migrate the protocol to the new governor system contracts. This proposal will
+deploy the new governor contracts to the Moonwell mainnet and base. After
+deployment, the proposal will transfer ownership of the Moonwell contracts from
+the current governor to the new governor.
 
 ## Specification
 
@@ -47,7 +47,7 @@ BASE_RPC_URL=http://127.0.0.1:8545 MOONBEAM_RPC_URL=http://127.0.0.1:8555
 ```bash
 DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
 src/proposals/mips/mip-m18/mip-m18a.sol:mipm18a --broadcast --slow --fork-url
-$MOONBEAM_RPC_URL
+$MOONBEAM_RPC_URL -g 200
 ```
 
 5. Copy new MULTICHAIN_GOVERNOR_PROXY and MULTICHAIN_GOVERNOR_IMPL from the
@@ -58,7 +58,7 @@ $MOONBEAM_RPC_URL
 ```bash
 DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
 src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b --broadcast --slow --fork-url
-$BASE_RPC_URL
+$BASE_RPC_URL -g 200
 ```
 
 7. Copy the new deployed addresses ECOSYSTEM_RESERVE_PROXY,
@@ -71,7 +71,7 @@ $BASE_RPC_URL
 ```bash
 DO_VALIDATE=true DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRINT=true
 forge script src/proposals/mips/mip-m18/mip-m18c.sol:mipm18c --slow --broadcast
---fork-url $MOONBEAM_BASE_URL
+--fork-url $MOONBEAM_BASE_URL -g 200
 ```
 
 9. Run
@@ -79,5 +79,5 @@ forge script src/proposals/mips/mip-m18/mip-m18c.sol:mipm18c --slow --broadcast
 ```bash
 DO_VALIDATE=true DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRINT=true
 forge script src/proposals/mips/mip-m18/mip-m18d.sol:mipm18d
---fork-url $MOONBEAM_BASE_URL
+--fork-url $MOONBEAM_BASE_URL -g 200
 ```
