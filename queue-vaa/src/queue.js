@@ -17,13 +17,15 @@ const network = 'moonbeam'
 // const network = 'moonbase'
 
 const tgAddress =
-  network === 'moonbase' ? '0xBaA4916ACD2d3Db77278A377f1b49A6E1127d6e6' // TemporalGovernor on Base Goerli
-  : '0x8b621804a7637b781e2BbD58e256a591F2dF7d51' // TemporalGovernor on Base
+    network === 'moonbase'
+        ? '0xc01EA381A64F8BE3bDBb01A7c34D809f80783662' // TemporalGovernor on Base Sepolia
+        : '0x8b621804a7637b781e2BbD58e256a591F2dF7d51'; // TemporalGovernor on Base
 
 // Block explorer URL
-const blockExplorer = 
-  network === 'moonbase' ? 'https://goerli.basescan.org/tx/'
-  : 'https://basescan.org/tx/'
+const blockExplorer =
+    network === 'moonbase'
+        ? 'https://sepolia.basescan.org/tx/'
+        : 'https://basescan.org/tx/';
 
 class MoonwellEvent {
   async sendDiscordMessage(url, payload) {
