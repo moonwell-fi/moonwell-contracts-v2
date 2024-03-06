@@ -2,8 +2,8 @@
 
 ## Overview
 
-Moonwell is shifting to a multichain model. This is the third of five
-deployment scripts that are needed to migrate the protocol to the new governor system
+Moonwell is shifting to a multichain model. This is the third of five deployment
+scripts that are needed to migrate the protocol to the new governor system
 contracts. This scrip will initialize the MultichainGovernor contract on
 Moonbeam.
 
@@ -22,6 +22,6 @@ Collection contract, staked well and reserve contracts to Base, it's necessary
 to initialize the MultichainGovernor contract with the correct parameters. This
 includes setting the break-glass approved calldatas, the trusted senders and the
 MultichainGovernor InitializeData parameters which includes: well, xwell,
-stkwell, vesting well addresses, proposal threshold, voting period, 
-cross chain vote collection period, quorum, max user live proposals, pause
-duration, pause guardian, break glass guardian and the wormhole relayer.
+stkwell, vesting well addresses, proposal threshold, voting period, cross chain
+vote collection period, quorum, max user live proposals, pause duration, pause
+guardian, break glass guardian and the wormhole relayer.
