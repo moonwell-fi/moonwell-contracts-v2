@@ -19,10 +19,10 @@ senders on the Temporal Governor contract on Base.
 
 ### Motivation
 
-After asking for changing the ownership of the contracts on Proposal D, we need
-to accept the ownership on the new governor. This includes accepting the pending
-admin of all mToken contracts, the Comptroller, the Wormhole Bridge Adapter in
-the xWELL contract on both Base and Moonbeam and removing the old governor as a
-trusted sender in Temporal Governor. This will allow the new governor to control
-the protocol and the wormhole bridge adapter to relay messages from the new
-Moonbeam governor to the Base governor and vice versa.
+After starting the contracts ownership change in Proposal D, it's necessary
+to finalize the ownership transfer on the new governor. This includes accepting the pending
+admin of all mToken contracts, Comptroller, Wormhole Bridge Adapter, xWELL
+contracts and removing the old governor as a trusted sender in Temporal
+Governor. This will allow the new governor to control the protocol and the 
+wormhole bridge adapter to relay messages from the new Moonbeam governor to 
+the Base governor and vice versa.

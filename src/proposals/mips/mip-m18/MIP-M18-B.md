@@ -2,10 +2,9 @@
 
 ## Overview
 
-Moonwell is shifting to a multichain model. This proposal is the second of five
-proposals that are needed to migrate the protocol to the new governor system
-contracts. This proposal will deploy the ecosystem reserve, staked well based on
-timestamp and the new vote collection contract to the Base chain.
+Moonwell is shifting to a multichain governance model. This is the second of five
+deployment scripts that are needed to migrate the protocol to the new governor system
+contracts. This script will deploy the new vote collection, ecosystem reserve, and staked well contracts. The new staked well contract has checkpoints based on timestamps instead of block numbers.
 
 ## Specification
 

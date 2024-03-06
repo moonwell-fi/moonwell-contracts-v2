@@ -21,7 +21,7 @@ that the migration can be completed in a subsequent proposal.
 
 ### Motivation
 
-Once we have deployed and initialize the new contracts, it's necessary to
+Once we have deployed and initialized the new contracts, it's necessary to
 transfer the governance powers from the current governor to the new governor.
 This includes setting the pending admin of all mToken contracts, the
 Comptroller, the chainlink price oracle admin, the Wormhole Bridge Adapter in
