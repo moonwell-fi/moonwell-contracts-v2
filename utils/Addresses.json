@@ -918,6 +918,12 @@
         "isContract": true
     },
     {
+        "addr": "0x13C0d0a89E7c3C747cc3A15234AB6942238d2ECb",
+        "chainId": 84532,
+        "name": "WELL",
+        "isContract": true
+    },
+    {
         "addr": "0x1AbEA09b07276669de5BC3a11F820fdC4ba529d1",
         "chainId": 84532,
         "name": "CHAINLINK_ORACLE",
