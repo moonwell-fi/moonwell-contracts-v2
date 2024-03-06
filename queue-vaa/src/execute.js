@@ -12,6 +12,7 @@ const temporalGovernorABI = [
 ]
 
 // Use Moonbeam for Base
+<<<<<<< Updated upstream
 const network = 'moonbeam'
 // Use Moonbase Alpha for Base Goerli
 // const network = 'moonbase'
@@ -24,6 +25,22 @@ const tgAddress =
 const blockExplorer = 
   network === 'moonbase' ? 'https://goerli.basescan.org/tx/'
   : 'https://basescan.org/tx/'
+=======
+//const network = 'moonbeam';
+// Use Moonbase Alpha for Base Sepolia 
+const network = 'moonbase'
+
+const tgAddress =
+    network === 'moonbase'
+        ? '0xc01EA381A64F8BE3bDBb01A7c34D809f80783662' // TemporalGovernor on Base Sepolia
+        : '0x8b621804a7637b781e2BbD58e256a591F2dF7d51'; // TemporalGovernor on Base
+
+// Block explorer URL
+const blockExplorer =
+    network === 'moonbase'
+        ? 'https://sepolia.basescan.org/tx/'
+        : 'https://basescan.org/tx/';
+>>>>>>> Stashed changes
 
 class MoonwellEvent {
   async sendDiscordMessage(url, payload) {
@@ -47,6 +64,7 @@ class MoonwellEvent {
     console.log("Sent Discord message!");
   }
 
+<<<<<<< Updated upstream
   discordMessagePayload(color, resultText, txURL, networkName, sequence, timestamp) {
     const friendlyNetworkName =
       networkName === 'moonbase' ? 'Base Goerli'
@@ -72,6 +90,55 @@ class MoonwellEvent {
         "inline": true
       }
     ];
+=======
+    discordMessagePayload(
+        color,
+        resultText,
+        txURL,
+        networkName,
+        sequence,
+        timestamp,
+    ) {
+        const friendlyNetworkName =
+            networkName === 'moonbase' ? 'Base Sepolia' : 'Base';
+        const mipNumber = sequence - 1;
+        let mipString = '';
+        if (mipNumber < 10) {
+            mipString = `MIP-B0${mipNumber}`;
+        } else {
+            mipString = `MIP-B${mipNumber}`;
+        }
+        const text = `${resultText.slice(0, 1).toUpperCase()}${resultText.slice(1)} ${mipString} on ${friendlyNetworkName}`;
+        const details = `Governance proposal ${mipString} ${resultText} on the ${friendlyNetworkName} network.`;
+        const baseFields = [
+            {
+                name: 'Network',
+                value: friendlyNetworkName,
+                inline: true,
+            },
+            {
+                name: 'Proposal',
+                value: mipString,
+                inline: true,
+            },
+        ];
+
+        if (timestamp && timestamp > 0) {
+            baseFields.push({
+                name: 'Executed at',
+                value: `<t:${timestamp}>`,
+                inline: true,
+            });
+        }
+
+        if (details) {
+            baseFields.push({
+                name: 'Details',
+                value: details,
+                inline: false,
+            });
+        }
+>>>>>>> Stashed changes
 
     if ((timestamp) && (timestamp > 0)) {
       baseFields.push({
