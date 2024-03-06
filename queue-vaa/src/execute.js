@@ -97,22 +97,6 @@ class MoonwellEvent {
             });
         }
 
-    if ((timestamp) && (timestamp > 0)) {
-      baseFields.push({
-        "name": "Executed at",
-        "value": `<t:${timestamp}>`,
-        "inline": true
-      });
-    }
-
-    if (details) {
-      baseFields.push({
-        "name": "Details",
-        "value": details,
-        "inline": false
-      });
-    }
-
     return {
       "content": "",
       "embeds": [
