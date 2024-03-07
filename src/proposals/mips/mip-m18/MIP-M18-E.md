@@ -1,4 +1,4 @@
-# MIP-M18: Multichain Governor Migration Part 2
+# MIP-M18: Multichain Governor Migration - Accept ownership on the new governor
 
 ## Overview
 
@@ -19,8 +19,10 @@ senders on the Temporal Governor contract on Base.
 
 ### Motivation
 
-In order to allow WELL token holders on all chains to participate in governance,
-the xWELL token has been deployed to Base and Moonbeam. This means, that as an
-xWELL holder on Base, you can vote on proposals on Moonbeam and vice versa.
-However, the current governor contract is only deployed to Moonbeam and only
-supports WELL, stkWELL and vesting WELL for participation in governance.
+After starting the contracts ownership change in Proposal D, it's necessary to
+finalize the ownership transfer on the new governor. This includes accepting the
+pending admin of all mToken contracts, Comptroller, Wormhole Bridge Adapter,
+xWELL contracts and removing the old governor as a trusted sender in Temporal
+Governor. This will allow the new governor to control the protocol and the
+wormhole bridge adapter to relay messages from the new Moonbeam governor to the
+Base governor and vice versa.

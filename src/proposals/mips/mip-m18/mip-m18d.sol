@@ -18,6 +18,8 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the
 /// Multichain Governor and the Artemis Timelock
+/// DO_BUILD=true DO_VALIDATE=true DO_RUN=true DO_PRINT=true forge script
+/// src/proposals/mips/mip-m18/mip-m18d.sol:mipm18d
 contract mipm18d is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18D";
 
