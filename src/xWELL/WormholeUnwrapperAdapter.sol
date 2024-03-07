@@ -17,7 +17,7 @@ contract WormholeUnwrapperAdapter is WormholeBridgeAdapter {
     /// @dev packing these variables into a single slot saves a
     /// COLD SLOAD on bridge out operations.
 
-    /// @notice lockbox for xERC20
+    /// @notice lockbox for xERC20, can only be set one time
     address public lockbox;
 
     /// @notice emitted when the lockbox is set
