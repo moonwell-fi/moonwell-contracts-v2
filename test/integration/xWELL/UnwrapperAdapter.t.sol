@@ -214,6 +214,7 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm19, ChainIds {
             1,
             xwell.buffer(address(wormholeAdapter))
         );
+        deal(address(well), address(xerc20Lockbox), mintAmount);
 
         uint256 startingWellBalance = well.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
