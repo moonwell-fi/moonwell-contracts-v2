@@ -44,6 +44,15 @@ contract mipm19 is GovernanceProposal {
                 addresses.getAddress("WORMHOLE_UNWRAPPER_ADAPTER")
             )
         );
+
+        _pushGovernanceAction(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+            "Set lockbox on wormhole unwrapper adapter",
+            abi.encodeWithSignature(
+                "setLockbox(address)",
+                addresses.getAddress("xWELL_LOCKBOX")
+            )
+        );
     }
 
     function run(Addresses addresses, address) public override {
@@ -66,6 +75,14 @@ contract mipm19 is GovernanceProposal {
             addresses.getAddress("WORMHOLE_UNWRAPPER_ADAPTER"),
             addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
             "Moonbeam proxies for wormhole bridge adapter"
+        );
+
+        assertEq(
+            WormholeUnwrapperAdapter(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ).lockbox(),
+            addresses.getAddress("xWELL_LOCKBOX"),
+            "lockbox not correctly set"
         );
     }
 }
