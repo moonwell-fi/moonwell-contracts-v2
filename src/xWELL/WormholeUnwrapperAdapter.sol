@@ -7,6 +7,8 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 
 /// @notice Wormhole Unwrapper xERC20 Token Bridge adapter
+/// Allows users coming from an external chain back to Moonbeam
+/// to unwrap their xWELL tokens into the underling WELL token.
 contract WormholeUnwrapperAdapter is WormholeBridgeAdapter {
     /// @notice lockbox for xERC20, can only be set one time
     address public lockbox;
