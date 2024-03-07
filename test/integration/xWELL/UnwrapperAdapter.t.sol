@@ -241,8 +241,6 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm19, ChainIds {
         uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
         uint256 endingLockboxBuffer = xwell.buffer(address(xerc20Lockbox));
 
-        /// TODO assert that lockbox buffer increased from the burn
-
         assertEq(
             endingWellBalance,
             startingWellBalance + mintAmount,
@@ -257,7 +255,7 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm19, ChainIds {
         assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
         assertEq(
             startingLockboxBuffer + mintAmount,
-            startingLockboxBuffer,
+            endingLockboxBuffer,
             "lockbox buffer incorrect"
         );
     }
