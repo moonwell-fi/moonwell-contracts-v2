@@ -8,15 +8,6 @@ import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 
 /// @notice Wormhole Unwrapper xERC20 Token Bridge adapter
 contract WormholeUnwrapperAdapter is WormholeBridgeAdapter {
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-    /// ------------------ SINGLE STORAGE SLOT ------------------
-    /// ---------------------------------------------------------
-    /// ---------------------------------------------------------
-
-    /// @dev packing these variables into a single slot saves a
-    /// COLD SLOAD on bridge out operations.
-
     /// @notice lockbox for xERC20, can only be set one time
     address public lockbox;
 
