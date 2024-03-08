@@ -13,6 +13,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
 
 contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm19, ChainIds {
     /// @notice addresses contract, stores all addresses
@@ -57,6 +58,19 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm19, ChainIds {
 
     function testValidate() public {
         validate(addresses, address(0));
+    }
+
+    function testInitializeLogicContractFails() public {
+        WormholeUnwrapperAdapter wormholeUnwrapperAdapter = WormholeUnwrapperAdapter(
+                addresses.getAddress("WORMHOLE_UNWRAPPER_ADAPTER")
+            );
+        vm.expectRevert("Initializable: contract is already initialized");
+        wormholeUnwrapperAdapter.initialize(
+            address(1),
+            address(1),
+            address(1),
+            0
+        );
     }
 
     function testReinitializeFails() public {
