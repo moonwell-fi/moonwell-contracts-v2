@@ -12,7 +12,6 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {mipb00 as mip} from "@proposals/mips/mip-b00/mip-b00.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
@@ -55,7 +54,30 @@ contract LiveSystemTest is Test {
         mrd._updateBorrowSpeed(mUSDbC, address(well), 1e18);
     }
 
+    function testUpdateEmissionConfigEndTimeSuccess() public {
+        vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
+
+        mrd._updateEndTime(
+            MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
+            well, /// rewards paid in WELL
+            block.timestamp + 4 weeks /// end time
+        );
+        vm.stopPrank();
+
+        MultiRewardDistributorCommon.MarketConfig memory config = mrd
+            .getConfigForMarket(
+                MToken(addresses.getAddress("MOONWELL_USDBC")),
+                addresses.getAddress("WELL")
+            );
+
+        assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
+        assertEq(config.emissionToken, well);
+        // comment out since the system was deployed before block.timestamp
+        assertEq(config.endTime, block.timestamp + 4 weeks);
+    }
+
     function testUpdateEmissionConfigSupplyUsdcSuccess() public {
+        testUpdateEmissionConfigEndTimeSuccess();
         vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
         mrd._updateSupplySpeed(
             MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
@@ -80,12 +102,14 @@ contract LiveSystemTest is Test {
         assertEq(config.emissionToken, well);
         assertEq(config.supplyEmissionsPerSec, 1e18);
         // comment out since the system was deployed before block.timestamp
-        //assertEq(config.endTime, block.timestamp + 4 weeks);
+        assertEq(config.endTime, block.timestamp + 4 weeks);
         assertEq(config.supplyGlobalIndex, 1e36);
         assertEq(config.borrowGlobalIndex, 1e36);
     }
 
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
+        testUpdateEmissionConfigEndTimeSuccess();
+
         vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
         mrd._updateBorrowSpeed(
             MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
@@ -110,7 +134,7 @@ contract LiveSystemTest is Test {
         assertEq(config.emissionToken, well);
         assertEq(config.borrowEmissionsPerSec, 1e18, "Borrow emissions incorrect");
         // comment out since the system was deployed before block.timestamp
-        //assertEq(config.endTime, block.timestamp + 4 weeks, "End time incorrect"));
+        assertEq(config.endTime, block.timestamp + 4 weeks, "End time incorrect");
         assertEq(config.supplyGlobalIndex, 1e36, "Supply global index incorrect");
         assertEq(config.borrowGlobalIndex, 1e36, "Borrow global index incorrect");
     }
@@ -269,7 +293,10 @@ contract LiveSystemTest is Test {
         toWarp = _bound(toWarp, 1_000_000, 4 weeks);
 
         testUpdateEmissionConfigBorrowUsdcSuccess();
+
+        vm.warp(block.timestamp + 1);
         testUpdateEmissionConfigSupplyUsdcSuccess();
+
         testBorrowMTokenSucceeds();
 
         vm.warp(block.timestamp + toWarp);
@@ -305,7 +332,10 @@ contract LiveSystemTest is Test {
         toWarp = _bound(toWarp, 1_000_000, 4 weeks);
 
         testUpdateEmissionConfigBorrowUsdcSuccess();
+
+        vm.warp(block.timestamp + 1);
         testUpdateEmissionConfigSupplyUsdcSuccess();
+
         testBorrowMTokenSucceeds();
 
         vm.warp(block.timestamp + toWarp);
