@@ -17,3 +17,23 @@ Basic development workflow:
 - use `forge test --match-contract LiveSystemTest --fork-url baseGoerli` to run the base goerli live system tests
 - use `forge script src/proposals/DeployProposal.s.sol:DeployProposal -vvvv --rpc-url $ETH_RPC_URL` to do a dry run of the deployment script
 
+## Mutation Testing
+
+Use certora gambit to generate mutaions for `MultichainVoteCollection` and then run each mutation against unit, integration tests and formal specification using `runMutation` script. The script generates a `Result.txt` file which stores following details for each mutations:
+- mutant diff with original contract
+- unit/integration test results with number and list of failing tests if any
+- result of certora formal verification against mutant with details such as number of failed rules, their list and certora prover cli job url
+
+Finally it logs total number of failed mutations.
+
+Following steps needs to be followed for mutation testing:
+
+Run certora gambit to generate mutants
+```
+gambit mutate --json certora/mutation/MultichainVoteCollectionConfig.json
+```
+
+Run script
+```
+sh runMutation.sh
+```
