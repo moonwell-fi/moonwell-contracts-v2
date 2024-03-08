@@ -18,6 +18,14 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 /// The Ecosystem Reserve custodies the xWELL that is used to pay rewards for
 /// the safety module (stkWELL).
 /// All contracts deployed are proxies.
+/// to simulate: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
+/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b --fork-url base
+/// to deploy: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
+/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b
+/// --broadcast --slow --fork-url base
+/// Once the proposal is execute, VOTE_COLLECTION_PROXY, VOTE_COLLECTION_IMPL,
+/// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, stkWELL_PROXY, stkWELL_IMPL
+/// and xWELL_PROXY must be added to the addresses.json file.
 contract mipm18b is HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment of the Multichain Vote Collection Contract to Base
     string public constant name = "MIP-M18B";
@@ -44,7 +52,6 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
         /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
-
         (
             address ecosystemReserveProxy,
             address ecosystemReserveImplementation,
