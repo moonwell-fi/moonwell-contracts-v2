@@ -551,11 +551,11 @@ abstract contract HybridProposal is
     ) internal {
         _verifyActionsPreRunHybrid(moonbeamActions);
 
-        MultichainGovernor governor = MultichainGovernor(governorAddress);
         address governanceToken = addresses.getAddress("WELL");
         address governorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );
+        MultichainGovernor governor = MultichainGovernor(governorAddress);
 
         {
             // Ensure proposer has meets minimum proposal threshold and quorum votes to pass the proposal
