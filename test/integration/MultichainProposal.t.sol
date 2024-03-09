@@ -1019,7 +1019,7 @@ contract MultichainProposalTest is
             uint256 startTimestamp = block.timestamp;
             uint256 endTimestamp = startTimestamp + governor.votingPeriod();
             bytes memory payload = abi.encode(
-                1,
+                proposalId,
                 startTimestamp - 1,
                 startTimestamp,
                 endTimestamp,
@@ -1140,7 +1140,7 @@ contract MultichainProposalTest is
             uint256 startTimestamp = block.timestamp;
             uint256 endTimestamp = startTimestamp + governor.votingPeriod();
             bytes memory payload = abi.encode(
-                1,
+                proposalId,
                 startTimestamp - 1,
                 startTimestamp,
                 endTimestamp,
@@ -1258,7 +1258,7 @@ contract MultichainProposalTest is
             uint256 startTimestamp = block.timestamp;
             uint256 endTimestamp = startTimestamp + governor.votingPeriod();
             bytes memory payload = abi.encode(
-                1,
+                proposalId,
                 startTimestamp - 1,
                 startTimestamp,
                 endTimestamp,
@@ -1523,7 +1523,7 @@ contract MultichainProposalTest is
             uint256 crossChainPeriod = endTimestamp +
                 governor.crossChainVoteCollectionPeriod();
             bytes memory payload = abi.encode(
-                1,
+                proposalId,
                 startTimestamp - 1,
                 startTimestamp,
                 endTimestamp,
@@ -1640,7 +1640,7 @@ contract MultichainProposalTest is
             uint256 crossChainPeriod = endTimestamp +
                 governor.crossChainVoteCollectionPeriod();
             bytes memory payload = abi.encode(
-                1,
+                proposalId,
                 startTimestamp - 1,
                 startTimestamp,
                 endTimestamp,
