@@ -95,9 +95,10 @@ contract BaseMoonwellViews is Initializable {
     }
 
     Comptroller public comptroller;
+    Well public governanceToken;
+
     TokenSaleDistributorInterfaceV1 private _tokenSaleDistributor;
     SafetyModuleInterfaceV1 private _safetyModule;
-    Well private _governanceToken;
     UniswapV2PairInterface private _governanceTokenLP;
     address private _nativeMarket;
 
@@ -111,7 +112,7 @@ contract BaseMoonwellViews is Initializable {
         address _comptroller,
         address tokenSaleDistributor,
         address safetyModule,
-        address governanceToken,
+        address _governanceToken,
         address nativeMarket,
         address governanceTokenLP
     ) external initializer {
@@ -133,7 +134,7 @@ contract BaseMoonwellViews is Initializable {
         );
 
         _safetyModule = SafetyModuleInterfaceV1(address(safetyModule));
-        _governanceToken = Well(address(governanceToken));
+        governanceToken = Well(address(_governanceToken));
         _nativeMarket = nativeMarket;
         _governanceTokenLP = UniswapV2PairInterface(governanceTokenLP);
     }
@@ -277,15 +278,15 @@ contract BaseMoonwellViews is Initializable {
     function getUserTokensVotingPower(
         address _user
     ) public view virtual returns (Votes memory _result) {
-        if (address(_governanceToken) != address(0)) {
-            uint _priorVotes = _governanceToken.getPriorVotes(
+        if (address(governanceToken) != address(0)) {
+            uint _priorVotes = governanceToken.getPriorVotes(
                 _user,
                 block.number - 1
             );
-            address _delegates = _governanceToken.delegates(_user);
+            address _delegates = governanceToken.delegates(_user);
             _result = Votes(
                 _priorVotes,
-                _governanceToken.balanceOf(_user),
+                governanceToken.balanceOf(_user),
                 _delegates
             );
         }
@@ -333,15 +334,15 @@ contract BaseMoonwellViews is Initializable {
         uint _resultSize = (_mTokens.length * 2) + 1;
         uint _currIndex;
 
-        if (address(_governanceToken) != address(0)) {
+        if (address(governanceToken) != address(0)) {
             _resultSize++;
         }
 
         address[] memory _tokens = new address[](_resultSize);
 
         // Gov token balance
-        if (address(_governanceToken) != address(0)) {
-            _tokens[_currIndex] = address(_governanceToken);
+        if (address(governanceToken) != address(0)) {
+            _tokens[_currIndex] = address(governanceToken);
             _currIndex++;
         }
 
@@ -453,10 +454,10 @@ contract BaseMoonwellViews is Initializable {
                 .getReserves();
             address token0 = _governanceTokenLP.token0();
 
-            uint _nativeReserve = token0 == address(_governanceToken)
+            uint _nativeReserve = token0 == address(governanceToken)
                 ? reserves1
                 : reserves0;
-            uint _tokenReserve = token0 == address(_governanceToken)
+            uint _tokenReserve = token0 == address(governanceToken)
                 ? reserves0
                 : reserves1;
 

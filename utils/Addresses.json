@@ -65,7 +65,6 @@
         "name": "MOONBEAM_TIMELOCK",
         "isContract": true
     },
-
     {
         "addr": "0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78",
         "chainId": 11155111,
@@ -952,6 +951,18 @@
         "addr": "0x949D6a0E3b1064d498D529a388B953b344CD13F7",
         "chainId": 1284,
         "name": "NOMAD_REALLOCATION_MULTISIG",
+        "isContract": true
+    },
+    {
+        "addr": "0xC72ba45f2Ae134F21DAEb2b7B5fd5De0064Ee9bB",
+        "chainId": 84532,
+        "name": "UNITROLLER",
+        "isContract": true
+    },
+    {
+        "addr": "0xE8F339C51cb2700113ec6ef552eE1D6cCA3BfB95",
+        "chainId": 84532,
+        "name": "xWELL_PROXY",
         "isContract": true
     }
 ]
