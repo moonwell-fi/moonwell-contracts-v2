@@ -23,6 +23,14 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 contract mipm18e is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18E";
 
+    constructor() {
+        _setProposalDescription(
+            abi.encodePacked(
+                vm.readFile("./src/proposals/mips/mip-m18/MIP-M18-E.md")
+            )
+        );
+    }
+
     /// @notice proposal's actions mostly happen on moonbeam
     function primaryForkId() public view override returns (uint256) {
         return moonbeamForkId;
@@ -174,14 +182,17 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy {
     function run(Addresses addresses, address) public override {
         vm.selectFork(moonbeamForkId);
 
-        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
-        _run(governor, moonbeamActions);
+        _runMoonbeamMultichainGovernor(
+            addresses,
+            address(1000000000),
+            addresses.getAddress("WELL"),
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+        );
 
         vm.selectFork(baseForkId);
 
-        address temporal = addresses.getAddress("TEMPORAL_GOVERNOR");
-
-        _run(temporal, baseActions);
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        _runBase(temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
         vm.selectFork(moonbeamForkId);
