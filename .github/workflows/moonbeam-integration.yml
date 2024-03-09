@@ -3,7 +3,7 @@ name: Foundry moonbeam integration tests
 on: [pull_request]
 
 env:
-  MOONBEAM_API_KEY: ${{secrets.MOONBEAM_API_KEY}}
+  MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
 
 jobs:
   run-moonbeam-tests:
