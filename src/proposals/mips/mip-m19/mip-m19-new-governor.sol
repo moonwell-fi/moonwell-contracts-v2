@@ -67,7 +67,13 @@ contract mipm19newGovernor is HybridProposal {
 
     function run(Addresses addresses, address) public override {
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
-        _run(governor, moonbeamActions);
+
+        _runMoonbeamMultichainGovernor(
+            addresses,
+            address(100000000),
+            addresses.getAddress("WELL"),
+            governor
+        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}
