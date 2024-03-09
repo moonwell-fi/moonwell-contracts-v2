@@ -543,18 +543,19 @@ abstract contract HybridProposal is
     }
 
     /// runs the proposal on moonbeam, verifying the actions through the hook
+    /// @param addresses the addresses contract
     /// @param caller the proposer address
-    /// @param governanceToken token that can vote in governance
-    /// @param governorAddress to propose to
     function _runMoonbeamMultichainGovernor(
         Addresses addresses,
-        address caller,
-        address governanceToken,
-        address governorAddress
+        address caller
     ) internal {
         _verifyActionsPreRunHybrid(moonbeamActions);
 
         MultichainGovernor governor = MultichainGovernor(governorAddress);
+        address governanceToken = addresses.getAddress("WELL");
+        address governorAddress = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
+        );
 
         {
             // Ensure proposer has meets minimum proposal threshold and quorum votes to pass the proposal

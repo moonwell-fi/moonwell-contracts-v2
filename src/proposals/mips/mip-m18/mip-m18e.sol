@@ -182,12 +182,7 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy {
     function run(Addresses addresses, address) public override {
         vm.selectFork(moonbeamForkId);
 
-        _runMoonbeamMultichainGovernor(
-            addresses,
-            address(1000000000),
-            addresses.getAddress("WELL"),
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        );
+        _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         vm.selectFork(baseForkId);
 
