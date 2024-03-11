@@ -24,11 +24,10 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18E";
 
     constructor() {
-        _setProposalDescription(
-            abi.encodePacked(
-                vm.readFile("./src/proposals/mips/mip-m18/MIP-M18-E.md")
-            )
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile("./src/proposals/mips/mip-m18/MIP-M18-E.md")
         );
+        _setProposalDescription(proposalDescription);
     }
 
     /// @notice proposal's actions mostly happen on moonbeam
@@ -38,6 +37,8 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy {
 
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
+        vm.selectFork(moonbeamForkId);
+
         ITemporalGovernor.TrustedSender[]
             memory trustedSendersToRemove = new ITemporalGovernor.TrustedSender[](
                 1
@@ -52,7 +53,10 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy {
 
         /// remove the artemis timelock as a trusted sender in the wormhole bridge adapter on base
         _pushHybridAction(
-            addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId),
+            addresses.getAddress(
+                "TEMPORAL_GOVERNOR",
+                sendingChainIdToReceivingChainId[block.chainid]
+            ),
             abi.encodeWithSignature(
                 "unSetTrustedSenders((uint16,address)[])",
                 trustedSendersToRemove

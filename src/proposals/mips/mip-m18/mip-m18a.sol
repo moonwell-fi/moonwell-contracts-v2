@@ -30,13 +30,17 @@ contract mipm18a is HybridProposal, MultichainGovernorDeploy {
     function deploy(Addresses addresses, address) public override {
         address proxyAdmin = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
 
+        address implementation = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_IMPL"
+        );
+
         (
             address governorProxy,
             address governorImpl
-        ) = deployMultichainGovernor(proxyAdmin);
+        ) = deployMultichainGovernor(proxyAdmin, implementation);
 
         addresses.addAddress("MULTICHAIN_GOVERNOR_PROXY", governorProxy, true);
-        addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", governorImpl, true);
+        //addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", governorImpl, true);
     }
 
     function validate(Addresses addresses, address) public view override {

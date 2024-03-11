@@ -15,11 +15,11 @@ import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/Multic
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 
-/// Proposal to run on Moonbeam to accept governance powers, finalizing
-/// the transfer of admin and owner from the current Artemis Timelock to the
-/// new Multichain Governor.
-/// DO_VALIDATE=true DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRINT=true forge script
-/// src/proposals/mips/mip-m18/mip-m18e.sol:mipm18e
+//- Move temporal governor ownership back to artemis
+//- Move bridge adapter ownership back to artemis
+//- Move xwell ownership back to artemis
+//- Move distributor ownership back to artemis
+//- Remove old governor as a trusted sender on temporal governor
 contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18E";
 
@@ -35,7 +35,10 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
     }
 
     /// run this action through the Multichain Governor
-    function build(Addresses addresses) public override {}
+    function build(Addresses addresses) public override {
+        vm.selectFork(baseForkId);
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+    }
 
     function validate(Addresses addresses, address) public override {}
 }
