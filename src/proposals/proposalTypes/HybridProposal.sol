@@ -616,6 +616,8 @@ abstract contract HybridProposal is
             ).call{value: cost}(proposeCalldata);
             data = returndata;
 
+            require(success, "propose multichain governor failed");
+
             console.log("Propose Gas Metering", gasStart - gasleft());
         }
 
