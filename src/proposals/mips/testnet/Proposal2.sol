@@ -18,7 +18,6 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 //- Move temporal governor ownership back to artemis
 //- Move bridge adapter ownership back to artemis
 //- Move xwell ownership back to artemis
-//- Move distributor ownership back to artemis
 //- Remove old governor as a trusted sender on temporal governor
 contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18E";
@@ -38,11 +37,14 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
     function build(Addresses addresses) public override {
         vm.selectFork(baseForkId);
 
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        address temporalGovernor = addresses.getAddress(
+            "TEMPORAL_GOVERNOR",
+            baseSepoliaChainId
+        );
 
         address timelock = addresses.getAddress(
             "MOONBEAM_TIMELOCK",
-            sendingChainIdToReceivingChainId[block.chainid]
+            moonBaseChainId
         );
 
         {
@@ -69,7 +71,7 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
         {
             ITemporalGovernor.TrustedSender[]
                 memory temporalGovernanceTrustedSenders = new ITemporalGovernor.TrustedSender[](
-                    1
+                    2
                 );
 
             // old governor
@@ -78,13 +80,21 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
             temporalGovernanceTrustedSenders[0]
                 .chainId = moonBeamWormholeChainId;
 
+            // new governor
+            temporalGovernanceTrustedSenders[1].addr = addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_PROXY",
+                moonBaseChainId
+            );
+            temporalGovernanceTrustedSenders[1]
+                .chainId = moonBeamWormholeChainId;
+
             _pushHybridAction(
                 temporalGovernor,
                 abi.encodeWithSignature(
                     "unSetTrustedSenders((uint16,address)[])",
                     temporalGovernanceTrustedSenders
                 ),
-                "Add Timelock as a trusted sender to the Temporal Governor",
+                "Remove old governor as a trusted sender to the Temporal Governor",
                 false
             );
         }
@@ -145,10 +155,22 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
         assertEq(
             Ownable(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"))
                 .owner(),
-            addresses.getAddress("MOONBEAM_TIMELOCK")
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
         assertEq(
+            Ownable2StepUpgradeable(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ).pendingOwner(),
+            addresses.getAddress("MOONBEAM_TIMELOCK")
+        );
+
+        assertEq(
             Ownable(addresses.getAddress("xWELL_PROXY")).owner(),
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+        );
+        assertEq(
+            Ownable2StepUpgradeable(addresses.getAddress("xWELL_PROXY"))
+                .pendingOwner(),
             addresses.getAddress("MOONBEAM_TIMELOCK")
         );
     }
