@@ -5,6 +5,22 @@ pragma solidity 0.8.19;
 /// It allows a project to have a single source of truth to get all the addresses
 /// for a given network.
 interface IAddresses {
+    /// @notice check if an address is set
+    /// @param name the name of the address
+    function isAddressSet(string memory name) external view returns (bool);
+
+    /// @notice check if an address is set for a specific chain id
+    /// @param name the name of the address
+    /// @param chainId the chain id
+    function isAddressSet(
+        string memory name,
+        uint256 chainId
+    ) external view returns (bool);
+
+    /// @notice check if an address is a contract
+    /// @param name the name of the address
+    function isAddressContract(string memory name) external view returns (bool);
+
     /// @notice get an address for the current chainId
     function getAddress(string memory name) external view returns (address);
 
@@ -30,13 +46,10 @@ interface IAddresses {
     ) external;
 
     /// @notice change an address for the current chainId
-    function changeAddress(string memory name, address addr) external;
-
-    /// @notice change an address for a specific chainId
     function changeAddress(
         string memory name,
-        address _addr,
-        uint256 _chainId
+        address addr,
+        bool isContract
     ) external;
 
     /// @notice change an address for an specific chainId and change the isContract flag
