@@ -449,6 +449,8 @@ abstract contract HybridProposal is
         address governanceToken,
         address proposerAddress
     ) internal {
+        _verifyActionsPreRunHybrid(moonbeamActions);
+
         MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(
             governorAddress
         );
@@ -477,13 +479,13 @@ abstract contract HybridProposal is
         bytes memory data;
         {
             // Execute the proposal
-            uint256 gas_start = gasleft();
+            uint256 gasStart = gasleft();
             vm.prank(proposerAddress);
             data = address(payable(governorAddress)).functionCall(
                 proposeCalldata
             );
 
-            emit log_named_uint("Propose Gas Metering", gas_start - gasleft());
+            console.log("Propose Gas Metering", gasStart - gasleft());
         }
         uint256 proposalId = abi.decode(data, (uint256));
 
@@ -526,13 +528,10 @@ abstract contract HybridProposal is
 
         {
             // Execute the proposal
-            uint256 gas_start = gasleft();
+            uint256 gasStart = gasleft();
             governor.execute(proposalId);
 
-            emit log_named_uint(
-                "Execution Gas Metering",
-                gas_start - gasleft()
-            );
+            console.log("Execution Gas Metering", gasStart - gasleft());
         }
 
         require(
@@ -540,6 +539,11 @@ abstract contract HybridProposal is
                 MoonwellArtemisGovernor.ProposalState.Executed,
             "Proposal state not executed"
         );
+
+        _verifyMTokensPostRun();
+
+        delete createdMTokens;
+        comptroller = address(0);
     }
 
     /// runs the proposal on moonbeam, verifying the actions through the hook
@@ -604,14 +608,14 @@ abstract contract HybridProposal is
             vm.deal(caller, cost * 2);
 
             // Execute the proposal
-            uint256 gas_start = gasleft();
+            uint256 gasStart = gasleft();
             vm.prank(caller);
             (bool success, bytes memory returndata) = address(
                 payable(governorAddress)
             ).call{value: cost}(proposeCalldata);
             data = returndata;
 
-            emit log_named_uint("Propose Gas Metering", gas_start - gasleft());
+            console.log("Propose Gas Metering", gasStart - gasleft());
         }
 
         uint256 proposalId = abi.decode(data, (uint256));
@@ -647,13 +651,10 @@ abstract contract HybridProposal is
 
         {
             // Execute the proposal
-            uint256 gas_start = gasleft();
+            uint256 gasStart = gasleft();
             governor.execute(proposalId);
 
-            emit log_named_uint(
-                "Execution Gas Metering",
-                gas_start - gasleft()
-            );
+            console.log("Execution Gas Metering", gasStart - gasleft());
         }
 
         require(
@@ -661,8 +662,6 @@ abstract contract HybridProposal is
                 IMultichainGovernor.ProposalState.Executed,
             "Proposal state not executed"
         );
-
-        vm.stopPrank();
 
         _verifyMTokensPostRun();
 
