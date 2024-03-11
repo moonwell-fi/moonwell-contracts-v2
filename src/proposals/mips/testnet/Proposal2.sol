@@ -109,12 +109,7 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
     function run(Addresses addresses, address) public override {
         vm.selectFork(moonbeamForkId);
 
-        _runMoonbeamArtemisGovernor(
-            addresses.getAddress("WORMHOLE_CORE"),
-            addresses.getAddress("ARTEMIS_GOVERNOR"),
-            addresses.getAddress("WELL"),
-            address(1000000000)
-        );
+        _runMoonbeamMultichainGovernor(addresses, address(1000000));
 
         vm.selectFork(baseForkId);
 
