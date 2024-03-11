@@ -1,6 +1,26 @@
 #!/bin/bash
 source .env
 
+output_title() {
+  local text="# $1"
+  echo "$text" > MutationTestOutput/Result.md
+}
+
+output_heading() {
+  local text="\n## $1"
+  echo "$text" >> MutationTestOutput/Result.md
+}
+
+output_code_result() {
+  local output="$1"
+  local heading="$2"
+  local content="<details>
+<summary>$heading</summary>\n
+\`\`\`\n$output\n\`\`\`
+</details>"
+  echo "$content" >> MutationTestOutput/Result.md
+}
+
 # Function to extract the last line from a file
 get_last_line() {
   local file="$1"
@@ -26,11 +46,17 @@ process_test_output() {
   local test_type="$1"
   local output="$2"
 
-  echo "\n$test_type:\n" >> MutationTestOutput/Result.txt
+  echo "\n### $test_type:" >> MutationTestOutput/Result.md
 
   # Check if output contains "Failing tests: "
   if grep -q "Failing tests:" "$output"; then
 
+
+    # Extract content after the pattern
+    content_after_pattern=$(get_content_after_pattern "$output" "Failing tests:")
+    echo "$content_after_pattern" >> MutationTestOutput/Result.txt
+    
+    
     # Extract content after the pattern
     content_after_pattern=$(get_content_after_pattern "$output" "Failing tests:")
     echo "$content_after_pattern" >> MutationTestOutput/Result.txt
@@ -49,7 +75,10 @@ process_test_output() {
     is_current_mutation_failed=1
 
     # Append to last_lines.txt with desired format
-    echo "Failed $test_type: $failed_tests, Passed Tests: $passed_tests" >> MutationTestOutput/Result.txt
+    echo "Failed $test_type: $failed_tests, Passed Tests: $passed_tests" >> MutationTestOutput/Result.md
+
+    content_after_pattern=$(get_content_after_pattern "$output" "Failing tests:")
+    output_code_result "$content_after_pattern" "View Failing tests"
   else
     # Extract last line
     last_line=$(get_last_line "$output")
@@ -61,7 +90,7 @@ process_test_output() {
     passed_tests=$(echo "$clean_line" | awk '{print $7}')
 
     # Append to last_lines.txt with desired format
-    echo "Failed $test_type: 0, Passed Tests: $passed_tests" >> MutationTestOutput/Result.txt
+    echo "Failed $test_type: 0, Passed Tests: $passed_tests" >> MutationTestOutput/Result.md
   fi
 }
 
@@ -77,32 +106,30 @@ failed_mutation=0
 
 is_current_mutation_failed=0 # Intialized as false
 
-# Append Mutation Result to Result.txt with desired format
-echo "Mutation Results\n" > MutationTestOutput/Result.txt
+# Append Mutation Result to Result.md with desired format
+output_title "Mutation Results\n"
 
 # Loop through the number of files
-for (( i=1; i <= num_files; i++ )); do
+for (( i=2; i <= num_files; i++ )); do
   # Construct dynamic file path using iterator
   file_path="gambit_out/mutants/$i/moonwell-contracts-v2/src/Governance/MultichainGovernor/MultichainVoteCollection.sol"
 
   # Check if file exists before copying
   if [[ -f "$file_path" ]]; then
     # Mark current mutation as not failed at the start of run
-    is_current_mutation_failed=0
+    (( is_current_mutation_failed=0 ))
     # Copy the file's contents to the target file
     cat "$file_path" > "$target_file"
 
-    echo "Mutation $i" >> MutationTestOutput/Result.txt
+    output_heading "Mutation $i"
 
     mutation_diff=$(gambit summary --mids $i)
     clean_mutation_diff=$(echo "$mutation_diff" | sed 's/\x1B\[[0-9;]*m//g')
-    echo "$clean_mutation_diff" >> MutationTestOutput/Result.txt
+    output_code_result "$clean_mutation_diff" "View mutation diff"
 
     temp_output_file="$target_dir/temp.txt"
-    # integration_output_file="$target_dir/$i/integration_mutation_$i.txt"
 
     touch "$temp_output_file"
-    # touch "$integration_output_file"
 
     # Run unit tests and capture output
     unit_command_output=$(forge test --mc Multichain -v)
@@ -141,7 +168,7 @@ for (( i=1; i <= num_files; i++ )); do
 
     rm "$temp_output_file"
 
-    if [[$is_current_mutation_failed -eq 1]]; then
+    if [[ $is_current_mutation_failed -eq 1 ]]; then
       # Increament total mutation failed
       (( failed_mutation++ ))
     fi
@@ -149,8 +176,8 @@ for (( i=1; i <= num_files; i++ )); do
   else
     echo "Warning: File '$file_path' not found."
   fi
-  echo "\n==================\n" >> MutationTestOutput/Result.txt
+  echo "\n==================\n" >> MutationTestOutput/Result.md
 done
 
-# Append to last_lines.txt with desired format
-echo "Failed Mutations: $failed_mutation" >> MutationTestOutput/Result.txt
+# Append to Result.md with desired format
+echo "Failed Mutations: $failed_mutation" >> MutationTestOutput/Result.md
