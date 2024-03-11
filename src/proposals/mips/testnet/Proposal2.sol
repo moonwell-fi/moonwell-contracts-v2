@@ -37,7 +37,73 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
         vm.selectFork(baseForkId);
+
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+
+        address timelock = addresses.getAddress(
+            "MOONBEAM_TIMELOCK",
+            sendingChainIdToReceivingChainId[block.chainid]
+        );
+
+        {
+            ITemporalGovernor.TrustedSender[]
+                memory temporalGovernanceTrustedSenders = new ITemporalGovernor.TrustedSender[](
+                    1
+                );
+
+            temporalGovernanceTrustedSenders[0].addr = timelock;
+            temporalGovernanceTrustedSenders[0]
+                .chainId = moonBeamWormholeChainId;
+
+            _pushHybridAction(
+                temporalGovernor,
+                abi.encodeWithSignature(
+                    "setTrustedSenders((uint16,address)[])",
+                    temporalGovernanceTrustedSenders
+                ),
+                "Add Timelock as a trusted sender to the Temporal Governor",
+                false
+            );
+        }
+
+        {
+            ITemporalGovernor.TrustedSender[]
+                memory temporalGovernanceTrustedSenders = new ITemporalGovernor.TrustedSender[](
+                    1
+                );
+
+            // old governor
+            temporalGovernanceTrustedSenders[0]
+                .addr = 0x716ff5a3Acbcd6cA05e921a524b80B5B68FAca05;
+            temporalGovernanceTrustedSenders[0]
+                .chainId = moonBeamWormholeChainId;
+
+            _pushHybridAction(
+                temporalGovernor,
+                abi.encodeWithSignature(
+                    "unSetTrustedSenders((uint16,address)[])",
+                    temporalGovernanceTrustedSenders
+                ),
+                "Add Timelock as a trusted sender to the Temporal Governor",
+                false
+            );
+        }
+
+        vm.selectFork(moonbeamForkId);
+
+        _pushHybridAction(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+            abi.encodeWithSignature("transferOwnership(address)", timelock),
+            "Set the pending owner of the Wormhole Bridge Adapter to Timelock",
+            true
+        );
+
+        _pushHybridAction(
+            addresses.getAddress("xWELL_PROXY"),
+            abi.encodeWithSignature("transferOwnership(address)", timelock),
+            "Set the pending owner of the xWELL Token to the Multichain Governor",
+            true
+        );
     }
 
     function validate(Addresses addresses, address) public override {}
