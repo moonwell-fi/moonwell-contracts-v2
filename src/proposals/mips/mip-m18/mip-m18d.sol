@@ -273,13 +273,17 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
     function run(Addresses addresses, address) public override {
         vm.selectFork(moonbeamForkId);
 
-        address timelock = addresses.getAddress("MOONBEAM_TIMELOCK");
-        _run(timelock, moonbeamActions);
+        _runMoonbeamArtemisGovernor(
+            addresses.getAddress("WORMHOLE_CORE"),
+            addresses.getAddress("ARTEMIS_GOVERNOR"),
+            addresses.getAddress("WELL"),
+            address(1000000000)
+        );
 
         vm.selectFork(baseForkId);
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        _run(temporalGovernor, baseActions);
+        _runBase(temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
         vm.selectFork(primaryForkId());

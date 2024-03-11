@@ -1,14 +1,21 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
+import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
+import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
+
 import "@forge-std/Test.sol";
 
+import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+import {ChainIds} from "@test/utils/ChainIds.sol";
+import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IHybridProposal} from "@proposals/proposalTypes/IHybridProposal.sol";
-import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
+import {MultichainGovernor, IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
+import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
+import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -25,6 +32,9 @@ abstract contract HybridProposal is
     Proposal,
     ChainIds
 {
+    using Strings for *;
+    using Address for address;
+
     /// @notice nonce for wormhole, unused by Temporal Governor
     uint32 private constant nonce = 0;
 
@@ -213,17 +223,39 @@ abstract contract HybridProposal is
     function getTargetsPayloadsValues(
         Addresses addresses
     ) public view returns (address[] memory, uint256[] memory, bytes[] memory) {
+        return
+            getTargetsPayloadsValues(
+                addresses.getAddress("WORMHOLE_CORE"),
+                addresses.getAddress(
+                    "TEMPORAL_GOVERNOR",
+                    sendingChainIdToReceivingChainId[block.chainid]
+                )
+            );
+    }
+
+    /// @notice return arrays of all items in the proposal that the
+    /// temporal governor will receive
+    /// all items are in the same order as the proposal
+    /// the length of each array is the same as the number of actions in the proposal
+    function getTargetsPayloadsValues(
+        address wormholeCore,
+        address temporalGovernor
+    ) public view returns (address[] memory, uint256[] memory, bytes[] memory) {
         /// target cannot be address 0 as that call will fail
         /// value can be 0
         /// arguments can be 0 as long as eth is sent
 
         uint256 proposalLength = moonbeamActions.length;
 
-        address[] memory targets = new address[](proposalLength + 1);
-        uint256[] memory values = new uint256[](proposalLength + 1);
-        bytes[] memory payloads = new bytes[](proposalLength + 1);
+        if (baseActions.length != 0) {
+            proposalLength += 1;
+        }
 
-        for (uint256 i = 0; i < proposalLength; i++) {
+        address[] memory targets = new address[](proposalLength);
+        uint256[] memory values = new uint256[](proposalLength);
+        bytes[] memory payloads = new bytes[](proposalLength);
+
+        for (uint256 i = 0; i < moonbeamActions.length; i++) {
             require(
                 moonbeamActions[i].target != address(0),
                 "Invalid target for governance"
@@ -242,16 +274,16 @@ abstract contract HybridProposal is
             payloads[i] = moonbeamActions[i].data;
         }
 
-        /// fill out final piece of proposal which is the call
-        /// to publishMessage on the temporal governor
-        targets[proposalLength] = addresses.getAddress("WORMHOLE_CORE");
-        values[proposalLength] = 0;
-        payloads[proposalLength] = getTemporalGovCalldata(
-            addresses.getAddress(
-                "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
-            )
-        );
+        /// only get temporal governor calldata if there are actions to execute on base
+        if (baseActions.length != 0) {
+            /// fill out final piece of proposal which is the call
+            /// to publishMessage on the temporal governor
+            targets[moonbeamActions.length] = wormholeCore;
+            values[moonbeamActions.length] = 0;
+            payloads[moonbeamActions.length] = getTemporalGovCalldata(
+                temporalGovernor
+            );
+        }
 
         return (targets, values, payloads);
     }
@@ -359,6 +391,29 @@ abstract contract HybridProposal is
         }
     }
 
+    /// @notice Getter function for `GovernorBravoDelegate.propose()` calldata
+    function getProposeCalldata(
+        address wormoholeCore,
+        address temporalGovernor
+    ) public view returns (bytes memory proposeCalldata) {
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = getTargetsPayloadsValues(wormoholeCore, temporalGovernor);
+
+        string[] memory signatures = new string[](targets.length);
+
+        proposeCalldata = abi.encodeWithSignature(
+            "propose(address[],uint256[],string[],bytes[],string)",
+            targets,
+            values,
+            signatures,
+            calldatas,
+            string(PROPOSAL_DESCRIPTION)
+        );
+    }
+
     /// -----------------------------------------------------
     /// -----------------------------------------------------
     /// -------------------- OVERRIDES ----------------------
@@ -383,23 +438,263 @@ abstract contract HybridProposal is
 
     function run(Addresses, address) public virtual override {}
 
-    /// runs the proposal on moonbeam or base, verifying the actions through the hook
-    /// @param caller the name of the caller address
-    /// @param actions the actions to run
-    function _run(address caller, ProposalAction[] memory actions) internal {
-        _verifyActionsPreRunHybrid(actions);
+    /// @notice Simulate governance proposal from artemis governor contract
+    /// @param wormholeCore address of the wormhole core contract
+    /// @param governorAddress address of the Governor Bravo Delegator contract
+    /// @param governanceToken address of the governance token of the system
+    /// @param proposerAddress address of the proposer
+    function _runMoonbeamArtemisGovernor(
+        address wormholeCore,
+        address governorAddress,
+        address governanceToken,
+        address proposerAddress
+    ) internal {
+        _verifyActionsPreRunHybrid(moonbeamActions);
 
-        vm.startPrank(caller);
+        MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(
+            governorAddress
+        );
 
-        for (uint256 i = 0; i < actions.length; i++) {
-            (bool success, ) = actions[i].target.call{value: actions[i].value}(
-                actions[i].data
+        {
+            // Ensure proposer has meets minimum proposal threshold and quorum votes to pass the proposal
+            uint256 quorumVotes = governor.quorumVotes();
+            uint256 proposalThreshold = governor.proposalThreshold();
+            uint256 votingPower = quorumVotes > proposalThreshold
+                ? quorumVotes
+                : proposalThreshold;
+
+            deal(governanceToken, proposerAddress, votingPower);
+            // Delegate proposer's votes to itself
+            vm.prank(proposerAddress);
+            Well(governanceToken).delegate(proposerAddress);
+            vm.roll(block.number + 1);
+        }
+
+        bytes memory proposeCalldata = getProposeCalldata(
+            wormholeCore,
+            governorAddress
+        );
+
+        // Register the proposal
+        bytes memory data;
+        {
+            // Execute the proposal
+            uint256 gasStart = gasleft();
+            vm.prank(proposerAddress);
+            data = address(payable(governorAddress)).functionCall(
+                proposeCalldata
             );
 
-            require(success, "moonbeam action failed");
+            console.log("Propose Gas Metering", gasStart - gasleft());
+        }
+        uint256 proposalId = abi.decode(data, (uint256));
+
+        // Check proposal is in Pending state
+        require(
+            governor.state(proposalId) ==
+                MoonwellArtemisGovernor.ProposalState.Pending
+        );
+
+        // Roll to Active state (voting period)
+        vm.roll(block.number + governor.votingDelay() + 1);
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        require(
+            governor.state(proposalId) ==
+                MoonwellArtemisGovernor.ProposalState.Active
+        );
+
+        // Vote YES
+        vm.prank(proposerAddress);
+        governor.castVote(proposalId, 0);
+
+        // Roll to allow proposal state transitions
+        vm.roll(block.number + governor.votingPeriod());
+        vm.warp(block.timestamp + governor.votingPeriod());
+        require(
+            governor.state(proposalId) ==
+                MoonwellArtemisGovernor.ProposalState.Succeeded
+        );
+
+        // Queue the proposal
+        governor.queue(proposalId);
+        require(
+            governor.state(proposalId) ==
+                MoonwellArtemisGovernor.ProposalState.Queued
+        );
+
+        // Warp to allow proposal execution on timelock
+        Timelock timelock = Timelock(address(governor.timelock()));
+        vm.warp(block.timestamp + timelock.delay());
+
+        {
+            // Execute the proposal
+            uint256 gasStart = gasleft();
+            governor.execute(proposalId);
+
+            console.log("Execution Gas Metering", gasStart - gasleft());
+        }
+
+        require(
+            governor.state(proposalId) ==
+                MoonwellArtemisGovernor.ProposalState.Executed,
+            "Proposal state not executed"
+        );
+
+        _verifyMTokensPostRun();
+
+        delete createdMTokens;
+        comptroller = address(0);
+    }
+
+    /// runs the proposal on moonbeam, verifying the actions through the hook
+    /// @param addresses the addresses contract
+    /// @param caller the proposer address
+    function _runMoonbeamMultichainGovernor(
+        Addresses addresses,
+        address caller
+    ) internal {
+        _verifyActionsPreRunHybrid(moonbeamActions);
+
+        address governanceToken = addresses.getAddress("WELL");
+        address governorAddress = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
+        );
+        MultichainGovernor governor = MultichainGovernor(governorAddress);
+
+        {
+            // Ensure proposer has meets minimum proposal threshold and quorum votes to pass the proposal
+            uint256 quorumVotes = governor.quorum();
+            uint256 proposalThreshold = governor.proposalThreshold();
+            uint256 votingPower = quorumVotes > proposalThreshold
+                ? quorumVotes
+                : proposalThreshold;
+            deal(governanceToken, caller, votingPower);
+
+            // Delegate proposer's votes to itself
+            vm.prank(caller);
+            Well(governanceToken).delegate(caller);
+            vm.roll(block.number + 1);
+        }
+
+        bytes memory data;
+        {
+            (
+                address[] memory targets,
+                uint256[] memory values,
+                bytes[] memory payloads
+            ) = getTargetsPayloadsValues(addresses);
+
+            /// triple check the values
+            for (uint256 i = 0; i < targets.length; i++) {
+                require(
+                    targets[i] != address(0),
+                    "Invalid target for governance"
+                );
+                require(
+                    (payloads[i].length == 0 && values[i] > 0) ||
+                        payloads[i].length > 0,
+                    "Invalid arguments for governance"
+                );
+            }
+
+            bytes memory proposeCalldata = abi.encodeWithSignature(
+                "propose(address[],uint256[],bytes[],string)",
+                targets,
+                values,
+                payloads,
+                string(PROPOSAL_DESCRIPTION)
+            );
+
+            uint256 cost = governor.bridgeCostAll();
+            vm.deal(caller, cost * 2);
+
+            // Execute the proposal
+            uint256 gasStart = gasleft();
+            vm.prank(caller);
+            (bool success, bytes memory returndata) = address(
+                payable(governorAddress)
+            ).call{value: cost}(proposeCalldata);
+            data = returndata;
+
+            console.log("Propose Gas Metering", gasStart - gasleft());
+        }
+
+        uint256 proposalId = abi.decode(data, (uint256));
+
+        // Roll to Active state (voting period)
+        require(
+            governor.state(proposalId) ==
+                IMultichainGovernor.ProposalState.Active,
+            "incorrect state, not active after proposing"
+        );
+
+        // Vote YES
+        vm.prank(caller);
+        governor.castVote(proposalId, 0);
+
+        // Roll to allow proposal state transitions
+        vm.roll(block.number + governor.votingPeriod() + 1);
+        vm.warp(block.timestamp + governor.votingPeriod() + 1);
+        require(
+            governor.state(proposalId) ==
+                IMultichainGovernor.ProposalState.CrossChainVoteCollection,
+            "incorrect state, not succeeded"
+        );
+
+        vm.warp(
+            block.timestamp + governor.crossChainVoteCollectionPeriod() + 1
+        );
+        require(
+            governor.state(proposalId) ==
+                IMultichainGovernor.ProposalState.Succeeded,
+            "incorrect state, not succeeded"
+        );
+
+        {
+            // Execute the proposal
+            uint256 gasStart = gasleft();
+            governor.execute(proposalId);
+
+            console.log("Execution Gas Metering", gasStart - gasleft());
+        }
+
+        require(
+            governor.state(proposalId) ==
+                IMultichainGovernor.ProposalState.Executed,
+            "Proposal state not executed"
+        );
+
+        _verifyMTokensPostRun();
+
+        delete createdMTokens;
+        comptroller = address(0);
+    }
+
+    /// runs the proposal actions on base, verifying the actions through the hook
+    /// @param temporalGovernorAddress the temporal governor contract address
+    function _runBase(address temporalGovernorAddress) internal {
+        _verifyActionsPreRunHybrid(baseActions);
+
+        vm.startPrank(temporalGovernorAddress);
+
+        for (uint256 i = 0; i < baseActions.length; i++) {
+            (bool success, ) = baseActions[i].target.call{
+                value: baseActions[i].value
+            }(baseActions[i].data);
+
+            require(
+                success,
+                string(
+                    abi.encodePacked(
+                        "base action failed to address ",
+                        baseActions[i].target.toHexString()
+                    )
+                )
+            );
         }
 
         vm.stopPrank();
+
         _verifyMTokensPostRun();
 
         delete createdMTokens;
