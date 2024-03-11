@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
-
+import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import "@forge-std/Test.sol";
 
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
@@ -106,5 +106,55 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
         );
     }
 
-    function validate(Addresses addresses, address) public override {}
+    function run(Addresses addresses, address) public override {
+        vm.selectFork(moonbeamForkId);
+
+        _runMoonbeamArtemisGovernor(
+            addresses.getAddress("WORMHOLE_CORE"),
+            addresses.getAddress("ARTEMIS_GOVERNOR"),
+            addresses.getAddress("WELL"),
+            address(1000000000)
+        );
+
+        vm.selectFork(baseForkId);
+
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        _runBase(temporalGovernor);
+
+        vm.selectFork(primaryForkId());
+    }
+
+    function validate(Addresses addresses, address) public override {
+        vm.selectFork(baseForkId);
+
+        TemporalGovernor temporalGovernor = TemporalGovernor(
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
+
+        // get all trusted senders
+        bytes32[] memory trustedSenders = temporalGovernor.allTrustedSenders(
+            chainIdToWormHoleId[block.chainid]
+        );
+
+        assertEq(trustedSenders.length, 1);
+
+        vm.selectFork(moonbeamForkId);
+
+        assertEq(
+            trustedSenders[0],
+            keccak256(
+                abi.encodePacked(addresses.getAddress("MOONBEAM_TIMELOCK"))
+            )
+        );
+
+        assertEq(
+            Ownable(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"))
+                .owner(),
+            addresses.getAddress("MOONBEAM_TIMELOCK")
+        );
+        assertEq(
+            Ownable(addresses.getAddress("xWELL_PROXY")).owner(),
+            addresses.getAddress("MOONBEAM_TIMELOCK")
+        );
+    }
 }
