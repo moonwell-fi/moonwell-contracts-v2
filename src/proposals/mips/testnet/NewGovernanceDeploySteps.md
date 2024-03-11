@@ -2,7 +2,9 @@
 
 ## Today: Clean up the house
 
-### Proposal 1 - current multichain governor:
+### Proposal 1: Move moonbase lending system ownership to Artemis
+
+### Proposal 2 - current multichain governor:
 
 - Move temporal governor ownership back to artemis
 - Move bridge adapter ownership back to artemis
@@ -10,7 +12,7 @@
 - Move distributor ownership back to artemis
 - Remove old governor as a trusted sender on temporal governor
 
-### Proposal 2 - old multichain governor:
+### Proposal 3 - old multichain governor:
 
 - Create proposal to change voting period to 1 minute and cross chain period to
   21 minutes on old governor
@@ -21,12 +23,12 @@ Execute proposal 19 to deploy the unwrapper adapter
 
 ## Tuesday night
 
-### Proposal 3
+### Proposal 4
 
 - Execute proposal to hand off proxy admin ownership from old governor to the
   current governor
 
-### Proposal 4
+### Proposal 5
 
 - Create a governance proposal to transfer proxy admin ownership from the
   current governor to the timelock tomorrow

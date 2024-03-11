@@ -20,7 +20,7 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 /// new Multichain Governor.
 /// DO_VALIDATE=true DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRINT=true forge script
 /// src/proposals/mips/mip-m18/mip-m18e.sol:mipm18e
-contract moveMoonbaseOwnership is HybridProposal, MultichainGovernorDeploy {
+contract Proposal1 is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18E";
 
     constructor() {
