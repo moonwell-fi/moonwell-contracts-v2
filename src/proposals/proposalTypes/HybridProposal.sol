@@ -571,6 +571,7 @@ abstract contract HybridProposal is
             deal(governanceToken, caller, votingPower);
 
             // Delegate proposer's votes to itself
+            vm.prank(caller);
             Well(governanceToken).delegate(caller);
             vm.roll(block.number + 1);
         }
