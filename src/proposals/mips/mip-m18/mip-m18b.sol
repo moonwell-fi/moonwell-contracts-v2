@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@protocol/proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
@@ -27,7 +26,7 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 /// Once the proposal is execute, VOTE_COLLECTION_PROXY, VOTE_COLLECTION_IMPL,
 /// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, stkWELL_PROXY, stkWELL_IMPL
 /// and xWELL_PROXY must be added to the addresses.json file.
-contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
+contract mipm18b is HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment of the Multichain Vote Collection Contract to Base
     string public constant name = "MIP-M18B";
 
@@ -112,14 +111,17 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl, true);
     }
 
-    function afterDeploy(Addresses addresses, address) public override {
+    function afterDeploy(
+        Addresses addresses,
+        address deployer
+    ) public override {
         IEcosystemReserveControllerUplift ecosystemReserveController = IEcosystemReserveControllerUplift(
                 addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
             );
 
         assertEq(
             ecosystemReserveController.owner(),
-            address(this),
+            deployer,
             "incorrect owner"
         );
         assertEq(

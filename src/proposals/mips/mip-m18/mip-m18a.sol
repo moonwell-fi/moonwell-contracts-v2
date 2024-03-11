@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
@@ -19,7 +18,7 @@ import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 /// Once the proposal is execute, MULTICHAIN_GOVERNOR_PROXY and
 /// MULTICHAIN_GOVERNOR_IMPL must be added to the addresses.json file
 /// before the next proposal can be executed.
-contract mipm18a is ChainIds, HybridProposal, MultichainGovernorDeploy {
+contract mipm18a is HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment name
     string public constant name = "MIP-M18A";
 

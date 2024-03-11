@@ -6,7 +6,6 @@ import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import "@forge-std/Test.sol";
 
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 
@@ -21,8 +20,16 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 /// new Multichain Governor.
 /// DO_VALIDATE=true DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRINT=true forge script
 /// src/proposals/mips/mip-m18/mip-m18e.sol:mipm18e
-contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
+contract mipm18e is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18E";
+
+    constructor() {
+        _setProposalDescription(
+            abi.encodePacked(
+                vm.readFile("./src/proposals/mips/mip-m18/MIP-M18-E.md")
+            )
+        );
+    }
 
     /// @notice proposal's actions mostly happen on moonbeam
     function primaryForkId() public view override returns (uint256) {
@@ -175,14 +182,12 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy, ChainIds {
     function run(Addresses addresses, address) public override {
         vm.selectFork(moonbeamForkId);
 
-        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
-        _run(governor, moonbeamActions);
+        _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         vm.selectFork(baseForkId);
 
-        address temporal = addresses.getAddress("TEMPORAL_GOVERNOR");
-
-        _run(temporal, baseActions);
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        _runBase(temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
         vm.selectFork(moonbeamForkId);
