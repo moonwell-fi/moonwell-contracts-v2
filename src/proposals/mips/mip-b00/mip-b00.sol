@@ -85,7 +85,11 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             );
             // change TEMPORAL_GOVERNOR if it already exists
             try addresses.getAddress("TEMPORAL_GOVERNOR") returns (address) {
-                addresses.changeAddress("TEMPORAL_GOVERNOR", address(governor));
+                addresses.changeAddress(
+                    "TEMPORAL_GOVERNOR",
+                    address(governor),
+                    true
+                );
                 /// TEMPORAL_GOVERNOR already exists
             } catch {
                 addresses.addAddress(
