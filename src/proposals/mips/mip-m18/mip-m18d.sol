@@ -6,7 +6,6 @@ import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import "@forge-std/Test.sol";
 
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
@@ -19,8 +18,17 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the
 /// Multichain Governor and the Artemis Timelock
-contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
+/// DO_BUILD=true DO_VALIDATE=true DO_RUN=true DO_PRINT=true forge script
+/// src/proposals/mips/mip-m18/mip-m18d.sol:mipm18d
+contract mipm18d is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18D";
+
+    constructor() {
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile("./src/proposals/mips/mip-m18/MIP-M18-D.md")
+        );
+        _setProposalDescription(proposalDescription);
+    }
 
     /// @notice proposal's actions mostly happen on moonbeam
     function primaryForkId() public view override returns (uint256) {
@@ -29,6 +37,8 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
 
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
+        vm.selectFork(moonbeamForkId);
+
         address multichainGovernorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );
@@ -263,13 +273,17 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy, ChainIds {
     function run(Addresses addresses, address) public override {
         vm.selectFork(moonbeamForkId);
 
-        address timelock = addresses.getAddress("MOONBEAM_TIMELOCK");
-        _run(timelock, moonbeamActions);
+        _runMoonbeamArtemisGovernor(
+            addresses.getAddress("WORMHOLE_CORE"),
+            addresses.getAddress("ARTEMIS_GOVERNOR"),
+            addresses.getAddress("WELL"),
+            address(1000000000)
+        );
 
         vm.selectFork(baseForkId);
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        _run(temporalGovernor, baseActions);
+        _runBase(temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
         vm.selectFork(primaryForkId());

@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@protocol/proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
@@ -19,7 +18,15 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 /// The Ecosystem Reserve custodies the xWELL that is used to pay rewards for
 /// the safety module (stkWELL).
 /// All contracts deployed are proxies.
-contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
+/// to simulate: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
+/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b --fork-url base
+/// to deploy: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
+/// src/proposals/mips/mip-m18/mip-m18b.sol:mipm18b
+/// --broadcast --slow --fork-url base
+/// Once the proposal is execute, VOTE_COLLECTION_PROXY, VOTE_COLLECTION_IMPL,
+/// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, stkWELL_PROXY, stkWELL_IMPL
+/// and xWELL_PROXY must be added to the addresses.json file.
+contract mipm18b is HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment of the Multichain Vote Collection Contract to Base
     string public constant name = "MIP-M18B";
 
@@ -45,7 +52,6 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
         /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
-
         (
             address ecosystemReserveProxy,
             address ecosystemReserveImplementation,
@@ -105,14 +111,17 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy, ChainIds {
         addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl, true);
     }
 
-    function afterDeploy(Addresses addresses, address) public override {
+    function afterDeploy(
+        Addresses addresses,
+        address deployer
+    ) public override {
         IEcosystemReserveControllerUplift ecosystemReserveController = IEcosystemReserveControllerUplift(
                 addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
             );
 
         assertEq(
             ecosystemReserveController.owner(),
-            address(this),
+            deployer,
             "incorrect owner"
         );
         assertEq(

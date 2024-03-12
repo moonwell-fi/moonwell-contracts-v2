@@ -32,16 +32,23 @@ contract WellDeployerNonceIncrement is Script, Test {
     function run() public {
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
+        uint256 expectedNonce = 387;
+        uint256 currentNonce = vm.getNonce(deployerAddress);
+
+        uint256 increment = expectedNonce - currentNonce;
         vm.startBroadcast(PRIVATE_KEY);
 
-        /// send all 2 tx's
-        for (uint256 i = 0; i < 3; i++) {
+        for (uint256 i = 0; i < increment; i++) {
             (bool success, ) = address(deployerAddress).call{value: 1}("");
             success;
-            // console.log(vm.getNonce(deployerAddress));
+            console.log(vm.getNonce(deployerAddress));
         }
         vm.stopBroadcast();
 
-        assertEq(vm.getNonce(deployerAddress), 471, "incorrect nonce");
+        assertEq(
+            vm.getNonce(deployerAddress),
+            expectedNonce,
+            "incorrect nonce"
+        );
     }
 }

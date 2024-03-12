@@ -82,9 +82,7 @@ abstract contract MIPProposal is Script {
                 ,
                 address[] memory recordedAddresses
             ) = addresses.getRecordedAddresses();
-            for (uint256 i = 0; i < recordedNames.length; i++) {
-                console.log("Deployed", recordedAddresses[i], recordedNames[i]);
-            }
+            console.log("New addresses after deploy:");
 
             console.log("New addresses after deploy:");
 
