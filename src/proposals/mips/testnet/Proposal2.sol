@@ -109,7 +109,7 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
         _pushHybridAction(
             addresses.getAddress("xWELL_PROXY"),
             abi.encodeWithSignature("transferOwnership(address)", timelock),
-            "Set the pending owner of the xWELL Token to the Multichain Governor",
+            "Set the pending owner of the xWELL Token to the Timelock",
             true
         );
     }
