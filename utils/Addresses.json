@@ -996,6 +996,12 @@
         "isContract": true
     },
     {
+        "addr": "0x876fa6f4EB3Aad22f9893f82784095401499d6cA",
+        "chainId": 1287,
+        "name": "WORMHOLE_UNWRAPPER_ADAPTER",
+        "isContract": true
+    },
+    {
         "addr": "0x7e6F29dA0137706fcE97434f7125Af0886ef1Ab2",
         "chainId": 84532,
         "name": "ECOSYSTEM_RESERVE_PROXY",
@@ -1037,7 +1043,6 @@
         "name": "VOTE_COLLECTION_IMPL",
         "isContract": true
     },
-
     {
         "addr": "0xD2D73F763745777599b21F5725181B8ccD08B060",
         "chainId": 1287,
