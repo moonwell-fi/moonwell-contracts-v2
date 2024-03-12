@@ -98,14 +98,14 @@ contract Proposal4 is HybridProposal {
                 addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY")
             ).admin(),
             timelock,
-            "TOKEN_SALE_DISTRIBUTOR_PROXY owner incorrect"
+            "TOKEN_SALE_DISTRIBUTOR_PROXY admin incorrect"
         );
         assertEq(
             ITokenSaleDistributorProxy(
                 addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY")
             ).pendingAdmin(),
             address(0),
-            "TOKEN_SALE_DISTRIBUTOR_PROXY pending owner incorrect"
+            "TOKEN_SALE_DISTRIBUTOR_PROXY pending admin incorrect"
         );
     }
 }
