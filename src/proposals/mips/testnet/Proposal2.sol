@@ -99,8 +99,6 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
             );
         }
 
-        vm.selectFork(moonbeamForkId);
-
         _pushHybridAction(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
             abi.encodeWithSignature("transferOwnership(address)", timelock),
