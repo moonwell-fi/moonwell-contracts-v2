@@ -20,13 +20,15 @@ contract mipm19 is GovernanceProposal {
     }
 
     function deploy(Addresses addresses, address) public override {
-        WormholeUnwrapperAdapter wormholeUnwrapperAdapter = new WormholeUnwrapperAdapter();
+        if (!addresses.isAddressSet("WORMHOLE_UNWRAPPER_ADAPTER")) {
+            WormholeUnwrapperAdapter wormholeUnwrapperAdapter = new WormholeUnwrapperAdapter();
 
-        addresses.addAddress(
-            "WORMHOLE_UNWRAPPER_ADAPTER",
-            address(wormholeUnwrapperAdapter),
-            true
-        );
+            addresses.addAddress(
+                "WORMHOLE_UNWRAPPER_ADAPTER",
+                address(wormholeUnwrapperAdapter),
+                true
+            );
+        }
     }
 
     function afterDeploy(Addresses addresses, address) public override {}
