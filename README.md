@@ -19,7 +19,7 @@ Basic development workflow:
 
 ## Mutation Testing
 
-Use certora gambit to generate mutaions for `MultichainVoteCollection` and then run each mutation against unit, integration tests and formal specification using `runMutation` script. The script generates a `Result.txt` file which stores following details for each mutations:
+Use certora gambit to generate mutaions for `MultichainVoteCollection` and then run each mutation against unit, integration tests and formal specification using `runMutation` script. The script generates a `Result.md` file which stores following details for each mutations:
 - mutant diff with original contract
 - unit/integration test results with number and list of failing tests if any
 - result of certora formal verification against mutant with details such as number of failed rules, their list and certora prover cli job url

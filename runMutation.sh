@@ -11,12 +11,12 @@ output_heading() {
   echo "$text" >> MutationTestOutput/Result.md
 }
 
-output_code_result() {
-  local output="$1"
+output_results() {
+  local result="$1"
   local heading="$2"
   local content="<details>
-<summary>$heading</summary>\n
-\`\`\`\n$output\n\`\`\`
+<summary>$result</summary>\n
+\`\`\`\n$result\n\`\`\`
 </details>"
   echo "$content" >> MutationTestOutput/Result.md
 }
@@ -78,7 +78,7 @@ process_test_output() {
     echo "Failed $test_type: $failed_tests, Passed Tests: $passed_tests" >> MutationTestOutput/Result.md
 
     content_after_pattern=$(get_content_after_pattern "$output" "Failing tests:")
-    output_code_result "$content_after_pattern" "View Failing tests"
+    output_results "$content_after_pattern" "View Failing tests"
   else
     # Extract last line
     last_line=$(get_last_line "$output")
@@ -112,7 +112,7 @@ output_title "Mutation Results\n"
 # Loop through the number of files
 for (( i=2; i <= num_files; i++ )); do
   # Construct dynamic file path using iterator
-  file_path="gambit_out/mutants/$i/moonwell-contracts-v2/src/Governance/MultichainGovernor/MultichainVoteCollection.sol"
+  file_path="gambit_out/mutants/$i/src/Governance/MultichainGovernor/MultichainVoteCollection.sol"
 
   # Check if file exists before copying
   if [[ -f "$file_path" ]]; then
@@ -125,7 +125,7 @@ for (( i=2; i <= num_files; i++ )); do
 
     mutation_diff=$(gambit summary --mids $i)
     clean_mutation_diff=$(echo "$mutation_diff" | sed 's/\x1B\[[0-9;]*m//g')
-    output_code_result "$clean_mutation_diff" "View mutation diff"
+    output_results "$clean_mutation_diff" "View mutation diff"
 
     temp_output_file="$target_dir/temp.txt"
 
@@ -165,6 +165,16 @@ for (( i=2; i <= num_files; i++ )); do
 
     # Process integration test outputs using the function
     process_test_output "Arbitrum Integration Test" "$temp_output_file"
+
+    output_heading "Certora Mutation Results: \n"
+
+    certora_run_output=$(certoraRun certora/confs/MultichainVoteCollection.conf --wait_for_results)
+    echo "$certora_run_output" > "$temp_output_file"
+
+    ## Extract content after the pattern
+    content_after_pattern=$(get_content_after_pattern "$temp_output_file" "Results for all:")
+    
+    output_results "$content_after_pattern" "View Result"
 
     rm "$temp_output_file"
 
