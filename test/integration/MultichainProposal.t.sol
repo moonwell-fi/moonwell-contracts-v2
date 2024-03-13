@@ -2638,9 +2638,6 @@ contract MultichainProposalTest is
         governor.unpause();
 
         assertFalse(governor.paused(), "governor paused");
-
-        governor.kickGuardian();
-
         assertEq(governor.pauseGuardian(), address(0), "guardian not kicked");
 
         /// mint whichever is greater, the proposal threshold or the quorum
