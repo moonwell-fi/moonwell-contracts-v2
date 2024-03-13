@@ -162,7 +162,7 @@ contract MultichainProposalTest is
         vm.makePersistent(address(xwell));
 
         stakedWellMoonbeam = IStakedWell(
-            addresses.getAddress("stkWELL", moonBeamChainId)
+            addresses.getAddress("stkWELL_PROXY", moonBeamChainId)
         );
 
         distributor = TokenSaleDistributorInterfaceV1(
@@ -1987,7 +1987,7 @@ contract MultichainProposalTest is
         targets[4] = addresses.getAddress("CHAINLINK_ORACLE");
         calldatas[4] = changeAdminCalldata;
 
-        targets[5] = addresses.getAddress("stkWELL");
+        targets[5] = addresses.getAddress("stkWELL_PROXY");
         calldatas[5] = setEmissionsManagerCalldata;
 
         targets[6] = addresses.getAddress("UNITROLLER");
@@ -2065,7 +2065,7 @@ contract MultichainProposalTest is
         governor.executeBreakGlass(targets, calldatas);
 
         assertEq(
-            IStakedWellUplift(addresses.getAddress("stkWELL"))
+            IStakedWellUplift(addresses.getAddress("stkWELL_PROXY"))
                 .EMISSION_MANAGER(),
             artemisTimelockAddress,
             "stkWELL EMISSIONS MANAGER"
