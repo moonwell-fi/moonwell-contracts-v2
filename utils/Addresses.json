@@ -1057,31 +1057,157 @@
         "isContract": false
     },
     {
-        "addr": "0xcD54d64186C775A934a81Bda11b56b3C749E2D0F",
+        "addr": "0xDe71A6CFD13dE924c84C3a11f6c96Ef083df017d",
+        "chainId": 1287,
+        "name": "BTC",
+        "isContract": true
+    },
+    {
+        "addr": "0x460dCc00F0D24e56D6C8a4B5dDFf6333403aCdB3",
+        "chainId": 1287,
+        "name": "WETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x1AC96f01B9d2c6AdD1cEEBDEeA0B6B48Db6C0827",
+        "chainId": 1287,
+        "name": "USDC",
+        "isContract": true
+    },
+    {
+        "addr": "0xef388dA299f5E75b4e935B7eC9602097aA89b76f",
+        "chainId": 1287,
+        "name": "USDT",
+        "isContract": true
+    },
+    {
+        "addr": "0x224506760E75bCF6Ed3A80880e86F159189cE04f",
+        "chainId": 1287,
+        "name": "FRAX",
+        "isContract": true
+    },
+    {
+        "addr": "0xF43Cd9e03d925Dd9c660b46AE86eA350b2C299D2",
+        "chainId": 1287,
+        "name": "MOONWELL_WBTC",
+        "isContract": true
+    },
+    {
+        "addr": "0xBaeEd251E950D6C7c7Ec92FfAfC571da8e85f50B",
+        "chainId": 1287,
+        "name": "MOONWELL_WETH",
+        "isContract": true
+    },
+    {
+        "addr": "0xbd17C45DB7C9782B34A5e6b22Be9755f62545009",
+        "chainId": 1287,
+        "name": "MOONWELL_USDC",
+        "isContract": true
+    },
+    {
+        "addr": "0x1dcCaE91438EA28A7e2e9178D9ADAd7096F47beF",
+        "chainId": 1287,
+        "name": "MOONWELL_USDT",
+        "isContract": true
+    },
+    {
+        "addr": "0x07bca43B75AbEd7496561130ab42CE7d9D08E978",
+        "chainId": 1287,
+        "name": "MOONWELL_FRAX",
+        "isContract": true
+    },
+    {
+        "addr": "0xC409e77229B6eCA42EA19E7AcF2d6b99Ebc02626",
+        "chainId": 1287,
+        "name": "MOONWELL_GLIMMER",
+        "isContract": true
+    },
+    {
+        "addr": "0x6A055083c8Af769Ce04E9A6E8987E7e9707368DA",
+        "chainId": 1287,
+        "name": "COMPTROLLER",
+        "isContract": true
+    },
+    {
+        "addr": "0x1a14f9af09648F6550c339A71D3e449e31B8E0Ae",
+        "chainId": 1287,
+        "name": "UNITROLLER",
+        "isContract": true
+    },
+    {
+        "addr": "0xd5448A26b31ff94F62C8301577f7A3980CFdcd2d",
+        "chainId": 1287,
+        "name": "CHAINLINK_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x9347F66FFCfaBc2ed22F3BDa4184f61E135C9481",
+        "chainId": 1287,
+        "name": "JUMP_RATE_MODEL",
+        "isContract": true
+    },
+    {
+        "addr": "0x778BEfb5d7AcBB62e8a2C6768B1589f2F00014b9",
+        "chainId": 1287,
+        "name": "CHAINLINK_GLIMMER_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0x0309E61a9e15f5afbC90F30582b82a37dfc41925",
+        "chainId": 1287,
+        "name": "CHAINLINK_BTC_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0x945343e642b0Bbcf31c6F695109322F454E5A4cF",
+        "chainId": 1287,
+        "name": "CHAINLINK_ETH_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0x649eEF5014a50D9795CB70949F27e10fB34C414a",
+        "chainId": 1287,
+        "name": "CHAINLINK_USDC_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0xf0DE766Bfd7fFA029E5329c14f5E5b4309cD1bC6",
+        "chainId": 1287,
+        "name": "CHAINLINK_USDT_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0xcBCdB2Eaec20A5FD489960D7968F3b3b09308a46",
+        "chainId": 1287,
+        "name": "CHAINLINK_FRAX_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0x7E498C2aae7fA815B71B39cd1351b7b5ee9D2a60",
         "chainId": 1287,
         "name": "stkWELL_IMPL",
         "isContract": true
     },
     {
-        "addr": "0x679f6F96016dE47C85a0C8Be53056846E4301B3e",
+        "addr": "0xCBfcab5e2E9DdC0B5Fa8B06Cd0e7a928c6D58DC0",
         "chainId": 1287,
         "name": "stkWELL",
         "isContract": true
     },
     {
-        "addr": "0xD095a1C9B4BBc9B1a3922a4656C5C4a8E601dF91",
+        "addr": "0xE126DF7e1976D59c2a9b4d41E666aB88B4594711",
         "chainId": 1287,
         "name": "ECOSYSTEM_RESERVE",
         "isContract": true
     },
     {
-        "addr": "0x7e6F29dA0137706fcE97434f7125Af0886ef1Ab2",
+        "addr": "0x1a64904d0494AB6CF60ABd3B1b469Db8ED1074bE",
         "chainId": 1287,
         "name": "ECOSYSTEM_RESERVE_IMPL",
         "isContract": true
     },
     {
-        "addr": "0xfBF16f8aAfd1927a8D8EF8399b5E380b5E393B15",
+        "addr": "0xf095450C4e080d1E4Ac33d7fAcE648881d4A2BB7",
         "chainId": 1287,
         "name": "ECOSYSTEM_RESERVE_CONTROLLER",
         "isContract": true

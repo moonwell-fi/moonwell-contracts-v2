@@ -7,6 +7,7 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
+// forge script script/DeployStkWell.sol --rpc-url moonbaseAlpha -vvvv --broadcast -g 200 --slow
 contract DeployStkWell is Script, ChainIds, MultichainGovernorDeploy {
     /// @notice addresses contract
     Addresses addresses;
@@ -27,7 +28,7 @@ contract DeployStkWell is Script, ChainIds, MultichainGovernorDeploy {
     function run() public {
         address proxyAdmin = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
 
-        address xwell = addresses.getAddress("xWELL_PROXY");
+        address well = addresses.getAddress("WELL");
 
         vm.startBroadcast(PRIVATE_KEY);
 
@@ -35,12 +36,14 @@ contract DeployStkWell is Script, ChainIds, MultichainGovernorDeploy {
             address ecosystemReserveProxy,
             address ecosystemReserveImplementation,
             address ecosystemReserveController
-        ) = deployEcosystemReserve(addresses.getAddress("MOONBEAM_TIMELOCK"));
+        ) = deployEcosystemReserve(
+                addresses.getAddress("MOONBEAM_PROXY_ADMIN")
+            );
 
         /// to mock the system on moonbeam
         (address proxy, address implementation) = deployStakedWellMock(
-            address(xwell),
-            address(xwell),
+            address(well),
+            address(well),
             1 days,
             1 weeks,
             ecosystemReserveProxy, // rewardsVault
