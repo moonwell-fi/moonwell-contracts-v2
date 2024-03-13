@@ -11,7 +11,7 @@ import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter
 
 /// rewrite of mip-m19 to use HybridProposal and generate calldata for
 /// the Multichain Governor.
-/// forge script src/proposals/mips/mip-m19/mip-m19-new-governor.sol:mipm19newGovernor --fork-url moonbeam -vvv
+/// forge script src/proposals/mips/mip-m19/mip-m19-new-governor.sol:mipm19newGovernor --fork-url moonbase -vvv
 contract mipm19newGovernor is HybridProposal {
     string public constant name = "MIP-M19";
 
@@ -28,13 +28,15 @@ contract mipm19newGovernor is HybridProposal {
     }
 
     function deploy(Addresses addresses, address) public override {
-        WormholeUnwrapperAdapter wormholeUnwrapperAdapter = new WormholeUnwrapperAdapter();
+        if (!addresses.isAddressSet("WORMHOLE_UNWRAPPER_ADAPTER")) {
+            WormholeUnwrapperAdapter wormholeUnwrapperAdapter = new WormholeUnwrapperAdapter();
 
-        addresses.addAddress(
-            "WORMHOLE_UNWRAPPER_ADAPTER",
-            address(wormholeUnwrapperAdapter),
-            true
-        );
+            addresses.addAddress(
+                "WORMHOLE_UNWRAPPER_ADAPTER",
+                address(wormholeUnwrapperAdapter),
+                true
+            );
+        }
     }
 
     function afterDeploy(Addresses addresses, address) public override {}
