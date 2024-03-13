@@ -87,8 +87,13 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy {
                 address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
                 proxyAdmin
             );
-            addresses.addAddress("stkWELL_PROXY", stkWellProxy, true);
-            addresses.addAddress("stkWELL_IMPL", stkWellImpl, true);
+            if (addresses.isAddressSet("stkWELL_PROXY")) {
+                addresses.changeAddress("stkWELL_PROXY", stkWellProxy, true);
+                addresses.changeAddress("stkWELL_IMPL", stkWellImpl, true);
+            } else {
+                addresses.addAddress("stkWELL_PROXY", stkWellProxy, true);
+                addresses.addAddress("stkWELL_IMPL", stkWellImpl, true);
+            }
         }
 
         (
