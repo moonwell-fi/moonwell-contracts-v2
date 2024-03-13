@@ -36,9 +36,7 @@ contract DeployStkWell is Script, ChainIds, MultichainGovernorDeploy {
             address ecosystemReserveProxy,
             address ecosystemReserveImplementation,
             address ecosystemReserveController
-        ) = deployEcosystemReserve(
-                addresses.getAddress("MOONBEAM_PROXY_ADMIN")
-            );
+        ) = deployEcosystemReserve(proxyAdmin);
 
         /// to mock the system on moonbeam
         (address proxy, address implementation) = deployStakedWellMock(
