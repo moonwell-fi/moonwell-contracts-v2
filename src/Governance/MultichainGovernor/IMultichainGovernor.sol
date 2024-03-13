@@ -350,4 +350,10 @@ interface IMultichainGovernor {
     /// should only be called if there is a change in gas prices on the external chain
     /// @param newGasLimit new gas limit to set
     function setGasLimit(uint96 newGasLimit) external;
+
+    /// @notice grant new pause guardian
+    /// @dev can only be called when unpaused, otherwise the
+    /// contract can be paused again
+    /// @param newPauseGuardian the new pause guardian
+    function grantPauseGuardian(address newPauseGuardian) external;
 }
