@@ -967,6 +967,16 @@ contract MultichainGovernor is
         _setGasLimit(newGasLimit);
     }
 
+    /// @notice grant new pause guardian
+    /// @dev can only be called when unpaused, otherwise the
+    /// contract can be paused again
+    /// @param newPauseGuardian the new pause guardian
+    function grantPauseGuardian(
+        address newPauseGuardian
+    ) external onlyGovernor whenNotPaused {
+        _grantGuardian(newPauseGuardian);
+    }
+
     //// @notice array lengths must add up
     /// calldata must be whitelisted
     /// only break glass guardian can call, once, and when they do, their role is revoked
