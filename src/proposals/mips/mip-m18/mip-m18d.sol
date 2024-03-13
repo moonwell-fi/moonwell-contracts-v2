@@ -153,122 +153,67 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
 
         /// set pending admin of MOONWELL_mwBTC to the Multichain Governor
         _pushHybridAction(
-            addresses.getAddress("MOONWELL_mwBTC"),
+            addresses.getAddress("MOONWELL_WBTC"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending admin of MOONWELL_mwBTC to the Multichain Governor",
+            "Set the pending admin of MOONWELL_WBTC to the Multichain Governor",
             true
         );
 
         /// set pending admin of MOONWELL_mBUSD to the Multichain Governor
         _pushHybridAction(
-            addresses.getAddress("MOONWELL_mBUSD"),
+            addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending admin of MOONWELL_mBUSD to the Multichain Governor",
+            "Set the pending admin of MOONWELL_USDC to the Multichain Governor",
             true
         );
 
         /// set pending admin of MOONWELL_mETH to the Multichain Governor
         _pushHybridAction(
-            addresses.getAddress("MOONWELL_mETH"),
+            addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending admin of MOONWELL_mETH to the Multichain Governor",
+            "Set the pending admin of MOONWELL_WETH to the Multichain Governor",
             true
         );
 
         /// set pending admin of MOONWELL_mUSDC to the Multichain Governor
         _pushHybridAction(
-            addresses.getAddress("MOONWELL_mUSDC"),
+            addresses.getAddress("MOONWELL_USDT"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending admin of MOONWELL_mUSDC to the Multichain Governor",
+            "Set the pending admin of MOONWELL_USDT to the Multichain Governor",
             true
         );
 
         /// set pending admin of mGLIMMER to the Multichain Governor
         _pushHybridAction(
-            addresses.getAddress("mGLIMMER"),
+            addresses.getAddress("MOONWELL_GLIMMER"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending admin of mGLIMMER to the Multichain Governor",
+            "Set the pending admin of MOONWELL_GLIMMER to the Multichain Governor",
             true
         );
 
         /// set pending admin of mxcDOT to the Multichain Governor
         _pushHybridAction(
-            addresses.getAddress("mxcDOT"),
+            addresses.getAddress("MOONWELL_FRAX"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending admin of mxcDOT to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of mxcUSDT to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("mxcUSDT"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of mxcUSDT to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of mFRAX to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("mFRAX"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of mFRAX to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of mUSDCwh to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("mUSDCwh"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of mUSDCwh to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of mxcUSDC to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("mxcUSDC"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of mxcUSDC to the Multichain Governor",
-            true
-        );
-
-        /// set pending admin of mETHwh to the Multichain Governor
-        _pushHybridAction(
-            addresses.getAddress("mETHwh"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of mETHwh to the Multichain Governor",
+            "Set the pending admin of MOONWELL_FRAX to the Multichain Governor",
             true
         );
 
@@ -353,124 +298,69 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mETHwh")).pendingAdmin(),
+            Timelock(addresses.getAddress("MOONWELL_WBTC")).pendingAdmin(),
             governor,
             "mETHwh pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mETHwh")).admin(),
+            Timelock(addresses.getAddress("MOONWELL_WBTC")).admin(),
             timelock,
             "mETHwh admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mxcUSDC")).pendingAdmin(),
+            Timelock(addresses.getAddress("MOONWELL_WETH")).pendingAdmin(),
             governor,
             "mxcUSDC pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mxcUSDC")).admin(),
+            Timelock(addresses.getAddress("MOONWELL_WETH")).admin(),
             timelock,
             "mxcUSDC admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mUSDCwh")).pendingAdmin(),
+            Timelock(addresses.getAddress("MOONWELL_USDC")).pendingAdmin(),
             governor,
             "mUSDCwh pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mUSDCwh")).admin(),
+            Timelock(addresses.getAddress("MOONWELL_USDC")).admin(),
             timelock,
             "mUSDCwh admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mFRAX")).pendingAdmin(),
+            Timelock(addresses.getAddress("MOONWELL_USDT")).pendingAdmin(),
             governor,
             "mFRAX pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mFRAX")).admin(),
+            Timelock(addresses.getAddress("MOONWELL_USDT")).admin(),
             timelock,
             "mFRAX admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mxcUSDT")).pendingAdmin(),
+            Timelock(addresses.getAddress("MOONWELL_FRAX")).pendingAdmin(),
             governor,
             "mxcUSDT pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mxcUSDT")).admin(),
+            Timelock(addresses.getAddress("MOONWELL_FRAX")).admin(),
             timelock,
             "mxcUSDT admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mxcDOT")).pendingAdmin(),
-            governor,
-            "mxcDOT pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("mxcDOT")).admin(),
-            timelock,
-            "mxcDOT admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("mGLIMMER")).pendingAdmin(),
+            Timelock(addresses.getAddress("MOONWELL_GLIMMER")).pendingAdmin(),
             governor,
             "mGLIMMER pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mGLIMMER")).admin(),
+            Timelock(addresses.getAddress("MOONWELL_GLIMMER")).admin(),
             timelock,
             "mGLIMMER admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mUSDC")).pendingAdmin(),
-            governor,
-            "MOONWELL_mUSDC pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mUSDC")).admin(),
-            timelock,
-            "MOONWELL_mUSDC admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mBUSD")).pendingAdmin(),
-            governor,
-            "MOONWELL_mBUSD pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mBUSD")).admin(),
-            timelock,
-            "MOONWELL_mBUSD admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mwBTC")).pendingAdmin(),
-            governor,
-            "MOONWELL_mwBTC pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mwBTC")).admin(),
-            timelock,
-            "MOONWELL_mwBTC admin incorrect"
-        );
-
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mETH")).pendingAdmin(),
-            governor,
-            "MOONWELL_mETH pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mETH")).admin(),
-            timelock,
-            "MOONWELL_mETH admin incorrect"
         );
 
         assertEq(
@@ -507,7 +397,6 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
 
         vm.selectFork(baseForkId);
 
-        // check that the temporal governor now has multichain governor as a trusted sender
         // and that the timelock is still a trusted sender
         TemporalGovernor temporalGovernor = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")

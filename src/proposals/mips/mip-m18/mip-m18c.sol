@@ -29,7 +29,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy {
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
     /// @notice duration of the voting period for a proposal
-    uint256 public constant votingPeriodSeconds = 3 days;
+    uint256 public constant votingPeriodSeconds = 5 minutes;
 
     /// @notice minimum number of votes cast required for a proposal to pass
     uint256 public constant quorum = 100_000_000 * 1e18;
@@ -38,7 +38,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy {
     uint256 public constant maxUserLiveProposals = 5;
 
     /// @notice duration of the pause
-    uint128 public constant pauseDuration = 30 days;
+    uint128 public constant pauseDuration = 10 minutes;
 
     /// @notice address of the temporal governor
     address[] public temporalGovernanceTargets;
@@ -47,7 +47,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy {
     uint256 public constant proposalThreshold = 1_000_000 * 1e18;
 
     /// @notice duration of the cross chain vote collection period
-    uint256 public constant crossChainVoteCollectionPeriod = 1 days;
+    uint256 public constant crossChainVoteCollectionPeriod = 25 minutes;
 
     /// @notice proposal's actions all happen on moonbeam
     function primaryForkId() public view override returns (uint256) {

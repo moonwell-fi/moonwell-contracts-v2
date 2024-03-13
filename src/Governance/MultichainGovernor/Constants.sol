@@ -21,7 +21,7 @@ library Constants {
     /// @notice the minimum amount of time for cross chain vote collection.
     /// This ensures that votes cast on other chains have the ability to
     /// be registered even if Wormhole experiences downtime or delays.
-    uint256 public constant MIN_CROSS_CHAIN_VOTE_COLLECTION_PERIOD = 5 minutes;
+    uint256 public constant MIN_CROSS_CHAIN_VOTE_COLLECTION_PERIOD = 25 minutes;
 
     /// @notice the maximum amount of time for the cross chain vote collection.
     uint256 public constant MAX_CROSS_CHAIN_VOTE_COLLECTION_PERIOD = 14 days;
