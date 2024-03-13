@@ -482,7 +482,7 @@
     {
         "addr": "0x7793E08Eb4525309C46C9BA394cE33361A167ba4",
         "chainId": 1284,
-        "name": "ECOSYSTEM_RESERVE",
+        "name": "ECOSYSTEM_RESERVE_PROXY",
         "isContract": true
     },
     {
@@ -1071,7 +1071,7 @@
     {
         "addr": "0xE126DF7e1976D59c2a9b4d41E666aB88B4594711",
         "chainId": 1287,
-        "name": "ECOSYSTEM_RESERVE",
+        "name": "ECOSYSTEM_RESERVE_PROXY",
         "isContract": true
     },
     {

@@ -56,7 +56,7 @@ contract DeployStkWell is Script, ChainIds, MultichainGovernorDeploy {
         addresses.addAddress("stkWELL_IMPL", address(implementation), true);
         addresses.addAddress("stkWELL_PROXY", address(proxy), true);
         addresses.addAddress(
-            "ECOSYSTEM_RESERVE",
+            "ECOSYSTEM_RESERVE_PROXY",
             address(ecosystemReserveProxy),
             true
         );
