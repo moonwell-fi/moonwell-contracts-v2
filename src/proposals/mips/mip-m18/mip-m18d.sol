@@ -216,17 +216,6 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
             "Set the pending admin of MOONWELL_FRAX to the Multichain Governor",
             true
         );
-
-        /// set pending admin of distrubutor
-        _pushHybridAction(
-            addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY"),
-            abi.encodeWithSignature(
-                "setPendingAdmin(address)",
-                multichainGovernorAddress
-            ),
-            "Set the pending admin of the distributor to the Multichain Governor",
-            true
-        );
     }
 
     function run(Addresses addresses, address) public override {
@@ -378,21 +367,6 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
             Timelock(addresses.getAddress("CHAINLINK_ORACLE")).admin(),
             governor,
             "Chainlink oracle admin incorrect"
-        );
-
-        assertEq(
-            ITokenSaleDistributorProxy(
-                addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY")
-            ).admin(),
-            timelock,
-            "TOKEN_SALE_DISTRIBUTOR_PROXY admin incorrect"
-        );
-        assertEq(
-            ITokenSaleDistributorProxy(
-                addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY")
-            ).pendingAdmin(),
-            governor,
-            "TOKEN_SALE_DISTRIBUTOR_PROXY pending admin incorrect"
         );
 
         vm.selectFork(baseForkId);
