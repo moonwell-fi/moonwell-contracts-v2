@@ -722,7 +722,7 @@
     {
         "addr": "0x8568A675384d761f36eC269D695d6Ce4423cfaB1",
         "chainId": 1284,
-        "name": "stkWELL",
+        "name": "stkWELL_PROXY",
         "isContract": true
     },
     {
@@ -1065,7 +1065,7 @@
     {
         "addr": "0xCBfcab5e2E9DdC0B5Fa8B06Cd0e7a928c6D58DC0",
         "chainId": 1287,
-        "name": "stkWELL",
+        "name": "stkWELL_PROXY",
         "isContract": true
     },
     {
