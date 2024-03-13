@@ -18,12 +18,15 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the
 /// Multichain Governor and the Artemis Timelock
+/// update MULTICHAIN_GOVERNOR_PROXY to 0x716ff5a3Acbcd6cA05e921a524b80B5B68FAca05 in Addresses.json for moonbase
+/// Command:
+///      MOONBEAM_RPC_URL="https://rpc.api.moonbase.moonbeam.network" forge script src/proposals/mips/mip-m18/mip-updatecrosschainperiod.sol --fork-url moonbase -vvvv
 contract Proposal3 is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP_UPDATE_CROSS_CHAIN_PERIOD";
 
-    uint256 public constant crossChainPeriod = 21 minutes;
+    uint256 public constant crossChainPeriod = 1 hours;
     // min voting period is 10 minutes
-    uint256 public constant votingPeriod = 10 minutes;
+    uint256 public constant votingPeriod = 1 hours;
 
     constructor() {
         bytes memory proposalDescription = bytes("Update cross chain period");
@@ -60,7 +63,35 @@ contract Proposal3 is HybridProposal, MultichainGovernorDeploy {
         );
     }
 
-    function run(Addresses addresses, address) public override {}
+    function run(Addresses addresses, address) public override {
+        vm.selectFork(moonbeamForkId);
 
-    function validate(Addresses addresses, address) public override {}
+        _runMoonbeamMultichainGovernor(addresses, address(1000000000));
+
+        vm.selectFork(baseForkId);
+
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        _runBase(temporalGovernor);
+
+        // switch back to the moonbeam fork so we can run the validations
+        vm.selectFork(moonbeamForkId);
+    }
+
+    function validate(Addresses addresses, address) public override {
+        assertEq(
+            MultichainGovernor(
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            ).crossChainVoteCollectionPeriod(),
+            crossChainPeriod,
+            "Cross chain period not updated"
+        );
+
+        assertEq(
+            MultichainGovernor(
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            ).votingPeriod(),
+            votingPeriod,
+            "Voting period not updated"
+        );
+    }
 }

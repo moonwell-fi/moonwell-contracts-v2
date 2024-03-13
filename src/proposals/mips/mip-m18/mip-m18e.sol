@@ -6,9 +6,10 @@ import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import "@forge-std/Test.sol";
 
+import {ITokenSaleDistributorProxy} from "../../../tokensale/ITokenSaleDistributorProxy.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-
+import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
@@ -359,5 +360,37 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy {
             governor,
             "UNITROLLER admin incorrect"
         );
+
+        assertEq(
+            ITokenSaleDistributorProxy(
+                addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY")
+            ).admin(),
+            governor,
+            "TOKEN_SALE_DISTRIBUTOR_PROXY admin incorrect"
+        );
+        assertEq(
+            ITokenSaleDistributorProxy(
+                addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY")
+            ).pendingAdmin(),
+            address(0),
+            "TOKEN_SALE_DISTRIBUTOR_PROXY pending admin incorrect"
+        );
+
+        vm.selectFork(baseForkId);
+
+        // check that the multichain governor now is the only trusted sender on the temporal governor
+        TemporalGovernor temporalGovernor = TemporalGovernor(
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
+
+        bytes32[] memory trustedSenders = temporalGovernor.allTrustedSenders(
+            chainIdToWormHoleId[block.chainid]
+        );
+
+        assertEq(trustedSenders.length, 1);
+
+        assertEq(trustedSenders[0], keccak256(abi.encodePacked(governor)));
+
+        vm.selectFork(moonbeamForkId);
     }
 }

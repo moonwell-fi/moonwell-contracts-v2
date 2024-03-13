@@ -74,8 +74,8 @@ contract Proposal7 is HybridProposal, MultichainGovernorDeploy {
                 mrd,
                 abi.encodeWithSignature(
                     "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
-                    emissionConfig[i].mToken,
-                    emissionConfig[i].owner,
+                    addresses.getAddress(emissionConfig[i].mToken),
+                    addresses.getAddress(emissionConfig[i].owner),
                     emissionConfig[i].emissionToken,
                     emissionConfig[i].supplyEmissionPerSec,
                     emissionConfig[i].borrowEmissionsPerSec,
@@ -92,24 +92,7 @@ contract Proposal7 is HybridProposal, MultichainGovernorDeploy {
     function run(Addresses addresses, address) public override {
         vm.selectFork(baseForkId);
 
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
-        MultiRewardDistributor distributor = MultiRewardDistributor(
-            addresses.getAddress("MRD_PROXY")
-        );
-
-        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        for (uint256 i = 0; i < emissionConfig.length; i++) {
-            distributor._addEmissionConfig(
-                MToken(addresses.getAddress(emissionConfig[i].mToken)),
-                addresses.getAddress(emissionConfig[i].owner),
-                emissionConfig[i].emissionToken,
-                emissionConfig[i].supplyEmissionPerSec,
-                emissionConfig[i].borrowEmissionsPerSec,
-                emissionConfig[i].endTime
-            );
-        }
+        _runBase(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
         vm.selectFork(moonbeamForkId);
     }

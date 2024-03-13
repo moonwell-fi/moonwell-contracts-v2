@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
-
+import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import "@forge-std/Test.sol";
 
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
@@ -18,7 +18,6 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 //- Move temporal governor ownership back to artemis
 //- Move bridge adapter ownership back to artemis
 //- Move xwell ownership back to artemis
-//- Move distributor ownership back to artemis
 //- Remove old governor as a trusted sender on temporal governor
 contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18E";
@@ -38,11 +37,14 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
     function build(Addresses addresses) public override {
         vm.selectFork(baseForkId);
 
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        address temporalGovernor = addresses.getAddress(
+            "TEMPORAL_GOVERNOR",
+            baseSepoliaChainId
+        );
 
         address timelock = addresses.getAddress(
             "MOONBEAM_TIMELOCK",
-            sendingChainIdToReceivingChainId[block.chainid]
+            moonBaseChainId
         );
 
         {
@@ -69,7 +71,7 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
         {
             ITemporalGovernor.TrustedSender[]
                 memory temporalGovernanceTrustedSenders = new ITemporalGovernor.TrustedSender[](
-                    1
+                    2
                 );
 
             // old governor
@@ -78,18 +80,24 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
             temporalGovernanceTrustedSenders[0]
                 .chainId = moonBeamWormholeChainId;
 
+            // new governor
+            temporalGovernanceTrustedSenders[1].addr = addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_PROXY",
+                moonBaseChainId
+            );
+            temporalGovernanceTrustedSenders[1]
+                .chainId = moonBeamWormholeChainId;
+
             _pushHybridAction(
                 temporalGovernor,
                 abi.encodeWithSignature(
                     "unSetTrustedSenders((uint16,address)[])",
                     temporalGovernanceTrustedSenders
                 ),
-                "Add Timelock as a trusted sender to the Temporal Governor",
+                "Remove old governor as a trusted sender to the Temporal Governor",
                 false
             );
         }
-
-        vm.selectFork(moonbeamForkId);
 
         _pushHybridAction(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
@@ -101,10 +109,67 @@ contract Proposal2 is HybridProposal, MultichainGovernorDeploy {
         _pushHybridAction(
             addresses.getAddress("xWELL_PROXY"),
             abi.encodeWithSignature("transferOwnership(address)", timelock),
-            "Set the pending owner of the xWELL Token to the Multichain Governor",
+            "Set the pending owner of the xWELL Token to the Timelock",
             true
         );
     }
 
-    function validate(Addresses addresses, address) public override {}
+    function run(Addresses addresses, address) public override {
+        vm.selectFork(moonbeamForkId);
+
+        _runMoonbeamMultichainGovernor(addresses, address(1000000));
+
+        vm.selectFork(baseForkId);
+
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        _runBase(temporalGovernor);
+
+        vm.selectFork(primaryForkId());
+    }
+
+    function validate(Addresses addresses, address) public override {
+        vm.selectFork(baseForkId);
+
+        TemporalGovernor temporalGovernor = TemporalGovernor(
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
+
+        // get all trusted senders
+        bytes32[] memory trustedSenders = temporalGovernor.allTrustedSenders(
+            chainIdToWormHoleId[block.chainid]
+        );
+
+        assertEq(trustedSenders.length, 1);
+
+        vm.selectFork(moonbeamForkId);
+
+        assertEq(
+            trustedSenders[0],
+            keccak256(
+                abi.encodePacked(addresses.getAddress("MOONBEAM_TIMELOCK"))
+            )
+        );
+
+        assertEq(
+            Ownable(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"))
+                .owner(),
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+        );
+        assertEq(
+            Ownable2StepUpgradeable(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ).pendingOwner(),
+            addresses.getAddress("MOONBEAM_TIMELOCK")
+        );
+
+        assertEq(
+            Ownable(addresses.getAddress("xWELL_PROXY")).owner(),
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+        );
+        assertEq(
+            Ownable2StepUpgradeable(addresses.getAddress("xWELL_PROXY"))
+                .pendingOwner(),
+            addresses.getAddress("MOONBEAM_TIMELOCK")
+        );
+    }
 }
