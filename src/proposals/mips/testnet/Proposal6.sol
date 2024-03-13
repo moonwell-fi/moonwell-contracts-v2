@@ -44,13 +44,11 @@ contract Proposal6 is HybridProposal, MultichainGovernorDeploy {
             proxyAdmin,
             abi.encodeWithSignature("transferOwnership(address)", timelock),
             "Set the owner of the Proxy Admin to Timelock",
-            false
+            true
         );
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(moonbeamForkId);
-
         _runMoonbeamMultichainGovernor(addresses, address(1000000));
     }
 
