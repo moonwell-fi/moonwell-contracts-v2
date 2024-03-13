@@ -91,7 +91,7 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
     /// however there are no checks on this as only the owner will call this function
     /// and the owner is assumed to be non-malicious
     function _grantGuardian(address newPauseGuardian) internal {
-        address previousPauseGuardian = newPauseGuardian;
+        address previousPauseGuardian = pauseGuardian;
         pauseGuardian = newPauseGuardian;
 
         /// if a new guardian is granted, the contract is automatically unpaused
