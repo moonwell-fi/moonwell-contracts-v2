@@ -58,21 +58,39 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy {
             address ecosystemReserveController
         ) = deployEcosystemReserve(proxyAdmin);
 
-        addresses.addAddress(
-            "ECOSYSTEM_RESERVE_PROXY",
-            ecosystemReserveProxy,
-            true
-        );
-        addresses.addAddress(
-            "ECOSYSTEM_RESERVE_IMPL",
-            ecosystemReserveImplementation,
-            true
-        );
-        addresses.addAddress(
-            "ECOSYSTEM_RESERVE_CONTROLLER",
-            ecosystemReserveController,
-            true
-        );
+        if (addresses.isAddressSet("ECOSYSTEM_RESERVE_PROXY")) {
+            addresses.changeAddress(
+                "ECOSYSTEM_RESERVE_PROXY",
+                ecosystemReserveProxy,
+                true
+            );
+            addresses.changeAddress(
+                "ECOSYSTEM_RESERVE_IMPL",
+                ecosystemReserveImplementation,
+                true
+            );
+            addresses.changeAddress(
+                "ECOSYSTEM_RESERVE_CONTROLLER",
+                ecosystemReserveController,
+                true
+            );
+        } else {
+            addresses.addAddress(
+                "ECOSYSTEM_RESERVE_PROXY",
+                ecosystemReserveProxy,
+                true
+            );
+            addresses.addAddress(
+                "ECOSYSTEM_RESERVE_IMPL",
+                ecosystemReserveImplementation,
+                true
+            );
+            addresses.addAddress(
+                "ECOSYSTEM_RESERVE_CONTROLLER",
+                ecosystemReserveController,
+                true
+            );
+        }
 
         {
             (address stkWellProxy, address stkWellImpl) = deployStakedWell(
@@ -112,8 +130,25 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy {
                 addresses.getAddress("TEMPORAL_GOVERNOR")
             );
 
-        addresses.addAddress("VOTE_COLLECTION_PROXY", collectionProxy, true);
-        addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl, true);
+        if (addresses.isAddressSet("VOTE_COLLECTION_PROXY")) {
+            addresses.changeAddress(
+                "VOTE_COLLECTION_PROXY",
+                collectionProxy,
+                true
+            );
+            addresses.changeAddress(
+                "VOTE_COLLECTION_IMPL",
+                collectionImpl,
+                true
+            );
+        } else {
+            addresses.addAddress(
+                "VOTE_COLLECTION_PROXY",
+                collectionProxy,
+                true
+            );
+            addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl, true);
+        }
     }
 
     function afterDeploy(

@@ -2628,8 +2628,16 @@ contract MultichainProposalTest is
         address pauseGuardian = addresses.getAddress(
             "MOONBEAM_PAUSE_GUARDIAN_MULTISIG"
         );
+
         vm.prank(pauseGuardian);
         governor.pause();
+
+        assertTrue(governor.paused(), "governor not paused");
+
+        vm.prank(pauseGuardian);
+        governor.unpause();
+
+        assertFalse(governor.paused(), "governor paused");
 
         governor.kickGuardian();
 
