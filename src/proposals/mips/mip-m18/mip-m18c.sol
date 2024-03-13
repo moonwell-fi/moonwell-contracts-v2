@@ -182,7 +182,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy {
 
         initData.well = addresses.getAddress("WELL");
         initData.xWell = addresses.getAddress("xWELL_PROXY");
-        initData.stkWell = addresses.getAddress("stkWELL");
+        initData.stkWell = addresses.getAddress("stkWELL_PROXY");
         initData.distributor = addresses.getAddress(
             "TOKEN_SALE_DISTRIBUTOR_PROXY"
         );
@@ -263,7 +263,7 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy {
         );
         assertEq(
             address(governor.stkWell()),
-            addresses.getAddress("stkWELL"),
+            addresses.getAddress("stkWELL_PROXY"),
             "incorrect stkWell address"
         );
         /// TODO change ownership of the distributor proxy
