@@ -22,7 +22,7 @@ contract MockTimelock {
 
 contract MultichainGovernorUnitTest is MultichainBaseTest {
     event BreakGlassGuardianChanged(address oldValue, address newValue);
-    event PauseGuardianUpdated(address oldPauseGuardian, address newPauseGuardian);
+    event PauseGuardianUpdated(address indexed oldPauseGuardian, address indexed newPauseGuardian);
 
     function setUp() public override {
         super.setUp();
