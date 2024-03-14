@@ -2621,4 +2621,95 @@ contract MultichainProposalTest is
         }
         require(userProposalFound, "proposal not created");
     }
+
+    function testGrantGuardianRoleAfterPause() public {
+        vm.selectFork(moonbeamForkId);
+
+        address pauseGuardian = addresses.getAddress(
+            "MOONBEAM_PAUSE_GUARDIAN_MULTISIG"
+        );
+
+        vm.prank(pauseGuardian);
+        governor.pause();
+
+        assertTrue(governor.paused(), "governor not paused");
+
+        vm.prank(pauseGuardian);
+        governor.unpause();
+
+        assertFalse(governor.paused(), "governor paused");
+        assertEq(governor.pauseGuardian(), address(0), "guardian not kicked");
+
+        /// mint whichever is greater, the proposal threshold or the quorum
+        uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
+            ? governor.proposalThreshold()
+            : governor.quorum();
+
+        deal(address(well), address(this), mintAmount);
+        well.transfer(address(this), mintAmount);
+        well.delegate(address(this));
+
+        vm.roll(block.number + 1);
+
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory description = "Proposal MIP-M00 - Set guardian role";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "grantPauseGuardian(address)",
+            pauseGuardian
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
+
+        uint256 proposalId = governor.propose{value: bridgeCost}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            0,
+            "incorrect proposal state"
+        );
+
+        /// vote yes on proposal
+        governor.castVote(proposalId, 0);
+
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 crossChainVoteCollectionEndTimestamp,
+            ,
+            ,
+            ,
+
+        ) = governor.proposalInformation(proposalId);
+
+        vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            4,
+            "incorrect proposal state"
+        );
+
+        governor.execute(proposalId);
+
+        assertEq(governor.pauseGuardian(), pauseGuardian, "guardian not set");
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            5,
+            "incorrect proposal state"
+        );
+    }
 }
