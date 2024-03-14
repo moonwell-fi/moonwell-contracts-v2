@@ -51,7 +51,7 @@ const fetchVAA = async (sequence, retries = 5, delay = 2000) => {
 
 // Entrypoint for the action
 exports.handler = async function (event) {
-  if (!event.request || !event.request.body || !event.request.body.signature || !event.request.body.request) throw new Error(`Missing payload`);
+  if (!event.request || !event.request.body) throw new Error(`Missing payload`);
   const { matchReasons, request, signature } = event.request.body;
 
   const sequence = payload.matchReasons[0].params.sequence;
