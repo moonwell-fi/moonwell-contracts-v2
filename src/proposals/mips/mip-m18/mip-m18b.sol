@@ -51,64 +51,76 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy {
     function deploy(Addresses addresses, address) public override {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
-        /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
-        (
-            address ecosystemReserveProxy,
-            address ecosystemReserveImplementation,
-            address ecosystemReserveController
-        ) = deployEcosystemReserve(proxyAdmin);
+        if (
+            !addresses.isAddressSet("ECOSYSTEM_RESEREVE_PROXY", block.chainid)
+        ) {
+            /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
+            (
+                address ecosystemReserveProxy,
+                address ecosystemReserveImplementation,
+                address ecosystemReserveController
+            ) = deployEcosystemReserve(proxyAdmin);
 
-        addresses.addAddress(
-            "ECOSYSTEM_RESERVE_PROXY",
-            ecosystemReserveProxy,
-            true
-        );
-        addresses.addAddress(
-            "ECOSYSTEM_RESERVE_IMPL",
-            ecosystemReserveImplementation,
-            true
-        );
-        addresses.addAddress(
-            "ECOSYSTEM_RESERVE_CONTROLLER",
-            ecosystemReserveController,
-            true
-        );
-
-        {
-            (address stkWellProxy, address stkWellImpl) = deployStakedWell(
-                addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("xWELL_PROXY"),
-                cooldownSeconds,
-                unstakeWindow,
+            addresses.addAddress(
+                "ECOSYSTEM_RESERVE_PROXY",
                 ecosystemReserveProxy,
-                /// check that emissions manager on Moonbeam is the Artemis Timelock, so on Base it should be the temporal governor
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                distributionDuration,
-                address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
-                proxyAdmin
+                true
             );
-            addresses.addAddress("stkWELL_PROXY", stkWellProxy, true);
-            addresses.addAddress("stkWELL_IMPL", stkWellImpl, true);
+            addresses.addAddress(
+                "ECOSYSTEM_RESERVE_IMPL",
+                ecosystemReserveImplementation,
+                true
+            );
+            addresses.addAddress(
+                "ECOSYSTEM_RESERVE_CONTROLLER",
+                ecosystemReserveController,
+                true
+            );
         }
 
-        (
-            address collectionProxy,
-            address collectionImpl
-        ) = deployVoteCollection(
-                addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("stkWELL_PROXY"),
-                addresses.getAddress( /// fetch multichain governor address on Moonbeam
-                        "MULTICHAIN_GOVERNOR_PROXY",
-                        sendingChainIdToReceivingChainId[block.chainid]
-                    ),
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                chainIdToWormHoleId[block.chainid],
-                proxyAdmin,
-                addresses.getAddress("TEMPORAL_GOVERNOR")
-            );
+        {
+            if (!addresses.isAddressSet("xWELL_PROXY", block.chainid)) {
+                (address stkWellProxy, address stkWellImpl) = deployStakedWell(
+                    addresses.getAddress("xWELL_PROXY"),
+                    addresses.getAddress("xWELL_PROXY"),
+                    cooldownSeconds,
+                    unstakeWindow,
+                    ecosystemReserveProxy,
+                    /// check that emissions manager on Moonbeam is the Artemis Timelock, so on Base it should be the temporal governor
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    distributionDuration,
+                    address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
+                    proxyAdmin
+                );
+                addresses.addAddress("stkWELL_PROXY", stkWellProxy, true);
+                addresses.addAddress("stkWELL_IMPL", stkWellImpl, true);
+            }
+        }
 
-        addresses.addAddress("VOTE_COLLECTION_PROXY", collectionProxy, true);
-        addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl, true);
+        if (!addresses.isAddressSet("VOTE_COLLECTION_PROXY", block.chainid)) {
+            (
+                address collectionProxy,
+                address collectionImpl
+            ) = deployVoteCollection(
+                    addresses.getAddress("xWELL_PROXY"),
+                    addresses.getAddress("stkWELL_PROXY"),
+                    addresses.getAddress( /// fetch multichain governor address on Moonbeam
+                            "MULTICHAIN_GOVERNOR_PROXY",
+                            sendingChainIdToReceivingChainId[block.chainid]
+                        ),
+                    addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+                    chainIdToWormHoleId[block.chainid],
+                    proxyAdmin,
+                    addresses.getAddress("TEMPORAL_GOVERNOR")
+                );
+
+            addresses.addAddress(
+                "VOTE_COLLECTION_PROXY",
+                collectionProxy,
+                true
+            );
+            addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl, true);
+        }
     }
 
     function afterDeploy(
