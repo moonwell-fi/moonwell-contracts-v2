@@ -1,0 +1,14 @@
+{
+  "name": "queueVAA",
+  "version": "1.0.0",
+  "description": "",
+  "main": "queue.js",
+  "scripts": {
+  },
+  "devDependencies": {
+    "axios": "^1.6.7"
+  },
+  "dependencies": {
+    "ethers": "^6.11.1"
+  }
+}
