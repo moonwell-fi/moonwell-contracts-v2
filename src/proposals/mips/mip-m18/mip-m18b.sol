@@ -51,9 +51,7 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy {
     function deploy(Addresses addresses, address) public override {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
-        if (
-            !addresses.isAddressSet("ECOSYSTEM_RESEREVE_PROXY", block.chainid)
-        ) {
+        if (!addresses.isAddressSet("stkWELL_PROXY", block.chainid)) {
             /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
             (
                 address ecosystemReserveProxy,
@@ -76,10 +74,8 @@ contract mipm18b is HybridProposal, MultichainGovernorDeploy {
                 ecosystemReserveController,
                 true
             );
-        }
 
-        {
-            if (!addresses.isAddressSet("xWELL_PROXY", block.chainid)) {
+            {
                 (address stkWellProxy, address stkWellImpl) = deployStakedWell(
                     addresses.getAddress("xWELL_PROXY"),
                     addresses.getAddress("xWELL_PROXY"),
