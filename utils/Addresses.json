@@ -984,13 +984,13 @@
         "isContract": true
     },
     {
-        "addr": "0x5f4b20B6d7D609948A8849f7D89eb620586A1F60",
+        "addr": "0x599D4a1538d686814eE11b331EACBBa166D7C41a",
         "chainId": 1287,
         "name": "MULTICHAIN_GOVERNOR_IMPL",
         "isContract": true
     },
     {
-        "addr": "0x86474066034CAD1D0802154E8Ae7Fe3a1042d2DD",
+        "addr": "0xf152d75fe4cBB11AE224B94110c31F0bdDb55850",
         "chainId": 1287,
         "name": "MULTICHAIN_GOVERNOR_PROXY",
         "isContract": true
