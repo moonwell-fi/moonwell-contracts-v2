@@ -996,51 +996,51 @@
         "isContract": true
     },
     {
+        "addr": "0x9AC4520143F86538CdF325Ec9141e060e5896d7a",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_PROXY"
+    },
+    {
+        "addr": "0x4462233cA8899316540ffE976990D77D486A3f9c",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_IMPL"
+    },
+    {
+        "addr": "0xCEdb41D3D274326a6a72F03215BA2E8aA0fA0A6a",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_CONTROLLER"
+    },
+    {
+        "addr": "0x136b89Fc7e52493AadC7710a64603793a857dAfA",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "stkWELL_PROXY"
+    },
+    {
+        "addr": "0xa48382Da31A70EFecDF0a77d454cdE07b25b4B8D",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "stkWELL_IMPL"
+    },
+    {
+        "addr": "0xBdD86164da753C1a25e72603d266Dc1CC32e8acf",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "VOTE_COLLECTION_PROXY"
+    },
+    {
+        "addr": "0x8B1570c2eE8B7a729384382472C9238D473E1529",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "VOTE_COLLECTION_IMPL"
+    },
+    {
         "addr": "0x876fa6f4EB3Aad22f9893f82784095401499d6cA",
         "chainId": 1287,
         "name": "WORMHOLE_UNWRAPPER_ADAPTER",
-        "isContract": true
-    },
-    {
-        "addr": "0x7e6F29dA0137706fcE97434f7125Af0886ef1Ab2",
-        "chainId": 84532,
-        "name": "ECOSYSTEM_RESERVE_PROXY",
-        "isContract": true
-    },
-    {
-        "addr": "0xAA6b26920AE8e786F9bBEf3A9504eE941577Bc8f",
-        "chainId": 84532,
-        "name": "ECOSYSTEM_RESERVE_IMPL",
-        "isContract": true
-    },
-    {
-        "addr": "0xD0e503b80cdF0197509940498F166598E5Fb9e4E",
-        "chainId": 84532,
-        "name": "ECOSYSTEM_RESERVE_CONTROLLER",
-        "isContract": true
-    },
-    {
-        "addr": "0x9374e4Ff60bBB28310C598695fC671A3c4c07E77",
-        "chainId": 84532,
-        "name": "stkWELL_PROXY",
-        "isContract": true
-    },
-    {
-        "addr": "0x679f6F96016dE47C85a0C8Be53056846E4301B3e",
-        "chainId": 84532,
-        "name": "stkWELL_IMPL",
-        "isContract": true
-    },
-    {
-        "addr": "0xe8318d11dCDf2194dB188D7eB83422FF148306f9",
-        "chainId": 84532,
-        "name": "VOTE_COLLECTION_PROXY",
-        "isContract": true
-    },
-    {
-        "addr": "0xF0558029cb98039Cee2c086878309Da2AE5610E1",
-        "chainId": 84532,
-        "name": "VOTE_COLLECTION_IMPL",
         "isContract": true
     },
     {
