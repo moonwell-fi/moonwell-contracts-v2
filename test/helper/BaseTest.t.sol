@@ -73,9 +73,9 @@ contract BaseTest is xWELLDeploy, Test {
 
     function setUp() public virtual {
         addresses = new Addresses();
-        if (addresses.getAddress("WELL") == address(0)) {
+        if (!addresses.isAddressSet("WELL")) {
             well = new MockERC20();
-            addresses.addAddress("WELL", address(well));
+            addresses.addAddress("WELL", address(well), true);
         } else {
             well = MockERC20(addresses.getAddress("WELL"));
         }

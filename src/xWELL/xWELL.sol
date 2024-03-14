@@ -192,7 +192,9 @@ contract xWELL is
     /// @dev can only be called when unpaused, otherwise the
     /// contract can be paused again
     /// @param newPauseGuardian the new pause guardian
-    function grantPauseGuardian(address newPauseGuardian) external onlyOwner whenNotPaused {
+    function grantPauseGuardian(
+        address newPauseGuardian
+    ) external onlyOwner whenNotPaused {
         _grantGuardian(newPauseGuardian);
     }
 

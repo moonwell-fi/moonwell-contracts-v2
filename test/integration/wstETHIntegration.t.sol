@@ -45,7 +45,7 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
         ); /// exchange starting price is 0.0002e18
         assertEq(
             mwstETH.reserveFactorMantissa(),
-            0.25e18,
+            0.30e18,
             "incorrect reserve factor"
         );
         assertEq(

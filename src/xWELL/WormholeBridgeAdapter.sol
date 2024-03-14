@@ -105,7 +105,7 @@ contract WormholeBridgeAdapter is
         targetAddress[targetChain] = address(this);
         _addTrustedSender(address(this), targetChain);
 
-        gasLimit = 300_000; /// @dev default starting gas limit for relayer 
+        gasLimit = 300_000; /// @dev default starting gas limit for relayer
     }
 
     /// --------------------------------------------------------

@@ -40,7 +40,11 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
 
         {
             MErc20Delegate mTokenLogic = new MErc20Delegate();
-            addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
+            addresses.addAddress(
+                "MTOKEN_IMPLEMENTATION",
+                address(mTokenLogic),
+                true
+            );
         }
 
         Configs.CTokenConfiguration[]
@@ -70,7 +74,8 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel)
+                        address(irModel),
+                        true
                     );
                 }
 
@@ -111,7 +116,11 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                     ""
                 );
 
-                addresses.addAddress(config.addressesString, address(mToken));
+                addresses.addAddress(
+                    config.addressesString,
+                    address(mToken),
+                    true
+                );
             }
         }
     }

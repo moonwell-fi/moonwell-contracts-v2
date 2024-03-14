@@ -56,7 +56,7 @@ contract xWELLRouter {
     function bridgeCost() external view returns (uint256) {
         return wormholeBridge.bridgeCost(baseWormholeChainId);
     }
-    
+
     /// @notice bridge WELL to xWELL on the base chain
     /// receiver address to receive the xWELL is msg.sender
     /// @param amount amount of WELL to bridge
@@ -81,7 +81,7 @@ contract xWELLRouter {
         /// approve the lockbox to spend the WELL
         well.approve(address(lockbox), amount);
 
-        /// deposit the WELL into the lockbox, which credits the lockbox with the xWELL
+        /// deposit the WELL into the lockbox, which credits the router contract the xWELL
         lockbox.deposit(amount);
 
         /// get the amount of xWELL credited to the lockbox

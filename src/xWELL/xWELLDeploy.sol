@@ -51,15 +51,6 @@ contract xWELLDeploy {
                 initData
             )
         );
-
-        xWELL(xwellImpl).initialize(
-            tokenName,
-            tokenSymbol,
-            tokenOwner,
-            newRateLimits,
-            newPauseDuration,
-            newPauseGuardian
-        );
     }
 
     /// @notice for Moonbeam deployment

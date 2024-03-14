@@ -56,15 +56,12 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
 
     /// @notice pause the contracts, can only pause while the contracts are unpaused
     /// uses up the pause, and starts the pause timer
-    function pause() external whenNotPaused {
+    function pause() public virtual whenNotPaused {
         require(
             msg.sender == pauseGuardian,
             "ConfigurablePauseGuardian: only pause guardian"
         );
-        require(
-            !pauseUsed(),
-            "ConfigurablePauseGuardian: pause already used"
-        );
+        require(!pauseUsed(), "ConfigurablePauseGuardian: pause already used");
 
         /// pause, set pauseStartTime to current block timestamp
         _setPauseTime(uint128(block.timestamp));

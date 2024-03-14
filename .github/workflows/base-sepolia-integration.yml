@@ -1,0 +1,23 @@
+name: Foundry base sepolia integration tests
+
+on: [pull_request]
+
+env:
+  BASE_RPC_URL: ${{secrets.BASE_SEPOLIA_RPC_URL}}
+
+jobs:
+  run-base-tests:
+    name: base-sepolia-integration-tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+      
+      - name: Integration Tests Base Sepolia
+        run: time forge test --match-contract LiveSystemTest --fork-url baseSepolia -vvv

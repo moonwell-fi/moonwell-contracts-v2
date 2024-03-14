@@ -101,12 +101,9 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// @notice returns the list of trusted senders for a given chain
     /// @param chainId The wormhole chain id to check
     /// @return The list of trusted senders
-    function allTrustedSenders(uint16 chainId)
-        external
-        view
-        override
-        returns (bytes32[] memory)
-    {
+    function allTrustedSenders(
+        uint16 chainId
+    ) external view override returns (bytes32[] memory) {
         bytes32[] memory trustedSendersList = new bytes32[](
             trustedSenders[chainId].length()
         );
@@ -194,7 +191,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
 
         emit GuardianPauseGranted(block.timestamp);
     }
-    
+
     /// @notice callable only via a gov proposal (governance)
     /// this transfers the guardian to a new address
     /// @param newGuardian The new guardian address
@@ -276,7 +273,9 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// periods of emergency when the governance on moonbeam is
     /// compromised and we need to stop additional proposals from going through.
     /// @param VAA The signed Verified Action Approval to process
-    function fastTrackProposalExecution(bytes memory VAA) external onlyOwner whenPaused {
+    function fastTrackProposalExecution(
+        bytes memory VAA
+    ) external onlyOwner whenPaused {
         _executeProposal(VAA, true); /// override timestamp checks and execute
     }
 
@@ -329,7 +328,10 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
 
         // Very important to check to make sure that the VAA we're processing is specifically designed
         // to be sent to this contract
-        require(intendedRecipient == address(this), "TemporalGovernor: Incorrect destination");
+        require(
+            intendedRecipient == address(this),
+            "TemporalGovernor: Incorrect destination"
+        );
 
         // Ensure the emitterAddress of this VAA is a trusted address
         require(
