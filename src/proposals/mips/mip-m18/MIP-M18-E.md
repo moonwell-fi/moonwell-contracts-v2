@@ -3,10 +3,10 @@
 ## Overview
 
 Moonwell is shifting to a multichain model. This proposal is the second of two
-proposals that are need to migrate the protocol to the new governor system
-contracts. This proposal will see the new Multichain Governor contract accept
-governance powers, transferring admin and owner from the current governor to the
-new governor. This proposal will also remove the Timelock contract as a trusted
+proposals that are needed to migrate the protocol to the new governor system
+contracts. This proposal will see the new Multichain Governor accept governance
+powers, transferring admin and owner from the current governor to the new
+governor. This proposal will also remove the Timelock contract as a trusted
 sender on the Temporal Governor contract on Base.
 
 ## Specification
