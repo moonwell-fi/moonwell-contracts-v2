@@ -153,8 +153,6 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy {
                 artemisTimelock
             )
         );
-
-        /// TODO add setPendingAdmin(address) ?
     }
 
     function afterDeploy(Addresses addresses, address) public override {
@@ -266,7 +264,6 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("stkWELL_PROXY"),
             "incorrect stkWell address"
         );
-        /// TODO change ownership of the distributor proxy
         assertEq(
             address(governor.distributor()),
             addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY"),

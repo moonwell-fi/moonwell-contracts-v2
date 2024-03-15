@@ -1,19 +1,22 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
+import "@forge-std/Test.sol";
+
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
-import "@forge-std/Test.sol";
-
+import {ITokenSaleDistributorProxy} from "../../../tokensale/ITokenSaleDistributorProxy.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
+import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the
@@ -290,7 +293,6 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
     }
 
     function validate(Addresses addresses, address) public override {
-        /// TODO validate the proxy admin for the ecosystem reserve proxy
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
         address timelock = addresses.getAddress("MOONBEAM_TIMELOCK");
 
@@ -300,6 +302,7 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
             governor,
             "stkWELL EMISSIONS MANAGER"
         );
+
         assertEq(
             Ownable(addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"))
                 .owner(),
@@ -476,7 +479,42 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
             "Chainlink oracle admin incorrect"
         );
 
-        /// TODO check that the temporal governor now has multichain governor as a trusted sender
-        /// and that the timelock is still a trusted sender
+        vm.selectFork(baseForkId);
+
+        TemporalGovernor temporalGovernor = TemporalGovernor(
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
+
+        assertTrue(
+            temporalGovernor.isTrustedSender(
+                chainIdToWormHoleId[block.chainid],
+                addresses.getAddress(
+                    "MOONBEAM_TIMELOCK",
+                    sendingChainIdToReceivingChainId[block.chainid]
+                )
+            ),
+            "timelock not trusted sender"
+        );
+
+        assertTrue(
+            temporalGovernor.isTrustedSender(
+                chainIdToWormHoleId[block.chainid],
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    sendingChainIdToReceivingChainId[block.chainid]
+                )
+            ),
+            "MultichainGovernor not trusted sender"
+        );
+
+        validateProxy(
+            vm,
+            addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"),
+            addresses.getAddress("ECOSYSTEM_RESERVE_IMPL"),
+            addresses.getAddress("MRD_PROXY_ADMIN"),
+            "moonbeam proxies for multichain governor"
+        );
+
+        vm.selectFork(moonbeamForkId);
     }
 }

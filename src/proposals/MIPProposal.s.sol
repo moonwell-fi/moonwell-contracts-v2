@@ -89,6 +89,7 @@ abstract contract MIPProposal is Script {
             for (uint256 j = 0; j < recordedNames.length; j++) {
                 console.log('{\n        "addr": "%s", ', recordedAddresses[j]);
                 console.log('        "chainId": %d,', block.chainid);
+                console.log('        "isContract": %s', true, ",");
                 console.log(
                     '        "name": "%s"\n}%s',
                     recordedNames[j],
