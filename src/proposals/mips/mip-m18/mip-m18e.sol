@@ -38,8 +38,6 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy {
 
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
-        vm.selectFork(moonbeamForkId);
-
         ITemporalGovernor.TrustedSender[]
             memory trustedSendersToRemove = new ITemporalGovernor.TrustedSender[](
                 1
