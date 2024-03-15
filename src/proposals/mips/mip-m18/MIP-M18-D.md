@@ -14,18 +14,21 @@ that the migration can be completed in a subsequent proposal.
 
 - Set pending admin of all mToken contracts
 - Set pending admin of the Comptroller
-- Set new admin of the chainlink price oracle
-- Set new owner of the Wormhole Bridge Adapter in the xWELL contract on both
-  Base and Moonbeam
-- Add the new governor as a trusted sender in Temporal Governor
+- Set Chainlink price oracle admin
+- Set Wormhole Bridge Adapter pending owner
+- Set xWELL pending owner
+- Set trusted sender in Temporal Governor
+- Set the Staked Well emission manager
+- Set the Ecosystem Reserve Controller owner
+- Set the the Proxy Admin owner
 
 ### Motivation
 
 Once we have deployed and initialized the new contracts, it's necessary to
 transfer the governance powers from the current governor to the new governor.
 This includes setting the pending admin of all mToken contracts, the
-Comptroller, the chainlink price oracle admin, the Wormhole Bridge Adapter in
-the xWELL contract on both Base and Moonbeam and adding the new governor as a
-trusted sender in Temporal Governor. This will allow the new governor to control
-the protocol and the wormhole bridge adapter to relay messages from the new
-Moonbeam governor to the Base governor and vice versa.
+Comptroller, the Chainlink price oracle admin, the Wormhole Bridge Adapter
+pending owner, the xWELL pending owner, the trusted sender in Temporal Governor,
+the Staked Well emission manager, the Ecosystem Reserve Controller owner, and
+the Proxy Admin owner. This will allow the new governor to control the Moonwell
+protocol and the Moonwell tokens.
