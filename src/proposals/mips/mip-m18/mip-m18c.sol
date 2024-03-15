@@ -153,11 +153,6 @@ contract mipm18c is HybridProposal, MultichainGovernorDeploy {
                 artemisTimelock
             )
         );
-
-        // for TokenSaleDistributor
-        approvedCalldata.push(
-            abi.encodeWithSignature("setPendingAdmin(address)", artemisTimelock)
-        );
     }
 
     function afterDeploy(Addresses addresses, address) public override {

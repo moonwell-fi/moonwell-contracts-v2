@@ -279,7 +279,16 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy {
 
         assertEq(trustedSenders.length, 1);
 
-        assertEq(trustedSenders[0], keccak256(abi.encodePacked(governor)));
+        assertTrue(
+            temporalGovernor.isTrustedSender(
+                chainIdToWormHoleId[block.chainid],
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    sendingChainIdToReceivingChainId[block.chainid]
+                )
+            ),
+            "MultichainGovernor not trusted sender"
+        );
 
         vm.selectFork(moonbeamForkId);
     }

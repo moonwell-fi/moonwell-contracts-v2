@@ -371,20 +371,31 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
 
         vm.selectFork(baseForkId);
 
-        // and that the timelock is still a trusted sender
         TemporalGovernor temporalGovernor = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
 
-        bytes32[] memory trustedSenders = temporalGovernor.allTrustedSenders(
-            chainIdToWormHoleId[block.chainid]
+        assertTrue(
+            temporalGovernor.isTrustedSender(
+                chainIdToWormHoleId[block.chainid],
+                addresses.getAddress(
+                    "MOONBEAM_TIMELOCK",
+                    sendingChainIdToReceivingChainId[block.chainid]
+                )
+            ),
+            "timelock not trusted sender"
         );
 
-        assertEq(trustedSenders.length, 2);
-
-        assertEq(trustedSenders[0], keccak256(abi.encodePacked(timelock)));
-
-        assertEq(trustedSenders[1], keccak256(abi.encodePacked(governor)));
+        assertTrue(
+            temporalGovernor.isTrustedSender(
+                chainIdToWormHoleId[block.chainid],
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    sendingChainIdToReceivingChainId[block.chainid]
+                )
+            ),
+            "MultichainGovernor not trusted sender"
+        );
 
         validateProxy(
             vm,
