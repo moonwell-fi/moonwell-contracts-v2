@@ -30,5 +30,5 @@ This includes setting the pending admin of all mToken contracts, the
 Comptroller, the Chainlink price oracle admin, the Wormhole Bridge Adapter
 pending owner, the xWELL pending owner, the trusted sender in Temporal Governor,
 the Staked Well emission manager, the Ecosystem Reserve Controller owner, and
-the Proxy Admin owner. This will allow the new governor to control the Moonwell
-protocol and the Moonwell tokens.
+the Proxy Admin owner. This will allow the new governor to control the entire
+Moonwell protocol from Moonbeam.
