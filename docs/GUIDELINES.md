@@ -99,13 +99,13 @@ Branches should be named in a consistent format:
 2. Use hyphens to separate words.
 3. Use a short and descriptive name.
 
-# Security Policy
+## Security Policy
 
 Security vulnerabilities should be disclosed to the project maintainers through
 [Immunefi](https://immunefi.com/bounty/moonwell/), or alternatively by email to
 [TBD]()
 
-# Solidity Conventions
+## Solidity Conventions
 
 In addition to the official Solidity Style Guide we have a number of other
 conventions that must be followed.
