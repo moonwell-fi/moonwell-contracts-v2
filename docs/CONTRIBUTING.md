@@ -35,4 +35,4 @@ If you're looking for a good place to start, look for issues labelled
 
 Moonwell V2 is a decentralized protocol, and we are committed to decentralizing
 its development. If you would like to propose a change to the protocol, please
-follow the [governance process](./gocs/GOVPROPOSAL.md).
+follow the [governance process](./governance/README.md).
