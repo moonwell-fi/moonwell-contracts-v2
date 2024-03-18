@@ -7,7 +7,7 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
-// forge script script/DeployStkWell.sol --rpc-url moonbaseAlpha -vvvv --broadcast -g 200 --slow
+// forge script script/DeployStkWell.sol --rpc-url moonbase -vvvv --broadcast -g 200 --slow
 contract DeployStkWell is Script, ChainIds, MultichainGovernorDeploy {
     /// @notice addresses contract
     Addresses addresses;

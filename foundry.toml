@@ -19,7 +19,7 @@ optimism = "https://endpoints.omniatech.io/v1/op/mainnet/public"
 avalanche = "https://rpc.ankr.com/avalanche"
 base = "https://mainnet.base.org"
 baseSepolia = "https://sepolia.base.org"
-moonbaseAlpha = "https://moonbase-alpha.public.blastapi.io"
+moonbase = "https://moonbase-alpha.public.blastapi.io"
 local = "http://127.0.0.1:8545"
 arbitrum = "https://arb1.arbitrum.io/rpc"
 
