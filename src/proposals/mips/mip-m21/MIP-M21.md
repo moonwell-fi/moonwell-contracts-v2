@@ -91,12 +91,3 @@ changes on the base chain to the amount of gas needed.
 
 On an unwrap transaction, the gas cost `167148` to mint new tokens on moonbeam
 on a chainforked integration test, so the gas costs are within the 300k limit.
-
-## Future Proposals
-
-After this proposal passes, there will be two governance proposals that will
-upgrade the current governance system from a single chain voting architecture to
-a multichain one. These proposals will allow WELL on Base to participate in
-governance. This architecture will allow the DAO to vote on collection contracts
-on different chains to allow holders of WELL on any chain to participate in
-governance.
