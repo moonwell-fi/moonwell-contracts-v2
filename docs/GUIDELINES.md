@@ -66,10 +66,7 @@ Reviewers should enforce code and project guidelines.
 
 External contributions must be reviewed separately by multiple maintainers.
 
-## Automation
-
-Automation should be used as much as possible to reduce the possibility of human
-error and forgetfulness.
+## Governance
 
 Moonwell uses
 [Forge Proposal Simulator](https://github.com/solidity-labs-io/forge-proposal-simulator/)
