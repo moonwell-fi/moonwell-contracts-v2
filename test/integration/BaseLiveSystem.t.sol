@@ -14,11 +14,11 @@ import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {MultiRewardDistributor} from "@protocol/multiRewardDistributor/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/multiRewardDistributor/MultiRewardDistributorCommon.sol";
 
 contract LiveSystemBaseTest is PostProposalCheck, Configs {
     MultiRewardDistributor mrd;

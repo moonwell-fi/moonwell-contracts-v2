@@ -11,7 +11,7 @@ import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellA
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
 
-import {JumpRateModel} from "@protocol/IRModels/JumpRateModel.sol";
+import {JumpRateModel} from "@protocol/irModels/JumpRateModel.sol";
 
 /*
 How to use:

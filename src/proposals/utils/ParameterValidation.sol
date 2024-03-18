@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "@forge-std/Test.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel} from "@protocol/IRModels/JumpRateModel.sol";
+import {JumpRateModel} from "@protocol/irModels/JumpRateModel.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 

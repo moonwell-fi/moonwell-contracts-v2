@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import "./MToken.sol";
-import "./Oracles/PriceOracle.sol";
-import "./MultiRewardDistributor/MultiRewardDistributor.sol";
+import "./oracles/PriceOracle.sol";
+import "./multiRewardDistributor/MultiRewardDistributor.sol";
 
 contract UnitrollerAdminStorage {
     /**

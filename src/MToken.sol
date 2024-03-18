@@ -6,7 +6,7 @@ import "./MTokenInterfaces.sol";
 import "./ErrorReporter.sol";
 import "./Exponential.sol";
 import "./EIP20Interface.sol";
-import "./IRModels/InterestRateModel.sol";
+import "./irModels/InterestRateModel.sol";
 
 /**
  * @title Moonwell's MToken Contract
