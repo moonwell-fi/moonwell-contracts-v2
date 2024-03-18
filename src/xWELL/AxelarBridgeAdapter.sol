@@ -5,9 +5,9 @@ import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/Saf
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
-import {IAxelarGateway} from "@protocol/xWELL/axelar-interfaces/IAxelarGateway.sol";
-import {IAxelarGasService} from "@protocol/xWELL/axelar-interfaces/IAxelarGasService.sol";
-import {AddressToString, StringToAddress} from "@protocol/xWELL/axelar-interfaces/AddressString.sol";
+import {IAxelarGateway} from "@protocol/xWELL/axelarInterfaces/IAxelarGateway.sol";
+import {IAxelarGasService} from "@protocol/xWELL/axelarInterfaces/IAxelarGasService.sol";
+import {AddressToString, StringToAddress} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
 
 /// @notice Axelar Token Bridge adapter for XERC20 tokens
 /// @dev the access control model for this contract is to deploy
