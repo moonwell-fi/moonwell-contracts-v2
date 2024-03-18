@@ -4,7 +4,7 @@ import "@forge-std/Test.sol";
 
 import "@test/helper/BaseTest.t.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichainGovernor/MultichainGovernorDeploy.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {

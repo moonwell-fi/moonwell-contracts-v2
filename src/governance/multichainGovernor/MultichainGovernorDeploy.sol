@@ -6,12 +6,12 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import "@forge-std/Test.sol";
 
 import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
-import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {MultichainGovernor} from "@protocol/governance/multichainGovernor/MultichainGovernor.sol";
+import {IMultichainGovernor} from "@protocol/governance/multichainGovernor/IMultichainGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
-import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
+import {MultichainVoteCollection} from "@protocol/governance/multichainGovernor/MultichainVoteCollection.sol";
 
 /// Helper contract to deploy MultichainGovernor, MultichainVoteCollection,
 /// Ecosystem Reserve, Ecosystem Reserve Controller and StakedWell contracts

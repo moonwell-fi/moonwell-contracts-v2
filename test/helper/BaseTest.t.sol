@@ -12,7 +12,7 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 
 import {SigUtils} from "@test/helper/SigUtils.sol";
 

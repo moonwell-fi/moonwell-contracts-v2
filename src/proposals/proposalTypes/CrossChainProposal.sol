@@ -8,8 +8,6 @@ import {ChainIds} from "@test/utils/ChainIds.sol";
 
 import "@forge-std/Test.sol";
 
-import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
-
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
 abstract contract CrossChainProposal is
     MultisigProposal,

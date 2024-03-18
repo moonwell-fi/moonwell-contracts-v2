@@ -3,16 +3,15 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Well} from "@protocol/Governance/deprecated/Well.sol";
+import {Well} from "@protocol/governance/deprecated/Well.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
+import {Timelock} from "@protocol/governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {StringUtils} from "@proposals/utils/StringUtils.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -24,7 +23,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
     TestProposals public proposals;
     IWormhole public wormhole;
     Addresses public addresses;
-    Timelock public timelock;
+    address public timelock;
     Well public well;
 
     event LogMessagePublished(
@@ -102,9 +101,8 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             addresses.getAddress("WORMHOLE_CORE", moonBeamChainId)
         );
         well = Well(addresses.getAddress("WELL", moonBeamChainId));
-        timelock = Timelock(
-            addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)
-        );
+        timelock = addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId);
+        
         governor = MoonwellArtemisGovernor(
             addresses.getAddress("ARTEMIS_GOVERNOR", moonBeamChainId)
         );

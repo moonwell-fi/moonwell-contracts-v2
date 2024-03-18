@@ -1,14 +1,14 @@
 pragma solidity 0.8.19;
 
-import {IMultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/IMultichainVoteCollection.sol";
+import {IMultichainVoteCollection} from "@protocol/governance/multichainGovernor/IMultichainVoteCollection.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
+import {Constants} from "@protocol/governance/multichainGovernor/Constants.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
-import {SnapshotInterface} from "@protocol/Governance/MultichainGovernor/SnapshotInterface.sol";
+import {SnapshotInterface} from "@protocol/governance/multichainGovernor/SnapshotInterface.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 
 /// @notice Upgradeable contract, constructor disables the implementation contract
 /// This contract is intentionally as minimal as possible. It is only responsible for

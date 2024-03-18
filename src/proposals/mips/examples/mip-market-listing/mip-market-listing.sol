@@ -20,7 +20,7 @@ import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
-import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultiRewardDistributor} from "@protocol/multiRewardDistributor/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/multiRewardDistributor/MultiRewardDistributorCommon.sol";

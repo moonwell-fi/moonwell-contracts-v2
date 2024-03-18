@@ -14,7 +14,6 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {MockWormhole} from "@test/mock/MockWormhole.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
 contract PrintCalldataTest is Test, ChainIds {
     TestProposals proposals;

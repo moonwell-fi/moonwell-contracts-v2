@@ -13,7 +13,7 @@ import {Configs} from "@proposals/Configs.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/multiRewardDistributor/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/multiRewardDistributor/MultiRewardDistributorCommon.sol";
 

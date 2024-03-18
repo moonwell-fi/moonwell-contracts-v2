@@ -2,17 +2,17 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {IMultichainGovernor, MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
-import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
-import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
+import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichainGovernor/MultichainGovernor.sol";
+import {MultichainVoteCollection} from "@protocol/governance/multichainGovernor/MultichainVoteCollection.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichainGovernor/MultichainGovernorDeploy.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
-import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Well} from "@protocol/Governance/Well.sol";
+import {Well} from "@protocol/governance/Well.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";

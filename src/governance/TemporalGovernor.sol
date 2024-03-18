@@ -7,7 +7,7 @@ import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 
-import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 
 /// @notice contract that governs the Base deployment of moonwell leveraging the wormhole bridge
 /// as the source of truth. Wormhole will be fed in actions from the moonbeam chain and this contract

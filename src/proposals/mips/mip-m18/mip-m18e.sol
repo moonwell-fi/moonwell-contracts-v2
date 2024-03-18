@@ -7,14 +7,14 @@ import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import "@forge-std/Test.sol";
 
 import {ITokenSaleDistributorProxy} from "../../../tokensale/ITokenSaleDistributorProxy.sol";
-import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
+import {Timelock} from "@protocol/governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
-import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
-import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
+import {MultichainGovernor} from "@protocol/governance/multichainGovernor/MultichainGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichainGovernor/MultichainGovernorDeploy.sol";
 
 /// Proposal to run on Moonbeam to accept governance powers, finalizing
 /// the transfer of admin and owner from the current Artemis Timelock to the

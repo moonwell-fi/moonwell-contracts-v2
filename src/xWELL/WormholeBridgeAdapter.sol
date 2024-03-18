@@ -9,7 +9,7 @@ import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 
 /// @notice Wormhole xERC20 Token Bridge adapter
 contract WormholeBridgeAdapter is

@@ -7,8 +7,8 @@ import {MToken} from "@protocol/MToken.sol";
 import {PriceOracle} from "@protocol//oracles/PriceOracle.sol";
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 import {SafetyModuleInterfaceV1} from "@protocol/views/SafetyModuleInterfaceV1.sol";
-import {Well} from "@protocol/Governance/Well.sol";
-import {IERC20} from "@protocol/Governance/IERC20.sol";
+import {Well} from "@protocol/governance/Well.sol";
+import {IERC20} from "@protocol/governance/IERC20.sol";
 import {MErc20Interface} from "@protocol/MTokenInterfaces.sol";
 import {UniswapV2PairInterface} from "@protocol/views/UniswapV2PairInterface.sol";
 

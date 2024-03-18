@@ -7,15 +7,15 @@ import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contr
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import {ITokenSaleDistributorProxy} from "../../../tokensale/ITokenSaleDistributorProxy.sol";
-import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
+import {Timelock} from "@protocol/governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
-import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
-import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
-import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
-import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {MultichainGovernor} from "@protocol/governance/multichainGovernor/MultichainGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichainGovernor/MultichainGovernorDeploy.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract

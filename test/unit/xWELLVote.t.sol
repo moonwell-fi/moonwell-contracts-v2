@@ -4,7 +4,7 @@ import "@forge-std/Test.sol";
 
 import "@test/helper/BaseTest.t.sol";
 
-import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
+import {Timelock} from "@protocol/governance/deprecated/Timelock.sol";
 import {MockTimestampGovernor} from "@test/mock/MockTimestampGovernor.sol";
 
 /// test the xWELL vote functionality on the xWELLProxy contract

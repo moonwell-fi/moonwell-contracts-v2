@@ -3,16 +3,16 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
+import {Constants} from "@protocol/governance/multichainGovernor/Constants.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
-import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
-import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
-import {IMultichainGovernor, MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
+import {MultichainVoteCollection} from "@protocol/governance/multichainGovernor/MultichainVoteCollection.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichainGovernor/MultichainGovernorDeploy.sol";
+import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichainGovernor/MultichainGovernor.sol";
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 

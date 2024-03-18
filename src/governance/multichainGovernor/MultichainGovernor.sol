@@ -4,11 +4,11 @@ import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/Enu
 import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
-import {SnapshotInterface} from "@protocol/Governance/MultichainGovernor/SnapshotInterface.sol";
+import {Constants} from "@protocol/governance/multichainGovernor/Constants.sol";
+import {SnapshotInterface} from "@protocol/governance/multichainGovernor/SnapshotInterface.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
-import {IMultichainGovernor} from "@protocol/Governance/MultichainGovernor/IMultichainGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {IMultichainGovernor} from "@protocol/governance/multichainGovernor/IMultichainGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 
 /// @notice Contract is pauseable by the guardian

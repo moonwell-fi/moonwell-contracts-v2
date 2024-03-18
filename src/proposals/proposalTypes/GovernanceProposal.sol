@@ -4,9 +4,9 @@ import {Test} from "@forge-std/Test.sol";
 import {console} from "@forge-std/console.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
-import {Well} from "@protocol/Governance/deprecated/Well.sol";
+import {Well} from "@protocol/governance/deprecated/Well.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {MoonwellArtemisGovernor, TimelockInterface} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
+import {MoonwellArtemisGovernor, TimelockInterface} from "@protocol/governance/deprecated/MoonwellArtemisGovernor.sol";
 
 abstract contract GovernanceProposal is Proposal {
     bool private DEBUG;

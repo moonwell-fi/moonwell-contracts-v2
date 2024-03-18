@@ -8,26 +8,26 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 
 import "@forge-std/Test.sol";
 
-import {Well} from "@protocol/Governance/deprecated/Well.sol";
+import {Well} from "@protocol/governance/deprecated/Well.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
-import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
+import {Timelock} from "@protocol/governance/deprecated/Timelock.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
+import {Constants} from "@protocol/governance/multichainGovernor/Constants.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {MultichainGovernor} from "@protocol/governance/multichainGovernor/MultichainGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MockVoteCollection} from "@test/mock/MockVoteCollection.sol";
 import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
-import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
-import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
+import {MultichainVoteCollection} from "@protocol/governance/multichainGovernor/MultichainVoteCollection.sol";
+import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 

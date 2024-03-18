@@ -1,6 +1,6 @@
 pragma solidity 0.8.19;
 
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 
 /// @notice pauseable by the guardian
 /// @notice upgradeable, constructor disables implementation

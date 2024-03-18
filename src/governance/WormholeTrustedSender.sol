@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 
-import {IWormholeTrustedSender} from "@protocol/Governance/IWormholeTrustedSender.sol";
+import {IWormholeTrustedSender} from "@protocol/governance/IWormholeTrustedSender.sol";
 
 /// @notice A contract that manages Wormhole trusted senders
 /// Used to allow only certain trusted senders on external chains
