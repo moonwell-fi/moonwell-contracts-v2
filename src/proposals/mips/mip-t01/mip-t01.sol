@@ -7,7 +7,6 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {TimelockProposal} from "@proposals/proposalTypes/TimelockProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 
