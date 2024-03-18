@@ -2,9 +2,9 @@
 
 ## Testing
 
-Code must be thoroughly tested with quality. Techniquies such as unit tests, and
-integration tests are enforced, and property-based and formal verification are
-very encouraged.
+It's essential to ensure that the code is tested thoroughly and of high quality.
+Techniques such as unit tests and integration tests are strictly enforced, and
+it's highly encouraged to use property-based and formal verification methods.
 
 > Tests should be written, not only to verify correctness of the target code,
 > but to be comprehensively reviewed by other programmers. Therefore, for
@@ -30,13 +30,12 @@ following the official
 [Solidity Style Guide](https://docs.soliditylang.org/en/latest/style-guide.html).
 See below for further [Solidity Conventions](#solidity-conventions).
 
-The code should be simple and straightforward, prioritizing readability and
-understandability. Before writing a single line of code code, you should have a
-picture in your head that is 99.9% clear of the system you are about to build.
-If you can’t visualize it, it’s because you didn’t ask the right questions. Ask
-questions until you can visualize the entire system in your head and understand
-the downstream effects of changing any part of it. Only then should you start to
-write code.
+We prioritize readability and understandability by keeping the code simple and
+straightforward.Before writing any code, make sure you have a clear picture of
+the system in your head. If you can't visualize it, it means you need to ask
+more questions until you can see the entire system in your mind. Understanding
+the downstream effects of any changes is vital. Only once you have this
+comprehensive view should you begin writing code.
 
 Consistency and predictability should be maintained across the codebase. In
 particular, this applies to naming, which should be systematic, clear, and
@@ -74,12 +73,11 @@ error and forgetfulness.
 
 Moonwell uses
 [Forge Proposal Simulator](https://github.com/solidity-labs-io/forge-proposal-simulator/)
-to simplify governance proposals and to ensure that any change to the protocol
-is rigorously tested before it is applied.
-
-Any protocol change should pass through a governance proposal and only be
-applied after it has been approved by the community. Refer to [./governance] to
-learn how to create a proposal once you have a Pull Request ready.
+to simplify governance proposals and ensure that any changes made to the
+protocol are rigorously tested before implementation. Any updates to the
+protocol must go through a governance proposal and can only be applied after
+community approval. Refer to [Governance](./governance/README.md) for guidance
+on how to create a proposal once you have a Pull Request ready.
 
 ## Pull requests
 
@@ -115,15 +113,8 @@ Security vulnerabilities should be disclosed to the project maintainers through
 In addition to the official Solidity Style Guide we have a number of other
 conventions that must be followed.
 
-- Events should be emitted immediately after the state change that they
-  represent, and should be named in the past tense.
-
-  ```solidity
-  function _burn(address who, uint256 value) internal {
-    super._burn(who, value);
-    emit TokensBurned(who, value);
-  }
-  ```
+- [CEI](https://fravoll.github.io/solidity-patterns/checks_effects_interactions.html)
+  pattern should be followed for external calls.
 
 - Interface names should have a capital I prefix.
 
@@ -135,8 +126,5 @@ conventions that must be followed.
   guaranteed not to happen. If the reason is immediately apparent from the line
   above the unchecked block, the comment may be omitted.
 
-- Revert messages should be clear and concise, and should contain dynamic data
-  where appropriate.
-
-- [CEI](https://fravoll.github.io/solidity-patterns/checks_effects_interactions.html)
-  pattern should be followed for external calls.
+- Revert messages should be clear and concise and include dynamic data where
+  appropriate.
