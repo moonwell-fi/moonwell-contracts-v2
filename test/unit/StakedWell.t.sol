@@ -1,11 +1,12 @@
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
+import "@forge-std/Test.sol";
 import "@test/helper/BaseTest.t.sol";
+
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
     IStakedWell stakedWell;
@@ -88,6 +89,34 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
             stkWellSupplyBefore + amount,
             stkWellSupplyAfter,
             "Wrong total supply"
+        );
+    }
+
+    function testConfigureAssetsIncorrectArityFails() public {
+        uint128[] memory emissionPerSecond = new uint128[](1);
+        uint256[] memory totalStaked = new uint256[](2);
+        address[] memory underlyingAsset = new address[](1);
+
+        vm.prank(address(stakedWell.EMISSION_MANAGER()));
+        vm.expectRevert("PARAM_LENGTHS");
+        stakedWell.configureAssets(
+            emissionPerSecond,
+            totalStaked,
+            underlyingAsset
+        );
+    }
+
+    function testConfigureAssetsNonManagerFails() public {
+        uint128[] memory emissionPerSecond = new uint128[](1);
+        uint256[] memory totalStaked = new uint256[](1);
+        address[] memory underlyingAsset = new address[](1);
+
+        vm.prank(address(1));
+        vm.expectRevert("ONLY_EMISSION_MANAGER");
+        stakedWell.configureAssets(
+            emissionPerSecond,
+            totalStaked,
+            underlyingAsset
         );
     }
 
