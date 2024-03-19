@@ -106,6 +106,20 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         );
     }
 
+    function testConfigureAssetsNonManagerFails() public {
+        uint128[] memory emissionPerSecond = new uint128[](1);
+        uint256[] memory totalStaked = new uint256[](1);
+        address[] memory underlyingAsset = new address[](1);
+
+        vm.prank(address(1));
+        vm.expectRevert("ONLY_EMISSION_MANAGER");
+        stakedWell.configureAssets(
+            emissionPerSecond,
+            totalStaked,
+            underlyingAsset
+        );
+    }
+
     function testGetPriorVotes() public {
         testStake();
 
