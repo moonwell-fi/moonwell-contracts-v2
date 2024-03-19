@@ -9,15 +9,14 @@ import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
 
-contract SetLiquidationIncentiveProposal is HybridProposal {
-    string public constant name = "SetLiquidationIncentiveProposal";
+contract SetCollateralFactorProposal is HybridProposal {
+    string public constant name = "SetCollateralFactorProposal";
 
-    uint256 public constant liquidityIncentive = 120e18;
+    uint256 public constant collateralFactor = 0.6e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            "Set the liquidation incentive to ",
-            abi.encodePacked(liquidityIncentive)
+            "Set collateral factor"
         );
         _setProposalDescription(proposalDescription);
     }
@@ -35,15 +34,35 @@ contract SetLiquidationIncentiveProposal is HybridProposal {
                 sendingChainIdToReceivingChainId[block.chainid]
             ),
             abi.encodeWithSignature(
-                "_setLiquidationIncentive(uint256)",
-                liquidityIncentive
+                "_setCollateralFactor(address,uint256)",
+                addresses.getAddress("MOONWELL_WETH"),
+                collateralFactor
             ),
-            "Set liquidation incentive",
+            "Set collateral factor",
+            false
+        );
+
+        _pushHybridAction(
+            addresses.getAddress(
+                "UNITROLLER",
+                sendingChainIdToReceivingChainId[block.chainid]
+            ),
+            abi.encodeWithSignature(
+                "_setCollateralFactor(address,uint256)",
+                addresses.getAddress(
+                    "MOONWELL_WETH",
+                    sendingChainIdToReceivingChainId[block.chainid]
+                ),
+                collateralFactor
+            ),
+            "Set collateral factor",
             false
         );
     }
 
     function run(Addresses addresses, address) public override {
+        _runMoonbeamMultichainGovernor(addresses, address(1000000000));
+
         vm.selectFork(baseForkId);
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
@@ -54,13 +73,26 @@ contract SetLiquidationIncentiveProposal is HybridProposal {
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(baseForkId);
+        (, uint256 collateralFactorMoonbase) = Comptroller(
+            addresses.getAddress("UNITROLLER")
+        ).markets(addresses.getAddress("MOONWELL_WETH"));
 
         assertEq(
-            Comptroller(addresses.getAddress("UNITROLLER"))
-                .liquidationIncentiveMantissa(),
-            liquidityIncentive,
-            "Liquidation incentive not set correctly"
+            collateralFactorMoonbase,
+            collateralFactor,
+            "Collateral factor not set correctly on moonbase"
+        );
+
+        vm.selectFork(baseForkId);
+
+        (, uint256 collateralFactorBase) = Comptroller(
+            addresses.getAddress("UNITROLLER")
+        ).markets(addresses.getAddress("MOONWELL_WETH"));
+
+        assertEq(
+            collateralFactorBase,
+            collateralFactor,
+            "Collateral factor not set correctly on base"
         );
 
         vm.selectFork(moonbeamForkId);
