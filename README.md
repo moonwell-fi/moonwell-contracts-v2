@@ -26,14 +26,14 @@ Use certora gambit to generate mutaions for `MultichainVoteCollection` and then 
 
 Finally it logs total number of failed mutations.
 
-Following steps needs to be followed for mutation testing:
+The following steps needs to be followed for mutation testing:
 
-Run certora gambit to generate mutants
+1. Run certora gambit to generate mutations:
 ```
 gambit mutate --json certora/mutation/MultichainVoteCollectionConfig.json
 ```
 
-Run script
+2. Run script that runs tests against mutants and outputs results into a readme file:
 ```
 sh runMutation.sh
 ```
