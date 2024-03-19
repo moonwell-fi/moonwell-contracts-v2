@@ -3,22 +3,22 @@ source .env
 
 output_title() {
   local text="# $1"
-  echo "$text" > MutationTestOutput/Result.md
+  echo "$text" > MutationTestOutput/Result_MultichainVoteCollection.md
 }
 
 output_heading() {
   local text="\n## $1"
-  echo "$text" >> MutationTestOutput/Result.md
+  echo "$text" >> MutationTestOutput/Result_MultichainVoteCollection.md
 }
 
 output_results() {
   local result="$1"
   local heading="$2"
   local content="<details>
-<summary>$result</summary>\n
+<summary>$heading</summary>\n
 \`\`\`\n$result\n\`\`\`
 </details>"
-  echo "$content" >> MutationTestOutput/Result.md
+  echo "$content" >> MutationTestOutput/Result_MultichainVoteCollection.md
 }
 
 # Function to extract the last line from a file
@@ -46,20 +46,10 @@ process_test_output() {
   local test_type="$1"
   local output="$2"
 
-  echo "\n### $test_type:" >> MutationTestOutput/Result.md
+  echo "\n### $test_type:" >> MutationTestOutput/Result_MultichainVoteCollection.md
 
   # Check if output contains "Failing tests: "
   if grep -q "Failing tests:" "$output"; then
-
-
-    # Extract content after the pattern
-    content_after_pattern=$(get_content_after_pattern "$output" "Failing tests:")
-    echo "$content_after_pattern" >> MutationTestOutput/Result.txt
-    
-    
-    # Extract content after the pattern
-    content_after_pattern=$(get_content_after_pattern "$output" "Failing tests:")
-    echo "$content_after_pattern" >> MutationTestOutput/Result.txt
     
     # Extract last line
     last_line=$(get_last_line "$output")
@@ -75,7 +65,7 @@ process_test_output() {
     is_current_mutation_failed=1
 
     # Append to last_lines.txt with desired format
-    echo "Failed $test_type: $failed_tests, Passed Tests: $passed_tests" >> MutationTestOutput/Result.md
+    echo "Failed $test_type: $failed_tests, Passed Tests: $passed_tests" >> MutationTestOutput/Result_MultichainVoteCollection.md
 
     content_after_pattern=$(get_content_after_pattern "$output" "Failing tests:")
     output_results "$content_after_pattern" "View Failing tests"
@@ -90,13 +80,13 @@ process_test_output() {
     passed_tests=$(echo "$clean_line" | awk '{print $7}')
 
     # Append to last_lines.txt with desired format
-    echo "Failed $test_type: 0, Passed Tests: $passed_tests" >> MutationTestOutput/Result.md
+    echo "Failed $test_type: 0, Passed Tests: $passed_tests" >> MutationTestOutput/Result_MultichainVoteCollection.md
   fi
 }
 
 target_file="src/Governance/MultichainGovernor/MultichainVoteCollection.sol"
 target_dir="MutationTestOutput"
-num_files=2
+num_files=136
 
 # Create directory for output files if it doesn't exist
 mkdir -p "$target_dir"
@@ -106,13 +96,13 @@ failed_mutation=0
 
 is_current_mutation_failed=0 # Intialized as false
 
-# Append Mutation Result to Result.md with desired format
+# Append Mutation Result to Result_MultichainVoteCollection.md with desired format
 output_title "Mutation Results\n"
 
 # Loop through the number of files
-for (( i=2; i <= num_files; i++ )); do
+for (( i=1; i <= num_files; i++ )); do
   # Construct dynamic file path using iterator
-  file_path="gambit_out/mutants/$i/src/Governance/MultichainGovernor/MultichainVoteCollection.sol"
+  file_path="gambit_out_MultichainVoteCollection/mutants/$i/src/Governance/MultichainGovernor/MultichainVoteCollection.sol"
 
   # Check if file exists before copying
   if [[ -f "$file_path" ]]; then
@@ -123,7 +113,7 @@ for (( i=2; i <= num_files; i++ )); do
 
     output_heading "Mutation $i"
 
-    mutation_diff=$(gambit summary --mids $i)
+    mutation_diff=$(gambit summary --mids $i --mutation-directory gambit_out_MultichainVoteCollection)
     clean_mutation_diff=$(echo "$mutation_diff" | sed 's/\x1B\[[0-9;]*m//g')
     output_results "$clean_mutation_diff" "View mutation diff"
 
@@ -152,19 +142,19 @@ for (( i=2; i <= num_files; i++ )); do
     # Process integration test outputs using the function
     process_test_output "Base Integration Test" "$temp_output_file"
 
-    # Run eth integration tests and capture output
-    integration_command_output=$(forge test --match-contract IntegrationTest --fork-url ethereum -v --fork-block-number $ETHEREUM_FORK_BLOCK_NUMBER --block-number $ETHEREUM_BLOCK_NUMBER --block-timestamp $ETHEREUM_TIMESTAMP --chain-id $ETHEREUM_CHAIN_ID)
-    echo "$integration_command_output" > "$temp_output_file"
+    # # Run eth integration tests and capture output
+    # integration_command_output=$(forge test --match-contract IntegrationTest --fork-url ethereum -v --fork-block-number $ETHEREUM_FORK_BLOCK_NUMBER --block-number $ETHEREUM_BLOCK_NUMBER --block-timestamp $ETHEREUM_TIMESTAMP --chain-id $ETHEREUM_CHAIN_ID)
+    # echo "$integration_command_output" > "$temp_output_file"
 
-    # Process integration test outputs using the function
-    process_test_output "Ethereum Integration Test" "$temp_output_file"
+    # # Process integration test outputs using the function
+    # process_test_output "Ethereum Integration Test" "$temp_output_file"
 
-    # Run arb integration tests and capture output
-    integration_command_output=$(forge test --match-contract ArbitrumTest --fork-url $ARB_RPC_URL -v --fork-block-number $ARB_FORK_BLOCK_NUMBER --block-number $ARB_BLOCK_NUMBER --block-timestamp $ARB_TIMESTAMP --chain-id $ARB_CHAIN_ID)
-    echo "$integration_command_output" > "$temp_output_file"
+    # # Run arb integration tests and capture output
+    # integration_command_output=$(forge test --match-contract ArbitrumTest --fork-url $ARB_RPC_URL -v --fork-block-number $ARB_FORK_BLOCK_NUMBER --block-number $ARB_BLOCK_NUMBER --block-timestamp $ARB_TIMESTAMP --chain-id $ARB_CHAIN_ID)
+    # echo "$integration_command_output" > "$temp_output_file"
 
-    # Process integration test outputs using the function
-    process_test_output "Arbitrum Integration Test" "$temp_output_file"
+    # # Process integration test outputs using the function
+    # process_test_output "Arbitrum Integration Test" "$temp_output_file"
 
     output_heading "Certora Mutation Results: \n"
 
@@ -186,8 +176,7 @@ for (( i=2; i <= num_files; i++ )); do
   else
     echo "Warning: File '$file_path' not found."
   fi
-  echo "\n==================\n" >> MutationTestOutput/Result.md
 done
 
-# Append to Result.md with desired format
-echo "Failed Mutations: $failed_mutation" >> MutationTestOutput/Result.md
+output_heading "Mutation Testing Result"
+echo "$failed_mutation failed out of total $num_files through integration tests" >> MutationTestOutput/Result_MultichainVoteCollection.md

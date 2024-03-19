@@ -13,5 +13,6 @@
         "@zelt=../../lib/zelt/",
         "@zelt-src=../../lib/zelt/src/",
         "@zelt-test=../../lib/zelt/test/"
-    ]
+    ],
+    "outdir": "../../gambit_out_MultichainVoteCollection"
 }
