@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
 
+import {IERC20} from "@protocol/stkWell/IERC20.sol";
 import {SafeMath} from "@protocol/stkWell/SafeMath.sol";
 import {DistributionTypes} from "@protocol/stkWell/DistributionTypes.sol";
 import {IDistributionManager} from "@protocol/stkWell/IDistributionManager.sol";
-import {IERC20} from "@protocol/stkWell/IERC20.sol";
 
 /**
  * @title DistributionManager
@@ -70,18 +69,27 @@ contract MockDistributionManager is IDistributionManager {
 
     /**
      * @dev Configures the distribution of rewards for a list of assets
-     * @param assetsConfigInput The list of configurations to apply
+     * @param emissionPerSecond The list of emissions per second
+     * @param totalStaked The list of total staked assets
+     * @param underlyingAsset The list of underlying assets
      **/
     function configureAssets(
-        DistributionTypes.AssetConfigInput[] calldata assetsConfigInput
+        uint128[] memory emissionPerSecond,
+        uint256[] memory totalStaked,
+        address[] memory underlyingAsset
     ) external override {
         require(msg.sender == EMISSION_MANAGER, "ONLY_EMISSION_MANAGER");
+        require(
+            emissionPerSecond.length == totalStaked.length &&
+                totalStaked.length == underlyingAsset.length,
+            "PARAM_LENGTHS"
+        );
 
-        for (uint256 i = 0; i < assetsConfigInput.length; ++i) {
+        for (uint256 i = 0; i < emissionPerSecond.length; ++i) {
             _configureAssetInternal(
-                assetsConfigInput[i].emissionPerSecond,
-                assetsConfigInput[i].totalStaked,
-                assetsConfigInput[i].underlyingAsset
+                emissionPerSecond[i],
+                totalStaked[i],
+                underlyingAsset[i]
             );
         }
     }
