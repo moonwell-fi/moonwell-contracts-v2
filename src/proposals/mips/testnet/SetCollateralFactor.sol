@@ -43,10 +43,7 @@ contract SetCollateralFactorProposal is HybridProposal {
         );
 
         _pushHybridAction(
-            addresses.getAddress(
-                "UNITROLLER",
-                sendingChainIdToReceivingChainId[block.chainid]
-            ),
+            addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
                 addresses.getAddress(
@@ -56,7 +53,7 @@ contract SetCollateralFactorProposal is HybridProposal {
                 collateralFactor
             ),
             "Set collateral factor",
-            false
+            true
         );
     }
 
