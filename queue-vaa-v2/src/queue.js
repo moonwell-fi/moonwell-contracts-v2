@@ -19,6 +19,105 @@ const tgAddress =
         ? '0x5713dd9a2b2ce515cf9232f48b457aebfb04b292' // TemporalGovernor on Base Sepolia
         : '0x8b621804a7637b781e2BbD58e256a591F2dF7d51'; // TemporalGovernor on Base
 
+// Block explorer URL
+const blockExplorer =
+    network === 'moonbase'
+        ? 'https://goerli.basescan.org/tx/'
+        : 'https://basescan.org/tx/';
+
+class MoonwellEvent {
+    async sendDiscordMessage(url, payload) {
+        console.log('Sending Discord message...');
+        if (!url) {
+            throw new Error('Discord webhook url is invalid!');
+        }
+        console.log('SENDING', JSON.stringify(payload, null, 2));
+        try {
+            const response = await axios.post(url, payload, {
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                },
+            });
+            console.log(`Status code: ${response.status}`);
+            console.log(
+                `Response data: ${JSON.stringify(response.data, null, 2)}`,
+            );
+        } catch (error) {
+            console.error(`Error message: ${error.message}`);
+        }
+        console.log('Sent Discord message!');
+    }
+
+    discordMessagePayload(color, txURL, networkName, sequence, timestamp) {
+        const mipNumber = sequence - 1;
+        let mipString = '';
+        if (mipNumber < 10) {
+            mipString = `MIP-B0${mipNumber}`;
+        } else {
+            mipString = `MIP-B${mipNumber}`;
+        }
+        const text = `Scheduled cross-chain execution of ${mipString} on ${networkName}`;
+        const details = `Upon successful completion of ${mipString}, it should be automatically executed on the ${networkName} network exactly 24 hours from now.`;
+        const baseFields = [
+            {
+                name: 'Network',
+                value: networkName,
+                inline: true,
+            },
+            {
+                name: 'Proposal',
+                value: mipString,
+                inline: true,
+            },
+        ];
+
+        if (timestamp && timestamp > 0) {
+            baseFields.push({
+                name: 'Will be executed at',
+                value: `<t:${timestamp}>`,
+                inline: true,
+            });
+        }
+
+        if (details) {
+            baseFields.push({
+                name: 'Details',
+                value: details,
+                inline: false,
+            });
+        }
+
+        return {
+            content: '',
+            embeds: [
+                {
+                    title: `${text}`,
+                    color: color,
+                    fields: baseFields,
+                    url: txURL,
+                },
+            ],
+        };
+    }
+
+    discordFormatLink(text, url) {
+        return `[${text}](${url})`;
+    }
+
+    numberWithCommas(num) {
+        if (!num.includes('.')) {
+            num = num + '.0';
+        }
+        const parts = num.toString().split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts
+            .join('.')
+            .replace(/(\.\d+[1-9])0+$/, '$1')
+            .replace(/\.0+$/, '');
+    }
+}
+
 const fetchVAA = async (sequence, retries = 5, delay = 2000) => {
     const apiEndpoint = `https://vaa-fetch.moonwell.workers.dev/?network=${network}&sequence=${sequence}`;
     for (let i = 0; i <= retries; i++) {
@@ -109,15 +208,3 @@ exports.handler = async function (event, context) {
     await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
     return {tx: tx.hash};
 };
-
-// To run locally (this code will not be executed in Autotasks)
-if (require.main === module) {
-    const {API_KEY: apiKey, API_SECRET: apiSecret} = process.env;
-    exports
-        .handler({...mockEvent, apiKey, apiSecret})
-        .then(() => process.exit(0))
-        .catch((error) => {
-            console.error(error);
-            process.exit(1);
-        });
-}

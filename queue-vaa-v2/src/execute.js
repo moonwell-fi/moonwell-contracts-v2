@@ -157,7 +157,7 @@ const fetchVAA = async (sequence, retries = 5, delay = 2000) => {
 
 async function processSequence(credentials, sequence) {
     const kvStore = new KeyValueStoreClient(credentials);
-    //    const {notificationClient} = context;
+    const {notificationClient} = context;
     const expiry = await kvStore.get(`${network}-${sequence}`);
     // If the sequence is not in the KV store, return true to remove it from the network sequences array
     if (!expiry) return true;
@@ -171,11 +171,11 @@ async function processSequence(credentials, sequence) {
             console.log(`Failed to fetch VAA for sequence ${sequence}`);
             console.log(`Removing sequence ${sequence} from KV store...`);
             await kvStore.del(`${network}-${sequence}`);
-            //            notificationClient.send({
-            //                channelAlias: 'Parameter Changes to Slack',
-            //                subject: `Failed to fetch VAA for sequence ${sequence} on ${network}`,
-            //                message: `Removed ${network}-${sequence} from the KV store`,
-            //            });
+            notificationClient.send({
+                channelAlias: 'Parameter Changes to Slack',
+                subject: `Failed to fetch VAA for sequence ${sequence} on ${network}`,
+                message: `Removed ${network}-${sequence} from the KV store`,
+            });
             return true; // Return true to remove the sequence from the network sequences array
         }
 
@@ -196,27 +196,27 @@ async function processSequence(credentials, sequence) {
                 console.log(`Called execute in ${tx.hash}`);
                 console.log(`Removing sequence ${sequence} from KV store...`);
                 await kvStore.del(`${network}-${sequence}`);
-                //                notificationClient.send({
-                //                    channelAlias: 'Parameter Changes to Slack',
-                //                    subject: `Executed Queued Proposal ${sequence} on ${network}`,
-                //                    message: `Successfully executed transaction: ${blockExplorer}${tx.hash}
-                //Removed ${network}-${sequence} from the KV store.`,
-                //                });
-                //                const {GOVBOT_WEBHOOK} = credentials.secrets;
-                //                const moonwellEvent = new MoonwellEvent();
-                //                const discordPayload = moonwellEvent.discordMessagePayload(
-                //                    0x42b24e, // Green (Go color in Moonwell Guide)
-                //                    `successfully executed`,
-                //                    blockExplorer + tx.hash,
-                //                    network,
-                //                    sequence,
-                //                    expiryTimestamp,
-                //                );
-                //                await moonwellEvent.sendDiscordMessage(
-                //                    GOVBOT_WEBHOOK,
-                //                    discordPayload,
-                //                );
-                //                return true;
+                notificationClient.send({
+                    channelAlias: 'Parameter Changes to Slack',
+                    subject: `Executed Queued Proposal ${sequence} on ${network}`,
+                    message: `Successfully executed transaction: ${blockExplorer}${tx.hash}
+                Removed ${network}-${sequence} from the KV store.`,
+                });
+                const {GOVBOT_WEBHOOK} = credentials.secrets;
+                const moonwellEvent = new MoonwellEvent();
+                const discordPayload = moonwellEvent.discordMessagePayload(
+                    0x42b24e, // Green (Go color in Moonwell Guide)
+                    `successfully executed`,
+                    blockExplorer + tx.hash,
+                    network,
+                    sequence,
+                    expiryTimestamp,
+                );
+                await moonwellEvent.sendDiscordMessage(
+                    GOVBOT_WEBHOOK,
+                    discordPayload,
+                );
+                return true;
             }
         } catch (error) {
             console.log(
@@ -224,26 +224,26 @@ async function processSequence(credentials, sequence) {
             );
             console.log(`Removing sequence ${sequence} from KV store...`);
             await kvStore.del(`${network}-${sequence}`);
-            //            notificationClient.send({
-            //                channelAlias: 'Parameter Changes to Slack',
-            //                subject: `Failed to Execute Queued Proposal ${sequence} on ${network}`,
-            //                message: `Removed ${network}-${sequence} from the KV store`,
-            //            });
-            //            const {GOVBOT_WEBHOOK} = credentials.secrets;
-            //            const moonwellEvent = new MoonwellEvent();
-            //            const discordPayload = moonwellEvent.discordMessagePayload(
-            //                0xe83938, // Red (Caution color in Moonwell Guide)
-            //                `failed to execute`,
-            //                'https://moonwell.fi/governance',
-            //                network,
-            //                sequence,
-            //                expiryTimestamp,
-            //            );
-            //            await moonwellEvent.sendDiscordMessage(
-            //                GOVBOT_WEBHOOK,
-            //                discordPayload,
-            //            );
-            //            return true;
+            notificationClient.send({
+                channelAlias: 'Parameter Changes to Slack',
+                subject: `Failed to Execute Queued Proposal ${sequence} on ${network}`,
+                message: `Removed ${network}-${sequence} from the KV store`,
+            });
+            const {GOVBOT_WEBHOOK} = credentials.secrets;
+            const moonwellEvent = new MoonwellEvent();
+            const discordPayload = moonwellEvent.discordMessagePayload(
+                0xe83938, // Red (Caution color in Moonwell Guide)
+                `failed to execute`,
+                'https://moonwell.fi/governance',
+                network,
+                sequence,
+                expiryTimestamp,
+            );
+            await moonwellEvent.sendDiscordMessage(
+                GOVBOT_WEBHOOK,
+                discordPayload,
+            );
+            return true;
         }
     } else {
         console.log(
@@ -288,15 +288,3 @@ exports.handler = async function (credentials, context) {
     // Store the updated array of strings back to the key/value store
     if (anyProcessed) await kvStore.put(network, sequences.join(','));
 };
-
-// To run locally (this code will not be executed in Autotasks)
-if (require.main === module) {
-    const {API_KEY: apiKey, API_SECRET: apiSecret} = process.env;
-    exports
-        .handler({apiKey, apiSecret})
-        .then(() => process.exit(0))
-        .catch((error) => {
-            console.error(error);
-            process.exit(1);
-        });
-}
