@@ -65,7 +65,7 @@ async function storeVAA(event, sequence, timestamp) {
 }
 
 // Entrypoint for the action
-exports.handler = async function (event) {
+exports.handler = async function (event, context) {
     console.log('Received event:', JSON.stringify(event.request.body, null, 2));
 
     const sequence = event.request.body.matchReasons[0].params.sequence;
@@ -85,9 +85,12 @@ exports.handler = async function (event) {
     const tx = await contract.queueProposal(vaa);
     console.log(`Called queueProposal in ${tx.hash}`);
     let timestamp = Math.floor(Date.now() / 1000);
+
     // On testnet, there is no 24 hour timelock
     //timestamp += 60 * 60 * 24 + 60; // 24 hours + 1 minute for buffer
     await storeVAA(event, sequence, timestamp);
+
+    const {notificationClient} = context;
     notificationClient.send({
         channelAlias: 'Parameter Changes to Slack',
         subject: `Inserted queued VAA ${sequence} on ${network}`,
