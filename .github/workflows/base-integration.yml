@@ -4,7 +4,6 @@ on: [pull_request]
 
 env:
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
-  BASESCAN_API_KEY: ${{secrets.BASESCAN_API_KEY}}
 
 jobs:
   run-base-tests:
