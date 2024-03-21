@@ -7,7 +7,6 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {SnapshotInterface} from "@protocol/Governance/MultichainGovernor/SnapshotInterface.sol";
-import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 

@@ -22,6 +22,7 @@ contract MockTimelock {
 
 contract MultichainGovernorUnitTest is MultichainBaseTest {
     event BreakGlassGuardianChanged(address oldValue, address newValue);
+    event PauseGuardianUpdated(address indexed oldPauseGuardian, address indexed newPauseGuardian);
 
     function setUp() public override {
         super.setUp();
@@ -324,6 +325,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.setBreakGlassGuardian(address(this));
     }
 
+    function testGrantPauseGuardianFails() public {
+        vm.expectRevert("MultichainGovernor: only governor");
+        governor.grantPauseGuardian(address(this));
+    }
+
     function testSetGasLimitNonGovernorFails() public {
         uint96 gasLimit = Constants.MIN_GAS_LIMIT;
         vm.prank(address(1));
@@ -418,6 +424,18 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         vm.expectRevert("ConfigurablePauseGuardian: only pause guardian");
         vm.prank(address(1));
         governor.pause();
+    }
+
+    function testNewGuardianCannotBeSetWhenGovernorPaused() public {
+        address pauseGuardian = governor.pauseGuardian();
+        vm.prank(pauseGuardian);
+        governor.pause();
+
+        address newPauseGuardian = address(1);
+        vm.prank(address(governor));
+
+        vm.expectRevert("Pausable: paused");
+        governor.grantPauseGuardian(newPauseGuardian);
     }
 
     /// ACL Positive Tests
@@ -608,6 +626,23 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             governor.breakGlassGuardian(),
             newBgg,
             "breakGlassGuardian not updated"
+        );
+    }
+
+    function testGrantPauseGuardianSucceeds() public {
+        address oldPauseGuardian = governor.pauseGuardian();
+        address newPauseGuardian = address(1);
+
+        vm.prank(address(governor));
+        vm.expectEmit(true, true, true, true, address(governor));
+        emit PauseGuardianUpdated(oldPauseGuardian, newPauseGuardian);
+
+        governor.grantPauseGuardian(newPauseGuardian);
+
+        assertEq(
+            governor.pauseGuardian(),
+            newPauseGuardian,
+            "pauseGuardian not updated"
         );
     }
 

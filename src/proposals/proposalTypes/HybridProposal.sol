@@ -223,13 +223,19 @@ abstract contract HybridProposal is
     function getTargetsPayloadsValues(
         Addresses addresses
     ) public view returns (address[] memory, uint256[] memory, bytes[] memory) {
+        address temporalGovernor;
+        if (addresses.isAddressSet("TEMPORAL_GOVERNOR")) {
+            temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        } else {
+            temporalGovernor = addresses.getAddress(
+                "TEMPORAL_GOVERNOR",
+                sendingChainIdToReceivingChainId[block.chainid]
+            );
+        }
         return
             getTargetsPayloadsValues(
                 addresses.getAddress("WORMHOLE_CORE"),
-                addresses.getAddress(
-                    "TEMPORAL_GOVERNOR",
-                    sendingChainIdToReceivingChainId[block.chainid]
-                )
+                temporalGovernor
             );
     }
 
@@ -615,6 +621,8 @@ abstract contract HybridProposal is
                 payable(governorAddress)
             ).call{value: cost}(proposeCalldata);
             data = returndata;
+
+            require(success, "propose multichain governor failed");
 
             console.log("Propose Gas Metering", gasStart - gasleft());
         }

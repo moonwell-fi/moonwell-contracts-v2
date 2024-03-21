@@ -21,6 +21,9 @@ contract MultichainGovernorDeploy is Test {
     ) public returns (address proxy, address governorImpl) {
         governorImpl = address(new MultichainGovernor());
 
+        console.log("proxy constructor calldata: ");
+        console.logBytes(abi.encode(governorImpl, proxyAdmin, ""));
+
         proxy = address(
             new TransparentUpgradeableProxy(governorImpl, proxyAdmin, "")
         );
@@ -69,6 +72,9 @@ contract MultichainGovernorDeploy is Test {
         );
 
         voteCollectionImpl = address(new MultichainVoteCollection());
+
+        console.log("proxy constructor calldata vote collection: ");
+        console.logBytes(abi.encode(voteCollectionImpl, proxyAdmin, initData));
 
         proxy = address(
             new TransparentUpgradeableProxy(
@@ -178,6 +184,9 @@ contract MultichainGovernorDeploy is Test {
             governance
         );
 
+        console.log("proxy constructor calldata mock staked well: ");
+        console.logBytes(abi.encode(implementation, proxyAdmin, initData));
+
         // deploy proxy
         proxy = address(
             new TransparentUpgradeableProxy(
@@ -214,6 +223,9 @@ contract MultichainGovernorDeploy is Test {
             distributionDuration,
             governance
         );
+
+        console.log("proxy constructor calldata mock staked well: ");
+        console.logBytes(abi.encode(implementation, proxyAdmin, initData));
 
         // deploy proxy
         proxy = address(

@@ -9,24 +9,26 @@ import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
 
-contract mipm19 is GovernanceProposal {
+contract mipm21 is GovernanceProposal {
     string public constant name = "MIP-M19";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m19/MIP-M19.md")
+            vm.readFile("./src/proposals/mips/mip-m21/MIP-M21.md")
         );
         _setProposalDescription(proposalDescription);
     }
 
     function deploy(Addresses addresses, address) public override {
-        WormholeUnwrapperAdapter wormholeUnwrapperAdapter = new WormholeUnwrapperAdapter();
+        if (!addresses.isAddressSet("WORMHOLE_UNWRAPPER_ADAPTER")) {
+            WormholeUnwrapperAdapter wormholeUnwrapperAdapter = new WormholeUnwrapperAdapter();
 
-        addresses.addAddress(
-            "WORMHOLE_UNWRAPPER_ADAPTER",
-            address(wormholeUnwrapperAdapter),
-            true
-        );
+            addresses.addAddress(
+                "WORMHOLE_UNWRAPPER_ADAPTER",
+                address(wormholeUnwrapperAdapter),
+                true
+            );
+        }
     }
 
     function afterDeploy(Addresses addresses, address) public override {}

@@ -6,9 +6,10 @@ import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import "@forge-std/Test.sol";
 
+import {ITokenSaleDistributorProxy} from "../../../tokensale/ITokenSaleDistributorProxy.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-
+import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
@@ -24,11 +25,10 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18E";
 
     constructor() {
-        _setProposalDescription(
-            abi.encodePacked(
-                vm.readFile("./src/proposals/mips/mip-m18/MIP-M18-E.md")
-            )
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile("./src/proposals/mips/mip-m18/MIP-M18-E.md")
         );
+        _setProposalDescription(proposalDescription);
     }
 
     /// @notice proposal's actions mostly happen on moonbeam
@@ -52,7 +52,10 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy {
 
         /// remove the artemis timelock as a trusted sender in the wormhole bridge adapter on base
         _pushHybridAction(
-            addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId),
+            addresses.getAddress(
+                "TEMPORAL_GOVERNOR",
+                sendingChainIdToReceivingChainId[block.chainid]
+            ),
             abi.encodeWithSignature(
                 "unSetTrustedSenders((uint16,address)[])",
                 trustedSendersToRemove
@@ -355,5 +358,31 @@ contract mipm18e is HybridProposal, MultichainGovernorDeploy {
             governor,
             "UNITROLLER admin incorrect"
         );
+
+        vm.selectFork(baseForkId);
+
+        // check that the multichain governor now is the only trusted sender on the temporal governor
+        TemporalGovernor temporalGovernor = TemporalGovernor(
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
+
+        bytes32[] memory trustedSenders = temporalGovernor.allTrustedSenders(
+            chainIdToWormHoleId[block.chainid]
+        );
+
+        assertEq(trustedSenders.length, 1);
+
+        assertTrue(
+            temporalGovernor.isTrustedSender(
+                chainIdToWormHoleId[block.chainid],
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    sendingChainIdToReceivingChainId[block.chainid]
+                )
+            ),
+            "MultichainGovernor not trusted sender"
+        );
+
+        vm.selectFork(moonbeamForkId);
     }
 }

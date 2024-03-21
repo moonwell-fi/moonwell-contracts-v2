@@ -293,7 +293,7 @@ contract Configs is Test {
                     EmissionConfig memory emissionConfig = EmissionConfig({
                         mToken: mTokenConfigs[i].addressesString,
                         owner: "EMISSIONS_ADMIN",
-                        emissionToken: addresses.getAddress("WELL"),
+                        emissionToken: addresses.getAddress("xWELL"),
                         supplyEmissionPerSec: 0,
                         borrowEmissionsPerSec: 0,
                         endTime: block.timestamp + 4 weeks
