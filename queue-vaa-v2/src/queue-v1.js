@@ -166,9 +166,9 @@ async function storeVAA(event, sequence, timestamp) {
 
 // Entrypoint for the action
 exports.handler = async function (event, context) {
-    const events = event.request.body.events;
+    const {events} = event.request.body;
 
-    const sequent = events[0].matchReasons[0].params.sequence;
+    const sequence = events[0].matchReasons[0].params.sequence;
 
     const vaa = await fetchVAA(sequence);
 
