@@ -8,11 +8,10 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 
 import "@forge-std/Test.sol";
 
-import {Well} from "@protocol/governance/deprecated/Well.sol";
+import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
-import {Timelock} from "@protocol/governance/deprecated/Timelock.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/governance/multichainGovernor/Constants.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
@@ -38,6 +37,7 @@ import {mipm18d} from "@proposals/mips/mip-m18/mip-m18d.sol";
 import {mipm18e} from "@proposals/mips/mip-m18/mip-m18e.sol";
 
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -65,7 +65,7 @@ contract MultichainProposalTest is
     MultichainGovernor public governor;
     IWormhole public wormhole;
     Timelock public timelock;
-    Well public well;
+    ERC20Votes public well;
     xWELL public xwell;
     IStakedWell public stakedWellMoonbeam;
     IStakedWell public stakedWellBase;
@@ -156,7 +156,7 @@ contract MultichainProposalTest is
             addresses.getAddress("WORMHOLE_CORE", moonBeamChainId)
         );
 
-        well = Well(addresses.getAddress("WELL", moonBeamChainId));
+        well = ERC20Votes(addresses.getAddress("WELL", moonBeamChainId));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY", moonBeamChainId));
         // make xwell persistent so votes are valid on both chains
         vm.makePersistent(address(xwell));

@@ -3,14 +3,15 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Well} from "@protocol/governance/deprecated/Well.sol";
+import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Timelock} from "@protocol/governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {StringUtils} from "@proposals/utils/StringUtils.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
+import {ITimelock} from "@protocol/interfaces/ITimelock.sol";
+import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 
 /// @notice run this on a chainforked moonbeam node.
@@ -23,8 +24,8 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
     TestProposals public proposals;
     IWormhole public wormhole;
     Addresses public addresses;
-    address public timelock;
-    Well public well;
+    ITimelock public timelock;
+    ERC20Votes public well;
 
     event LogMessagePublished(
         address indexed sender,
@@ -100,12 +101,15 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         wormhole = IWormhole(
             addresses.getAddress("WORMHOLE_CORE", moonBeamChainId)
         );
-        well = Well(addresses.getAddress("WELL", moonBeamChainId));
-        timelock = addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId);
-        
+        timelock = ITimelock(
+            addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)
+        );
+
         governor = MoonwellArtemisGovernor(
             addresses.getAddress("ARTEMIS_GOVERNOR", moonBeamChainId)
         );
+
+        well = ERC20Votes(addresses.getAddress("WELL"));
 
         vm.selectFork(moonbeamForkId);
     }

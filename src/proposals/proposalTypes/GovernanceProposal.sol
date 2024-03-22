@@ -3,10 +3,11 @@ pragma solidity 0.8.19;
 import {Test} from "@forge-std/Test.sol";
 import {console} from "@forge-std/console.sol";
 
+import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {Well} from "@protocol/governance/deprecated/Well.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {MoonwellArtemisGovernor, TimelockInterface} from "@protocol/governance/deprecated/MoonwellArtemisGovernor.sol";
+import {ITimelock} from "@protocol/interfaces/ITimelock.sol";
+import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 
 abstract contract GovernanceProposal is Proposal {
     bool private DEBUG;
@@ -123,7 +124,7 @@ abstract contract GovernanceProposal is Proposal {
     /// @notice delegate voting power
     /// @param proposerAddress address of the proposer
     /// @param token token
-    function _delegate(address proposerAddress, Well token) internal {
+    function _delegate(address proposerAddress, ERC20Votes token) internal {
         token.delegate(proposerAddress);
     }
 
@@ -174,9 +175,9 @@ abstract contract GovernanceProposal is Proposal {
 
         /// @dev deal and delegate, so the proposal can be simulated end-to-end
         Addresses addresses = new Addresses();
-        Well well = Well(payable(addresses.getAddress("WELL")));
-        _deal(address(well), proposerAddress, 100_000_000e18);
-        _delegate(proposerAddress, well);
+        address well = payable(addresses.getAddress("WELL"));
+        _deal(well, proposerAddress, 100_000_000e18);
+        _delegate(proposerAddress, ERC20Votes(well));
 
         /// @dev skip ahead
         vm.roll(block.number + 1000);
@@ -243,9 +244,7 @@ abstract contract GovernanceProposal is Proposal {
             /// @dev queue the proposal
             governor.queue(proposalId);
 
-            TimelockInterface timelock = TimelockInterface(
-                payable(timelockAddress)
-            );
+            ITimelock timelock = ITimelock(payable(timelockAddress));
             vm.warp(block.timestamp + timelock.delay());
 
             /// @dev execute the proposal

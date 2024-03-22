@@ -6,16 +6,17 @@ import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import "@forge-std/Test.sol";
 
-import {Well} from "@protocol/governance/deprecated/Well.sol";
+import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Timelock} from "@protocol/governance/deprecated/Timelock.sol";
+
 import {Addresses} from "@proposals/Addresses.sol";
 import {IHybridProposal} from "@proposals/proposalTypes/IHybridProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichainGovernor/MultichainGovernor.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
-import {IArtemisGovernor} from "@protocol/governance/IArtemisGovernor.sol";
+import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
+import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -472,7 +473,7 @@ abstract contract HybridProposal is
             deal(governanceToken, proposerAddress, votingPower);
             // Delegate proposer's votes to itself
             vm.prank(proposerAddress);
-            Well(governanceToken).delegate(proposerAddress);
+            ERC20Votes(governanceToken).delegate(proposerAddress);
             vm.roll(block.number + 1);
         }
 
@@ -578,7 +579,7 @@ abstract contract HybridProposal is
 
             // Delegate proposer's votes to itself
             vm.prank(caller);
-            Well(governanceToken).delegate(caller);
+            ERC20Votes(governanceToken).delegate(caller);
             vm.roll(block.number + 1);
         }
 

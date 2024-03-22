@@ -7,7 +7,7 @@ import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contr
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import {ITokenSaleDistributorProxy} from "../../../tokensale/ITokenSaleDistributorProxy.sol";
-import {Timelock} from "@protocol/governance/deprecated/Timelock.sol";
+
 import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
@@ -17,6 +17,7 @@ import {MultichainGovernor} from "@protocol/governance/multichainGovernor/Multic
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichainGovernor/MultichainGovernorDeploy.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the

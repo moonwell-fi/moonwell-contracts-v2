@@ -7,9 +7,6 @@ import {Script} from "@forge-std/Script.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {mipb00 as mip} from "@proposals/mips/mip-b00/mip-b00.sol";
 
-import {Timelock} from "@protocol/governance/deprecated/Timelock.sol";
-import {Well} from "@protocol/governance/deprecated/Well.sol";
-
 import {JumpRateModel} from "@protocol/irModels/JumpRateModel.sol";
 
 /*
