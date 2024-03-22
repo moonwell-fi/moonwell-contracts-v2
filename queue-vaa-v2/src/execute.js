@@ -155,7 +155,7 @@ const fetchVAA = async (sequence, retries = 5, delay = 2000) => {
     throw new Error('Failed to fetch VAA after multiple retries');
 };
 
-async function processSequence(credentials, sequence) {
+async function processSequence(credentials, sequence, context) {
     const kvStore = new KeyValueStoreClient(credentials);
     const {notificationClient} = context;
     const expiry = await kvStore.get(`${network}-${sequence}`);
