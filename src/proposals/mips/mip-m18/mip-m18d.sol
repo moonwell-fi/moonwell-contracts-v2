@@ -6,24 +6,28 @@ import "@forge-std/Test.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
-import {ITokenSaleDistributorProxy} from "../../../tokensale/ITokenSaleDistributorProxy.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {Configs} from "@proposals/Configs.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
+import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
-import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
-import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {ITokenSaleDistributorProxy} from "@protocol/tokensale/ITokenSaleDistributorProxy.sol";
+import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the
 /// Multichain Governor and the Artemis Timelock
 /// DO_BUILD=true DO_VALIDATE=true DO_RUN=true DO_PRINT=true forge script
 /// src/proposals/mips/mip-m18/mip-m18d.sol:mipm18d
-contract mipm18d is HybridProposal, MultichainGovernorDeploy {
+contract mipm18d is Configs, HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M18D";
 
     constructor() {
@@ -271,6 +275,66 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
             "Set the pending admin of mETHwh to the Multichain Governor",
             true
         );
+
+        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
+        delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
+
+        {
+            string
+                memory mtokensPath = "./src/proposals/mips/mip-m18/mip-m23.json";
+            string memory fileContents = vm.readFile(mtokensPath);
+            bytes memory rawJson = vm.parseJson(fileContents);
+            EmissionConfig[] memory decodedEmissions = abi.decode(
+                rawJson,
+                (EmissionConfig[])
+            );
+
+            for (uint256 i = 0; i < decodedEmissions.length; i++) {
+                emissions[block.chainid].push(decodedEmissions[i]);
+            }
+        }
+
+        /// -------------- EMISSION CONFIGURATION --------------
+
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
+            block.chainid
+        );
+        address mrd = addresses.getAddress(
+            "MRD_PROXY",
+            sendingChainIdToReceivingChainId[block.chainid]
+        );
+
+        unchecked {
+            for (uint256 i = 0; i < emissionConfig.length; i++) {
+                EmissionConfig memory config = emissionConfig[i];
+
+                _pushHybridAction(
+                    mrd,
+                    abi.encodeWithSignature(
+                        "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
+                        addresses.getAddress(
+                            config.mToken,
+                            sendingChainIdToReceivingChainId[block.chainid]
+                        ),
+                        addresses.getAddress(
+                            config.owner,
+                            sendingChainIdToReceivingChainId[block.chainid]
+                        ),
+                        config.emissionToken,
+                        config.supplyEmissionPerSec,
+                        config.borrowEmissionsPerSec,
+                        config.endTime
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Emission configuration set for ",
+                            config.mToken
+                        )
+                    ),
+                    false /// base action
+                );
+            }
+        }
     }
 
     function run(Addresses addresses, address) public override {
@@ -514,6 +578,61 @@ contract mipm18d is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("MRD_PROXY_ADMIN"),
             "moonbeam proxies for multichain governor"
         );
+
+        /// get moonbeam chainid for the emissions as this is where the data was stored
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
+            sendingChainIdToReceivingChainId[block.chainid]
+        );
+        MultiRewardDistributor distributor = MultiRewardDistributor(
+            addresses.getAddress("MRD_PROXY")
+        );
+
+        unchecked {
+            for (uint256 i = 0; i < emissionConfig.length; i++) {
+                EmissionConfig memory config = emissionConfig[i];
+                MultiRewardDistributorCommon.MarketConfig
+                    memory marketConfig = distributor.getConfigForMarket(
+                        MToken(addresses.getAddress(config.mToken)),
+                        config.emissionToken
+                    );
+
+                assertEq(
+                    marketConfig.owner,
+                    addresses.getAddress(config.owner),
+                    "emission owner incorrect"
+                );
+                assertEq(
+                    marketConfig.emissionToken,
+                    config.emissionToken,
+                    "emission token incorrect"
+                );
+                assertEq(
+                    marketConfig.endTime,
+                    config.endTime,
+                    "end time incorrect"
+                );
+                assertEq(
+                    marketConfig.supplyEmissionsPerSec,
+                    config.supplyEmissionPerSec,
+                    "supply emission per second incorrect"
+                );
+                assertEq(
+                    marketConfig.borrowEmissionsPerSec,
+                    config.borrowEmissionsPerSec,
+                    "borrow emission per second incorrect"
+                );
+                assertEq(
+                    marketConfig.supplyGlobalIndex,
+                    1e36,
+                    "supply global index incorrect"
+                );
+                assertEq(
+                    marketConfig.borrowGlobalIndex,
+                    1e36,
+                    "borrow global index incorrect"
+                );
+            }
+        }
 
         vm.selectFork(moonbeamForkId);
     }
