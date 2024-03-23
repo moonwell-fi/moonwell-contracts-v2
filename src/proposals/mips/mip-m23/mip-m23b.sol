@@ -28,7 +28,7 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 /// and xWELL_PROXY must be added to the addresses.json file.
 contract mipm23b is HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment of the Multichain Vote Collection Contract to Base
-    string public constant name = "MIP-M18B";
+    string public constant name = "MIP-M23B";
 
     /// @notice cooldown window to withdraw staked WELL to xWELL
     uint256 public constant cooldownSeconds = 10 days;
