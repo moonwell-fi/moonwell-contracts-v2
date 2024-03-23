@@ -7,7 +7,6 @@ import "@forge-std/Test.sol";
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
-import {BreakGlassCalldata} from "@protocol/utils/BreakGlassCalldata.sol";
 
 /// Performs the following actions which hand off direct or pending ownership
 /// of the contracts from the Multichain Governor to the Artemis Timelock contract:
