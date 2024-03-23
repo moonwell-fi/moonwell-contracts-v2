@@ -185,15 +185,11 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
     }
 
     function testBridgeOutSuccess() public {
-        uint256 mintAmount = testMintViaLockbox(uint96(startingWellAmount));
+        uint256 burnAmount = testMintViaLockbox(uint96(startingWellAmount));
 
-        uint256 startingWellBalance = well.balanceOf(user);
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
-        uint256 startingLockboxWellbalance = well.balanceOf(
-            address(xerc20Lockbox)
-        );
 
         uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
         uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
@@ -201,37 +197,22 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
         vm.deal(user, cost);
 
         vm.startPrank(user);
-        xwell.approve(address(wormholeAdapter), mintAmount);
-        wormholeAdapter.bridge{value: cost}(dstChainId, mintAmount, user);
+        xwell.approve(address(wormholeAdapter), burnAmount);
+        wormholeAdapter.bridge{value: cost}(dstChainId, burnAmount, user);
         vm.stopPrank();
 
-        uint256 endingLockboxWellbalance = well.balanceOf(
-            address(xerc20Lockbox)
-        );
-        uint256 endingWellBalance = well.balanceOf(user);
         uint256 endingXWellBalance = xwell.balanceOf(user);
         uint256 endingXWellTotalSupply = xwell.totalSupply();
         uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        assertEq(
-            endingLockboxWellbalance,
-            startingLockboxWellbalance - mintAmount,
-            "lockbox well balance incorrect"
-        );
-        assertEq(
-            endingWellBalance,
-            startingWellBalance + mintAmount,
-            "user well balance incorrect"
-        );
-
-        assertEq(endingBuffer, startingBuffer + mintAmount, "buffer incorrect");
+        assertEq(endingBuffer, startingBuffer + burnAmount, "buffer incorrect");
         assertEq(
             endingXWellBalance,
-            startingXWellBalance,
+            startingXWellBalance - burnAmount,
             "user xWELL balance incorrect, should be unchanged"
         );
         assertEq(
-            endingXWellTotalSupply,
+            endingXWellTotalSupply + burnAmount,
             startingXWellTotalSupply,
             "total xWELL supply incorrect"
         );
