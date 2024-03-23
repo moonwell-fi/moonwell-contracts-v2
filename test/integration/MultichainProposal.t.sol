@@ -10,8 +10,8 @@ import "@forge-std/Test.sol";
 
 import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {MToken} from "@protocol/MToken.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
@@ -20,22 +20,22 @@ import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
+import {MockVoteCollection} from "@test/mock/MockVoteCollection.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
-import {MockVoteCollection} from "@test/mock/MockVoteCollection.sol";
+import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
 import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
 import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 
-import {mipm18a} from "@proposals/mips/mip-m18/mip-m18a.sol";
-import {mipm18b} from "@proposals/mips/mip-m18/mip-m18b.sol";
-import {mipm18c} from "@proposals/mips/mip-m18/mip-m18c.sol";
-import {mipm18d} from "@proposals/mips/mip-m18/mip-m18d.sol";
-import {mipm18e} from "@proposals/mips/mip-m18/mip-m18e.sol";
+import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
+import {mipm23} from "@proposals/mips/mip-m23/mip-m23.sol";
+import {mipm24} from "@proposals/mips/mip-m24/mip-m24.sol";
 
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 
@@ -95,11 +95,9 @@ contract MultichainProposalTest is
 
     address public constant voter = address(100_000_000);
 
-    mipm18a public proposalA;
-    mipm18b public proposalB;
-    mipm18c public proposalC;
-    mipm18d public proposalD;
-    mipm18e public proposalE;
+    mipm23c public proposalC;
+    mipm23 public proposalD;
+    mipm24 public proposalE;
 
     TemporalGovernor public temporalGov;
 
@@ -125,22 +123,17 @@ contract MultichainProposalTest is
 
         vm.selectFork(moonbeamForkId);
 
-        proposalA = new mipm18a();
-        proposalB = new mipm18b();
-        proposalC = new mipm18c();
-        proposalD = new mipm18d();
-        proposalE = new mipm18e();
+        proposalC = new mipm23c();
+        proposalD = new mipm23();
+        proposalE = new mipm24();
 
-        address[] memory proposalsArray = new address[](5);
-        proposalsArray[0] = address(proposalA);
-        proposalsArray[1] = address(proposalB);
-        proposalsArray[2] = address(proposalC);
-        proposalsArray[3] = address(proposalD);
-        proposalsArray[4] = address(proposalE);
+        /// set up temporal gov calldata
+        proposalC.buildCalldata(addresses);
 
-        proposalA.setForkIds(baseForkId, moonbeamForkId);
-        proposalB.setForkIds(baseForkId, moonbeamForkId);
-        proposalC.setForkIds(baseForkId, moonbeamForkId);
+        address[] memory proposalsArray = new address[](2);
+        proposalsArray[0] = address(proposalD);
+        proposalsArray[1] = address(proposalE);
+
         proposalD.setForkIds(baseForkId, moonbeamForkId);
         proposalE.setForkIds(baseForkId, moonbeamForkId);
 
@@ -287,6 +280,76 @@ contract MultichainProposalTest is
             temporalGov.allTrustedSenders(moonBeamWormholeChainId).length,
             1,
             "incorrect amount of trusted senders post proposal"
+        );
+    }
+
+    function testGetAllMarketConfigs() public {
+        MultiRewardDistributor mrd = MultiRewardDistributor(
+            addresses.getAddress("MRD_PROXY")
+        );
+
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_DAI"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
+        );
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_USDBC"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
+        );
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_USDC"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
+        );
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_WETH"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
+        );
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_cbETH"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
+        );
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_wstETH"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
+        );
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_rETH"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
         );
     }
 
