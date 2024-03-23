@@ -11,12 +11,6 @@ import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
 
-import {mipm18a} from "@proposals/mips/mip-m18/mip-m18a.sol";
-import {mipm18b} from "@proposals/mips/mip-m18/mip-m18b.sol";
-import {mipm18c} from "@proposals/mips/mip-m18/mip-m18c.sol";
-import {mipm18d} from "@proposals/mips/mip-m18/mip-m18d.sol";
-import {mipm18e} from "@proposals/mips/mip-m18/mip-m18e.sol";
-
 /*
 How to use:
 forge test --fork-url $ETH_RPC_URL --match-contract TestProposals -vvv
