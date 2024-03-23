@@ -33,8 +33,6 @@ import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/Temporal
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 
-import {mipm23a} from "@proposals/mips/mip-m23/mip-m23a.sol";
-import {mipm23b} from "@proposals/mips/mip-m23/mip-m23b.sol";
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {mipm23} from "@proposals/mips/mip-m23/mip-m23.sol";
 import {mipm24} from "@proposals/mips/mip-m24/mip-m24.sol";
@@ -97,8 +95,6 @@ contract MultichainProposalTest is
 
     address public constant voter = address(100_000_000);
 
-    mipm23a public proposalA;
-    mipm23b public proposalB;
     mipm23c public proposalC;
     mipm23 public proposalD;
     mipm24 public proposalE;
@@ -127,22 +123,17 @@ contract MultichainProposalTest is
 
         vm.selectFork(moonbeamForkId);
 
-        proposalA = new mipm23a();
-        proposalB = new mipm23b();
         proposalC = new mipm23c();
         proposalD = new mipm23();
         proposalE = new mipm24();
 
-        address[] memory proposalsArray = new address[](5);
-        proposalsArray[0] = address(proposalA);
-        proposalsArray[1] = address(proposalB);
-        proposalsArray[2] = address(proposalC);
-        proposalsArray[3] = address(proposalD);
-        proposalsArray[4] = address(proposalE);
+        /// set up temporal gov calldata
+        proposalC.buildCalldata(addresses);
 
-        proposalA.setForkIds(baseForkId, moonbeamForkId);
-        proposalB.setForkIds(baseForkId, moonbeamForkId);
-        proposalC.setForkIds(baseForkId, moonbeamForkId);
+        address[] memory proposalsArray = new address[](2);
+        proposalsArray[0] = address(proposalD);
+        proposalsArray[1] = address(proposalE);
+
         proposalD.setForkIds(baseForkId, moonbeamForkId);
         proposalE.setForkIds(baseForkId, moonbeamForkId);
 
