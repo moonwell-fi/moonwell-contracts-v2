@@ -50,10 +50,6 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
         );
 
         deal(address(well), user, startingWellAmount);
-
-        deploy(addresses, address(0));
-        build(addresses);
-        run(addresses, address(0));
     }
 
     function testValidate() public {
@@ -191,9 +187,13 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
     function testBridgeOutSuccess() public {
         uint256 mintAmount = testMintViaLockbox(uint96(startingWellAmount));
 
+        uint256 startingWellBalance = well.balanceOf(user);
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
+        uint256 startingLockboxWellbalance = well.balanceOf(
+            address(xerc20Lockbox)
+        );
 
         uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
         uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
@@ -205,19 +205,34 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
         wormholeAdapter.bridge{value: cost}(dstChainId, mintAmount, user);
         vm.stopPrank();
 
+        uint256 endingLockboxWellbalance = well.balanceOf(
+            address(xerc20Lockbox)
+        );
+        uint256 endingWellBalance = well.balanceOf(user);
         uint256 endingXWellBalance = xwell.balanceOf(user);
         uint256 endingXWellTotalSupply = xwell.totalSupply();
         uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
 
+        assertEq(
+            endingLockboxWellbalance,
+            startingLockboxWellbalance - mintAmount,
+            "lockbox well balance incorrect"
+        );
+        assertEq(
+            endingWellBalance,
+            startingWellBalance + mintAmount,
+            "user well balance incorrect"
+        );
+
         assertEq(endingBuffer, startingBuffer + mintAmount, "buffer incorrect");
         assertEq(
             endingXWellBalance,
-            startingXWellBalance - mintAmount,
-            "user xWELL balance incorrect"
+            startingXWellBalance,
+            "user xWELL balance incorrect, should be unchanged"
         );
         assertEq(
             endingXWellTotalSupply,
-            startingXWellTotalSupply - mintAmount,
+            startingXWellTotalSupply,
             "total xWELL supply incorrect"
         );
     }
