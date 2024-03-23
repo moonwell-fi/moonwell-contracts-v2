@@ -33,11 +33,11 @@ import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/Temporal
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 
-import {mipm18a} from "@proposals/mips/mip-m18/mip-m18a.sol";
-import {mipm18b} from "@proposals/mips/mip-m18/mip-m18b.sol";
-import {mipm18c} from "@proposals/mips/mip-m18/mip-m18c.sol";
-import {mipm18d} from "@proposals/mips/mip-m18/mip-m18d.sol";
-import {mipm18e} from "@proposals/mips/mip-m18/mip-m18e.sol";
+import {mipm23a} from "@proposals/mips/mip-m23/mip-m23a.sol";
+import {mipm23b} from "@proposals/mips/mip-m23/mip-m23b.sol";
+import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
+import {mipm23} from "@proposals/mips/mip-m23/mip-m23.sol";
+import {mipm24} from "@proposals/mips/mip-m24/mip-m24.sol";
 
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 
@@ -97,11 +97,11 @@ contract MultichainProposalTest is
 
     address public constant voter = address(100_000_000);
 
-    mipm18a public proposalA;
-    mipm18b public proposalB;
-    mipm18c public proposalC;
-    mipm18d public proposalD;
-    mipm18e public proposalE;
+    mipm23a public proposalA;
+    mipm23b public proposalB;
+    mipm23c public proposalC;
+    mipm23 public proposalD;
+    mipm24 public proposalE;
 
     TemporalGovernor public temporalGov;
 
@@ -127,11 +127,11 @@ contract MultichainProposalTest is
 
         vm.selectFork(moonbeamForkId);
 
-        proposalA = new mipm18a();
-        proposalB = new mipm18b();
-        proposalC = new mipm18c();
-        proposalD = new mipm18d();
-        proposalE = new mipm18e();
+        proposalA = new mipm23a();
+        proposalB = new mipm23b();
+        proposalC = new mipm23c();
+        proposalD = new mipm23();
+        proposalE = new mipm24();
 
         address[] memory proposalsArray = new address[](5);
         proposalsArray[0] = address(proposalA);
