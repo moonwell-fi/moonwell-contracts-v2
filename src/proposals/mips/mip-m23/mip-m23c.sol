@@ -53,7 +53,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         return moonbeamForkId;
     }
 
-    function buildCalldata(Addresses addresses) private {
+    function buildCalldata(Addresses addresses) public {
         require(
             temporalGovernanceTargets.length == 0,
             "calldata already set in mip-18-c"
