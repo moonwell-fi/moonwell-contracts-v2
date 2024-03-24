@@ -10,6 +10,7 @@ import "@forge-std/Test.sol";
 
 import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {MToken} from "@protocol/MToken.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
@@ -19,11 +20,13 @@ import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MultichainGovernor} from "@protocol/governance/multichainGovernor/MultichainGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MockVoteCollection} from "@test/mock/MockVoteCollection.sol";
+import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
+import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
 import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichainGovernor/MultichainVoteCollection.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
@@ -287,6 +290,76 @@ contract MultichainProposalTest is
             temporalGov.allTrustedSenders(moonBeamWormholeChainId).length,
             1,
             "incorrect amount of trusted senders post proposal"
+        );
+    }
+
+    function testGetAllMarketConfigs() public {
+        MultiRewardDistributor mrd = MultiRewardDistributor(
+            addresses.getAddress("MRD_PROXY")
+        );
+
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_DAI"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
+        );
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_USDBC"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
+        );
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_USDC"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
+        );
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_WETH"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
+        );
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_cbETH"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
+        );
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_wstETH"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
+        );
+        assertEq(
+            mrd
+                .getAllMarketConfigs(
+                    MToken(addresses.getAddress("MOONWELL_rETH"))
+                )
+                .length,
+            3,
+            "incorrect reward token length"
         );
     }
 

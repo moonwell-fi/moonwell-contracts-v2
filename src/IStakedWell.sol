@@ -45,6 +45,12 @@ interface IStakedWell {
         address underlyingAsset
     ) external;
 
+    function configureAssets(
+        uint128[] memory emissionPerSecond,
+        uint256[] memory totalStaked,
+        address[] memory underlyingAsset
+    ) external;
+
     /// @notice update the unstake window
     /// @param unstakeWindow the new unstake window
     function setUnstakeWindow(uint256 unstakeWindow) external;

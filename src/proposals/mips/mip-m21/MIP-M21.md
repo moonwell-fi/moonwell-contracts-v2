@@ -1,16 +1,26 @@
-# MIP-M19: Upgrade Wormhole Bridge Adapter on Moonbeam
+# MIP-M21: Upgrade Wormhole Bridge Adapter on Moonbeam
 
 ## Overview
 
-Currently, the Wormhole Bridge Adapter on Moonbeam gives users xWELL. Users will
-then likely have to unwrap xWELL to get WELL. This is a two-step process that is
-not user-friendly. This proposal aims to upgrade the Wormhole Bridge Adapter on
-Moonbeam to give users WELL directly. This new logic contract works by minting
-xWELL to the adapter, and then using the lockbox contract to burn these tokens
-and transfer WELL to the user. This will make the process of bridging xWELL from
-other chains to Moonbeam much more user-friendly.
+In preparation for the upcoming upgrade of the WELL token to the
+[xERC20 standard](https://www.xerc20.com/), which will enable the token to be
+natively used on the Base network for voting and staking, the Wormhole Bridge
+Adapter on Moonbeam needs to be upgraded. While the upgraded WELL token is not
+yet in use, it is governed by the
+[Moonwell governor](https://moonscan.io/address/0xfc4DFB17101A12C5CEc5eeDd8E92B5b16557666d),
+so this upgrade must be performed through governance.
+
+This upgraded Wormhole Bridge Adapter will support a more user-friendly
+experience by automatically unwrapping the xERC20 version of WELL back to the
+[original Moonbeam native WELL token](https://moonscan.io/token/0x511ab53f793683763e5a8829738301368a2411e3)
+on transfer, which will reduce the number of steps required to transfer tokens
+between Moonbeam and Base.
 
 ## Security
+
+This change has been audited by Halborn Security as part of the xERC20 upgrade,
+and no security issues were found. The audit report can be found
+[here](https://github.com/HalbornSecurity/PublicReports/blob/master/Solidity%20Smart%20Contract%20Audits/Moonwell_Finance_XWell_Token_Rate-Limiting_Smart_Contract_Security_Assessment_Report_Halborn_Final.pdf).
 
 In order to ensure no storage slot collisions, the slither tool was used to view
 the storage offset changes in the new logic contract. No storage slot collisions
@@ -19,7 +29,7 @@ were found, and a single variable `lockbox` was added to the
 
 ### Wormhole Adapter Unwrapper
 
-`slither src/xWELL/WormholeUnwrapperAdapter.sol  --print variable-order  --solc-remaps '@openzeppelin-contracts/=lib/openzeppelin-contracts/ @openzeppelin/=lib/openzeppelin-contracts/ @openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/ @protocol=src/ @proposals=src/proposals/'`
+`slither src/xWELL/WormholeUnwrapperAdapter.sol  --print variable-order  --solc-remaps '@openzeppelin-contracts/=lib/openzeppelin-contracts/OpenZeppelin Defender/=lib/openzeppelin-contracts/ @openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/ @protocol=src/ @proposals=src/proposals/'`
 
 ```
 WormholeUnwrapperAdapter:
@@ -47,7 +57,7 @@ WormholeUnwrapperAdapter:
 ### Original Wormhole Bridge Adapter
 
 ```
-slither src/xWELL/WormholeBridgeAdapter.sol  --print variable-order  --solc-remaps '@openzeppelin-contracts/=lib/openzeppelin-contracts/ @openzeppelin/=lib/openzeppelin-contracts/ @openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/ @protocol=src/ @proposals=src/proposals/'
+slither src/xWELL/WormholeBridgeAdapter.sol  --print variable-order  --solc-remaps '@openzeppelin-contracts/=lib/openzeppelin-contracts/ @OpenZeppelin Defender/=lib/openzeppelin-contracts/ @openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/ @protocol=src/ @proposals=src/proposals/'
 ```
 
 ```

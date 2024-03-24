@@ -684,6 +684,12 @@
         "isContract": true
     },
     {
+        "addr": "0x85B6cb73b076309616Dba529fA2b20e2A0A9EEe9",
+        "chainId": 1284,
+        "isContract": true,
+        "name": "WORMHOLE_UNWRAPPER_ADAPTER"
+    },
+    {
         "addr": "0x3b1BDDC0998058dD266e2a0aC855D0d750700a7f",
         "chainId": 1284,
         "name": "xWELL_LOGIC",
