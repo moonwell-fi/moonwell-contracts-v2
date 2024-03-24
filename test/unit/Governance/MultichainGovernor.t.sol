@@ -22,7 +22,10 @@ contract MockTimelock {
 
 contract MultichainGovernorUnitTest is MultichainBaseTest {
     event BreakGlassGuardianChanged(address oldValue, address newValue);
-    event PauseGuardianUpdated(address indexed oldPauseGuardian, address indexed newPauseGuardian);
+    event PauseGuardianUpdated(
+        address indexed oldPauseGuardian,
+        address indexed newPauseGuardian
+    );
 
     function setUp() public override {
         super.setUp();
@@ -149,7 +152,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
         vm.expectRevert("Initializable: contract is already initialized");
 
-        governorLogic.initialize(initData, trustedSenders, new bytes[](0));
+        MultichainGovernor(address(governorLogic)).initialize(
+            initData,
+            trustedSenders,
+            new bytes[](0)
+        );
     }
 
     function testDeployxWell() public {
