@@ -122,12 +122,13 @@ Guardian role has the ability to "break glass” and roll back governance
 ownership to a predetermined address, which will be set to the current governor
 contract. It is important to note that the break glass function can only be used
 once and must be restored through an onchain governance vote. The Governance
-Guardians will sit on a 3 of 5 multisig. I nominate myself to be one of the five
-Governance Guardians, recognizing the importance of this responsibility and my
-commitment to the long-term success and health of Moonwell. The complete list of
-signers is currently being determined, with a focus on selecting individuals and
-entities who have demonstrated expertise, integrity, and dedication to the
-Moonwell Protocol and community.
+fGuardians will sit on a 3 of 4 multisig. I nominate myself to be one of the
+four Governance Guardians, recognizing the importance of this responsibility and
+my commitment to the long-term success and health of Moonwell. The complete list
+of signers is currently being determined, with a focus on selecting individuals
+and entities who have demonstrated expertise, integrity, and dedication to the
+Moonwell Protocol and community. An additional signer will be added in the near
+future to further increase the security of the multisig and ability to respond.
 
 ## Mutichain WELL (xWELL)
 
@@ -167,15 +168,21 @@ The following are the testing and security measures employed:
   [Halborn Audit](https://github.com/moonwell-fi/moonwell-contracts-v2/blob/main/audits/Moonwell_Finance_XWell_Token_Rate-Limiting_Smart_Contract_Security_Assessment_Report_Halborn_Final_Update.pdf)
   which reviewed the xWELL token and the Wormhole Bridge Adapter.
 
-By employing a combination of unit, integration, invariant testing, formal
-verification, and third-party audits, such as the comprehensive assessment by
-Halborn, we've built a foundation of trust and security. These steps reflect our
-proactive approach to safeguarding the protocol against vulnerabilities,
-reinforcing our commitment to maintaining the highest standards of security. As
-we move forward with our governance proposal, we believe that this strong
-security framework sets a solid groundwork for the changes we aim to implement,
-aligning with our mission to provide a safe and dependable environment for our
-community.
+## xWELL Parameters
+
+The xWELL token will have the following parameters for the Wormhole Bridge
+Adapters to limit throughput and increase security.
+
+- Buffer Capacity: 100,000,000 xWELL on each chain.
+- Buffer Replenish Rate: 1,158 xWELL per second. This rate is equivalent to
+  100,000,000 xWELL per day and allows the midpoint to be reached within 12
+  hours if the buffer is fully depleted or replenished.
+
+The buffer depletes on minting, and replenishes on burning. The buffer is
+designed to limit the creation of xWELL on each chain, ensuring that the rate of
+minting and burning is controlled and secure. These parameters will likely be
+lowered in the future once the initial token amounts have been moved across
+chains.
 
 ### Conclusion
 
