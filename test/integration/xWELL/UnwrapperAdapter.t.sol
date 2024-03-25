@@ -50,10 +50,6 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
         );
 
         deal(address(well), user, startingWellAmount);
-
-        deploy(addresses, address(0));
-        build(addresses);
-        run(addresses, address(0));
     }
 
     function testValidate() public {
@@ -189,7 +185,7 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
     }
 
     function testBridgeOutSuccess() public {
-        uint256 mintAmount = testMintViaLockbox(uint96(startingWellAmount));
+        uint256 burnAmount = testMintViaLockbox(uint96(startingWellAmount));
 
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
@@ -201,23 +197,23 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
         vm.deal(user, cost);
 
         vm.startPrank(user);
-        xwell.approve(address(wormholeAdapter), mintAmount);
-        wormholeAdapter.bridge{value: cost}(dstChainId, mintAmount, user);
+        xwell.approve(address(wormholeAdapter), burnAmount);
+        wormholeAdapter.bridge{value: cost}(dstChainId, burnAmount, user);
         vm.stopPrank();
 
         uint256 endingXWellBalance = xwell.balanceOf(user);
         uint256 endingXWellTotalSupply = xwell.totalSupply();
         uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        assertEq(endingBuffer, startingBuffer + mintAmount, "buffer incorrect");
+        assertEq(endingBuffer, startingBuffer + burnAmount, "buffer incorrect");
         assertEq(
             endingXWellBalance,
-            startingXWellBalance - mintAmount,
-            "user xWELL balance incorrect"
+            startingXWellBalance - burnAmount,
+            "user xWELL balance incorrect, should be unchanged"
         );
         assertEq(
-            endingXWellTotalSupply,
-            startingXWellTotalSupply - mintAmount,
+            endingXWellTotalSupply + burnAmount,
+            startingXWellTotalSupply,
             "total xWELL supply incorrect"
         );
     }

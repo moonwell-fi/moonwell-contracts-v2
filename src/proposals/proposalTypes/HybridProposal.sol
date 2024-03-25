@@ -492,8 +492,12 @@ abstract contract HybridProposal is
                 proposeCalldata
             );
 
-            console.log("Propose Gas Metering", gasStart - gasleft());
+            require(
+                gasStart - gasleft() <= 13_000_000,
+                "Proposal propose gas limit exceeded"
+            );
         }
+
         uint256 proposalId = abi.decode(data, (uint256));
 
         // Check proposal is in Pending state
@@ -538,7 +542,10 @@ abstract contract HybridProposal is
             uint256 gasStart = gasleft();
             governor.execute(proposalId);
 
-            console.log("Execution Gas Metering", gasStart - gasleft());
+            require(
+                gasStart - gasleft() <= 13_000_000,
+                "Proposal execute gas limit exceeded"
+            );
         }
 
         require(
@@ -625,7 +632,10 @@ abstract contract HybridProposal is
 
             require(success, "propose multichain governor failed");
 
-            console.log("Propose Gas Metering", gasStart - gasleft());
+            require(
+                gasStart - gasleft() <= 13_000_000,
+                "Proposal propose gas limit exceeded"
+            );
         }
 
         uint256 proposalId = abi.decode(data, (uint256));
@@ -664,7 +674,10 @@ abstract contract HybridProposal is
             uint256 gasStart = gasleft();
             governor.execute(proposalId);
 
-            console.log("Execution Gas Metering", gasStart - gasleft());
+            require(
+                gasStart - gasleft() <= 13_000_000,
+                "Proposal execute gas limit exceeded"
+            );
         }
 
         require(

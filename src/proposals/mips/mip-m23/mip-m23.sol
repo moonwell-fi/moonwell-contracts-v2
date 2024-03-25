@@ -7,7 +7,7 @@ import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contr
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import {ITokenSaleDistributorProxy} from "../../../tokensale/ITokenSaleDistributorProxy.sol";
-
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Addresses} from "@proposals/Addresses.sol";
@@ -30,13 +30,19 @@ import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 /// After this proposal, the Temporal Governor will have 2 admins, the
 /// Multichain Governor and the Artemis Timelock
 /// DO_BUILD=true DO_VALIDATE=true DO_RUN=true DO_PRINT=true forge script
-/// src/proposals/mips/mip-m18/mip-m18d.sol:mipm18d
-contract mipm18d is Configs, HybridProposal, MultichainGovernorDeploy {
-    string public constant name = "MIP-M18D";
+/// src/proposals/mips/mip-m23/mip-m23.sol:mipm23
+contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
+    string public constant name = "MIP-M23";
+
+    /// @notice new xWELL buffer cap
+    uint256 public constant XWELL_BUFFER_CAP = 100_000_000 * 1e18;
+
+    /// @notice new xWELL rate limit per second
+    uint128 public constant XWELL_RATE_LIMIT_PER_SECOND = 1158 * 1e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m18/MIP-M18-D.md")
+            vm.readFile("./src/proposals/mips/mip-m23/MIP-M23.md")
         );
         _setProposalDescription(proposalDescription);
     }
@@ -113,6 +119,48 @@ contract mipm18d is Configs, HybridProposal, MultichainGovernorDeploy {
             ),
             "Set the pending owner of the xWELL Token to the Multichain Governor",
             true
+        );
+
+        /// adjust rate limits to allow initial transfers through
+        _pushHybridAction(
+            addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
+            abi.encodeWithSignature(
+                "setBufferCap(address,uint256)",
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+                XWELL_BUFFER_CAP
+            ),
+            "Set the buffer cap of the wormhole bridge adapter to 100m",
+            true
+        );
+        _pushHybridAction(
+            addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
+            abi.encodeWithSignature(
+                "setBufferCap(address,uint256)",
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+                XWELL_BUFFER_CAP
+            ),
+            "Set the buffer cap of the wormhole bridge adapter to 100m",
+            false
+        );
+        _pushHybridAction(
+            addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
+            abi.encodeWithSignature(
+                "setRateLimitPerSecond(address,uint128)",
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+                XWELL_RATE_LIMIT_PER_SECOND
+            ),
+            "Set the rate limit per second of the wormhole bridge adapter to 1158/WELL per second",
+            true
+        );
+        _pushHybridAction(
+            addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
+            abi.encodeWithSignature(
+                "setRateLimitPerSecond(address,uint128)",
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+                XWELL_RATE_LIMIT_PER_SECOND
+            ),
+            "Set the rate limit per second of the wormhole bridge adapter to 1158/WELL per second",
+            false
         );
 
         /// transfer ownership of chainlink oracle
@@ -285,7 +333,7 @@ contract mipm18d is Configs, HybridProposal, MultichainGovernorDeploy {
 
         {
             string
-                memory mtokensPath = "./src/proposals/mips/mip-m18/mip-m23.json";
+                memory mtokensPath = "./src/proposals/mips/mip-m23/mip-m23.json";
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
             EmissionConfig[] memory decodedEmissions = abi.decode(
@@ -547,7 +595,37 @@ contract mipm18d is Configs, HybridProposal, MultichainGovernorDeploy {
             "Chainlink oracle admin incorrect"
         );
 
+        assertEq(
+            xWELL(addresses.getAddress("xWELL_PROXY")).bufferCap(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ),
+            XWELL_BUFFER_CAP,
+            "xWELL buffer cap incorrect"
+        );
+        assertEq(
+            xWELL(addresses.getAddress("xWELL_PROXY")).rateLimitPerSecond(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ),
+            XWELL_RATE_LIMIT_PER_SECOND,
+            "xWELL rate limit per second incorrect"
+        );
+
         vm.selectFork(baseForkId);
+
+        assertEq(
+            xWELL(addresses.getAddress("xWELL_PROXY")).bufferCap(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ),
+            XWELL_BUFFER_CAP,
+            "xWELL buffer cap incorrect"
+        );
+        assertEq(
+            xWELL(addresses.getAddress("xWELL_PROXY")).rateLimitPerSecond(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ),
+            XWELL_RATE_LIMIT_PER_SECOND,
+            "xWELL rate limit per second incorrect"
+        );
 
         TemporalGovernor temporalGovernor = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")

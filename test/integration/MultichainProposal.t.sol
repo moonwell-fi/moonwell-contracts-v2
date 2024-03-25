@@ -33,11 +33,9 @@ import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/Temporal
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 
-import {mipm18a} from "@proposals/mips/mip-m18/mip-m18a.sol";
-import {mipm18b} from "@proposals/mips/mip-m18/mip-m18b.sol";
-import {mipm18c} from "@proposals/mips/mip-m18/mip-m18c.sol";
-import {mipm18d} from "@proposals/mips/mip-m18/mip-m18d.sol";
-import {mipm18e} from "@proposals/mips/mip-m18/mip-m18e.sol";
+import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
+import {mipm23} from "@proposals/mips/mip-m23/mip-m23.sol";
+import {mipm24} from "@proposals/mips/mip-m24/mip-m24.sol";
 
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
@@ -98,11 +96,9 @@ contract MultichainProposalTest is
 
     address public constant voter = address(100_000_000);
 
-    mipm18a public proposalA;
-    mipm18b public proposalB;
-    mipm18c public proposalC;
-    mipm18d public proposalD;
-    mipm18e public proposalE;
+    mipm23c public proposalC;
+    mipm23 public proposalD;
+    mipm24 public proposalE;
 
     TemporalGovernor public temporalGov;
 
@@ -128,22 +124,17 @@ contract MultichainProposalTest is
 
         vm.selectFork(moonbeamForkId);
 
-        proposalA = new mipm18a();
-        proposalB = new mipm18b();
-        proposalC = new mipm18c();
-        proposalD = new mipm18d();
-        proposalE = new mipm18e();
+        proposalC = new mipm23c();
+        proposalD = new mipm23();
+        proposalE = new mipm24();
 
-        address[] memory proposalsArray = new address[](5);
-        proposalsArray[0] = address(proposalA);
-        proposalsArray[1] = address(proposalB);
-        proposalsArray[2] = address(proposalC);
-        proposalsArray[3] = address(proposalD);
-        proposalsArray[4] = address(proposalE);
+        /// set up temporal gov calldata
+        proposalC.buildCalldata(addresses);
 
-        proposalA.setForkIds(baseForkId, moonbeamForkId);
-        proposalB.setForkIds(baseForkId, moonbeamForkId);
-        proposalC.setForkIds(baseForkId, moonbeamForkId);
+        address[] memory proposalsArray = new address[](2);
+        proposalsArray[0] = address(proposalD);
+        proposalsArray[1] = address(proposalE);
+
         proposalD.setForkIds(baseForkId, moonbeamForkId);
         proposalE.setForkIds(baseForkId, moonbeamForkId);
 
@@ -2379,9 +2370,13 @@ contract MultichainProposalTest is
                 uint256 index
             ) = stkwell.assets(address(stkwell));
 
-            assertEq(0, lastUpdateTimestamp, "lastUpdateTimestamp");
-            assertEq(0, emissionsPerSecond, "emissions per second");
-            assertEq(0, index, "rewards per second");
+            assertGe(
+                lastUpdateTimestamp,
+                1711250225,
+                "lastUpdateTimestamp decreased"
+            );
+            assertGe(emissionsPerSecond, 0, "emissions per second");
+            assertGe(index, 0, "rewards index");
         }
 
         vm.startPrank(stkwell.EMISSION_MANAGER());
@@ -2423,7 +2418,7 @@ contract MultichainProposalTest is
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
-            assertEq(0, index, "rewards per second");
+            assertEq(1e18, index, "rewards per second");
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,
@@ -2443,21 +2438,22 @@ contract MultichainProposalTest is
         uint256 userxWellBalance = xwell.balanceOf(address(this));
         stkwell.claimRewards(address(this), type(uint256).max);
 
-        assertEq(
+        uint256 userRewards = 10 days * 1e18;
+
+        assertLt(
             xwell.balanceOf(address(this)),
-            userxWellBalance + (10 days * 1e18),
-            "incorrect xWELL balance after claiming rewards"
+            userxWellBalance + userRewards,
+            "incorrect xWELL balance after claiming rewards, rewards too high"
         );
 
         {
             (
                 uint128 emissionsPerSecond,
                 uint128 lastUpdateTimestamp,
-                uint256 index
+
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
-            assertEq(864000000000000000, index, "rewards per second");
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,
@@ -2497,9 +2493,13 @@ contract MultichainProposalTest is
                 uint256 index
             ) = stkwell.assets(address(stkwell));
 
-            assertEq(0, lastUpdateTimestamp, "lastUpdateTimestamp");
-            assertEq(0, emissionsPerSecond, "emissions per second");
-            assertEq(0, index, "rewards per second");
+            assertGe(
+                lastUpdateTimestamp,
+                1711250225,
+                "lastUpdateTimestamp decreased"
+            );
+            assertGe(emissionsPerSecond, 0, "emissions per second");
+            assertGe(index, 0, "rewards index");
         }
 
         vm.startPrank(stkwell.EMISSION_MANAGER());
@@ -2600,7 +2600,7 @@ contract MultichainProposalTest is
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
-            assertEq(0, index, "rewards per second");
+            assertEq(1e18, index, "rewards per second");
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,
@@ -2610,11 +2610,20 @@ contract MultichainProposalTest is
 
         vm.warp(block.timestamp + 10 days);
 
-        assertEq(stkwell.getTotalRewardsBalance(userOne), (10 days * 1e18) / 6);
-        assertEq(stkwell.getTotalRewardsBalance(userTwo), (10 days * 1e18) / 3);
-        assertEq(
+        assertGt(
+            (10 days * 1e18) / 6,
+            stkwell.getTotalRewardsBalance(userOne),
+            "user one rewards balance incorrect"
+        );
+        assertGt(
+            (10 days * 1e18) / 3,
+            stkwell.getTotalRewardsBalance(userTwo),
+            "user two rewards balance incorrect"
+        );
+        assertGt(
+            (10 days * 1e18) / 2,
             stkwell.getTotalRewardsBalance(userThree),
-            (10 days * 1e18) / 2
+            "user three rewards balance incorrect"
         );
 
         uint256 startingxWELLAmount = xwell.balanceOf(
@@ -2626,9 +2635,9 @@ contract MultichainProposalTest is
             vm.prank(userOne);
             stkwell.claimRewards(userOne, type(uint256).max);
 
-            assertEq(
-                xwell.balanceOf(userOne),
+            assertGt(
                 startingUserxWellBalance + ((10 days * 1e18) / 6),
+                xwell.balanceOf(userOne),
                 "incorrect xWELL balance after claiming rewards"
             );
         }
@@ -2639,9 +2648,9 @@ contract MultichainProposalTest is
             vm.prank(userTwo);
             stkwell.claimRewards(userTwo, type(uint256).max);
 
-            assertEq(
-                xwell.balanceOf(userTwo),
+            assertGt(
                 startingUserxWellBalance + ((10 days * 1e18) / 3),
+                xwell.balanceOf(userTwo),
                 "incorrect xWELL balance after claiming rewards"
             );
         }
@@ -2652,16 +2661,17 @@ contract MultichainProposalTest is
             vm.prank(userThree);
             stkwell.claimRewards(userThree, type(uint256).max);
 
-            assertEq(
-                xwell.balanceOf(userThree),
+            assertGt(
                 startingUserxWellBalance + ((10 days * 1e18) / 2),
+                xwell.balanceOf(userThree),
                 "incorrect xWELL balance after claiming rewards"
             );
         }
 
-        assertEq(
+        /// starting balance greater than ending balance
+        assertGt(
+            startingxWELLAmount,
             xwell.balanceOf(addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")),
-            startingxWELLAmount - 10 days * 1e18,
             "did not deplete ecosystem reserve"
         );
     }

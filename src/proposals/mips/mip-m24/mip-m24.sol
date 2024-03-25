@@ -20,14 +20,14 @@ import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 /// Proposal to run on Moonbeam to accept governance powers, finalizing
 /// the transfer of admin and owner from the current Artemis Timelock to the
 /// new Multichain Governor.
-/// DO_VALIDATE=true DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRINT=true forge script
-/// src/proposals/mips/mip-m18/mip-m18e.sol:mipm18e
-contract mipm18e is HybridProposal, MultichainGovernorDeploy {
-    string public constant name = "MIP-M18E";
+/// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
+/// src/proposals/mips/mip-m24/mip-m24.sol:mipm24
+contract mipm24 is HybridProposal, MultichainGovernorDeploy {
+    string public constant name = "MIP-M24";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m18/MIP-M18-E.md")
+            vm.readFile("./src/proposals/mips/mip-m24/MIP-M24.md")
         );
         _setProposalDescription(proposalDescription);
     }
