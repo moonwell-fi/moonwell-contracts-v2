@@ -110,14 +110,13 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             addresses.getAddress("ARTEMIS_GOVERNOR", moonBeamChainId)
         );
 
+        vm.selectFork(moonbeamForkId);
         if (!addresses.isAddressSet("WELL")) {
             well = ERC20Votes(address(new MockERC20()));
             addresses.addAddress("WELL", address(well), true);
         } else {
             well = ERC20Votes(addresses.getAddress("WELL"));
         }
-
-        vm.selectFork(moonbeamForkId);
     }
 
     function testMintSelf() public {
