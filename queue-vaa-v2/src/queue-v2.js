@@ -1,24 +1,23 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+// Script compatible with Defender v2
 const {ethers} = require('ethers');
-const {
-    DefenderRelaySigner,
-    DefenderRelayProvider,
-} = require('defender-relay-client/lib/ethers');
+const {Defender} = require('@openzeppelin/defender-sdk');
 const {KeyValueStoreClient} = require('defender-kvstore-client');
 const axios = require('axios');
+
+// moonbeam is for Base Mainnet
+//const network = 'moonbeam'
+// moonbeam is for Base testnet
+const network = 'moonbase';
 
 const temporalGovernorABI = [
     'function queueProposal(bytes VAA)',
     'function executeProposal(bytes VAA)',
 ];
 
-// moonbeam is for Base Mainnet
-const network = 'moonbeam';
-// moonbeam is for Base testnet
-// const network = 'moonbase'
-
 const tgAddress =
     network === 'moonbase'
-        ? '0xBaA4916ACD2d3Db77278A377f1b49A6E1127d6e6' // TemporalGovernor on Base Goerli
+        ? '0xc01EA381A64F8BE3bDBb01A7c34D809f80783662' // TemporalGovernor on Base Sepolia
         : '0x8b621804a7637b781e2BbD58e256a591F2dF7d51'; // TemporalGovernor on Base
 
 // Block explorer URL
@@ -165,37 +164,35 @@ async function storeVAA(event, sequence, timestamp) {
     console.log(`Stored ${network}-${sequence} with expiry ${timestamp}`);
 }
 
-// Entrypoint for the Autotask
+// Entrypoint for the action
 exports.handler = async function (event, context) {
-    const {notificationClient} = context;
-    const payload = event.request.body;
-    const matchReasons = payload.matchReasons;
-    const sentinel = payload.sentinel;
-    const transaction = payload.transaction;
-    const abi = sentinel.abi;
+    console.log('Received event:', JSON.stringify(event.request.body, null, 2));
 
-    const sequence = payload.matchReasons[0].params.sequence;
-
-    // Fetch the VAA from the Cloudflare worker
+    const sequence = event.request.body.matchReasons[0].params.sequence;
     const vaa = await fetchVAA(sequence);
 
-    // Initialize defender relayer provider and signer
-    const provider = new DefenderRelayProvider(event);
-    const signer = new DefenderRelaySigner(event, provider, {speed: 'fast'});
+    const client = new Defender(event);
 
-    // Create contract instance from the signer and use it to send a tx
+    const provider = client.relaySigner.getProvider();
+    const signer = client.relaySigner.getSigner(provider, {speed: 'fast'});
+
     const contract = new ethers.Contract(
         tgAddress,
         temporalGovernorABI,
         signer,
     );
+
     const tx = await contract.queueProposal(vaa);
     console.log(`Called queueProposal in ${tx.hash}`);
     let timestamp = Math.floor(Date.now() / 1000);
 
     // On testnet, there is no 24 hour timelock
-    timestamp += 60 * 60 * 24 + 60; // 24 hours + 1 minute for buffer
+    if (network == 'moonbeam') {
+        timestamp += 60 * 60 * 24 + 60; // 24 hours + 1 minute for buffer
+    }
     await storeVAA(event, sequence, timestamp);
+
+    const {notificationClient} = context;
     notificationClient.send({
         channelAlias: 'Parameter Changes to Slack',
         subject: `Inserted queued VAA ${sequence} on ${network}`,
@@ -214,15 +211,3 @@ exports.handler = async function (event, context) {
     await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
     return {tx: tx.hash};
 };
-
-// To run locally (this code will not be executed in Autotasks)
-if (require.main === module) {
-    const {API_KEY: apiKey, API_SECRET: apiSecret} = process.env;
-    exports
-        .handler({apiKey, apiSecret})
-        .then(() => process.exit(0))
-        .catch((error) => {
-            console.error(error);
-            process.exit(1);
-        });
-}
