@@ -12,6 +12,7 @@ contract xWELLVoteUnitTest is BaseTest {
     uint256 constant guardianSunset = 730 days;
 
     function setUp() public override {
+        super.setUp();
         vm.warp(block.timestamp + 1000000);
     }
 
