@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MockERC20} from "@test/mock/MockERC20.sol";
 import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
@@ -108,7 +107,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         timelock = ITimelock(
             addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)
         );
-        well = Well(addresses.getAddress("WELL", moonBeamChainId));
+        well = ERC20Votes(addresses.getAddress("WELL", moonBeamChainId));
 
         governor = MoonwellArtemisGovernor(
             addresses.getAddress("ARTEMIS_GOVERNOR", moonBeamChainId)
