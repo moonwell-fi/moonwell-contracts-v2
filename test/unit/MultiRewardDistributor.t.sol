@@ -1,14 +1,14 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
-import "@protocol/multiRewardDistributor/MultiRewardDistributor.sol";
+import "@protocol/rewards/MultiRewardDistributor.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {FaucetToken, FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
-import {InterestRateModel} from "@protocol/irModels/InterestRateModel.sol";
+import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
-import {WhitePaperInterestRateModel} from "@protocol/irModels/WhitePaperInterestRateModel.sol";
+import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
 
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin-contracts/contracts/utils/Strings.sol";

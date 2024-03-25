@@ -11,7 +11,7 @@ import {MToken} from "@protocol/MToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MTokenInterface} from "@protocol/MTokenInterfaces.sol";
 import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
-import {MultiRewardDistributorCommon} from "@protocol/multiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
 /**
     @title A multi-asset distributor that tracks mTokens supply/borrows

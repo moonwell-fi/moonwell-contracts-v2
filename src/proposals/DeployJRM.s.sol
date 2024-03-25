@@ -7,7 +7,7 @@ import {Script} from "@forge-std/Script.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {mipb00 as mip} from "@proposals/mips/mip-b00/mip-b00.sol";
 
-import {JumpRateModel} from "@protocol/irModels/JumpRateModel.sol";
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 
 /*
 How to use:

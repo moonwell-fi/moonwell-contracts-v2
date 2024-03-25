@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {BaseMoonwellViews} from "@protocol/views/BaseMoonwellViews.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {IMultiRewardDistributor} from "@protocol/multiRewardDistributor/IMultiRewardDistributor.sol";
+import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 

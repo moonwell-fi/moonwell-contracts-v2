@@ -9,11 +9,11 @@ import {SigUtils} from "@test/helper/SigUtils.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
-import {InterestRateModel} from "@protocol/irModels/InterestRateModel.sol";
+import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
-import {MultiRewardDistributor} from "@protocol/multiRewardDistributor/MultiRewardDistributor.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
-import {WhitePaperInterestRateModel} from "@protocol/irModels/WhitePaperInterestRateModel.sol";
+import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
 
 interface InstrumentedExternalEvents {
     event PricePosted(

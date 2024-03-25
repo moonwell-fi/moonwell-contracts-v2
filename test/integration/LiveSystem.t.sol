@@ -14,8 +14,8 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {MultiRewardDistributor} from "@protocol/multiRewardDistributor/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/multiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
 contract LiveSystemTest is Test {
     MultiRewardDistributor mrd;
@@ -29,7 +29,7 @@ contract LiveSystemTest is Test {
         well = addresses.getAddress("WELL");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
     }
-    
+
     function testGuardianCanPauseTemporalGovernor() public {
         TemporalGovernor gov = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")
@@ -132,11 +132,27 @@ contract LiveSystemTest is Test {
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
-        assertEq(config.borrowEmissionsPerSec, 1e18, "Borrow emissions incorrect");
+        assertEq(
+            config.borrowEmissionsPerSec,
+            1e18,
+            "Borrow emissions incorrect"
+        );
         // comment out since the system was deployed before block.timestamp
-        assertEq(config.endTime, block.timestamp + 4 weeks, "End time incorrect");
-        assertEq(config.supplyGlobalIndex, 1e36, "Supply global index incorrect");
-        assertEq(config.borrowGlobalIndex, 1e36, "Borrow global index incorrect");
+        assertEq(
+            config.endTime,
+            block.timestamp + 4 weeks,
+            "End time incorrect"
+        );
+        assertEq(
+            config.supplyGlobalIndex,
+            1e36,
+            "Supply global index incorrect"
+        );
+        assertEq(
+            config.borrowGlobalIndex,
+            1e36,
+            "Borrow global index incorrect"
+        );
     }
 
     function testMintMTokenSucceeds() public {

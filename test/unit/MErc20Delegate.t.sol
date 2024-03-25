@@ -12,10 +12,10 @@ import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
-import {InterestRateModel} from "@protocol/irModels/InterestRateModel.sol";
-import {WhitePaperInterestRateModel} from "@protocol/irModels/WhitePaperInterestRateModel.sol";
+import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
+import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
-import {MultiRewardDistributor} from "@protocol/multiRewardDistributor/MultiRewardDistributor.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 
 interface InstrumentedExternalEvents {
     event PricePosted(
