@@ -16,7 +16,7 @@ import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/
 /// to execute: DO_BUILD=true DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
 /// src/proposals/mips/mip-m23/mip-m23c.sol:mipm23c --broadcast --slow --fork-url moonbeam
 contract mipm23c is HybridProposal, MultichainGovernorDeploy {
-    string public constant name = "MIP-M18C";
+    string public constant name = "MIP-M23C";
 
     /// @notice whitelisted calldata for the break glass guardian
     bytes[] public approvedCalldata;
