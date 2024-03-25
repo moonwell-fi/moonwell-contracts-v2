@@ -122,16 +122,20 @@ Guardian role has the ability to "break glass” and roll back governance
 ownership to a predetermined address, which will be set to the current governor
 contract. It is important to note that the break glass function can only be used
 once and must be restored through an onchain governance vote. The Governance
-Guardians will sit on a 3 of 5 multisig. I nominate myself to be one of the five
+Guardians will sit on a 3 of 4 multisig. I nominate myself to be one of the four
 Governance Guardians, recognizing the importance of this responsibility and my
 commitment to the long-term success and health of Moonwell. The complete list of
-signers is as follows:
+signers is currently being determined, with a focus on selecting individuals and
+entities who have demonstrated expertise, integrity, and dedication to the
+Moonwell Protocol and community. An additional signer will be added in the near
+future to further increase the security of the multisig and ability to respond.
 
-1. [Gauntlet](https://twitter.com/gauntlet_xyz)
-2. [Elliot Friedman](https://twitter.com/Elliot0x) (Solidity Labs)
-3. [Luke Youngblood](https://twitter.com/LukeYoungblood) (Lunar Labs)
-4. [X0s0l](https://twitter.com/x0s0l)
-5. [Coolhorsegirl](https://twitter.com/coolhorsegirl2)
+The complete list of signers is as follows:
+
+1. [Luke Youngblood](https://twitter.com/LukeYoungblood) (Lunar Labs)
+2. [X0s0l](https://twitter.com/x0s0l)
+3. [Coolhorsegirl](https://twitter.com/coolhorsegirl2)
+4. [Elliot Friedman](https://twitter.com/Elliot0x) (Solidity Labs)
 
 ## Mutichain WELL (xWELL)
 
