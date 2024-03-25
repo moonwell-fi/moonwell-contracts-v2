@@ -26,13 +26,13 @@ import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/Mul
 /// After this proposal, the Temporal Governor will have 2 admins, the
 /// Multichain Governor and the Artemis Timelock
 /// DO_BUILD=true DO_VALIDATE=true DO_RUN=true DO_PRINT=true forge script
-/// src/proposals/mips/mip-m18/mip-m18d.sol:mipm18d
-contract mipm18d is Configs, HybridProposal, MultichainGovernorDeploy {
-    string public constant name = "MIP-M18D";
+/// src/proposals/mips/mip-m23/mip-m23.sol:mipm23
+contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
+    string public constant name = "MIP-M23";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m18/MIP-M18-D.md")
+            vm.readFile("./src/proposals/mips/mip-m23/MIP-M23.md")
         );
         _setProposalDescription(proposalDescription);
     }
@@ -281,7 +281,7 @@ contract mipm18d is Configs, HybridProposal, MultichainGovernorDeploy {
 
         {
             string
-                memory mtokensPath = "./src/proposals/mips/mip-m18/mip-m23.json";
+                memory mtokensPath = "./src/proposals/mips/mip-m23/mip-m23.json";
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
             EmissionConfig[] memory decodedEmissions = abi.decode(
