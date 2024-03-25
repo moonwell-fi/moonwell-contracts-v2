@@ -59,7 +59,6 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             mips = new address[](0);
 
             proposals = new TestProposals(mips);
-            vm.makePersistent(address(proposals));
         } else if (path.hasChar(",")) {
             string[] memory mipPaths = path.split(",");
             if (mipPaths.length < 2) {
@@ -77,12 +76,13 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
                 mips[i] = deployCode(code);
             }
             proposals = new TestProposals(mips);
-            vm.makePersistent(address(proposals));
         } else {
             bytes memory code = getCode(path);
             mips[0] = deployCode(code);
             proposals = new TestProposals(mips);
         }
+
+        vm.makePersistent(address(proposals));
 
         proposals.setUp();
         /// run all proposal steps
@@ -108,18 +108,13 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         timelock = ITimelock(
             addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)
         );
+        well = Well(addresses.getAddress("WELL", moonBeamChainId));
 
         governor = MoonwellArtemisGovernor(
             addresses.getAddress("ARTEMIS_GOVERNOR", moonBeamChainId)
         );
 
         vm.selectFork(moonbeamForkId);
-        if (!addresses.isAddressSet("WELL")) {
-            well = ERC20Votes(address(new MockERC20()));
-            addresses.addAddress("WELL", address(well), true);
-        } else {
-            well = ERC20Votes(addresses.getAddress("WELL"));
-        }
     }
 
     function testMintSelf() public {
