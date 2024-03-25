@@ -59,6 +59,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             mips = new address[](0);
 
             proposals = new TestProposals(mips);
+            vm.makePersistent(address(proposals));
         } else if (path.hasChar(",")) {
             string[] memory mipPaths = path.split(",");
             if (mipPaths.length < 2) {
@@ -76,6 +77,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
                 mips[i] = deployCode(code);
             }
             proposals = new TestProposals(mips);
+            vm.makePersistent(address(proposals));
         } else {
             bytes memory code = getCode(path);
             mips[0] = deployCode(code);
@@ -98,6 +100,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         ); /// only setup, after deploy, build, do not validate, run, teardown
 
         addresses = proposals.addresses();
+        vm.makePersistent(address(addresses));
 
         wormhole = IWormhole(
             addresses.getAddress("WORMHOLE_CORE", moonBeamChainId)
