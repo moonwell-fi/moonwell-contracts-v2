@@ -13,16 +13,16 @@ import {Configs} from "@proposals/Configs.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 
-import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
-import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
+import {MultichainGovernor} from "@protocol/governance/MultichainGovernor/MultichainGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichainGovernor/MultichainGovernorDeploy.sol";
 import {ITokenSaleDistributorProxy} from "@protocol/tokensale/ITokenSaleDistributorProxy.sol";
-import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {MultiRewardDistributorCommon} from "@protocol/multiRewardDistributor/MultiRewardDistributorCommon.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 
