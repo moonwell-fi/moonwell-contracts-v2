@@ -93,4 +93,7 @@ contract RecoveryUnitTest is Test, RecoveryDeploy {
 
     /// to receive eth from recovery contract
     fallback() external payable {}
+
+    /// to receive eth from recovery contract
+    receive() external payable {}
 }

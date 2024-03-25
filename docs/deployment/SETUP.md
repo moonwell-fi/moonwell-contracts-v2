@@ -1,19 +1,38 @@
-# System Setup
+## Live System Contracts
 
-set your env vars:
+Currently the Moonwell contracts are deployed on the following chains:
 
-`ETH_PRIVATE_KEY, DO_DEPLOY, and DO_AFTERDEPLOY to true`
+- Moonbeam
+- Moonbase
+- Base Mainnet
+- Base Sepolia
 
-if deploying on base goerli, go to Addresses.json and delete everything after
-this line `        /// ---------- base goerli deployment ----------` and before
-this line` `                /// -----------------------------------------------`
+All the addresses are stored in the `Addresses.json` file with their respective
+chain ids.
 
-then to deploy the entire system on base goerli:
+## Deploying
 
-`forge script src/proposals/DeployProposal.s.sol:DeployProposal -vvv --rpc-url baseGoerli --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key baseGoerli --verify`
+This section outlines the steps to deploy the system contracts to a new chain.
+
+### Set Environment Variables
+
+Set `ETH_PRIVATE_KEY = "0x..."` to .env file or export it in the shell. This is
+the private key of the account that will deploy the contracts.
+
+### Clean addresses from Addresses.json
+
+When redeploying the contracts to a chain that already has the contracts
+deployed, the addresses to the respective chain in the `Addresses.json` file
+should be removed. If you don't remove, the deployment script will skip the
+deployment of the contracts that already have an address in the
+`Addresses.json`.
+
+### Running the Deployment Script
+
+`forge script src/proposals/DeployProposal.s.sol:DeployProposal -vvv --rpc-url baseSepolia --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key baseSepolia --verify`
 
 Substitute out the rpc-url for the chain to deploy on if the destination is not
-base goerli.
+base Sepolia.
 
 If deploying on mainnet, double check that `mainnetMTokens.json` and
 `mainnetRewardStreams.json` in the `proposals/` folder are correctly filled out.
@@ -24,11 +43,16 @@ system are correct in `Addresses.json`, then deploy to base mainnet:
 
 `forge script src/proposals/DeployProposal.s.sol:DeployProposal -vvv --rpc-url base --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key base --verify`
 
-Once contracts are deployed, add generated address json into the Addresses.json
+Once contracts are deployed, add generated addresses into the Addresses.json
 file.
 
+### Submitting Governance Proposal
+
+After the contracts are deployed, the next step is to submit a governance
+proposal to MultichainGovernor to accept the ownership of the system contracts.
+
 Create the calldata to submit on the proposing chain, for testnet fork base
-goerli:
+sepolia:
 
 `forge test --match-test testPrintCalldata -vvv --fork-url baseGoerli`
 
@@ -44,7 +68,7 @@ ArtemisGovernor contract with the calldata the raw hex copied.
 Once the calldata is sent, wait for the proposal to finish the voting period,
 then queue and execute it.
 
-If on base goerli, send .00001 eth to the Temporal Governor contract. If on
+If on base sepolia , send .00001 eth to the Temporal Governor contract. If on
 mainnet, send .00001 eth to the Temporal Governor contract and all required
 amounts for other tokens as well.
 

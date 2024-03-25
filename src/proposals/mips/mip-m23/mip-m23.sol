@@ -17,9 +17,9 @@ import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
-import {MultichainGovernor} from "@protocol/governance/MultichainGovernor/MultichainGovernor.sol";
+import {MultichainGovernor} from "@protocol/governance/multichainGovernor/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
+import {MultiRewardDistributor} from "@protocol/multiRewardDistributor/MultiRewardDistributor.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichainGovernor/MultichainGovernorDeploy.sol";
 import {ITokenSaleDistributorProxy} from "@protocol/tokensale/ITokenSaleDistributorProxy.sol";
 import {MultiRewardDistributorCommon} from "@protocol/multiRewardDistributor/MultiRewardDistributorCommon.sol";
