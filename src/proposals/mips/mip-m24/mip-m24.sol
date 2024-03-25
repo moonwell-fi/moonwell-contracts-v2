@@ -12,9 +12,9 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
-import {MultichainGovernor} from "@protocol/governance/multichainGovernor/MultichainGovernor.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichainGovernor/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 
 /// Proposal to run on Moonbeam to accept governance powers, finalizing

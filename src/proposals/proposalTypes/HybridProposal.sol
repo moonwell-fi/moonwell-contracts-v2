@@ -13,7 +13,7 @@ import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IHybridProposal} from "@proposals/proposalTypes/IHybridProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
-import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichainGovernor/MultichainGovernor.sol";
+import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";

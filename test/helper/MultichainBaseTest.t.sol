@@ -2,9 +2,9 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichainGovernor/MultichainGovernor.sol";
-import {MultichainVoteCollection} from "@protocol/governance/multichainGovernor/MultichainVoteCollection.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichainGovernor/MultichainGovernorDeploy.sol";
+import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
