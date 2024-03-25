@@ -6,6 +6,7 @@ import "@forge-std/Test.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
@@ -29,6 +30,12 @@ import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/Mul
 /// src/proposals/mips/mip-m23/mip-m23.sol:mipm23
 contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
     string public constant name = "MIP-M23";
+
+    /// @notice new xWELL buffer cap
+    uint256 public constant XWELL_BUFFER_CAP = 100_000_000 * 1e18;
+
+    /// @notice new xWELL rate limit per second
+    uint128 public constant XWELL_RATE_LIMIT_PER_SECOND = 1158 * 1e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -109,6 +116,48 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             ),
             "Set the pending owner of the xWELL Token to the Multichain Governor",
             true
+        );
+
+        /// adjust rate limits to allow initial transfers through
+        _pushHybridAction(
+            addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
+            abi.encodeWithSignature(
+                "setBufferCap(address,uint256)",
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+                XWELL_BUFFER_CAP
+            ),
+            "Set the buffer cap of the wormhole bridge adapter to 100m",
+            true
+        );
+        _pushHybridAction(
+            addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
+            abi.encodeWithSignature(
+                "setBufferCap(address,uint256)",
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+                XWELL_BUFFER_CAP
+            ),
+            "Set the buffer cap of the wormhole bridge adapter to 100m",
+            false
+        );
+        _pushHybridAction(
+            addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
+            abi.encodeWithSignature(
+                "setRateLimitPerSecond(address,uint128)",
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+                XWELL_RATE_LIMIT_PER_SECOND
+            ),
+            "Set the rate limit per second of the wormhole bridge adapter to 1158/WELL per second",
+            true
+        );
+        _pushHybridAction(
+            addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
+            abi.encodeWithSignature(
+                "setRateLimitPerSecond(address,uint128)",
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+                XWELL_RATE_LIMIT_PER_SECOND
+            ),
+            "Set the rate limit per second of the wormhole bridge adapter to 1158/WELL per second",
+            false
         );
 
         /// transfer ownership of chainlink oracle
@@ -543,7 +592,37 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             "Chainlink oracle admin incorrect"
         );
 
+        assertEq(
+            xWELL(addresses.getAddress("xWELL_PROXY")).bufferCap(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ),
+            XWELL_BUFFER_CAP,
+            "xWELL buffer cap incorrect"
+        );
+        assertEq(
+            xWELL(addresses.getAddress("xWELL_PROXY")).rateLimitPerSecond(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ),
+            XWELL_RATE_LIMIT_PER_SECOND,
+            "xWELL rate limit per second incorrect"
+        );
+
         vm.selectFork(baseForkId);
+
+        assertEq(
+            xWELL(addresses.getAddress("xWELL_PROXY")).bufferCap(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ),
+            XWELL_BUFFER_CAP,
+            "xWELL buffer cap incorrect"
+        );
+        assertEq(
+            xWELL(addresses.getAddress("xWELL_PROXY")).rateLimitPerSecond(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            ),
+            XWELL_RATE_LIMIT_PER_SECOND,
+            "xWELL rate limit per second incorrect"
+        );
 
         TemporalGovernor temporalGovernor = TemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")
