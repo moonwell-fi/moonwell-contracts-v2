@@ -404,7 +404,7 @@ contract MultichainProposalTest is
         bytes[] memory whitelistedCalldata = new bytes[](0);
 
         vm.expectRevert("Initializable: contract is already initialized");
-        governor.initialize(
+        MultichainGovernor(address(governor)).initialize(
             initializeData,
             trustedSenders,
             whitelistedCalldata
