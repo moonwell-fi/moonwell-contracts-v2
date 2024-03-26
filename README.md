@@ -4,7 +4,7 @@ The Moonwell Protocol is a fork of Compound v2 with features like borrow/supply
 caps, cross-chain governance, and multi-token emissions.
 
 The "v2" release of the Moonwell Protocol is a major system upgrade to use
-solidity 0.8.17, add supply caps, and a number of improvements for user
+solidity 0.8.19, add supply caps, and a number of improvements for user
 experience (things like `mintWithPermit` and `claimAllRewards`). Solidity
 version 0.8.20 was not used because EIP-3855 which adds the PUSH0 opcode will
 not be live on base where this system will be deployed.

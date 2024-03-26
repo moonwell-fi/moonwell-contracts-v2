@@ -1,10 +1,12 @@
 # Contributing Guidelines
 
-There are many ways to contribute to Moonwell V2 Contracts
+There are many ways to contribute to Moonwell's Smart Contracts repository
 
 ## Opening an issue
 
-You can [open an issue] to suggest a feature or report a minor bug.
+You can
+[open an issue](https://github.com/moonwell-fi/moonwell-contracts-v2/issues/new)
+to suggest a feature or report a minor bug.
 
 Before opening an issue, be sure to search through the existing open and closed
 issues, and consider posting a comment in one of those instead.
@@ -13,8 +15,6 @@ When requesting a new feature, include as many details as you can, especially
 around the use cases that motivate it. Features are prioritized according to the
 impact they may have on the ecosystem, so we appreciate information showing that
 the impact could be high.
-
-[open an issue]: https://github.com/moonwell-fi/moonwell-contracts-v2/issues/new
 
 ## Submitting a pull request
 
@@ -35,4 +35,5 @@ If you're looking for a good place to start, look for issues labelled
 
 Moonwell V2 is a decentralized protocol, and we are committed to decentralizing
 its development. If you would like to propose a change to the protocol, please
-follow the [governance process](./governance/README.md).
+follow the
+[Moonwell Community Contribution Guidelines](https://forum.moonwell.fi/t/moonwell-community-contribution-guidelines/706).

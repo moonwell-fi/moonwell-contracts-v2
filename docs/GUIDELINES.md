@@ -2,20 +2,18 @@
 
 ## Testing
 
-It's essential to ensure that the code is tested thoroughly and of high quality.
-Techniques such as unit tests and integration tests are strictly enforced, and
-it's highly encouraged to use property-based and formal verification methods.
+The protocol has several layers of testing: unit testing, integration testing,
+and formal verification.
 
-> Tests should be written, not only to verify correctness of the target code,
-> but to be comprehensively reviewed by other programmers. Therefore, for
-> mission critical Solidity code, the quality of the tests are just as important
-> (if not more so) than the code itself, and should be written with the highest
-> standards of clarity and elegance.
+All contributions should have total code coverage. You should use integration
+tests, unit tests, harnesses, etc. You must test your code as close to the real
+world as possible. You can see your coverage using the forge coverage command.
+Note: the accuracy of the coverage tool is not authoritative; if you can show
+your lines of code were covered, that’s sufficient.
 
-Every addition or change to the code must come with relevant and comprehensive
-tests.
-
-Flaky tests are not acceptable.
+You may contribute to formal analysis for your patch, but that is not a strict
+requirement. For complex changes to the protocol, formal verification is
+recommended.
 
 The test suite should run automatically for every change in the repository, and
 in pull requests tests must pass before merging.
@@ -25,26 +23,34 @@ pull requests.
 
 ## Code style
 
-Solidity code should be written in a consistent format enforced by a linter,
-following the official
-[Solidity Style Guide](https://docs.soliditylang.org/en/latest/style-guide.html).
-See below for further [Solidity Conventions](#solidity-conventions).
+The most important principle in writing code for this project is clarity. Code
+should be as obvious as possible. We’ll always prefer clear over clever. The
+following are a list of principles to follow to lead in the right direction for
+your patch.
 
-We prioritize readability and understandability by keeping the code simple and
-straightforward.Before writing any code, make sure you have a clear picture of
-the system in your head. If you can't visualize it, it means you need to ask
-more questions until you can see the entire system in your mind. Understanding
-the downstream effects of any changes is vital. Only once you have this
-comprehensive view should you begin writing code.
-
-Consistency and predictability should be maintained across the codebase. In
-particular, this applies to naming, which should be systematic, clear, and
-concise.
-
-Sometimes these guidelines may be broken if doing so brings significant
-efficiency gains, but explanatory comments should be added.
-
-Modularity should be pursued, but not at the cost of the above priorities.
+1. Prefer local context. Try to not do too much in one function. Do not hide
+   complexity by calling into complex sub-routines.
+2. Variables should be clearly named, even if it makes the name long. You can
+   use Hungarian-like notation for variables like supplyAmountMantissa, here
+   indicating the value is a real number with 18 decimals of precision.
+3. Your code should be clear without comments, and should have comments to make
+   things crystal clear to other contributors what the intent behind each line
+   of code is.
+4. Prefer the order
+   [Checks, Effects then Interactions](https://fravoll.github.io/solidity-patterns/checks_effects_interactions.html)
+   and generally avoid cross-contract interactions where possible. Additionally,
+   avoid interspersing computation with effects and interactions (e.g. if you
+   can calculate a value upfront, do so).
+5. Try to match the code-style that already exists in the repository. Please do
+   not refactor existing code styles.
+6. Public functions should have NatSpec documentation, including: a notice
+   briefly describing the purpose, what the parameters are, and what the return
+   value is.
+7. Unchecked arithmetic blocks should contain comments explaining why overflow
+   is guaranteed not to happen. If the reason is immediately apparent from the
+   line above the unchecked block, the comment may be omitted.
+8. Revert messages should be clear and concise and include dynamic data where
+   appropriate.
 
 ## Documentation
 
@@ -104,24 +110,3 @@ Branches should be named in a consistent format:
 Security vulnerabilities should be disclosed to the project maintainers through
 [Immunefi](https://immunefi.com/bounty/moonwell/), or alternatively by email to
 [TBD]()
-
-## Solidity Conventions
-
-In addition to the official Solidity Style Guide we have a number of other
-conventions that must be followed.
-
-- [CEI](https://fravoll.github.io/solidity-patterns/checks_effects_interactions.html)
-  pattern should be followed for external calls.
-
-- Interface names should have a capital I prefix.
-
-  ```solidity
-  interface IERC777 {
-  ```
-
-- Unchecked arithmetic blocks should contain comments explaining why overflow is
-  guaranteed not to happen. If the reason is immediately apparent from the line
-  above the unchecked block, the comment may be omitted.
-
-- Revert messages should be clear and concise and include dynamic data where
-  appropriate.
