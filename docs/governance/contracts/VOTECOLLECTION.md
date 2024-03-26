@@ -36,3 +36,12 @@ relay the votes to Moonbeam for counting. Votes can be relayed back to Moonbeam
 as many times as users want but votes will only be counted on Moonbeam once.
 
 ## View Only Functions
+
+- `getReceipt`: Returns the vote receipt of a voter for a proposal
+- `proposalInformation`: Returns the proposal information for a given proposal
+  id. Includes the proposer, vote snapshot timestmap, vote start timestamp, vote
+  end timestamp, corss chain vote collection end timestamp, for votes, against
+  votes and abstain votes.
+- `proposalVotes`: Returns the vote count for a proposal
+- `getVotes`: Returns the total voting power for an address at a given block
+  number and timestamp. well, xWell, stkWell and distributor
