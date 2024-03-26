@@ -12,7 +12,7 @@ import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {StringUtils} from "@proposals/utils/StringUtils.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
+import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -20,7 +20,7 @@ import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellA
 contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
     using StringUtils for string;
 
-    MoonwellArtemisGovernor public governor;
+    MultichainGovernor public governor;
     TestProposals public proposals;
     IWormhole public wormhole;
     Addresses public addresses;
@@ -105,8 +105,8 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         timelock = Timelock(
             addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)
         );
-        governor = MoonwellArtemisGovernor(
-            addresses.getAddress("ARTEMIS_GOVERNOR", moonBeamChainId)
+        governor = MultichainGovernor(
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
         );
 
         vm.selectFork(moonbeamForkId);
@@ -136,7 +136,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         for (uint256 i = 0; i < proposals.nProposals(); i++) {
             bytes memory artemisQueuePayload = CrossChainProposal(
                 address(proposals.proposals(i))
-            ).getArtemisGovernorCalldata(
+            ).getMultichainGovernorCalldata(
                     addresses.getAddress("TEMPORAL_GOVERNOR"), /// call temporal gov on base
                     addresses.getAddress( /// call wormhole on moonbeam
                             "WORMHOLE_CORE",
@@ -200,16 +200,13 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             uint64 nextSequence = IWormhole(wormhole).nextSequence(
                 moonbeamTimelock
             );
-            vm.warp(governor.votingDelay() + block.timestamp + 1); /// now active
 
             vm.prank(voter);
             governor.castVote(proposalId, 0); /// VOTE YES
 
-            vm.warp(governor.votingPeriod() + block.timestamp + 1);
+            vm.warp(governor.crossChainVoteCollectionPeriod() + block.timestamp + 1);
 
-            governor.queue(proposalId);
-
-            vm.warp(block.timestamp + timelock.delay() + 1); /// finish timelock
+            vm.warp(block.timestamp + timelock.delay() + 1); /// finish cross chain vote collection period
 
             bytes memory temporalGovExecData = abi.encode(
                 temporalGov,
