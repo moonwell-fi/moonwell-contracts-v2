@@ -3,7 +3,7 @@ name: Foundry Base Chainlink Oracle Integration Tests
 on: [pull_request]
 
 env:
-  ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
+  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
 
 jobs:
   run-eth-mainnet-tests:
