@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 
 import "@forge-std/Test.sol";
