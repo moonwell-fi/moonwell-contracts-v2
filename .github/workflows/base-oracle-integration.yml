@@ -20,4 +20,4 @@ jobs:
         uses: ./.github/actions
 
       - name: Integration Test Contracts
-        run: time forge test --match-contract IntegrationTest --fork-url $ETH_RPC_URL
+        run: time forge test --match-contract ChainlinkCompositeOracleIntegrationTestBase --fork-url $BASE_RPC_URL
