@@ -1,20 +1,20 @@
 # Vote Collection
 
-On chains external to Moonbeam, there will be one vote collection contract per
-chain where users are allowed to place votes to be relayed back to moonbeam for
-counting in governance. Vote Collection is live only on Base because is the only
-chain besides Moonbeam that has the Moonwell contracts deployed.
+For every chain external to Moonbeam, a single vote collection contract will be
+created. Users can put their votes on these contracts, and they will be relayed
+back to Moonbeam for governance counting. The Vote Collection is only live on
+the Base chain since it has the Moonwell contracts deployed, apart from
+Moonbeam.
 
 ## Overview
 
-When a proposal is created on Moonbeam, a message is deliver y to the vote
-collection contract through Wormhole. The message payload contains the proposal
-id, the start and end timestamp for the voting period, the voting snapshot
-timestamp and the cross chain vote collection end timestamp. The vote collection
-contract will collect votes for the proposal during the voting period. After the
-voting period has ended, anyone can relay the votes back to Moonbeam for
-counting. Votes can be relayed back to Moonbeam as many times as users want but
-votes will only be counted on Moonbeam once.
+When a proposal is created on Moonbeam, a message is sent to the Vote Collection
+contract via Wormhole. The message holds the proposal id, the start and end
+timestamps of the voting period, the voting snapshot timestamp, and the
+cross-chain vote collection end timestamp. The Vote Collection contract collects
+proposal votes throughout the voting period. After the voting period ends,
+anyone can relay the votes back to Moonbeam for counting. Although the relay of
+votes can happen multiple times, they will only get counted once on Moonbeam.
 
 ## Permissionless Actions
 
@@ -30,10 +30,12 @@ The following tokens are used for voting:
 
 ### Emit Votes
 
-Any address can emit votes to Moonbeam by calling the `emitVotes` function. The
-caller must provide the proposal id they are relaying votes for. Wormhole will
-relay the votes to Moonbeam for counting. Votes can be relayed back to Moonbeam
-as many times as users want but votes will only be counted on Moonbeam once.
+Anyone can emit votes to Moonbeam by calling the `emitVotes` function. The
+caller must provide the proposal id they are relaying the votes for and pay for
+the Wormhole bridge cost (bridgeCost function is available to check needed
+amount). Wormhole will then relay the votes to Moonbeam for counting. Although
+the relay of votes can happen multiple times, they will only get counted once on
+Moonbeam.
 
 ## View Only Functions
 
@@ -45,3 +47,13 @@ as many times as users want but votes will only be counted on Moonbeam once.
 - `proposalVotes`: Returns the vote count for a proposal
 - `getVotes`: Returns the total voting power for an address at a given block
   number and timestamp. well, xWell, stkWell and distributor
+
+## Only Owner Functions
+
+The Vote Collection is owned by the [Temporal Governor](TEMPORALGOVERNOR.md)
+contract. Only the Temporal Governor can call the functions below. This means
+that a proposal must be created on Moonbeam and passed to the Temporal Governor
+to update these parameters.
+
+- `setGasLimit`: Sets the gas limit for the emitVotes function
+- `setNewStakeWell`: Update the staked WELL token address
