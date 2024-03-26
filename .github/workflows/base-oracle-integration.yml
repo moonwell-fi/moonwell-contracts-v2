@@ -1,4 +1,4 @@
-name: Foundry eth integration tests
+name: Foundry Base Chainlink Oracle Integration Tests
 
 on: [pull_request]
 
@@ -7,7 +7,7 @@ env:
 
 jobs:
   run-eth-mainnet-tests:
-    name: eth-mainnet-integration-tests
+    name: base-oracle-integration-tests
     runs-on: ubuntu-latest
 
     steps:
