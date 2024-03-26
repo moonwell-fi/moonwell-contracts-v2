@@ -91,7 +91,7 @@ contract CrossChainJSONProposal is CrossChainProposal {
             calldatas
         );
 
-        bytes memory artemisCalldata = getArtemisGovernorCalldata(
+        bytes memory artemisCalldata = getMultichainGovernorCalldata(
             temporalGov,
             addresses.getAddress("WORMHOLE_CORE", moonBeamChainId), /// get wormhole core address on moonbeam
             temporalGovCalldata
