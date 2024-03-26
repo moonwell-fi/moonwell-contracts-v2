@@ -89,9 +89,7 @@ contract xWELLOwnerHandler is Test {
 
     /// rate limit changes
     function setRateLimitPerSecond(bool limiter, uint128 rateLimit) external {
-        rateLimit = uint128(
-            _bound(rateLimit, 0, type(uint128).max)
-        );
+        rateLimit = uint128(_bound(rateLimit, 0, type(uint128).max));
 
         address toLimit = limiter == true ? address(this) : address(xwell);
 

@@ -121,9 +121,7 @@ contract MoonwellViewsV3 is BaseMoonwellViews {
         address _user
     ) public view override returns (Votes memory _result) {
         if (address(governanceToken) != address(0)) {
-            uint _priorVotes = xWELL(address(governanceToken)).getVotes(
-                _user
-            );
+            uint _priorVotes = xWELL(address(governanceToken)).getVotes(_user);
             address _delegates = governanceToken.delegates(_user);
             _result = Votes(
                 _priorVotes,
@@ -132,5 +130,4 @@ contract MoonwellViewsV3 is BaseMoonwellViews {
             );
         }
     }
-
 }

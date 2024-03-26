@@ -12,7 +12,10 @@ import {MTokenStorage} from "@protocol/MTokenInterfaces.sol";
 library LibCompound {
     using FixedPointMathLib for uint256;
 
-    function viewUnderlyingBalanceOf(MErc20 mToken, address user) internal view returns (uint256) {
+    function viewUnderlyingBalanceOf(
+        MErc20 mToken,
+        address user
+    ) internal view returns (uint256) {
         return mToken.balanceOf(user).mulWadDown(viewExchangeRate(mToken));
     }
 
@@ -23,23 +26,36 @@ library LibCompound {
             return mToken.exchangeRateStored();
         }
 
-        uint256 totalCash = MErc20(mToken.underlying()).balanceOf(address(mToken));
+        uint256 totalCash = MErc20(mToken.underlying()).balanceOf(
+            address(mToken)
+        );
         uint256 borrowsPrior = mToken.totalBorrows();
         uint256 reservesPrior = mToken.totalReserves();
 
-        uint256 borrowRateMantissa = mToken.interestRateModel().getBorrowRate(totalCash, borrowsPrior, reservesPrior);
+        uint256 borrowRateMantissa = mToken.interestRateModel().getBorrowRate(
+            totalCash,
+            borrowsPrior,
+            reservesPrior
+        );
 
         require(borrowRateMantissa <= 0.0005e16, "RATE_TOO_HIGH"); // Same as borrowRateMaxMantissa in CTokenInterfaces.sol
 
-        uint256 interestAccumulated =
-            (borrowRateMantissa * (block.timestamp - accrualBlockTimestampPrior)).mulWadDown(borrowsPrior);
+        uint256 interestAccumulated = (borrowRateMantissa *
+            (block.timestamp - accrualBlockTimestampPrior)).mulWadDown(
+                borrowsPrior
+            );
 
-        uint256 totalReserves = mToken.reserveFactorMantissa().mulWadDown(interestAccumulated) + reservesPrior;
+        uint256 totalReserves = mToken.reserveFactorMantissa().mulWadDown(
+            interestAccumulated
+        ) + reservesPrior;
         uint256 totalBorrows = interestAccumulated + borrowsPrior;
         uint256 totalSupply = mToken.totalSupply();
 
-        return totalSupply == 0
-            ? MToken(address(mToken)).exchangeRateStored() /// get initial exchange rate if total supply is 0
-            : (totalCash + totalBorrows - totalReserves).divWadDown(totalSupply);
+        return
+            totalSupply == 0
+                ? MToken(address(mToken)).exchangeRateStored() /// get initial exchange rate if total supply is 0
+                : (totalCash + totalBorrows - totalReserves).divWadDown(
+                    totalSupply
+                );
     }
 }

@@ -1,1 +1,1 @@
-#  MIP-T01 Updates Chainlink price feeds for wstETH amd cbETH
+# MIP-T01 Updates Chainlink price feeds for wstETH amd cbETH

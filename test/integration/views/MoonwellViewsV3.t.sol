@@ -77,11 +77,9 @@ contract MoonwellViewsV3Test is Test, PostProposalCheck {
         assertEq(_rewards.length, 0);
     }
 
-
     function testProtocolInfo() public {
         MoonwellViewsV3.ProtocolInfo memory _protocolInfo = viewsContract
             .getProtocolInfo();
         assertEq(_protocolInfo.transferPaused, false);
     }
-
 }

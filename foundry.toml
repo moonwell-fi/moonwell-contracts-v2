@@ -5,8 +5,9 @@ libs = ['node_modules', 'lib']
 test = 'test'
 cache_path  = 'artifacts/forge-cache'
 fs_permissions = [{ access = "read", path = "./"}]
-solc = "0.8.19" # lock to paris to prevent use of push0 opcode which is not live on base
+auto_detect_solc = true
 evm_version = 'paris' # lock to paris to prevent use of push0 opcode which is not live on base
+optimizer_runs = 1
 
 [rpc_endpoints]
 localhost = "http://127.0.0.1:8545"
@@ -16,15 +17,20 @@ moonbase = "https://rpc.api.moonbase.moonbeam.network"
 ethereum = "https://rpc.ankr.com/eth"
 optimism = "https://endpoints.omniatech.io/v1/op/mainnet/public"
 avalanche = "https://rpc.ankr.com/avalanche"
-base = "${BASE_RPC_URL}"
-baseGoerli = "${BASE_GOERLI_RPC_URL}"
+base = "https://mainnet.base.org"
+baseSepolia = "https://sepolia.base.org"
+moonbaseAlpha = "https://moonbase-alpha.public.blastapi.io"
 local = "http://127.0.0.1:8545"
 
-[etherscan]
-moonriver = { key = "${MOONRIVER_API_KEY}", url= "https://api-moonriver.moonscan.io/api" }
-moonbeam = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbeam.moonscan.io/api" }
-moonbase = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbase.moonscan.io/api" }
-goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/api" }
-sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
-base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
-baseGoerli = { key = "PLACEHOLDER_STRING", url= "https://api-goerli.basescan.org/api" }
+# comment out the following lines so that CI passes fast and doesn't throw errors related to connecting to CI
+#[etherscan]
+#moonriver = { key = "${MOONRIVER_API_KEY}", url= "https://api-moonriver.moonscan.io/api" }
+#moonbeam = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbeam.moonscan.io/api" }
+#moonbase = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbase.moonscan.io/api" }
+#goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/api" }
+#sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
+#base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
+#baseSepolia = { key = "${BASESCAN_API_KEY}", url= "https://sepolia.basescan.org/api" }
+
+[fuzz]
+fail_on_revert = true

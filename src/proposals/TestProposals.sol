@@ -102,12 +102,14 @@ contract TestProposals is Test {
             if (deploy) {
                 if (debug) {
                     console.log("Proposal", name, "deploy()");
-                    addresses.resetRecordingAddresses();
                 }
+                addresses.resetRecordingAddresses(); /// reset the recording addresses so deployment has clean slate
+
                 proposals[i].deploy(addresses, address(proposals[i])); /// mip itself is the deployer
                 if (debug) {
                     (
                         string[] memory recordedNames,
+                        ,
                         address[] memory recordedAddresses
                     ) = addresses.getRecordedAddresses();
                     for (uint256 j = 0; j < recordedNames.length; j++) {

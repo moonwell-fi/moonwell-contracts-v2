@@ -42,7 +42,7 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers
     function deploy(Addresses addresses, address) public override {
         MWethDelegate mWethLogic = new MWethDelegate();
-        addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic));
+        addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic), true);
     }
 
     function afterDeploy(Addresses addresses, address) public override {}

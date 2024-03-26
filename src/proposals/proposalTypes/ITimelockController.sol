@@ -43,7 +43,13 @@ interface ITimelockController {
     /**
      * @dev Emitted when a call is performed as part of operation `id`.
      */
-    event CallExecuted(bytes32 indexed id, uint256 indexed index, address target, uint256 value, bytes data);
+    event CallExecuted(
+        bytes32 indexed id,
+        uint256 indexed index,
+        address target,
+        uint256 value,
+        bytes data
+    );
 
     /**
      * @dev Emitted when operation `id` is cancelled.
@@ -77,7 +83,9 @@ interface ITimelockController {
     /**
      * @dev Returns whether an operation is pending or not.
      */
-    function isOperationPending(bytes32 id) external view returns (bool pending);
+    function isOperationPending(
+        bytes32 id
+    ) external view returns (bool pending);
 
     /**
      * @dev Returns whether an operation is ready or not.
@@ -223,12 +231,23 @@ interface ITimelockController {
     /**
      * @dev See {IERC721Receiver-onERC721Received}.
      */
-    function onERC721Received(address, address, uint256, bytes memory) external returns (bytes4);
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes memory
+    ) external returns (bytes4);
 
     /**
      * @dev See {IERC1155Receiver-onERC1155Received}.
      */
-    function onERC1155Received(address, address, uint256, uint256, bytes memory) external returns (bytes4);
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes memory
+    ) external returns (bytes4);
 
     /**
      * @dev See {IERC1155Receiver-onERC1155BatchReceived}.
