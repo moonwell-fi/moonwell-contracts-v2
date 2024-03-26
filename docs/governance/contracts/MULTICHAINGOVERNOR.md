@@ -43,16 +43,15 @@ proposer must provide the following parameters:
 
 ### Vote
 
-Any address can vote on a proposal by calling the `castVote` function.
-
-Users can vote `for`, `against`, or `abstain` on a proposal.
+Any address can vote on a proposal by calling the `castVote` function. Users can
+vote `for`, `against`, or `abstain` on a proposal.
 
 The following tokens are used for voting:
 
-- `WELL`: The Moonwell token
-- `stkWELL`: The staked token for Moonwell
-- `xWELL`: The bridged token for Moonwell
-- `Distributor`: Vesting WELL in the claimable contract
+- WELL: The Moonwell token
+- Staked WELL: The staked token for Moonwell
+- xWELL: The bridged token for Moonwell
+- Vesting WELL: Vesting WELL locked in the claimable contract
 
 The caller must provide the following parameters:
 
@@ -116,7 +115,7 @@ addresses are the only parameter the break glass guardian can specify without
 sanitization. The calldata they pass must be an exact match of one of the
 calldatas specified above, otherwise the entire transaction will revert.
 
-## View only functions
+## View Only Functions
 
 - `getReceipt`: Returns the vote receipt of a voter for a proposal
 - `proposalInformation`: Returns the proposal information for a given proposal
@@ -137,16 +136,18 @@ calldatas specified above, otherwise the entire transaction will revert.
 - `chainAddressVotes`: Return the votes for a particular chain and proposal that
   have been cast.
 - `state`: Returns the status of a proposal. The status can be one of the
-  following: 1. Active: This means that the proposal is currently in the voting
-  period. 2. CrossChainVoteCollection: THe voting period has ended, and the
-  proposal is now waiting for cross-chain votes. 3. Cancelled: The proposer has
-  canceled or anyone can cancel if the proposer voting power has become lower
-  than the minimum proposal threshold. 4. Defeated: The proposal has been
-  defeated, the amount of against votes plus the amount of abstain votes is
-  higher or equal than governance quorum. 5. Succeeded: The proposal has passed,
-  the amount of for votes plus the amount of abstain votes is higher than
-  governance quorum. 6. Executed: The proposal has been executed. If the
-  proposal is cross-chain, the payload will be relayed to the Temporal Governor
-  for execution on the target chain.
+  following:
+  1. Active: This means that the proposal is currently in the voting period.
+  2. CrossChainVoteCollection: THe voting period has ended, and the proposal is
+     now waiting for cross-chain votes.
+  3. Cancelled: The proposer has canceled or anyone can cancel if the proposer
+     voting power has become lower than the minimum proposal threshold.
+  4. Defeated: The proposal has been defeated, the amount of against votes plus
+     the amount of abstain votes is higher or equal than governance quorum.
+  5. Succeeded: The proposal has passed, the amount of for votes plus the amount
+     of abstain votes is higher than governance quorum.
+  6. Executed: The proposal has been executed. If the proposal is cross-chain,
+     the payload will be relayed to the Temporal Governor for execution on the
+     target chain.
 
 ## Security Considerations
