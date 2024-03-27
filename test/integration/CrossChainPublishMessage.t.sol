@@ -13,7 +13,7 @@ import {TestProposals} from "@proposals/TestProposals.sol";
 import {ITimelock} from "@protocol/interfaces/ITimelock.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
