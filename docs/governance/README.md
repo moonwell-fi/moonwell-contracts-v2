@@ -5,6 +5,15 @@ active, like Moonbeam and Base. Its main objective is to execute proposals on
 Moonbeam, and if they have a cross-chain nature, their payload will be relayed
 to another chain for execution by the Temporal Governor.
 
+There are two main components in the Multichain Governor architecture:
+
+1. [Multichain Governor](./contracts/MULTICHAINGOVERNOR.md): The main contract
+   deployed on Moonbeam that handles the creation, voting, and execution of
+   proposals.
+2. [Vote Collection](./contracts/VOTECOLLECTION.md): The contract that handles
+   the collection of votes from external chains and emits them to the Governor
+   contract.
+
 ```mermaid
 sequenceDiagram
     Actor User
@@ -27,14 +36,10 @@ sequenceDiagram
     end
 ```
 
-There are two main components in the Multichain Governor architecture:
-
-1. [Multichain Governor](./contracts/MULTICHAINGOVERNOR.md): The main contract
-   deployed on Moonbeam that handles the creation, voting, and execution of
-   proposals.
-2. [Vote Collection](./contracts/VOTECOLLECTION.md): The contract that handles
-   the collection of votes from external chains and emits them to the Governor
-   contract.
+Once the voting period ends, external chain votes can be emitted by anyone to be
+counted on the Moonbeam Governance Contract. The Governor contract will validate
+it and update the vote counts accordingly. After the cross chain voting
+collection period ends and if proposal passes, it can be executed by anyone.
 
 ```mermaid
 graph LR
@@ -51,9 +56,8 @@ graph LR
     wc -- Receive votes --> mg
 ```
 
-Once the voting period ends, external chain votes can be emitted by anyone to be
-counted on the Moonbeam Governance Contract. The Governor contract will validate
-it and update the vote counts accordingly.
+Multichain Governance relies on the Wormhole bridge to relay the proposal
+creation and vote collection messages to the external chains.
 
 ## Cross Chain Voting
 
