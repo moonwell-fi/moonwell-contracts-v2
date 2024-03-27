@@ -17,20 +17,24 @@ active on Moonbeam can have an impact on the system's state on other chains.
 
 ```mermaid
 sequenceDiagram
-    participant Users
+    Actor User
     participant MultichainGovernor
     participant VoteCollection
-    Users->>MultichainGovernor: create proposal
+    User->>MultichainGovernor: create proposal
     MultichainGovernor-->>VoteCollection: create proposal
-    votingPeriod [Voting Period]
-        Users->>MultichainGovernor: vote
-        Users->>VoteCollection: vote
+    par Voting Period
+        User->>MultichainGovernor: vote
+        User->>VoteCollection: vote
     end
-    crossChainVoteCollectionPeriod [Cross Chain Vote Collection Period]
-        Users->>VoteCollection: emit votes
+    Note over User,MultichainGovernor: WELL, stkWELL, Vesting WELL and xWELL can be used for voting
+    par Cross Chain Vote Collection Period
+        User->>VoteCollection: emit votes
         VoteCollection-->>MultichainGovernor: emit votes
     end
-    Users->>MultichainGovernor: execute proposal
+    Note over User,VoteCollection: stkWELL, and xWELL can be used for voting
+    opt For votes reached quorum
+        User->>MultichainGovernor: execute proposal
+    end
 ```
 
 ```mermaid
