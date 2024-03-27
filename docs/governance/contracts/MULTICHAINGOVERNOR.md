@@ -5,7 +5,7 @@ proposals are created and executed.
 
 ## Overview
 
-The Moonbeam governor contract will be the source of truth for all governance
+The Moonbeam governor contract is the source of truth for all governance
 actions in Moonwell. When a new proposal is created, it will broadcast a message
 that will be sent to destination chains voting contracts to enable WELL and
 stkWELL holders to cast their vote on proposals that are going to go live on

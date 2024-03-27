@@ -61,10 +61,19 @@ not be live on base where this system will be deployed.
   - [Contributing](./docs/governance/CONTRIBUTING.md): Documentation on
     submitting proposals to the TemporalGovernor contract using the cross chain
     proposal simulation framework.
-  - [TemporalGovernor](./docs/governance/contracts/TEMPORALGOVERNOR.md): A cross
+  - [Listing new markets](./docs/governance/MARKET_ADD.md): Documentation on
+    listing new markets on the Moonwell Protocol.
+  - [Temporal Governor](./docs/governance/contracts/TEMPORALGOVERNOR.md): A cross
     chain governance contract that allows proposals passed by the community on
     moonbeam to be relayed across the chain to the Base network. This contract
     owns the entire system deployment on base.
+  - [Multichain Governor](./docs/governance/contracts/MULTICHAINGOVERNOR.md):
+    Multichain Governor is live on Moonbeam and is the source of truth for all governance actions in Moonwell.
+  - [Vote Collection](./docs/governance/VOTECOLLECTION.md): Documentation on
+    how votes are collected on external chains and relayed to Moonbeam.
+- [Deployment](./docs/deployment/): Steps to deploy the Moonwell Protocol to a
+  new chain.
+
 
 # Tests
 
