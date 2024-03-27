@@ -105,10 +105,10 @@ Moonwell uses Certora to formally verify the protocol. The Certora tests are
 located in the `certora` directory. To run the Certora tests, first you need to
 export the `CERTORAKEY` environment variable with the Certora API key.
 
-1. Run `certoraRun certora/confs/ConfigurablePauseGuardian.conf` to run the
-   ConfigurablePauseGuardian tests.
-2. Run `certoraRun certora/confs/ERC20.conf` to run the ERC20 tests.
-3. Run `certoraRun certora/confs/MultichainGovernor.conf` to run the
-   MultichainGovernor tests.
-4. Run `certoraRun certora/confs/MultichainVoteCollection.conf` to run the
-   MultichainVoteCollection tests.
+- Run `certoraRun certora/confs/ConfigurablePauseGuardian.conf` to run the
+  ConfigurablePauseGuardian tests.
+- Run `certoraRun certora/confs/ERC20.conf` to run the ERC20 tests.
+- Run `certoraRun certora/confs/MultichainGovernor.conf` to run the
+  MultichainGovernor tests.
+- Run `certoraRun certora/confs/MultichainVoteCollection.conf` to run the
+  MultichainVoteCollection tests.
