@@ -55,6 +55,3 @@ the following contracts.
   MToken contract and provides all the functionality of the MToken contract.
 - [Deployment](../SETUP.md): Documentation on how to deploy the Moonwell system
   on the base or base goerli network.
-- [Testing](../run.sh): Shell script file to run all the different tests.
-  Requires setting both `ARB_RPC_URL` and `ETH_RPC_URL` environment variables to
-  work properly.

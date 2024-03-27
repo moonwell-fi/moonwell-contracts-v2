@@ -116,3 +116,9 @@ export the `CERTORAKEY` environment variable with the Certora API key.
   MultichainGovernor tests.
 - Run `certoraRun certora/confs/MultichainVoteCollection.conf` to run the
   MultichainVoteCollection tests.
+
+## Running All Tests
+
+- [run.sh](./run.sh): Shell script file to run all the different tests. Requires
+  setting both `ARB_RPC_URL` and `ETH_RPC_URL` environment variables to work
+  properly.
