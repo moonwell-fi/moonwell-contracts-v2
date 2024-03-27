@@ -1,4 +1,4 @@
-name: Foundry Base Chainlink Oracle Integration Tests
+name: Foundry base chainlink oracle integration tests
 
 on: [pull_request]
 

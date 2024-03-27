@@ -5,7 +5,7 @@ import "@forge-std/Test.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 
-contract ChainlinkCompositeOracleIntegrationTestBase is Test {
+contract ChainlinkCompositeOracleIntegrationBaseTest is Test {
     ChainlinkCompositeOracle public oracle;
 
     /// @notice multiplier value
