@@ -1,31 +1,59 @@
 # Multichain Governance
 
-The Multichain Governance feature allows voting on all networks where Moonwell
-is active, like Moonbeam and Base. Its main objective is to execute proposals on
+The Multichain Governance allows voting on all networks where Moonwell is
+active, like Moonbeam and Base. Its main objective is to execute proposals on
 Moonbeam, and if they have a cross-chain nature, their payload will be relayed
 to another chain for execution by the Temporal Governor.
+
+```mermaid
+sequenceDiagram
+    Actor User
+    participant MultichainGovernor
+    participant VoteCollection
+    User->>MultichainGovernor: create proposal
+    MultichainGovernor-->>VoteCollection: create proposal
+    par Voting Period
+        User->>MultichainGovernor: vote
+        Note over User,MultichainGovernor: WELL, stkWELL, Vesting WELL and <br/>xWELL can be used for voting
+        User->>VoteCollection: vote
+        Note over User,VoteCollection: stkWELL, and xWELL can be used for voting
+    end
+    par Cross Chain Vote Collection Period
+        User->>VoteCollection: emit votes
+        VoteCollection-->>MultichainGovernor: emit votes
+    end
+    opt For votes reached quorum
+        User->>MultichainGovernor: execute proposal
+    end
+```
+
+There are two main components in the Multichain Governor architecture:
+
+1. [Multichain Governor](./contracts/MULTICHAINGOVERNOR.md): The main contract
+   deployed on Moonbeam that handles the creation, voting, and execution of
+   proposals.
+2. [Vote Collection](./contracts/VOTECOLLECTION.md): The contract that handles
+   the collection of votes from external chains and emits them to the Governor
+   contract.
+
+```mermaid
+graph LR
+    mg((MultichainGovernor)) -- Publish proposal creation message --> wc{WormholeCore}
+    stkWell[stkWELL] -- Cast Votes --> mg
+    well[WELL] -- Cast Votes --> mg
+    vWell[Vesting WELL] -- Cast Votes --> mg
+    xWell[xWELL] -- Cast Votes --> mg
+
+    wc -- Send proposal creation message --> vc((VoteCollection))
+    xWellBase[xWELL] -- Cast Votes --> vc
+    stkWellBase[stkWELL] -- Cast Votes --> vc
+    vc -- Emit votes --> wc
+    wc -- Receive votes --> mg
+```
 
 Once the voting period ends, external chain votes can be emitted by anyone to be
 counted on the Moonbeam Governance Contract. The Governor contract will validate
 it and update the vote counts accordingly.
-
-## Voting
-
-### Moonbeam
-
-The following tokens can be used to vote on Moonbeam:
-
-- WELL
-- xWELL
-- Vesting WELL in the claims contract
-- Staked WELL
-
-### Base
-
-The following tokens can be used to vote on Base:
-
-- xWELL
-- Staked WELL
 
 ## Cross Chain Voting
 

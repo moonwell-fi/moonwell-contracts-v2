@@ -9,48 +9,10 @@ The Moonbeam governor contract serves as the source of truth for all governance
 actions in Moonwell. Whenever a new proposal is created, it will send out a
 message that will be transmitted to the voting contracts of destination chains.
 This will empower WELL and stkWELL holders to participate in the voting process
-on proposals that are going to go live on Moonbeam. The Multiwell proposals
-framework is designed to work cross-chain, which implies that proposals that are
-active on Moonbeam can have an impact on the system's state on other chains.
-
-## Architecture
-
-```mermaid
-sequenceDiagram
-    Actor User
-    participant MultichainGovernor
-    participant VoteCollection
-    User->>MultichainGovernor: create proposal
-    MultichainGovernor-->>VoteCollection: create proposal
-    par Voting Period
-        User->>MultichainGovernor: vote
-        Note over User,MultichainGovernor: WELL, stkWELL, Vesting WELL and xWELL<br/> can be used for voting
-        User->>VoteCollection: vote
-        Note over User,VoteCollection: stkWELL, and xWELL can be used for voting
-    end
-    par Cross Chain Vote Collection Period
-        User->>VoteCollection: emit votes
-        VoteCollection-->>MultichainGovernor: emit votes
-    end
-    opt For votes reached quorum
-        User->>MultichainGovernor: execute proposal
-    end
-```
-
-```mermaid
-graph LR
-    mg((MultichainGovernor)) -- Publish proposal creation message --> wc{WormholeCore}
-    stkWell[stkWELL] -- Cast Votes --> mg
-    well[WELL] -- Cast Votes --> mg
-    vWell[Vesting WELL] -- Cast Votes --> mg
-    xWell[xWELL] -- Cast Votes --> mg
-
-    wc -- Send proposal creation message --> vc((VoteCollection))
-    xWellBase[xWELL] -- Cast Votes --> vc
-    stkWellBase[stkWELL] -- Cast Votes --> vc
-    vc -- Emit votes --> wc
-    wc -- Receive votes --> mg
-```
+on proposals that are going to go live on Moonbeam. The proposals framework used
+for Moonwell governance is designed to work cross-chain, which implies that
+proposals that are active on Moonbeam can have an impact on the system's state
+on other chains.
 
 ## Governance Parameters Configuration
 
