@@ -24,14 +24,14 @@ sequenceDiagram
     MultichainGovernor-->>VoteCollection: create proposal
     par Voting Period
         User->>MultichainGovernor: vote
+        Note over User,MultichainGovernor: WELL, stkWELL, Vesting WELL and xWELL<br/> can be used for voting
         User->>VoteCollection: vote
+        Note over User,VoteCollection: stkWELL, and xWELL can be used for voting
     end
-    Note over User,MultichainGovernor: WELL, stkWELL, Vesting WELL and xWELL can be used for voting
     par Cross Chain Vote Collection Period
         User->>VoteCollection: emit votes
         VoteCollection-->>MultichainGovernor: emit votes
     end
-    Note over User,VoteCollection: stkWELL, and xWELL can be used for voting
     opt For votes reached quorum
         User->>MultichainGovernor: execute proposal
     end
