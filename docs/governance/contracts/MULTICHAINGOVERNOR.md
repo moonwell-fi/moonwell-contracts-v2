@@ -17,29 +17,31 @@ active on Moonbeam can have an impact on the system's state on other chains.
 
 ```mermaid
 sequenceDiagram
-    participant Proposer
-    participant Voter
-    participant Anyone
+    participant Users
     participant MultichainGovernor
     participant VoteCollection
-    Proposer->>MultichainGovernor: create proposal
+    Users->>MultichainGovernor: create proposal
     MultichainGovernor-->>VoteCollection: create proposal
-    Voter->>MultichainGovernor: vote
-    Voter->>VoteCollection: vote
-    Anyone->>VoteCollection: emit votes
-    VoteCollection-->>MultichainGovernor: emit votes
-    Anyone->>MultichainGovernor: execute proposal
+    votingPeriod [Voting Period]
+        Users->>MultichainGovernor: vote
+        Users->>VoteCollection: vote
+    end
+    crossChainVoteCollectionPeriod [Cross Chain Vote Collection Period]
+        Users->>VoteCollection: emit votes
+        VoteCollection-->>MultichainGovernor: emit votes
+    end
+    Users->>MultichainGovernor: execute proposal
 ```
 
 ```mermaid
 graph LR
-    mg((MultichainGovernor)) -- Publishes proposal creation message --> wc{WormholeCore}
+    mg((MultichainGovernor)) -- Publish proposal creation message --> wc{WormholeCore}
     stkWell[stkWELL] -- Cast Votes --> mg
     well[WELL] -- Cast Votes --> mg
     vWell[Vesting WELL] -- Cast Votes --> mg
     xWell[xWELL] -- Cast Votes --> mg
 
-    wc -- Sends proposal creation message --> vc((VoteCollection))
+    wc -- Send proposal creation message --> vc((VoteCollection))
     xWellBase[xWELL] -- Cast Votes --> vc
     stkWellBase[stkWELL] -- Cast Votes --> vc
     vc -- Emit votes --> wc
