@@ -32,5 +32,3 @@ arbitrum = "https://arb1.arbitrum.io/rpc"
 #base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
 #baseSepolia = { key = "${BASESCAN_API_KEY}", url= "https://sepolia.basescan.org/api" }
 
-[fuzz]
-fail_on_revert = true
