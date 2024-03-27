@@ -13,6 +13,24 @@ on proposals that are going to go live on Moonbeam. The Multiwell proposals
 framework is designed to work cross-chain, which implies that proposals that are
 active on Moonbeam can have an impact on the system's state on other chains.
 
+## Architecture
+
+```mermaid
+sequenceDiagram
+    participant Proposer
+    participant Voter
+    participante Anyone
+    participant MultichainGovernor
+    participant VoteCollection
+    Proposer->>MultichainGovernor: creates proposal
+    MultichainGovernor->>VoteCollection: creates proposal
+    Voter->>MultichainGovernor: vote
+    Voter->>VoteCollection: vote
+    Anyone->>VoteCollection: emit votes
+    VoteCollection->>MultichainGovernor: emit votes
+    Anyone->>MultichainGovernor: executes proposal
+```
+
 ## Governance Parameters Configuration
 
 - `votingPeriod`: The time period in seconds that the governor will collect
