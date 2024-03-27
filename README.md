@@ -84,7 +84,7 @@ invariants and formal verification.
 
 The unit tests coverage must be kept as close to 100% as possible.
 
-Use `forge test -vvv --match-contract UnitTest` to run the unit tests
+- use `forge test -vvv --match-contract UnitTest` to run the unit tests
 
 ## Integration tests
 
@@ -109,16 +109,16 @@ Moonwell uses Certora to formally verify the protocol. The Certora tests are
 located in the `certora` directory. To run the Certora tests, first you need to
 export the `CERTORAKEY` environment variable with the Certora API key.
 
-- Run `certoraRun certora/confs/ConfigurablePauseGuardian.conf` to run the
+- use `certoraRun certora/confs/ConfigurablePauseGuardian.conf` to run the
   ConfigurablePauseGuardian tests.
-- Run `certoraRun certora/confs/ERC20.conf` to run the ERC20 tests.
-- Run `certoraRun certora/confs/MultichainGovernor.conf` to run the
+- use `certoraRun certora/confs/ERC20.conf` to run the ERC20 tests.
+- use `certoraRun certora/confs/MultichainGovernor.conf` to run the
   MultichainGovernor tests.
-- Run `certoraRun certora/confs/MultichainVoteCollection.conf` to run the
+- use `certoraRun certora/confs/MultichainVoteCollection.conf` to run the
   MultichainVoteCollection tests.
 
 ## Running All Tests
 
-- [run.sh](./run.sh): Shell script file to run all the different tests. Requires
-  setting both `ARB_RPC_URL` and `ETH_RPC_URL` environment variables to work
-  properly.
+[run.sh](./run.sh): Shell script file to run all the different tests. Requires
+setting both `ARB_RPC_URL` and `ETH_RPC_URL` environment variables to work
+properly.
