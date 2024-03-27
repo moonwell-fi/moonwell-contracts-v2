@@ -97,8 +97,8 @@ A proposal can be any of the following status:
 ```mermaid
 graph LR
     mg((MultichainGovernor)) -- Publish execution message --> wc{WormholeCore}
-    dm((Defender Monitor)) -- Read Wormhole publish event emission --> wc
-    dm -- Trigger queue autotask --> da((Defender Autotask))
+    dm[Defender Monitor] -- Read Wormhole publish event emission --> wc
+    dm -- Trigger queue autotask --> da[Defender Autotask]
     da -- Queue VAA --> tg((Temporal Governor))
     da -- Execute VAA --> tg
 ```
