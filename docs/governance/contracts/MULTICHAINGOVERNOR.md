@@ -22,13 +22,22 @@ sequenceDiagram
     participant Anyone
     participant MultichainGovernor
     participant VoteCollection
-    Proposer->>MultichainGovernor: creates proposal
-    MultichainGovernor->>VoteCollection: creates proposal
+    Proposer->>MultichainGovernor: create proposal
+    MultichainGovernor-->>VoteCollection: create proposal
     Voter->>MultichainGovernor: vote
     Voter->>VoteCollection: vote
     Anyone->>VoteCollection: emit votes
-    VoteCollection->>MultichainGovernor: emit votes
-    Anyone->>MultichainGovernor: executes proposal
+    VoteCollection-->>MultichainGovernor: emit votes
+    Anyone->>MultichainGovernor: execute proposal
+```
+
+```mermaid
+graph LR
+    mg[MultichainGovernor] -- Publishes proposal creation message --> wc((WormholeCore))
+    stkWell((stkWELL)) -- Cast Votes --> mg
+    well((WELL)) -- Cast Votes --> mg
+    vWell((Vesting WELL)) -- Cast Votes --> mg
+    xWell((xWELL)) -- Cast Votes --> mg
 ```
 
 ## Governance Parameters Configuration
