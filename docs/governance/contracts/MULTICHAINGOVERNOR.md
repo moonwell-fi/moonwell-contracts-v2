@@ -33,11 +33,17 @@ sequenceDiagram
 
 ```mermaid
 graph LR
-    mg[MultichainGovernor] -- Publishes proposal creation message --> wc((WormholeCore))
-    stkWell((stkWELL)) -- Cast Votes --> mg
-    well((WELL)) -- Cast Votes --> mg
-    vWell((Vesting WELL)) -- Cast Votes --> mg
-    xWell((xWELL)) -- Cast Votes --> mg
+    mg((MultichainGovernor)) -- Publishes proposal creation message --> wc{WormholeCore}
+    stkWell[stkWELL] -- Cast Votes --> mg
+    well[WELL] -- Cast Votes --> mg
+    vWell[Vesting WELL] -- Cast Votes --> mg
+    xWell[xWELL] -- Cast Votes --> mg
+
+    wc -- Sends proposal creation message --> vc((VoteCollection))
+    xWellBase[xWELL] -- Cast Votes --> vc
+    stkWellBase[stkWELL] -- Cast Votes --> vc
+    vc -- Emit votes --> wc
+    wc -- Receive votes --> mg
 ```
 
 ## Governance Parameters Configuration
