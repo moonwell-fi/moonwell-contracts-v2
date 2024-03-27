@@ -78,7 +78,7 @@ not be live on base where this system will be deployed.
 # Tests
 
 The protocol has several layers of testing: unit testing, integration testing,
-and formal verification.
+invariants and formal verification.
 
 ## Unit tests
 
@@ -98,6 +98,10 @@ Use `forge test -vvv --match-contract UnitTest` to run the unit tests
   the base sepolia live system tests
 - use `forge test --match-contract MultichainProposalTest` to run the Multichain
   Governor integration tests
+
+## Invariants
+
+- use `forge test --match-contract Invariant` to run the invariants tests
 
 ## Formal Verification
 

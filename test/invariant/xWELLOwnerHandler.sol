@@ -8,7 +8,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 
-contract xWELLOwnerHandler is Test {
+contract xWELLOwnerHandlerInvariant is Test {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     mapping(address => EnumerableSet.AddressSet) internal _users;
