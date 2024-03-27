@@ -63,24 +63,31 @@ not be live on base where this system will be deployed.
     proposal simulation framework.
   - [Listing new markets](./docs/governance/MARKET_ADD.md): Documentation on
     listing new markets on the Moonwell Protocol.
-  - [Temporal Governor](./docs/governance/contracts/TEMPORALGOVERNOR.md): A cross
-    chain governance contract that allows proposals passed by the community on
-    moonbeam to be relayed across the chain to the Base network. This contract
-    owns the entire system deployment on base.
+  - [Temporal Governor](./docs/governance/contracts/TEMPORALGOVERNOR.md): A
+    cross chain governance contract that allows proposals passed by the
+    community on moonbeam to be relayed across the chain to the Base network.
+    This contract owns the entire system deployment on base.
   - [Multichain Governor](./docs/governance/contracts/MULTICHAINGOVERNOR.md):
-    Multichain Governor is live on Moonbeam and is the source of truth for all governance actions in Moonwell.
-  - [Vote Collection](./docs/governance/VOTECOLLECTION.md): Documentation on
-    how votes are collected on external chains and relayed to Moonbeam.
+    Multichain Governor is live on Moonbeam and is the source of truth for all
+    governance actions in Moonwell.
+  - [Vote Collection](./docs/governance/VOTECOLLECTION.md): Documentation on how
+    votes are collected on external chains and relayed to Moonbeam.
 - [Deployment](./docs/deployment/): Steps to deploy the Moonwell Protocol to a
   new chain.
-
 
 # Tests
 
 The protocol has several layers of testing: unit testing, integration testing,
 and formal verification.
 
-- use `forge test -vvv --match-contract UnitTest` to run the unit tests
+## Unit tests
+
+The unit tests coverage must be kept as close to 100% as possible.
+
+Use `forge test -vvv --match-contract UnitTest` to run the unit tests
+
+## Integration tests
+
 - use `forge test --match-contract IntegrationTest --fork-url ethereum` to run
   the integration tests
 - use `forge test --match-contract ArbitrumTest --fork-url arbitrum` to run the
@@ -91,3 +98,17 @@ and formal verification.
   the base sepolia live system tests
 - use `forge test --match-contract MultichainProposalTest` to run the Multichain
   Governor integration tests
+
+## Formal Verification
+
+Moonwell uses Certora to formally verify the protocol. The Certora tests are
+located in the `certora` directory. To run the Certora tests, first you need to
+export the `CERTORAKEY` environment variable with the Certora API key.
+
+1. Run `certoraRun certora/confs/ConfigurablePauseGuardian.conf` to run the
+   ConfigurablePauseGuardian tests.
+2. Run `certoraRun certora/confs/ERC20.conf` to run the ERC20 tests.
+3. Run `certoraRun certora/confs/MultichainGovernor.conf` to run the
+   MultichainGovernor tests.
+4. Run `certoraRun certora/confs/MultichainVoteCollection.conf` to run the
+   MultichainVoteCollection tests.

@@ -5,14 +5,14 @@ proposals are created and executed.
 
 ## Overview
 
-The Moonbeam governor contract is the source of truth for all governance
-actions in Moonwell. When a new proposal is created, it will broadcast a message
-that will be sent to destination chains voting contracts to enable WELL and
-stkWELL holders to cast their vote on proposals that are going to go live on
-Moonbeam. This means the delay period allows for enough time for messages to be
-relayed from Moonbeam to external chains through Wormhole Relayers. The message
-sent from the Moonbeam Governor Contract will contain the proposal id, and start
-and end timestamp for the voting period.
+The Moonbeam governor contract is the source of truth for all governance actions
+in Moonwell. When a new proposal is created, it will broadcast a message that
+will be sent to destination chains voting contracts to enable WELL and stkWELL
+holders to cast their vote on proposals that are going to go live on Moonbeam.
+This means the delay period allows for enough time for messages to be relayed
+from Moonbeam to external chains through Wormhole Relayers. The message sent
+from the Moonbeam Governor Contract will contain the proposal id, and start and
+end timestamp for the voting period.
 
 ## Governance Parameters Configuration
 
