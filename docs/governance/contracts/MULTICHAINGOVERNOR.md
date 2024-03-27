@@ -19,7 +19,7 @@ active on Moonbeam can have an impact on the system's state on other chains.
 sequenceDiagram
     participant Proposer
     participant Voter
-    participante Anyone
+    participant Anyone
     participant MultichainGovernor
     participant VoteCollection
     Proposer->>MultichainGovernor: creates proposal
