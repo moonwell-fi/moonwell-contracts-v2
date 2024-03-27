@@ -79,14 +79,13 @@ Moonwell uses
 to simplify governance proposals and ensure that any changes made to the
 protocol are rigorously tested before implementation. Any updates to the
 protocol must go through a governance proposal and can only be applied after
-community approval. Refer to [Governance](./governance/README.md) for guidance
-on how to create a proposal once you have a Pull Request ready.
+community approval. Refer to [Governance](./governance/CONTRIBUTING.md) for
+guidance on how to create a proposal once you have a Pull Request ready.
 
 ## Pull requests
 
-Pull requests are squash-merged to keep the `main` branch history clean. The
-title of the pull request becomes the commit message, so it should be written in
-a consistent format:
+The title of the pull request becomes the commit message, so it should be
+written in a consistent format:
 
 1. Begin with a capital letter.
 2. Do not end with a period.
@@ -108,5 +107,4 @@ Branches should be named in a consistent format:
 ## Security Policy
 
 Security vulnerabilities should be disclosed to the project maintainers through
-[Immunefi](https://immunefi.com/bounty/moonwell/), or alternatively by email to
-[TBD]()
+[Immunefi](https://immunefi.com/bounty/moonwell/).
