@@ -9,7 +9,7 @@
     },
     "scripts": {
         "prepare": "husky",
-        "lint": "npx solhint --config ./.solhintrc --ignore-path .solhintignore 'src/**/*.sol' --fix --yes",
+        "lint": "npx solhint --config ./.solhintrc --ignore-path .solhintignore 'src/**/*.sol'",
         "prettier": "npx prettier --ignore-path .prettierignore --write"
     },
     "repository": {
