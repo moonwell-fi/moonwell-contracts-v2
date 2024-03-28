@@ -13,7 +13,7 @@ git diff --cached --name-status | grep -v '^(D|R[0-9]+)' | cut -f2- > "$STAGED_F
 # Run Solhint on staged .sol files, if any
 if [ -s "$STAGED_SOL_FILES" ]; then
     # If there are staged .sol files, run Solhint on them
-    SOLHINT_OUTPUT=$(cat "$STAGED_SOL_FILES" | xargs npx solhint --config ./.solhintrc --ignore-path .solhintignore)
+    SOLHINT_OUTPUT=$(cat "$STAGED_SOL_FILES" | xargs npm run lint)
     SOLHINT_EXIT_CODE=$?
 
     if [ $SOLHINT_EXIT_CODE -ne 0 ]; then

@@ -20,7 +20,7 @@ jobs:
               run: "npm install"
 
             - name: "Lint the contracts"
-              run: "npx solhint --config ./.solhintrc --ignore-path .solhintignore"
+              run: "npm run lint"
 
             - name: "Add lint summary"
               run: |
