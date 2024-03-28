@@ -5,8 +5,8 @@ written in Solidity.
 
 ## Features
 
-1. **Safe Math Operations**: The contract leverages the OpenZeppelin `SafeCast`
-   library to perform safe casting operations.
+1. **Safe Casting Operations**: The contract leverages the OpenZeppelin
+   `SafeCast` library to perform safe casting operations.
 
 2. **Pause Functionality**: The contract uses the `Pausable` contract from
    OpenZeppelin to add pausing mechanisms. This allows certain functionalities
@@ -45,14 +45,21 @@ written in Solidity.
 
 5. **Guardian Pause Allowed**: A Boolean variable indicating whether or not the
    guardian can pause the contract. It starts as true and then is set to false
-   when the guardian pauses.
+   when the guardian pauses. It can be set to true again only by a governance
+   proposal that grants the guardian the ability to pause again and sets the new
+   guardian address.
 
 6. **Trusted Senders**: A mapping from chain id to a trusted sender (in bytes32
-   format). This mapping is used to validate incoming requests.
+   format). This mapping is used to validate incoming requests, ensuring only
+   trusted contracts from the right chains are allowed to send requests to this
+   contract.
 
 7. **Queued Transactions**: A mapping from message hashes to `ProposalInfo`
    objects. This mapping is used to ensure transactions aren't processed more
-   than once, and that time restrictions are enforced.
+   than once, and that a timelock on all proposals are enforced. This timelock
+   can be bypassed by the guardian in case of an emergency, immediately
+   executing a proposal if the contract has already been paused and the caller
+   is the pause guardian.
 
 ## Functionality
 
@@ -78,3 +85,24 @@ The contract provides various functionalities:
 - Helper functions: There are several private helper functions used internally
   by the contract for queueing proposals, executing proposals, and performing
   payload sanity checks.
+
+## Security Considerations
+
+The Temporal Governor makes trust assumptions that the governor contract(s) on
+external chains are not malicious. Should the owner of the Temporal Governor
+turn malicious, the following are the destructive actions they can take:
+
+- A malicious proposal from a trusted sender can remove all trusted senders,
+  making the contract inoperable. Without trusted senders, no VAA's are valid.
+- A malicious pause from the pause guardian can prevent valid governance
+  proposals from being executed for a period of ten days, until the contract
+  automatically unpauses.
+- There are no payable functions on Temporal Governor, so it cannot send Ether
+  as part of its governance proposals unless a contract with Ether is
+  self-destructed to give Ether to the Temporal Governor. If self-destruct is
+  removed, there is no way to send Ether to the Temporal Governor.
+- If enough Wormhole signers become malicious, then they can create valid VAA's
+  that have malicious payloads. Wormhole is assumed to be trusted and secure.
+
+If any of these assumptions are violated, it becomes hard to reason about the
+state the system should be in.

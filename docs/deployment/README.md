@@ -3,16 +3,16 @@
 Currently the Moonwell contracts are deployed on the following chains:
 
 - Moonbeam
-- Moonbase
+- Moonbase - test network
 - Base Mainnet
-- Base Sepolia
+- Base Sepolia - test network
 
 All the addresses are stored in the `Addresses.json` file with their respective
 chain ids.
 
 ## Deploying
 
-This section outlines the steps to deploy the system contracts to a new chain.
+This section outlines the steps to deploy the new smart contracts.
 
 ### Set Environment Variables
 
@@ -22,7 +22,7 @@ the private key of the account that will deploy the contracts.
 ### Clean addresses from Addresses.json
 
 When redeploying the contracts to a chain that already has the contracts
-deployed, the addresses to the respective chain in the `Addresses.json` file
+deployed, the addresses in the respective chain in the `Addresses.json` file
 should be removed. If you don't remove, the deployment script will skip the
 deployment of the contracts that already have an address in the
 `Addresses.json`.
