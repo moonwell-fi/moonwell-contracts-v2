@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {PriceOracle} from "@protocol//oracles/PriceOracle.sol";
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 import {SafetyModuleInterfaceV1} from "@protocol/views/SafetyModuleInterfaceV1.sol";
 import {Well} from "@protocol/governance/Well.sol";

@@ -30,7 +30,7 @@ fi
 # Run Prettier and check for errors on staged files
 if [ -s "$STAGED_FILES" ]; then
     # Note: Using `--write` with Prettier to automatically fix formatting
-    PRETTIER_OUTPUT=$(cat "$STAGED_FILES" | xargs npx prettier --ignore-path .prettierignore --write)
+    PRETTIER_OUTPUT=$(cat "$STAGED_FILES" | xargs npm run prettier)
     PRETTIER_EXIT_CODE=$?
 
     if [ $PRETTIER_EXIT_CODE -ne 0 ]; then
