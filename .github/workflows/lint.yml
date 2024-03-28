@@ -3,39 +3,39 @@ name: Linter
 on: [pull_request]
 
 jobs:
-    lint:
-        runs-on: "ubuntu-latest"
-        steps:
-            - name: "Check out the repo"
-              uses: "actions/checkout@v3"
-              with:
-                  submodules: "recursive"
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Check out the repo"
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
-            - name: "Install Node.js"
-              uses: "actions/setup-node@v3"
-              with:
-                  node-version: "lts/*"
+      - name: "Install Node.js"
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
 
-            - name: "Install the Node.js dependencies"
-              run: "npm install"
+      - name: "Install the Node.js dependencies"
+        run: npm install
 
-            - name: "Lint the contracts"
-              id: lint
-              run: |
-                  if npm run lint; then
-                      echo "LINT_STATUS=passed" >> $GITHUB_ENV
-                  else
-                      echo "LINT_STATUS=failed" >> $GITHUB_ENV
-                      exit 1
-                  fi
+      - name: "Lint the contracts and capture output"
+        id: lint
+        run: |
+          LINT_OUTCOME=$(npm run lint 2>&1)
+          echo "::set-output name=result::${LINT_OUTCOME}"
+          echo "LINT_OUTCOME<<EOF" >> $GITHUB_ENV
+          echo "$LINT_OUTCOME" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
-            - name: "Add lint summary"
-              if: always()
-              run: |
-                  if [ "$LINT_STATUS" = "passed" ]; then
-                      echo "## Lint result" >> $GITHUB_STEP_SUMMARY
-                      echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-                  else
-                      echo "## Lint result" >> $GITHUB_STEP_SUMMARY
-                      echo "❌ Failed" >> $GITHUB_STEP_SUMMARY
-                  fi
+      - name: "Check for errors in lint outcome"
+        if: always()
+        run: |
+          if grep -q "error" <<< "$LINT_OUTCOME"; then
+              echo "## Lint result" >> $GITHUB_STEP_SUMMARY
+              echo "❌ Failed" >> $GITHUB_STEP_SUMMARY
+              exit 1
+          else
+              echo "## Lint result" >> $GITHUB_STEP_SUMMARY
+              echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+          fi
