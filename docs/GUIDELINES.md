@@ -2,17 +2,19 @@
 
 ## Testing
 
-The protocol has several layers of testing: unit testing, integration testing,
-and formal verification.
+Moonwell has a high bar for contributions to the codebase. Engineers are
+expected to have several layers of testing for all Solidity code: unit, fuzz,
+integration, and invariant testing. Formal verification should be used if it is
+a good fit for the problem.
 
-All contributions should have total code coverage. You should use integration
-tests, unit tests, harnesses, etc. You must test your code as close to the real
-world as possible. You can see your coverage using the forge coverage command.
-Note: the accuracy of the coverage tool is not authoritative; if you can show
-your lines of code were covered, that’s sufficient.
+All contributions should have 100% code coverage. All testing types should be
+used. Code must be as close to the real world as possible. You can see your
+coverage using the forge coverage command. Note: the accuracy of the coverage
+tool is not authoritative; if you can show your lines of code were covered,
+that’s sufficient.
 
-You may contribute to formal analysis for your patch, but that is not a strict
-requirement. For complex changes to the protocol, formal verification is
+You may contribute to formal verification for your patch, however this is not a
+strict requirement. For complex changes to the protocol, formal verification is
 recommended.
 
 The test suite should run automatically for every change in the repository, and
@@ -23,10 +25,9 @@ pull requests.
 
 ## Code style
 
-The most important principle in writing code for this project is clarity. Code
-should be as obvious as possible. We’ll always prefer clear over clever. The
-following are a list of principles to follow to lead in the right direction for
-your patch.
+The most important principle in writing code is clarity. Code should be as
+obvious as possible. We always prefer clear over clever. The following are a
+list of principles to follow to lead in the right direction for your patch.
 
 1. Prefer local context. Try to not do too much in one function. Do not hide
    complexity by calling into complex sub-routines.
@@ -46,9 +47,9 @@ your patch.
 6. Public functions should have NatSpec documentation, including: a notice
    briefly describing the purpose, what the parameters are, and what the return
    value is.
-7. Unchecked arithmetic blocks should contain comments explaining why overflow
-   is guaranteed not to happen. If the reason is immediately apparent from the
-   line above the unchecked block, the comment may be omitted.
+7. Unchecked arithmetic blocks should contain comments explaining why under or
+   over flows are guaranteed not to happen. If the reason is immediately
+   apparent from the line above the unchecked block, the comment may be omitted.
 8. Revert messages should be clear and concise and include dynamic data where
    appropriate.
 
@@ -62,11 +63,12 @@ for critical decisions that the user may face.
 
 ## Peer review
 
-All changes must be submitted through pull requests and go through peer code
-review.
+All changes must be submitted through pull requests and go through code review.
 
 The review must be approached by the reviewer in a similar way as if it was an
-audit of the code in question (but importantly it is not a substitute for).
+audit of the code in question (but importantly it is not a substitute for). See
+[this checklist](https://github.com/solidity-labs-io/code-review-checklist) for
+how to conduct a proper code review.
 
 Reviewers should enforce code and project guidelines.
 
@@ -77,10 +79,11 @@ External contributions must be reviewed separately by multiple maintainers.
 Moonwell uses
 [Forge Proposal Simulator](https://github.com/solidity-labs-io/forge-proposal-simulator/)
 to simplify governance proposals and ensure that any changes made to the
-protocol are rigorously tested before implementation. Any updates to the
-protocol must go through a governance proposal and can only be applied after
-community approval. Refer to [Governance](./governance/CONTRIBUTING.md) for
-guidance on how to create a proposal once you have a Pull Request ready.
+protocol are rigorously tested before implementation and easy to review. Any
+updates to the protocol must go through a governance proposal and can only be
+applied after community approval. Refer to
+[Governance](./governance/CONTRIBUTING.md) for guidance on how to create a
+proposal once you have a Pull Request ready.
 
 ## Pull requests
 
