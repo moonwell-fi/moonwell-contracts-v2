@@ -6,8 +6,8 @@ caps, cross-chain governance, and multi-token emissions.
 The "v2" release of the Moonwell Protocol is a major system upgrade to use
 solidity 0.8.19, add supply caps, and a number of improvements for user
 experience (things like `mintWithPermit` and `claimAllRewards`). Solidity
-version 0.8.20 was not used because EIP-3855 which adds the PUSH0 opcode will
-not be live on base where this system will be deployed.
+version 0.8.20 was not used because EIP-3855 which adds the PUSH0 opcode was not
+be live on base at the time this system was deployed.
 
 # Table of Contents
 
@@ -78,7 +78,7 @@ not be live on base where this system will be deployed.
 # Tests
 
 The protocol has several layers of testing: unit testing, integration testing,
-invariants and formal verification.
+invariants, fuzzing, mutation and formal verification.
 
 ## Unit tests
 
@@ -105,9 +105,10 @@ The unit tests coverage must be kept as close to 100% as possible.
 
 ## Formal Verification
 
-Moonwell uses Certora to formally verify the protocol. The Certora tests are
-located in the `certora` directory. To run the Certora tests, first you need to
-export the `CERTORAKEY` environment variable with the Certora API key.
+Moonwell uses Certora to formally verify key protocol invariants. The Certora
+formal specifications are located in the `certora` directory. To run the Certora
+tests, first you need to export the `CERTORAKEY` environment variable with the
+Certora API key.
 
 - use `certoraRun certora/confs/ConfigurablePauseGuardian.conf` to run the
   ConfigurablePauseGuardian tests.
@@ -119,6 +120,7 @@ export the `CERTORAKEY` environment variable with the Certora API key.
 
 ## Running All Tests
 
-[run.sh](./run.sh): Shell script file to run all the different tests. Requires
-setting both `ARB_RPC_URL` and `ETH_RPC_URL` environment variables to work
-properly.
+1. Set `PROPOSAL_ARTIFACT_PATH` environment variables
+   > Run `./.github/helper/get-env-var.sh` to find the last proposal artifact
+   > path
+2. Run [run.sh](./run.sh) to execute all the different tests

@@ -2,8 +2,8 @@
 
 The Multichain Governance allows voting on all networks where Moonwell is
 active, like Moonbeam and Base. Its main objective is to execute proposals on
-Moonbeam, and if they have a cross-chain nature, their payload will be relayed
-to another chain for execution by the Temporal Governor.
+Moonbeam, and if they are cross-chain, their payload will be relayed to another
+chain for execution by the Temporal Governor.
 
 There are two main components in the Multichain Governor architecture:
 
@@ -80,7 +80,7 @@ become either failed or succeeded from its previous state.
 A proposal can be any of the following status:
 
 - Active: This means that the proposal is currently in the voting period.
-- CrossChainVoteCollection: THe voting period has ended, and the proposal is now
+- CrossChainVoteCollection: The voting period has ended, and the proposal is now
   waiting for cross-chain votes.
 - Cancelled: The proposer has canceled or anyone can cancel if the proposer
   voting power has become lower than the minimum proposal threshold.

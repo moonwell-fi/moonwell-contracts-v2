@@ -12,7 +12,6 @@ import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensio
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";

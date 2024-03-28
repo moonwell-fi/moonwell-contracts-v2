@@ -8,10 +8,10 @@ integration, and invariant testing. Formal verification should be used if it is
 a good fit for the problem.
 
 All contributions should have 100% code coverage. All testing types should be
-used. Code must be as close to the real world as possible. You can see your
-coverage using the forge coverage command. Note: the accuracy of the coverage
-tool is not authoritative; if you can show your lines of code were covered,
-that’s sufficient.
+used. Code must be tested in as close to the real world conditions. You can see
+your coverage using the forge coverage command. Note: the accuracy of the
+coverage tool is not authoritative; if you can show your lines of code were
+covered, that’s sufficient.
 
 You may contribute to formal verification for your patch, however this is not a
 strict requirement. For complex changes to the protocol, formal verification is

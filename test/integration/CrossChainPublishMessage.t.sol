@@ -10,7 +10,6 @@ import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {StringUtils} from "@proposals/utils/StringUtils.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
-import {ITimelock} from "@protocol/interfaces/ITimelock.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
@@ -25,7 +24,6 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
     TestProposals public proposals;
     IWormhole public wormhole;
     Addresses public addresses;
-    ITimelock public timelock;
     ERC20Votes public well;
 
     event LogMessagePublished(
@@ -106,9 +104,6 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
 
         wormhole = IWormhole(
             addresses.getAddress("WORMHOLE_CORE", moonBeamChainId)
-        );
-        timelock = ITimelock(
-            addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)
         );
         well = ERC20Votes(addresses.getAddress("WELL", moonBeamChainId));
 
