@@ -8,6 +8,7 @@ fs_permissions = [{ access = "read", path = "./"}]
 auto_detect_solc = true
 evm_version = 'paris' # lock to paris to prevent use of push0 opcode which is not live on base
 optimizer_runs = 1
+rpc_storage_caching = { chains = "all", endpoints = "all" }
 
 [rpc_endpoints]
 localhost = "http://127.0.0.1:8545"
