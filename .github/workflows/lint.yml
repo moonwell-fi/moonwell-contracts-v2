@@ -20,9 +20,22 @@ jobs:
               run: "npm install"
 
             - name: "Lint the contracts"
-              run: "npm run lint"
+              id: lint
+              run: |
+                  if npm run lint; then
+                      echo "LINT_STATUS=passed" >> $GITHUB_ENV
+                  else
+                      echo "LINT_STATUS=failed" >> $GITHUB_ENV
+                      exit 1
+                  fi
 
             - name: "Add lint summary"
+              if: always()
               run: |
-                  echo "## Lint result" >> $GITHUB_STEP_SUMMARY
-                  echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+                  if [ "$LINT_STATUS" = "passed" ]; then
+                      echo "## Lint result" >> $GITHUB_STEP_SUMMARY
+                      echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+                  else
+                      echo "## Lint result" >> $GITHUB_STEP_SUMMARY
+                      echo "❌ Failed" >> $GITHUB_STEP_SUMMARY
+                  fi
