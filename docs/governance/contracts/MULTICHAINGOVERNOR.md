@@ -1,7 +1,7 @@
 # Multichain Governor
 
-Multichain Governor is live on Moonbeam. The Multichain Governor is where the
-proposals are created and executed.
+The Multichain Governor contract is live on Moonbeam. This contract is
+responsible for creating and executing proposals.
 
 ## Overview
 
@@ -18,7 +18,7 @@ on other chains.
 
 - `votingPeriod`: The time period in seconds that the governor will collect
   votes for a proposal.
-- `crossChainVoeCollectionPeriod`: The time period in seconds that the governor
+- `crossChainVoteCollectionPeriod`: The time period in seconds that the governor
   will collect votes for a proposal before it is executed and after the voting
   period has ended.
 - `quorum`: The minimum percentage of votes required for a proposal to pass.
@@ -37,8 +37,9 @@ they have at least the voting power threshold required to create a proposal. The
 proposer must provide the following parameters:
 
 - `targets`: An array of addresses to call
-- `values`: An array of values to pass to the calls
-- `calldatas`: An array of calldatas to pass to the calls
+- `values`: An array of values to pass to each of the calls
+- `calldatas`: An array of ABI-encoded calldatas with function signatures to
+  pass to the targets
 - `description`: A string describing the proposal
 
 ### Vote
@@ -46,23 +47,26 @@ proposer must provide the following parameters:
 Any address can vote on a proposal by calling the `castVote` function. Users can
 vote `for`, `against`, or `abstain` on a proposal.
 
-The following tokens are used for voting:
+The following tokens are used as sources of voting power:
 
-- WELL: The Moonwell token
-- Staked WELL: The staked token for Moonwell
-- xWELL: The bridged token for Moonwell
-- Vesting WELL: Vesting WELL locked in the claimable contract
+- WELL: The native WELL token on Moonbeam
+- Staked WELL: WELL Staked in the safety module
+- xWELL: The native multi-chain token for Moonwell
+- Vesting WELL: Vesting WELL locked in the claims contract
 
-The caller must provide the following parameters:
+The caller must provide the following parameters when casting their votes:
 
 - `proposalId`: The id of the proposal to vote on
-- `voteValue`: The vote value to cast. `0` for against, `1` for for, `2` for
-  abstain.
+- `voteValue`: The vote value to cast. `0` for `yes`, `1` for `no`, `2` for
+  `abstain`.
+
+Votes can only be placed one time per proposal, and once a vote is cast, it
+cannot be changed.
 
 ### Execute Proposal
 
 Any address can execute a proposal by calling the `execute` function. The
-proposal must have passed the cross chain voting colleciton period and have
+proposal must have passed the cross chain voting collection period and have
 enough for votes to be executed. The caller must provide the following
 parameter:
 
@@ -152,3 +156,43 @@ calldatas specified above, otherwise the entire transaction will revert.
      target chain.
 
 ## Security Considerations
+
+This contract makes multiple assumptions about its own state and external system
+states to ensure proper functioning. Any one of these items being compromised
+could lead to unexpected behavior.
+
+1. Approved calldata is correctly set for the Break Glass Guardian. Incorrect
+   calldata could allow the Break Glass Guardian to call any function on any
+   contract. Side affects of incorrect configuration include but are not limited
+   to:
+
+   - complete loss of governance abilities on both Base and or Moonbeam
+     deployments
+   - setting of incorrect oracle data
+   - arbitrary changes to governance parameters
+
+2. The Pause Guardian is not malicious.
+
+   - if the Pause Guardian is malicious, they could pause the contract for the
+     current pause duration of 30 days before the contract pauses again.
+   - if the Pause Guardian is malicious, they could wait for a governance
+     proposal to grant another guardian the ability to pause the contract, then
+     pause the contract, clearing this proposal from the active set of
+     proposals. Then the community would need to wait 30 days before they could
+     create, vote on and pass another proposal again.
+
+3. The vote collection contracts on other chains are not malicious and working
+   properly.
+
+   - if the vote collection contracts on other chains are malicious, they could
+     prevent the Multichain Governor from executing proposals, or pass proposals
+     that are failing by registering incorrect vote counts.
+
+4. Wormhole is live and working properly, this ensures that voters on other
+   chains can participate in governance.
+
+   - if Wormhole is paused or offline, the Multichain Governor will still be
+     able to execute and pass proposals, however, users on other chains will not
+     be able to submit or have their votes collected.
+   - if Wormhole becomes malicious, it could register incorrect vote counts or
+     prevent the Multichain Governor from executing proposals.
