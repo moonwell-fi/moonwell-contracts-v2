@@ -36,8 +36,6 @@ contract DeployMoonwellViewsV3 is Script, Test {
     }
 
     function run() public {
-        address deployerAddress = vm.addr(PRIVATE_KEY);
-
         vm.startBroadcast(PRIVATE_KEY);
 
         address unitroller = addresses.getAddress("UNITROLLER");
@@ -61,7 +59,7 @@ contract DeployMoonwellViewsV3 is Script, Test {
 
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+        new TransparentUpgradeableProxy(
             address(viewsContract),
             address(proxyAdmin),
             initdata

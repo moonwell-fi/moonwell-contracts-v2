@@ -13,8 +13,8 @@ import {Comptroller} from "@protocol/Comptroller.sol";
 import {mip0x as mip} from "@proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 

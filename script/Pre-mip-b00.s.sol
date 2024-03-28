@@ -9,7 +9,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
-import {ChainlinkCompositeOracle} from "@protocol/Oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 
 /*
 to run:

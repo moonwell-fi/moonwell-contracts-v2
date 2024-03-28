@@ -17,4 +17,4 @@ jobs:
         uses: ./.github/actions
 
       - name: Invariant Test Contracts
-        run: time forge test -vvv --match-contract InvariantTest
+        run: time forge test -vvv --match-contract xWELLOwnerHandler

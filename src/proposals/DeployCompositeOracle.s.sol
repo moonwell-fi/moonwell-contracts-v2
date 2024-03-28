@@ -5,7 +5,7 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
-import {ChainlinkCompositeOracle} from "@protocol/Oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 
 /*
 How to use:

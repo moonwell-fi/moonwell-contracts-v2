@@ -6,22 +6,21 @@ import "@forge-std/Test.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
+
+import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
-import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
-import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
-import {ITokenSaleDistributorProxy} from "@protocol/tokensale/ITokenSaleDistributorProxy.sol";
-import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the

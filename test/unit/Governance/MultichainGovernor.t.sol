@@ -2,15 +2,15 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {IMultichainGovernor, MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
-import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
-import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
+import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
+import {Constants} from "@protocol/governance/multichain/Constants.sol";
 
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 
@@ -22,7 +22,10 @@ contract MockTimelock {
 
 contract MultichainGovernorUnitTest is MultichainBaseTest {
     event BreakGlassGuardianChanged(address oldValue, address newValue);
-    event PauseGuardianUpdated(address indexed oldPauseGuardian, address indexed newPauseGuardian);
+    event PauseGuardianUpdated(
+        address indexed oldPauseGuardian,
+        address indexed newPauseGuardian
+    );
 
     function setUp() public override {
         super.setUp();
@@ -149,7 +152,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
         vm.expectRevert("Initializable: contract is already initialized");
 
-        governorLogic.initialize(initData, trustedSenders, new bytes[](0));
+        MultichainGovernor(address(governorLogic)).initialize(
+            initData,
+            trustedSenders,
+            new bytes[](0)
+        );
     }
 
     function testDeployxWell() public {

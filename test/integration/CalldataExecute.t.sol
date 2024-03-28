@@ -10,7 +10,7 @@ import {Configs} from "@proposals/Configs.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {mipb00 as mip} from "@proposals/mips/mip-b00/mip-b00.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
-import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 
 contract CalldataExecute is Test, Configs {
     Addresses addresses;

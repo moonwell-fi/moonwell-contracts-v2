@@ -8,7 +8,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
-import {ChainlinkCompositeOracle} from "@protocol/Oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 
 contract Configs is Test {
     struct CTokenConfiguration {

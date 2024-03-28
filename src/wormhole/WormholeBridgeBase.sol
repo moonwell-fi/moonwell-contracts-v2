@@ -1,9 +1,8 @@
 pragma solidity 0.8.19;
 
-import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 
 /// @notice Wormhole Bridge Base Contract
