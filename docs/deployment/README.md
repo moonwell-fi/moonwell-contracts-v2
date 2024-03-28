@@ -29,19 +29,17 @@ deployment of the contracts that already have an address in the
 
 ### Running the Deployment Script
 
-`forge script src/proposals/DeployProposal.s.sol:DeployProposal -vvv --rpc-url baseSepolia --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key baseSepolia --verify`
+`forge script src/proposals/mip-b00.sol -vvv --rpc-url ${chainName} --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key ${keyName} --verify`
 
-Substitute out the rpc-url for the chain to deploy on if the destination is not
-base Sepolia.
+Substitute out the rpc-url and etherscan-api-key with the correct values for the
+chain you are deploying to.
 
 If deploying on mainnet, double check that `mainnetMTokens.json` and
 `mainnetRewardStreams.json` in the `proposals/` folder are correctly filled out.
 Then, double check that in `Addresses.json`, all the oracles, tokens and
 guardians are correctly set. If no reward streams will be created, ensure the
 rewards json file is an empty array. Triple check that the addresses for the
-system are correct in `Addresses.json`, then deploy to base mainnet:
-
-`forge script src/proposals/DeployProposal.s.sol:DeployProposal -vvv --rpc-url base --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key base --verify`
+system are correct in `Addresses.json`.
 
 Once contracts are deployed, add generated addresses into the Addresses.json
 file.
@@ -51,26 +49,14 @@ file.
 After the contracts are deployed, the next step is to submit a governance
 proposal to MultichainGovernor to accept the ownership of the system contracts.
 
-Create the calldata to submit on the proposing chain, for testnet fork base
-sepolia:
+Scroll up the logs from the step above to get the calldata after section
+"multichain governor queue governance calldata"", and send the calldata to the
+governance contract on moonbeam or moonbase by going to metamask and submitting
+a transaction to the MultichainGovernor contract with the calldata the raw hex
+copied.
 
-`forge test --match-test testPrintCalldata -vvv --fork-url baseGoerli`
-
-for mainnet calldata:
-
-`forge test --match-test testPrintCalldata -vvv --fork-url base`
-
-Then, scroll up to get the calldata after section "artemis governor queue
-governance calldata", and send the calldata to the governance contract on
-moonbase by going to metamask and submitting a transaction to the
-ArtemisGovernor contract with the calldata the raw hex copied.
-
-Once the calldata is sent, wait for the proposal to finish the voting period,
-then queue and execute it.
-
-If on base sepolia , send .00001 eth to the Temporal Governor contract. If on
-mainnet, send .00001 eth to the Temporal Governor contract and all required
-amounts for other tokens as well.
+Once the calldata is sent, vote for and wait for the proposal to finish the
+voting period, then execute it.
 
 After the proposal is executed, get the proposal execute transaction hash, and
 pass the transaction hash to the VAA script.
