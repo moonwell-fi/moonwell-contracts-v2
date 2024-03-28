@@ -6,7 +6,6 @@ import "@forge-std/Test.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
 
 /// rewrite of mip-m19 to use HybridProposal and generate calldata for
@@ -68,8 +67,6 @@ contract mipm21newGovernor is HybridProposal {
     }
 
     function run(Addresses addresses, address) public override {
-        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
-
         _runMoonbeamMultichainGovernor(addresses, address(100000000));
     }
 

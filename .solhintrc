@@ -9,7 +9,7 @@
     "not-rely-on-time": "off",
     "one-contract-per-file": "off",
 	"no-inline-assembly": "off",
-	"custom-errors": "off",
+	"gas-custom-errors": "off",
 	"no-empty-blocks": "off",
 	"var-name-mixedcase": "off",
 	"no-global-import": "off",
@@ -22,6 +22,7 @@
     "const-name-snakecase": "off",
     "visibility-modifier-order": "off",
     "max-states-count": "off",
-    "no-complex-fallback": "off"
+    "no-complex-fallback": "off",
+    "no-unused-import": "error"
     }
 }

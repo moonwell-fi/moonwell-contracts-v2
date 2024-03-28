@@ -1,7 +1,5 @@
 pragma solidity 0.8.19;
 
-import {PausableUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
-
 import {ConfigurablePause} from "@protocol/xWELL/ConfigurablePause.sol";
 
 /// @notice possible states for this contract to be in:

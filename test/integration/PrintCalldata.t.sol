@@ -6,7 +6,6 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 
 import "@forge-std/Test.sol";
 
-import {Well} from "@protocol/Governance/deprecated/Well.sol";
 import {mipb02} from "@proposals/mips/mip-b02/mip-b02.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
@@ -14,7 +13,6 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {MockWormhole} from "@test/mock/MockWormhole.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
 
 contract PrintCalldataTest is Test, ChainIds {
     TestProposals proposals;

@@ -2,7 +2,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
+import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
