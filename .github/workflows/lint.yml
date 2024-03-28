@@ -1,0 +1,28 @@
+name: Linter
+
+on: [pull_request]
+
+jobs:
+    lint:
+        runs-on: "ubuntu-latest"
+        steps:
+            - name: "Check out the repo"
+              uses: "actions/checkout@v3"
+              with:
+                  submodules: "recursive"
+
+            - name: "Install Node.js"
+              uses: "actions/setup-node@v3"
+              with:
+                  node-version: "lts/*"
+
+            - name: "Install the Node.js dependencies"
+              run: "npm install"
+
+            - name: "Lint the contracts"
+              run: "npx solhint --config ./.solhintrc --ignore-path .solhintignore"
+
+            - name: "Add lint summary"
+              run: |
+                  echo "## Lint result" >> $GITHUB_STEP_SUMMARY
+                  echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
