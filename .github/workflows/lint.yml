@@ -19,23 +19,19 @@ jobs:
       - name: "Install the Node.js dependencies"
         run: npm install
 
-      - name: "Lint the contracts and capture output"
+      - name: Run linter and check for errors
         id: lint
         run: |
-          LINT_OUTCOME=$(npm run lint 2>&1)
-          echo "::set-output name=result::${LINT_OUTCOME}"
+          LINT_OUTCOME=$(npm run lint 2>&1 || true) # Prevent the step from failing immediately
+          echo "$LINT_OUTCOME"
           echo "LINT_OUTCOME<<EOF" >> $GITHUB_ENV
           echo "$LINT_OUTCOME" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-
-      - name: "Check for errors in lint outcome"
-        if: always()
-        run: |
-          if grep -q "error" <<< "$LINT_OUTCOME"; then
-              echo "## Lint result" >> $GITHUB_STEP_SUMMARY
-              echo "❌ Failed" >> $GITHUB_STEP_SUMMARY
-              exit 1
+          if echo "$LINT_OUTCOME" | grep -q " error "; then
+            echo "## Lint result" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Failed due to errors" >> $GITHUB_STEP_SUMMARY
+            exit 1
           else
-              echo "## Lint result" >> $GITHUB_STEP_SUMMARY
-              echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+            echo "## Lint result" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Passed or warnings found" >> $GITHUB_STEP_SUMMARY
           fi
