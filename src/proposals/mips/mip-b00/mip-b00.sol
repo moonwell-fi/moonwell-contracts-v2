@@ -237,7 +237,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 addresses.getAddress("MRD_PROXY_ADMIN")
             );
             Unitroller unitroller = Unitroller(
-                addresses.getAddress("UNITROLLER")
+                payable(addresses.getAddress("UNITROLLER"))
             );
 
             address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
@@ -527,7 +527,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
         /// assert comptroller and unitroller are wired together properly
         {
             Unitroller unitroller = Unitroller(
-                addresses.getAddress("UNITROLLER")
+                payable(addresses.getAddress("UNITROLLER"))
             );
             Comptroller comptroller = Comptroller(
                 addresses.getAddress("COMPTROLLER")
