@@ -840,9 +840,21 @@
         "isContract": true
     },
     {
+        "addr": "0x1Cdb984008dcEe9d06c28654ed31cf82680EeA62",
+        "chainId": 1284,
+        "name": "JUMP_RATE_IRM_mxcUSDT",
+        "isContract": true
+    },
+    {
         "addr": "0x1C55649f73CDA2f72CEf3DD6C5CA3d49EFcF484C",
         "chainId": 1284,
         "name": "mFRAX",
+        "isContract": true
+    },
+    {
+        "addr": "0xE1Dd796dBEB5A67CE37CbC52dCD164D0535c901E",
+        "chainId": 1284,
+        "name": "JUMP_RATE_IRM_mFRAX",
         "isContract": true
     },
     {
@@ -852,9 +864,21 @@
         "isContract": true
     },
     {
+        "addr": "0x32f3A6134590fc2d9440663d35a2F0a6265F04c4",
+        "chainId": 1284,
+        "name": "JUMP_RATE_IRM_mxcUSDC",
+        "isContract": true
+    },
+    {
         "addr": "0x744b1756e7651c6D57f5311767EAFE5E931D615b",
         "chainId": 1284,
         "name": "mUSDCwh",
+        "isContract": true
+    },
+    {
+        "addr": "0xF22c8255eA615b3Da6CA5CF5aeCc8956bfF07Aa8",
+        "chainId": 1284,
+        "name": "JUMP_RATE_IRM_mUSDCwh",
         "isContract": true
     },
     {
