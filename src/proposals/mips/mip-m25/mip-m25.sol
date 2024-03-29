@@ -16,9 +16,6 @@ import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/Multic
 import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
 import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
 
-/// Proposal to run on Moonbeam to accept governance powers, finalizing
-/// the transfer of admin and owner from the current Artemis Timelock to the
-/// new Multichain Governor.
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m25/mip-m25.sol:mipm25
 contract mipm25 is HybridProposal, MultichainGovernorDeploy {
