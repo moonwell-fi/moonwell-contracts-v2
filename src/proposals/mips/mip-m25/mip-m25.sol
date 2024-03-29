@@ -44,7 +44,7 @@ contract mipm25 is HybridProposal, MultichainGovernorDeploy {
         /// Moonbeam actions
 
         _pushHybridAction(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+            addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
                 addresses.getAddress("mxcUSDC"),
@@ -55,7 +55,7 @@ contract mipm25 is HybridProposal, MultichainGovernorDeploy {
         );
 
         _pushHybridAction(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+            addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
                 addresses.getAddress("mGLIMMER"),
@@ -84,4 +84,9 @@ contract mipm25 is HybridProposal, MultichainGovernorDeploy {
 
     /// TODO fill out validations on Moonbeam
     function validate(Addresses addresses, address) public override {}
+
+    function arbitraryLogic(address toCall, bytes calldata data) public {
+        (bool success, bytes memory result) = toCall.call(data);
+        require(success, "MIP-M25: arbitrary logic failed");
+    }
 }
