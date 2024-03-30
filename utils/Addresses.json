@@ -1300,5 +1300,23 @@
         "chainId": 1287,
         "name": "CHAINLINK_FRAX_USD",
         "isContract": true
+    },
+    {
+        "addr": "0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080",
+        "chainId": 1284,
+        "name": "xcDOT",
+        "isContract": true
+    },
+    {
+        "addr": "0xFFFFFFfFea09FB06d082fd1275CD48b191cbCD1d",
+        "chainId": 1284,
+        "name": "xcUSDT",
+        "isContract": true
+    },
+    {
+        "addr": "0xFFfffffF7D2B0B761Af01Ca8e25242976ac0aD7D",
+        "chainId": 1284,
+        "name": "xcUSDC",
+        "isContract": true
     }
 ]
