@@ -29,6 +29,18 @@ interface IStakedWell {
         uint256 blockNumber
     ) external view returns (uint256);
 
+    /// @notice view the reward speed for stkWELL
+    function assets(
+        address
+    )
+        external
+        view
+        returns (
+            uint128 emissionsPerSecond,
+            uint128 lastUpdateTimestamp,
+            uint256 index
+        );
+
     function redeem(address to, uint256 amount) external;
 
     function mint(address to, uint256 amount) external;
