@@ -124,6 +124,8 @@ contract MultichainProposalTest is
         proposalC = new mipm23c();
         proposalF = new mipm25();
 
+        proposalC.buildCalldata(addresses); /// build calldata for bgg test
+
         address[] memory proposalsArray = new address[](1);
         proposalsArray[0] = address(proposalF);
 
