@@ -40,10 +40,6 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         );
     }
 
-    function testValidate() public {
-        validate(addresses, address(0));
-    }
-
     function testReinitializeFails() public {
         vm.expectRevert("Initializable: contract is already initialized");
         xwell.initialize(

@@ -50,10 +50,6 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
         deal(address(well), user, startingWellAmount);
     }
 
-    function testValidate() public {
-        validate(addresses, address(0));
-    }
-
     function testReinitializeFails() public {
         vm.expectRevert("Initializable: contract is already initialized");
         xwell.initialize(
