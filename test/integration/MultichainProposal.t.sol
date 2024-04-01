@@ -8,13 +8,12 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 
 import "@forge-std/Test.sol";
 
-import {Well} from "@protocol/Governance/deprecated/Well.sol";
+import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {Constants} from "@protocol/Governance/MultichainGovernor/Constants.sol";
+import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
@@ -22,14 +21,14 @@ import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {MockVoteCollection} from "@test/mock/MockVoteCollection.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
-import {MultichainVoteCollection} from "@protocol/Governance/MultichainGovernor/MultichainVoteCollection.sol";
-import {ITemporalGovernor, TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
+import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 
@@ -37,6 +36,7 @@ import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {mipm25} from "@proposals/mips/mip-m25/mip-m25.sol";
 
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -64,7 +64,7 @@ contract MultichainProposalTest is
     MultichainGovernor public governor;
     IWormhole public wormhole;
     Timelock public timelock;
-    Well public well;
+    ERC20Votes public well;
     xWELL public xwell;
     IStakedWell public stakedWellMoonbeam;
     IStakedWell public stakedWellBase;
@@ -141,7 +141,7 @@ contract MultichainProposalTest is
             addresses.getAddress("WORMHOLE_CORE", moonBeamChainId)
         );
 
-        well = Well(addresses.getAddress("WELL", moonBeamChainId));
+        well = ERC20Votes(addresses.getAddress("WELL", moonBeamChainId));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY", moonBeamChainId));
         // make xwell persistent so votes are valid on both chains
         vm.makePersistent(address(xwell));
@@ -386,7 +386,7 @@ contract MultichainProposalTest is
         bytes[] memory whitelistedCalldata = new bytes[](0);
 
         vm.expectRevert("Initializable: contract is already initialized");
-        governor.initialize(
+        MultichainGovernor(address(governor)).initialize(
             initializeData,
             trustedSenders,
             whitelistedCalldata

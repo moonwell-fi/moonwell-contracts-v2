@@ -3,15 +3,16 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Well} from "@protocol/Governance/deprecated/Well.sol";
+import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {StringUtils} from "@proposals/utils/StringUtils.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
+import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -23,7 +24,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
     TestProposals public proposals;
     IWormhole public wormhole;
     Addresses public addresses;
-    Well public well;
+    ERC20Votes public well;
 
     event LogMessagePublished(
         address indexed sender,
@@ -81,6 +82,8 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             proposals = new TestProposals(mips);
         }
 
+        vm.makePersistent(address(proposals));
+
         proposals.setUp();
         /// run all proposal steps
         proposals.testProposals(
@@ -97,11 +100,13 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         ); /// only setup, after deploy, build, do not validate, run, teardown
 
         addresses = proposals.addresses();
+        vm.makePersistent(address(addresses));
 
         wormhole = IWormhole(
             addresses.getAddress("WORMHOLE_CORE", moonBeamChainId)
         );
-        well = Well(addresses.getAddress("WELL", moonBeamChainId));
+        well = ERC20Votes(addresses.getAddress("WELL", moonBeamChainId));
+
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
         );
