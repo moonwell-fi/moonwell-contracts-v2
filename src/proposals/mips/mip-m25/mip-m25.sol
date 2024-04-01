@@ -9,18 +9,15 @@ import "@forge-std/Test.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
-import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
-import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {ITokenSaleDistributorProxy} from "@protocol/tokensale/ITokenSaleDistributorProxy.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m25/mip-m25.sol:mipm25
-contract mipm25 is
-    HybridProposal,
-    ParameterValidation
-{
+contract mipm25 is HybridProposal, ParameterValidation {
     string public constant name = "MIP-M25";
 
     uint256 public constant NEW_MXC_USDC_COLLATERAL_FACTOR = 0.15e18;
