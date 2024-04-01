@@ -17,10 +17,7 @@ import {ITokenSaleDistributorProxy} from "@protocol/tokensale/ITokenSaleDistribu
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m25/mip-m25.sol:mipm25
-contract mipm25 is
-    HybridProposal,
-    ParameterValidation
-{
+contract mipm25 is HybridProposal, ParameterValidation {
     string public constant name = "MIP-M25";
 
     uint256 public constant NEW_MXC_USDC_COLLATERAL_FACTOR = 0.15e18;
@@ -69,6 +66,8 @@ contract mipm25 is
             vm.etch(addresses.getAddress("xcUSDT"), runtimeBytecode);
 
             MockERC20Params(addresses.getAddress("xcUSDT")).setSymbol("xcUSDT");
+
+            MockERC20Params(addresses.getAddress("xcUSDT")).symbol();
         }
 
         {
@@ -96,6 +95,8 @@ contract mipm25 is
             vm.etch(addresses.getAddress("xcUSDC"), runtimeBytecode);
 
             MockERC20Params(addresses.getAddress("xcUSDC")).setSymbol("xcUSDC");
+
+            MockERC20Params(addresses.getAddress("xcUSDC")).symbol();
         }
 
         {
@@ -122,6 +123,8 @@ contract mipm25 is
 
             vm.etch(addresses.getAddress("xcDOT"), runtimeBytecode);
             MockERC20Params(addresses.getAddress("xcDOT")).setSymbol("xcDOT");
+
+            MockERC20Params(addresses.getAddress("xcDOT")).symbol();
         }
     }
 
@@ -223,8 +226,6 @@ contract mipm25 is
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(moonbeamForkId);
-
         /// safety check to ensure no base actions are run
         require(
             baseActions.length == 0,
