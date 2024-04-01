@@ -441,7 +441,7 @@ abstract contract HybridProposal is
 
     function build(Addresses) public virtual override {}
 
-    function teardown(Addresses, address) public pure virtual override {}
+    function teardown(Addresses, address) public virtual override {}
 
     function run(Addresses, address) public virtual override {}
 
