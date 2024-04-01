@@ -1,23 +1,16 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
-import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
-import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
-import {ITemporalGovernor} from "@protocol/Governance/ITemporalGovernor.sol";
-import {MultichainGovernor} from "@protocol/Governance/MultichainGovernor/MultichainGovernor.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {WormholeTrustedSender} from "@protocol/Governance/WormholeTrustedSender.sol";
-import {MultichainGovernorDeploy} from "@protocol/Governance/MultichainGovernor/MultichainGovernorDeploy.sol";
-import {ITokenSaleDistributorProxy} from "@protocol/tokensale/ITokenSaleDistributorProxy.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b16/mip-b16.sol:mipb16
@@ -28,8 +21,11 @@ contract mipb16 is
 {
     string public constant name = "MIP-B16";
 
-    /// TODO this is TBD and based on the current state of the system
-    uint256 public constant REWARD_SPEED = 1e18;
+    /// this is and based on Warden's recommendation for reward speeds
+    uint256 public constant REWARD_SPEED = 896275511648961000;
+
+    /// @notice the amount of WELL to be sent to the Safety Module for funding 41 days of rewards
+    uint256 public constant WELL_AMOUNT = 3_174_966.37 * 1e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -44,9 +40,37 @@ contract mipb16 is
         return baseForkId;
     }
 
+    function teardown(Addresses addresses, address) public override {
+        deal(
+            addresses.getAddress("xWELL_PROXY"),
+            addresses.getAddress("FOUNDATION_MULTISIG"),
+            WELL_AMOUNT
+        );
+
+        /// approve the Temporal Governor to spend xWELL
+        vm.startPrank(addresses.getAddress("FOUNDATION_MULTISIG"));
+        ERC20(addresses.getAddress("xWELL_PROXY")).approve(
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
+            WELL_AMOUNT
+        );
+        vm.stopPrank();
+    }
+
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
         /// Base actions
+
+        _pushHybridAction(
+            addresses.getAddress("xWELL_PROXY"),
+            abi.encodeWithSignature(
+                "transferFrom(address,address,uint256)",
+                addresses.getAddress("FOUNDATION_MULTISIG"),
+                addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"),
+                WELL_AMOUNT
+            ),
+            "Transfer xWELL rewards to Ecosystem Reserve Proxy on Base",
+            false
+        );
 
         _pushHybridAction(
             addresses.getAddress("stkWELL_PROXY"),
@@ -61,26 +85,21 @@ contract mipb16 is
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(moonbeamForkId);
-
         /// safety check to ensure no base actions are run
         require(
-            baseActions.length == 1,
-            "MIP-M26: should have no base actions"
+            baseActions.length == 2,
+            "MIP-B16: should have two base actions"
         );
+
         require(
             moonbeamActions.length == 0,
-            "MIP-M26: should have no base actions"
+            "MIP-B16: should have no moonbeam actions"
         );
 
-        /// only run actions on Base
-        _runMoonbeamMultichainGovernor(addresses, address(1000000000));
-
-        vm.selectFork(baseForkId);
         _runBase(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
-    /// TODO fill out validations on Base
+    /// @notice validations on Base
     function validate(Addresses addresses, address) public override {
         vm.selectFork(baseForkId);
 
@@ -94,13 +113,20 @@ contract mipb16 is
         assertEq(
             emissionsPerSecond,
             REWARD_SPEED,
-            "MIP-M26: emissionsPerSecond incorrect"
+            "MIP-B16: emissionsPerSecond incorrect"
         );
 
         assertGt(
             lastUpdateTimestamp,
             0,
-            "MIP-M26: lastUpdateTimestamp not set"
+            "MIP-B16: lastUpdateTimestamp not set"
+        );
+        assertEq(
+            ERC20(addresses.getAddress("xWELL_PROXY")).balanceOf(
+                addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
+            ),
+            WELL_AMOUNT,
+            "MIP-B16: ecosystem reserve not funded"
         );
     }
 }
