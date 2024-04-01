@@ -290,6 +290,7 @@ contract xWellRouterTest is Test, ChainIds {
         vm.expectEmit(true, true, true, true, address(router));
         emit BridgeOutSuccess(address(this), mintAmount);
         router.bridgeToBase{value: bridgeCost}(mintAmount);
+        assertEq(address(router).balance, 0, "incorrect router balance");
     }
 
     receive() external payable {
