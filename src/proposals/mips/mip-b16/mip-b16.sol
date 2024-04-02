@@ -8,7 +8,6 @@ import "@forge-std/Test.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 
