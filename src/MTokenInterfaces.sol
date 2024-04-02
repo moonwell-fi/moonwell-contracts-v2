@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "./ComptrollerInterface.sol";
-import "./IRModels/InterestRateModel.sol";
+import "./irm/InterestRateModel.sol";
 import "./EIP20NonStandardInterface.sol";
 import "./ErrorReporter.sol";
 

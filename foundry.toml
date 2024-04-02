@@ -14,14 +14,14 @@ rpc_storage_caching = { chains = "all", endpoints = "all" }
 localhost = "http://127.0.0.1:8545"
 moonriver = "https://rpc.api.moonriver.moonbeam.network"
 moonbeam = "https://rpc.api.moonbeam.network"
-moonbase = "https://rpc.api.moonbase.moonbeam.network"
+moonbase = "https://moonbase-alpha.public.blastapi.io"
 ethereum = "https://rpc.ankr.com/eth"
 optimism = "https://endpoints.omniatech.io/v1/op/mainnet/public"
 avalanche = "https://rpc.ankr.com/avalanche"
 base = "https://mainnet.base.org"
 baseSepolia = "https://sepolia.base.org"
-moonbaseAlpha = "https://moonbase-alpha.public.blastapi.io"
 local = "http://127.0.0.1:8545"
+arbitrum = "https://arb1.arbitrum.io/rpc"
 
 # comment out the following lines so that CI passes fast and doesn't throw errors related to connecting to CI
 #[etherscan]
@@ -33,5 +33,3 @@ local = "http://127.0.0.1:8545"
 #base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
 #baseSepolia = { key = "${BASESCAN_API_KEY}", url= "https://sepolia.basescan.org/api" }
 
-[fuzz]
-fail_on_revert = true

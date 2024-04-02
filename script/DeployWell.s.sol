@@ -7,7 +7,7 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
-import {Well} from "@protocol/Governance/Well.sol";
+import {Well} from "@protocol/governance/Well.sol";
 
 /*
  Utility to deploy Well contract on a testnet

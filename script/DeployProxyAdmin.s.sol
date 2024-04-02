@@ -10,10 +10,9 @@ import {console} from "@forge-std/console.sol";
 /*
  Utility to deploy a ProxyAdmin contract on a testnet
  to simulate:
-     forge script script/DeployProxyAdmin.s.sol:DeployProxyAdminScript -vvvv --rpc-url moonbaseAlpha
- to run:
+     forge script script/DeployProxyAdmin.s.sol:DeployProxyAdminScript -vvvv --rpc-url moonbase to run:
     forge script script/DeployProxyAdmin.s.sol:DeployProxyAdminScript -vvvv \ 
-    --rpc-url moonbase/baseGoerli --broadcast --etherscan-api-key moonbaseAlpha --verify
+    --rpc-url moonbase/baseGoerli --broadcast --etherscan-api-key moonbase --verify
 */
 contract DeployProxyAdminScript is Script, ChainIds {
     /// @notice addresses contract
