@@ -1,21 +1,23 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
-import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
-
 import "@forge-std/Test.sol";
 
+import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
+import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+
 import {ChainIds} from "@test/utils/ChainIds.sol";
 
+import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IHybridProposal} from "@proposals/proposalTypes/IHybridProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
-import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
+
+import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
+import {Implementation} from "@protocol/wormhole/Implementation.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -568,6 +570,27 @@ abstract contract HybridProposal is
     /// @param temporalGovernorAddress the temporal governor contract address
     function _runBase(address temporalGovernorAddress) internal {
         _verifyActionsPreRunHybrid(baseActions);
+
+        receiver = new Implementation();
+        uint256 codeSize;
+        assembly {
+            codeSize := extcodesize(sload(receiver.slot))
+        }
+
+        bytes memory runtimeBytecode = new bytes(codeSize);
+
+        assembly {
+            extcodecopy(
+                sload(receiver.slot),
+                add(runtimeBytecode, 0x20),
+                0,
+                codeSize
+            )
+        }
+
+        /// set the wormhole core address to have the
+        /// runtime bytecode of the mock core to bypass guardians checks
+        vm.etch(addresses.getAddress("WORMHOLE_CORE"), runtimeBytecode);
 
         vm.startPrank(temporalGovernorAddress);
 
