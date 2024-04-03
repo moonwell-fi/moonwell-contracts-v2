@@ -4,9 +4,9 @@
 pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "./Getters.sol";
-import "./Structs.sol";
-import "./libraries/external/BytesLib.sol";
+import "@wormhole/Getters.sol";
+import "@wormhole/Structs.sol";
+import "@wormhole/libraries/external/BytesLib.sol";
 
 contract Messages is Getters {
     using BytesLib for bytes;

@@ -17,7 +17,7 @@ import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.
 
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
-import {Implementation} from "@protocol/wormhole/Implementation.sol";
+import {Implementation} from "@protocol/wormhole/mocks/Implementation.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -568,29 +568,17 @@ abstract contract HybridProposal is
 
     /// runs the proposal actions on base, verifying the actions through the hook
     /// @param temporalGovernorAddress the temporal governor contract address
-    function _runBase(address temporalGovernorAddress) internal {
+    function _runBase(
+        Addresses addresses,
+        address temporalGovernorAddress
+    ) internal {
         _verifyActionsPreRunHybrid(baseActions);
 
-        receiver = new Implementation();
-        uint256 codeSize;
-        assembly {
-            codeSize := extcodesize(sload(receiver.slot))
-        }
-
-        bytes memory runtimeBytecode = new bytes(codeSize);
-
-        assembly {
-            extcodecopy(
-                sload(receiver.slot),
-                add(runtimeBytecode, 0x20),
-                0,
-                codeSize
-            )
-        }
+        Implementation core = new Implementation();
 
         /// set the wormhole core address to have the
         /// runtime bytecode of the mock core to bypass guardians checks
-        vm.etch(addresses.getAddress("WORMHOLE_CORE"), runtimeBytecode);
+        vm.etch(addresses.getAddress("WORMHOLE_CORE"), address(core).code);
 
         vm.startPrank(temporalGovernorAddress);
 
