@@ -15,7 +15,6 @@ import {IHybridProposal} from "@proposals/proposalTypes/IHybridProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
-import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 
 /// @notice this is a proposal type to be used for proposals that
@@ -340,18 +339,6 @@ abstract contract HybridProposal is
             console.logBytes(payloads[i]);
         }
 
-        bytes memory payloadArtemis = abi.encodeWithSignature(
-            "propose(address[],uint256[],string[],bytes[],string)",
-            targets,
-            values,
-            signatures,
-            payloads,
-            string(PROPOSAL_DESCRIPTION)
-        );
-
-        console.log("Governor artemis proposal calldata");
-        console.logBytes(payloadArtemis);
-
         bytes memory payloadMultichainGovernor = abi.encodeWithSignature(
             "propose(address[],uint256[],bytes[],string)",
             targets,
@@ -444,121 +431,6 @@ abstract contract HybridProposal is
     function teardown(Addresses, address) public pure virtual override {}
 
     function run(Addresses, address) public virtual override {}
-
-    /// @notice Simulate governance proposal from artemis governor contract
-    /// @param wormholeCore address of the wormhole core contract
-    /// @param governorAddress address of the Governor Bravo Delegator contract
-    /// @param governanceToken address of the governance token of the system
-    /// @param proposerAddress address of the proposer
-    function _runMoonbeamArtemisGovernor(
-        address wormholeCore,
-        address governorAddress,
-        address governanceToken,
-        address proposerAddress
-    ) internal {
-        _verifyActionsPreRunHybrid(moonbeamActions);
-
-        MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(
-            governorAddress
-        );
-
-        {
-            // Ensure proposer has meets minimum proposal threshold and quorum votes to pass the proposal
-            uint256 quorumVotes = governor.quorumVotes();
-            uint256 proposalThreshold = governor.proposalThreshold();
-            uint256 votingPower = quorumVotes > proposalThreshold
-                ? quorumVotes
-                : proposalThreshold;
-
-            deal(governanceToken, proposerAddress, votingPower);
-            // Delegate proposer's votes to itself
-            vm.prank(proposerAddress);
-            ERC20Votes(governanceToken).delegate(proposerAddress);
-            vm.roll(block.number + 1);
-        }
-
-        bytes memory proposeCalldata = getProposeCalldata(
-            wormholeCore,
-            governorAddress
-        );
-
-        // Register the proposal
-        bytes memory data;
-        {
-            // Execute the proposal
-            uint256 gasStart = gasleft();
-            vm.prank(proposerAddress);
-            data = address(payable(governorAddress)).functionCall(
-                proposeCalldata
-            );
-
-            require(
-                gasStart - gasleft() <= 13_000_000,
-                "Proposal propose gas limit exceeded"
-            );
-        }
-
-        uint256 proposalId = abi.decode(data, (uint256));
-
-        // Check proposal is in Pending state
-        require(
-            governor.state(proposalId) ==
-                MoonwellArtemisGovernor.ProposalState.Pending
-        );
-
-        // Roll to Active state (voting period)
-        vm.roll(block.number + governor.votingDelay() + 1);
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
-        require(
-            governor.state(proposalId) ==
-                MoonwellArtemisGovernor.ProposalState.Active
-        );
-
-        // Vote YES
-        vm.prank(proposerAddress);
-        governor.castVote(proposalId, 0);
-
-        // Roll to allow proposal state transitions
-        vm.roll(block.number + governor.votingPeriod());
-        vm.warp(block.timestamp + governor.votingPeriod());
-        require(
-            governor.state(proposalId) ==
-                MoonwellArtemisGovernor.ProposalState.Succeeded
-        );
-
-        // Queue the proposal
-        governor.queue(proposalId);
-        require(
-            governor.state(proposalId) ==
-                MoonwellArtemisGovernor.ProposalState.Queued
-        );
-
-        // Warp to allow proposal execution on timelock
-        Timelock timelock = Timelock(address(governor.timelock()));
-        vm.warp(block.timestamp + timelock.delay());
-
-        {
-            // Execute the proposal
-            uint256 gasStart = gasleft();
-            governor.execute(proposalId);
-
-            require(
-                gasStart - gasleft() <= 13_000_000,
-                "Proposal execute gas limit exceeded"
-            );
-        }
-
-        require(
-            governor.state(proposalId) ==
-                MoonwellArtemisGovernor.ProposalState.Executed,
-            "Proposal state not executed"
-        );
-
-        _verifyMTokensPostRun();
-
-        delete createdMTokens;
-        comptroller = address(0);
-    }
 
     /// runs the proposal on moonbeam, verifying the actions through the hook
     /// @param addresses the addresses contract
