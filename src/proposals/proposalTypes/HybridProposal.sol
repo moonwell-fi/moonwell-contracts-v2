@@ -605,4 +605,34 @@ abstract contract HybridProposal is
         delete createdMTokens;
         comptroller = address(0);
     }
+
+    function generateVM(
+        uint8 version,
+        uint32 timestamp,
+        uint32 nonce,
+        uint16 emitterChainId,
+        bytes32 emitterAddress,
+        uint64 sequence,
+        uint8 consistencyLevel,
+        bytes memory payload
+    ) public pure returns (bytes memory) {
+        // Encode the body first to compute its hash
+        bytes memory body = abi.encodePacked(
+            abi.encodePacked(timestamp),
+            abi.encodePacked(nonce),
+            abi.encodePacked(emitterChainId),
+            abi.encodePacked(emitterAddress),
+            abi.encodePacked(sequence),
+            abi.encodePacked(consistencyLevel),
+            abi.encodePacked(payload)
+        );
+
+        // Compute the hash of the body
+        bytes32 bodyHash = keccak256(abi.encodePacked(keccak256(body)));
+
+        // Encode the version and then concatenate the body
+        bytes memory encodedVM = abi.encodePacked(version.toBytesUint8(), body);
+
+        return encodedVM;
+    }
 }
