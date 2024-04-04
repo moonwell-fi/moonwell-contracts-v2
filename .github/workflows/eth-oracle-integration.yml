@@ -1,13 +1,13 @@
-name: Foundry base chainlink oracle integration tests
+name: Foundry Eth chainlink oracle integration tests
 
 on: [pull_request]
 
 env:
-  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+  ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
 
 jobs:
   run-eth-mainnet-tests:
-    name: base-oracle-integration-tests
+    name: eth-oracle-integration-tests
     runs-on: ubuntu-latest
 
     steps:
@@ -20,4 +20,4 @@ jobs:
         uses: ./.github/actions
 
       - name: Integration Test Contracts
-        run: time forge test --match-contract ChainlinkCompositeOracleIntegrationTestBase --fork-url $BASE_RPC_URL
+        run: time forge test --match-contract ChainlinkCompositeOracleIntegrationTest --fork-url $ETH_RPC_URL

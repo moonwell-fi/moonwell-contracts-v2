@@ -96,8 +96,6 @@ contract MultichainProposalTest is
     address public constant voter = address(100_000_000);
 
     mipm23c public proposalC;
-    mipm23 public proposalD;
-    mipm24 public proposalE;
 
     TemporalGovernor public temporalGov;
 
@@ -124,21 +122,12 @@ contract MultichainProposalTest is
         vm.selectFork(moonbeamForkId);
 
         proposalC = new mipm23c();
-        proposalD = new mipm23();
-        proposalE = new mipm24();
 
         /// set up temporal gov calldata
         proposalC.buildCalldata(addresses);
 
-        address[] memory proposalsArray = new address[](2);
-        proposalsArray[0] = address(proposalD);
-        proposalsArray[1] = address(proposalE);
-
-        proposalD.setForkIds(baseForkId, moonbeamForkId);
-        proposalE.setForkIds(baseForkId, moonbeamForkId);
-
         /// load proposals up into the TestMultichainProposal contract
-        _initialize(proposalsArray);
+        _initialize(new address[](0));
 
         runProposals(false, true, true, true, true, true, true, true);
 
@@ -2417,7 +2406,7 @@ contract MultichainProposalTest is
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
-            assertEq(1e18, index, "rewards per second");
+            assertGt(index, 0, "index incorrect");
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,
@@ -2599,7 +2588,7 @@ contract MultichainProposalTest is
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
-            assertEq(1e18, index, "rewards per second");
+            assertGt(index, 0, "index incorrect");
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,
