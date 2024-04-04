@@ -16,7 +16,7 @@ import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
 
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {Implementation} from "@protocol/wormhole/mocks/Implementation.sol";
 
@@ -585,6 +585,12 @@ abstract contract HybridProposal is
         uint256[] memory values = new uint256[](baseActions.length);
         bytes[] memory payloads = new bytes[](baseActions.length);
 
+        for (uint256 i = 0; i < baseActions.length; i++) {
+            targets[i] = baseActions[i].target;
+            values[i] = baseActions[i].value;
+            payloads[i] = baseActions[i].data;
+        }
+
         bytes memory payload = abi.encode(
             temporalGovernorAddress,
             targets,
@@ -593,7 +599,10 @@ abstract contract HybridProposal is
         );
 
         bytes32 governor = addressToBytes(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_PROXY",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
         );
 
         bytes memory vaa = generateVM(
@@ -603,25 +612,37 @@ abstract contract HybridProposal is
             payload
         );
 
-        TemporalGovernor(temporalGovernorAddress).queueProposal(vaa);
+        // address wormholeCore,
+        // uint256 _proposalDelay,
+        // uint256 _permissionlessUnpauseTime,
+        // TrustedSender[] memory _trustedSenders
 
-        for (uint256 i = 0; i < baseActions.length; i++) {
-            (bool success, ) = baseActions[i].target.call{
-                value: baseActions[i].value
-            }(baseActions[i].data);
+        ITemporalGovernor.TrustedSender[]
+            memory truestedSender = new ITemporalGovernor.TrustedSender[](1);
+        truestedSender[0] = ITemporalGovernor.TrustedSender({
+            chainId: uint16(sendingChainIdToReceivingChainId[block.chainid]),
+            addr: addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_PROXY",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
+        });
 
-            require(
-                success,
-                string(
-                    abi.encodePacked(
-                        "base action failed to address ",
-                        baseActions[i].target.toHexString()
-                    )
-                )
-            );
+        bytes memory args = abi.encode(
+            addresses.getAddress("WORMHOLE_CORE"),
+            1,
+            1,
+            truestedSender
+        );
+        bytes memory bytecode = abi.encodePacked(
+            vm.getCode("TemporalGovernor.sol:TemporalGovernor"),
+            args
+        );
+        address deployed;
+        assembly {
+            deployed := create(0, add(bytecode, 0x20), mload(bytecode))
         }
-
-        vm.stopPrank();
+        vm.etch(temporalGovernorAddress, deployed.code);
+        TemporalGovernor(temporalGovernorAddress).queueProposal(vaa);
 
         _verifyMTokensPostRun();
 
@@ -649,11 +670,7 @@ abstract contract HybridProposal is
             abi.encodePacked(payload)
         );
 
-        // Compute the hash of the body
-        bytes32 bodyHash = keccak256(abi.encodePacked(keccak256(body)));
-
         // Encode the version and then concatenate the body
-        // version hardcoded to 1
         bytes memory encodedVM = abi.encodePacked(version, body);
 
         return encodedVM;

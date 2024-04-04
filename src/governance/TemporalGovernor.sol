@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
+import {console} from "@forge-std/console.sol";
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {Pausable} from "@openzeppelin-contracts/contracts/security/Pausable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
@@ -319,10 +320,15 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
         uint256[] memory values; /// native token amount to send
         bytes[] memory calldatas; /// calldata to send
 
+        console.log("VAA payload");
+        console.logBytes(vm.payload);
+
         (intendedRecipient, targets, values, calldatas) = abi.decode(
             vm.payload,
             (address, address[], uint256[], bytes[])
         );
+
+        console.log("intent", intendedRecipient);
 
         _sanityCheckPayload(targets, values, calldatas);
 
