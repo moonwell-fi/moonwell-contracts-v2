@@ -16,6 +16,7 @@ import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
 
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {Implementation} from "@protocol/wormhole/mocks/Implementation.sol";
 
@@ -580,7 +581,29 @@ abstract contract HybridProposal is
         /// runtime bytecode of the mock core to bypass guardians checks
         vm.etch(addresses.getAddress("WORMHOLE_CORE"), address(core).code);
 
-        vm.startPrank(temporalGovernorAddress);
+        address[] memory targets = new address[](baseActions.length);
+        uint256[] memory values = new uint256[](baseActions.length);
+        bytes[] memory payloads = new bytes[](baseActions.length);
+
+        bytes memory payload = abi.encode(
+            temporalGovernorAddress,
+            targets,
+            values,
+            payloads
+        );
+
+        bytes32 governor = addressToBytes(
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+        );
+
+        bytes memory vaa = generateVM(
+            uint32(block.timestamp),
+            uint16(sendingChainIdToReceivingChainId[block.chainid]),
+            governor,
+            payload
+        );
+
+        TemporalGovernor(temporalGovernorAddress).queueProposal(vaa);
 
         for (uint256 i = 0; i < baseActions.length; i++) {
             (bool success, ) = baseActions[i].target.call{
@@ -607,15 +630,14 @@ abstract contract HybridProposal is
     }
 
     function generateVM(
-        uint8 version,
         uint32 timestamp,
-        uint32 nonce,
         uint16 emitterChainId,
         bytes32 emitterAddress,
-        uint64 sequence,
-        uint8 consistencyLevel,
         bytes memory payload
     ) public pure returns (bytes memory) {
+        uint64 sequence = 200;
+        uint8 version = 1;
+
         // Encode the body first to compute its hash
         bytes memory body = abi.encodePacked(
             abi.encodePacked(timestamp),
@@ -631,8 +653,13 @@ abstract contract HybridProposal is
         bytes32 bodyHash = keccak256(abi.encodePacked(keccak256(body)));
 
         // Encode the version and then concatenate the body
-        bytes memory encodedVM = abi.encodePacked(version.toBytesUint8(), body);
+        // version hardcoded to 1
+        bytes memory encodedVM = abi.encodePacked(version, body);
 
         return encodedVM;
+    }
+
+    function addressToBytes(address addr) public pure returns (bytes32) {
+        return bytes32(bytes20(addr)) >> 96;
     }
 }
