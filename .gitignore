@@ -120,3 +120,6 @@ typescript/yarn.lock
 .certora_internal/
 
 lcov.info
+
+# mutation testing
+gambit_out*
