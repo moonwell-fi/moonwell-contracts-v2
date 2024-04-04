@@ -142,30 +142,6 @@ for (( i=1; i <= num_files; i++ )); do
     # Process integration test outputs using the function
     process_test_output "Base Integration Test" "$temp_output_file"
 
-    # # Run eth integration tests and capture output
-    # integration_command_output=$(forge test --match-contract IntegrationTest --fork-url ethereum -v --fork-block-number $ETHEREUM_FORK_BLOCK_NUMBER --block-number $ETHEREUM_BLOCK_NUMBER --block-timestamp $ETHEREUM_TIMESTAMP --chain-id $ETHEREUM_CHAIN_ID)
-    # echo "$integration_command_output" > "$temp_output_file"
-
-    # # Process integration test outputs using the function
-    # process_test_output "Ethereum Integration Test" "$temp_output_file"
-
-    # # Run arb integration tests and capture output
-    # integration_command_output=$(forge test --match-contract ArbitrumTest --fork-url $ARB_RPC_URL -v --fork-block-number $ARB_FORK_BLOCK_NUMBER --block-number $ARB_BLOCK_NUMBER --block-timestamp $ARB_TIMESTAMP --chain-id $ARB_CHAIN_ID)
-    # echo "$integration_command_output" > "$temp_output_file"
-
-    # # Process integration test outputs using the function
-    # process_test_output "Arbitrum Integration Test" "$temp_output_file"
-
-    # output_heading "Certora Mutation Results: \n"
-
-    # certora_run_output=$(certoraRun certora/confs/MultichainVoteCollection.conf --wait_for_results)
-    # echo "$certora_run_output" > "$temp_output_file"
-
-    # ## Extract content after the pattern
-    # content_after_pattern=$(get_content_after_pattern "$temp_output_file" "Results for all:")
-    
-    # output_results "$content_after_pattern" "View Result"
-
     rm "$temp_output_file"
 
     if [[ $is_current_mutation_failed -eq 1 ]]; then
