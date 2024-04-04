@@ -19,7 +19,9 @@ contract PostProposalCheck is CreateCode {
         // Run all pending proposals before doing e2e tests
         address[] memory mips = new address[](1);
 
-        if (keccak256(bytes(path)) == '""' || bytes(path).length == 0) {
+        if (
+            keccak256(bytes(path)) == keccak256('""') || bytes(path).length == 0
+        ) {
             /// empty string on both mac and unix, no proposals to run
             mips = new address[](0);
 

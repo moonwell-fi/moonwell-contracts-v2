@@ -5,16 +5,16 @@ import "@forge-std/Test.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 
-contract ChainlinkCompositeOracleIntegrationBaseTest is Test {
+contract ChainlinkCompositeOracleIntegrationTest is Test {
     ChainlinkCompositeOracle public oracle;
 
     /// @notice multiplier value
     address public constant cbEthEthOracle =
-        0x806b4Ac04501c29769051e42783cF04dCE41440b;
+        0xF017fcB346A1885194689bA23Eff2fE6fA5C483b;
 
     /// @notice eth usd value
     address public constant ethUsdOracle =
-        0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
     function setUp() public {
         oracle = new ChainlinkCompositeOracle(
