@@ -320,15 +320,10 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
         uint256[] memory values; /// native token amount to send
         bytes[] memory calldatas; /// calldata to send
 
-        console.log("VAA payload");
-        console.logBytes(vm.payload);
-
         (intendedRecipient, targets, values, calldatas) = abi.decode(
             vm.payload,
             (address, address[], uint256[], bytes[])
         );
-
-        console.log("intent", intendedRecipient);
 
         _sanityCheckPayload(targets, values, calldatas);
 

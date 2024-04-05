@@ -42,7 +42,7 @@ abstract contract HybridProposal is
     uint32 private constant nonce = 0;
 
     /// @notice instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
-    uint16 public constant consistencyLevel = 200;
+    uint8 public constant consistencyLevel = 200;
 
     /// @notice actions to run against contracts live on moonbeam
     ProposalAction[] public moonbeamActions;
@@ -607,41 +607,11 @@ abstract contract HybridProposal is
 
         bytes memory vaa = generateVM(
             uint32(block.timestamp),
-            uint16(sendingChainIdToReceivingChainId[block.chainid]),
+            uint16(chainIdToWormHoleId[baseChainId]),
             governor,
             payload
         );
 
-        // address wormholeCore,
-        // uint256 _proposalDelay,
-        // uint256 _permissionlessUnpauseTime,
-        // TrustedSender[] memory _trustedSenders
-
-        ITemporalGovernor.TrustedSender[]
-            memory truestedSender = new ITemporalGovernor.TrustedSender[](1);
-        truestedSender[0] = ITemporalGovernor.TrustedSender({
-            chainId: uint16(sendingChainIdToReceivingChainId[block.chainid]),
-            addr: addresses.getAddress(
-                "MULTICHAIN_GOVERNOR_PROXY",
-                sendingChainIdToReceivingChainId[block.chainid]
-            )
-        });
-
-        bytes memory args = abi.encode(
-            addresses.getAddress("WORMHOLE_CORE"),
-            1,
-            1,
-            truestedSender
-        );
-        bytes memory bytecode = abi.encodePacked(
-            vm.getCode("TemporalGovernor.sol:TemporalGovernor"),
-            args
-        );
-        address deployed;
-        assembly {
-            deployed := create(0, add(bytecode, 0x20), mload(bytecode))
-        }
-        vm.etch(temporalGovernorAddress, deployed.code);
         TemporalGovernor(temporalGovernorAddress).queueProposal(vaa);
 
         _verifyMTokensPostRun();
@@ -661,13 +631,13 @@ abstract contract HybridProposal is
 
         // Encode the body first to compute its hash
         bytes memory body = abi.encodePacked(
-            abi.encodePacked(timestamp),
-            abi.encodePacked(nonce),
-            abi.encodePacked(emitterChainId),
-            abi.encodePacked(emitterAddress),
-            abi.encodePacked(sequence),
-            abi.encodePacked(consistencyLevel),
-            abi.encodePacked(payload)
+            timestamp,
+            nonce,
+            emitterChainId,
+            emitterAddress,
+            sequence,
+            consistencyLevel,
+            payload
         );
 
         // Encode the version and then concatenate the body

@@ -4,7 +4,6 @@
 pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import {console} from "@forge-std/console.sol";
 import "@wormhole/Getters.sol";
 import "@wormhole/Structs.sol";
 import "@wormhole/libraries/external/BytesLib.sol";
@@ -22,7 +21,6 @@ contract Messages is Getters {
     {
         vm = parseVM(encodedVM);
 
-        console.log("VM PARSED");
         // Bypass the hash check as this is running in a simulation
         valid = true;
         reason = "";
