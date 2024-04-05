@@ -415,7 +415,7 @@ abstract contract HybridProposal is
     /// -----------------------------------------------------
     /// -----------------------------------------------------
 
-    /// @notice print out the proposal action steps and which chains they were run on
+    /// @notice Print out the proposal action steps and which chains they were run on
     function printCalldata(Addresses addresses) public override {
         printProposalActionSteps();
         printGovernorCalldata(addresses);
@@ -433,7 +433,7 @@ abstract contract HybridProposal is
 
     function run(Addresses, address) public virtual override {}
 
-    /// runs the proposal on moonbeam, verifying the actions through the hook
+    /// @notice Runs the proposal on moonbeam, verifying the actions through the hook
     /// @param addresses the addresses contract
     /// @param caller the proposer address
     function _runMoonbeamMultichainGovernor(
@@ -565,7 +565,8 @@ abstract contract HybridProposal is
         comptroller = address(0);
     }
 
-    /// runs the proposal actions on base, verifying the actions through the hook
+    /// @notice Runs the proposal actions on base, verifying the actions through the hook
+    /// @param addresses the addresses contract
     /// @param temporalGovernorAddress the temporal governor contract address
     function _runBase(
         Addresses addresses,
@@ -573,10 +574,12 @@ abstract contract HybridProposal is
     ) internal {
         _verifyActionsPreRunHybrid(baseActions);
 
+        // Deploy the modified Wormhole Core implementation contract which
+        // bypass the guardians signature check
         Implementation core = new Implementation();
 
-        /// set the wormhole core address to have the
-        /// runtime bytecode of the mock core to bypass guardians checks
+        /// Set the wormhole core address to have the
+        /// runtime bytecode of the mock core
         vm.etch(addresses.getAddress("WORMHOLE_CORE"), address(core).code);
 
         address[] memory targets = new address[](baseActions.length);
@@ -603,7 +606,7 @@ abstract contract HybridProposal is
             )
         );
 
-        bytes memory vaa = generateVM(
+        bytes memory vaa = generateVAA(
             uint32(block.timestamp),
             uint16(chainIdToWormHoleId[baseChainId]),
             governor,
@@ -626,7 +629,8 @@ abstract contract HybridProposal is
         comptroller = address(0);
     }
 
-    function generateVM(
+    // @dev utility function to generate a Wormhole VAA payload excluding the guardians signature
+    function generateVAA(
         uint32 timestamp,
         uint16 emitterChainId,
         bytes32 emitterAddress,
@@ -647,6 +651,7 @@ abstract contract HybridProposal is
         );
     }
 
+    // @dev utility function to convert an address to bytes32
     function addressToBytes(address addr) public pure returns (bytes32) {
         return bytes32(bytes20(addr)) >> 96;
     }

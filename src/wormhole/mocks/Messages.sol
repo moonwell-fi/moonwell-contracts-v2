@@ -173,6 +173,7 @@ contract Messages is Getters {
     /**
      * @dev parseVM serves to parse an encodedVM into a vm struct
      *  - it intentionally performs no validation functions, it simply parses raw into a struct
+     * This function is modified to not validate signers. Do not use in production.
      */
     function parseVM(
         bytes memory encodedVM
