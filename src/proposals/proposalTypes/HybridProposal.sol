@@ -631,12 +631,12 @@ abstract contract HybridProposal is
         uint16 emitterChainId,
         bytes32 emitterAddress,
         bytes memory payload
-    ) public pure returns (bytes memory) {
+    ) private pure returns (bytes memory encodedVM) {
         uint64 sequence = 200;
         uint8 version = 1;
 
-        // Encode the body first to compute its hash
-        bytes memory body = abi.encodePacked(
+        encodedVM = abi.encodePacked(
+            version,
             timestamp,
             nonce,
             emitterChainId,
@@ -645,11 +645,6 @@ abstract contract HybridProposal is
             consistencyLevel,
             payload
         );
-
-        // Encode the version and then concatenate the body
-        bytes memory encodedVM = abi.encodePacked(version, body);
-
-        return encodedVM;
     }
 
     function addressToBytes(address addr) public pure returns (bytes32) {
