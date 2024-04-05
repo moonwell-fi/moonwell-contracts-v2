@@ -16,7 +16,7 @@ contract Messages is Getters {
         bytes calldata encodedVM
     )
         public
-        view
+        pure
         returns (Structs.VM memory vm, bool valid, string memory reason)
     {
         vm = parseVM(encodedVM);

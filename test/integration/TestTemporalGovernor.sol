@@ -3,19 +3,21 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {Unitroller} from "@protocol/Unitroller.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
 
-contract TestTemporalGovenror is Configs, HybridProposal {
-    string public constant name = "MIP-M23";
+contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
+    string public constant name = "TEST_TEMPORAL_GOVERNOR";
 
     uint256 public constant collateralFactor = 0.6e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m23/MIP-M23.md")
+            "Set collateral factor to 0.6e18 for MOONWELL_WETH on Moonbeam."
         );
         _setProposalDescription(proposalDescription);
     }
@@ -50,9 +52,19 @@ contract TestTemporalGovenror is Configs, HybridProposal {
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
-        // switch back to the moonbeam fork so we can run the validations
         vm.selectFork(primaryForkId());
     }
 
-    function validate(Addresses addresses, address) public override {}
+    function validate(Addresses addresses, address) public override {
+        vm.selectFork(baseForkId);
+
+        Comptroller unitroller = Comptroller(
+            addresses.getAddress("UNITROLLER")
+        );
+
+        (, uint256 collateralFactorMantissa) = unitroller.markets(
+            addresses.getAddress("MOONWELL_WETH")
+        );
+        assertEq(collateralFactorMantissa, collateralFactor);
+    }
 }
