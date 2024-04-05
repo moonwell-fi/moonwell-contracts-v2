@@ -16,7 +16,7 @@ import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
 
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {Implementation} from "@protocol/wormhole/mocks/Implementation.sol";
 
 /// @notice this is a proposal type to be used for proposals that
