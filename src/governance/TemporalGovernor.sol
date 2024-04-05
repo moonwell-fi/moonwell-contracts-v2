@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
 import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {Pausable} from "@openzeppelin-contracts/contracts/security/Pausable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";

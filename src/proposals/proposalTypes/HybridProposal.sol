@@ -17,7 +17,6 @@ import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.
 
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {Implementation} from "@protocol/wormhole/mocks/Implementation.sol";
 
 /// @notice this is a proposal type to be used for proposals that
@@ -27,7 +26,6 @@ import {Implementation} from "@protocol/wormhole/mocks/Implementation.sol";
 /// two different proposal types. One for moonbeam and one for base.
 /// We also need to have references to both networks in the proposal
 /// to switch between forks.
-
 abstract contract HybridProposal is
     IHybridProposal,
     IMultichainProposal,
@@ -612,7 +610,15 @@ abstract contract HybridProposal is
             payload
         );
 
-        TemporalGovernor(temporalGovernorAddress).queueProposal(vaa);
+        ITemporalGovernor temporalGovernor = ITemporalGovernor(
+            temporalGovernorAddress
+        );
+
+        temporalGovernor.queueProposal(vaa);
+
+        vm.warp(block.timestamp + temporalGovernor.proposalDelay());
+
+        temporalGovernor.executeProposal(vaa);
 
         _verifyMTokensPostRun();
 
