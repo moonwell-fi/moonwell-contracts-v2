@@ -168,7 +168,7 @@ contract MultichainGovernorDeploy is Test {
     ) public returns (address proxy, address implementation) {
         // deploy mock implementation
         implementation = deployCode(
-            "artifacts/foundry/MockStakedWell/MockStakedWell.json"
+            "artifacts/foundry/MockStakedWell.sol/MockStakedWell.json"
         );
 
         // generate init calldata
