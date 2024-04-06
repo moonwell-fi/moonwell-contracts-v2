@@ -20,11 +20,12 @@ contract mipb16 is
 {
     string public constant name = "MIP-B17";
 
-    /// this is and based on Warden's recommendation for reward speeds
+    /// @notice this is based on Warden Finance's recommendation for reward speeds
     uint256 public constant REWARD_SPEED = 896275511648961000;
 
-    /// @notice the amount of WELL to be sent to the Safety Module for funding 41 days of rewards
-    uint256 public constant WELL_AMOUNT = 3_174_966.37 * 1e18;
+    /// @notice the amount of WELL to be sent to the Safety Module for funding 38 days of rewards
+    /// 36*86400*.896275511648961000 = 2,787,775.3514329283 WELL, round up to 2,787,776
+    uint256 public constant WELL_AMOUNT = 2_787_776 * 1e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
