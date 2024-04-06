@@ -18,7 +18,7 @@ contract mipb16 is
     MultichainGovernorDeploy,
     ParameterValidation
 {
-    string public constant name = "MIP-B16";
+    string public constant name = "MIP-B17";
 
     /// this is and based on Warden's recommendation for reward speeds
     uint256 public constant REWARD_SPEED = 896275511648961000;
@@ -39,21 +39,7 @@ contract mipb16 is
         return baseForkId;
     }
 
-    function teardown(Addresses addresses, address) public override {
-        deal(
-            addresses.getAddress("xWELL_PROXY"),
-            addresses.getAddress("FOUNDATION_MULTISIG"),
-            WELL_AMOUNT
-        );
-
-        /// approve the Temporal Governor to spend xWELL
-        vm.startPrank(addresses.getAddress("FOUNDATION_MULTISIG"));
-        ERC20(addresses.getAddress("xWELL_PROXY")).approve(
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            WELL_AMOUNT
-        );
-        vm.stopPrank();
-    }
+    function teardown(Addresses addresses, address) public override {}
 
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
@@ -94,6 +80,11 @@ contract mipb16 is
             moonbeamActions.length == 0,
             "MIP-B16: should have no moonbeam actions"
         );
+        vm.selectFork(moonbeamForkId);
+
+        _runMoonbeamMultichainGovernor(addresses, address(1000000000));
+
+        vm.selectFork(baseForkId);
 
         _runBase(addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
