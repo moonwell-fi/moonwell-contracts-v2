@@ -6,7 +6,8 @@
 
 The original proposal was approved but contained an error that prevented
 successful execution on Moonbeam. This issue has been corrected in this
-resubmission.
+resubmission. If this proposal passes, the community can expect to have rewards
+enabled for the Safety Module on Base on Thursday.
 
 ## Summary
 
