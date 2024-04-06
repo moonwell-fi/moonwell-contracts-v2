@@ -1,14 +1,20 @@
-# MIP-B16 Base Safety Module Activation
+# MIP-B16 Base Safety Module Activation Resubmission
 
 **Authors**: Elliot, Ana
 
-**Summary**
+## Simple Summary
+
+The original proposal was approved but contained an error that prevented
+successful execution on Moonbeam. This issue has been corrected in this
+resubmission.
+
+## Summary
 
 This proposal aims to activate reward emissions for the new Safety Module on
 Base, incentivizing users to help secure the Moonwell protocol through staking
 and participate in onchain governance.
 
-**Overview**
+## Overview
 
 The Moonwell community has recently approved the implementation of a new
 multichain governor contract to govern the Moonwell protocol. Additionally, a
@@ -22,7 +28,7 @@ participate in governance. Initially, rewards were set to 0 on the new Safety
 Module on Base. This proposal aims to enable rewards for users in the Safety
 Module with the new Base native WELL token.
 
-**Implementation**
+## Implementation
 
 This proposal will set and fund rewards that will be distributed to all Safety
 Module stakers on Base. Initial reward speeds will be set to the value
@@ -33,7 +39,7 @@ A "Yay" vote indicates your support for enabling reward emissions for the Safety
 Module on Base, as outlined in this proposal. A "Nay" vote indicates your
 opposition to enabling reward emissions for the Safety Module on Base.
 
-**Conclusion**
+## Conclusion
 
 Adding rewards to the Safety Module on Base creates incentives for users to
 backstop the protocol with the new Base native WELL token. Staking WELL in the
