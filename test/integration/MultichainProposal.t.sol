@@ -34,6 +34,7 @@ import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistribu
 
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {mipm25} from "@proposals/mips/mip-m25/mip-m25.sol";
+import {mipb16} from "@proposals/mips/mip-b16/mip-b16.sol";
 
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
@@ -96,6 +97,7 @@ contract MultichainProposalTest is
 
     mipm23c public proposalC;
     mipm25 public proposalF;
+    mipb16 public proposalG;
 
     TemporalGovernor public temporalGov;
 
@@ -123,11 +125,13 @@ contract MultichainProposalTest is
 
         proposalC = new mipm23c();
         proposalF = new mipm25();
+        proposalG = new mipb16();
 
         proposalC.buildCalldata(addresses); /// build calldata for bgg test
 
-        address[] memory proposalsArray = new address[](1);
+        address[] memory proposalsArray = new address[](2);
         proposalsArray[0] = address(proposalF);
+        proposalsArray[1] = address(proposalG);
 
         proposalF.setForkIds(baseForkId, moonbeamForkId);
 
