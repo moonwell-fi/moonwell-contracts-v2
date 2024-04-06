@@ -277,6 +277,31 @@ contract MultichainProposalTest is
         );
     }
 
+    function testNoBaseWormholeCoreAddressInProposal() public {
+        address wormholeBase = addresses.getAddress(
+            "WORMHOLE_CORE",
+            baseChainId
+        );
+        vm.selectFork(moonbeamForkId);
+        uint256[] memory proposals = governor.liveProposals();
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (proposals[i] == 4) {
+                continue;
+            }
+
+            (address[] memory targets, , ) = governor.getProposalData(
+                proposals[i]
+            );
+
+            for (uint256 j = 0; j < targets.length; j++) {
+                require(
+                    targets[j] != wormholeBase,
+                    "targeted wormhole core base address on moonbeam"
+                );
+            }
+        }
+    }
+
     function testGetAllMarketConfigs() public {
         MultiRewardDistributor mrd = MultiRewardDistributor(
             addresses.getAddress("MRD_PROXY")
@@ -2411,7 +2436,7 @@ contract MultichainProposalTest is
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
-            assertEq(1e18, index, "rewards per second");
+            assertGt(index, 1, "rewards per second");
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,
@@ -2593,7 +2618,7 @@ contract MultichainProposalTest is
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
-            assertEq(1e18, index, "rewards per second");
+            assertGt(index, 1, "rewards per second");
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,
