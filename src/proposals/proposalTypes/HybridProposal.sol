@@ -235,7 +235,13 @@ abstract contract HybridProposal is
         }
         return
             getTargetsPayloadsValues(
-                addresses.getAddress("WORMHOLE_CORE"),
+                addresses.getAddress(
+                    "WORMHOLE_CORE",
+                    block.chainid == baseChainId ||
+                        block.chainid == moonBeamChainId
+                        ? moonBeamChainId
+                        : moonBaseChainId
+                ),
                 temporalGovernor
             );
     }
