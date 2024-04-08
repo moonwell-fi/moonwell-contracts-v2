@@ -756,13 +756,13 @@
         "isContract": true
     },
     {
-        "addr": "0xfB26A4947A38cb53e2D083c6490060CCCE7438c5",
+        "addr": "0x0c87F9f6c052060b28DeA1e4aCFd24A407ac33FA",
         "chainId": 1284,
         "name": "xWELL_ROUTER",
         "isContract": true
     },
     {
-        "addr": "0x8e0BF5d4bc584A14f8F7300cfF03a186ef8b1201",
+        "addr": "0x2E58a9BCEA402936f3a110386318d087A6B0b623",
         "chainId": 1287,
         "name": "xWELL_ROUTER",
         "isContract": true
