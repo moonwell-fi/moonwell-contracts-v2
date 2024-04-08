@@ -123,3 +123,6 @@ lcov.info
 
 # mutation testing
 gambit_out*
+
+# fuzz and invariant testing
+cache/
