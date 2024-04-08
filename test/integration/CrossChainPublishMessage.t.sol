@@ -103,7 +103,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         vm.makePersistent(address(addresses));
 
         wormhole = IWormhole(
-            addresses.getAddress("WORMHOLE_CORE", moonBeamChainId)
+            addresses.getAddress("WORMHOLE_CORE_MAINNET", moonBeamChainId)
         );
         well = ERC20Votes(addresses.getAddress("WELL", moonBeamChainId));
 

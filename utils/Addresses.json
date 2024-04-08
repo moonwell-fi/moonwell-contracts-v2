@@ -140,7 +140,7 @@
     {
         "addr": "0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901",
         "chainId": 1287,
-        "name": "WORMHOLE_CORE",
+        "name": "WORMHOLE_CORE_TESTNET",
         "isContract": true
     },
     {
@@ -152,7 +152,7 @@
     {
         "addr": "0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3",
         "chainId": 1284,
-        "name": "WORMHOLE_CORE",
+        "name": "WORMHOLE_CORE_MAINNET",
         "isContract": true
     },
     {

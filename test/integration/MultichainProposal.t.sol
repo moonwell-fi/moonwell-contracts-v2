@@ -2035,7 +2035,7 @@ contract MultichainProposalTest is
         address[] memory targets = new address[](19);
         bytes[] memory calldatas = new bytes[](19);
 
-        targets[0] = addresses.getAddress("WORMHOLE_CORE");
+        targets[0] = addresses.getAddress("WORMHOLE_CORE_MAINNET");
         calldatas[0] = proposalC.approvedCalldata(0);
 
         targets[1] = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
