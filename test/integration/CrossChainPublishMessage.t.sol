@@ -141,7 +141,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             ).getMultichainGovernorCalldata(
                     addresses.getAddress("TEMPORAL_GOVERNOR"), /// call temporal gov on base
                     addresses.getAddress( /// call wormhole on moonbeam
-                            "WORMHOLE_CORE",
+                            "WORMHOLE_CORE_MAINNET",
                             sendingChainIdToReceivingChainId[block.chainid]
                         )
                 );
@@ -151,7 +151,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
 
             /// on moonbeam network so this should return proper addresses
             address wormholeCore = addresses.getAddress(
-                "WORMHOLE_CORE",
+                "WORMHOLE_CORE_MAINNET",
                 moonBeamChainId
             );
             address temporalGov = addresses.getAddress(
