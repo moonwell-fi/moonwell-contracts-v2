@@ -120,10 +120,18 @@ Certora API key.
 
 ## Mutation Testing
 
-Use certora gambit to generate mutations for `MultichainVoteCollection` and `MultichainGovernor` and then run each mutation against unit, integration tests and formal specification using `runVoteCollectionMutation` and `runGovernorMutation` script respectively. Each scripts generates a `MutationTestOuput/Result_<Contract>.md` file which stores following details for each mutations:
+Use certora gambit to generate mutations for `MultichainVoteCollection` and
+`MultichainGovernor` and then run each mutation against unit, integration tests
+and formal specification using `runVoteCollectionMutation` and
+`runGovernorMutation` script respectively. Each scripts generates a
+`MutationTestOuput/Result_<Contract>.md` file which stores following details for
+each mutations:
+
 - mutant diff with original contract
 - unit/integration test results with number and list of failing tests if any
-- result of certora formal verification against mutant with details such as number of failed rules, their list and certora prover cli job url (Certora formal verification runs only in MultichainVoteCollection script)
+- result of certora formal verification against mutant with details such as
+  number of failed rules, their list and certora prover cli job url (Certora
+  formal verification runs only in MultichainVoteCollection script)
 
 Finally at the end it logs total number of failed mutations.
 
@@ -132,28 +140,38 @@ The following steps needs to be followed for mutation testing:
 1. Run certora gambit to generate mutations:
 
 - MultichainVoteCollection
+
 ```
 gambit mutate --json certora/mutation/MultichainVoteCollectionConfig.json
 ```
 
 - MultichainGovernor
+
 ```
 gambit mutate --json certora/mutation/MultichainGovernorConfig.json
 ```
 
-2. Run script that runs tests against mutants and outputs results into a readme file:
+2. Run script that runs tests against mutants and outputs results into a readme
+   file:
 
 - MultichainVoteCollection
+
 ```
 sh runVoteCollectionMutation.sh
 ```
 
 - MultichainVoteCollection
+
 ```
 sh runGovernorMutation.sh
 ```
 
-Note: Remember the script replaces original contract code with mutated code and thus both script cannot be run in parallel as the tests might fail because of mutated code of the other contract. But you can easily run scripts in parallel with just cloning the same repository and running single script in a single repository. Also remember to checkout any changes before running the mutations as they might affect the mutation output.
+Note: Remember the script replaces original contract code with mutated code and
+thus both script cannot be run in parallel as the tests might fail because of
+mutated code of the other contract. But you can easily run scripts in parallel
+with just cloning the same repository and running single script in a single
+repository. Also remember to checkout any changes before running the mutations
+as they might affect the mutation output.
 
 ## Running All Tests
 
