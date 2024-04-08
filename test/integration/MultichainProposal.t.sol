@@ -121,6 +121,7 @@ contract MultichainProposalTest is
         vm.selectFork(moonbeamForkId);
 
         proposalC = new mipm23c();
+        proposalC.buildCalldata(addresses);
 
         address[] memory proposalsArray = new address[](0);
 
