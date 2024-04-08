@@ -123,8 +123,6 @@ contract MultichainProposalTest is
         proposalC = new mipm23c();
         proposalC.buildCalldata(addresses);
 
-        address[] memory proposalsArray = new address[](0);
-
         /// load proposals up into the TestMultichainProposal contract
         _initialize(new address[](0));
 
