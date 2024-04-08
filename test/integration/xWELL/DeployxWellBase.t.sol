@@ -95,13 +95,6 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
         uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
-
-        console.log("block chain id: ", block.chainid);
-        console.log(
-            "wormholeAdapter relayer: ",
-            address(wormholeAdapter.wormholeRelayer())
-        );
-
         uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
         vm.deal(user, cost);
