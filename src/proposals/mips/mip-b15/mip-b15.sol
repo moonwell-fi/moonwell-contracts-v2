@@ -3,13 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
 
 contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     string public constant name = "MIP-b15";
@@ -32,10 +30,7 @@ contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     function build(Addresses addresses) public override {
         _pushCrossChainAction(
             addresses.getAddress("MOONWELL_USDBC"),
-            abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                USDbC_NEW_RF
-            ),
+            abi.encodeWithSignature("_setReserveFactor(uint256)", USDbC_NEW_RF),
             "Set reserve factor for Moonwell USDBC to updated reserve factor"
         );
 
@@ -65,9 +60,6 @@ contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             })
         );
 
-        _validateRF(
-            addresses.getAddress("MOONWELL_USDBC"),
-            USDbC_NEW_RF
-        );
+        _validateRF(addresses.getAddress("MOONWELL_USDBC"), USDbC_NEW_RF);
     }
 }
