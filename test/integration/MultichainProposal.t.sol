@@ -269,7 +269,7 @@ contract MultichainProposalTest is
 
     function testNoBaseWormholeCoreAddressInProposal() public {
         address wormholeBase = addresses.getAddress(
-            "WORMHOLE_CORE",
+            "WORMHOLE_CORE_BASE",
             baseChainId
         );
         vm.selectFork(moonbeamForkId);
