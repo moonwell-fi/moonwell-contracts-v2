@@ -71,7 +71,7 @@ contract mipb16 is
     }
 
     function run(Addresses addresses, address) public override {
-        /// safety check to ensure no base actions are run
+        /// safety check to ensure no moonbeam actions are run
         require(
             baseActions.length == 2,
             "MIP-B16: should have two base actions"
