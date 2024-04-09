@@ -2428,11 +2428,7 @@ contract MultichainProposalTest is
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
-<<<<<<< HEAD
             assertGt(index, 1, "rewards per second");
-=======
-            assertGt(index, 0, "index incorrect");
->>>>>>> 0b5de6e781c5db6e79094da8c773f348e68db2e9
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,
@@ -2614,11 +2610,7 @@ contract MultichainProposalTest is
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
-<<<<<<< HEAD
             assertGt(index, 1, "rewards per second");
-=======
-            assertGt(index, 0, "index incorrect");
->>>>>>> 0b5de6e781c5db6e79094da8c773f348e68db2e9
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,
