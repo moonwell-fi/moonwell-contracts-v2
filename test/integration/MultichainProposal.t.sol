@@ -33,8 +33,7 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
-import {mipm23} from "@proposals/mips/mip-m23/mip-m23.sol";
-import {mipm24} from "@proposals/mips/mip-m24/mip-m24.sol";
+import {mipm25} from "@proposals/mips/mip-m25/mip-m25.sol";
 
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
@@ -122,8 +121,6 @@ contract MultichainProposalTest is
         vm.selectFork(moonbeamForkId);
 
         proposalC = new mipm23c();
-
-        /// set up temporal gov calldata
         proposalC.buildCalldata(addresses);
 
         /// load proposals up into the TestMultichainProposal contract
