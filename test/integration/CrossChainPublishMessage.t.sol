@@ -136,7 +136,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         }
 
         for (uint256 i = 0; i < proposals.nProposals(); i++) {
-            bytes memory artemisQueuePayload = CrossChainProposal(
+            bytes memory multichainGovernorQueuePayload = CrossChainProposal(
                 address(proposals.proposals(i))
             ).getMultichainGovernorCalldata(
                     addresses.getAddress("TEMPORAL_GOVERNOR"), /// call temporal gov on base
@@ -146,8 +146,8 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
                         )
                 );
 
-            console.log("artemis governor queue calldata");
-            emit log_bytes(artemisQueuePayload);
+            console.log("multichain governor queue calldata");
+            emit log_bytes(multichainGovernorQueuePayload);
 
             /// on moonbeam network so this should return proper addresses
             address wormholeCore = addresses.getAddress(
@@ -174,7 +174,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             vm.deal(voter, cost);
             vm.prank(voter);
             (bool success, ) = address(governor).call{value: cost}(
-                artemisQueuePayload
+                multichainGovernorQueuePayload
             );
 
             require(success, "proposing gov proposal on moonbeam failed");
