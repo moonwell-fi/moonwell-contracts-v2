@@ -28,11 +28,11 @@ contract DeployTokenSale is Script {
         vm.startBroadcast(PRIVATE_KEY);
 
         address implementation = deployCode(
-            "TokenSaleDistributor.sol:TokenSaleDistributor"
+            "artifacts/foundry/TokenSaleDistributor.sol/TokenSaleDistributor.json"
         );
 
         address proxy = deployCode(
-            "TokenSaleDistributorProxy.sol:TokenSaleDistributorProxy"
+            "artifacts/foundry/TokenSaleDistributorProxy.sol/TokenSaleDistributorProxy.json"
         );
 
         ITokenSaleDistributorProxy(proxy).setPendingImplementation(

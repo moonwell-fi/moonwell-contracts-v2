@@ -1,22 +1,23 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
-import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
-
 import "@forge-std/Test.sol";
 
+import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
+import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+
 import {ChainIds} from "@test/utils/ChainIds.sol";
 
+import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IHybridProposal} from "@proposals/proposalTypes/IHybridProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
-import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
-import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
-import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
+
+import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -25,7 +26,6 @@ import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 /// two different proposal types. One for moonbeam and one for base.
 /// We also need to have references to both networks in the proposal
 /// to switch between forks.
-
 abstract contract HybridProposal is
     IHybridProposal,
     IMultichainProposal,
@@ -40,7 +40,7 @@ abstract contract HybridProposal is
     uint32 private constant nonce = 0;
 
     /// @notice instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
-    uint16 public constant consistencyLevel = 200;
+    uint8 public constant consistencyLevel = 200;
 
     /// @notice actions to run against contracts live on moonbeam
     ProposalAction[] public moonbeamActions;
@@ -235,7 +235,15 @@ abstract contract HybridProposal is
         }
         return
             getTargetsPayloadsValues(
-                addresses.getAddress("WORMHOLE_CORE"),
+                block.chainid == baseChainId || block.chainid == moonBeamChainId
+                    ? addresses.getAddress(
+                        "WORMHOLE_CORE_MOONBEAM",
+                        moonBeamChainId
+                    )
+                    : addresses.getAddress(
+                        "WORMHOLE_CORE_MOONBASE",
+                        moonBaseChainId
+                    ),
                 temporalGovernor
             );
     }
@@ -340,18 +348,6 @@ abstract contract HybridProposal is
             console.logBytes(payloads[i]);
         }
 
-        bytes memory payloadArtemis = abi.encodeWithSignature(
-            "propose(address[],uint256[],string[],bytes[],string)",
-            targets,
-            values,
-            signatures,
-            payloads,
-            string(PROPOSAL_DESCRIPTION)
-        );
-
-        console.log("Governor artemis proposal calldata");
-        console.logBytes(payloadArtemis);
-
         bytes memory payloadMultichainGovernor = abi.encodeWithSignature(
             "propose(address[],uint256[],bytes[],string)",
             targets,
@@ -427,7 +423,7 @@ abstract contract HybridProposal is
     /// -----------------------------------------------------
     /// -----------------------------------------------------
 
-    /// @notice print out the proposal action steps and which chains they were run on
+    /// @notice Print out the proposal action steps and which chains they were run on
     function printCalldata(Addresses addresses) public override {
         printProposalActionSteps();
         printGovernorCalldata(addresses);
@@ -445,122 +441,7 @@ abstract contract HybridProposal is
 
     function run(Addresses, address) public virtual override {}
 
-    /// @notice Simulate governance proposal from artemis governor contract
-    /// @param wormholeCore address of the wormhole core contract
-    /// @param governorAddress address of the Governor Bravo Delegator contract
-    /// @param governanceToken address of the governance token of the system
-    /// @param proposerAddress address of the proposer
-    function _runMoonbeamArtemisGovernor(
-        address wormholeCore,
-        address governorAddress,
-        address governanceToken,
-        address proposerAddress
-    ) internal {
-        _verifyActionsPreRunHybrid(moonbeamActions);
-
-        MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(
-            governorAddress
-        );
-
-        {
-            // Ensure proposer has meets minimum proposal threshold and quorum votes to pass the proposal
-            uint256 quorumVotes = governor.quorumVotes();
-            uint256 proposalThreshold = governor.proposalThreshold();
-            uint256 votingPower = quorumVotes > proposalThreshold
-                ? quorumVotes
-                : proposalThreshold;
-
-            deal(governanceToken, proposerAddress, votingPower);
-            // Delegate proposer's votes to itself
-            vm.prank(proposerAddress);
-            ERC20Votes(governanceToken).delegate(proposerAddress);
-            vm.roll(block.number + 1);
-        }
-
-        bytes memory proposeCalldata = getProposeCalldata(
-            wormholeCore,
-            governorAddress
-        );
-
-        // Register the proposal
-        bytes memory data;
-        {
-            // Execute the proposal
-            uint256 gasStart = gasleft();
-            vm.prank(proposerAddress);
-            data = address(payable(governorAddress)).functionCall(
-                proposeCalldata
-            );
-
-            require(
-                gasStart - gasleft() <= 13_000_000,
-                "Proposal propose gas limit exceeded"
-            );
-        }
-
-        uint256 proposalId = abi.decode(data, (uint256));
-
-        // Check proposal is in Pending state
-        require(
-            governor.state(proposalId) ==
-                MoonwellArtemisGovernor.ProposalState.Pending
-        );
-
-        // Roll to Active state (voting period)
-        vm.roll(block.number + governor.votingDelay() + 1);
-        vm.warp(block.timestamp + governor.votingDelay() + 1);
-        require(
-            governor.state(proposalId) ==
-                MoonwellArtemisGovernor.ProposalState.Active
-        );
-
-        // Vote YES
-        vm.prank(proposerAddress);
-        governor.castVote(proposalId, 0);
-
-        // Roll to allow proposal state transitions
-        vm.roll(block.number + governor.votingPeriod());
-        vm.warp(block.timestamp + governor.votingPeriod());
-        require(
-            governor.state(proposalId) ==
-                MoonwellArtemisGovernor.ProposalState.Succeeded
-        );
-
-        // Queue the proposal
-        governor.queue(proposalId);
-        require(
-            governor.state(proposalId) ==
-                MoonwellArtemisGovernor.ProposalState.Queued
-        );
-
-        // Warp to allow proposal execution on timelock
-        Timelock timelock = Timelock(address(governor.timelock()));
-        vm.warp(block.timestamp + timelock.delay());
-
-        {
-            // Execute the proposal
-            uint256 gasStart = gasleft();
-            governor.execute(proposalId);
-
-            require(
-                gasStart - gasleft() <= 13_000_000,
-                "Proposal execute gas limit exceeded"
-            );
-        }
-
-        require(
-            governor.state(proposalId) ==
-                MoonwellArtemisGovernor.ProposalState.Executed,
-            "Proposal state not executed"
-        );
-
-        _verifyMTokensPostRun();
-
-        delete createdMTokens;
-        comptroller = address(0);
-    }
-
-    /// runs the proposal on moonbeam, verifying the actions through the hook
+    /// @notice Runs the proposal on moonbeam, verifying the actions through the hook
     /// @param addresses the addresses contract
     /// @param caller the proposer address
     function _runMoonbeamMultichainGovernor(
@@ -692,34 +573,94 @@ abstract contract HybridProposal is
         comptroller = address(0);
     }
 
-    /// runs the proposal actions on base, verifying the actions through the hook
+    /// @notice Runs the proposal actions on base, verifying the actions through the hook
+    /// @param addresses the addresses contract
     /// @param temporalGovernorAddress the temporal governor contract address
-    function _runBase(address temporalGovernorAddress) internal {
+    function _runBase(
+        Addresses addresses,
+        address temporalGovernorAddress
+    ) internal {
         _verifyActionsPreRunHybrid(baseActions);
 
-        vm.startPrank(temporalGovernorAddress);
+        // Deploy the modified Wormhole Core implementation contract which
+        // bypass the guardians signature check
+        Implementation core = new Implementation();
+
+        /// Set the wormhole core address to have the
+        /// runtime bytecode of the mock core
+        vm.etch(addresses.getAddress("WORMHOLE_CORE"), address(core).code);
+
+        address[] memory targets = new address[](baseActions.length);
+        uint256[] memory values = new uint256[](baseActions.length);
+        bytes[] memory payloads = new bytes[](baseActions.length);
 
         for (uint256 i = 0; i < baseActions.length; i++) {
-            (bool success, ) = baseActions[i].target.call{
-                value: baseActions[i].value
-            }(baseActions[i].data);
-
-            require(
-                success,
-                string(
-                    abi.encodePacked(
-                        "base action failed to address ",
-                        baseActions[i].target.toHexString()
-                    )
-                )
-            );
+            targets[i] = baseActions[i].target;
+            values[i] = baseActions[i].value;
+            payloads[i] = baseActions[i].data;
         }
 
-        vm.stopPrank();
+        bytes memory payload = abi.encode(
+            temporalGovernorAddress,
+            targets,
+            values,
+            payloads
+        );
+
+        bytes32 governor = addressToBytes(
+            addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_PROXY",
+                sendingChainIdToReceivingChainId[block.chainid]
+            )
+        );
+
+        bytes memory vaa = generateVAA(
+            uint32(block.timestamp),
+            uint16(chainIdToWormHoleId[baseChainId]),
+            governor,
+            payload
+        );
+
+        ITemporalGovernor temporalGovernor = ITemporalGovernor(
+            temporalGovernorAddress
+        );
+
+        temporalGovernor.queueProposal(vaa);
+
+        vm.warp(block.timestamp + temporalGovernor.proposalDelay());
+
+        temporalGovernor.executeProposal(vaa);
 
         _verifyMTokensPostRun();
 
         delete createdMTokens;
         comptroller = address(0);
+    }
+
+    // @dev utility function to generate a Wormhole VAA payload excluding the guardians signature
+    function generateVAA(
+        uint32 timestamp,
+        uint16 emitterChainId,
+        bytes32 emitterAddress,
+        bytes memory payload
+    ) private pure returns (bytes memory encodedVM) {
+        uint64 sequence = 200;
+        uint8 version = 1;
+
+        encodedVM = abi.encodePacked(
+            version,
+            timestamp,
+            nonce,
+            emitterChainId,
+            emitterAddress,
+            sequence,
+            consistencyLevel,
+            payload
+        );
+    }
+
+    // @dev utility function to convert an address to bytes32
+    function addressToBytes(address addr) public pure returns (bytes32) {
+        return bytes32(bytes20(addr)) >> 96;
     }
 }

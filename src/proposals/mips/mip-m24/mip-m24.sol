@@ -187,7 +187,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         vm.selectFork(baseForkId);
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        _runBase(temporalGovernor);
+        _runBase(addresses, temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
         vm.selectFork(moonbeamForkId);
