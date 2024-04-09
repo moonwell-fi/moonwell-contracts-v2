@@ -87,7 +87,7 @@ contract mipb16 is
 
         vm.selectFork(baseForkId);
 
-        _runBase(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        _runBase(addresses, addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
     /// @notice validations on Base
