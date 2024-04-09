@@ -17,7 +17,7 @@ import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.
 
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {Implementation} from "@protocol/wormhole/mocks/Implementation.sol";
+import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -237,11 +237,11 @@ abstract contract HybridProposal is
             getTargetsPayloadsValues(
                 block.chainid == baseChainId || block.chainid == moonBeamChainId
                     ? addresses.getAddress(
-                        "WORMHOLE_CORE_MAINNET",
+                        "WORMHOLE_CORE_MOONBEAM",
                         moonBeamChainId
                     )
                     : addresses.getAddress(
-                        "WORMHOLE_CORE_TESTNET",
+                        "WORMHOLE_CORE_MOONBASE",
                         moonBaseChainId
                     ),
                 temporalGovernor

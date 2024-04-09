@@ -146,7 +146,7 @@ contract MultichainProposalTest is
             addresses.getAddress("VOTE_COLLECTION_PROXY", baseChainId)
         );
         wormhole = IWormhole(
-            addresses.getAddress("WORMHOLE_CORE_MAINNET", moonBeamChainId)
+            addresses.getAddress("WORMHOLE_CORE_MOONBEAM", moonBeamChainId)
         );
 
         well = ERC20Votes(addresses.getAddress("WELL", moonBeamChainId));
@@ -2035,7 +2035,7 @@ contract MultichainProposalTest is
         address[] memory targets = new address[](19);
         bytes[] memory calldatas = new bytes[](19);
 
-        targets[0] = addresses.getAddress("WORMHOLE_CORE_MAINNET");
+        targets[0] = addresses.getAddress("WORMHOLE_CORE_MOONBEAM");
         calldatas[0] = proposalC.approvedCalldata(0);
 
         targets[1] = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
@@ -2100,7 +2100,7 @@ contract MultichainProposalTest is
                 baseChainId
             );
             address wormholeCore = addresses.getAddress(
-                "WORMHOLE_CORE_MAINNET"
+                "WORMHOLE_CORE_MOONBEAM"
             );
             uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
                 address(governor)
