@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
-import {ChainlinkCompositeOracle} from "@protocol/Oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 
 contract ChainlinkCompositeOracleIntegrationTest is Test {
     ChainlinkCompositeOracle public oracle;
@@ -17,7 +17,11 @@ contract ChainlinkCompositeOracleIntegrationTest is Test {
         0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
     function setUp() public {
-        oracle = new ChainlinkCompositeOracle(ethUsdOracle, cbEthEthOracle, address(0));
+        oracle = new ChainlinkCompositeOracle(
+            ethUsdOracle,
+            cbEthEthOracle,
+            address(0)
+        );
     }
 
     function testSetup() public {
@@ -104,7 +108,6 @@ contract ChainlinkCompositeOracleIntegrationTest is Test {
         ); /// bound price multiplier between 1e18 and 10_000e18
         /// scaling factor is between 1 and 1e18
         uint256 scalingFactor = 10 ** uint256(_bound(decimals, 0, 18)); /// bound decimals between 0 and 18
-        
 
         assertEq(
             oracle.calculatePrice(

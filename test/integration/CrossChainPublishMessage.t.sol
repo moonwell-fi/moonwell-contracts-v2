@@ -3,16 +3,16 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Well} from "@protocol/Governance/deprecated/Well.sol";
+import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Timelock} from "@protocol/Governance/deprecated/Timelock.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {StringUtils} from "@proposals/utils/StringUtils.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
+import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -20,12 +20,11 @@ import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellA
 contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
     using StringUtils for string;
 
-    MoonwellArtemisGovernor public governor;
+    MultichainGovernor public governor;
     TestProposals public proposals;
     IWormhole public wormhole;
     Addresses public addresses;
-    Timelock public timelock;
-    Well public well;
+    ERC20Votes public well;
 
     event LogMessagePublished(
         address indexed sender,
@@ -53,7 +52,9 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         // Run all pending proposals before doing e2e tests
         address[] memory mips = new address[](1);
 
-        if (keccak256(bytes(path)) == '""' || bytes(path).length == 0) {
+        if (
+            keccak256(bytes(path)) == keccak256('""') || bytes(path).length == 0
+        ) {
             /// empty string on both mac and unix, no proposals to run
             mips = new address[](0);
 
@@ -81,6 +82,8 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             proposals = new TestProposals(mips);
         }
 
+        vm.makePersistent(address(proposals));
+
         proposals.setUp();
         /// run all proposal steps
         proposals.testProposals(
@@ -97,16 +100,15 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         ); /// only setup, after deploy, build, do not validate, run, teardown
 
         addresses = proposals.addresses();
+        vm.makePersistent(address(addresses));
 
         wormhole = IWormhole(
             addresses.getAddress("WORMHOLE_CORE", moonBeamChainId)
         );
-        well = Well(addresses.getAddress("WELL", moonBeamChainId));
-        timelock = Timelock(
-            addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)
-        );
-        governor = MoonwellArtemisGovernor(
-            addresses.getAddress("ARTEMIS_GOVERNOR", moonBeamChainId)
+        well = ERC20Votes(addresses.getAddress("WELL", moonBeamChainId));
+
+        governor = MultichainGovernor(
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
         );
 
         vm.selectFork(moonbeamForkId);
@@ -136,22 +138,18 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         for (uint256 i = 0; i < proposals.nProposals(); i++) {
             bytes memory artemisQueuePayload = CrossChainProposal(
                 address(proposals.proposals(i))
-            ).getArtemisGovernorCalldata(
+            ).getMultichainGovernorCalldata(
                     addresses.getAddress("TEMPORAL_GOVERNOR"), /// call temporal gov on base
                     addresses.getAddress( /// call wormhole on moonbeam
-                        "WORMHOLE_CORE",
-                        sendingChainIdToReceivingChainId[block.chainid]
-                    )
+                            "WORMHOLE_CORE",
+                            sendingChainIdToReceivingChainId[block.chainid]
+                        )
                 );
 
             console.log("artemis governor queue calldata");
             emit log_bytes(artemisQueuePayload);
 
             /// on moonbeam network so this should return proper addresses
-            address moonbeamTimelock = addresses.getAddress(
-                "MOONBEAM_TIMELOCK",
-                moonBeamChainId
-            );
             address wormholeCore = addresses.getAddress(
                 "WORMHOLE_CORE",
                 moonBeamChainId
@@ -170,9 +168,14 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
                     .getTargetsPayloadsValues();
 
             vm.selectFork(moonbeamForkId);
+
             testMintSelf();
+            uint256 cost = governor.bridgeCostAll();
+            vm.deal(voter, cost);
             vm.prank(voter);
-            (bool success, ) = address(governor).call(artemisQueuePayload);
+            (bool success, ) = address(governor).call{value: cost}(
+                artemisQueuePayload
+            );
 
             require(success, "proposing gov proposal on moonbeam failed");
 
@@ -182,10 +185,6 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             /// -----------------------------------------------------------
             /// -----------------------------------------------------------
 
-            require(
-                moonbeamTimelock != address(0),
-                "invalid moonbeam timelock address"
-            );
             require(
                 wormholeCore != address(0),
                 "invalid temporal governor address"
@@ -198,18 +197,18 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
             uint256 proposalId = governor.proposalCount();
 
             uint64 nextSequence = IWormhole(wormhole).nextSequence(
-                moonbeamTimelock
+                address(governor)
             );
-            vm.warp(governor.votingDelay() + block.timestamp + 1); /// now active
 
             vm.prank(voter);
             governor.castVote(proposalId, 0); /// VOTE YES
 
-            vm.warp(governor.votingPeriod() + block.timestamp + 1);
-
-            governor.queue(proposalId);
-
-            vm.warp(block.timestamp + timelock.delay() + 1); /// finish timelock
+            vm.warp(
+                governor.votingPeriod() +
+                    governor.crossChainVoteCollectionPeriod() +
+                    block.timestamp +
+                    1
+            );
 
             bytes memory temporalGovExecData = abi.encode(
                 temporalGov,
@@ -222,7 +221,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
 
             /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
             emit LogMessagePublished(
-                moonbeamTimelock,
+                address(governor),
                 nextSequence,
                 0, /// nonce is hardcoded at 0 in CrossChainProposal.sol
                 temporalGovExecData,

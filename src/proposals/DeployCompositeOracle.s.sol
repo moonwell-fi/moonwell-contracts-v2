@@ -5,7 +5,7 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
-import {ChainlinkCompositeOracle} from "@protocol/Oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 
 /*
 How to use:
@@ -27,7 +27,9 @@ contract DeployCompositeOracle is Script {
         PRIVATE_KEY = uint256(
             vm.envOr(
                 "MOONWELL_DEPLOY_PK",
-                bytes32(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80)
+                bytes32(
+                    0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+                )
             )
         );
     }
@@ -40,7 +42,10 @@ contract DeployCompositeOracle is Script {
             address(0) /// only 2 oracles for this composite oracle
         );
 
-        console.log("successfully deployed chainlink composite oracle: %s", address(clco));
+        console.log(
+            "successfully deployed chainlink composite oracle: %s",
+            address(clco)
+        );
 
         vm.stopBroadcast();
 

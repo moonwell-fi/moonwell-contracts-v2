@@ -1,6 +1,6 @@
 pragma solidity 0.8.19;
 
-import {AddressToString, StringToAddress} from "@protocol/xWELL/axelar-interfaces/AddressString.sol";
+import {AddressToString, StringToAddress} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
 
 import "@test/helper/BaseTest.t.sol";
 

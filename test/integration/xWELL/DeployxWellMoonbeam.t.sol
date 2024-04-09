@@ -50,10 +50,6 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
         deal(address(well), user, startingWellAmount);
     }
 
-    function testValidate() public {
-        validate(addresses, address(0));
-    }
-
     function testReinitializeFails() public {
         vm.expectRevert("Initializable: contract is already initialized");
         xwell.initialize(
@@ -210,6 +206,7 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
             xwell.buffer(address(wormholeAdapter))
         );
 
+        uint256 startingWellBalance = well.balanceOf(user);
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
@@ -220,6 +217,7 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
             address(wormholeAdapter)
         );
         bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
+        deal(address(well), addresses.getAddress("xWELL_LOCKBOX"), mintAmount);
 
         vm.prank(address(wormholeAdapter.wormholeRelayer()));
         wormholeAdapter.receiveWormholeMessages(
@@ -230,20 +228,27 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
             nonce
         );
 
+        uint256 endingWellBalance = well.balanceOf(user);
         uint256 endingXWellBalance = xwell.balanceOf(user);
         uint256 endingXWellTotalSupply = xwell.totalSupply();
         uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
 
         assertEq(
             endingXWellBalance,
-            startingXWellBalance + mintAmount,
-            "user xWELL balance incorrect"
+            startingXWellBalance,
+            "user xWELL balance incorrect, should not change"
+        );
+        assertEq(
+            startingWellBalance + mintAmount,
+            endingWellBalance,
+            "user WELL balance incorrect, did not increase"
         );
         assertEq(
             endingXWellTotalSupply,
-            startingXWellTotalSupply + mintAmount,
-            "total xWELL supply incorrect"
+            startingXWellTotalSupply,
+            "total xWELL supply incorrect, should not change"
         );
+
         assertTrue(wormholeAdapter.processedNonces(nonce), "nonce not used");
         assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
     }

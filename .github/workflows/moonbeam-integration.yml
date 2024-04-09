@@ -2,6 +2,9 @@ name: Foundry moonbeam integration tests
 
 on: [pull_request]
 
+env:
+  MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
+
 jobs:
   run-moonbeam-tests:
     name: moonbeam-integration-tests
@@ -20,4 +23,4 @@ jobs:
         run: bash ./.github/helper/set-env-var.sh
 
       - name: Integration Tests Moonbeam Mainnet
-        run: time forge test --match-contract MoonbeamTest --fork-url moonbeam -vvv
+        run: time forge test --match-contract MoonbeamTest --fork-url $MOONBEAM_RPC_URL -vvv

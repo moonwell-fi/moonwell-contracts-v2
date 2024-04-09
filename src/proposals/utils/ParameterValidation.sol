@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "@forge-std/Test.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel} from "@protocol/IRModels/JumpRateModel.sol";
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 
@@ -74,6 +74,21 @@ contract ParameterValidation is Test {
             collateralFactorMantissa,
             collateralFactor,
             "collateral factor validation failed"
+        );
+    }
+
+    function _validateRF(
+        address tokenAddress,
+        uint256 reserveFactor
+    ) internal {
+        MToken token = MToken(tokenAddress);
+
+        uint256 reserveFactorMantissa = token.reserveFactorMantissa();
+
+        assertEq(
+            reserveFactorMantissa,
+            reserveFactor,
+            "reserve factor validation failed"
         );
     }
 }

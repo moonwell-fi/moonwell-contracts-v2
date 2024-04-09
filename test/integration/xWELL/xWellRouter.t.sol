@@ -34,6 +34,9 @@ contract xWellRouterTest is Test, ChainIds {
     /// @notice user address for testing
     address user = address(0x123);
 
+    /// @notice whether or not the fallback reverts
+    bool public fallbackReverts;
+
     /// @notice amount of well to mint
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
@@ -59,6 +62,8 @@ contract xWellRouterTest is Test, ChainIds {
             addresses.getAddress("xWELL_LOCKBOX"),
             address(wormholeAdapter)
         );
+
+        fallbackReverts = false; /// default to not revert
     }
 
     function testSetup() public {
@@ -122,28 +127,41 @@ contract xWellRouterTest is Test, ChainIds {
     }
 
     function testBridgeOutToSuccess(
-        uint256 mintAmount
+        uint256 mintAmount,
+        uint256 glmrAmount
     ) public returns (uint256) {
+        uint256 bridgeCost = router.bridgeCost();
+
         mintAmount = _bound(
             mintAmount,
             1,
             xwell.buffer(address(wormholeAdapter))
         );
+        glmrAmount = _bound(glmrAmount, bridgeCost, type(uint256).max);
 
         uint256 startingXWellBalance = xwell.balanceOf(address(this));
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
         deal(address(well), address(this), mintAmount);
-        uint256 bridgeCost = router.bridgeCost();
-        vm.deal(address(this), bridgeCost);
+        vm.deal(address(this), glmrAmount);
+
         uint256 startingWellBalance = well.balanceOf(address(this));
         uint256 startingLockboxWellBalance = well.balanceOf(address(lockbox));
 
         well.approve(address(router), mintAmount);
+
         vm.expectEmit(true, true, true, true, address(router));
         emit BridgeOutSuccess(address(this), mintAmount);
+
         router.bridgeToBase{value: bridgeCost}(address(this), mintAmount);
+
+        assertEq(address(router).balance, 0, "incorrect router balance");
+        assertEq(
+            address(this).balance,
+            glmrAmount - bridgeCost,
+            "incorrect router balance"
+        );
 
         assertEq(
             xwell.buffer(address(wormholeAdapter)),
@@ -221,5 +239,61 @@ contract xWellRouterTest is Test, ChainIds {
             "incorrect xwell total supply"
         );
         return mintAmount;
+    }
+
+    function testBridgeToBaseFailsInsufficientGlmr() public {
+        vm.expectRevert("xWELLRouter: insufficient GLMR sent");
+        router.bridgeToBase{value: 1}(0);
+    }
+
+    function testBridgeToBaseFailsRefund() public {
+        uint256 mintAmount = xwell.buffer(address(wormholeAdapter));
+
+        uint256 startingXWellBalance = xwell.balanceOf(address(this));
+        uint256 startingXWellTotalSupply = xwell.totalSupply();
+        uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
+
+        deal(address(well), address(this), mintAmount);
+
+        uint256 bridgeCost = router.bridgeCost() * 2; /// a little extra
+        vm.deal(address(this), bridgeCost);
+
+        uint256 startingWellBalance = well.balanceOf(address(this));
+        uint256 startingLockboxWellBalance = well.balanceOf(address(lockbox));
+
+        well.approve(address(router), mintAmount);
+
+        fallbackReverts = true;
+        vm.expectRevert("xWELLRouter: failed to refund excess GLMR");
+        router.bridgeToBase{value: bridgeCost}(mintAmount);
+    }
+
+    function testBridgeToBaseSucceedsNoRefund() public {
+        uint256 mintAmount = xwell.buffer(address(wormholeAdapter));
+
+        uint256 startingXWellBalance = xwell.balanceOf(address(this));
+        uint256 startingXWellTotalSupply = xwell.totalSupply();
+        uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
+
+        deal(address(well), address(this), mintAmount);
+
+        uint256 bridgeCost = router.bridgeCost(); /// no extra, no refund amount
+        vm.deal(address(this), bridgeCost);
+
+        uint256 startingWellBalance = well.balanceOf(address(this));
+        uint256 startingLockboxWellBalance = well.balanceOf(address(lockbox));
+
+        well.approve(address(router), mintAmount);
+
+        fallbackReverts = true;
+
+        vm.expectEmit(true, true, true, true, address(router));
+        emit BridgeOutSuccess(address(this), mintAmount);
+        router.bridgeToBase{value: bridgeCost}(mintAmount);
+        assertEq(address(router).balance, 0, "incorrect router balance");
+    }
+
+    receive() external payable {
+        require(!fallbackReverts, "fallback reverted");
     }
 }

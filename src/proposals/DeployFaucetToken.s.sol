@@ -32,7 +32,10 @@ contract DeployFaucetToken is Script {
         );
         symbol = string(vm.envOr("SYMBOL", bytes("DAI")));
         name = string(vm.envOr("NAME", bytes("DAI Faucet Token")));
-        initialMintAmount = vm.envOr("INITIAL_MINT_AMOUNT", uint256(100_000_000e18));
+        initialMintAmount = vm.envOr(
+            "INITIAL_MINT_AMOUNT",
+            uint256(100_000_000e18)
+        );
         decimals = uint8(vm.envOr("DECIMALS", uint8(18)));
     }
 
