@@ -92,7 +92,7 @@
     {
         "addr": "0x79A1027a6A159502049F10906D333EC57E95F083",
         "chainId": 84532,
-        "name": "WORMHOLE_CORE",
+        "name": "WORMHOLE_CORE_SEPOLIA_BASE",
         "isContract": true
     },
     {
@@ -140,7 +140,7 @@
     {
         "addr": "0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901",
         "chainId": 1287,
-        "name": "WORMHOLE_CORE",
+        "name": "WORMHOLE_CORE_MOONBASE",
         "isContract": true
     },
     {
@@ -152,7 +152,7 @@
     {
         "addr": "0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3",
         "chainId": 1284,
-        "name": "WORMHOLE_CORE",
+        "name": "WORMHOLE_CORE_MOONBEAM",
         "isContract": true
     },
     {
@@ -200,7 +200,7 @@
     {
         "addr": "0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6",
         "chainId": 8453,
-        "name": "WORMHOLE_CORE",
+        "name": "WORMHOLE_CORE_BASE",
         "isContract": true
     },
     {
@@ -756,13 +756,13 @@
         "isContract": true
     },
     {
-        "addr": "0xfB26A4947A38cb53e2D083c6490060CCCE7438c5",
+        "addr": "0x0c87F9f6c052060b28DeA1e4aCFd24A407ac33FA",
         "chainId": 1284,
         "name": "xWELL_ROUTER",
         "isContract": true
     },
     {
-        "addr": "0x8e0BF5d4bc584A14f8F7300cfF03a186ef8b1201",
+        "addr": "0x2E58a9BCEA402936f3a110386318d087A6B0b623",
         "chainId": 1287,
         "name": "xWELL_ROUTER",
         "isContract": true

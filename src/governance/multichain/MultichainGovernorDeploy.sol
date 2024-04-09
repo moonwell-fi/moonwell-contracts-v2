@@ -167,7 +167,9 @@ contract MultichainGovernorDeploy is Test {
         address proxyAdmin
     ) public returns (address proxy, address implementation) {
         // deploy mock implementation
-        implementation = deployCode("MockStakedWell.sol:MockStakedWell");
+        implementation = deployCode(
+            "artifacts/foundry/MockStakedWell.sol/MockStakedWell.json"
+        );
 
         // generate init calldata
         bytes memory initData = abi.encodeWithSignature(
@@ -211,7 +213,9 @@ contract MultichainGovernorDeploy is Test {
         address proxyAdmin
     ) public returns (address proxy, address implementation) {
         // deploy actual stkWELL implementation for Base
-        implementation = deployCode("StakedWell.sol:StakedWell");
+        implementation = deployCode(
+            "artifacts/foundry/StakedWell.sol/StakedWell.json"
+        );
 
         // generate init calldata
         bytes memory initData = abi.encodeWithSignature(
@@ -250,11 +254,11 @@ contract MultichainGovernorDeploy is Test {
         )
     {
         ecosystemReserveImplementation = deployCode(
-            "EcosystemReserve.sol:EcosystemReserve"
+            "artifacts/foundry/EcosystemReserve.sol/EcosystemReserve.json"
         );
 
         ecosystemReserveController = deployCode(
-            "EcosystemReserveController.sol:EcosystemReserveController"
+            "artifacts/foundry/EcosystemReserveController.sol/EcosystemReserveController.json"
         );
 
         ecosystemReserveProxy = address(

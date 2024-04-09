@@ -24,12 +24,12 @@ contract xwellDeployBase is Proposal, CrossChainProposal, Configs, xWELLDeploy {
     string public constant name = "MIP xWELL Token Creation Base";
 
     /// @notice the buffer cap for the xWELL token on both base and moonbeam
-    uint112 public constant bufferCap = 38_000_000 * 1e18;
+    uint112 public constant bufferCap = 100_000_000 * 1e18;
 
     /// @notice the rate limit per second for the xWELL token on both base and moonbeam
     /// heals at ~19m per day if buffer is fully replenished or depleted
     /// this limit is used for the wormhole bridge adapters
-    uint128 public constant rateLimitPerSecond = 219.907 * 1e18;
+    uint128 public constant rateLimitPerSecond = 1158 * 1e18;
 
     /// @notice the duration of the pause for the xWELL token on both base and moonbeam
     /// once the contract has been paused, in this period of time, it will automatically

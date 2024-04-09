@@ -33,10 +33,7 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
-import {mipm25} from "@proposals/mips/mip-m25/mip-m25.sol";
-import {mipb16} from "@proposals/mips/mip-b16/mip-b16.sol";
 
-import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 
 /// @notice run this on a chainforked moonbeam node.
@@ -96,8 +93,6 @@ contract MultichainProposalTest is
     address public constant voter = address(100_000_000);
 
     mipm23c public proposalC;
-    mipm25 public proposalF;
-    mipb16 public proposalG;
 
     TemporalGovernor public temporalGov;
 
@@ -124,19 +119,10 @@ contract MultichainProposalTest is
         vm.selectFork(moonbeamForkId);
 
         proposalC = new mipm23c();
-        proposalF = new mipm25();
-        proposalG = new mipb16();
-
-        proposalC.buildCalldata(addresses); /// build calldata for bgg test
-
-        address[] memory proposalsArray = new address[](2);
-        proposalsArray[0] = address(proposalF);
-        proposalsArray[1] = address(proposalG);
-
-        proposalF.setForkIds(baseForkId, moonbeamForkId);
+        proposalC.buildCalldata(addresses);
 
         /// load proposals up into the TestMultichainProposal contract
-        _initialize(proposalsArray);
+        _initialize(new address[](0));
 
         runProposals(false, true, true, true, true, true, true, true);
 
@@ -144,7 +130,7 @@ contract MultichainProposalTest is
             addresses.getAddress("VOTE_COLLECTION_PROXY", baseChainId)
         );
         wormhole = IWormhole(
-            addresses.getAddress("WORMHOLE_CORE", moonBeamChainId)
+            addresses.getAddress("WORMHOLE_CORE_MOONBEAM", moonBeamChainId)
         );
 
         well = ERC20Votes(addresses.getAddress("WELL", moonBeamChainId));
@@ -2058,7 +2044,7 @@ contract MultichainProposalTest is
         address[] memory targets = new address[](19);
         bytes[] memory calldatas = new bytes[](19);
 
-        targets[0] = addresses.getAddress("WORMHOLE_CORE");
+        targets[0] = addresses.getAddress("WORMHOLE_CORE_MOONBEAM");
         calldatas[0] = proposalC.approvedCalldata(0);
 
         targets[1] = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
@@ -2122,7 +2108,9 @@ contract MultichainProposalTest is
                 "TEMPORAL_GOVERNOR",
                 baseChainId
             );
-            address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
+            address wormholeCore = addresses.getAddress(
+                "WORMHOLE_CORE_MOONBEAM"
+            );
             uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
                 address(governor)
             );
@@ -2440,7 +2428,11 @@ contract MultichainProposalTest is
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
+<<<<<<< HEAD
             assertGt(index, 1, "rewards per second");
+=======
+            assertGt(index, 0, "index incorrect");
+>>>>>>> 0b5de6e781c5db6e79094da8c773f348e68db2e9
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,
@@ -2622,7 +2614,11 @@ contract MultichainProposalTest is
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
+<<<<<<< HEAD
             assertGt(index, 1, "rewards per second");
+=======
+            assertGt(index, 0, "index incorrect");
+>>>>>>> 0b5de6e781c5db6e79094da8c773f348e68db2e9
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,

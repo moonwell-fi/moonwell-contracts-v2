@@ -386,19 +386,10 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(moonbeamForkId);
-
-        _runMoonbeamArtemisGovernor(
-            addresses.getAddress("WORMHOLE_CORE"),
-            addresses.getAddress("ARTEMIS_GOVERNOR"),
-            addresses.getAddress("WELL"),
-            address(1000000000)
-        );
-
         vm.selectFork(baseForkId);
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        _runBase(temporalGovernor);
+        _runBase(addresses, temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
         vm.selectFork(primaryForkId());
