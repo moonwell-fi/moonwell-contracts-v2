@@ -90,9 +90,6 @@ contract CalldataExecute is Test, Configs {
             "incorrect state, not succeeded"
         );
 
-        deal(governanceToken, governorAddress, 100_000_000 * 1e18);
-        ERC20Votes(governanceToken).balanceOf(governorAddress);
-
         governor.execute(proposalId);
     }
 
@@ -140,9 +137,6 @@ contract CalldataExecute is Test, Configs {
         governor.queue(proposalId);
 
         vm.warp(block.timestamp + 86400 + 1);
-
-        deal(governanceToken, governorAddress, 100_000_000 * 1e18);
-        ERC20Votes(governanceToken).balanceOf(governorAddress);
 
         governor.execute(proposalId);
     }
