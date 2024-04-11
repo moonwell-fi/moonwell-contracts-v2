@@ -6,6 +6,7 @@ import {Comptroller} from "@protocol/Comptroller.sol";
 import {IMultiRewardDistributor} from "@protocol/MultiRewardDistributor/IMultiRewardDistributor.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {SafetyModuleInterfaceV1} from "@protocol/views/SafetyModuleInterfaceV1.sol";
 
 /**
  * @title Moonwells Views Contract for V3 deployment (Post xWELL deployment)
@@ -121,9 +122,7 @@ contract MoonwellViewsV3 is BaseMoonwellViews {
         address _user
     ) public view override returns (Votes memory _result) {
         if (address(governanceToken) != address(0)) {
-            uint _priorVotes = xWELL(address(governanceToken)).getVotes(
-                _user
-            );
+            uint _priorVotes = xWELL(address(governanceToken)).getVotes(_user);
             address _delegates = governanceToken.delegates(_user);
             _result = Votes(
                 _priorVotes,
@@ -133,4 +132,20 @@ contract MoonwellViewsV3 is BaseMoonwellViews {
         }
     }
 
+    /// @notice A view to get the user voting power from the tokens staking in the safety module
+    function getUserStakingVotingPower(
+        address _user
+    ) public view override returns (Votes memory _result) {
+        if (address(safetyModule) != address(0)) {
+            uint _priorVotes = SafetyModuleInterfaceV1(address(safetyModule)).getPriorVotes(
+                _user,
+                block.timestamp - 1
+            );
+            _result = Votes(
+                _priorVotes,
+                safetyModule.balanceOf(_user),
+                address(0)
+            );
+        }
+    }
 }
