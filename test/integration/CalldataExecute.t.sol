@@ -61,11 +61,11 @@ contract CalldataExecute is Test, Configs {
         ).bridgeCostAll();
 
         vm.deal(address(this), cost);
-        (bool success, bytes memory err) = addresses
+        (bool success, bytes memory result) = addresses
             .getAddress("MULTICHAIN_GOVERNOR_PROXY")
             .call{value: cost}(execData);
 
-        uint256 proposalId = abi.decode(err, (uint256));
+        uint256 proposalId = abi.decode(result, (uint256));
         require(success, "propose failed");
 
         /// pass proposal
@@ -120,11 +120,11 @@ contract CalldataExecute is Test, Configs {
             vm.roll(block.number + 1);
         }
 
-        (bool success, bytes memory err) = address(governorAddress).call(
+        (bool success, bytes memory result) = address(governorAddress).call(
             execDataMoonriver
         );
 
-        uint256 proposalId = abi.decode(err, (uint256));
+        uint256 proposalId = abi.decode(result, (uint256));
         require(success, "propose failed");
 
         vm.warp(block.timestamp + governor.votingDelay() + 1);
