@@ -18,10 +18,28 @@
         "isContract": false
     },
     {
+        "addr": "0x2BE2e230e89c59c8E20E633C524AD2De246e7370",
+        "chainId": 1285,
+        "isContract": true,
+        "name": "APOLLO_GOVERNOR"
+    },
+    {
+        "addr": "0xBb8d88bcD9749636BC4D2bE22aaC4Bb3B01A58F1",
+        "chainId": 1285,
+        "isContract": true,
+        "name": "MFAM"
+    },
+    {
         "addr": "0x9A8464C4C11CeA17e191653Deb7CdC1bE30F1Af4",
         "chainId": 1284,
         "isContract": true,
         "name": "MULTICHAIN_GOVERNOR_PROXY"
+    },
+    {
+        "addr": "0xE907f95c46659c6eF24d84cFDb9f8FF9Cf57c723",
+        "chainId": 1284,
+        "isContract": true,
+        "name": "STELLASWAP_REWARDER"
     },
     {
         "addr": "0x14eBB684bBa5FFd7881590c7540bC3b85B550023",
