@@ -27,18 +27,16 @@ contract CalldataExecute is Test, Configs {
         addresses = proposals.addresses();
     }
 
-    function testSimulateExec() public {
+    /// forge test --mt testSimulateExecMoonbeam --fork-url moonbeam -vvvv
+    function testSimulateExecMoonbeam() public {
         address caller = address(this);
         address governanceToken = addresses.getAddress("WELL");
         address governorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );
-        address stellaSwapRewarder = addresses.getAddress(
-            "STELLASWAP_REWARDER"
-        );
         MultichainGovernor governor = MultichainGovernor(governorAddress);
 
-        vm.prank(0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451);
+        vm.prank(addresses.getAddress("MGLIMMER_MULTISIG"));
         ERC20Votes(governanceToken).approve(governorAddress, type(uint256).max);
 
         deal(governanceToken, governorAddress, 100_000_000 * 1e18);
@@ -98,14 +96,12 @@ contract CalldataExecute is Test, Configs {
         governor.execute(proposalId);
     }
 
+    /// forge test --mt testSimulateExecMoonriver --fork-url moonriver -vvvv
     function testSimulateExecMoonriver() public {
         address caller = address(this);
         address governanceToken = addresses.getAddress("MFAM");
         address governorAddress = addresses.getAddress("APOLLO_GOVERNOR");
         IArtemisGovernor governor = IArtemisGovernor(governorAddress);
-
-        vm.prank(0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451);
-        ERC20Votes(governanceToken).approve(governorAddress, type(uint256).max);
 
         deal(governanceToken, governorAddress, 100_000_000 * 1e18);
 
