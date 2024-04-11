@@ -18,6 +18,12 @@
         "isContract": false
     },
     {
+        "addr": "0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451",
+        "chainId": 1284,
+        "isContract": true,
+        "name": "MGLIMMER_MULTISIG"
+    },
+    {
         "addr": "0x2BE2e230e89c59c8E20E633C524AD2De246e7370",
         "chainId": 1285,
         "isContract": true,
