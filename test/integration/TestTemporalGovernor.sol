@@ -29,17 +29,21 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
 
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
+        address weth = addresses.getAddress(
+            "MOONWELL_WETH",
+            sendingChainIdToReceivingChainId[block.chainid]
+        );
+
+        address unitroller = addresses.getAddress(
+            "UNITROLLER",
+            sendingChainIdToReceivingChainId[block.chainid]
+        );
+
         _pushHybridAction(
-            addresses.getAddress(
-                "UNITROLLER",
-                sendingChainIdToReceivingChainId[block.chainid]
-            ),
+            unitroller,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
-                addresses.getAddress(
-                    "MOONWELL_WETH",
-                    sendingChainIdToReceivingChainId[block.chainid]
-                ),
+                weth,
                 collateralFactor
             ),
             "Set collateral factor",
@@ -66,5 +70,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
             addresses.getAddress("MOONWELL_WETH")
         );
         assertEq(collateralFactorMantissa, collateralFactor);
+
+        vm.selectFork(primaryForkId());
     }
 }
