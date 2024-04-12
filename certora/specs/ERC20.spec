@@ -285,8 +285,18 @@ rule noChangeTotalSupply(env e) {
     f(e, args);
     uint256 totalSupplyAfter = totalSupply();
 
+    uint128 rateLimitPerSecond;
+    uint112 bufferCap;
+    uint32 lastBufferUsedTime;
+    uint112 bufferStored;
+    uint112 midpoint;
+
+    rateLimitPerSecond, bufferCap, lastBufferUsedTime, bufferStored, midpoint = rateLimits(e.msg.sender);
+
+    assert (totalSupplyAfter > totalSupplyBefore && bufferCap(e.msg.sender) > assert_uint256(midpoint)) =>
+     bufferCap(e.msg.sender) != 0;
     assert totalSupplyAfter > totalSupplyBefore => f.selector == sig:mint(address,uint256).selector;
-    assert totalSupplyAfter < totalSupplyBefore => f.selector == sig:burn(address,uint256).selector;
+    assert totalSupplyAfter < totalSupplyBefore => f.selector == sig:burn(address,uint256).selector && bufferCap(e.msg.sender) != 0;
 }
 
 /*

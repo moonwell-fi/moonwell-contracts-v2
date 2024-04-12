@@ -66,9 +66,9 @@ abstract contract MIPProposal is Script {
         if (DO_AFTER_DEPLOY_SETUP) afterDeploySetup(addresses);
         vm.stopBroadcast();
 
+        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
         if (DO_BUILD) build(addresses);
         if (DO_RUN) run(addresses, deployerAddress);
-        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
         if (DO_VALIDATE) validate(addresses, deployerAddress);
         /// todo print out actual proposal calldata
         if (DO_PRINT) {

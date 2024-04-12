@@ -33,9 +33,7 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
-import {mipm25} from "@proposals/mips/mip-m25/mip-m25.sol";
 
-import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 
 /// @notice run this on a chainforked moonbeam node.
@@ -267,6 +265,31 @@ contract MultichainProposalTest is
             1,
             "incorrect amount of trusted senders post proposal"
         );
+    }
+
+    function testNoBaseWormholeCoreAddressInProposal() public {
+        address wormholeBase = addresses.getAddress(
+            "WORMHOLE_CORE_BASE",
+            baseChainId
+        );
+        vm.selectFork(moonbeamForkId);
+        uint256[] memory proposals = governor.liveProposals();
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (proposals[i] == 4) {
+                continue;
+            }
+
+            (address[] memory targets, , ) = governor.getProposalData(
+                proposals[i]
+            );
+
+            for (uint256 j = 0; j < targets.length; j++) {
+                require(
+                    targets[j] != wormholeBase,
+                    "targeted wormhole core base address on moonbeam"
+                );
+            }
+        }
     }
 
     function testGetAllMarketConfigs() public {
@@ -2405,7 +2428,7 @@ contract MultichainProposalTest is
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
-            assertGt(index, 0, "index incorrect");
+            assertGt(index, 1, "rewards per second");
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,
@@ -2587,7 +2610,7 @@ contract MultichainProposalTest is
             ) = stkwell.assets(address(stkwell));
 
             assertEq(1e18, emissionsPerSecond, "emissions per second");
-            assertGt(index, 0, "index incorrect");
+            assertGt(index, 1, "rewards per second");
             assertEq(
                 block.timestamp,
                 lastUpdateTimestamp,
