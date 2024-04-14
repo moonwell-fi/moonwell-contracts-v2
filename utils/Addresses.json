@@ -24,6 +24,18 @@
         "name": "MGLIMMER_MULTISIG"
     },
     {
+        "addr": "0x519ee031E182D3E941549E7909C9319cFf4be69a",
+        "chainId": 1284,
+        "isContract": true,
+        "name": "WELL_FOUNDATION_MULTISIG"
+    },
+    {
+        "addr": "0x9F94Ff95cbC403cbfC18802eDEAeF71dA8155f36",
+        "chainId": 1284,
+        "isContract": false,
+        "name": "CURLY"
+    },
+    {
         "addr": "0x2BE2e230e89c59c8E20E633C524AD2De246e7370",
         "chainId": 1285,
         "isContract": true,
