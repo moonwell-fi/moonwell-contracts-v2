@@ -8,6 +8,7 @@ artifacts
 .github
 .husky
 other
+certora
 
 # files
 *.env
@@ -28,7 +29,6 @@ Makefile
 *.sh
 *.pdf
 *.lock
+.env.example
+.solhintignore
 
-# temporarily
-test/unit/SystemUpgrade.t.sol
-test/integration/LiveSystem.t.sol
