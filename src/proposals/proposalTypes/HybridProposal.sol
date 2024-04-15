@@ -586,9 +586,14 @@ abstract contract HybridProposal is
         // bypass the guardians signature check
         Implementation core = new Implementation();
 
+        address wormholeCore = block.chainid == baseChainId ||
+            block.chainid == moonBeamChainId
+            ? addresses.getAddress("WORMHOLE_CORE_BASE")
+            : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE");
+
         /// Set the wormhole core address to have the
         /// runtime bytecode of the mock core
-        vm.etch(addresses.getAddress("WORMHOLE_CORE"), address(core).code);
+        vm.etch(wormholeCore, address(core).code);
 
         address[] memory targets = new address[](baseActions.length);
         uint256[] memory values = new uint256[](baseActions.length);
