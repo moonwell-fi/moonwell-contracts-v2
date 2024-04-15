@@ -1,5 +1,5 @@
-name: 'Setup Environment'
-description: 'Set up the pre-compiled environment'
+name: "Setup Environment"
+description: "Set up the pre-compiled environment"
 
 runs:
   using: "composite"
@@ -12,7 +12,7 @@ runs:
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
       with:
-        version: nightly
+        version: 42da942
 
     - name: Clean Contracts
       run: forge clean
