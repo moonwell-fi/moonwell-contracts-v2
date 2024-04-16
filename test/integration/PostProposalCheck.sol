@@ -14,9 +14,7 @@ contract PostProposalCheck is CreateCode {
     Addresses addresses;
     TestProposals proposals;
 
-    function setUp() public virtual {}
-
-    function testsetUp() public virtual {
+    function setUp() public virtual {
         string memory path = getPath();
         // Run all pending proposals before doing e2e tests
         address[] memory mips = new address[](1);

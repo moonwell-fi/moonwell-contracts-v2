@@ -26,11 +26,11 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
     function setUp() public override {
         super.setUp();
 
-        //        well = addresses.getAddress("WELL");
-        //        mwstETH = MErc20(addresses.getAddress("MOONWELL_wstETH"));
-        //        comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
-        //        mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
-        //        mwstETH.accrueInterest();
+        well = addresses.getAddress("WELL");
+        mwstETH = MErc20(addresses.getAddress("MOONWELL_wstETH"));
+        comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+        mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
+        mwstETH.accrueInterest();
     }
 
     function testSetupmwstETH() public {
