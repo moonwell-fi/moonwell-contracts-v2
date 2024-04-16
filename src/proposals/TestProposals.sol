@@ -51,6 +51,7 @@ contract TestProposals is Test {
         DO_VALIDATE = vm.envOr("DO_VALIDATE", true);
 
         addresses = new Addresses();
+        vm.makePersistent(address(addresses));
 
         // proposals.push(Proposal(address(new mipb01())));
         nProposals = proposals.length;
