@@ -54,10 +54,21 @@ contract Configs is Test {
     /// @notice initial mToken mint amount
     uint256 public constant initialMintAmount = 1 ether;
 
-    constructor() {
-        string memory fileContents = vm.readFile(
-            "./src/proposals/mainnetMTokensExample.json"
+    function _setEmissionConfiguration(string memory emissionPath) internal {
+        string memory fileContents = vm.readFile(emissionPath);
+        bytes memory rawJson = vm.parseJson(fileContents);
+        EmissionConfig[] memory decodedEmissions = abi.decode(
+            rawJson,
+            (EmissionConfig[])
         );
+
+        for (uint256 i = 0; i < decodedEmissions.length; i++) {
+            emissions[block.chainid].push(decodedEmissions[i]);
+        }
+    }
+
+    function _setMTokenConfiguration(string memory mTokenPath) internal {
+        string memory fileContents = vm.readFile(mTokenPath);
         bytes memory rawJson = vm.parseJson(fileContents);
 
         CTokenConfiguration[] memory decodedJson = abi.decode(
@@ -83,17 +94,6 @@ contract Configs is Test {
             }
 
             cTokenConfigurations[block.chainid].push(decodedJson[i]);
-        }
-
-        fileContents = vm.readFile("./src/proposals/mainnetRewardStreams.json");
-        rawJson = vm.parseJson(fileContents);
-        EmissionConfig[] memory decodedEmissions = abi.decode(
-            rawJson,
-            (EmissionConfig[])
-        );
-
-        for (uint256 i = 0; i < decodedEmissions.length; i++) {
-            emissions[_baseChainId].push(decodedEmissions[i]);
         }
     }
 
