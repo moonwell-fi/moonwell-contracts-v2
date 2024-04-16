@@ -20,7 +20,7 @@ import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 /// before the next proposal can be executed.
 contract mipm23a is HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment name
-    string public constant name = "MIP-M23A";
+    string public constant override name = "MIP-M23A";
 
     /// @notice proposal's actions all happen on moonbeam
     function primaryForkId() public view override returns (uint256) {

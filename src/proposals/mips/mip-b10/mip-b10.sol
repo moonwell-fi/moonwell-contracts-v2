@@ -26,7 +26,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 contract mipb10 is Proposal, CrossChainProposal, Configs {
     /// @notice the name of the proposal
     /// Read more here: https://forum.moonwell.fi/t/mip-b10-onboard-reth-as-collateral-on-base-deployment/672
-    string public constant name = "MIP-B10 rETH Market Creation";
+    string public constant override name = "MIP-B10 rETH Market Creation";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;

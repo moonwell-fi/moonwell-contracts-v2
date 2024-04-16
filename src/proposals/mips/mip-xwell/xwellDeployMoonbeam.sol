@@ -17,7 +17,7 @@ import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 /// @dev do not use MIP as a base to fork off of, it will not work
 contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
     /// @notice the name of the proposal
-    string public constant name = "MIP xWELL Token Creation Moonbeam";
+    string public constant override name = "MIP xWELL Token Creation Moonbeam";
 
     /// @notice the buffer cap for the xWELL token on both base and moonbeam
     uint112 public constant bufferCap = 38_000_000 * 1e18;

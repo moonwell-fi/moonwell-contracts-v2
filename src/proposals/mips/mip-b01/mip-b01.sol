@@ -13,7 +13,7 @@ import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.so
 /// This MIP sets the IRM for an MToken contract.
 /// It is intended to be used as a template for future MIPs that need to set IRM's.
 contract mipb01 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "MIP-b01";
+    string public constant override name = "MIP-b01";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 

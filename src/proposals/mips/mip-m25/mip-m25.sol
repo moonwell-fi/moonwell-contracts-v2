@@ -11,7 +11,7 @@ import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m25/mip-m25.sol:mipm25
 contract mipm25 is HybridProposal, ParameterValidation {
-    string public constant name = "MIP-M25";
+    string public constant override name = "MIP-M25";
 
     uint256 public constant NEW_MXC_USDC_COLLATERAL_FACTOR = 0.15e18;
     uint256 public constant NEW_MGLIMMER_COLLATERAL_FACTOR = 0.57e18;

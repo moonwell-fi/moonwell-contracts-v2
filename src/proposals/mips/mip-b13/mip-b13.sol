@@ -10,7 +10,7 @@ import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.so
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 
 contract mipb13 is Proposal, CrossChainProposal, Configs, ParameterValidation {
-    string public constant name = "MIP-b13";
+    string public constant override name = "MIP-b13";
 
     uint256 public constant wstETH_NEW_CF = 0.78e18;
     uint256 public constant rETH_NEW_CF = 0.78e18;

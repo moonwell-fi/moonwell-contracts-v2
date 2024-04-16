@@ -26,7 +26,7 @@ export DO_VALIDATE=true
 /// forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv
 
 contract mipb02 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "MIP-b02";
+    string public constant override name = "MIP-b02";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 

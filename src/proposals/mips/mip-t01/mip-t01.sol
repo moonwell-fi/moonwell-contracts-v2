@@ -11,7 +11,7 @@ import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 
 /// This MIP sets the price feeds for wstETH and cbETH.
 contract mipt01 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "mip-t01";
+    string public constant override name = "mip-t01";
 
     constructor() {
         string memory descriptionPath = string(

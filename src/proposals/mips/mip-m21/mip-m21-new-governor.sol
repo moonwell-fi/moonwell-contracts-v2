@@ -12,7 +12,7 @@ import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter
 /// the Multichain Governor.
 /// forge script src/proposals/mips/mip-m19/mip-m19-new-governor.sol:mipm19newGovernor --fork-url moonbase -vvv
 contract mipm21newGovernor is HybridProposal {
-    string public constant name = "MIP-M21";
+    string public constant override name = "MIP-M21";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(

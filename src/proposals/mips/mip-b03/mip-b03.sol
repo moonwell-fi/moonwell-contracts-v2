@@ -24,7 +24,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 /// in the Addresses.sol contract for the network the MTokens are being deployed on.
 contract mip0x is Proposal, CrossChainProposal, Configs {
     /// @notice the name of the proposal
-    string public constant name = "MIP Market Creation";
+    string public constant override name = "MIP Market Creation";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;

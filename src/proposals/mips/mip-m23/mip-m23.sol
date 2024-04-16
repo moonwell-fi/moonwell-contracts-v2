@@ -28,7 +28,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 /// DO_BUILD=true DO_VALIDATE=true DO_RUN=true DO_PRINT=true forge script
 /// src/proposals/mips/mip-m23/mip-m23.sol:mipm23
 contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
-    string public constant name = "MIP-M23";
+    string public constant override name = "MIP-M23";
 
     /// @notice new xWELL buffer cap
     uint256 public constant XWELL_BUFFER_CAP = 100_000_000 * 1e18;
@@ -328,18 +328,9 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
         {
-            string
-                memory mtokensPath = "./src/proposals/mips/mip-m23/mip-m23.json";
-            string memory fileContents = vm.readFile(mtokensPath);
-            bytes memory rawJson = vm.parseJson(fileContents);
-            EmissionConfig[] memory decodedEmissions = abi.decode(
-                rawJson,
-                (EmissionConfig[])
+            _setEmissionConfiguration(
+                "./src/proposals/mips/mip-m23/mip-m23.json"
             );
-
-            for (uint256 i = 0; i < decodedEmissions.length; i++) {
-                emissions[block.chainid].push(decodedEmissions[i]);
-            }
         }
 
         /// -------------- EMISSION CONFIGURATION --------------
