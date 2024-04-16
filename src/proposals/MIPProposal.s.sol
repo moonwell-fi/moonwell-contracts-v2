@@ -69,7 +69,10 @@ abstract contract MIPProposal is Script {
         if (DO_TEARDOWN) teardown(addresses, deployerAddress);
         if (DO_BUILD) build(addresses);
         if (DO_RUN) run(addresses, deployerAddress);
-        if (DO_VALIDATE) validate(addresses, deployerAddress);
+        if (DO_VALIDATE) {
+            validate(addresses, deployerAddress);
+            console.log("Validation completed for proposal ", this.name());
+        }
         /// todo print out actual proposal calldata
         if (DO_PRINT) {
             printCalldata(addresses);
@@ -82,9 +85,10 @@ abstract contract MIPProposal is Script {
                 ,
                 address[] memory recordedAddresses
             ) = addresses.getRecordedAddresses();
-            console.log("New addresses after deploy:");
 
-            console.log("New addresses after deploy:");
+            if (recordedNames.length != 0) {
+                console.log("New addresses after deploy:");
+            }
 
             for (uint256 j = 0; j < recordedNames.length; j++) {
                 console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
@@ -98,6 +102,8 @@ abstract contract MIPProposal is Script {
             }
         }
     }
+
+    function name() external view virtual returns (string memory);
 
     function deploy(Addresses, address) public virtual;
 
