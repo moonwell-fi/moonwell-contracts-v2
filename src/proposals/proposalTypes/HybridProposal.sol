@@ -11,6 +11,7 @@ import {ChainIds} from "@test/utils/ChainIds.sol";
 
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IHybridProposal} from "@proposals/proposalTypes/IHybridProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
@@ -64,11 +65,67 @@ abstract contract HybridProposal is
     uint256 public moonbeamForkId =
         vm.createFork(vm.envOr("MOONBEAM_RPC_URL", DEFAULT_MOONBEAM_RPC_URL));
 
+    /// @notice allows asserting wormhole core correctly emits data to temporal governor
+    event LogMessagePublished(
+        address indexed sender,
+        uint64 sequence,
+        uint32 nonce,
+        bytes payload,
+        uint8 consistencyLevel
+    );
+
+    enum ProposalType {
+        Moonbeam,
+        Base
+    }
+
     /// @notice set the governance proposal's description
     function _setProposalDescription(
         bytes memory newProposalDescription
     ) internal {
         PROPOSAL_DESCRIPTION = newProposalDescription;
+    }
+
+    /// @notice push an action to the Hybrid proposal
+    /// @param target the target contract
+    /// @param data calldata to pass to the target
+    /// @param description description of the action
+    /// @param proposalType whether this action is on moonbeam or base
+    function _pushHybridAction(
+        address target,
+        bytes memory data,
+        string memory description,
+        ProposalType proposalType
+    ) internal {
+        _pushHybridAction(
+            target,
+            0,
+            data,
+            description,
+            proposalType == ProposalType.Moonbeam
+        );
+    }
+
+    /// @notice push an action to the Hybrid proposal
+    /// @param target the target contract
+    /// @param value msg.value to send to target
+    /// @param data calldata to pass to the target
+    /// @param description description of the action
+    /// @param proposalType whether this action is on moonbeam or base
+    function _pushHybridAction(
+        address target,
+        uint256 value,
+        bytes memory data,
+        string memory description,
+        ProposalType proposalType
+    ) internal {
+        _pushHybridAction(
+            target,
+            value,
+            data,
+            description,
+            proposalType == ProposalType.Moonbeam
+        );
     }
 
     /// @notice push an action to the Hybrid proposal
@@ -479,6 +536,22 @@ abstract contract HybridProposal is
                 bytes[] memory payloads
             ) = getTargetsPayloadsValues(addresses);
 
+            if (baseActions.length != 0) {
+                address wormholeCoreMoonbeam = block.chainid == moonBeamChainId
+                    ? addresses.getAddress(
+                        "WORMHOLE_CORE_MOONBEAM",
+                        moonBeamChainId
+                    )
+                    : addresses.getAddress(
+                        "WORMHOLE_CORE_MOONBASE",
+                        moonBaseChainId
+                    );
+                require(
+                    targets[targets.length - 1] == wormholeCoreMoonbeam,
+                    "Wormhole Core target incorrectly set on Moonbeam"
+                );
+            }
+
             /// triple check the values
             for (uint256 i = 0; i < targets.length; i++) {
                 require(
@@ -551,8 +624,105 @@ abstract contract HybridProposal is
         );
 
         {
+            address wormholeCoreBase = addresses.getAddress(
+                "WORMHOLE_CORE_BASE",
+                baseChainId
+            );
+            address wormholeCoreBaseSepolia = addresses.getAddress(
+                "WORMHOLE_CORE_SEPOLIA_BASE",
+                baseSepoliaChainId
+            );
+            address temporalGov = addresses.getAddress(
+                "TEMPORAL_GOVERNOR",
+                sendingChainIdToReceivingChainId[block.chainid]
+            );
+            address wormholeCoreMoonbeam = block.chainid == moonBeamChainId
+                ? addresses.getAddress(
+                    "WORMHOLE_CORE_MOONBEAM",
+                    moonBeamChainId
+                )
+                : addresses.getAddress(
+                    "WORMHOLE_CORE_MOONBASE",
+                    moonBaseChainId
+                );
+
+            address[] memory targets = new address[](baseActions.length);
+            uint256[] memory values = new uint256[](baseActions.length);
+            bytes[] memory calldatas = new bytes[](baseActions.length);
+
+            for (uint256 i = 0; i < baseActions.length; i++) {
+                targets[i] = baseActions[i].target;
+                values[i] = baseActions[i].value;
+                calldatas[i] = baseActions[i].data;
+            }
+
+            /// assert wormhole core BASE address is not in the list of targets on Moonbeam
+            for (uint256 i = 0; i < targets.length; i++) {
+                require(
+                    targets[i] != wormholeCoreBase,
+                    "Wormhole Core BASE address should not be in the list of targets"
+                );
+                require(
+                    targets[i] != wormholeCoreBaseSepolia,
+                    "Wormhole Core BASE Sepolia address should not be in the list of targets"
+                );
+            }
+
+            for (uint256 i = 0; i < baseActions.length; i++) {
+                /// there's 0 reason for any proposal actions to target wormhole core on base
+                require(
+                    baseActions[i].target != wormholeCoreMoonbeam,
+                    "Wormhole Core Moonbeam address should not be in the list of targets for Base"
+                );
+                require(
+                    baseActions[i].target != wormholeCoreBase &&
+                        baseActions[i].target != wormholeCoreBaseSepolia,
+                    "Wormhole Core Base address should not be in the list of targets for Base"
+                );
+
+                if (baseActions.length >= 2 && i < baseActions.length - 2) {
+                    require(
+                        baseActions[i].target != wormholeCoreBase,
+                        "Wormhole Core BASE address should be the last target for Base"
+                    );
+                }
+            }
+
+            for (uint256 i = 0; i < moonbeamActions.length; i++) {
+                require(
+                    moonbeamActions[i].target != temporalGov,
+                    "Temporal Governor should not be in the list of targets for Moonbeam"
+                );
+            }
+
             // Execute the proposal
             uint256 gasStart = gasleft();
+
+            if (baseActions.length != 0) {
+                bytes memory temporalGovExecData = abi.encode(
+                    temporalGov,
+                    targets,
+                    values,
+                    calldatas
+                );
+
+                /// increments each time the Multichain Governor publishes a message
+                uint64 nextSequence = IWormhole(wormholeCoreMoonbeam)
+                    .nextSequence(address(governor));
+
+                /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
+                vm.expectEmit(true, true, true, true, wormholeCoreMoonbeam);
+
+                /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
+                emit LogMessagePublished(
+                    address(governor),
+                    nextSequence,
+                    nonce, /// nonce is hardcoded at 0 in HybridProposal.sol
+                    temporalGovExecData,
+                    consistencyLevel /// consistency level is hardcoded at 200 in CrossChainProposal.sol
+                );
+            }
+
             governor.execute(proposalId);
 
             require(
@@ -566,6 +736,14 @@ abstract contract HybridProposal is
                 IMultichainGovernor.ProposalState.Executed,
             "Proposal state not executed"
         );
+
+        for (uint256 i = 0; i < moonbeamActions.length; i++) {
+            /// there's 0 reason for any proposal actions to call addresses with 0 bytecode
+            require(
+                moonbeamActions[i].target.code.length > 0,
+                "target for moonbeam action not a contract"
+            );
+        }
 
         _verifyMTokensPostRun();
 
@@ -588,7 +766,15 @@ abstract contract HybridProposal is
 
         /// Set the wormhole core address to have the
         /// runtime bytecode of the mock core
-        vm.etch(addresses.getAddress("WORMHOLE_CORE"), address(core).code);
+        vm.etch(
+            block.chainid == baseChainId
+                ? addresses.getAddress("WORMHOLE_CORE_BASE", baseChainId)
+                : addresses.getAddress(
+                    "WORMHOLE_CORE_SEPOLIA_BASE",
+                    baseSepoliaChainId
+                ),
+            address(core).code
+        );
 
         address[] memory targets = new address[](baseActions.length);
         uint256[] memory values = new uint256[](baseActions.length);
@@ -598,6 +784,14 @@ abstract contract HybridProposal is
             targets[i] = baseActions[i].target;
             values[i] = baseActions[i].value;
             payloads[i] = baseActions[i].data;
+        }
+
+        for (uint256 i = 0; i < targets.length; i++) {
+            /// there's 0 reason for any proposal actions to call addresses with 0 bytecode
+            require(
+                targets[i].code.length > 0,
+                "target for base action not a contract"
+            );
         }
 
         bytes memory payload = abi.encode(
