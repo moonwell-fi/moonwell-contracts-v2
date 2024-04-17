@@ -43,12 +43,17 @@ contract mipb16 is
     function teardown(Addresses addresses, address) public override {
         vm.selectFork(baseForkId);
 
-        vm.startPrank(addresses.getAddress("FOUNDATION_MULTISIG"));
-        ERC20(addresses.getAddress("xWELL_PROXY")).approve(
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            100_000_000 * 1e18
-        );
-        vm.stopPrank();
+        /// stop errors on unit tests of proposal infrastructure
+        if (address(addresses) != address(0)) {
+            vm.startPrank(addresses.getAddress("FOUNDATION_MULTISIG"));
+
+            ERC20(addresses.getAddress("xWELL_PROXY")).approve(
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                100_000_000 * 1e18
+            );
+
+            vm.stopPrank();
+        }
     }
 
     /// run this action through the Multichain Governor
