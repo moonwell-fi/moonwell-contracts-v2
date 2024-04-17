@@ -25,7 +25,6 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
             json_output=$(jq -n --arg file "$file" --arg output "$selected_output" '{file: $file, output: $output}')
 
 
-            echo "$json_output"
             # Encode to base64 to ensure safe passage through environment variables
             base64_output=$(echo "$json_output" | base64 | tr -d '\n')
             echo "$base64_output"
