@@ -336,9 +336,7 @@ contract Addresses is IAddresses, Test {
             )
         );
 
-        if (chainId == block.chainid && data.isContract) {
-            _checkAddress(addr, data.isContract, name, chainId);
-        }
+        _checkAddress(addr, data.isContract, name, chainId);
     }
 
     /// @notice check if an address is a contract
