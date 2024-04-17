@@ -5,7 +5,6 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {MTokenStorage} from "@protocol/MTokenInterfaces.sol";
 
 /// @notice Get up to date mToken data without mutating state.
 /// @author Transmissions11 (https://github.com/transmissions11/libcompound)
