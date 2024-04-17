@@ -41,11 +41,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             vm.readFile("./src/proposals/mips/mip-m23/MIP-M23.md")
         );
         _setProposalDescription(proposalDescription);
-    }
-
-    /// @notice proposal's actions mostly happen on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+        primaryForkId = moonbeamForkId;
     }
 
     /// run this action through the Artemis Governor
@@ -392,7 +388,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         _runBase(addresses, temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
-        vm.selectFork(primaryForkId());
+        vm.selectFork(primaryForkId);
     }
 
     function validate(Addresses addresses, address) public override {
