@@ -55,6 +55,8 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             vm.readFile("./docs/MIP00.md")
         );
         _setProposalDescription(proposalDescription);
+        _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
+        _setEmissionConfiguration("./src/proposals/mainnetRewardStreams.json");
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
