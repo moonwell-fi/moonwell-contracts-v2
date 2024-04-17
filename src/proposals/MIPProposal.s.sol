@@ -58,6 +58,8 @@ abstract contract MIPProposal is Script {
     }
 
     function run() public virtual {
+        vm.selectFork(primaryForkId);
+
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
         console.log("deployerAddress: ", deployerAddress);

@@ -33,6 +33,7 @@ contract mipb16 is
         );
 
         _setProposalDescription(proposalDescription);
+
         primaryForkId = baseForkId;
     }
 
