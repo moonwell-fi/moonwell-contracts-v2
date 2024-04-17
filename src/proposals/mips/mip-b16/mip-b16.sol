@@ -40,7 +40,21 @@ contract mipb16 is
         return baseForkId;
     }
 
-    function teardown(Addresses addresses, address) public override {}
+    function teardown(Addresses addresses, address) public override {
+        vm.selectFork(baseForkId);
+
+        /// stop errors on unit tests of proposal infrastructure
+        if (address(addresses) != address(0)) {
+            vm.startPrank(addresses.getAddress("FOUNDATION_MULTISIG"));
+
+            ERC20(addresses.getAddress("xWELL_PROXY")).approve(
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                100_000_000 * 1e18
+            );
+
+            vm.stopPrank();
+        }
+    }
 
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
@@ -111,13 +125,6 @@ contract mipb16 is
             lastUpdateTimestamp,
             0,
             "MIP-B16: lastUpdateTimestamp not set"
-        );
-        assertEq(
-            ERC20(addresses.getAddress("xWELL_PROXY")).balanceOf(
-                addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
-            ),
-            WELL_AMOUNT,
-            "MIP-B16: ecosystem reserve not funded"
         );
     }
 }

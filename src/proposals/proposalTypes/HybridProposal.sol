@@ -585,10 +585,16 @@ abstract contract HybridProposal is
         // Deploy the modified Wormhole Core implementation contract which
         // bypass the guardians signature check
         Implementation core = new Implementation();
+        address wormhole = block.chainid == baseChainId
+            ? addresses.getAddress("WORMHOLE_CORE_BASE", baseChainId)
+            : addresses.getAddress(
+                "WORMHOLE_CORE_SEPOLIA_BASE",
+                baseSepoliaChainId
+            );
 
         /// Set the wormhole core address to have the
         /// runtime bytecode of the mock core
-        vm.etch(addresses.getAddress("WORMHOLE_CORE"), address(core).code);
+        vm.etch(wormhole, address(core).code);
 
         address[] memory targets = new address[](baseActions.length);
         uint256[] memory values = new uint256[](baseActions.length);
