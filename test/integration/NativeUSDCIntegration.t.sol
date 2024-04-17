@@ -72,8 +72,6 @@ contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
             addresses.getAddress("MOONWELL_USDC")
         ) / 10;
 
-        console.log("usdcMintAmount: %d", usdcMintAmount / 1e6);
-
         uint256 borrowAmount = 33_000_000e6;
         address underlying = address(mUSDC.underlying());
 
