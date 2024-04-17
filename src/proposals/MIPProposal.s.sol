@@ -20,7 +20,6 @@ to verify after deploy:
         --chain 8453
 
 */
-
 abstract contract MIPProposal is Script {
     uint256 private PRIVATE_KEY;
     Addresses private addresses;
@@ -34,6 +33,9 @@ abstract contract MIPProposal is Script {
     bool private DO_TEARDOWN;
     bool private DO_VALIDATE;
     bool private DO_PRINT;
+
+    /// @notice primary fork id
+    uint256 public primaryForkId;
 
     constructor() {
         // Default behavior: use Anvil 0 private key
