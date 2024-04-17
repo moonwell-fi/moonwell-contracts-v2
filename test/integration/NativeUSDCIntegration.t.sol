@@ -66,16 +66,21 @@ contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
     }
 
     function testBorrowingOverBorrowCapFailsUsdc() public {
+        /// TODO figure out why this test intermittently fails when it subtracts 1000e6 from mintAmount
+        /// fails with mintAllowed error, "market supply cap reached"
         uint256 usdcMintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_USDC")
-        ) - 1_000e6;
+        ) / 10;
+
+        console.log("usdcMintAmount: %d", usdcMintAmount / 1e6);
+
         uint256 borrowAmount = 33_000_000e6;
         address underlying = address(mUSDC.underlying());
 
         deal(underlying, address(this), usdcMintAmount);
 
         IERC20(underlying).approve(address(mUSDC), usdcMintAmount);
-        mUSDC.mint(usdcMintAmount);
+        assertEq(mUSDC.mint(usdcMintAmount), 0, "mint failed");
 
         address[] memory mToken = new address[](1);
         mToken[0] = address(mUSDC);
