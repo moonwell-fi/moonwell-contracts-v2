@@ -97,7 +97,7 @@ abstract contract CrossChainProposal is
                 "Invalid target for governance"
             );
 
-            /// if there are is no calldata and no eth, the action is not valid
+            /// if there is no calldata and no eth, the action is not valid
             require(
                 (actions[i].data.length == 0 && actions[i].value > 0) ||
                     actions[i].data.length > 0,
