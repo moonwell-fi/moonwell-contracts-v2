@@ -37,7 +37,7 @@ jobs:
               run: echo "DEBUG=true" >> $GITHUB_ENV
 
             - name: Set PROPOSALS_FOLDER
-              run: echo "PROPOSALS_FOLDER=src/proposals/mips/" >> $GITHUB_ENV
+              run: echo "PROPOSALS_FOLDER=src/proposals/mips" >> $GITHUB_ENV
 
             - name: Run Proposals
               id: run_proposals

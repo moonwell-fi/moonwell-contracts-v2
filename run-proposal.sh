@@ -32,5 +32,5 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
         fi
     done
 else
-    echo "No PR changes detected in /examples."
+    echo "No PR changes detected in $FOLDER"
 fi
