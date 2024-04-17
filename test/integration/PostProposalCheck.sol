@@ -51,6 +51,8 @@ contract PostProposalCheck is CreateCode {
             proposals = new TestProposals(mips);
         }
 
+        vm.makePersistent(address(proposals));
+
         proposals.setUp();
         proposals.testProposals(
             false, /// do not log debug output
