@@ -7,7 +7,7 @@ import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 
 abstract contract ProposalChecker is ChainIds {
     /// @notice should only be run while on the Moonbeam fork
-    /// @dev checks that the Moonbeam actions do not include the Base wormhole core address
+    /// @dev checks that the Moonbeam actions do not include the Base wormhole core address and temporal governor address
     /// @param targets the list of targets for the Moonbeam actions
     /// @param addresses the addresses contract
     function checkMoonbeamActions(
