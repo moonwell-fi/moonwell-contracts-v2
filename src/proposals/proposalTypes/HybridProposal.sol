@@ -1,24 +1,24 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
-
+import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
 import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
-import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
+
+import "@forge-std/Test.sol";
 
 import {ChainIds} from "@test/utils/ChainIds.sol";
-
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {IHybridProposal} from "@proposals/proposalTypes/IHybridProposal.sol";
+import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
+import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
 
-import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
+import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -28,11 +28,11 @@ import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 /// We also need to have references to both networks in the proposal
 /// to switch between forks.
 abstract contract HybridProposal is
-    IHybridProposal,
-    IMultichainProposal,
-    MarketCreationHook,
+    ChainIds,
     Proposal,
-    ChainIds
+    ProposalChecker,
+    MarketCreationHook,
+    IMultichainProposal
 {
     using Strings for *;
     using Address for address;
@@ -280,7 +280,12 @@ abstract contract HybridProposal is
     /// the length of each array is the same as the number of actions in the proposal
     function getTargetsPayloadsValues(
         Addresses addresses
-    ) public view returns (address[] memory, uint256[] memory, bytes[] memory) {
+    )
+        public
+        view
+        override
+        returns (address[] memory, uint256[] memory, bytes[] memory)
+    {
         address temporalGovernor;
         if (addresses.isAddressSet("TEMPORAL_GOVERNOR")) {
             temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
@@ -505,7 +510,7 @@ abstract contract HybridProposal is
         Addresses addresses,
         address caller
     ) internal {
-        _verifyActionsPreRunHybrid(moonbeamActions);
+        _verifyActionsPreRun(moonbeamActions);
 
         address governanceToken = addresses.getAddress("WELL");
         address governorAddress = addresses.getAddress(
@@ -514,7 +519,7 @@ abstract contract HybridProposal is
         MultichainGovernor governor = MultichainGovernor(governorAddress);
 
         {
-            // Ensure proposer has meets minimum proposal threshold and quorum votes to pass the proposal
+            // Ensure proposer meets minimum proposal threshold and quorum votes to pass the proposal
             uint256 quorumVotes = governor.quorum();
             uint256 proposalThreshold = governor.proposalThreshold();
             uint256 votingPower = quorumVotes > proposalThreshold
@@ -536,21 +541,8 @@ abstract contract HybridProposal is
                 bytes[] memory payloads
             ) = getTargetsPayloadsValues(addresses);
 
-            if (baseActions.length != 0) {
-                address wormholeCoreMoonbeam = block.chainid == moonBeamChainId
-                    ? addresses.getAddress(
-                        "WORMHOLE_CORE_MOONBEAM",
-                        moonBeamChainId
-                    )
-                    : addresses.getAddress(
-                        "WORMHOLE_CORE_MOONBASE",
-                        moonBaseChainId
-                    );
-                require(
-                    targets[targets.length - 1] == wormholeCoreMoonbeam,
-                    "Wormhole Core target incorrectly set on Moonbeam"
-                );
-            }
+            checkMoonbeamBaseActions(addresses, baseActions, moonbeamActions);
+            checkMoonbeamActions(targets, addresses);
 
             /// triple check the values
             for (uint256 i = 0; i < targets.length; i++) {
@@ -624,18 +616,6 @@ abstract contract HybridProposal is
         );
 
         {
-            address wormholeCoreBase = addresses.getAddress(
-                "WORMHOLE_CORE_BASE",
-                baseChainId
-            );
-            address wormholeCoreBaseSepolia = addresses.getAddress(
-                "WORMHOLE_CORE_SEPOLIA_BASE",
-                baseSepoliaChainId
-            );
-            address temporalGov = addresses.getAddress(
-                "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
-            );
             address wormholeCoreMoonbeam = block.chainid == moonBeamChainId
                 ? addresses.getAddress(
                     "WORMHOLE_CORE_MOONBEAM",
@@ -656,47 +636,10 @@ abstract contract HybridProposal is
                 calldatas[i] = baseActions[i].data;
             }
 
-            /// assert wormhole core BASE address is not in the list of targets on Moonbeam
-            for (uint256 i = 0; i < targets.length; i++) {
-                require(
-                    targets[i] != wormholeCoreBase,
-                    "Wormhole Core BASE address should not be in the list of targets"
-                );
-                require(
-                    targets[i] != wormholeCoreBaseSepolia,
-                    "Wormhole Core BASE Sepolia address should not be in the list of targets"
-                );
-            }
-
-            for (uint256 i = 0; i < baseActions.length; i++) {
-                /// there's 0 reason for any proposal actions to target wormhole core on base
-                require(
-                    baseActions[i].target != wormholeCoreMoonbeam,
-                    "Wormhole Core Moonbeam address should not be in the list of targets for Base"
-                );
-                require(
-                    baseActions[i].target != wormholeCoreBase &&
-                        baseActions[i].target != wormholeCoreBaseSepolia,
-                    "Wormhole Core Base address should not be in the list of targets for Base"
-                );
-
-                if (baseActions.length >= 2 && i < baseActions.length - 2) {
-                    require(
-                        baseActions[i].target != wormholeCoreBase,
-                        "Wormhole Core BASE address should be the last target for Base"
-                    );
-                }
-            }
-
-            for (uint256 i = 0; i < moonbeamActions.length; i++) {
-                require(
-                    moonbeamActions[i].target != temporalGov,
-                    "Temporal Governor should not be in the list of targets for Moonbeam"
-                );
-            }
-
-            // Execute the proposal
-            uint256 gasStart = gasleft();
+            address temporalGov = addresses.getAddress(
+                "TEMPORAL_GOVERNOR",
+                sendingChainIdToReceivingChainId[block.chainid]
+            );
 
             if (baseActions.length != 0) {
                 bytes memory temporalGovExecData = abi.encode(
@@ -723,6 +666,9 @@ abstract contract HybridProposal is
                 );
             }
 
+            uint256 gasStart = gasleft();
+
+            /// Execute the proposal
             governor.execute(proposalId);
 
             require(
@@ -737,14 +683,6 @@ abstract contract HybridProposal is
             "Proposal state not executed"
         );
 
-        for (uint256 i = 0; i < moonbeamActions.length; i++) {
-            /// there's 0 reason for any proposal actions to call addresses with 0 bytecode
-            require(
-                moonbeamActions[i].target.code.length > 0,
-                "target for moonbeam action not a contract"
-            );
-        }
-
         _verifyMTokensPostRun();
 
         delete createdMTokens;
@@ -758,7 +696,7 @@ abstract contract HybridProposal is
         Addresses addresses,
         address temporalGovernorAddress
     ) internal {
-        _verifyActionsPreRunHybrid(baseActions);
+        _verifyActionsPreRun(baseActions);
 
         // Deploy the modified Wormhole Core implementation contract which
         // bypass the guardians signature check
@@ -786,13 +724,8 @@ abstract contract HybridProposal is
             payloads[i] = baseActions[i].data;
         }
 
-        for (uint256 i = 0; i < targets.length; i++) {
-            /// there's 0 reason for any proposal actions to call addresses with 0 bytecode
-            require(
-                targets[i].code.length > 0,
-                "target for base action not a contract"
-            );
-        }
+        checkMoonbeamBaseActions(addresses, baseActions, moonbeamActions);
+        checkBaseActions(targets, addresses);
 
         bytes memory payload = abi.encode(
             temporalGovernorAddress,
@@ -831,7 +764,7 @@ abstract contract HybridProposal is
         comptroller = address(0);
     }
 
-    // @dev utility function to generate a Wormhole VAA payload excluding the guardians signature
+    /// @dev utility function to generate a Wormhole VAA payload excluding the guardians signature
     function generateVAA(
         uint32 timestamp,
         uint16 emitterChainId,
@@ -853,7 +786,7 @@ abstract contract HybridProposal is
         );
     }
 
-    // @dev utility function to convert an address to bytes32
+    /// @dev utility function to convert an address to bytes32
     function addressToBytes(address addr) public pure returns (bytes32) {
         return bytes32(bytes20(addr)) >> 96;
     }
