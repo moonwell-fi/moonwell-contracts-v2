@@ -16,8 +16,8 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
             
             # Extracting the relevant part of the output
             selected_output=$(echo "$clean_output" | awk '
-            /-------- Addresses added after running proposal --------/, /## Setting up 1 EVM./ {
-                if (/## Setting up 1 EVM./) exit;  # Exit before printing the line with "Setting up 1 EVM."
+            /------------------ Proposal Actions ------------------/, /Proposal Description:/ {
+                if (/Proposal Description:/) exit;  # Exit before printing the line with "Proposal Description:"
                 print;
             }
             ')
@@ -25,6 +25,7 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
             json_output=$(jq -n --arg file "$file" --arg output "$selected_output" '{file: $file, output: $output}')
 
 
+            echo "$json_output"
             # Encode to base64 to ensure safe passage through environment variables
             base64_output=$(echo "$json_output" | base64 | tr -d '\n')
             echo "$base64_output"
