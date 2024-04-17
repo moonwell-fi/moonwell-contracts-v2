@@ -30,7 +30,7 @@ contract PrintNewMarketAddCalldataTest is Test, ChainIds {
             0,
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             addresses.getAddress(
-                "WORMHOLE_CORE",
+                "WORMHOLE_CORE_MOONBASE",
                 sendingChainIdToReceivingChainId[block.chainid]
             ) /// get moonbase wormhole address so proposal will work
         );
@@ -55,7 +55,7 @@ contract PrintNewMarketAddCalldataTest is Test, ChainIds {
             0,
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             addresses.getAddress(
-                "WORMHOLE_CORE",
+                "WORMHOLE_CORE_MOONBASE",
                 sendingChainIdToReceivingChainId[block.chainid]
             ) /// get moonbase wormhole address so proposal will work
         );

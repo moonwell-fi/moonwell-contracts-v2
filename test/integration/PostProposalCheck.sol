@@ -41,13 +41,17 @@ contract PostProposalCheck is CreateCode {
                 bytes memory code = getCode(mipPaths[i]);
 
                 mips[i] = deployCode(code);
+                vm.makePersistent(mips[i]);
             }
             proposals = new TestProposals(mips);
         } else {
             bytes memory code = getCode(path);
             mips[0] = deployCode(code);
+            vm.makePersistent(mips[0]);
             proposals = new TestProposals(mips);
         }
+
+        vm.makePersistent(address(proposals));
 
         proposals.setUp();
         proposals.testProposals(
