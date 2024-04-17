@@ -249,17 +249,10 @@ contract xWellRouterTest is Test, ChainIds {
     function testBridgeToBaseFailsRefund() public {
         uint256 mintAmount = xwell.buffer(address(wormholeAdapter));
 
-        uint256 startingXWellBalance = xwell.balanceOf(address(this));
-        uint256 startingXWellTotalSupply = xwell.totalSupply();
-        uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
-
         deal(address(well), address(this), mintAmount);
 
         uint256 bridgeCost = router.bridgeCost() * 2; /// a little extra
         vm.deal(address(this), bridgeCost);
-
-        uint256 startingWellBalance = well.balanceOf(address(this));
-        uint256 startingLockboxWellBalance = well.balanceOf(address(lockbox));
 
         well.approve(address(router), mintAmount);
 
@@ -271,17 +264,10 @@ contract xWellRouterTest is Test, ChainIds {
     function testBridgeToBaseSucceedsNoRefund() public {
         uint256 mintAmount = xwell.buffer(address(wormholeAdapter));
 
-        uint256 startingXWellBalance = xwell.balanceOf(address(this));
-        uint256 startingXWellTotalSupply = xwell.totalSupply();
-        uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
-
         deal(address(well), address(this), mintAmount);
 
         uint256 bridgeCost = router.bridgeCost(); /// no extra, no refund amount
         vm.deal(address(this), bridgeCost);
-
-        uint256 startingWellBalance = well.balanceOf(address(this));
-        uint256 startingLockboxWellBalance = well.balanceOf(address(lockbox));
 
         well.approve(address(router), mintAmount);
 
