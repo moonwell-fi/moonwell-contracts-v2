@@ -8,6 +8,7 @@ FOLDER=$PROPOSALS_FOLDER
 if [[ ! -z "$CHANGED_FILES" ]]; then
     IFS=' ' read -r -a files_array <<< "$CHANGED_FILES"
 
+    echo "Checking for proposals in $FOLDER"
     for file in "${files_array[@]}"; do
         if [[ $file == "$FOLDER"/* ]]; then
             output=$(forge script "$file" 2>&1)
@@ -16,8 +17,8 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
             
             # Extracting the relevant part of the output
             selected_output=$(echo "$clean_output" | awk '
-            /------------------ Proposal Actions ------------------/, /Proposal Description:/ {
-                if (/Proposal Description:/) exit;  # Exit before printing the line with "Proposal Description:"
+            /------------------ Proposal Actions ------------------/, /\n\nProposal Description:/ {
+                if (/\n\nProposal Description:/) exit;  # Exit before printing the line with "Proposal Description:"
                 print;
             }
             ')
