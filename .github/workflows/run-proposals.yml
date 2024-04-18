@@ -63,7 +63,7 @@ jobs:
                       }
 
             - name: Run Proposals
-              run: ./run-proposal.sh
+              run: chmod +x ./run-proposal.sh 
 
             - name: List files in the current directory
               run: ls -lah
