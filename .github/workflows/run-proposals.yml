@@ -1,4 +1,4 @@
-name: "CI"
+name: "Run Proposals"
 
 env:
     FOUNDRY_PROFILE: "ci"
@@ -11,7 +11,7 @@ on:
             - "main"
 
 jobs:
-    run-proposal:
+    run-proposals:
         permissions:
             pull-requests: write
         runs-on: ubuntu-latest
