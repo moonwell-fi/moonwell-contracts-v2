@@ -25,12 +25,13 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
             }
             ')
 
+            echo "Selected output for $file:"
+            echo "$selected_output"
+
             # Only add to results if selected_output is not empty
             if [ ! -z "$selected_output" ]; then
                 json_entry=$(jq -n --arg file "$file" --arg output "$selected_output" '{file: $file, output: $output}')
                 results+=("$json_entry")
-                echo "Proposal output for $file:"
-                echo "$selected_output"
             fi
         fi
     done
@@ -39,6 +40,8 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
     if [ ${#results[@]} -ne 0 ]; then
         json_output=$(jq -n --argjson entries "$(echo ${results[@]} | jq -s '.')" '{"results": $entries}')
         echo "Writing JSON to output.json..."
+        # Create output.json 
+        touch output.json
         # Write JSON to output.json
         echo "$json_output" > output.json
     fi
