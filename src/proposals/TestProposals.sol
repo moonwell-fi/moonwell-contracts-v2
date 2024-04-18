@@ -51,6 +51,7 @@ contract TestProposals is Test {
         DO_VALIDATE = vm.envOr("DO_VALIDATE", true);
 
         addresses = new Addresses();
+        vm.makePersistent(address(addresses));
 
         // proposals.push(Proposal(address(new mipb01())));
         nProposals = proposals.length;
@@ -136,6 +137,12 @@ contract TestProposals is Test {
                 proposals[i].afterDeploySetup(addresses);
             }
 
+            // Teardown step
+            if (teardown) {
+                if (debug) console.log("Proposal", name, "teardown()");
+                proposals[i].teardown(addresses, address(proposals[i]));
+            }
+
             // Build step
             if (build) {
                 if (debug) console.log("Proposal", name, "build()");
@@ -146,12 +153,6 @@ contract TestProposals is Test {
             if (run) {
                 if (debug) console.log("Proposal", name, "run()");
                 proposals[i].run(addresses, address(proposals[i]));
-            }
-
-            // Teardown step
-            if (teardown) {
-                if (debug) console.log("Proposal", name, "teardown()");
-                proposals[i].teardown(addresses, address(proposals[i]));
             }
 
             // Validate step

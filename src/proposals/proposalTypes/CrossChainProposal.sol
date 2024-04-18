@@ -294,10 +294,15 @@ abstract contract CrossChainProposal is
     function printCalldata(Addresses addresses) public override {
         printActions(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress(
-                "WORMHOLE_CORE",
-                sendingChainIdToReceivingChainId[block.chainid]
-            )
+            block.chainid == moonBeamChainId
+                ? addresses.getAddress(
+                    "WORMHOLE_CORE_MOONBEAM",
+                    moonBeamChainId
+                )
+                : addresses.getAddress(
+                    "WORMHOLE_CORE_MOONBASE",
+                    moonBaseChainId
+                )
         );
     }
 
