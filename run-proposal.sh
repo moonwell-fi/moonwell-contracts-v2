@@ -12,6 +12,7 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
 
     for file in "${files_array[@]}"; do
         if [[ $file == "$FOLDER"/* ]]; then
+            echo "Processing $file..."
             output=$(forge script "$file" 2>&1)
             # Removal of ANSI Escape Codes
             clean_output=$(echo "$output" | sed 's/\x1b\[[0-9;]*m//g')
@@ -28,6 +29,8 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
             if [ ! -z "$selected_output" ]; then
                 json_entry=$(jq -n --arg file "$file" --arg output "$selected_output" '{file: $file, output: $output}')
                 results+=("$json_entry")
+                echo "Proposal output for $file:"
+                echo "$selected_output"
             fi
         fi
     done
@@ -35,6 +38,7 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
     # Construct JSON array from results
     if [ ${#results[@]} -ne 0 ]; then
         json_output=$(jq -n --argjson entries "$(echo ${results[@]} | jq -s '.')" '{"results": $entries}')
+        echo "Writing JSON to output.json..."
         # Write JSON to output.json
         echo "$json_output" > output.json
     fi

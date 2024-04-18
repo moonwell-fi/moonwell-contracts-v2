@@ -64,11 +64,14 @@ jobs:
 
             - name: Run Proposal
               run: |
-               chmod +x ./run-proposal.sh
-               if ! ./run-proposal.sh; then
-                 echo "Script failed to execute properly"
-                 exit 1
-               fi
+                chmod +x ./run-proposal.sh
+                ./run-proposal.sh
+                if [ -f output.json ]; then
+                  echo "output.json exists."
+                  ls -lah output.json
+                else
+                  echo "output.json does not exist."
+                fi
 
             - name: List files in the current directory
               run: ls -lah
