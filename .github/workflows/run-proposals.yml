@@ -69,7 +69,6 @@ jobs:
                   echo "result=${output}" >> $GITHUB_ENV
 
             - name: Decode and Comment PR with Proposal Output
-              needs: run_proposals
               id: decode
               if: env.result
               run: |
@@ -78,7 +77,6 @@ jobs:
 
             - name: Use Decoded Output
               if: env.result
-              needs: decode
               uses: actions/github-script@v6
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
