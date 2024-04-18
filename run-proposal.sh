@@ -38,9 +38,5 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
         # Encode to base64 to ensure safe passage through environment variables
         base64_output=$(echo "$json_output" | base64 | tr -d '\n')
         echo "$base64_output"
-    else
-        echo "No relevant output found in $FOLDER"
     fi
-else
-    echo "No PR changes detected in $FOLDER"
 fi
