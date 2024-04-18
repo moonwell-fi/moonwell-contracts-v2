@@ -97,7 +97,7 @@ contract BaseMoonwellViews is Initializable {
     Well public governanceToken;
 
     TokenSaleDistributorInterfaceV1 private _tokenSaleDistributor;
-    SafetyModuleInterfaceV1 private _safetyModule;
+    SafetyModuleInterfaceV1 public safetyModule;
     UniswapV2PairInterface private _governanceTokenLP;
     address private _nativeMarket;
 
@@ -110,7 +110,7 @@ contract BaseMoonwellViews is Initializable {
     function initialize(
         address _comptroller,
         address tokenSaleDistributor,
-        address safetyModule,
+        address _safetyModule,
         address _governanceToken,
         address nativeMarket,
         address governanceTokenLP
@@ -132,7 +132,7 @@ contract BaseMoonwellViews is Initializable {
             address(tokenSaleDistributor)
         );
 
-        _safetyModule = SafetyModuleInterfaceV1(address(safetyModule));
+        safetyModule = SafetyModuleInterfaceV1(address(_safetyModule));
         governanceToken = Well(address(_governanceToken));
         _nativeMarket = nativeMarket;
         _governanceTokenLP = UniswapV2PairInterface(governanceTokenLP);
@@ -216,14 +216,14 @@ contract BaseMoonwellViews is Initializable {
         view
         returns (StakingInfo memory _result)
     {
-        if (address(_safetyModule) != address(0)) {
-            _result.cooldown = _safetyModule.COOLDOWN_SECONDS();
-            _result.unstakeWindow = _safetyModule.UNSTAKE_WINDOW();
-            _result.distributionEnd = _safetyModule.DISTRIBUTION_END();
-            _result.totalSupply = _safetyModule.totalSupply();
+        if (address(safetyModule) != address(0)) {
+            _result.cooldown = safetyModule.COOLDOWN_SECONDS();
+            _result.unstakeWindow = safetyModule.UNSTAKE_WINDOW();
+            _result.distributionEnd = safetyModule.DISTRIBUTION_END();
+            _result.totalSupply = safetyModule.totalSupply();
 
-            SafetyModuleInterfaceV1.AssetData memory asset = _safetyModule
-                .assets(address(_safetyModule));
+            SafetyModuleInterfaceV1.AssetData memory asset = safetyModule
+                .assets(address(safetyModule));
             _result.emissionPerSecond = asset.emissionPerSecond;
             _result.lastUpdateTimestamp = asset.lastUpdateTimestamp;
             _result.index = asset.index;
@@ -240,14 +240,14 @@ contract BaseMoonwellViews is Initializable {
     function getUserStakingVotingPower(
         address _user
     ) public view virtual returns (Votes memory _result) {
-        if (address(_safetyModule) != address(0)) {
-            uint _priorVotes = _safetyModule.getPriorVotes(
+        if (address(safetyModule) != address(0)) {
+            uint _priorVotes = safetyModule.getPriorVotes(
                 _user,
                 block.number - 1
             );
             _result = Votes(
                 _priorVotes,
-                _safetyModule.balanceOf(_user),
+                safetyModule.balanceOf(_user),
                 address(0)
             );
         }
@@ -415,12 +415,12 @@ contract BaseMoonwellViews is Initializable {
     function getUserStakingInfo(
         address _user
     ) public view returns (UserStakingInfo memory _result) {
-        if (address(_safetyModule) != address(0)) {
-            _result.pendingRewards = _safetyModule.getTotalRewardsBalance(
+        if (address(safetyModule) != address(0)) {
+            _result.pendingRewards = safetyModule.getTotalRewardsBalance(
                 _user
             );
-            _result.cooldown = _safetyModule.stakersCooldowns(_user);
-            _result.totalStaked = _safetyModule.balanceOf(_user);
+            _result.cooldown = safetyModule.stakersCooldowns(_user);
+            _result.totalStaked = safetyModule.balanceOf(_user);
         }
     }
 
