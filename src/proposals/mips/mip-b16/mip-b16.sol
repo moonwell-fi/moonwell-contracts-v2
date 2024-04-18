@@ -35,6 +35,7 @@ contract mipb16 is
         _setProposalDescription(proposalDescription);
     }
 
+    /// @notice proposal's actions happen only on base
     function primaryForkId() public view override returns (uint256) {
         return baseForkId;
     }
