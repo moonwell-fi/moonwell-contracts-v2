@@ -81,18 +81,19 @@ contract RecoveryUnitTest is Test, RecoveryDeploy {
     function testEmergencyActionEthToFailingReceiverAsOwnerFails() public {
         FailingReceiver fail = new FailingReceiver();
         vm.deal(address(recover), 1 ether);
-        
-        
+
         Recovery.Call[] memory calls = new Recovery.Call[](1);
         calls[0].target = address(fail);
         calls[0].value = 1 ether;
         calls[0].callData = "";
-        
+
         vm.expectRevert("Recovery: underlying call reverted");
         recover.emergencyAction(calls);
-
     }
 
     /// to receive eth from recovery contract
     fallback() external payable {}
+
+    /// to receive eth from recovery contract
+    receive() external payable {}
 }

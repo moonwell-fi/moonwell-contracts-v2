@@ -1,7 +1,5 @@
 pragma solidity 0.8.19;
 
-import {PausableUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
-
 import {ConfigurablePause} from "@protocol/xWELL/ConfigurablePause.sol";
 
 /// @notice possible states for this contract to be in:
@@ -56,15 +54,12 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
 
     /// @notice pause the contracts, can only pause while the contracts are unpaused
     /// uses up the pause, and starts the pause timer
-    function pause() external whenNotPaused {
+    function pause() public virtual whenNotPaused {
         require(
             msg.sender == pauseGuardian,
             "ConfigurablePauseGuardian: only pause guardian"
         );
-        require(
-            !pauseUsed(),
-            "ConfigurablePauseGuardian: pause already used"
-        );
+        require(!pauseUsed(), "ConfigurablePauseGuardian: pause already used");
 
         /// pause, set pauseStartTime to current block timestamp
         _setPauseTime(uint128(block.timestamp));
@@ -94,7 +89,7 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
     /// however there are no checks on this as only the owner will call this function
     /// and the owner is assumed to be non-malicious
     function _grantGuardian(address newPauseGuardian) internal {
-        address previousPauseGuardian = newPauseGuardian;
+        address previousPauseGuardian = pauseGuardian;
         pauseGuardian = newPauseGuardian;
 
         /// if a new guardian is granted, the contract is automatically unpaused

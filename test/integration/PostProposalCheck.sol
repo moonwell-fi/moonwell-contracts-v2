@@ -19,7 +19,9 @@ contract PostProposalCheck is CreateCode {
         // Run all pending proposals before doing e2e tests
         address[] memory mips = new address[](1);
 
-        if (keccak256(bytes(path)) == '""' || bytes(path).length == 0) {
+        if (
+            keccak256(bytes(path)) == keccak256('""') || bytes(path).length == 0
+        ) {
             /// empty string on both mac and unix, no proposals to run
             mips = new address[](0);
 
@@ -39,13 +41,17 @@ contract PostProposalCheck is CreateCode {
                 bytes memory code = getCode(mipPaths[i]);
 
                 mips[i] = deployCode(code);
+                vm.makePersistent(mips[i]);
             }
             proposals = new TestProposals(mips);
         } else {
             bytes memory code = getCode(path);
             mips[0] = deployCode(code);
+            vm.makePersistent(mips[0]);
             proposals = new TestProposals(mips);
         }
+
+        vm.makePersistent(address(proposals));
 
         proposals.setUp();
         proposals.testProposals(

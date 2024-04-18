@@ -61,4 +61,6 @@ contract IRModelWethUpgradeLiveSystemBaseTest is PostProposalCheck, Configs {
     }
 
     fallback() external payable {}
+
+    receive() external payable {}
 }

@@ -2,11 +2,16 @@
 pragma solidity 0.8.19;
 
 import "@protocol/MErc20.sol";
-import "@protocol/Oracles/PriceOracle.sol";
+import "@protocol/oracles/PriceOracle.sol";
 
 contract SimplePriceOracle is PriceOracle {
     mapping(address => uint) prices;
-    event PricePosted(address asset, uint previousPriceMantissa, uint requestedPriceMantissa, uint newPriceMantissa);
+    event PricePosted(
+        address asset,
+        uint previousPriceMantissa,
+        uint requestedPriceMantissa,
+        uint newPriceMantissa
+    );
 
     address public admin;
 
@@ -14,7 +19,9 @@ contract SimplePriceOracle is PriceOracle {
         admin = msg.sender;
     }
 
-    function getUnderlyingPrice(MToken mToken) override public view returns (uint) {
+    function getUnderlyingPrice(
+        MToken mToken
+    ) public view override returns (uint) {
         if (compareStrings(mToken.symbol(), "mGLMR")) {
             return 1e18;
         } else {
@@ -22,11 +29,19 @@ contract SimplePriceOracle is PriceOracle {
         }
     }
 
-    function setUnderlyingPrice(MToken mToken, uint underlyingPriceMantissa) public {
+    function setUnderlyingPrice(
+        MToken mToken,
+        uint underlyingPriceMantissa
+    ) public {
         require(msg.sender == admin, "Only admin can set the price");
 
         address asset = address(MErc20(address(mToken)).underlying());
-        emit PricePosted(asset, prices[asset], underlyingPriceMantissa, underlyingPriceMantissa);
+        emit PricePosted(
+            asset,
+            prices[asset],
+            underlyingPriceMantissa,
+            underlyingPriceMantissa
+        );
         prices[asset] = underlyingPriceMantissa;
     }
 
@@ -42,7 +57,11 @@ contract SimplePriceOracle is PriceOracle {
         return prices[asset];
     }
 
-    function compareStrings(string memory a, string memory b) internal pure returns (bool) {
-        return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
+    function compareStrings(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
+        return (keccak256(abi.encodePacked((a))) ==
+            keccak256(abi.encodePacked((b))));
     }
 }

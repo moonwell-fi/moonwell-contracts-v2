@@ -33,15 +33,13 @@ contract DeployMoonwellViewsV1 is Script, Test {
     }
 
     function run() public {
-        address deployerAddress = vm.addr(PRIVATE_KEY);
-
         vm.startBroadcast(PRIVATE_KEY);
 
         address unitroller = addresses.getAddress("UNITROLLER");
         address tokenSaleDistributor = addresses.getAddress("TOKENSALE");
         address safetyModule = addresses.getAddress("STWELL");
         address governanceToken = addresses.getAddress("WELL");
-        address nativeMarket = addresses.getAddress("MGLIMMER");
+        address nativeMarket = addresses.getAddress("mGLIMMER");
         address governanceTokenLP = addresses.getAddress("WELL_LP");
 
         MoonwellViewsV1 viewsContract = new MoonwellViewsV1();
@@ -58,7 +56,7 @@ contract DeployMoonwellViewsV1 is Script, Test {
 
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+        new TransparentUpgradeableProxy(
             address(viewsContract),
             address(proxyAdmin),
             initdata

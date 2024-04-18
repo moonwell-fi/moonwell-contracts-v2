@@ -23,23 +23,14 @@ contract PrintNewMarketAddCalldataTest is Test, ChainIds {
     }
 
     function testPrintNewMarketCalldataDeployMToken() public {
-        proposals.testProposals(
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            true
-        ); /// set debug to true, build, and run proposal
+        proposals.testProposals(true, true, true, true, true, true, true, true); /// set debug to true, build, and run proposal
         addresses = proposals.addresses();
 
         proposals.printCalldata(
             0,
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             addresses.getAddress(
-                "WORMHOLE_CORE",
+                "WORMHOLE_CORE_MOONBASE",
                 sendingChainIdToReceivingChainId[block.chainid]
             ) /// get moonbase wormhole address so proposal will work
         );
@@ -64,7 +55,7 @@ contract PrintNewMarketAddCalldataTest is Test, ChainIds {
             0,
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             addresses.getAddress(
-                "WORMHOLE_CORE",
+                "WORMHOLE_CORE_MOONBASE",
                 sendingChainIdToReceivingChainId[block.chainid]
             ) /// get moonbase wormhole address so proposal will work
         );

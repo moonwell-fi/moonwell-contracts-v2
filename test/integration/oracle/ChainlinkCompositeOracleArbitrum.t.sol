@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
-import {ChainlinkCompositeOracle} from "@protocol/Oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 
 contract ChainlinkCompositeOracleArbitrumTest is Test {
     ChainlinkCompositeOracle public oracle;
@@ -25,13 +25,13 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         0xa668682974E3f121185a3cD94f00322beC674275;
 
     /// @notice expected wsteth/usd price
-    uint256 public constant expectedwstEthUsdPrice = 1961081787640101877788;
+    uint256 public constant expectedwstEthUsdPrice = 3850008609010486567260;
 
     /// @notice expected steth/usd price
-    uint256 public constant expectedStethUsdPrice = 1737398897450621932100;
+    uint256 public constant expectedStethUsdPrice = 3312374728235857089159;
 
     /// @notice expected cbeth/usd price
-    uint256 public constant expectedcbEthUsdPrice = 1806705256062053314476;
+    uint256 public constant expectedcbEthUsdPrice = 3523030126865378499375;
 
     function setUp() public {
         oracle = new ChainlinkCompositeOracle(
@@ -40,7 +40,11 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
             wstethstEthOracle
         );
 
-        vm.rollFork(102516073);
+        /// this needs to be updated every 6 months for tests to pass as rolling
+        /// to blocks too far in the past will cause the test to fail due to the rpc provider
+        /// updating this value to the current block number means tests will fail if the eth
+        /// price changes, so those will need to be updated too.
+        vm.rollFork(197234344);
     }
 
     function testSetup() public {
@@ -58,7 +62,6 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         );
         assertTrue(price > 0, "Price should be greater than 0");
 
-        console.log("price: %s", price);
         assertEq(expectedStethUsdPrice, price);
     }
 
@@ -84,8 +87,6 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         assertEq(roundId, 0);
         assertEq(startedAt, 0);
         assertEq(answeredInRound, 0);
-
-        console.log("price: %s", price);
 
         assertEq(expectedwstEthUsdPrice, price);
     }
@@ -116,8 +117,6 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         assertEq(roundId, 0);
         assertEq(startedAt, 0);
         assertEq(answeredInRound, 0);
-
-        console.log("price: %s", price);
 
         assertEq(expectedcbEthUsdPrice, price);
     }

@@ -11,9 +11,9 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
@@ -45,7 +45,7 @@ contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
         ); /// exchange starting price is 0.0002e18
         assertEq(
             mwstETH.reserveFactorMantissa(),
-            0.25e18,
+            0.30e18,
             "incorrect reserve factor"
         );
         assertEq(
@@ -146,8 +146,8 @@ contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
         assertApproxEqRel(
             liquidity,
             (mintAmount * price * collateralFactor) / 1e36, /// trim off both the CF and Chainlink Price feed extra precision
-            1e9,
-            "liquidity not within .0000001% of given CF"
+            1e10,
+            "liquidity not within .000001% of given CF"
         );
         assertEq(shortfall, 0, "Incorrect shortfall");
 

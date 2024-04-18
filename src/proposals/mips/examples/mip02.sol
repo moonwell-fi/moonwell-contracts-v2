@@ -10,12 +10,11 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {Unitroller} from "@protocol/Unitroller.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/IRModels/JumpRateModel.sol";
+import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
 /// @notice This MIP deploys and lists new MTokens for the protocol.
@@ -40,7 +39,11 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
 
         {
             MErc20Delegate mTokenLogic = new MErc20Delegate();
-            addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
+            addresses.addAddress(
+                "MTOKEN_IMPLEMENTATION",
+                address(mTokenLogic),
+                true
+            );
         }
 
         Configs.CTokenConfiguration[]
@@ -70,7 +73,8 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel)
+                        address(irModel),
+                        true
                     );
                 }
 
@@ -111,7 +115,11 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                     ""
                 );
 
-                addresses.addAddress(config.addressesString, address(mToken));
+                addresses.addAddress(
+                    config.addressesString,
+                    address(mToken),
+                    true
+                );
             }
         }
     }

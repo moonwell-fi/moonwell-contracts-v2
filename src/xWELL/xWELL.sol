@@ -3,13 +3,10 @@ pragma solidity 0.8.19;
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {ERC20VotesUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
-import {Initializable} from "@openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
 import {xERC20} from "@protocol/xWELL/xERC20.sol";
-import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
-import {ConfigurablePause} from "@protocol/xWELL/ConfigurablePause.sol";
 import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 
 contract xWELL is
@@ -192,7 +189,9 @@ contract xWELL is
     /// @dev can only be called when unpaused, otherwise the
     /// contract can be paused again
     /// @param newPauseGuardian the new pause guardian
-    function grantPauseGuardian(address newPauseGuardian) external onlyOwner whenNotPaused {
+    function grantPauseGuardian(
+        address newPauseGuardian
+    ) external onlyOwner whenNotPaused {
         _grantGuardian(newPauseGuardian);
     }
 

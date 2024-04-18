@@ -2,6 +2,7 @@
 @openzeppelin-contracts/=lib/openzeppelin-contracts/
 @openzeppelin/=lib/openzeppelin-contracts/
 @openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/
+@wormhole/=lib/wormhole/ethereum/contracts/
 @protocol=src/
 @test=test/
 @proposals=src/proposals/
