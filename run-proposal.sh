@@ -8,7 +8,6 @@ FOLDER=$PROPOSALS_FOLDER
 if [[ ! -z "$CHANGED_FILES" ]]; then
     IFS=' ' read -r -a files_array <<< "$CHANGED_FILES"
 
-    echo "Checking for proposals in $FOLDER"
     for file in "${files_array[@]}"; do
         if [[ $file == "$FOLDER"/* ]]; then
             output=$(forge script "$file" 2>&1)
