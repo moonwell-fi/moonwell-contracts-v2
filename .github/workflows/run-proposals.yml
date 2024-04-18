@@ -65,6 +65,12 @@ jobs:
             - name: Run Proposals
               run: ./run-proposal.sh
 
+            - name: List files in the current directory
+              run: ls -lah
+            
+            - name: Show current working directory
+              run: pwd
+
             - name: Check if output.json exists
               id: check_output
               run: |
