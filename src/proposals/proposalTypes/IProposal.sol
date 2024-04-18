@@ -2,6 +2,17 @@ pragma solidity 0.8.19;
 
 import {Addresses} from "@proposals/Addresses.sol";
 
+struct ProposalAction {
+    /// address to call
+    address target;
+    /// value to send
+    uint256 value;
+    /// calldata to pass to the target
+    bytes data;
+    /// for human description
+    string description;
+}
+
 interface IProposal {
     // Proposal name, e.g. "ZIP16"
     function name() external view returns (string memory);

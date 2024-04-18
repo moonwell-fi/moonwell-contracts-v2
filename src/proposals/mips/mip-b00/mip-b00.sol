@@ -27,7 +27,7 @@ import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol"
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
 contract mipb00 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "MIP-B00";
+    string public constant override name = "MIP-B00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
     uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
@@ -55,6 +55,8 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             vm.readFile("./docs/MIP00.md")
         );
         _setProposalDescription(proposalDescription);
+        _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
+        _setEmissionConfiguration("./src/proposals/mainnetRewardStreams.json");
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as

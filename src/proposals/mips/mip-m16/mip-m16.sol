@@ -8,7 +8,7 @@ import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 
 contract mipm16 is GovernanceProposal {
-    string public constant name = "MIP-M16";
+    string public constant override name = "MIP-M16";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(

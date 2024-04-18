@@ -73,7 +73,10 @@ abstract contract MIPProposal is Script {
         if (DO_TEARDOWN) teardown(addresses, deployerAddress);
         if (DO_BUILD) build(addresses);
         if (DO_RUN) run(addresses, deployerAddress);
-        if (DO_VALIDATE) validate(addresses, deployerAddress);
+        if (DO_VALIDATE) {
+            validate(addresses, deployerAddress);
+            console.log("Validation completed for proposal ", this.name());
+        }
         /// todo print out actual proposal calldata
         if (DO_PRINT) {
             printCalldata(addresses);
@@ -81,27 +84,80 @@ abstract contract MIPProposal is Script {
         }
 
         if (DO_DEPLOY) {
-            (
-                string[] memory recordedNames,
-                ,
-                address[] memory recordedAddresses
-            ) = addresses.getRecordedAddresses();
-            console.log("New addresses after deploy:");
+            {
+                (
+                    string[] memory recordedNames,
+                    ,
+                    address[] memory recordedAddresses
+                ) = addresses.getRecordedAddresses();
 
-            console.log("New addresses after deploy:");
+                if (recordedNames.length != 0) {
+                    console.log("New addresses after deploy:");
+                }
 
-            for (uint256 j = 0; j < recordedNames.length; j++) {
-                console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
-                console.log("        'chainId': %d,", block.chainid);
-                console.log("        'isContract': %s", true, ",");
-                console.log(
-                    "        'name': '%s'\n}%s",
-                    recordedNames[j],
-                    j < recordedNames.length - 1 ? "," : ""
-                );
+                for (uint256 j = 0; j < recordedNames.length; j++) {
+                    console.log(
+                        "{\n        'addr': '%s', ",
+                        recordedAddresses[j]
+                    );
+                    console.log("        'chainId': %d,", block.chainid);
+                    console.log("        'isContract': %s", true, ",");
+                    console.log(
+                        "        'name': '%s'\n}%s",
+                        recordedNames[j],
+                        j < recordedNames.length - 1 ? "," : ""
+                    );
+                }
+            }
+
+            {
+                (
+                    string[] memory recordedNames,
+                    uint256[] memory chainIds,
+                    address[] memory oldRecordedAddresses,
+                    address[] memory newRecordedAddresses
+                ) = addresses.getChangedAddresses();
+
+                if (recordedNames.length != 0) {
+                    console.log("Addresses Changed after deploy:");
+                }
+
+                for (uint256 j = 0; j < recordedNames.length; j++) {
+                    console.log(
+                        "%s on chainid %d changed ",
+                        recordedNames[j],
+                        chainIds[j]
+                    );
+
+                    console.log(
+                        "    %s -> %s\n",
+                        oldRecordedAddresses[j],
+                        newRecordedAddresses[j]
+                    );
+                }
+
+                if (recordedNames.length != 0) {
+                    console.log("\nNew Addresses JSON\n");
+                }
+
+                for (uint256 j = 0; j < recordedNames.length; j++) {
+                    console.log(
+                        "{\n        'addr': '%s', ",
+                        newRecordedAddresses[j]
+                    );
+                    console.log("        'chainId': %d,", chainIds[j]);
+                    console.log("        'isContract': %s", true, ",");
+                    console.log(
+                        "        'name': '%s'\n}%s",
+                        newRecordedAddresses[j],
+                        j < newRecordedAddresses.length - 1 ? "," : ""
+                    );
+                }
             }
         }
     }
+
+    function name() external view virtual returns (string memory);
 
     function deploy(Addresses, address) public virtual;
 

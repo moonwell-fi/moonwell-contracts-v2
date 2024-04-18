@@ -11,7 +11,7 @@ import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 
 contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
-    string public constant name = "TEST_TEMPORAL_GOVERNOR";
+    string public constant override name = "TEST_TEMPORAL_GOVERNOR";
 
     uint256 public constant collateralFactor = 0.6e18;
 

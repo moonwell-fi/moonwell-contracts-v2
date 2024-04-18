@@ -19,7 +19,7 @@ import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m24/mip-m24.sol:mipm24
 contract mipm24 is HybridProposal, MultichainGovernorDeploy {
-    string public constant name = "MIP-M24";
+    string public constant override name = "MIP-M24";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(

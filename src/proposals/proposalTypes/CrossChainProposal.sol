@@ -1,17 +1,19 @@
 pragma solidity 0.8.19;
 
-import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
-import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
-
 import "@forge-std/Test.sol";
+
+import {ChainIds} from "@test/utils/ChainIds.sol";
+import {Addresses} from "@proposals/Addresses.sol";
+import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
+import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
+import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
 abstract contract CrossChainProposal is
+    ChainIds,
+    ProposalChecker,
     MultisigProposal,
-    MarketCreationHook,
-    ChainIds
+    MarketCreationHook
 {
     uint32 private constant nonce = 0; /// nonce for wormhole, unused by Temporal Governor
 
@@ -53,9 +55,21 @@ abstract contract CrossChainProposal is
     /// run pre and post proposal hooks to ensure that mToken markets created by the
     /// proposal are valid and mint at least 1 wei worth of mTokens to address 0
     function _simulateCrossChainActions(address temporalGovAddress) internal {
-        _verifyActionsPreRunMultisig(actions);
+        _verifyActionsPreRun(actions);
         _simulateMultisigActions(temporalGovAddress);
         _verifyMTokensPostRun();
+    }
+
+    /// @notice calls getTargetsPayloadsValues()
+    function getTargetsPayloadsValues(
+        Addresses /// shhh
+    )
+        public
+        view
+        override
+        returns (address[] memory, uint256[] memory, bytes[] memory)
+    {
+        return getTargetsPayloadsValues();
     }
 
     /// @notice return arrays of all items in the proposal that the
@@ -83,16 +97,16 @@ abstract contract CrossChainProposal is
                 "Invalid target for governance"
             );
 
-            /// if there are no args and no eth, the action is not valid
+            /// if there is no calldata and no eth, the action is not valid
             require(
-                (actions[i].arguments.length == 0 && actions[i].value > 0) ||
-                    actions[i].arguments.length > 0,
+                (actions[i].data.length == 0 && actions[i].value > 0) ||
+                    actions[i].data.length > 0,
                 "Invalid arguments for governance"
             );
 
             targets[i] = actions[i].target;
             values[i] = actions[i].value;
-            payloads[i] = actions[i].arguments;
+            payloads[i] = actions[i].data;
         }
 
         return (targets, values, payloads);
@@ -271,7 +285,7 @@ abstract contract CrossChainProposal is
                 actions[i].target,
                 actions[i].value
             );
-            emit log_bytes(actions[i].arguments);
+            emit log_bytes(actions[i].data);
 
             console.log("\n");
         }
