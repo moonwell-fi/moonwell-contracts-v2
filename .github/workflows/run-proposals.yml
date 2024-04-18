@@ -63,30 +63,32 @@ jobs:
                       }
 
             - name: Run Proposals
-              run: |
-                  output=$(./run-proposal.sh)
-                  echo "result=${output}" >> $GITHUB_ENV
+              run: ./run-proposal.sh
 
-            - name: Decode and Comment PR with Proposal Output
-              id: decode
-              if: env.result
+            - name: Check if output.json exists
+              id: check_output
               run: |
-                  echo "${{ env.result }}" | base64 -d > decoded_output.json
-              shell: bash
+                  if [ -f output.json ]; then
+                      echo "EXISTS=true" >> $GITHUB_ENV
+                  else
+                      echo "EXISTS=false" >> $GITHUB_ENV
+                  fi
 
-            - name: Use Decoded Output
-              if: env.result
+            - name: Comment PR with Proposal Output
+              if: env.EXISTS == 'true'
               uses: actions/github-script@v6
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   script: |
                       const fs = require('fs');
-                      const outputs = JSON.parse(fs.readFileSync('decoded_output.json', 'utf8')).results;
-                      const prNumber = context.payload.pull_request.number;
-                      outputs.forEach(output => {
-                          github.rest.issues.createComment({
-                            ...context.repo,
-                            issue_number: prNumber,
-                            body: `### Proposal output for ${output.file}:\n\`\`\`\n${output.output}\n\`\`\``
+                      if (fs.existsSync('output.json')) {
+                          const outputs = JSON.parse(fs.readFileSync('output.json', 'utf8')).results;
+                          const prNumber = context.payload.pull_request.number;
+                          outputs.forEach(output => {
+                              github.rest.issues.createComment({
+                                ...context.repo,
+                                issue_number: prNumber,
+                                body: `### Proposal output for ${output.file}:\n\`\`\`\n${output.output}\n\`\`\``
+                              });
                           });
-                      });
+                      }

@@ -35,8 +35,7 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
     # Construct JSON array from results
     if [ ${#results[@]} -ne 0 ]; then
         json_output=$(jq -n --argjson entries "$(echo ${results[@]} | jq -s '.')" '{"results": $entries}')
-        # Encode to base64 to ensure safe passage through environment variables
-        base64_output=$(echo "$json_output" | base64 | tr -d '\n')
-        echo "$base64_output"
+        # Write JSON to output.json
+        echo "$json_output" > output.json
     fi
 fi
