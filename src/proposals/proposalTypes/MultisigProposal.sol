@@ -1,17 +1,10 @@
 pragma solidity 0.8.19;
 
-import {Proposal} from "./Proposal.sol";
+import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 
 abstract contract MultisigProposal is Proposal {
-    struct MultisigAction {
-        address target;
-        uint256 value;
-        bytes arguments;
-        /// for human description
-        string description;
-    }
-
-    MultisigAction[] public actions;
+    ProposalAction[] public actions;
 
     /// @notice push an action to the Multisig proposal
     function _pushMultisigAction(
@@ -21,10 +14,10 @@ abstract contract MultisigProposal is Proposal {
         string memory description
     ) internal {
         actions.push(
-            MultisigAction({
+            ProposalAction({
                 value: value,
                 target: target,
-                arguments: data,
+                data: data,
                 description: description
             })
         );
@@ -47,7 +40,7 @@ abstract contract MultisigProposal is Proposal {
         for (uint256 i = 0; i < actions.length; i++) {
             (bool success, bytes memory result) = actions[i].target.call{
                 value: actions[i].value
-            }(actions[i].arguments);
+            }(actions[i].data);
 
             require(success, string(result));
         }

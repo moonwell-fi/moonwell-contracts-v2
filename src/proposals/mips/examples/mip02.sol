@@ -22,7 +22,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 /// @dev be sure to include all necessary underlying and price feed addresses in the Addresses.sol contract for the network
 /// the MTokens are being deployed to.
 contract mip02 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "MIP02";
+    string public constant override name = "MIP02";
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
 
     struct CTokenAddresses {

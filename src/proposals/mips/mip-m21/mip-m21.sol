@@ -9,7 +9,7 @@ import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.so
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
 
 contract mipm21 is GovernanceProposal {
-    string public constant name = "MIP-M19";
+    string public constant override name = "MIP-M19";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(

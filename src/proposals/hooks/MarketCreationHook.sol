@@ -5,8 +5,7 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
-import {IHybridProposal} from "@proposals/proposalTypes/IHybridProposal.sol";
+import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 
 contract MarketCreationHook {
     /// private so that contracts that inherit cannot write to functionDetectors
@@ -35,25 +34,7 @@ contract MarketCreationHook {
         functionDetectors[detector] = true;
     }
 
-    function _verifyActionsPreRunMultisig(
-        MultisigProposal.MultisigAction[] memory proposal
-    ) internal {
-        address[] memory targets = new address[](proposal.length);
-        uint256[] memory values = new uint256[](proposal.length);
-        bytes[] memory datas = new bytes[](proposal.length);
-
-        for (uint256 i = 0; i < proposal.length; i++) {
-            targets[i] = proposal[i].target;
-            values[i] = proposal[i].value;
-            datas[i] = proposal[i].arguments;
-        }
-
-        _verifyActionsPreRun(targets, values, datas);
-    }
-
-    function _verifyActionsPreRunHybrid(
-        IHybridProposal.ProposalAction[] memory proposal
-    ) internal {
+    function _verifyActionsPreRun(ProposalAction[] memory proposal) internal {
         address[] memory targets = new address[](proposal.length);
         uint256[] memory values = new uint256[](proposal.length);
         bytes[] memory datas = new bytes[](proposal.length);
@@ -64,13 +45,13 @@ contract MarketCreationHook {
             datas[i] = proposal[i].data;
         }
 
-        _verifyActionsPreRun(targets, values, datas);
+        _verifyActionsPreRunSignatures(targets, values, datas);
     }
 
     /// @notice function to verify market listing actions
     /// run against every MIP cross chain proposal to ensure that the
     /// proposal conforms to the expected market creation pattern.
-    function _verifyActionsPreRun(
+    function _verifyActionsPreRunSignatures(
         address[] memory targets,
         uint256[] memory,
         bytes[] memory datas

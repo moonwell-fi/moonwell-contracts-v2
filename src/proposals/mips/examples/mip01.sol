@@ -16,7 +16,7 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 /// The first step is to open `mainnetRewardStreams.json` and add the reward streams for the
 /// different mTokens. Then generate calldata by adding MIP01 to the TestProposals file.
 contract mipb01 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "MIP01";
+    string public constant override name = "MIP01";
 
     function deploy(Addresses addresses, address) public override {}
 

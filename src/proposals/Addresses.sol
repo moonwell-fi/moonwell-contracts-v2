@@ -335,6 +335,8 @@ contract Addresses is IAddresses, Test {
                 )
             )
         );
+
+        _checkAddress(addr, data.isContract, name, chainId);
     }
 
     /// @notice check if an address is a contract
