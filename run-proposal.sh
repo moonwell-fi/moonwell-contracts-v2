@@ -17,6 +17,9 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
             # Removal of ANSI Escape Codes
             clean_output=$(echo "$output" | sed 's/\x1b\[[0-9;]*m//g')
 
+            echo "Output for $file:"
+            echo "$clean_output"
+
             # Extracting the relevant part of the output
             selected_output=$(echo "$clean_output" | awk '
             /------------------ Proposal Actions ------------------/, /\n\nProposal Description:/ {
