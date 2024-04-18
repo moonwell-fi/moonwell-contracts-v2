@@ -28,9 +28,6 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
             }
             ')
 
-            echo "Selected output for $file:"
-            echo "$selected_output"
-
             # Only add to results if selected_output is not empty
             if [ ! -z "$selected_output" ]; then
                 json_entry=$(jq -n --arg file "$file" --arg output "$selected_output" '{file: $file, output: $output}')
