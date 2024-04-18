@@ -62,8 +62,13 @@ jobs:
                         });
                       }
 
-            - name: Run Proposals
-              run: chmod +x ./run-proposal.sh 
+            - name: Run Proposal
+              run: |
+               chmod +x ./run-proposal.sh
+               if ! ./run-proposal.sh; then
+                 echo "Script failed to execute properly"
+                 exit 1
+               fi
 
             - name: List files in the current directory
               run: ls -lah
