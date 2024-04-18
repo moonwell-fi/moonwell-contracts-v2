@@ -38,7 +38,6 @@ abstract contract ProposalChecker is ChainIds {
             baseSepoliaChainId
         );
 
-        /// assert wormhole core BASE address is not in the list of targets on Moonbeam
         for (uint256 i = 0; i < targets.length; i++) {
             /// there's no reason for any proposal actions to call addresses with 0 bytecode
             require(
@@ -46,11 +45,15 @@ abstract contract ProposalChecker is ChainIds {
                 "target for Moonbeam action not a contract"
             );
             require(
-                targets[i] != temporalGovBase &&
-                    targets[i] != temporalGovBaseSepolia,
+                targets[i] != temporalGovBase,
                 "Temporal Governor should not be in the list of targets for Moonbeam"
             );
+            require(
+                targets[i] != temporalGovBaseSepolia,
+                "Temporal Governor Base Sepolia should not be in the list of targets for Moonbeam"
+            );
 
+            /// assert wormhole core BASE or BASE Sepolia address is not in the list of targets on Moonbeam
             require(
                 targets[i] != wormholeCoreBase,
                 "Wormhole Core Base should not be in the list of targets"
@@ -84,7 +87,6 @@ abstract contract ProposalChecker is ChainIds {
             baseSepoliaChainId
         );
 
-        /// assert wormhole core BASE address is not in the list of targets on Base
         for (uint256 i = 0; i < targets.length; i++) {
             /// there's 0 reason for any proposal actions to call addresses with 0 bytecode
             require(
@@ -92,6 +94,7 @@ abstract contract ProposalChecker is ChainIds {
                 "target for base action not a contract"
             );
 
+            /// assert wormhole core BASE or BASE Sepolia address is not in the list of targets on Base
             require(
                 targets[i] != wormholeCoreBase,
                 "Wormhole Core BASE address should not be in the list of targets"
@@ -103,6 +106,11 @@ abstract contract ProposalChecker is ChainIds {
         }
     }
 
+    /// @notice checks actions on both moonbeam and base
+    /// ensures neither targets wormhole core on either chain
+    /// @param addresses the addresses contract
+    /// @param baseActions the list of actions for the base chain
+    /// @param moonbeamActions the list of actions for the moonbeam chain
     function checkMoonbeamBaseActions(
         Addresses addresses,
         ProposalAction[] memory baseActions,
