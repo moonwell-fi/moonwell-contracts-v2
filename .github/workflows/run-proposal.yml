@@ -82,10 +82,25 @@ jobs:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   script: |
                       const fs = require('fs');
-                      const output = JSON.parse(fs.readFileSync('decoded_output.json', 'utf8'));
+                      const outputs = JSON.parse(fs.readFileSync('decoded_output.json', 'utf8')).results;
                       const prNumber = context.payload.pull_request.number;
-                      github.rest.issues.createComment({
-                        ...context.repo,
-                        issue_number: prNumber,
-                        body: `### Proposal output for ${output.file}:\n\`\`\`\n${output.output}\n\`\`\``
+                      outputs.forEach(output => {
+                          github.rest.issues.createComment({
+                            ...context.repo,
+                            issue_number: prNumber,
+                            body: `### Proposal output for ${output.file}:\n\`\`\`\n${output.output}\n\`\`\``
+                          });
                       });
+
+
+
+
+
+
+
+
+
+
+
+
+
