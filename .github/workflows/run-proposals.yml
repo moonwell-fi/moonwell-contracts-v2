@@ -71,17 +71,7 @@ jobs:
             - name: Show current working directory
               run: pwd
 
-            - name: Check if output.json exists
-              id: check_output
-              run: |
-                  if [ -f output.json ]; then
-                      echo "EXISTS=true" >> $GITHUB_ENV
-                  else
-                      echo "EXISTS=false" >> $GITHUB_ENV
-                  fi
-
             - name: Comment PR with Proposal Output
-              if: env.EXISTS == 'true'
               uses: actions/github-script@v6
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
