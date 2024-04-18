@@ -21,6 +21,7 @@ contract mipm21newGovernor is HybridProposal {
         _setProposalDescription(proposalDescription);
     }
 
+    /// @notice proposal's actions mostly happen on moonbeam
     function primaryForkId() public view override returns (uint256) {
         return moonbeamForkId;
     }

@@ -43,6 +43,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         _setProposalDescription(proposalDescription);
     }
 
+    /// @notice proposal's actions mostly happen on moonbeam
     function primaryForkId() public view override returns (uint256) {
         return moonbeamForkId;
     }
