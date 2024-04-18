@@ -19,7 +19,10 @@ contract mipm21newGovernor is HybridProposal {
             vm.readFile("./src/proposals/mips/mip-m21/MIP-M21.md")
         );
         _setProposalDescription(proposalDescription);
-        primaryForkId = moonbeamForkId;
+    }
+
+    function primaryForkId() public view override returns (uint256) {
+        return moonbeamForkId;
     }
 
     function deploy(Addresses addresses, address) public override {

@@ -31,8 +31,10 @@ contract HybridProposalExample is
             )
         );
         _setProposalDescription(proposalDescription);
+    }
 
-        primaryForkId = baseForkId;
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
     }
 
     function build(Addresses addresses) public override {
@@ -114,7 +116,7 @@ contract HybridProposalExample is
         _runBase(addresses, temporalGovernor);
 
         // switch back to the base fork so we can run the validations
-        vm.selectFork(primaryForkId);
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public override {

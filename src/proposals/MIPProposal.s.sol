@@ -34,9 +34,6 @@ abstract contract MIPProposal is Script {
     bool private DO_VALIDATE;
     bool private DO_PRINT;
 
-    /// @notice primary fork id
-    uint256 public primaryForkId;
-
     constructor() {
         PRIVATE_KEY = uint256(vm.envOr("ETH_PRIVATE_KEY", uint256(123)));
 
@@ -55,7 +52,7 @@ abstract contract MIPProposal is Script {
     }
 
     function run() public virtual {
-        vm.selectFork(primaryForkId);
+        vm.selectFork(primaryForkId());
 
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
@@ -155,6 +152,10 @@ abstract contract MIPProposal is Script {
     }
 
     function name() external view virtual returns (string memory);
+
+    function primaryForkId() public virtual returns (uint256) {
+        return 0;
+    }
 
     function deploy(Addresses, address) public virtual;
 

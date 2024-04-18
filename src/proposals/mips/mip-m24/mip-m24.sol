@@ -26,7 +26,10 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             vm.readFile("./src/proposals/mips/mip-m24/MIP-M24.md")
         );
         _setProposalDescription(proposalDescription);
-        primaryForkId = moonbeamForkId;
+    }
+
+    function primaryForkId() public view override returns (uint256) {
+        return moonbeamForkId;
     }
 
     /// run this action through the Multichain Governor

@@ -33,8 +33,10 @@ contract mipb16 is
         );
 
         _setProposalDescription(proposalDescription);
+    }
 
-        primaryForkId = baseForkId;
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
     }
 
     function teardown(Addresses addresses, address) public override {

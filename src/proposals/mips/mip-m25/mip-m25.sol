@@ -24,7 +24,10 @@ contract mipm25 is HybridProposal, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-m25/MIP-M25.md")
         );
         _setProposalDescription(proposalDescription);
-        primaryForkId = moonbeamForkId;
+    }
+
+    function primaryForkId() public view override returns (uint256) {
+        return moonbeamForkId;
     }
 
     function deploy(Addresses addresses, address) public override {

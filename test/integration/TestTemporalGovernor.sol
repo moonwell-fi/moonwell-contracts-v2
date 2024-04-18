@@ -20,7 +20,10 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
             "Set collateral factor to 0.6e18 for MOONWELL_WETH on Moonbeam."
         );
         _setProposalDescription(proposalDescription);
-        primaryForkId = moonbeamForkId;
+    }
+
+    function primaryForkId() public view override returns (uint256) {
+        return moonbeamForkId;
     }
 
     /// run this action through the Artemis Governor
@@ -48,7 +51,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
-        vm.selectFork(primaryForkId);
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public override {
