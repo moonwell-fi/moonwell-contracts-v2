@@ -39,12 +39,6 @@ jobs:
             - name: Set PROPOSALS_FOLDER
               run: echo "PROPOSALS_FOLDER=src/proposals/mips" >> $GITHUB_ENV
 
-            - name: Run Proposals
-              id: run_proposals
-              run: |
-                  output=$(./run-proposal.sh)
-                  echo "result=${output}" >> $GITHUB_ENV
-
             - name: List and Delete Previous Comments
               uses: actions/github-script@v6
               with:
@@ -68,7 +62,14 @@ jobs:
                         });
                       }
 
+            - name: Run Proposals
+              id: run_proposals
+              run: |
+                  output=$(./run-proposal.sh)
+                  echo "result=${output}" >> $GITHUB_ENV
+
             - name: Decode and Comment PR with Proposal Output
+              needs: run_proposals
               id: decode
               if: env.result
               run: |
@@ -77,6 +78,7 @@ jobs:
 
             - name: Use Decoded Output
               if: env.result
+              needs: decode
               uses: actions/github-script@v6
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
