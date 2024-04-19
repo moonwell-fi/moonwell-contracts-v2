@@ -23,29 +23,57 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
         uint256[] memory proposalIds = governor.liveProposals();
 
         for (uint256 i = 0; i < proposalIds.length; i++) {
+            uint256 proposalId = proposalIds[i];
             (address[] memory targets, , bytes[] memory calldatas) = governor
-                .getProposalData(proposalIds[i]);
+                .getProposalData(proposalId);
 
-            for (uint256 j = 1; j < targets.length; j++) {
+            for (uint256 j = 0; j < targets.length; j++) {
                 require(
                     targets[j].code.length > 0,
                     "Proposal target not a contract"
                 );
+
+                // Simulate proposals execution
+                address well = addresses.getAddress("WELL");
+
+                // cast votes
+                deal(well, address(this), governor.quorum());
+                governor.castVote(proposalId, 0);
+
+                (
+                    ,
+                    ,
+                    ,
+                    ,
+                    uint256 crossChainVoteCollectionEndTimestamp,
+                    ,
+                    ,
+                    ,
+
+                ) = governor.proposalInformation(proposalId);
+
+                vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+
+                governor.execute(proposalId);
             }
 
+            // Check if there is any action on Base
             address wormholeCore = block.chainid == moonBeamChainId
                 ? addresses.getAddress("WORMHOLE_CORE_MOONBEAM")
                 : addresses.getAddress("WORMHOLE_CORE_MOONBASE");
 
             uint256 lastIndex = targets.length - 1;
+
             if (targets[lastIndex] == wormholeCore) {
-                console.log("Wormhole Core address mismatch");
                 // decode calldatas
                 (, bytes memory payload, ) = abi.decode(
-                    calldatas[lastIndex],
+                    slice(
+                        calldatas[lastIndex],
+                        4,
+                        calldatas[lastIndex].length - 4
+                    ),
                     (uint32, bytes, uint8)
                 );
-                console.log("after decode calldatas");
 
                 // decode payload
                 (
@@ -105,4 +133,17 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
     //        temporalGovernor.executeProposal(vaa);
     //
     //    }
+
+    // Utility function to slice bytes array
+    function slice(
+        bytes memory data,
+        uint start,
+        uint length
+    ) internal pure returns (bytes memory) {
+        bytes memory part = new bytes(length);
+        for (uint i = 0; i < length; i++) {
+            part[i] = data[i + start];
+        }
+        return part;
+    }
 }
