@@ -63,7 +63,7 @@ jobs:
                       }
 
             - name: Run Proposal
-              run: ./run-proposal.sh
+              run: ./run-proposals.sh
                 
             - name: Comment PR with Proposal Output
               uses: actions/github-script@v6
