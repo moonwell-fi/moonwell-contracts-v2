@@ -327,7 +327,7 @@ contract MultichainGovernor is
     }
 
     /// @notice returns information about a proposal
-    /// @param oOproposalId the id of the proposal to check
+    /// @param proposalId the id of the proposal to check
     function getProposalData(
         uint256 proposalId
     )

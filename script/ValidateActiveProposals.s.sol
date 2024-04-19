@@ -2,28 +2,33 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 import {console} from "@forge-std/console.sol";
+import {Script} from "@forge-std/Script.sol";
 
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {Script} from "@forge-std/Script.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
+import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 
 contract ValidateActiveProposals is Script, Test, ChainIds {
     /// @notice addresses contract
     Addresses addresses;
 
+    /// @notice fork ID for moonbeam
+    uint256 public moonbeamForkId =
+        vm.createFork(
+            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")),
+            6737902
+        );
+
     /// @notice fork ID for base
     uint256 public baseForkId =
         vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
 
-    /// @notice fork ID for moonbeam
-    uint256 public moonbeamForkId =
-        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")));
-
     constructor() {
         addresses = new Addresses();
+        vm.makePersistent(address(addresses));
     }
 
     function run() public {
@@ -90,7 +95,9 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
                     ),
                     (uint32, bytes, uint8)
                 );
-                address expectedTemporalGov = block.chainid == moonBeamChainId
+
+                vm.selectFork(baseForkId);
+                address expectedTemporalGov = block.chainid == baseChainId
                     ? addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId)
                     : addresses.getAddress(
                         "TEMPORAL_GOVERNOR",
@@ -102,8 +109,8 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
                     (
                         address temporalGovernorAddress,
                         address[] memory targets,
-                        uint256[] memory values,
-                        bytes[] memory payloads
+                        ,
+
                     ) = abi.decode(
                             payload,
                             (address, address[], uint256[], bytes[])
@@ -113,9 +120,14 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
                         temporalGovernorAddress == expectedTemporalGov,
                         "Temporal Governor address mismatch"
                     );
-                }
 
-                vm.selectFork(baseForkId);
+                    for (uint256 j = 0; j < targets.length; j++) {
+                        require(
+                            targets[j].code.length > 0,
+                            "Proposal target not a contract"
+                        );
+                    }
+                }
 
                 bytes memory vaa = generateVAA(
                     uint32(block.timestamp),
@@ -127,6 +139,20 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
                 ITemporalGovernor temporalGovernor = ITemporalGovernor(
                     expectedTemporalGov
                 );
+
+                // Deploy the modified Wormhole Core implementation contract which
+                // bypass the guardians signature check
+                Implementation core = new Implementation();
+                address wormhole = block.chainid == baseChainId
+                    ? addresses.getAddress("WORMHOLE_CORE_BASE", baseChainId)
+                    : addresses.getAddress(
+                        "WORMHOLE_CORE_SEPOLIA_BASE",
+                        baseSepoliaChainId
+                    );
+
+                /// Set the wormhole core address to have the
+                /// runtime bytecode of the mock core
+                vm.etch(wormhole, address(core).code);
 
                 temporalGovernor.queueProposal(vaa);
 
