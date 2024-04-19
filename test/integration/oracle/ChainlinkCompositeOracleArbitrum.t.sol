@@ -25,13 +25,13 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         0xa668682974E3f121185a3cD94f00322beC674275;
 
     /// @notice expected wsteth/usd price
-    uint256 public constant expectedwstEthUsdPrice = 3850008609010486567260;
+    uint256 public constant expectedwstEthUsdPrice = 3614882813449691700118;
 
     /// @notice expected steth/usd price
-    uint256 public constant expectedStethUsdPrice = 3312374728235857089159;
+    uint256 public constant expectedStethUsdPrice = 3105417811919294597070;
 
     /// @notice expected cbeth/usd price
-    uint256 public constant expectedcbEthUsdPrice = 3523030126865378499375;
+    uint256 public constant expectedcbEthUsdPrice = 3308361417282418265307;
 
     function setUp() public {
         oracle = new ChainlinkCompositeOracle(
@@ -44,7 +44,7 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         /// to blocks too far in the past will cause the test to fail due to the rpc provider
         /// updating this value to the current block number means tests will fail if the eth
         /// price changes, so those will need to be updated too.
-        vm.rollFork(197234344);
+        vm.rollFork(202629125);
     }
 
     function testSetup() public {
@@ -82,13 +82,21 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
 
         assertTrue(answer > 0, "Price should be greater than 0");
 
-        assertEq(price, uint256(answer));
-        assertEq(updatedAt, block.timestamp);
-        assertEq(roundId, 0);
-        assertEq(startedAt, 0);
-        assertEq(answeredInRound, 0);
+        assertEq(price, uint256(answer), "Price should be equal to answer");
+        assertEq(
+            updatedAt,
+            block.timestamp,
+            "updatedAt should be equal to block.timestamp"
+        );
+        assertEq(roundId, 0, "roundId should be equal to 0");
+        assertEq(startedAt, 0, "startedAt should be equal to 0");
+        assertEq(answeredInRound, 0, "answeredInRound should be equal to 0");
 
-        assertEq(expectedwstEthUsdPrice, price);
+        assertEq(
+            expectedwstEthUsdPrice,
+            price,
+            "Price should be equal to expectedwstEthUsdPrice"
+        );
     }
 
     function testTestLatestRoundDataCbEth() public {
