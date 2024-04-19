@@ -19,6 +19,8 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
     uint256 public moonbeamForkId =
         vm.createFork(
             vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")),
+            // TODO remove this once tests are done
+            // this is a block on moonbase that contains an active proposal
             6737902
         );
 
@@ -131,7 +133,7 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
 
                 bytes memory vaa = generateVAA(
                     uint32(block.timestamp),
-                    uint16(chainIdToWormHoleId[baseChainId]),
+                    uint16(chainIdToWormHoleId[block.chainid]),
                     addressToBytes(address(governor)),
                     payload
                 );
@@ -172,7 +174,7 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
     ) private pure returns (bytes memory encodedVM) {
         uint64 sequence = 200;
         uint8 version = 1;
-        uint256 nonce = 1;
+        uint256 nonce = 0;
         uint256 consistencyLevel = 200;
 
         encodedVM = abi.encodePacked(
