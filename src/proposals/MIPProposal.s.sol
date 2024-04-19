@@ -20,7 +20,6 @@ to verify after deploy:
         --chain 8453
 
 */
-
 abstract contract MIPProposal is Script {
     uint256 private PRIVATE_KEY;
     Addresses private addresses;
@@ -36,10 +35,7 @@ abstract contract MIPProposal is Script {
     bool private DO_PRINT;
 
     constructor() {
-        // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = uint256(
-            vm.envOr("ETH_PRIVATE_KEY", bytes32(type(uint256).max))
-        );
+        PRIVATE_KEY = uint256(vm.envOr("ETH_PRIVATE_KEY", uint256(123)));
 
         DEBUG = vm.envOr("DEBUG", true);
         DO_DEPLOY = vm.envOr("DO_DEPLOY", true);
@@ -56,6 +52,8 @@ abstract contract MIPProposal is Script {
     }
 
     function run() public virtual {
+        vm.selectFork(primaryForkId());
+
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
         console.log("deployerAddress: ", deployerAddress);
@@ -154,6 +152,10 @@ abstract contract MIPProposal is Script {
     }
 
     function name() external view virtual returns (string memory);
+
+    function primaryForkId() public virtual returns (uint256) {
+        return 0;
+    }
 
     function deploy(Addresses, address) public virtual;
 

@@ -52,18 +52,13 @@ abstract contract HybridProposal is
     /// @notice hex encoded description of the proposal
     bytes public PROPOSAL_DESCRIPTION;
 
-    string public constant DEFAULT_BASE_RPC_URL = "https://mainnet.base.org";
-
     /// @notice fork ID for base
     uint256 public baseForkId =
-        vm.createFork(vm.envOr("BASE_RPC_URL", DEFAULT_BASE_RPC_URL));
-
-    string public constant DEFAULT_MOONBEAM_RPC_URL =
-        "https://rpc.api.moonbeam.network";
+        vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
 
     /// @notice fork ID for moonbeam
     uint256 public moonbeamForkId =
-        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", DEFAULT_MOONBEAM_RPC_URL));
+        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")));
 
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(

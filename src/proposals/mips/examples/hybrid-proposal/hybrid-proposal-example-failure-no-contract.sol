@@ -33,7 +33,7 @@ contract HybridProposalExample is
         _setProposalDescription(proposalDescription);
     }
 
-    /// @notice proposal's actions mostly happen on moonbeam
+    /// @notice proposal's actions mostly happen on base
     function primaryForkId() public view override returns (uint256) {
         return baseForkId;
     }

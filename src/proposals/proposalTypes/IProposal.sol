@@ -17,6 +17,9 @@ interface IProposal {
     // Proposal name, e.g. "ZIP16"
     function name() external view returns (string memory);
 
+    /// primary fork id for this proposal
+    function primaryForkId() external view returns (uint256);
+
     // Deploy contracts and add them to list of addresses
     function deploy(Addresses, address) external;
 
