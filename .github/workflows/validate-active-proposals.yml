@@ -1,0 +1,31 @@
+name: "Validate Active Proposals"
+
+env:
+    FOUNDRY_PROFILE: "ci"
+
+on:
+    workflow_dispatch:
+    pull_request:
+    push:
+        branches:
+            - "main"
+
+jobs:
+    run-proposals:
+        permissions:
+            pull-requests: write
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+              with:
+                  submodules: "recursive"
+
+            - name: "Install Foundry"
+              uses: "foundry-rs/foundry-toolchain@v1"
+
+            - name: Set DEBUG flag
+              run: echo "DEBUG=true" >> $GITHUB_ENV
+           
+            - name: Run Validation Script
+              run: forge script script/ValidateActiveProposals.s.sol
