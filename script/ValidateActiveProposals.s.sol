@@ -6,7 +6,7 @@ import {Script} from "@forge-std/Script.sol";
 
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
@@ -18,7 +18,7 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
     /// @notice fork ID for moonbeam
     uint256 public moonbeamForkId =
         vm.createFork(
-            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")),
+            vm.envOr("MOONBEAM_RPC_URL", string("moonbase")),
             // TODO remove this once tests are done
             // this is a block on moonbase that contains an active proposal
             6737902
@@ -26,7 +26,7 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
 
     /// @notice fork ID for base
     uint256 public baseForkId =
-        vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+        vm.createFork(vm.envOr("BASE_RPC_URL", string("baseSepolia")));
 
     constructor() {
         addresses = new Addresses();
@@ -138,7 +138,7 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
                     payload
                 );
 
-                ITemporalGovernor temporalGovernor = ITemporalGovernor(
+                TemporalGovernor temporalGovernor = TemporalGovernor(
                     expectedTemporalGov
                 );
 
@@ -171,11 +171,11 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
         uint16 emitterChainId,
         bytes32 emitterAddress,
         bytes memory payload
-    ) private pure returns (bytes memory encodedVM) {
+    ) private returns (bytes memory encodedVM) {
         uint64 sequence = 200;
         uint8 version = 1;
-        uint256 nonce = 0;
-        uint256 consistencyLevel = 200;
+        uint32 nonce = 0;
+        uint8 consistencyLevel = 200;
 
         encodedVM = abi.encodePacked(
             version,
