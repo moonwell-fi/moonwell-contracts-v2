@@ -17,16 +17,11 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
 
     /// @notice fork ID for moonbeam
     uint256 public moonbeamForkId =
-        vm.createFork(
-            vm.envOr("MOONBEAM_RPC_URL", string("moonbase")),
-            // TODO remove this once tests are done
-            // this is a block on moonbase that contains an active proposal
-            6737902
-        );
+        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")));
 
     /// @notice fork ID for base
     uint256 public baseForkId =
-        vm.createFork(vm.envOr("BASE_RPC_URL", string("baseSepolia")));
+        vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
 
     constructor() {
         addresses = new Addresses();
@@ -110,7 +105,7 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
                     // decode payload
                     (
                         address temporalGovernorAddress,
-                        address[] memory targets,
+                        address[] memory baseTargets,
                         ,
 
                     ) = abi.decode(
@@ -123,9 +118,9 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
                         "Temporal Governor address mismatch"
                     );
 
-                    for (uint256 j = 0; j < targets.length; j++) {
+                    for (uint256 j = 0; j < baseTargets.length; j++) {
                         require(
-                            targets[j].code.length > 0,
+                            baseTargets[j].code.length > 0,
                             "Proposal target not a contract"
                         );
                     }
@@ -171,7 +166,7 @@ contract ValidateActiveProposals is Script, Test, ChainIds {
         uint16 emitterChainId,
         bytes32 emitterAddress,
         bytes memory payload
-    ) private returns (bytes memory encodedVM) {
+    ) private pure returns (bytes memory encodedVM) {
         uint64 sequence = 200;
         uint8 version = 1;
         uint32 nonce = 0;
