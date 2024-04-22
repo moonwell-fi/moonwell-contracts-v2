@@ -1,10 +1,9 @@
-name: Foundry Eth chainlink oracle integration tests
-
+name: Live Proposal Integration Tests
 on: [pull_request]
 
 jobs:
   run-eth-mainnet-tests:
-    name: eth-live-proposals-integration-tests
+    name: live-proposals-integration-tests
     runs-on: ubuntu-latest
 
     steps:
