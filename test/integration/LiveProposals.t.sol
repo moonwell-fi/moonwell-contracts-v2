@@ -49,7 +49,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         }
     }
 
-    function igtestBranchProposals() public {
+    function testBranchProposals() public {
         for (uint i = 0; i < proposals.length; i++) {
             proposals[i].run();
         }
