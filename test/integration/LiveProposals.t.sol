@@ -34,12 +34,8 @@ contract LiveProposalsIntegrationTest is Test, ChainIds {
         vm.makePersistent(address(addresses));
 
         //git diff --name-only -- src/proposals/mips/
-        string[] memory inputs = new string[](5);
-        inputs[0] = "git";
-        inputs[1] = "diff";
-        inputs[2] = "--name-only";
-        inputs[3] = "--";
-        inputs[4] = "src/proposals/mips/";
+        string[] memory inputs = new string[](1);
+        inputs[0] = "./branch-proposals.sh";
 
         string memory output = string(vm.ffi(inputs));
 
