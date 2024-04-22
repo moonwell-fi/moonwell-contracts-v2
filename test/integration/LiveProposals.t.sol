@@ -21,13 +21,13 @@ contract LiveProposalsIntegrationTest is Test, ChainIds {
     /// @notice fork ID for moonbeam
     uint256 public moonbeamForkId =
         vm.createFork(
-            vm.envOr("MOONBEAM_RPC_URL", string("moonbase")),
-            6737902
+            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
+            //6737902
         );
 
     /// @notice fork ID for base
     uint256 public baseForkId =
-        vm.createFork(vm.envOr("BASE_RPC_URL", string("baseSepolia")));
+        vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
 
     function setUp() public {
         addresses = new Addresses();
@@ -53,7 +53,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds {
 
     function testBranchProposals() public {
         for (uint i = 0; i < proposals.length; i++) {
-            proposals[i].run(addresses, address(this));
+            proposals[i].run();
         }
     }
 
