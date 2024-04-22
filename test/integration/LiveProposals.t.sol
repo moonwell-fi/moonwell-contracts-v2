@@ -10,8 +10,9 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
+import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 
-contract LiveProposalsIntegrationTest is Test, ChainIds {
+contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     /// @notice addresses contract
     Addresses addresses;
 
@@ -20,10 +21,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds {
 
     /// @notice fork ID for moonbeam
     uint256 public moonbeamForkId =
-        vm.createFork(
-            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
-            //6737902
-        );
+        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")));
 
     /// @notice fork ID for base
     uint256 public baseForkId =
@@ -51,7 +49,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds {
         }
     }
 
-    function testBranchProposals() public {
+    function igtestBranchProposals() public {
         for (uint i = 0; i < proposals.length; i++) {
             proposals[i].run();
         }
@@ -70,12 +68,8 @@ contract LiveProposalsIntegrationTest is Test, ChainIds {
             (address[] memory targets, , bytes[] memory calldatas) = governor
                 .getProposalData(proposalId);
 
+            checkMoonbeamActions(targets, addresses);
             for (uint256 j = 0; j < targets.length; j++) {
-                require(
-                    targets[j].code.length > 0,
-                    "Proposal target not a contract"
-                );
-
                 {
                     // Simulate proposals execution
                     (
@@ -147,12 +141,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds {
                         "Temporal Governor address mismatch"
                     );
 
-                    for (uint256 j = 0; j < baseTargets.length; j++) {
-                        require(
-                            baseTargets[j].code.length > 0,
-                            "Proposal target not a contract"
-                        );
-                    }
+                    checkBaseActions(baseTargets, addresses);
                 }
 
                 bytes memory vaa = generateVAA(

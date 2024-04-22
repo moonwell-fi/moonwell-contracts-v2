@@ -201,11 +201,13 @@ abstract contract ProposalChecker is ChainIds {
             }
         }
     }
+
     function getTargetsPayloadsValues(
         Addresses addresses
     )
         public
         view
         virtual
-        returns (address[] memory, uint256[] memory, bytes[] memory);
+        returns (address[] memory, uint256[] memory, bytes[] memory)
+    {}
 }
