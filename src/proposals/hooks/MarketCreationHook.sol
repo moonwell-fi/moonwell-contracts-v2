@@ -127,11 +127,16 @@ contract MarketCreationHook {
             );
         }
 
-        MToken[] memory markets = Comptroller(comptroller).getAllMarkets();
+        if (address(comptroller) != address(0)) {
+            MToken[] memory markets = Comptroller(comptroller).getAllMarkets();
 
-        for (uint256 i = 0; i < markets.length; i++) {
-            require(markets[i].totalSupply() >= 1e8, "empty market");
-            require(markets[i].balanceOf(address(0)) > 0, "no burnt tokens");
+            for (uint256 i = 0; i < markets.length; i++) {
+                require(markets[i].totalSupply() >= 1e8, "empty market");
+                require(
+                    markets[i].balanceOf(address(0)) > 0,
+                    "no burnt tokens"
+                );
+            }
         }
     }
 
