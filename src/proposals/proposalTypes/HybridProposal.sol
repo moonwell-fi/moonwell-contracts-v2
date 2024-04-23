@@ -778,9 +778,4 @@ abstract contract HybridProposal is
             payload
         );
     }
-
-    /// @dev utility function to convert an address to bytes32
-    function addressToBytes(address addr) public pure returns (bytes32) {
-        return bytes32(bytes20(addr)) >> 96;
-    }
 }

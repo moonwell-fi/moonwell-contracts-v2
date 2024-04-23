@@ -1,6 +1,6 @@
 pragma solidity 0.8.19;
 
-import {StringUtils} from "@proposals/utils/StringUtils.sol";
+import {StringUtils} from "@utils/StringUtils.sol";
 import "@forge-std/Test.sol";
 
 contract StringUtilsTest is Test {

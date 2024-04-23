@@ -5,6 +5,7 @@ import "@forge-std/Test.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import {AddressUtils} from "@utils/AddressUtils.sol";
 
 interface InstrumentedExternalEvents {
     /// @notice Emitted when a VAA is decoded
@@ -33,6 +34,7 @@ interface InstrumentedExternalEvents {
 
 contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
     using SafeCast for *;
+    using AddressUtils for address;
 
     TemporalGovernor governor;
     address public constant admin = address(100);
@@ -63,7 +65,7 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         assertTrue(
             governor.isTrustedSender(
                 block.chainid.toUint16(),
-                governor.addressToBytes(admin)
+                governor.toBytes(admin)
             )
         );
         assertEq(address(governor.wormholeBridge()), wormholeCore);

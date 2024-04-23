@@ -9,7 +9,7 @@ import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
-import {StringUtils} from "@proposals/utils/StringUtils.sol";
+import {StringUtils} from "@utils/StringUtils.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";

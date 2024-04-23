@@ -9,11 +9,16 @@ import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
+import {StringUtils} from "@utils/StringUtils.sol";
+import {BytesUtils} from "@utils/BytesUtils.sol";
 import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 
 contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
+    using StringUtils for string;
+    using BytesUtils for bytes;
+
     /// @notice addresses contract
     Addresses addresses;
 
@@ -47,7 +52,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         string memory output = string(vm.ffi(inputs));
 
         // Convert output to array of lines
-        string[] memory lines = splitString(output, "\n");
+        string[] memory lines = output.split("\n");
 
         proposals = new Proposal[](lines.length);
 
@@ -117,8 +122,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
                 // decode calldatas
                 (, payload, ) = abi.decode(
-                    slice(
-                        calldatas[lastIndex],
+                    calldatas[lastIndex].slice(
                         4,
                         calldatas[lastIndex].length - 4
                     ),
@@ -224,60 +228,5 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
             consistencyLevel,
             payload
         );
-    }
-
-    /// @dev utility function to convert an address to bytes32
-    function addressToBytes(address addr) private pure returns (bytes32) {
-        return bytes32(bytes20(addr)) >> 96;
-    }
-
-    // @dev Utility function to slice bytes array
-    function slice(
-        bytes memory data,
-        uint start,
-        uint length
-    ) private pure returns (bytes memory) {
-        bytes memory part = new bytes(length);
-        for (uint i = 0; i < length; i++) {
-            part[i] = data[i + start];
-        }
-        return part;
-    }
-
-    // @dev Utility function to split string by delimiter
-    function splitString(
-        string memory _base,
-        string memory _value
-    ) private pure returns (string[] memory splitArr) {
-        bytes memory base = bytes(_base);
-        bytes memory value = bytes(_value);
-        uint count = 1;
-        for (uint i = 0; i < base.length; i++) {
-            if (base[i] == value[0]) {
-                count++;
-            }
-        }
-
-        splitArr = new string[](count);
-        uint index = 0;
-        uint lastIndex = 0;
-        for (uint i = 0; i < base.length; i++) {
-            if (base[i] == value[0]) {
-                bytes memory word = new bytes(i - lastIndex);
-                for (uint j = lastIndex; j < i; j++) {
-                    word[j - lastIndex] = base[j];
-                }
-                splitArr[index] = string(word);
-                index++;
-                lastIndex = i + 1;
-            }
-        }
-        if (lastIndex <= base.length) {
-            bytes memory word = new bytes(base.length - lastIndex);
-            for (uint j = lastIndex; j < base.length; j++) {
-                word[j - lastIndex] = base[j];
-            }
-            splitArr[index] = string(word);
-        }
     }
 }
