@@ -16,7 +16,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Test Contracts
+      - name: Live Proposal Integration Tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: time forge test --mc LiveProposalsIntegrationTest --ffi

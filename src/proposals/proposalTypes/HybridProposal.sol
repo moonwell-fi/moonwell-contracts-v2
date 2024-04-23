@@ -657,7 +657,7 @@ abstract contract HybridProposal is
                     nextSequence,
                     nonce, /// nonce is hardcoded at 0 in HybridProposal.sol
                     temporalGovExecData,
-                    consistencyLevel /// consistency level is hardcoded at 200 in CrossChainProposal.sol
+                    consistencyLevel /// consistency level is hardcoded at 200 in HybridProposal.sol
                 );
             }
 

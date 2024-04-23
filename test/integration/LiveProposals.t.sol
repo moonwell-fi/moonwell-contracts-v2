@@ -6,11 +6,12 @@ import {console} from "@forge-std/console.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Addresses} from "@proposals/Addresses.sol";
+import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
+import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
-import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
-import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 
 contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     /// @notice addresses contract
@@ -26,6 +27,15 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     /// @notice fork ID for base
     uint256 public baseForkId =
         vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+
+    /// @notice allows asserting wormhole core correctly emits data to temporal governor
+    event LogMessagePublished(
+        address indexed sender,
+        uint64 sequence,
+        uint32 nonce,
+        bytes payload,
+        uint8 consistencyLevel
+    );
 
     function setUp() public {
         addresses = new Addresses();
@@ -68,33 +78,28 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                 .getProposalData(proposalId);
 
             checkMoonbeamActions(targets, addresses);
-            for (uint256 j = 0; j < targets.length; j++) {
-                {
-                    // Simulate proposals execution
-                    (
-                        ,
-                        uint256 voteSnapshotTimestamp,
-                        uint256 votingStartTime,
-                        ,
-                        uint256 crossChainVoteCollectionEndTimestamp,
-                        ,
-                        ,
-                        ,
+            {
+                // Simulate proposals execution
+                (
+                    ,
+                    uint256 voteSnapshotTimestamp,
+                    uint256 votingStartTime,
+                    ,
+                    uint256 crossChainVoteCollectionEndTimestamp,
+                    ,
+                    ,
+                    ,
 
-                    ) = governor.proposalInformation(proposalId);
+                ) = governor.proposalInformation(proposalId);
 
-                    address well = addresses.getAddress("xWELL_PROXY");
-                    vm.warp(voteSnapshotTimestamp - 1);
-                    deal(well, address(this), governor.quorum());
-                    xWELL(well).delegate(address(this));
+                address well = addresses.getAddress("xWELL_PROXY");
+                vm.warp(voteSnapshotTimestamp - 1);
+                deal(well, address(this), governor.quorum());
+                xWELL(well).delegate(address(this));
 
-                    vm.warp(votingStartTime);
-                    governor.castVote(proposalId, 0);
-
-                    vm.warp(crossChainVoteCollectionEndTimestamp + 1);
-
-                    governor.execute(proposalId);
-                }
+                vm.warp(votingStartTime);
+                governor.castVote(proposalId, 0);
+                vm.warp(crossChainVoteCollectionEndTimestamp + 1);
             }
 
             // Check if there is any action on Base
@@ -103,10 +108,15 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                 : addresses.getAddress("WORMHOLE_CORE_MOONBASE");
 
             uint256 lastIndex = targets.length - 1;
-
+            bytes memory payload;
             if (targets[lastIndex] == wormholeCore) {
+                /// increments each time the Multichain Governor publishes a message
+                uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
+                    address(governor)
+                );
+
                 // decode calldatas
-                (, bytes memory payload, ) = abi.decode(
+                (, payload, ) = abi.decode(
                     slice(
                         calldatas[lastIndex],
                         4,
@@ -115,6 +125,21 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     (uint32, bytes, uint8)
                 );
 
+                /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
+                vm.expectEmit(true, true, true, true, wormholeCore);
+
+                /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
+                emit LogMessagePublished(
+                    address(governor),
+                    nextSequence,
+                    0,
+                    payload,
+                    200
+                );
+            }
+            governor.execute(proposalId);
+
+            if (targets[lastIndex] == wormholeCore) {
                 vm.selectFork(baseForkId);
                 address expectedTemporalGov = block.chainid == baseChainId
                     ? addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId)
