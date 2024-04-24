@@ -56,6 +56,8 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         // Convert output to array of lines
         string[] memory lines = output.split("\n");
 
+        console.log("lines length", lines.length);
+        console.log("lines[0]", lines[0]);
         proposals = new Proposal[](lines.length);
 
         for (uint i = 0; i < lines.length; i++) {
