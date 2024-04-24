@@ -230,7 +230,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         Addresses addresses
     )
         public
-        virtual
+        view
         override
         returns (address[] memory, uint256[] memory, bytes[] memory)
     {}
