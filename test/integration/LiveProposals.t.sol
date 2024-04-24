@@ -229,7 +229,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     }
 
     function getTargetsPayloadsValues(
-        Addresses addresses
+        Addresses
     )
         public
         view

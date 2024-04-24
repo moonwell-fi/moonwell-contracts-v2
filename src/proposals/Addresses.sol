@@ -105,6 +105,22 @@ contract Addresses is IAddresses, Test {
         );
     }
 
+    /// @notice add or change an address (if is aready set) for the current chainId
+    /// @param name the name of the address
+    /// @param addr the address to change to
+    /// @param isContract whether the address is a contract
+    function addOrChangeAddress(
+        string memory name,
+        address addr,
+        bool isContract
+    ) public {
+        if (isAddressSet(name)) {
+            changeAddress(name, addr, isContract);
+        } else {
+            addAddress(name, addr, isContract);
+        }
+    }
+
     /// @notice add an address for a specific chainId
     /// @param name the name of the address
     /// @param addr the address to add

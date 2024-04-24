@@ -288,12 +288,15 @@ contract Configs is Test {
                     emissions[_localChainId].push(emissionConfig);
                 }
 
-                if (block.chainid == _baseSepoliaChainId) {
+                if (
+                    block.chainid == _baseSepoliaChainId ||
+                    block.chainid == _baseChainId
+                ) {
                     /// pay USDBC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({
                         mToken: mTokenConfigs[i].addressesString,
                         owner: "EMISSIONS_ADMIN",
-                        emissionToken: addresses.getAddress("xWELL"),
+                        emissionToken: addresses.getAddress("xWELL_PROXY"),
                         supplyEmissionPerSec: 0,
                         borrowEmissionsPerSec: 0,
                         endTime: block.timestamp + 4 weeks
