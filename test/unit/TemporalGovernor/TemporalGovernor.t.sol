@@ -5,7 +5,7 @@ import "@forge-std/Test.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import {AddressUtils} from "@utils/AddressUtils.sol";
+import {Address} from "@utils/Address.sol";
 
 interface InstrumentedExternalEvents {
     /// @notice Emitted when a VAA is decoded
@@ -34,7 +34,7 @@ interface InstrumentedExternalEvents {
 
 contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
     using SafeCast for *;
-    using AddressUtils for address;
+    using Address for address;
 
     TemporalGovernor governor;
     address public constant admin = address(100);
@@ -65,7 +65,7 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         assertTrue(
             governor.isTrustedSender(
                 block.chainid.toUint16(),
-                governor.toBytes(admin)
+                admin.toBytes()
             )
         );
         assertEq(address(governor.wormholeBridge()), wormholeCore);
@@ -134,13 +134,13 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         assertTrue(
             governor.isTrustedSender(
                 block.chainid.toUint16(),
-                governor.addressToBytes(newAdmin)
+                newAdmin.toBytes()
             )
         );
         assertTrue(
             governor.isTrustedSender(
                 block.chainid.toUint16(),
-                governor.addressToBytes(admin)
+                admin.toBytes()
             )
         );
     }
@@ -160,13 +160,13 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         assertFalse(
             governor.isTrustedSender(
                 block.chainid.toUint16(),
-                governor.addressToBytes(newAdmin)
+                newAdmin.toBytes()
             )
         );
         assertTrue(
             governor.isTrustedSender(
                 block.chainid.toUint16(),
-                governor.addressToBytes(admin)
+                admin.toBytes()
             )
         );
     }

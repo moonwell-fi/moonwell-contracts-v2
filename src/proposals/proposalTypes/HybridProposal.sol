@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
 import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import "@forge-std/Test.sol";
@@ -19,6 +18,7 @@ import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {Address} from "@utils/Address.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -34,7 +34,7 @@ abstract contract HybridProposal is
     MarketCreationHook,
     IMultichainProposal
 {
-    using Strings for *;
+    using Strings for string;
     using Address for address;
 
     /// @notice nonce for wormhole, unused by Temporal Governor
@@ -727,12 +727,11 @@ abstract contract HybridProposal is
             payloads
         );
 
-        bytes32 governor = addressToBytes(
+        bytes32 governor = 
             addresses.getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
                 sendingChainIdToReceivingChainId[block.chainid]
-            )
-        );
+            ).toBytes();
 
         bytes memory vaa = generateVAA(
             uint32(block.timestamp),

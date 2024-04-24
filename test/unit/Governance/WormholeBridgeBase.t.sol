@@ -13,8 +13,11 @@ import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {Address} from "@utils/Address.sol";
 
 contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
+    using Address for address;
+    
     event ProposalCanceled(uint256 proposalId);
 
     function setUp() public override {
@@ -118,7 +121,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         voteCollection.receiveWormholeMessages{value: 100}(
             "",
             new bytes[](0),
-            addressToBytes(address(this)),
+            address(this).toBytes(),
             moonBeamWormholeChainId,
             bytes32(type(uint256).max)
         );
@@ -127,7 +130,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         governor.receiveWormholeMessages{value: 100}(
             "",
             new bytes[](0),
-            addressToBytes(address(this)),
+            address(this).toBytes(),
             moonBeamWormholeChainId,
             bytes32(type(uint256).max)
         );
@@ -139,7 +142,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         voteCollection.receiveWormholeMessages{value: 0}(
             "",
             new bytes[](0),
-            addressToBytes(address(this)),
+            address(this).toBytes(),
             moonBeamWormholeChainId,
             bytes32(type(uint256).max)
         );
@@ -148,7 +151,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         governor.receiveWormholeMessages{value: 0}(
             "",
             new bytes[](0),
-            addressToBytes(address(this)),
+            address(this).toBytes(),
             baseWormholeChainId,
             bytes32(type(uint256).max)
         );
@@ -165,7 +168,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         voteCollection.receiveWormholeMessages{value: 0}(
             payloadVoteCollection,
             new bytes[](0), /// field unchecked in contract
-            addressToBytes(address(governor)),
+            address(governor).toBytes(),
             moonBeamWormholeChainId,
             bytes32(type(uint256).max)
         );
@@ -175,7 +178,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         governor.receiveWormholeMessages{value: 0}(
             payloadGovernor,
             new bytes[](0), /// field unchecked in contract
-            addressToBytes(address(voteCollection)),
+            address(voteCollection).toBytes(),
             baseWormholeChainId,
             bytes32(type(uint256).max)
         );
@@ -194,7 +197,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         governor.receiveWormholeMessages{value: 0}(
             payload,
             new bytes[](0), /// field unchecked in contract
-            addressToBytes(address(voteCollection)),
+            address(voteCollection).toBytes(),
             baseWormholeChainId,
             bytes32(type(uint256).max)
         );
@@ -226,11 +229,4 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
             );
     }
 
-    /// @notice Wormhole addresses are denominated in 32 byte chunks. Converting the address to a bytes20
-    /// then to a bytes32 *left* aligns it, so we right shift to get the proper data
-    /// @param addr The address to convert
-    /// @return The address as a bytes32
-    function addressToBytes(address addr) public pure returns (bytes32) {
-        return bytes32(bytes20(addr)) >> 96;
-    }
 }

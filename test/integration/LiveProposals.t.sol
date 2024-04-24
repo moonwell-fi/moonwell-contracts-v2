@@ -9,15 +9,17 @@ import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
-import {StringUtils} from "@utils/StringUtils.sol";
-import {BytesUtils} from "@utils/BytesUtils.sol";
+import {String} from "@utils/String.sol";
+import {Bytes} from "@utils/Bytes.sol";
+import { Address } from "@utils/Address.sol";
 import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 
 contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
-    using StringUtils for string;
-    using BytesUtils for bytes;
+    using String for string;
+    using Bytes for bytes;
+    using Address for address;
 
     /// @notice addresses contract
     Addresses addresses;
@@ -175,7 +177,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                 bytes memory vaa = generateVAA(
                     uint32(block.timestamp),
                     uint16(chainIdToWormHoleId[block.chainid]),
-                    addressToBytes(address(governor)),
+                    address(governor).toBytes(),
                     payload
                 );
 
