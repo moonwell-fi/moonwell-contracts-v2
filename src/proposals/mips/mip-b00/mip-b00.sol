@@ -56,7 +56,14 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./docs/MIP00.md")
+            vm.readFile(
+                string(
+                    abi.encodePacked(
+                        vm.projectRoot(),
+                        "/src/proposals/mips/mip-b00/MIP-B00.md"
+                    )
+                )
+            )
         );
         _setProposalDescription(proposalDescription);
         _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
