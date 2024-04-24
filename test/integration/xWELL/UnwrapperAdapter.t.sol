@@ -14,8 +14,11 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
+import {Address} from "@utils/Address.sol";
 
 contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
+    using Address for address;
+
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
 
@@ -104,7 +107,7 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
         assertEq(externalAddresses.length, 1, "incorrect trusted senders");
         assertEq(
             externalAddresses[0],
-            wormholeAdapter.addressToBytes(address(wormholeAdapter)),
+            address(wormholeAdapter).toBytes(),
             "incorrect actual trusted senders"
         );
         assertTrue(
@@ -233,9 +236,7 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
 
         uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
         bytes memory payload = abi.encode(user, mintAmount);
-        bytes32 sender = wormholeAdapter.addressToBytes(
-            address(wormholeAdapter)
-        );
+        bytes32 sender = address(wormholeAdapter).toBytes();
         bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
 
         vm.prank(address(wormholeAdapter.wormholeRelayer()));

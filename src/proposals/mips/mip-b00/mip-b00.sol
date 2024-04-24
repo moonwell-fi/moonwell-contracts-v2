@@ -26,7 +26,11 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
+import {Address} from "@utils/Address.sol";
+
 contract mipb00 is Proposal, CrossChainProposal, Configs {
+    using Address for address;
+
     string public constant override name = "MIP-B00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
     uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
@@ -663,12 +667,12 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
         assertTrue(
             governor.isTrustedSender(
                 chainIdToWormHoleId[block.chainid],
-                governor.addressToBytes(
-                    addresses.getAddress(
+                addresses
+                    .getAddress(
                         "MOONBEAM_TIMELOCK",
                         sendingChainIdToReceivingChainId[block.chainid]
                     )
-                )
+                    .toBytes()
             )
         );
         {
