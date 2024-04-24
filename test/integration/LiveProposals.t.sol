@@ -11,7 +11,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {String} from "@utils/String.sol";
 import {Bytes} from "@utils/Bytes.sol";
-import { Address } from "@utils/Address.sol";
+import {Address} from "@utils/Address.sol";
 import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";

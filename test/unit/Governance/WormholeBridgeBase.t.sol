@@ -17,7 +17,7 @@ import {Address} from "@utils/Address.sol";
 
 contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
     using Address for address;
-    
+
     event ProposalCanceled(uint256 proposalId);
 
     function setUp() public override {
@@ -228,5 +228,4 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
                 description
             );
     }
-
 }

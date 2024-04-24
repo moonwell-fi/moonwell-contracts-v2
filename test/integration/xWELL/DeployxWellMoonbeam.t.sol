@@ -17,7 +17,7 @@ import {Address} from "@utils/Address.sol";
 
 contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
     using Address for address;
-    
+
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
 

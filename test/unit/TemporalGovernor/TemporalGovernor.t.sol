@@ -63,10 +63,7 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
 
     function testSetupCorrectly() public {
         assertTrue(
-            governor.isTrustedSender(
-                block.chainid.toUint16(),
-                admin.toBytes()
-            )
+            governor.isTrustedSender(block.chainid.toUint16(), admin.toBytes())
         );
         assertEq(address(governor.wormholeBridge()), wormholeCore);
     }
@@ -138,10 +135,7 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
             )
         );
         assertTrue(
-            governor.isTrustedSender(
-                block.chainid.toUint16(),
-                admin.toBytes()
-            )
+            governor.isTrustedSender(block.chainid.toUint16(), admin.toBytes())
         );
     }
 
@@ -164,10 +158,7 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
             )
         );
         assertTrue(
-            governor.isTrustedSender(
-                block.chainid.toUint16(),
-                admin.toBytes()
-            )
+            governor.isTrustedSender(block.chainid.toUint16(), admin.toBytes())
         );
     }
 

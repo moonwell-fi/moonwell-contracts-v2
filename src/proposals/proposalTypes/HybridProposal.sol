@@ -727,11 +727,12 @@ abstract contract HybridProposal is
             payloads
         );
 
-        bytes32 governor = 
-            addresses.getAddress(
+        bytes32 governor = addresses
+            .getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
                 sendingChainIdToReceivingChainId[block.chainid]
-            ).toBytes();
+            )
+            .toBytes();
 
         bytes memory vaa = generateVAA(
             uint32(block.timestamp),
