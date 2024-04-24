@@ -147,12 +147,9 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
             if (targets[lastIndex] == wormholeCore) {
                 vm.selectFork(baseForkId);
-                address expectedTemporalGov = block.chainid == baseChainId
-                    ? addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId)
-                    : addresses.getAddress(
-                        "TEMPORAL_GOVERNOR",
-                        baseSepoliaChainId
-                    );
+                address expectedTemporalGov = addresses.getAddress(
+                    "TEMPORAL_GOVERNOR"
+                );
 
                 {
                     // decode payload
@@ -189,11 +186,8 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                 // bypass the guardians signature check
                 Implementation core = new Implementation();
                 address wormhole = block.chainid == baseChainId
-                    ? addresses.getAddress("WORMHOLE_CORE_BASE", baseChainId)
-                    : addresses.getAddress(
-                        "WORMHOLE_CORE_SEPOLIA_BASE",
-                        baseSepoliaChainId
-                    );
+                    ? addresses.getAddress("WORMHOLE_CORE_BASE")
+                    : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE");
 
                 /// Set the wormhole core address to have the
                 /// runtime bytecode of the mock core
@@ -231,4 +225,13 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
             payload
         );
     }
+
+    function getTargetsPayloadsValues(
+        Addresses addresses
+    )
+        public
+        virtual
+        override
+        returns (address[] memory, uint256[] memory, bytes[] memory)
+    {}
 }

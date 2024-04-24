@@ -208,6 +208,5 @@ abstract contract ProposalChecker is ChainIds {
         public
         view
         virtual
-        returns (address[] memory, uint256[] memory, bytes[] memory)
-    {}
+        returns (address[] memory, uint256[] memory, bytes[] memory);
 }
