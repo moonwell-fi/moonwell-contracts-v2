@@ -19,4 +19,6 @@ jobs:
       - name: Live Proposal Integration Tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: time forge test --mc LiveProposalsIntegrationTest --ffi -vvvvv
+        run: |
+             chmod +x ./branch-proposals.sh
+             time forge test --mc LiveProposalsIntegrationTest --ffi -vvvvv
