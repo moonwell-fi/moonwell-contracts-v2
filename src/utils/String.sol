@@ -68,6 +68,11 @@ library String {
         string memory str,
         bytes1 delimiter
     ) public pure returns (string[] memory) {
+        // Check if the input string is empty
+        if (bytes(str).length == 0) {
+            return new string[](0);
+        }
+
         uint256 stringCount = countWords(str, delimiter);
 
         string[] memory splitStrings = new string[](stringCount);
