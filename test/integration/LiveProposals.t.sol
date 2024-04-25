@@ -24,9 +24,6 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     /// @notice addresses contract
     Addresses addresses;
 
-    /// @notice array of proposals added/changed in the current branch
-    Proposal[] public proposals;
-
     /// @notice fork ID for moonbeam
     uint256 public moonbeamForkId =
         vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")));
@@ -47,7 +44,12 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     function setUp() public {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
+    }
 
+    function testBranchProposals() public {
+        address deployer = address(this);
+
+        // Get proposals added or changed in the current branch
         string[] memory inputs = new string[](1);
         inputs[0] = "./branch-proposals.sh";
 
@@ -57,24 +59,28 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         string[] memory lines = output.split("\n");
 
         if (lines.length > 0) {
-            proposals = new Proposal[](lines.length);
-
             for (uint i = 0; i < lines.length; i++) {
-                address proposal = deployCode(lines[i]);
-                proposals[i] = Proposal(proposal);
-                vm.makePersistent(proposal);
+                Proposal proposal = Proposal(deployCode(lines[i]));
+                vm.makePersistent(address(proposal));
+                proposal.setForkIds(baseForkId, moonbeamForkId);
+                vm.selectFork(proposal.primaryForkId());
+                proposal.deploy(addresses, deployer);
+                proposal.afterDeploy(addresses, deployer);
+                proposal.afterDeploySetup(addresses);
+                proposal.build(addresses);
+                proposal.run(addresses, deployer);
+                proposal.validate(addresses, deployer);
             }
-        }
-    }
 
-    function testBranchProposals() public {
-        for (uint i = 0; i < proposals.length; i++) {
-            proposals[i].run();
+            assertGt(lines.length, 0, "Proposals executed successfully");
+        } else {
+            assertEq(lines.length, 0, "Branch has no proposals");
         }
     }
 
     function testActiveProposals() public {
         vm.selectFork(moonbeamForkId);
+
         MultichainGovernor governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );

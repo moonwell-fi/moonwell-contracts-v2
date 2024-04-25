@@ -30,10 +30,6 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {Address} from "@utils/Address.sol";
 
 contract mipb00 is Proposal, CrossChainProposal, Configs {
-    /// @notice fork ID for base
-    uint256 public baseForkId =
-        vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
-
     using Address for address;
 
     string public constant override name = "MIP-B00";
@@ -72,12 +68,6 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             )
         );
         _setProposalDescription(proposalDescription);
-        _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
-
-        // If deploying to mainnet again these values must be adjust
-        // endTime must be in the future
-        // mock values are set on initEmissions function for test executions
-        //_setEmissionConfiguration("./src/proposals/mainnetRewardStreams.json");
     }
 
     /// @dev change this if wanting to deploy to a different chain
@@ -182,6 +172,8 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 true
             );
         }
+
+        _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         uint256 cTokenConfigsLength = cTokenConfigs.length;
@@ -251,6 +243,11 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 );
             }
         }
+        // If deploying to mainnet again these values must be adjust
+        // endTime must be in the future
+        // mock values are set on initEmissions function for test executions
+        //_setEmissionConfiguration("./src/proposals/mainnetRewardStreams.json");
+
         initEmissions(addresses, deployer);
         WETHRouter router = new WETHRouter(
             WETH9(addresses.getAddress("WETH")),
