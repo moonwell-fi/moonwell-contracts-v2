@@ -468,6 +468,12 @@
         "isContract": true
     },
     {
+        "addr": "0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa",
+        "chainId": 84532,
+        "name": "FOUNDATION_MULTISIG",
+        "isContract": false
+    },
+    {
         "addr": "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70",
         "chainId": 8453,
         "name": "CHAINLINK_ETH_USD",
