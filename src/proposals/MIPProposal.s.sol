@@ -21,6 +21,12 @@ to verify after deploy:
 
 */
 abstract contract MIPProposal is Script {
+    /// @notice fork ID for base
+    uint256 public baseForkId;
+
+    /// @notice fork ID for moonbeam
+    uint256 public moonbeamForkId;
+
     uint256 private PRIVATE_KEY;
     Addresses private addresses;
 
@@ -49,6 +55,11 @@ abstract contract MIPProposal is Script {
 
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
+
+        setForkIds(
+            vm.createFork(vm.envOr("BASE_RPC_URL", string("base"))),
+            vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")))
+        );
     }
 
     function run() public virtual {
@@ -71,89 +82,16 @@ abstract contract MIPProposal is Script {
             validate(addresses, deployerAddress);
             console.log("Validation completed for proposal ", this.name());
         }
-        /// todo print out actual proposal calldata
         if (DO_PRINT) {
             printCalldata(addresses);
             printProposalActionSteps();
-        }
-
-        if (DO_DEPLOY) {
-            {
-                (
-                    string[] memory recordedNames,
-                    ,
-                    address[] memory recordedAddresses
-                ) = addresses.getRecordedAddresses();
-
-                if (recordedNames.length != 0) {
-                    console.log("New addresses after deploy:");
-                }
-
-                for (uint256 j = 0; j < recordedNames.length; j++) {
-                    console.log(
-                        "{\n        'addr': '%s', ",
-                        recordedAddresses[j]
-                    );
-                    console.log("        'chainId': %d,", block.chainid);
-                    console.log("        'isContract': %s", true, ",");
-                    console.log(
-                        "        'name': '%s'\n}%s",
-                        recordedNames[j],
-                        j < recordedNames.length - 1 ? "," : ""
-                    );
-                }
-            }
-
-            {
-                (
-                    string[] memory recordedNames,
-                    uint256[] memory chainIds,
-                    address[] memory oldRecordedAddresses,
-                    address[] memory newRecordedAddresses
-                ) = addresses.getChangedAddresses();
-
-                if (recordedNames.length != 0) {
-                    console.log("Addresses Changed after deploy:");
-                }
-
-                for (uint256 j = 0; j < recordedNames.length; j++) {
-                    console.log(
-                        "%s on chainid %d changed ",
-                        recordedNames[j],
-                        chainIds[j]
-                    );
-
-                    console.log(
-                        "    %s -> %s\n",
-                        oldRecordedAddresses[j],
-                        newRecordedAddresses[j]
-                    );
-                }
-
-                if (recordedNames.length != 0) {
-                    console.log("\nNew Addresses JSON\n");
-                }
-
-                for (uint256 j = 0; j < recordedNames.length; j++) {
-                    console.log(
-                        "{\n        'addr': '%s', ",
-                        newRecordedAddresses[j]
-                    );
-                    console.log("        'chainId': %d,", chainIds[j]);
-                    console.log("        'isContract': %s", true, ",");
-                    console.log(
-                        "        'name': '%s'\n}%s",
-                        newRecordedAddresses[j],
-                        j < newRecordedAddresses.length - 1 ? "," : ""
-                    );
-                }
-            }
+            _printAddressesChanges();
         }
     }
 
     function name() external view virtual returns (string memory);
 
-    function primaryForkId() public virtual returns (uint256) {
+    function primaryForkId() public view virtual returns (uint256) {
         return 0;
     }
 
@@ -174,4 +112,67 @@ abstract contract MIPProposal is Script {
     function validate(Addresses, address) public virtual;
 
     function printProposalActionSteps() public virtual;
+
+    /// @notice set the fork IDs for base and moonbeam
+    function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) public {
+        require(
+            _baseForkId != _moonbeamForkId,
+            "setForkIds: fork IDs cannot be the same"
+        );
+
+        baseForkId = _baseForkId;
+        moonbeamForkId = _moonbeamForkId;
+    }
+
+    /// @dev Print recorded addresses
+    function _printAddressesChanges() private view {
+        (
+            string[] memory recordedNames,
+            ,
+            address[] memory recordedAddresses
+        ) = addresses.getRecordedAddresses();
+
+        if (recordedNames.length > 0) {
+            console.log(
+                "\n-------- Addresses added after running proposal --------"
+            );
+            for (uint256 j = 0; j < recordedNames.length; j++) {
+                console.log(
+                    "{\n          'addr': '%s', ",
+                    recordedAddresses[j]
+                );
+                console.log("        'chainId': %d,", block.chainid);
+                console.log("        'isContract': %s", true, ",");
+                console.log(
+                    "        'name': '%s'\n}%s",
+                    recordedNames[j],
+                    j < recordedNames.length - 1 ? "," : ""
+                );
+            }
+        }
+
+        (
+            string[] memory changedNames,
+            ,
+            ,
+            address[] memory changedAddresses
+        ) = addresses.getChangedAddresses();
+
+        if (changedNames.length > 0) {
+            console.log(
+                "\n------- Addresses changed after running proposal --------"
+            );
+
+            for (uint256 j = 0; j < changedNames.length; j++) {
+                console.log("{\n          'addr': '%s', ", changedAddresses[j]);
+                console.log("        'chainId': %d,", block.chainid);
+                console.log("        'isContract': %s", true, ",");
+                console.log(
+                    "        'name': '%s'\n}%s",
+                    changedNames[j],
+                    j < changedNames.length - 1 ? "," : ""
+                );
+            }
+        }
+    }
 }

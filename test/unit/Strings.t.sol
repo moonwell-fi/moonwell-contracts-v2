@@ -1,10 +1,10 @@
 pragma solidity 0.8.19;
 
-import {StringUtils} from "@proposals/utils/StringUtils.sol";
+import {String} from "@utils/String.sol";
 import "@forge-std/Test.sol";
 
-contract StringUtilsTest is Test {
-    using StringUtils for string;
+contract StringTest is Test {
+    using String for string;
 
     function testHasChar() public {
         string memory testString = "hello world";

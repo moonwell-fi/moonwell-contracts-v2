@@ -38,6 +38,7 @@ contract HybridProposalExample is
         return baseForkId;
     }
 
+    /// @notice create proposal actions
     function build(Addresses addresses) public override {
         vm.selectFork(moonbeamForkId);
 

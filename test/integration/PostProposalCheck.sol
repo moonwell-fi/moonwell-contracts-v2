@@ -5,11 +5,11 @@ import {Test} from "@forge-std/Test.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
-import {StringUtils} from "@proposals/utils/StringUtils.sol";
+import {String} from "@utils/String.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 
 contract PostProposalCheck is CreateCode {
-    using StringUtils for string;
+    using String for string;
 
     Addresses addresses;
     TestProposals proposals;

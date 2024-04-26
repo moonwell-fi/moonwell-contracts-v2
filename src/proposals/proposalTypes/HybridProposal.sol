@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
 import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import "@forge-std/Test.sol";
@@ -14,11 +13,10 @@ import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
-import {IMultichainProposal} from "@proposals/proposalTypes/IMultichainProposal.sol";
-
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {Address} from "@utils/Address.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -31,10 +29,9 @@ abstract contract HybridProposal is
     ChainIds,
     Proposal,
     ProposalChecker,
-    MarketCreationHook,
-    IMultichainProposal
+    MarketCreationHook
 {
-    using Strings for *;
+    using Strings for string;
     using Address for address;
 
     /// @notice nonce for wormhole, unused by Temporal Governor
@@ -51,14 +48,6 @@ abstract contract HybridProposal is
 
     /// @notice hex encoded description of the proposal
     bytes public PROPOSAL_DESCRIPTION;
-
-    /// @notice fork ID for base
-    uint256 public baseForkId =
-        vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
-
-    /// @notice fork ID for moonbeam
-    uint256 public moonbeamForkId =
-        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")));
 
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
@@ -362,23 +351,6 @@ abstract contract HybridProposal is
 
     /// -----------------------------------------------------
     /// -----------------------------------------------------
-    /// ----------------- Helper Functions ------------------
-    /// -----------------------------------------------------
-    /// -----------------------------------------------------
-
-    /// @notice set the fork IDs for base and moonbeam
-    function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) external {
-        require(
-            _baseForkId != _moonbeamForkId,
-            "setForkIds: fork IDs cannot be the same"
-        );
-
-        baseForkId = _baseForkId;
-        moonbeamForkId = _moonbeamForkId;
-    }
-
-    /// -----------------------------------------------------
-    /// -----------------------------------------------------
     /// --------------------- Printing ----------------------
     /// -----------------------------------------------------
     /// -----------------------------------------------------
@@ -657,7 +629,7 @@ abstract contract HybridProposal is
                     nextSequence,
                     nonce, /// nonce is hardcoded at 0 in HybridProposal.sol
                     temporalGovExecData,
-                    consistencyLevel /// consistency level is hardcoded at 200 in CrossChainProposal.sol
+                    consistencyLevel /// consistency level is hardcoded at 200 in HybridProposal.sol
                 );
             }
 
@@ -727,12 +699,12 @@ abstract contract HybridProposal is
             payloads
         );
 
-        bytes32 governor = addressToBytes(
-            addresses.getAddress(
+        bytes32 governor = addresses
+            .getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
                 sendingChainIdToReceivingChainId[block.chainid]
             )
-        );
+            .toBytes();
 
         bytes memory vaa = generateVAA(
             uint32(block.timestamp),
@@ -777,10 +749,5 @@ abstract contract HybridProposal is
             consistencyLevel,
             payload
         );
-    }
-
-    /// @dev utility function to convert an address to bytes32
-    function addressToBytes(address addr) public pure returns (bytes32) {
-        return bytes32(bytes20(addr)) >> 96;
     }
 }
