@@ -16,6 +16,8 @@ interface IArtemisGovernor {
 
     function votingPeriod() external view returns (uint256);
 
+    function currentQuorum() external view returns (uint256);
+
     function votingDelay() external view returns (uint256);
 
     function queue(uint256 proposalId) external;
