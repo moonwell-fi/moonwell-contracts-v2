@@ -756,6 +756,18 @@
         "name": "VOTE_COLLECTION_IMPL"
     },
     {
+        "addr": "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "AERO"
+    },
+    {
+        "addr": "0x4EC5970fC728C5f65ba413992CD5fF6FD70fcfF0",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "CHAINLINK_AERO_ORACLE"
+    },
+    {
         "addr": "0x0D45033775b290D69462944289b7A402a651B460",
         "chainId": 1284,
         "name": "xWELL_LOCKBOX",
