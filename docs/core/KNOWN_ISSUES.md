@@ -39,6 +39,9 @@ its gas limit, then the system can be broken. This is because the system will
 not be able to process any transactions on the external chain, and the system
 will be unable to process any governance proposals. To mitigate this, the
 governor would use the break glass guardian to recover system ownership.
+Alternatively, a governance proposal could occur on Moonbeam to update the gas
+limit. However, users on Base would not be able to participate until this vote
+passed and the proposal is bridged to Base.
 
 ## Timestamp Difference Between Chains
 
