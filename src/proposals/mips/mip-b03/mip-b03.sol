@@ -63,8 +63,12 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
         {
-            string memory mtokensPath = vm.envString("MTOKENS_PATH");
-            /// MTOKENS_PATH="./src/proposals/mips/examples/mip-market-listing/MTokens.json"
+            string memory mtokensPath = vm.envOr(
+                "MTOKENS_PATH",
+                string(
+                    "./src/proposals/mips/examples/mip-market-listing/MTokens.json"
+                )
+            );
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
 
