@@ -128,3 +128,13 @@ AERO, supports a favorable risk profile. Implementing this recommendation could
 drive further integration within the Base ecosystem, benefiting Moonwell
 community and stakeholders by providing more options for investment and
 collateral.
+
+### Voting Options
+
+We propose the following voting options for the Moonwell community:
+
+- For: Approve the addition of AERO as a new collateral asset on Moonwell's Base
+  deployment with the recommended risk parameters
+- Against: Reject the addition of AERO as a new collateral asset on Moonwell's
+  Base deployment
+- Abstain
