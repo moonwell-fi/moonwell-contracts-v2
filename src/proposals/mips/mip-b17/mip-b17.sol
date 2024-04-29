@@ -203,26 +203,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
         }
     }
 
-    function afterDeploySetup(Addresses addresses) public override {
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
-
-        uint256 cTokenConfigsLength = cTokenConfigs.length;
-        unchecked {
-            for (uint256 i = 0; i < cTokenConfigsLength; i++) {
-                Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-                address tokenAddress = addresses.getAddress(
-                    config.tokenAddressName
-                );
-
-                deal(
-                    tokenAddress,
-                    addresses.getAddress("TEMPORAL_GOVERNOR"),
-                    cTokenConfigs[i].initialMintAmount
-                );
-            }
-        }
-    }
+    function afterDeploySetup(Addresses addresses) public override {}
 
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
 
