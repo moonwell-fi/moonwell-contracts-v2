@@ -143,7 +143,7 @@ calldatas specified above, otherwise the entire transaction will revert.
 - `state`: Returns the status of a proposal. The status can be one of the
   following:
   1. Active: This means that the proposal is currently in the voting period.
-  2. CrossChainVoteCollection: THe voting period has ended, and the proposal is
+  2. CrossChainVoteCollection: The voting period has ended, and the proposal is
      now waiting for cross-chain votes.
   3. Cancelled: The proposer has canceled or anyone can cancel if the proposer
      voting power has become lower than the minimum proposal threshold.
