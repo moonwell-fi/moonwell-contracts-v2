@@ -130,6 +130,10 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
         console.log("\n\n");
     }
 
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
+
     /// @notice no contracts are deployed in this proposal
     function deploy(Addresses addresses, address deployer) public override {
         Configs.CTokenConfiguration[]
