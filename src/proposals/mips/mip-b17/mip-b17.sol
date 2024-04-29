@@ -46,9 +46,12 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
         address unitroller;
     }
 
-    constructor() {
-        /// for example, should be set to
-        /// LISTING_PATH="./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
+
+    /// @notice Aero market mToken and corresponding IRM is deployed in this proposal
+    function deploy(Addresses addresses, address deployer) public override {
         string
             memory descriptionPath = "./src/proposals/mips/mip-b17/MIP-B17.md";
         bytes memory proposalDescription = abi.encodePacked(
@@ -56,9 +59,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
-
         _setMTokenConfiguration("./src/proposals/mips/mip-b17/MTokens.json");
-
         _setEmissionConfiguration(
             "./src/proposals/mips/mip-b17/RewardStreams.json"
         );
@@ -73,18 +74,13 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
             emissions[block.chainid].length
         );
         console.log("\n\n");
-    }
 
-    /// @notice Aero market mToken and corresponding IRM is deployed in this proposal
-    function deploy(Addresses addresses, address deployer) public override {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
-        uint256 cTokenConfigsLength = cTokenConfigs.length;
-
         //// create all of the CTokens according to the configuration in Config.sol
         unchecked {
-            for (uint256 i = 0; i < cTokenConfigsLength; i++) {
+            for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
                 _validateCaps(addresses, config);
