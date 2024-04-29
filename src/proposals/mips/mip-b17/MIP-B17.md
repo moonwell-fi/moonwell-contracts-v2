@@ -73,7 +73,7 @@ Moonwell Base market.
 Borrow and supply caps are the primary parameter recommendations we can make to
 mitigate protocol risk when listing new assets. Gauntlet recommends setting the
 borrow and supply caps strategically with available liquidity on-chain. There is
-sufficient liquidity to trade upto $20M worth of AERO tokens with a slippage of
+sufficient liquidity to trade up to $20M worth of AERO tokens with a slippage of
 25% signalling a maximum cap setting of 12M AERO tokens. However, we recommend a
 more conservative supply cap of 6M AERO tokens and 3M AERO tokens for borrow cap
 to bootstrap the market. Gauntlet will continue to monitor these caps and
