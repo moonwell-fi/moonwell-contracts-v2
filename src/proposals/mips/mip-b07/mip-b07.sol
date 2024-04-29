@@ -22,7 +22,12 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
     function afterDeploySetup(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-        string memory descriptionPath = vm.envString("LISTING_PATH");
+        string memory descriptionPath = vm.envOr(
+            "LISTING_PATH",
+            string(
+                "./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
+            )
+        );
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(descriptionPath)
         );
