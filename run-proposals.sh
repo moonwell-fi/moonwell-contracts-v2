@@ -11,7 +11,7 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
     IFS=' ' read -r -a files_array <<< "$CHANGED_FILES"
 
     for file in "${files_array[@]}"; do
-        if [[ $file == "$FOLDER"/* ]]; then
+        if [[ $file == "$FOLDER"/*.sol ]]; then
             echo "Processing $file..."
             output=$(forge script "$file" 2>&1)
             # Removal of ANSI Escape Codes
