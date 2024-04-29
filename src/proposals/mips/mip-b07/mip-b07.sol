@@ -38,7 +38,12 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
         {
-            string memory mtokensPath = vm.envString("EMISSION_PATH");
+            string memory mtokensPath = vm.envOr(
+                "EMISSION_PATH",
+                string(
+                    "./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
+                )
+            );
             /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
