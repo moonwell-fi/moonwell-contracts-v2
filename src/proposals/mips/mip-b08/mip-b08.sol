@@ -400,7 +400,10 @@ contract mipb08 is Proposal, CrossChainProposal, Configs {
         address
     ) public override(CrossChainProposal, MIPProposal) {
         printCalldata(addresses);
-        _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        _simulateCrossChainActions(
+            addresses,
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}
