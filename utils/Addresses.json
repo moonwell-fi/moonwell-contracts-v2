@@ -768,6 +768,18 @@
         "name": "CHAINLINK_AERO_ORACLE"
     },
     {
+        "addr": "0x96e03a0F2DCAC38C86B5069d018341077f48Cb1c",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_AERO"
+    },
+    {
+        "addr": "0x73902f619CEB9B31FD8EFecf435CbDf89E369Ba6",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "MOONWELL_AERO"
+    },
+    {
         "addr": "0x0D45033775b290D69462944289b7A402a651B460",
         "chainId": 1284,
         "name": "xWELL_LOCKBOX",
