@@ -19,6 +19,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          chmod +x ./branch-proposals.sh
+          chmod +x ./get-latest-base-proposal.sh
+          chmod +x ./get-latest-moonbeam-proposal.sh
           time forge test --mc LiveProposalsIntegrationTest --ffi -vvv
         shell: bash
