@@ -50,14 +50,17 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
         }
         ')
 
+        json_output=""
         # Write to JSON if selected_output is not empty
         if [ ! -z "$selected_output" ]; then
             json_output=$(jq -n --arg file "$selected_file" --arg output "$selected_output" '{file: $file, output: $output}')
-            echo "Writing JSON to output.json..."
+        else
+            json_output=$(jq -n --arg file "$selected_file" --arg output "Proposal $selected_failed failed." '{file: $file, output: $output}')
+        fi
+        echo "Writing JSON to output.json..."
             # Create output.json 
             touch output.json
             # Write JSON to output.json
             echo "$json_output" > output.json
-        fi
     fi
 fi
