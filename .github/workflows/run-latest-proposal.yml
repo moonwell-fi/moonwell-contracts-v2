@@ -74,11 +74,9 @@ jobs:
                       if (fs.existsSync('output.json')) {
                           const outputs = JSON.parse(fs.readFileSync('output.json', 'utf8')).results;
                           const prNumber = context.payload.pull_request.number;
-                          outputs.forEach(output => {
-                              github.rest.issues.createComment({
-                                ...context.repo,
-                                issue_number: prNumber,
-                                body: `### Proposal output for ${output.file}:\n\`\`\`\n${output.output}\n\`\`\``
-                              });
-                          });
-                      }
+                          github.rest.issues.createComment({
+                             ...context.repo,
+                             issue_number: prNumber,
+                             body: `### Proposal output for ${output.file}:\n\`\`\`\n${output.output}\n\`\`\``
+                       });
+        }

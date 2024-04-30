@@ -57,9 +57,6 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
             json_output=$(jq -n --arg file "$selected_file" --arg output "Proposal $selected_file failed. Check CI logs" '{file: $file, output: $output}')
         fi
 
-        echo "JSON Output:"
-        echo "$json_output"
-
         echo "Writing JSON to output.json..."
         # Create output.json 
         touch output.json
