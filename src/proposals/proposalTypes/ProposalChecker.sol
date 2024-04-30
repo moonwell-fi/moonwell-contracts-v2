@@ -4,8 +4,11 @@ pragma solidity 0.8.19;
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
+import {AddressToString} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
 
 abstract contract ProposalChecker is ChainIds {
+    using AddressToString for address;
+
     /// @notice should only be run while on the Moonbeam fork
     /// @dev checks that the Moonbeam actions do not include the Base wormhole core address and temporal governor address
     /// @param targets the list of targets for the Moonbeam actions
@@ -40,9 +43,15 @@ abstract contract ProposalChecker is ChainIds {
 
         for (uint256 i = 0; i < targets.length; i++) {
             /// there's no reason for any proposal actions to call addresses with 0 bytecode
+
             require(
                 targets[i].code.length > 0,
-                "target for Moonbeam action not a contract"
+                string(
+                    abi.encodePacked(
+                        "target for Moonbeam action not a contract ",
+                        targets[i].toString()
+                    )
+                )
             );
             require(
                 targets[i] != temporalGovBase,
@@ -181,7 +190,7 @@ abstract contract ProposalChecker is ChainIds {
                 addresses
             );
 
-            if (baseActions.length > 0) {
+            if (baseActions.length > 0 && moonbeamActions.length > 1) {
                 require(
                     targets[targets.length - 1] ==
                         (
@@ -196,7 +205,12 @@ abstract contract ProposalChecker is ChainIds {
                                     moonBaseChainId
                                 )
                         ),
-                    "final target should be wormhole core"
+                    string(
+                        abi.encodePacked(
+                            "final target should be wormhole core instead got: ",
+                            targets[targets.length - 1].toString()
+                        )
+                    )
                 );
             }
         }

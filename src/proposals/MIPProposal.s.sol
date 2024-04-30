@@ -83,8 +83,8 @@ abstract contract MIPProposal is Script {
             console.log("Validation completed for proposal ", this.name());
         }
         if (DO_PRINT) {
-            printCalldata(addresses);
             printProposalActionSteps();
+            printCalldata(addresses);
             _printAddressesChanges();
         }
     }

@@ -2,8 +2,10 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {Bytes} from "@utils/Bytes.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
+import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
@@ -15,6 +17,8 @@ abstract contract CrossChainProposal is
     MultisigProposal,
     MarketCreationHook
 {
+    using Bytes for bytes;
+
     uint32 private constant nonce = 0; /// nonce for wormhole, unused by Temporal Governor
 
     /// instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
@@ -54,7 +58,57 @@ abstract contract CrossChainProposal is
     /// @param temporalGovAddress address of the cross chain governor executing the calls
     /// run pre and post proposal hooks to ensure that mToken markets created by the
     /// proposal are valid and mint at least 1 wei worth of mTokens to address 0
-    function _simulateCrossChainActions(address temporalGovAddress) internal {
+    function _simulateCrossChainActions(
+        Addresses addresses,
+        address temporalGovAddress
+    ) internal {
+        {
+            (address[] memory targets, , ) = getTargetsPayloadsValues(
+                addresses
+            );
+            checkBaseActions(targets, addresses);
+            checkMoonbeamBaseActions(
+                addresses,
+                actions,
+                new ProposalAction[](0)
+            );
+
+            bytes memory proposalCalldata = getMultichainGovernorCalldata(
+                temporalGovAddress,
+                addresses.getAddress(
+                    block.chainid == baseChainId ||
+                        block.chainid == moonBeamChainId
+                        ? "WORMHOLE_CORE_MOONBEAM"
+                        : "WORMHOLE_CORE_MOONBASE",
+                    block.chainid == baseChainId ||
+                        block.chainid == moonBeamChainId
+                        ? moonBeamChainId
+                        : moonBaseChainId
+                )
+            );
+
+            (address[] memory baseTargets, , , ) = abi.decode(
+                proposalCalldata.slice(4, proposalCalldata.length - 4),
+                (address[], uint256[], bytes[], string)
+            );
+
+            address expectedAddress = block.chainid == baseChainId ||
+                block.chainid == moonBeamChainId
+                ? addresses.getAddress(
+                    "WORMHOLE_CORE_MOONBEAM",
+                    moonBeamChainId
+                )
+                : addresses.getAddress(
+                    "WORMHOLE_CORE_MOONBASE",
+                    moonBaseChainId
+                );
+            require(baseTargets.length == 1);
+            require(
+                baseTargets[0] == expectedAddress,
+                "target incorrect, not wormhole core"
+            );
+        }
+
         _verifyActionsPreRun(actions);
         _simulateMultisigActions(temporalGovAddress);
         _verifyMTokensPostRun();
@@ -210,7 +264,7 @@ abstract contract CrossChainProposal is
         );
         require(
             wormholeCore != address(0),
-            "getMultichainGovernorCalldata: Invalid womrholecore"
+            "getMultichainGovernorCalldata: Invalid Wormholecore"
         );
 
         address[] memory targets = new address[](1);
@@ -294,7 +348,8 @@ abstract contract CrossChainProposal is
     function printCalldata(Addresses addresses) public override {
         printActions(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
-            block.chainid == moonBeamChainId
+            /// if moonbeam or base use wormhole core on moonbeam, else use moonbase
+            block.chainid == moonBeamChainId || block.chainid == baseChainId
                 ? addresses.getAddress(
                     "WORMHOLE_CORE_MOONBEAM",
                     moonBeamChainId
@@ -307,6 +362,9 @@ abstract contract CrossChainProposal is
     }
 
     function run(Addresses addresses, address) public virtual override {
-        _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        _simulateCrossChainActions(
+            addresses,
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
     }
 }

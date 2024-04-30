@@ -1,0 +1,18 @@
+[
+    {
+        "borrowEmissionsPerSec": 1,
+        "emissionToken": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "endTime": 1715983200,
+        "mToken": "MOONWELL_AERO",
+        "owner": "EMISSIONS_ADMIN",
+        "supplyEmissionPerSec": 0
+    },
+    {
+        "borrowEmissionsPerSec": 1,
+        "emissionToken": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "endTime": 1715983200,
+        "mToken": "MOONWELL_AERO",
+        "owner": "EMISSIONS_ADMIN",
+        "supplyEmissionPerSec": 0
+    }
+]

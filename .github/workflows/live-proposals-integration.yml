@@ -1,7 +1,6 @@
 name: Live Proposal Integration Tests
 on: [pull_request]
 
-        
 jobs:
   run-live-proposals-integration-tests:
     name: live-proposals-integration-tests
@@ -20,6 +19,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-             chmod +x ./branch-proposals.sh
-             time forge test --mc LiveProposalsIntegrationTest --ffi 
+          chmod +x ./branch-proposals.sh
+          time forge test --mc LiveProposalsIntegrationTest --ffi -vvv
         shell: bash

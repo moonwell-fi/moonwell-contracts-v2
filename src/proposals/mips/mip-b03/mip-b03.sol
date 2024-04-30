@@ -47,7 +47,12 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
     constructor() {
         /// for example, should be set to
         /// LISTING_PATH="./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
-        string memory descriptionPath = vm.envString("LISTING_PATH");
+        string memory descriptionPath = vm.envOr(
+            "LISTING_PATH",
+            string(
+                "./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
+            )
+        );
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(descriptionPath)
         );
@@ -58,8 +63,12 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
         {
-            string memory mtokensPath = vm.envString("MTOKENS_PATH");
-            /// MTOKENS_PATH="./src/proposals/mips/examples/mip-market-listing/MTokens.json"
+            string memory mtokensPath = vm.envOr(
+                "MTOKENS_PATH",
+                string(
+                    "./src/proposals/mips/examples/mip-market-listing/MTokens.json"
+                )
+            );
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
 
@@ -90,7 +99,12 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
         }
 
         {
-            string memory mtokensPath = vm.envString("EMISSION_PATH");
+            string memory mtokensPath = vm.envOr(
+                "EMISSION_PATH",
+                string(
+                    "./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
+                )
+            );
             /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
@@ -114,6 +128,10 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
             emissions[block.chainid].length
         );
         console.log("\n\n");
+    }
+
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
     }
 
     /// @notice no contracts are deployed in this proposal
@@ -384,7 +402,10 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
         address
     ) public override(CrossChainProposal, MIPProposal) {
         printCalldata(addresses);
-        _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        _simulateCrossChainActions(
+            addresses,
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}

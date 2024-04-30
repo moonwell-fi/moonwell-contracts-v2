@@ -9,9 +9,9 @@ pr_number=$(echo "$pr_details" | jq -r '.[0].number')
 
 # Step 3: Print changes if a PR number is found
 if [ ! -z "$pr_number" ]; then
-  # Get the list of modified .sol files in the 'src/proposals/mips/' directory
-  modified_files=$(gh pr diff $pr_number --name-only | grep 'src/proposals/mips/.*\.sol$')
+  # Get the list of modified .sol files in the 'src/proposals/mips/' directory excluding 'example' folder
+  modified_files=$(gh pr diff $pr_number --name-only | grep 'src/proposals/mips/.*\.sol$' | grep -v 'src/proposals/mips/mip-b00/mip-b00.sol' | grep -v 'src/proposals/mips/examples/')
 
-  # Filter out mip-b00.sol from the list 
-  echo "$modified_files" | grep -v 'src/proposals/mips/mip-b00/mip-b00.sol'
+  # Display the modified files
+  echo "$modified_files"
 fi

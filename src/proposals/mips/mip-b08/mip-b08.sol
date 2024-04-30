@@ -124,6 +124,10 @@ contract mipb08 is Proposal, CrossChainProposal, Configs {
         console.log("\n\n");
     }
 
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
+
     /// @notice no contracts are deployed in this proposal
     function deploy(Addresses addresses, address deployer) public override {
         Configs.CTokenConfiguration[]
@@ -400,7 +404,10 @@ contract mipb08 is Proposal, CrossChainProposal, Configs {
         address
     ) public override(CrossChainProposal, MIPProposal) {
         printCalldata(addresses);
-        _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        _simulateCrossChainActions(
+            addresses,
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}
