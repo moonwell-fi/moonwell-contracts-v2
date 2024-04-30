@@ -253,22 +253,36 @@ contract LiveSystemTest is Test {
 
         vm.warp(block.timestamp + toWarp);
 
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
+
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDBC")),
+                mToken,
                 address(this)
             );
 
         assertEq(rewards[0].emissionToken, well);
+
+        uint256 balance = mToken.balanceOf(address(this));
+        uint256 totalSupply = mToken.totalSupply();
+
+        MultiRewardDistributorCommon.MarketConfig memory config = mrd
+            .getConfigForMarket(
+                mToken,
+                addresses.getAddress("WELL")
+            );
+
+        uint256 expectedReward = (toWarp * config.supplyEmissionsPerSec) * balance / totalSupply;
+
         assertApproxEqRel(
             rewards[0].totalAmount,
-            toWarp * 1e18,
+            expectedReward,
             1e17,
             "Total rewards not within 1%"
         ); /// allow 1% error, anything more causes test failure
         assertApproxEqRel(
             rewards[0].supplySide,
-            toWarp * 1e18,
+            expectedReward,
             1e17,
             "Supply side rewards not within 1%"
         ); /// allow 1% error, anything more causes test failure
@@ -317,28 +331,47 @@ contract LiveSystemTest is Test {
 
         vm.warp(block.timestamp + toWarp);
 
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
+
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDBC")),
+                mToken,
                 address(this)
             );
+
+        uint256 balance = mToken.balanceOf(address(this));
+        uint256 totalSupply = mToken.totalSupply();
+
+        MultiRewardDistributorCommon.MarketConfig memory config = mrd
+            .getConfigForMarket(
+                mToken,
+                addresses.getAddress("WELL")
+            );
+
+        uint256 expectedSupplyReward = (toWarp * config.supplyEmissionsPerSec) * balance / totalSupply;
+
+        uint256 userCurrentBorrow = mToken.borrowBalanceCurrent(address(this));
+        uint256 totalBorrow = mToken.totalBorrows();
+
+        // calculate expected borrow reward
+        uint256 expectedBorrowReward = (toWarp * config.borrowEmissionsPerSec) * userCurrentBorrow / totalBorrow;
 
         assertEq(rewards[0].emissionToken, well);
         assertApproxEqRel(
             rewards[0].totalAmount,
-            toWarp * 1e18 + toWarp * 1e18,
+            expectedBorrowReward + expectedSupplyReward,
             1e17,
             "Total rewards not within 1%"
         ); /// allow 1% error, anything more causes test failure
         assertApproxEqRel(
             rewards[0].borrowSide,
-            toWarp * 1e18,
+            expectedBorrowReward,
             1e17,
             "Borrow side rewards not within 1%"
         ); /// allow 1% error, anything more causes test failure
         assertApproxEqRel(
             rewards[0].supplySide,
-            toWarp * 1e18,
+            expectedSupplyReward,
             1e17,
             "Supply side rewards not within 1%"
         );
@@ -385,6 +418,12 @@ contract LiveSystemTest is Test {
         vm.prank(liquidator);
         usdc.approve(address(mToken), repayAmt);
 
+        MultiRewardDistributorCommon.RewardInfo[] memory rewardsBefore = mrd
+            .getOutstandingRewardsForUser(
+                mToken,
+                address(this)
+            );
+
         _liquidateAccount(
             liquidator,
             address(this),
@@ -392,30 +431,29 @@ contract LiveSystemTest is Test {
             1e6
         );
 
-        MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
+        MultiRewardDistributorCommon.RewardInfo[] memory rewardsAfter = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDBC")),
+                mToken,
                 address(this)
             );
 
-        assertEq(rewards[0].emissionToken, well);
-        assertGt(
-            rewards[0].totalAmount,
-            toWarp * 1e18,
-            "Total rewards not gt 100%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
-            rewards[0].borrowSide,
-            toWarp * 1e18,
-            1e17,
-            "Borrow side rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
-            rewards[0].supplySide,
-            (toWarp * 1e18) / 2,
-            1e17,
-            "Supply side rewards not within 1%"
-        );
+        for (uint256 i = 0; i < rewardsBefore.length; i++) {
+            assertEq(
+                rewardsAfter[i].totalAmount,
+                rewardsBefore[i].totalAmount,
+                "Total rewards not equal"
+            );
+            assertEq(
+                rewardsAfter[i].borrowSide,
+                rewardsBefore[i].borrowSide,
+                "Borrow side rewards not equal"
+            );
+            assertEq(
+                rewardsAfter[i].supplySide,
+                rewardsBefore[i].supplySide,
+                "Supply side rewards not equal"
+            );
+        }
     }
 
     function _liquidateAccount(
