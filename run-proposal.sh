@@ -15,7 +15,7 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
     for file in "${files_array[@]}"; do
         if [[ $file == "$FOLDER"/*.sol && $file != *"/examples/"* ]]; then
 
-            # Use awk to extract the number following 'm', 'b', or 't' before '.sol'
+            # Extract the number following 'm', 'b', or 't' before '.sol'
             number=$(echo $file | sed -E 's/.*[bmt]([0-9]+)\.sol/\1/')
 
             # Check if a number was actually found; if not, skip this file
@@ -50,12 +50,15 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
         ')
 
         json_output=""
-        # Write to JSON if selected_output is not empty
+        # Write to JSON if selected_output otherwise write a failure message
         if [ ! -z "$selected_output" ]; then
             json_output=$(jq -n --arg file "$selected_file" --arg output "$selected_output" '{file: $file, output: $output}')
         else
             json_output=$(jq -n --arg file "$selected_file" --arg output "Proposal $selected_file failed. Check CI logs" '{file: $file, output: $output}')
         fi
+
+        echo "JSON Output:"
+        echo "$json_output"
 
         echo "Writing JSON to output.json..."
         # Create output.json 
