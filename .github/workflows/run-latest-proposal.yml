@@ -72,7 +72,7 @@ jobs:
                   script: |
                       const fs = require('fs');
                       if (fs.existsSync('output.json')) {
-                          const outputs = JSON.parse(fs.readFileSync('output.json', 'utf8')).results;
+                          const output = JSON.parse(fs.readFileSync('output.json', 'utf8'));
                           const prNumber = context.payload.pull_request.number;
                           github.rest.issues.createComment({
                              ...context.repo,
