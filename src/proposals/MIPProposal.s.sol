@@ -91,9 +91,7 @@ abstract contract MIPProposal is Script {
 
     function name() external view virtual returns (string memory);
 
-    function primaryForkId() public view virtual returns (uint256) {
-        return 0;
-    }
+    function primaryForkId() public view virtual returns (uint256);
 
     function deploy(Addresses, address) public virtual;
 

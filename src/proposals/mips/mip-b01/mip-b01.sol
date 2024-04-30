@@ -23,6 +23,11 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
         );
     }
 
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
+
     function deploy(Addresses addresses, address) public override {}
 
     function afterDeploy(Addresses addresses, address) public override {}

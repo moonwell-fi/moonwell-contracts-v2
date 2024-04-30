@@ -38,6 +38,11 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
         _setProposalDescription(proposalDescription);
     }
 
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
+
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers
     function deploy(Addresses addresses, address) public override {
         MWethDelegate mWethLogic = new MWethDelegate();

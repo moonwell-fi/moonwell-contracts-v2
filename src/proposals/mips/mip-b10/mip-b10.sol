@@ -125,6 +125,11 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
         console.log("\n\n");
     }
 
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
+
     /// @notice no contracts are deployed in this proposal
     function deploy(Addresses addresses, address deployer) public override {
         Configs.CTokenConfiguration[]

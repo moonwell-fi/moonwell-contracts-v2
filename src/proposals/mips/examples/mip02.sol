@@ -31,6 +31,11 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
         address unitroller;
     }
 
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
+
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
     /// listed to be able to deploy on base. This allows the deployer to be able to initialize the
     /// markets with a balance to avoid exploits
