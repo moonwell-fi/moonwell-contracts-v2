@@ -66,5 +66,6 @@ contract PostProposalCheck is CreateCode {
         );
 
         addresses = proposals.addresses();
+        vm.makePersistent(address(addresses));
     }
 }

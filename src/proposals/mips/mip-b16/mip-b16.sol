@@ -45,6 +45,14 @@ contract mipb16 is
 
         /// stop errors on unit tests of proposal infrastructure
         if (address(addresses) != address(0)) {
+            if (block.chainid == baseSepoliaChainId) {
+                deal(
+                    addresses.getAddress("xWELL_PROXY"),
+                    addresses.getAddress("FOUNDATION_MULTISIG"),
+                    100_000_000 * 1e18
+                );
+            }
+
             vm.startPrank(addresses.getAddress("FOUNDATION_MULTISIG"));
 
             ERC20(addresses.getAddress("xWELL_PROXY")).approve(

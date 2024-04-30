@@ -103,6 +103,8 @@ contract TestProposals is Test {
                 }
                 addresses.resetRecordingAddresses(); /// reset the recording addresses so deployment has clean slate
 
+                vm.selectFork(proposals[i].primaryForkId());
+
                 proposals[i].deploy(addresses, address(proposals[i])); /// mip itself is the deployer
                 if (debug) {
                     (
