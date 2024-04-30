@@ -8,28 +8,31 @@ FOLDER=$PROPOSALS_FOLDER
 if [[ ! -z "$CHANGED_FILES" ]]; then
     IFS=' ' read -r -a files_array <<< "$CHANGED_FILES"
 
+      # Initialize an empty array to hold numbers and corresponding file names
     max_number=-1
     selected_file=""
 
     for file in "${files_array[@]}"; do
-        # Skip files in the /examples directory
-        if [[ $file == *"/examples/"* ]]; then
-            continue
-        fi
+        if [[ $file == "$FOLDER"/*.sol && $file != *"/examples/"* ]]; then
 
-        if [[ $file == "$FOLDER"/*.sol ]]; then
-            # Extract the number before ".sol"
-            number=$(echo "$file" | grep -o -E '[0-9]+(?=.sol)')
+            # Use awk to extract the number following 'm', 'b', or 't' before '.sol'
+            number=$(echo $file | sed -E 's/.*[bmt]([0-9]+)\.sol/\1/')
 
-            # Update selected_file if this file has a higher number
+            # Check if a number was actually found; if not, skip this file
+            if [[ -z "$number" ]]; then
+                continue
+            fi
+
+             # Check if this number is the highest found so far
             if [[ "$number" -gt "$max_number" ]]; then
                 max_number=$number
                 selected_file=$file
-            fi
+            fi        
         fi
     done
 
-    # If a valid .sol file was found
+
+    # If file was found
     if [[ ! -z "$selected_file" ]]; then
         echo "Processing $selected_file..."
         output=$(forge script "$selected_file" 2>&1)

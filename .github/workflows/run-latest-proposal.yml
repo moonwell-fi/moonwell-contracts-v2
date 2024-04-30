@@ -1,4 +1,4 @@
-name: "Run Proposals"
+name: "Run Latest Proposal"
 
 env:
     FOUNDRY_PROFILE: "ci"
@@ -63,7 +63,7 @@ jobs:
                       }
 
             - name: Run Proposal
-              run: ./run-proposals.sh
+              run: ./run-proposal.sh
                 
             - name: Comment PR with Proposal Output
               uses: actions/github-script@v6
