@@ -12,6 +12,11 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
     selected_file=""
 
     for file in "${files_array[@]}"; do
+        # Skip files in the /examples directory
+        if [[ $file == *"/examples/"* ]]; then
+            continue
+        fi
+
         if [[ $file == "$FOLDER"/*.sol ]]; then
             # Extract the number before ".sol"
             number=$(echo "$file" | grep -o -E '[0-9]+(?=.sol)')
