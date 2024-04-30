@@ -31,7 +31,6 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
         fi
     done
 
-
     # If file was found
     if [[ ! -z "$selected_file" ]]; then
         echo "Processing $selected_file..."
@@ -55,12 +54,13 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
         if [ ! -z "$selected_output" ]; then
             json_output=$(jq -n --arg file "$selected_file" --arg output "$selected_output" '{file: $file, output: $output}')
         else
-            json_output=$(jq -n --arg file "$selected_file" --arg output "Proposal $selected_failed failed." '{file: $file, output: $output}')
+            json_output=$(jq -n --arg file "$selected_file" --arg output "Proposal $selected_file failed. Check CI logs" '{file: $file, output: $output}')
         fi
+
         echo "Writing JSON to output.json..."
-            # Create output.json 
-            touch output.json
-            # Write JSON to output.json
-            echo "$json_output" > output.json
+        # Create output.json 
+        touch output.json
+        # Write JSON to output.json
+        echo "$json_output" > output.json
     fi
 fi
