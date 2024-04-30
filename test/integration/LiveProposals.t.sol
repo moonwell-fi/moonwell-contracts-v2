@@ -46,35 +46,59 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         vm.makePersistent(address(addresses));
     }
 
-    function testBranchProposals() public {
+    function testLatestBaseProposal() public {
         address deployer = address(this);
 
-        // Get proposals added or changed in the current branch
         string[] memory inputs = new string[](1);
-        inputs[0] = "./branch-proposals.sh";
+        inputs[0] = "./get-latest-base-proposal.sh";
 
         string memory output = string(vm.ffi(inputs));
 
-        // Convert output to array of lines
-        string[] memory lines = output.split("\n");
+        if (
+            keccak256(abi.encodePacked(output)) !=
+            keccak256(abi.encodePacked(string("")))
+        ) {
+            Proposal proposal = Proposal(deployCode(output));
+            vm.makePersistent(address(proposal));
 
-        if (lines.length > 0) {
-            for (uint i = 0; i < lines.length; i++) {
-                Proposal proposal = Proposal(deployCode(lines[i]));
-                vm.makePersistent(address(proposal));
-                proposal.setForkIds(baseForkId, moonbeamForkId);
-                vm.selectFork(proposal.primaryForkId());
-                proposal.deploy(addresses, deployer);
-                proposal.afterDeploy(addresses, deployer);
-                proposal.afterDeploySetup(addresses);
-                proposal.build(addresses);
-                proposal.run(addresses, deployer);
-                proposal.validate(addresses, deployer);
-            }
+            proposal.setForkIds(baseForkId, moonbeamForkId);
 
-            assertGt(lines.length, 0, "Proposals executed successfully");
-        } else {
-            assertEq(lines.length, 0, "Branch has no proposals");
+            vm.selectFork(proposal.primaryForkId());
+
+            proposal.deploy(addresses, deployer);
+            proposal.afterDeploy(addresses, deployer);
+            proposal.afterDeploySetup(addresses);
+            proposal.build(addresses);
+            proposal.run(addresses, deployer);
+            proposal.validate(addresses, deployer);
+        }
+    }
+
+    function testLatestMoonbeamProposal() public {
+        address deployer = address(this);
+
+        string[] memory inputs = new string[](1);
+        inputs[0] = "./get-latest-moonbeam-proposal.sh";
+
+        string memory output = string(vm.ffi(inputs));
+
+        if (
+            keccak256(abi.encodePacked(output)) !=
+            keccak256(abi.encodePacked(string("")))
+        ) {
+            Proposal proposal = Proposal(deployCode(output));
+            vm.makePersistent(address(proposal));
+
+            proposal.setForkIds(baseForkId, moonbeamForkId);
+
+            vm.selectFork(proposal.primaryForkId());
+
+            proposal.deploy(addresses, deployer);
+            proposal.afterDeploy(addresses, deployer);
+            proposal.afterDeploySetup(addresses);
+            proposal.build(addresses);
+            proposal.run(addresses, deployer);
+            proposal.validate(addresses, deployer);
         }
     }
 
