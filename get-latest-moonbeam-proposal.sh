@@ -1,10 +1,7 @@
 #!/bin/bash
 BASE_DIR="artifacts/foundry"
 
-# Get all moonbeam MIP directories
-LATEST_MIP_DIR=$(ls -1v ${BASE_DIR}/ | grep '^mip-m' | tail -n 1)
-
-# Filter directories, excluding any that start with 'mip-market-listing'
+# Find moonbeam directories, excluding any that start with 'mip-market-listing' and get the latest one
 LATEST_MIP_DIR=$(ls -1v ${BASE_DIR}/ | grep '^mip-m' | grep -v '^mip-market-listing' | tail -n 1)
 
 # Get the MIP number from the directory path 
