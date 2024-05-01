@@ -1,4 +1,4 @@
-name: "Run Proposals"
+name: "Run Latest Proposal"
 
 env:
     FOUNDRY_PROFILE: "ci"
@@ -11,7 +11,7 @@ on:
             - "main"
 
 jobs:
-    run-proposals:
+    run-proposal:
         permissions:
             pull-requests: write
         runs-on: ubuntu-latest
@@ -63,7 +63,7 @@ jobs:
                       }
 
             - name: Run Proposal
-              run: ./run-proposals.sh
+              run: ./run-proposal.sh
                 
             - name: Comment PR with Proposal Output
               uses: actions/github-script@v6
@@ -72,13 +72,11 @@ jobs:
                   script: |
                       const fs = require('fs');
                       if (fs.existsSync('output.json')) {
-                          const outputs = JSON.parse(fs.readFileSync('output.json', 'utf8')).results;
+                          const output = JSON.parse(fs.readFileSync('output.json', 'utf8'));
                           const prNumber = context.payload.pull_request.number;
-                          outputs.forEach(output => {
-                              github.rest.issues.createComment({
-                                ...context.repo,
-                                issue_number: prNumber,
-                                body: `### Proposal output for ${output.file}:\n\`\`\`\n${output.output}\n\`\`\``
-                              });
-                          });
-                      }
+                          github.rest.issues.createComment({
+                             ...context.repo,
+                             issue_number: prNumber,
+                             body: `### Proposal output for ${output.file}:\n\`\`\`\n${output.output}\n\`\`\``
+                             });
+                       }

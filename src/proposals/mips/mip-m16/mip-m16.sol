@@ -17,6 +17,11 @@ contract mipm16 is GovernanceProposal {
         _setProposalDescription(proposalDescription);
     }
 
+    /// @notice proposal's actions all happen on moonbeam
+    function primaryForkId() public view override returns (uint256) {
+        return moonbeamForkId;
+    }
+
     function deploy(Addresses addresses, address) public override {}
 
     function afterDeploy(Addresses addresses, address) public override {}

@@ -170,43 +170,13 @@ abstract contract CrossChainProposal is
     /// @param temporalGovernor address of the cross chain governor executing the calls
     function getTemporalGovCalldata(
         address temporalGovernor
-    ) public returns (bytes memory timelockCalldata) {
+    ) public view returns (bytes memory timelockCalldata) {
         (
             address[] memory targets,
             uint256[] memory values,
             bytes[] memory payloads
         ) = getTargetsPayloadsValues();
 
-        require(
-            temporalGovernor != address(0),
-            "getTemporalGovCalldata: Invalid temporal governor"
-        );
-
-        timelockCalldata = abi.encodeWithSignature(
-            "publishMessage(uint32,bytes,uint8)",
-            nonce,
-            abi.encode(temporalGovernor, targets, values, payloads),
-            consistencyLevel
-        );
-
-        console.log(
-            "\ncalldata for execution on temporal gov: abi.encode(temporalGovernor, targets, values, payloads)"
-        );
-        emit log_bytes(abi.encode(temporalGovernor, targets, values, payloads));
-        console.log("");
-
-        require(
-            timelockCalldata.length <= 10_000,
-            "getTemporalGovCalldata: Timelock publish message calldata max size of 10kb exceeded"
-        );
-    }
-
-    function getTemporalGovCalldata(
-        address temporalGovernor,
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory payloads
-    ) public pure returns (bytes memory timelockCalldata) {
         require(
             temporalGovernor != address(0),
             "getTemporalGovCalldata: Invalid temporal governor"
@@ -231,7 +201,7 @@ abstract contract CrossChainProposal is
     function getMultichainGovernorCalldata(
         address temporalGovernor,
         address wormholeCore
-    ) public returns (bytes memory) {
+    ) public view returns (bytes memory) {
         require(
             temporalGovernor != address(0),
             "getMultichainGovernorCalldata: Invalid temporal governor"
@@ -294,31 +264,14 @@ abstract contract CrossChainProposal is
         address temporalGovernor,
         address wormholeCore
     ) public {
-        /// if temporal governor is address 0, catch in this function call
-        bytes memory temporalGovCalldata = getTemporalGovCalldata(
-            temporalGovernor
-        );
-
-        console.log("temporal governance calldata");
-        emit log_bytes(temporalGovCalldata);
-
-        bytes memory wormholeTemporalGovPayload = abi.encodeWithSignature(
-            "publishMessage(uint32,bytes,uint8)",
-            nonce,
-            temporalGovCalldata,
-            consistencyLevel
-        );
-
-        console.log("wormhole publish governance calldata");
-        emit log_bytes(wormholeTemporalGovPayload);
-
         /// if wormhole core is address 0, catch in this function call
+        /// if temporal governor is address 0, catch in this function call
         bytes memory multichainPayload = getMultichainGovernorCalldata(
             temporalGovernor,
             wormholeCore
         );
 
-        console.log("multichain governor queue governance calldata");
+        console.log("Multichain governor queue governance calldata");
         emit log_bytes(multichainPayload);
     }
 

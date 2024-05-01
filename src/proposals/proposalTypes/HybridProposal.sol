@@ -355,40 +355,6 @@ abstract contract HybridProposal is
     /// -----------------------------------------------------
     /// -----------------------------------------------------
 
-    function printGovernorCalldata(Addresses addresses) public view {
-        (
-            address[] memory targets,
-            uint256[] memory values,
-            bytes[] memory payloads
-        ) = getTargetsPayloadsValues(addresses);
-
-        string[] memory signatures = new string[](targets.length);
-
-        console.log(
-            "------------------ Proposal Targets, Values, Payloads ------------------"
-        );
-        for (uint256 i = 0; i < signatures.length; i++) {
-            signatures[i] = "";
-            console.log(
-                "target: %s\nvalue: %d\npayload\n",
-                targets[i],
-                values[i]
-            );
-            console.logBytes(payloads[i]);
-        }
-
-        bytes memory payloadMultichainGovernor = abi.encodeWithSignature(
-            "propose(address[],uint256[],bytes[],string)",
-            targets,
-            values,
-            payloads,
-            string(PROPOSAL_DESCRIPTION)
-        );
-
-        console.log("Governor multichain proposal calldata");
-        console.logBytes(payloadMultichainGovernor);
-    }
-
     function printProposalActionSteps() public override {
         console.log(
             "\n\nProposal Description:\n\n%s",
@@ -453,9 +419,28 @@ abstract contract HybridProposal is
     /// -----------------------------------------------------
 
     /// @notice Print out the proposal action steps and which chains they were run on
-    function printCalldata(Addresses addresses) public override {
-        printProposalActionSteps();
-        printGovernorCalldata(addresses);
+    function printCalldata(Addresses addresses) public view override {
+        require(
+            bytes(PROPOSAL_DESCRIPTION).length > 0,
+            "No proposal description"
+        );
+
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory payloads
+        ) = getTargetsPayloadsValues(addresses);
+
+        bytes memory payloadMultichainGovernor = abi.encodeWithSignature(
+            "propose(address[],uint256[],bytes[],string)",
+            targets,
+            values,
+            payloads,
+            string(PROPOSAL_DESCRIPTION)
+        );
+
+        console.log("Governor multichain proposal calldata");
+        console.logBytes(payloadMultichainGovernor);
     }
 
     function deploy(Addresses, address) public virtual override {}

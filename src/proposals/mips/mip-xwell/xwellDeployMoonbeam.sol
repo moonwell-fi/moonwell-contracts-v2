@@ -39,6 +39,11 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
 
+    /// @notice proposal's actions all happen on moonbeam
+    function primaryForkId() public view override returns (uint256) {
+        return moonbeamForkId;
+    }
+
     function deploy(Addresses addresses, address) public override {
         /// --------------------------------------------------
         /// --------------------------------------------------
