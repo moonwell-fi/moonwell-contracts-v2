@@ -419,14 +419,12 @@ abstract contract HybridProposal is
     /// -----------------------------------------------------
 
     /// @notice Print out the proposal action steps and which chains they were run on
-    function printCalldata(Addresses addresses) public override {
+    function printCalldata(Addresses addresses) public view override {
         (
             address[] memory targets,
             uint256[] memory values,
             bytes[] memory payloads
         ) = getTargetsPayloadsValues(addresses);
-
-        string[] memory signatures = new string[](targets.length);
 
         bytes memory payloadMultichainGovernor = abi.encodeWithSignature(
             "propose(address[],uint256[],bytes[],string)",

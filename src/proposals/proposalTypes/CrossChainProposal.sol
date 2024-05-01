@@ -170,7 +170,7 @@ abstract contract CrossChainProposal is
     /// @param temporalGovernor address of the cross chain governor executing the calls
     function getTemporalGovCalldata(
         address temporalGovernor
-    ) public returns (bytes memory timelockCalldata) {
+    ) public view returns (bytes memory timelockCalldata) {
         (
             address[] memory targets,
             uint256[] memory values,
@@ -201,7 +201,7 @@ abstract contract CrossChainProposal is
     function getMultichainGovernorCalldata(
         address temporalGovernor,
         address wormholeCore
-    ) public returns (bytes memory) {
+    ) public view returns (bytes memory) {
         require(
             temporalGovernor != address(0),
             "getMultichainGovernorCalldata: Invalid temporal governor"
@@ -271,7 +271,7 @@ abstract contract CrossChainProposal is
             wormholeCore
         );
 
-        console.log("multichain governor queue governance calldata");
+        console.log("Multichain governor queue governance calldata");
         emit log_bytes(multichainPayload);
     }
 
