@@ -54,21 +54,19 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
         string memory output = string(vm.ffi(inputs));
 
-        if (bytes(output).length != 0) {
-            Proposal proposal = Proposal(deployCode(output));
-            vm.makePersistent(address(proposal));
+        Proposal proposal = Proposal(deployCode(output));
+        vm.makePersistent(address(proposal));
 
-            proposal.setForkIds(baseForkId, moonbeamForkId);
+        proposal.setForkIds(baseForkId, moonbeamForkId);
 
-            vm.selectFork(proposal.primaryForkId());
+        vm.selectFork(proposal.primaryForkId());
 
-            proposal.deploy(addresses, deployer);
-            proposal.afterDeploy(addresses, deployer);
-            proposal.afterDeploySetup(addresses);
-            proposal.build(addresses);
-            proposal.run(addresses, deployer);
-            proposal.validate(addresses, deployer);
-        }
+        proposal.deploy(addresses, deployer);
+        proposal.afterDeploy(addresses, deployer);
+        proposal.afterDeploySetup(addresses);
+        proposal.build(addresses);
+        proposal.run(addresses, deployer);
+        proposal.validate(addresses, deployer);
     }
 
     function testLatestMoonbeamProposal() public {
@@ -79,21 +77,19 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
         string memory output = string(vm.ffi(inputs));
 
-        if (bytes(output).length != 0) {
-            Proposal proposal = Proposal(deployCode(output));
-            vm.makePersistent(address(proposal));
+        Proposal proposal = Proposal(deployCode(output));
+        vm.makePersistent(address(proposal));
 
-            proposal.setForkIds(baseForkId, moonbeamForkId);
+        proposal.setForkIds(baseForkId, moonbeamForkId);
 
-            vm.selectFork(proposal.primaryForkId());
+        vm.selectFork(proposal.primaryForkId());
 
-            proposal.deploy(addresses, deployer);
-            proposal.afterDeploy(addresses, deployer);
-            proposal.afterDeploySetup(addresses);
-            proposal.build(addresses);
-            proposal.run(addresses, deployer);
-            proposal.validate(addresses, deployer);
-        }
+        proposal.deploy(addresses, deployer);
+        proposal.afterDeploy(addresses, deployer);
+        proposal.afterDeploySetup(addresses);
+        proposal.build(addresses);
+        proposal.run(addresses, deployer);
+        proposal.validate(addresses, deployer);
     }
 
     function testActiveProposals() public {
