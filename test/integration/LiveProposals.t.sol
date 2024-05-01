@@ -54,10 +54,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
         string memory output = string(vm.ffi(inputs));
 
-        if (
-            keccak256(abi.encodePacked(output)) !=
-            keccak256(abi.encodePacked(string("")))
-        ) {
+        if (bytes(output).length != 0) {
             Proposal proposal = Proposal(deployCode(output));
             vm.makePersistent(address(proposal));
 
@@ -82,10 +79,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
         string memory output = string(vm.ffi(inputs));
 
-        if (
-            keccak256(abi.encodePacked(output)) !=
-            keccak256(abi.encodePacked(string("")))
-        ) {
+        if (bytes(output).length != 0) {
             Proposal proposal = Proposal(deployCode(output));
             vm.makePersistent(address(proposal));
 

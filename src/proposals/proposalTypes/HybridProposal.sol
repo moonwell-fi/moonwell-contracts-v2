@@ -420,6 +420,11 @@ abstract contract HybridProposal is
 
     /// @notice Print out the proposal action steps and which chains they were run on
     function printCalldata(Addresses addresses) public view override {
+        require(
+            bytes(PROPOSAL_DESCRIPTION).length > 0,
+            "No proposal description"
+        );
+
         (
             address[] memory targets,
             uint256[] memory values,
