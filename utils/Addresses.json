@@ -24,14 +24,80 @@
         "name": "MORPHO_BLUE"
     },
     {
+        "addr": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+        "chainId": 1,
+        "isContract": true,
+        "name": "stETH"
+    },
+    {
+        "addr": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+        "chainId": 1,
+        "isContract": true,
+        "name": "MORPHO_IRM_MAINNET"
+    },
+    {
+        "addr": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+        "chainId": 1,
+        "isContract": true,
+        "name": "MORPHO_BLUE"
+    },
+    {
+        "addr": "0x86392dC19c0b719886221c78AB11eb8Cf5c52812",
+        "chainId": 1,
+        "name": "stETH_ETH_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x986b5E1e1755e3C2440e960477f25201B0a8bbD4",
+        "chainId": 1,
+        "name": "ETH_USDC_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x3A7bB36Ee3f3eE32A60e9f2b33c1e5f2E83ad766",
+        "chainId": 1,
+        "isContract": true,
+        "name": "MORPHO_ORACLE_FACTORY"
+    },
+    {
+        "addr": "0x2DC205F24BCb6B311E5cdf0745B0741648Aebd3d",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "MORPHO_ORACLE_FACTORY"
+    },
+    {
+        "addr": "0xf586d0728a47229e747d824a939000Cf21dEF5A0",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "stETH_ETH_CHAINLINK_ORACLE"
+    },
+    {
+        "addr": "",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "USDC_ETH_CHAINLINK_ORACLE"
+    },
+    {
+        "addr": "0x46415998764c29ab2a25cbea6254146d50d22687",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "MORPHO_IRM_SEPOLIA"
+    },
+    {
         "addr": "0x10e5196375e6461703662DE1c11F0C28884cBf3b",
         "chainId": 84532,
         "isContract": true,
         "name": "METAMORPHO_USDC_VAULT_TESTNET"
     },
     {
-        "addr": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-        "chainId": 84532,
+        "addr": "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB",
+        "chainId": 1,
+        "isContract": true,
+        "name": "METAMORPHO_USDC_VAULT_MAINNET"
+    },
+    {
+        "addr": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "chainId": 1,
         "isContract": true,
         "name": "USDC"
     },
