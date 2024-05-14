@@ -2,7 +2,6 @@
 pragma solidity >=0.5.0;
 
 import {IMorphoChainlinkOracleV2} from "@interfaces/IMorphoChainlinkOracleV2.sol";
-import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 
 /// @title IMorphoChainlinkOracleV2Factory
 /// @author Morpho Labs
