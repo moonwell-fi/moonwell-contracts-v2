@@ -9,3 +9,4 @@
 @utils/=src/utils/
 @zelt/=lib/zelt/
 @external/=src/external/
+@interfaces/=src/interfaces/
