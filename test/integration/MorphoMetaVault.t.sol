@@ -16,7 +16,7 @@ import {PendingAddress, IMetaMorpho, MarketAllocation} from "@external/MetaMorph
 import {IMorphoChainlinkOracleV2, IMorphoChainlinkOracleV2Factory} from "@interfaces/IMorphoChainlinkOracleV2Factory.sol";
 
 /// for testing against mainnet
-contract MorphoVaultLiveSystemBaseTest is Configs {
+contract MorphoVaultEthMainnetTest is Configs {
     Addresses addresses;
     IMetaMorpho metaMorpho;
     IMetaMorpho usdcVault;
