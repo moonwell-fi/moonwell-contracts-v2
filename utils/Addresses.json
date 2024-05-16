@@ -126,6 +126,12 @@
         "name": "APOLLO_GOVERNOR"
     },
     {
+        "addr": "0x04e6322D196E0E4cCBb2610dd8B8f2871E160bd7",
+        "chainId": 1285,
+        "isContract": true,
+        "name": "APOLLO_TIMELOCK"
+    },
+    {
         "addr": "0xBb8d88bcD9749636BC4D2bE22aaC4Bb3B01A58F1",
         "chainId": 1285,
         "isContract": true,
