@@ -46,10 +46,11 @@ contract Factory4626 {
         address rewardRecipient
     ) external returns (address vault) {
         address asset = MErc20(mToken).underlying();
-
+        /// parameter checks
         require(rewardRecipient != address(0), "INVALID_RECIPIENT");
         require(asset != weth, "INVALID_ASSET");
 
+        /// create the vault contract
         vault = address(
             new MoonwellERC4626(
                 ERC20(asset),
@@ -57,6 +58,30 @@ contract Factory4626 {
                 rewardRecipient,
                 moontroller
             )
+        );
+
+        /// handle initial mints to the vault to prevent front-running
+        /// and share price manipulation
+
+        uint256 initialMintAmount = 10 ** ((ERC20(asset).decimals() * 2) / 3);
+
+        require(
+            ERC20(asset).transferFrom(
+                msg.sender,
+                address(this),
+                initialMintAmount
+            ),
+            "transferFrom failed"
+        );
+
+        require(
+            ERC20(asset).approve(vault, initialMintAmount),
+            "approve failed"
+        );
+
+        require(
+            MoonwellERC4626(vault).deposit(initialMintAmount, address(0)) > 0,
+            "deposit failed"
         );
 
         emit DeployedMoonwellERC4626(asset, mToken, rewardRecipient, vault);
