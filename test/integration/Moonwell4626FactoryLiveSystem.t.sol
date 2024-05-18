@@ -105,12 +105,31 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
         ethFactory.deployMoonwellERC4626Eth(mcbEth, address(1));
     }
 
+    function testDeploycbEthVaultFailsNotFunded() public {
+        address cbEth = addresses.getAddress("MOONWELL_cbETH");
+        address rewardRecipient = address(0xeeeeeeeeeeee);
+
+        vm.expectRevert("ERC20: insufficient allowance");
+        factory.deployMoonwellERC4626(cbEth, rewardRecipient);
+    }
+
+    function testDeployEthVaultFailsNotFunded() public {
+        address mwEth = addresses.getAddress("MOONWELL_WETH");
+        address rewardRecipient = address(0xeeeeeeeeeeee);
+
+        vm.expectRevert();
+        ethFactory.deployMoonwellERC4626Eth(mwEth, rewardRecipient);
+    }
+
     /// Happy Paths
 
-    function testDeployVaultSuccess() public {
+    function testDeployVaultSuccessFunded() public {
         address cbEth = addresses.getAddress("cbETH");
         address mcbEth = addresses.getAddress("MOONWELL_cbETH");
         address rewardRecipient = address(0xeeeeeeeeeeee);
+
+        deal(cbEth, address(this), .01 ether);
+        ERC20(cbEth).approve(address(factory), .01 ether);
 
         /// take a snapshot of the current state
         uint256 snapshotId = vm.snapshot();
@@ -127,7 +146,7 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
         assertEq(
             address(MoonwellERC4626(vault).asset()),
             addresses.getAddress("cbETH"),
-            "incorrect asset address"
+            "incorrect asset address, should be cbEth"
         );
         assertEq(
             address(MoonwellERC4626(vault).mToken()),
@@ -144,11 +163,23 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
             address(comptroller),
             "incorrect moontroller address"
         );
+        assertTrue(
+            MoonwellERC4626(vault).totalSupply() > 0,
+            "incorrect totalSupply"
+        );
+        assertEq(
+            MoonwellERC4626(vault).totalSupply(),
+            MoonwellERC4626(vault).balanceOf(address(0)),
+            "incorrect balance of address(0)"
+        );
     }
 
     function testDeployEthVaultSuccess() public {
         address mwEth = addresses.getAddress("MOONWELL_WETH");
         address rewardRecipient = address(0xeeeeeeeeeeee);
+
+        deal(address(weth), address(this), .01 ether);
+        weth.approve(address(ethFactory), .01 ether);
 
         /// take a snapshot of the current state
         uint256 snapshotId = vm.snapshot();
@@ -173,7 +204,7 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
         assertEq(
             address(MoonwellERC4626(vault).asset()),
             address(weth),
-            "incorrect asset address"
+            "incorrect asset address, should be weth"
         );
         assertEq(
             address(MoonwellERC4626(vault).mToken()),
@@ -189,6 +220,15 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
             address(MoonwellERC4626(vault).comptroller()),
             address(comptroller),
             "incorrect moontroller address"
+        );
+        assertTrue(
+            MoonwellERC4626(vault).totalSupply() > 0,
+            "incorrect totalSupply"
+        );
+        assertEq(
+            MoonwellERC4626(vault).totalSupply(),
+            MoonwellERC4626(vault).balanceOf(address(0)),
+            "incorrect balance of address(0)"
         );
     }
 }
