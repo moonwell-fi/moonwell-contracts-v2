@@ -4,7 +4,6 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
-import {MoonwellERC4626Eth} from "@protocol/4626/MoonwellERC4626Eth.sol";
 import {Comptroller as IMoontroller} from "@protocol/Comptroller.sol";
 
 contract Factory4626 {
