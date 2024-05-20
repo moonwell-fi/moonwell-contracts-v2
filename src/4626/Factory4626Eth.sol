@@ -51,7 +51,7 @@ contract Factory4626Eth {
     ) external returns (address vault) {
         /// parameter checks
         require(rewardRecipient != address(0), "INVALID_RECIPIENT");
-        require(MErc20(mToken).underlying() == weth, "INVALID_MTOKEN");
+        require(MErc20(mToken).underlying() == weth, "INVALID_ASSET");
 
         /// create the vault contract
         vault = address(
