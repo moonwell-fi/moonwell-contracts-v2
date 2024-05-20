@@ -38,8 +38,8 @@ contract Factory4626 {
         weth = _weth;
     }
 
-    /// @notice Deploy a CompoundERC4626 vault
-    /// @param mToken The corresponding Moonwell mToken
+    /// @notice Deploy a MoonwellERC4626 vault
+    /// @param mToken The corresponding mToken
     /// @param rewardRecipient The address to receive rewards
     function deployMoonwellERC4626(
         address mToken,
