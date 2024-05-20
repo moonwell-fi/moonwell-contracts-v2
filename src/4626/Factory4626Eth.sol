@@ -20,7 +20,7 @@ contract Factory4626Eth {
     address public immutable weth;
 
     /// @notice The initial mint amount for a new vault
-    uint256 public constant INITIAL_MINT_AMOUNT = 0.01 ether;
+    uint256 public constant INITIAL_MINT_AMOUNT = 0.0001 ether;
 
     /// @notice event emitted when a new 4626 vault is deployed
     /// @param asset underlying the vault
