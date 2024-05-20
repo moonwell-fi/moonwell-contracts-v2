@@ -371,6 +371,16 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         assertEq(weth.balanceOf(address(router)), 0, "router weth balance");
     }
 
+    function testMintFailsNoValue() public {
+        vm.expectRevert("ZERO_ETH");
+        router.mint{value: 0}(ethVault, address(this), 1, 0);
+    }
+
+    function testDepositFailsNoValue() public {
+        vm.expectRevert("ZERO_ETH");
+        router.deposit{value: 0}(ethVault, address(this), 1, 0);
+    }
+
     function _getMaxSupplyAmount(
         address mToken
     ) internal view returns (uint256) {

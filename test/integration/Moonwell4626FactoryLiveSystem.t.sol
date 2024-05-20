@@ -101,7 +101,7 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
     function testDeployVaultAssetNotWethFails() public {
         address mcbEth = addresses.getAddress("MOONWELL_cbETH");
 
-        vm.expectRevert("INVALID_MTOKEN");
+        vm.expectRevert("INVALID_ASSET");
         ethFactory.deployMoonwellERC4626Eth(mcbEth, address(1));
     }
 
