@@ -464,7 +464,7 @@ abstract contract HybridProposal is
     ) internal {
         _verifyActionsPreRun(moonbeamActions);
 
-        address governanceToken = addresses.getAddress("WELL");
+        address governanceToken = addresses.getAddress("GOVTOKEN");
         address governorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );

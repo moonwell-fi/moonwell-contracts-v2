@@ -45,7 +45,7 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
     function setUp() public {
         addresses = new Addresses();
 
-        well = ERC20(addresses.getAddress("WELL"));
+        well = ERC20(addresses.getAddress("GOVTOKEN"));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
         xerc20Lockbox = XERC20Lockbox(addresses.getAddress("xWELL_LOCKBOX"));
         wormholeAdapter = WormholeBridgeAdapter(

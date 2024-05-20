@@ -26,7 +26,7 @@ contract LiveSystemTest is Test {
     function setUp() public {
         addresses = new Addresses();
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
-        well = addresses.getAddress("WELL");
+        well = addresses.getAddress("GOVTOKEN");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
     }
 
@@ -67,7 +67,7 @@ contract LiveSystemTest is Test {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_USDBC")),
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
@@ -95,7 +95,7 @@ contract LiveSystemTest is Test {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_USDBC")),
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
@@ -127,7 +127,7 @@ contract LiveSystemTest is Test {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_USDBC")),
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
@@ -269,7 +269,7 @@ contract LiveSystemTest is Test {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 mToken,
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         uint256 expectedReward = (toWarp * config.supplyEmissionsPerSec) * balance / totalSupply;
@@ -345,7 +345,7 @@ contract LiveSystemTest is Test {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 mToken,
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         uint256 expectedSupplyReward = (toWarp * config.supplyEmissionsPerSec) * balance / totalSupply;

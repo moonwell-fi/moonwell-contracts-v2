@@ -177,7 +177,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
 
         MultichainGovernor.InitializeData memory initData;
 
-        initData.well = addresses.getAddress("WELL");
+        initData.well = addresses.getAddress("GOVTOKEN");
         initData.xWell = addresses.getAddress("xWELL_PROXY");
         initData.stkWell = addresses.getAddress("stkWELL_PROXY");
         initData.distributor = addresses.getAddress(
@@ -255,7 +255,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         );
         assertEq(
             address(governor.well()),
-            addresses.getAddress("WELL"),
+            addresses.getAddress("GOVTOKEN"),
             "incorrect well address"
         );
         assertEq(

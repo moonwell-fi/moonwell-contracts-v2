@@ -27,7 +27,7 @@ contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
     function setUp() public override {
         super.setUp();
 
-        well = addresses.getAddress("WELL");
+        well = addresses.getAddress("GOVTOKEN");
         mUSDC = MErc20(addresses.getAddress("MOONWELL_USDC"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
@@ -155,7 +155,7 @@ contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_USDC")),
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(

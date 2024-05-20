@@ -36,7 +36,7 @@ contract DeployXWellRouter is Script, Test {
 
         router = new xWELLRouter(
             addresses.getAddress("xWELL_PROXY"),
-            addresses.getAddress("WELL"),
+            addresses.getAddress("GOVTOKEN"),
             addresses.getAddress("xWELL_LOCKBOX"),
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );

@@ -32,7 +32,7 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         super.setUp();
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
-        well = addresses.getAddress("WELL");
+        well = addresses.getAddress("GOVTOKEN");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         router = WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));
         oracle = ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"));
@@ -101,7 +101,7 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_USDBC")),
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
@@ -127,7 +127,7 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_USDBC")),
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));

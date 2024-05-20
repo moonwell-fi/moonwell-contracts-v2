@@ -174,7 +174,7 @@ abstract contract GovernanceProposal is Proposal {
 
         /// @dev deal and delegate, so the proposal can be simulated end-to-end
         Addresses addresses = new Addresses();
-        address well = payable(addresses.getAddress("WELL"));
+        address well = payable(addresses.getAddress("GOVTOKEN"));
         _deal(well, proposerAddress, 100_000_000e18);
         _delegate(proposerAddress, ERC20Votes(well));
 
