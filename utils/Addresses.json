@@ -92,7 +92,7 @@
     {
         "addr": "0x511aB53F793683763E5a8829738301368a2411E3",
         "chainId": 1284,
-        "name": "WELL",
+        "name": "GOVTOKEN",
         "isContract": true
     },
     {
@@ -260,7 +260,7 @@
     {
         "addr": "0xFF8adeC2221f9f4D8dfbAFa6B9a297d17603493D",
         "chainId": 8453,
-        "name": "WELL",
+        "name": "GOVTOKEN",
         "isContract": true
     },
     {
