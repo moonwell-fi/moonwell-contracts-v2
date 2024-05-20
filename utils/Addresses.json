@@ -45,7 +45,7 @@
         "addr": "0xBb8d88bcD9749636BC4D2bE22aaC4Bb3B01A58F1",
         "chainId": 1285,
         "isContract": true,
-        "name": "MFAM"
+        "name": "GOVTOKEN"
     },
     {
         "addr": "0x9A8464C4C11CeA17e191653Deb7CdC1bE30F1Af4",
@@ -554,19 +554,19 @@
     {
         "addr": "0x8568A675384d761f36eC269D695d6Ce4423cfaB1",
         "chainId": 1284,
-        "name": "STWELL",
+        "name": "STKGOVTOKEN",
         "isContract": true
     },
     {
         "addr": "0x091608f4e4a15335145be0A279483C0f8E4c7955",
         "chainId": 1284,
-        "name": "mGLIMMER",
+        "name": "MNATIVE",
         "isContract": true
     },
     {
         "addr": "0xb536c1F9A157B263B70A9a35705168ACC0271742",
         "chainId": 1284,
-        "name": "WELL_LP",
+        "name": "GOVTOKEN_LP",
         "isContract": true
     },
     {
@@ -578,25 +578,25 @@
     {
         "addr": "0xCd76e63f3AbFA864c53b4B98F57c1aA6539FDa3a",
         "chainId": 1285,
-        "name": "STWELL",
+        "name": "STKGOVTOKEN",
         "isContract": true
     },
     {
         "addr": "0xBb8d88bcD9749636BC4D2bE22aaC4Bb3B01A58F1",
         "chainId": 1285,
-        "name": "WELL",
+        "name": "GOVTOKEN",
         "isContract": true
     },
     {
         "addr": "0x6a1A771C7826596652daDC9145fEAaE62b1cd07f",
         "chainId": 1285,
-        "name": "MGLIMMER",
+        "name": "MNATIVE",
         "isContract": true
     },
     {
         "addr": "0xE6Bfc609A2e58530310D6964ccdd236fc93b4ADB",
         "chainId": 1285,
-        "name": "WELL_LP",
+        "name": "GOVTOKEN_LP",
         "isContract": true
     },
     {
@@ -735,13 +735,13 @@
         "addr": "0xe66E3A37C3274Ac24FE8590f7D84A2427194DC17",
         "chainId": 8453,
         "isContract": true,
-        "name": "stkWELL_PROXY"
+        "name": "STKNATIVE"
     },
     {
         "addr": "0x4439640C018E541eC6b29a5828bc876327cf556C",
         "chainId": 8453,
         "isContract": true,
-        "name": "stkWELL_IMPL"
+        "name": "STKNATIVE_IMPL"
     },
     {
         "addr": "0xe0278B32c627FF6fFbbe7de6A18Ade145603e949",
@@ -842,7 +842,7 @@
     {
         "addr": "0x8568A675384d761f36eC269D695d6Ce4423cfaB1",
         "chainId": 1284,
-        "name": "stkWELL_PROXY",
+        "name": "STKNATIVE",
         "isContract": true
     },
     {
@@ -980,7 +980,7 @@
     {
         "addr": "0x96d50c8b4072A1246d40c4455D7b6D748f7D4BD3",
         "chainId": 1287,
-        "name": "WELL",
+        "name": "GOVTOKEN",
         "isContract": true
     },
     {
@@ -1070,7 +1070,7 @@
     {
         "addr": "0x13C0d0a89E7c3C747cc3A15234AB6942238d2ECb",
         "chainId": 84532,
-        "name": "WELL",
+        "name": "GOVTOKEN",
         "isContract": true
     },
     {
@@ -1167,13 +1167,13 @@
         "addr": "0x136b89Fc7e52493AadC7710a64603793a857dAfA",
         "chainId": 84532,
         "isContract": true,
-        "name": "stkWELL_PROXY"
+        "name": "STKNATIVE"
     },
     {
         "addr": "0xa48382Da31A70EFecDF0a77d454cdE07b25b4B8D",
         "chainId": 84532,
         "isContract": true,
-        "name": "stkWELL_IMPL"
+        "name": "STKNATIVE_IMPL"
     },
     {
         "addr": "0xBdD86164da753C1a25e72603d266Dc1CC32e8acf",
@@ -1214,13 +1214,13 @@
     {
         "addr": "0x7E498C2aae7fA815B71B39cd1351b7b5ee9D2a60",
         "chainId": 1287,
-        "name": "stkWELL_IMPL",
+        "name": "STKNATIVE_IMPL",
         "isContract": true
     },
     {
         "addr": "0xCBfcab5e2E9DdC0B5Fa8B06Cd0e7a928c6D58DC0",
         "chainId": 1287,
-        "name": "stkWELL_PROXY",
+        "name": "STKNATIVE_PROXY",
         "isContract": true
     },
     {
@@ -1304,7 +1304,7 @@
     {
         "addr": "0xC409e77229B6eCA42EA19E7AcF2d6b99Ebc02626",
         "chainId": 1287,
-        "name": "MOONWELL_GLIMMER",
+        "name": "MGLIMMER",
         "isContract": true
     },
     {
