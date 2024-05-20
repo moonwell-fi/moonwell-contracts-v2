@@ -88,8 +88,8 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                     address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
                     proxyAdmin
                 );
-                addresses.addAddress("stkWELL_PROXY", stkWellProxy, true);
-                addresses.addAddress("stkWELL_IMPL", stkWellImpl, true);
+                addresses.addAddress("STKNATIVE", stkWellProxy, true);
+                addresses.addAddress("STKNATIVE_IMPL", stkWellImpl, true);
             }
         }
 
@@ -99,7 +99,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                 address collectionImpl
             ) = deployVoteCollection(
                     addresses.getAddress("xWELL_PROXY"),
-                    addresses.getAddress("stkWELL_PROXY"),
+                    addresses.getAddress("STKNATIVE_PROXY"),
                     addresses.getAddress( /// fetch multichain governor address on Moonbeam
                             "MULTICHAIN_GOVERNOR_PROXY",
                             sendingChainIdToReceivingChainId[block.chainid]
@@ -148,7 +148,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         /// approve stkWELL contract to spend xWELL from the ecosystem reserve contract
         ecosystemReserveController.approve(
             addresses.getAddress("xWELL_PROXY"),
-            addresses.getAddress("stkWELL_PROXY"),
+            addresses.getAddress("STKNATIVE_PROXY"),
             approvalAmount
         );
 
@@ -186,7 +186,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
             validateProxy(
                 vm,
-                addresses.getAddress("stkWELL_PROXY"),
+                addresses.getAddress("STKNATIVE_PROXY"),
                 addresses.getAddress("stkWELL_IMPL"),
                 addresses.getAddress("MRD_PROXY_ADMIN"),
                 "stkWELL_PROXY validation"
@@ -237,7 +237,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             assertEq(
                 xWell.allowance(
                     address(ecosystemReserve),
-                    addresses.getAddress("stkWELL_PROXY")
+                    addresses.getAddress("STKNATIVE_PROXY")
                 ),
                 approvalAmount,
                 "ecosystem reserve not approved to give stkWELL_PROXY approvalAmount"
@@ -256,7 +256,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         /// validate stkWELL contract
         {
             IStakedWellUplift stkWell = IStakedWellUplift(
-                addresses.getAddress("stkWELL_PROXY")
+                addresses.getAddress("STKNATIVE_PROXY")
             );
 
             /// stake and reward token are the same
@@ -325,7 +325,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
             assertEq(
                 address(voteCollection.stkWell()),
-                addresses.getAddress("stkWELL_PROXY"),
+                addresses.getAddress("STKNATIVE_PROXY"),
                 "incorrect stkWELL"
             );
 
