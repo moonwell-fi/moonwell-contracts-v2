@@ -30,8 +30,6 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
     MoonwellERC4626 vault;
     ERC4626EthRouter router;
 
-    /// TODO add reentrancy tests
-
     function setUp() public {
         addresses = new Addresses();
 
