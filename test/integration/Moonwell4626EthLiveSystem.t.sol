@@ -20,6 +20,7 @@ import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
 import {ERC4626EthRouter} from "@protocol/router/ERC4626EthRouter.sol";
 import {deploy4626Router} from "@protocol/4626/4626FactoryDeploy.sol";
 import {MoonwellERC4626Eth} from "@protocol/4626/MoonwellERC4626Eth.sol";
+import {Malicious4626Minter} from "@test/mock/Malicious4626Minter.sol";
 
 contract Moonwell4626EthLiveSystemBaseTest is Configs {
     Comptroller comptroller;
@@ -352,19 +353,56 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         router.deposit{value: 0}(ethVault, address(this), 1, 0);
     }
 
-    function _getMaxSupplyAmount(
-        address mToken
-    ) internal view returns (uint256) {
-        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
+    function testReentrancyDepositFails() public {
+        uint256 amount = 1_000e18;
 
-        uint256 totalCash = MToken(mToken).getCash();
-        uint256 totalBorrows = MToken(mToken).totalBorrows();
-        uint256 totalReserves = MToken(mToken).totalReserves();
+        _innerMintTest(amount);
 
-        // totalSupplies = totalCash + totalBorrows - totalReserves
-        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+        Malicious4626Minter minter = new Malicious4626Minter(0);
 
-        return supplyCap - totalSupplies - 1_000e6;
+        ethVault.transfer(address(minter), ethVault.balanceOf(address(this)));
+
+        vm.expectRevert("ETH_TRANSFER_FAILED");
+        minter.startAttack(address(ethVault));
+    }
+
+    function testReentrancyMintFails() public {
+        uint256 amount = 1_000e18;
+
+        _innerMintTest(amount);
+
+        Malicious4626Minter minter = new Malicious4626Minter(1);
+
+        ethVault.transfer(address(minter), ethVault.balanceOf(address(this)));
+
+        vm.expectRevert("ETH_TRANSFER_FAILED");
+        minter.startAttack(address(ethVault));
+    }
+
+    function testReentrancyWithdrawFails() public {
+        uint256 amount = 1_000e18;
+
+        _innerMintTest(amount);
+
+        Malicious4626Minter minter = new Malicious4626Minter(2);
+
+        ethVault.transfer(address(minter), ethVault.balanceOf(address(this)));
+
+        vm.expectRevert("ETH_TRANSFER_FAILED");
+        minter.startAttack(address(ethVault));
+    }
+
+    function testReentrancyRedeemFails() public {
+        uint256 amount = 1_000e18;
+
+        _innerMintTest(amount);
+
+        Malicious4626Minter minter = new Malicious4626Minter(3);
+
+        ethVault.transfer(address(minter), ethVault.balanceOf(address(this)));
+
+        vm.expectRevert("ETH_TRANSFER_FAILED");
+        minter.startAttack(address(ethVault));
     }
 
     function _innerMintTest(uint256 amount) private {
@@ -407,6 +445,21 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
 
         /// weth balance
         assertEq(weth.balanceOf(address(router)), 0, "router weth balance");
+    }
+
+    function _getMaxSupplyAmount(
+        address mToken
+    ) internal view returns (uint256) {
+        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
+
+        uint256 totalCash = MToken(mToken).getCash();
+        uint256 totalBorrows = MToken(mToken).totalBorrows();
+        uint256 totalReserves = MToken(mToken).totalReserves();
+
+        // totalSupplies = totalCash + totalBorrows - totalReserves
+        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+
+        return supplyCap - totalSupplies - 1_000e6;
     }
 
     receive() external payable {}
