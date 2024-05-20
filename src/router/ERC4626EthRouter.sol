@@ -44,9 +44,11 @@ contract ERC4626EthRouter {
     /// @notice refund any excess weth back to the sender
     /// a malicious vault could not drain this contract because
     /// approvals are revoked after each function call.
-    /// @param vault The ERC4626 vault to deposit assets to.
-    /// @param vault The ERC4626 vault to zero approval to.
+    /// @param vault The ERC4626 vault to deposit assets into.
     modifier wrapApproveRefundRevoke(address vault) {
+        /// 0. check for zero eth
+        require(msg.value != 0, "ZERO_ETH");
+
         /// 1. wrap eth -> weth
         weth.deposit{value: msg.value}();
 
