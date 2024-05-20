@@ -142,6 +142,19 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
             "incorrect eth 4626 total supply"
         );
         assertEq(weth.balanceOf(address(this)), amount, "not enough refunded");
+        assertEq(
+            weth.allowance(
+                address(router),
+                addresses.getAddress("MOONWELL_WETH")
+            ),
+            0,
+            "allowance not zero after minting through router"
+        );
+        assertEq(
+            address(router).balance,
+            0,
+            "router balance not zero after minting through router"
+        );
     }
 
     function testDepositExcessWethRefunded() public {
@@ -180,8 +193,8 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         );
     }
 
-    function testWithdrawEthFromEth4626Vault() public {
-        uint256 amount = 1_000e18;
+    function testWithdrawEthFromEth4626Vault(uint256 amount) public {
+        amount = _bound(amount, 1e18, 1_000e18);
 
         _innerMintTest(amount);
 
@@ -206,8 +219,8 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         );
     }
 
-    function testRedeemEthFromEth4626Vault() public {
-        uint256 amount = 1_000e18;
+    function testRedeemEthFromEth4626Vault(uint256 amount) public {
+        amount = _bound(amount, 1e18, 1_000e18);
 
         _innerMintTest(amount);
 
@@ -222,48 +235,6 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
 
         assertGt(address(this).balance, amount, "incorrect amount out");
         assertEq(ethVault.totalSupply(), 0, "incorrect total supply");
-    }
-
-    function _innerMintTest(uint256 amount) private {
-        uint256 startingTotalSupply = ethVault.totalSupply();
-        vm.deal(address(this), amount);
-
-        uint256 shares = ethVault.convertToShares(amount);
-        router.mint{value: amount}(ethVault, address(this), shares, amount);
-
-        assertEq(
-            ethVault.balanceOf(address(this)),
-            shares,
-            "incorrect eth 4626 share balance"
-        );
-        assertEq(
-            ethVault.totalSupply() - startingTotalSupply,
-            shares,
-            "incorrect eth 4626 total supply"
-        );
-        assertEq(
-            weth.allowance(
-                address(router),
-                addresses.getAddress("MOONWELL_WETH")
-            ),
-            0,
-            "allowance not zero after minting through router"
-        );
-
-        /// eth balance
-        assertEq(
-            address(this).balance,
-            0,
-            "incorrect balance after depositing shares"
-        );
-        assertEq(
-            address(router).balance,
-            0,
-            "router balance not zero after minting through router"
-        );
-
-        /// weth balance
-        assertEq(weth.balanceOf(address(router)), 0, "router weth balance");
     }
 
     function testMintcbEth4626Shares(uint256 amount) public {
@@ -394,6 +365,48 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
 
         return supplyCap - totalSupplies - 1_000e6;
+    }
+
+    function _innerMintTest(uint256 amount) private {
+        uint256 startingTotalSupply = ethVault.totalSupply();
+        vm.deal(address(this), amount);
+
+        uint256 shares = ethVault.convertToShares(amount);
+        router.mint{value: amount}(ethVault, address(this), shares, amount);
+
+        assertEq(
+            ethVault.balanceOf(address(this)),
+            shares,
+            "incorrect eth 4626 share balance"
+        );
+        assertEq(
+            ethVault.totalSupply() - startingTotalSupply,
+            shares,
+            "incorrect eth 4626 total supply"
+        );
+        assertEq(
+            weth.allowance(
+                address(router),
+                addresses.getAddress("MOONWELL_WETH")
+            ),
+            0,
+            "allowance not zero after minting through router"
+        );
+
+        /// eth balance
+        assertEq(
+            address(this).balance,
+            0,
+            "incorrect balance after depositing shares"
+        );
+        assertEq(
+            address(router).balance,
+            0,
+            "router balance not zero after minting through router"
+        );
+
+        /// weth balance
+        assertEq(weth.balanceOf(address(router)), 0, "router weth balance");
     }
 
     receive() external payable {}
