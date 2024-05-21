@@ -32,7 +32,7 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
         safetyModule = addresses.getAddress("STWELL");
         governanceToken = addresses.getAddress("GOVTOKEN");
         nativeMarket = addresses.getAddress("mGLIMMER");
-        governanceTokenLP = addresses.getAddress("GOVTOKEN_LP);
+        governanceTokenLP = addresses.getAddress("GOVTOKEN_LP");
 
         viewsContract = new MoonwellViewsV1();
 
