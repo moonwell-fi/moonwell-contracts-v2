@@ -99,7 +99,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                 address collectionImpl
             ) = deployVoteCollection(
                     addresses.getAddress("xWELL_PROXY"),
-                    addresses.getAddress("STKNATIVE_PROXY"),
+                    addresses.getAddress("STKNATIVE"),
                     addresses.getAddress( /// fetch multichain governor address on Moonbeam
                             "MULTICHAIN_GOVERNOR_PROXY",
                             sendingChainIdToReceivingChainId[block.chainid]
@@ -148,7 +148,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         /// approve stkWELL contract to spend xWELL from the ecosystem reserve contract
         ecosystemReserveController.approve(
             addresses.getAddress("xWELL_PROXY"),
-            addresses.getAddress("STKNATIVE_PROXY"),
+            addresses.getAddress("STKNATIVE"),
             approvalAmount
         );
 
@@ -237,7 +237,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             assertEq(
                 xWell.allowance(
                     address(ecosystemReserve),
-                    addresses.getAddress("STKNATIVE_PROXY")
+                    addresses.getAddress("STKNATIVE")
                 ),
                 approvalAmount,
                 "ecosystem reserve not approved to give stkWELL_PROXY approvalAmount"
@@ -256,7 +256,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         /// validate stkWELL contract
         {
             IStakedWellUplift stkWell = IStakedWellUplift(
-                addresses.getAddress("STKNATIVE_PROXY")
+                addresses.getAddress("STKNATIVE")
             );
 
             /// stake and reward token are the same
@@ -325,7 +325,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
             assertEq(
                 address(voteCollection.stkWell()),
-                addresses.getAddress("STKNATIVE_PROXY"),
+                addresses.getAddress("STKNATIVE"),
                 "incorrect stkWELL"
             );
 

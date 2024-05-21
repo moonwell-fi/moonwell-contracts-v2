@@ -110,7 +110,7 @@ contract BreakGlass is Script, mipm23c {
         });
 
         calls[12] = Calls({
-            target: addresses.getAddress("STKNATIVE_PROXY"),
+            target: addresses.getAddress("STKNATIVE"),
             call: approvedCalldata[3] /// setEmissionsManager
         });
 

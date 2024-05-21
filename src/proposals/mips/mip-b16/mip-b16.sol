@@ -73,11 +73,11 @@ contract mipb16 is
         );
 
         _pushHybridAction(
-            addresses.getAddress("STKNATIVE_PROXY"),
+            addresses.getAddress("STKNATIVE"),
             abi.encodeWithSignature(
                 "configureAsset(uint128,address)",
                 REWARD_SPEED,
-                addresses.getAddress("STKNATIVE_PROXY")
+                addresses.getAddress("STKNATIVE")
             ),
             "Set reward speed for the Safety Module on Base",
             false
@@ -108,7 +108,7 @@ contract mipb16 is
     function validate(Addresses addresses, address) public override {
         vm.selectFork(baseForkId);
 
-        address stkWellProxy = addresses.getAddress("STKNATIVE_PROXY");
+        address stkWellProxy = addresses.getAddress("STKNATIVE");
         (
             uint128 emissionsPerSecond,
             uint128 lastUpdateTimestamp,
