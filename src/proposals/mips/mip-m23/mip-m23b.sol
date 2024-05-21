@@ -24,7 +24,7 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 /// src/proposals/mips/mip-m23/mip-m23b.sol:mipm23b
 /// --broadcast --slow --fork-url base
 /// Once the proposal is execute, VOTE_COLLECTION_PROXY, VOTE_COLLECTION_IMPL,
-/// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, stkWELL_PROXY, stkWELL_IMPL
+/// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, STKNATIVE, STKNATIVE_IMPL
 /// and xWELL_PROXY must be added to the addresses.json file.
 contract mipm23b is HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment of the Multichain Vote Collection Contract to Base
@@ -51,7 +51,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
     function deploy(Addresses addresses, address) public override {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
-        if (!addresses.isAddressSet("stkWELL_PROXY", block.chainid)) {
+        if (!addresses.isAddressSet("STKNATIVE", block.chainid)) {
             /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
             (
                 address ecosystemReserveProxy,
@@ -186,10 +186,10 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
             validateProxy(
                 vm,
-                addresses.getAddress("STKNATIVE_PROXY"),
-                addresses.getAddress("stkWELL_IMPL"),
+                addresses.getAddress("STKNATIVE"),
+                addresses.getAddress("STKNATIVE_IMPL"),
                 addresses.getAddress("MRD_PROXY_ADMIN"),
-                "stkWELL_PROXY validation"
+                "STKNATIVE validation"
             );
 
             validateProxy(

@@ -75,7 +75,7 @@ contract BreakGlass is Script, mipm23c {
         });
 
         calls[5] = Calls({
-            target: addresses.getAddress("mGLIMMER"),
+            target: addresses.getAddress("MNATIVE"),
             call: approvedCalldata[1] /// _setPendingAdmin
         });
 

@@ -247,14 +247,14 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             true
         );
 
-        /// set pending admin of mGLIMMER to the Multichain Governor
+        /// set pending admin of MNATIVE to the Multichain Governor
         _pushHybridAction(
-            addresses.getAddress("mGLIMMER"),
+            addresses.getAddress("MNATIVE"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending admin of mGLIMMER to the Multichain Governor",
+            "Set the pending admin of MNATIVE to the Multichain Governor",
             true
         );
 
@@ -502,14 +502,14 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mGLIMMER")).pendingAdmin(),
+            Timelock(addresses.getAddress("MNATIVE")).pendingAdmin(),
             governor,
-            "mGLIMMER pending admin incorrect"
+            "MNATIVE pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mGLIMMER")).admin(),
+            Timelock(addresses.getAddress("MNATIVE")).admin(),
             timelock,
-            "mGLIMMER admin incorrect"
+            "MNATIVE admin incorrect"
         );
 
         assertEq(

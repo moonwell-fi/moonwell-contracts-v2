@@ -2082,7 +2082,7 @@ contract MultichainProposalTest is
         targets[11] = addresses.getAddress("MOONWELL_mUSDC");
         calldatas[11] = _setPendingAdminCalldata;
 
-        targets[12] = addresses.getAddress("mGLIMMER");
+        targets[12] = addresses.getAddress("MNATIVE");
         calldatas[12] = _setPendingAdminCalldata;
 
         targets[13] = addresses.getAddress("mxcDOT");
@@ -2252,14 +2252,14 @@ contract MultichainProposalTest is
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mGLIMMER")).pendingAdmin(),
+            Timelock(addresses.getAddress("MNATIVE")).pendingAdmin(),
             artemisTimelockAddress,
-            "mGLIMMER pending admin incorrect"
+            "MNATIVE pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mGLIMMER")).admin(),
+            Timelock(addresses.getAddress("MNATIVE")).admin(),
             address(governor),
-            "mGLIMMER admin incorrect"
+            "MNATIVE admin incorrect"
         );
 
         assertEq(

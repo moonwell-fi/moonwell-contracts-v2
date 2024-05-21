@@ -122,11 +122,11 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             true
         );
 
-        /// accept admin of mGLIMMER
+        /// accept admin of MNATIVE
         _pushHybridAction(
-            addresses.getAddress("mGLIMMER"),
+            addresses.getAddress("MNATIVE"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of mGLIMMER as the Multichain Governor",
+            "Accept admin of MNATIVE as the Multichain Governor",
             true
         );
 
@@ -291,14 +291,14 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mGLIMMER")).pendingAdmin(),
+            Timelock(addresses.getAddress("MNATIVE")).pendingAdmin(),
             address(0),
-            "mGLIMMER pending admin incorrect"
+            "MNATIVE pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mGLIMMER")).admin(),
+            Timelock(addresses.getAddress("MNATIVE")).admin(),
             governor,
-            "mGLIMMER admin incorrect"
+            "MNATIVE admin incorrect"
         );
 
         assertEq(

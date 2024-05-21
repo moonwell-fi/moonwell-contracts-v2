@@ -29,9 +29,9 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
 
         comptroller = addresses.getAddress("UNITROLLER");
         tokenSaleDistributor = addresses.getAddress("TOKENSALE");
-        safetyModule = addresses.getAddress("STWELL");
+        safetyModule = addresses.getAddress("STKGOVTOKEN");
         governanceToken = addresses.getAddress("GOVTOKEN");
-        nativeMarket = addresses.getAddress("mGLIMMER");
+        nativeMarket = addresses.getAddress("MNATIVE");
         governanceTokenLP = addresses.getAddress("GOVTOKEN_LP");
 
         viewsContract = new MoonwellViewsV1();

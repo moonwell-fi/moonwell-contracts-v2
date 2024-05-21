@@ -140,10 +140,10 @@ contract mipm25 is HybridProposal, ParameterValidation {
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("mGLIMMER"),
+                addresses.getAddress("MNATIVE"),
                 NEW_MGLIMMER_COLLATERAL_FACTOR
             ),
-            "Set collateral factor of mGLIMMER",
+            "Set collateral factor of MNATIVE",
             true
         );
 
@@ -239,7 +239,7 @@ contract mipm25 is HybridProposal, ParameterValidation {
 
         _validateCF(
             addresses,
-            addresses.getAddress("mGLIMMER"),
+            addresses.getAddress("MNATIVE"),
             NEW_MGLIMMER_COLLATERAL_FACTOR
         );
 
