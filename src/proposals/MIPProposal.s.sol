@@ -85,7 +85,7 @@ abstract contract MIPProposal is Script {
         if (DO_PRINT) {
             printProposalActionSteps();
             printCalldata(addresses);
-            _printAddressesChanges();
+            addresses.printJSONChanges();
         }
     }
 
@@ -120,57 +120,5 @@ abstract contract MIPProposal is Script {
 
         baseForkId = _baseForkId;
         moonbeamForkId = _moonbeamForkId;
-    }
-
-    /// @dev Print recorded addresses
-    function _printAddressesChanges() private view {
-        (
-            string[] memory recordedNames,
-            ,
-            address[] memory recordedAddresses
-        ) = addresses.getRecordedAddresses();
-
-        if (recordedNames.length > 0) {
-            console.log(
-                "\n-------- Addresses added after running proposal --------"
-            );
-            for (uint256 j = 0; j < recordedNames.length; j++) {
-                console.log(
-                    "{\n          'addr': '%s', ",
-                    recordedAddresses[j]
-                );
-                console.log("        'chainId': %d,", block.chainid);
-                console.log("        'isContract': %s", true, ",");
-                console.log(
-                    "        'name': '%s'\n}%s",
-                    recordedNames[j],
-                    j < recordedNames.length - 1 ? "," : ""
-                );
-            }
-        }
-
-        (
-            string[] memory changedNames,
-            ,
-            ,
-            address[] memory changedAddresses
-        ) = addresses.getChangedAddresses();
-
-        if (changedNames.length > 0) {
-            console.log(
-                "\n------- Addresses changed after running proposal --------"
-            );
-
-            for (uint256 j = 0; j < changedNames.length; j++) {
-                console.log("{\n          'addr': '%s', ", changedAddresses[j]);
-                console.log("        'chainId': %d,", block.chainid);
-                console.log("        'isContract': %s", true, ",");
-                console.log(
-                    "        'name': '%s'\n}%s",
-                    changedNames[j],
-                    j < changedNames.length - 1 ? "," : ""
-                );
-            }
-        }
     }
 }

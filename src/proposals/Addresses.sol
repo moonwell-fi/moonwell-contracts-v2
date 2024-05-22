@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
+import {console} from "forge-std/console.sol";
 import {Test} from "@forge-std/Test.sol";
+
 import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IAddresses} from "./IAddresses.sol";
 
@@ -215,7 +217,7 @@ contract Addresses is IAddresses, Test {
 
     /// @notice get recorded addresses from a proposal's deployment
     function getRecordedAddresses()
-        external
+        public
         view
         returns (
             string[] memory names,
@@ -244,7 +246,7 @@ contract Addresses is IAddresses, Test {
 
     /// @notice get changed addresses from a proposal's deployment
     function getChangedAddresses()
-        external
+        public
         view
         returns (
             string[] memory names,
@@ -289,6 +291,55 @@ contract Addresses is IAddresses, Test {
         uint256 chainId
     ) public view returns (bool) {
         return _addresses[name][chainId].addr != address(0);
+    }
+
+    /// @notice Print new recorded and changed addresses
+    function printJSONChanges() external view {
+        {
+            (
+                string[] memory names,
+                ,
+                address[] memory addresses
+            ) = getRecordedAddresses();
+
+            if (names.length > 0) {
+                console.log("\n\n--------- Addresses added ---------");
+                for (uint256 j = 0; j < names.length; j++) {
+                    console.log("{\n          'addr': '%s', ", addresses[j]);
+                    console.log("        'chainId': %d,", block.chainid);
+                    console.log("        'isContract': %s", true, ",");
+                    console.log(
+                        "        'name': '%s'\n}%s",
+                        names[j],
+                        j < names.length - 1 ? "," : ""
+                    );
+                }
+            }
+        }
+
+        {
+            (
+                string[] memory names,
+                ,
+                ,
+                address[] memory addresses
+            ) = getChangedAddresses();
+
+            if (names.length > 0) {
+                console.log("\n\n-------- Addresses changed  --------");
+
+                for (uint256 j = 0; j < names.length; j++) {
+                    console.log("{\n          'addr': '%s', ", addresses[j]);
+                    console.log("        'chainId': %d,", block.chainid);
+                    console.log("        'isContract': %s", true, ",");
+                    console.log(
+                        "        'name': '%s'\n}%s",
+                        names[j],
+                        j < names.length - 1 ? "," : ""
+                    );
+                }
+            }
+        }
     }
 
     /// @notice add an address for a specific chainId
