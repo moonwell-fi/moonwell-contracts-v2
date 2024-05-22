@@ -1414,5 +1414,11 @@
         "chainId": 84532,
         "isContract": true,
         "name": "rETH"
+    },
+    {
+        "addr": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "MORPHO_BLUE"
     }
 ]
