@@ -1390,5 +1390,29 @@
         "chainId": 84532,
         "isContract": true,
         "name": "DAI"
+    },
+    {
+        "addr": "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "USDC"
+    },
+    {
+        "addr": "0x7b597C9489430F02dFc26ac71b0680a3C2c6733a",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "ENA"
+    },
+    {
+        "addr": "0x147692790eCF02ef13e84d23fCc8045aA0EcBD85",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "stETH"
+    },
+    {
+        "addr": "0xd02c53d0E10399e1806AfF8734C405A59BEC3ef0",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "rETH"
     }
 ]
