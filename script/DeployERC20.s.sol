@@ -7,7 +7,7 @@ import {Script} from "@forge-std/Script.sol";
 
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
-contract MockERC20 is ERC20 {
+contract MockERC20WithDecimals is ERC20 {
     uint8 private _decimals;
 
     constructor(
@@ -21,9 +21,15 @@ contract MockERC20 is ERC20 {
     function decimals() public view override returns (uint8) {
         return _decimals;
     }
+
+    function mint(address account, uint256 amount) public returns (bool) {
+        _mint(account, amount);
+        return true;
+    }
 }
 
-// forge script script/DeployERC20.s.sol --tc DeployERC20 --rpc-url baseSepolia --broadcast --verify
+// forge script script/DeployERC20.s.sol --rpc-url baseSepolia --broadcast
+// --verify --sender ${SENDER_WALLET} --account ${WALLET}
 contract DeployERC20 is Script {
     function run() public {
         Addresses addresses = new Addresses();
@@ -33,10 +39,14 @@ contract DeployERC20 is Script {
         string memory decimals = vm.prompt("Enter the token decimals");
 
         vm.startBroadcast();
-        MockERC20 token = new MockERC20(name, symbol, stringToUint8(decimals));
+        MockERC20WithDecimals token = new MockERC20WithDecimals(
+            name,
+            symbol,
+            stringToUint8(decimals)
+        );
         vm.stopBroadcast();
 
-        addresses.addAddress(symbol, address(token), true);
+        addresses.changeAddress(symbol, address(token), true);
 
         addresses.printJSONChanges();
     }

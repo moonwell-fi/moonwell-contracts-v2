@@ -138,10 +138,10 @@
         "isContract": true
     },
     {
-        "addr": "0xdbc885569E711262926803184eC9Ff73816fc953",
+        "addr": "0xe44ECA4B30B98E1B94bf16C0E3ec50905DC3073E",
         "chainId": 84532,
-        "name": "cbETH",
-        "isContract": true
+        "isContract": true,
+        "name": "cbETH"
     },
     {
         "addr": "0x663A6F02d547dFd639BF689FED298712f2FB69Fb",
@@ -1386,31 +1386,31 @@
         "isContract": true
     },
     {
-        "addr": "0xf42385AeEB9B02E8A1DDe63424066Bb0dD2EA296",
+        "addr": "0x542fC4526020afEd1023F771F109Ab26b940B77e",
         "chainId": 84532,
         "isContract": true,
         "name": "DAI"
     },
     {
-        "addr": "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
+        "addr": "0xD6D1874Dd89b59FA8a14C9A3F216DD1537f6c9c8",
         "chainId": 84532,
         "isContract": true,
         "name": "USDC"
     },
     {
-        "addr": "0x7b597C9489430F02dFc26ac71b0680a3C2c6733a",
+        "addr": "0x4D052FdAaeC90fe04d9614922D7A8Ea631B95653",
         "chainId": 84532,
         "isContract": true,
         "name": "ENA"
     },
     {
-        "addr": "0x147692790eCF02ef13e84d23fCc8045aA0EcBD85",
+        "addr": "0x1aBEf60714145c37820C639F15E57f64EcDf4998",
         "chainId": 84532,
         "isContract": true,
         "name": "stETH"
     },
     {
-        "addr": "0xd02c53d0E10399e1806AfF8734C405A59BEC3ef0",
+        "addr": "0x869376ca7C320d4e10BcD95dB63318A1F6A59E12",
         "chainId": 84532,
         "isContract": true,
         "name": "rETH"
