@@ -23,6 +23,7 @@ contract MockERC20 is ERC20 {
     }
 }
 
+// forge script script/DeployERC20.s.sol --tc DeployERC20 --rpc-url baseSepolia --broadcast --verify
 contract DeployERC20 is Script {
     function run() public {
         Addresses addresses = new Addresses();

@@ -1384,5 +1384,11 @@
         "chainId": 1284,
         "name": "xcUSDC",
         "isContract": true
+    },
+    {
+        "addr": "0xf42385AeEB9B02E8A1DDe63424066Bb0dD2EA296",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "DAI"
     }
 ]
