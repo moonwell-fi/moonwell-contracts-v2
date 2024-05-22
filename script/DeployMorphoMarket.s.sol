@@ -70,7 +70,7 @@ contract DeployMorphoMarket is Script {
             collateralTokenAddress,
             oracleAddress,
             irmAddress,
-            stringToUint8(lltv)
+            stringToUint256(lltv)
         );
 
         vm.startBroadcast();
@@ -80,18 +80,17 @@ contract DeployMorphoMarket is Script {
         vm.stopBroadcast();
     }
 
-    function stringToUint8(string memory str) public pure returns (uint8) {
+    function stringToUint256(string memory str) public pure returns (uint256) {
         bytes memory b = bytes(str);
-        uint result = 0;
+        uint256 result = 0;
         for (uint i = 0; i < b.length; i++) {
             if (b[i] >= 0x30 && b[i] <= 0x39) {
-                // ensure it's a numeric character (0-9)
-                result = result * 10 + (uint8(b[i]) - 48); // ASCII value for '0' is 48
+                // check it's a numeric character (0-9)
+                result = result * 10 + (uint256(uint8(b[i])) - 48); // ASCII '0' is 48
             } else {
                 revert("Non-numeric character.");
             }
         }
-        require(result <= 255, "Value does not fit in uint8.");
-        return uint8(result);
+        return result;
     }
 }
