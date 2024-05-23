@@ -59,21 +59,21 @@ contract DeployMorphoMarket is Script {
             "Enter the collateral token name"
         );
         string memory oracle = vm.prompt("Enter the oracle token name");
-        string memory irm = vm.prompt("Enter the irm token name");
         string memory lltv = vm.prompt("Enter the lltv ");
 
         address morpho = addresses.getAddress("MORPHO_BLUE");
 
+        address irm = addresses.getAddress("MORPHO_ADAPTIVE_CURVE_IRM");
+
         address loanTokenAddress = addresses.getAddress(loanToken);
         address collateralTokenAddress = addresses.getAddress(collateralToken);
         address oracleAddress = addresses.getAddress(oracle);
-        address irmAddress = addresses.getAddress(irm);
 
         IMorphoBlue.MarketParams memory params = IMorphoBlue.MarketParams(
             loanTokenAddress,
             collateralTokenAddress,
             oracleAddress,
-            irmAddress,
+            irm,
             lltv.toUint256()
         );
 

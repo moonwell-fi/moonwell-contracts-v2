@@ -1420,5 +1420,17 @@
         "chainId": 84532,
         "isContract": true,
         "name": "MORPHO_BLUE"
+    },
+    {
+        "addr": "0x46415998764C29aB2a25CbeA6254146D50D22687",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "MORPHO_ADAPTIVE_CURVE_IRM"
+    },
+    {
+        "addr": "0x46415998764C29aB2a25CbeA6254146D50D22687",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "MORPHO_ADAPTIVE_CURVE_IRM"
     }
 ]
