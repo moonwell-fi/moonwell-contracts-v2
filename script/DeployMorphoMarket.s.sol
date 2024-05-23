@@ -59,7 +59,30 @@ contract DeployMorphoMarket is Script {
             "Enter the collateral token name"
         );
         string memory oracle = vm.prompt("Enter the oracle token name");
-        string memory lltv = vm.prompt("Enter the lltv ");
+        uint256 lltv = vm.prompt("Enter the lltv ").toUint256();
+
+        //the LLTV is defined with 18 decimals. 1e18 represents an LLTV of 100% (which is not enabled) and 945000000000000000 thus represents 94.5%.
+        // Enabled LLTVs: 0%; 38.5%; 62.5%; 77.0%; 86.0%; 91.5%; 94.5%; 96.5%; 98%.
+
+        uint256[] memory enabledLLTVs = new uint256[](9);
+        enabledLLTVs[0] = 0.0 * 1e18;
+        enabledLLTVs[1] = 0.385 * 1e18;
+        enabledLLTVs[2] = 0.625 * 1e18;
+        enabledLLTVs[3] = 0.77 * 1e18;
+        enabledLLTVs[4] = 0.86 * 1e18;
+        enabledLLTVs[5] = 0.915 * 1e18;
+        enabledLLTVs[6] = 0.945 * 1e18;
+        enabledLLTVs[7] = 0.965 * 1e18;
+        enabledLLTVs[8] = 0.98 * 1e18;
+
+        for (uint256 i = 0; i < enabledLLTVs.length; i++) {
+            if (lltv == enabledLLTVs[i]) {
+                break;
+            }
+            if (i == enabledLLTVs.length - 1) {
+                revert("Invalid LLTV");
+            }
+        }
 
         address morpho = addresses.getAddress("MORPHO_BLUE");
 
