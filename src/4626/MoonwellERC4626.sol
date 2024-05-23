@@ -172,15 +172,6 @@ contract MoonwellERC4626 is ERC4626 {
 
     /// @notice maximum amount of underlying tokens that can be deposited into the underlying protocol
     function maxDeposit(address) public view override returns (uint256) {
-        return maxMint(address(0));
-    }
-
-    /// @notice Returns the maximum amount of tokens that can be supplied
-    /// no way for this function to ever revert unless comptroller or mToken is broken
-    /// @dev accrue interest must be called before this function is called, otherwise
-    /// an outdated value will be fetched, and the returned value will be incorrect
-    /// (greater than actual amount available to be minted will be returned)
-    function maxMint(address) public view override returns (uint256) {
         if (comptroller.mintGuardianPaused(address(mToken))) {
             return 0;
         }
@@ -220,6 +211,20 @@ contract MoonwellERC4626 is ERC4626 {
         }
 
         return type(uint256).max;
+    }
+
+    /// @notice Returns the maximum amount of tokens that can be supplied
+    /// no way for this function to ever revert unless comptroller or mToken is broken
+    /// @dev accrue interest must be called before this function is called, otherwise
+    /// an outdated value will be fetched, and the returned value will be incorrect
+    /// (greater than actual amount available to be minted will be returned)
+    function maxMint(address) public view override returns (uint256) {
+        uint256 mintAmount = maxDeposit(address(0));
+
+        return
+            mintAmount == type(uint256).max
+                ? mintAmount
+                : convertToShares(mintAmount);
     }
 
     /// @notice maximum amount of underlying tokens that can be withdrawn
