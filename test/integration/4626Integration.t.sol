@@ -373,4 +373,13 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         vault.redeem(aliceInitialMintAmount, alice, alice);
         vm.stopPrank();
     }
+
+    function testConvertToShareThenAssetsRoundsDown(uint256 assets) public {
+        assets = _bound(assets, 1, 100_000_000 * 1e18);
+
+        uint256 shares = vault.convertToShares(assets);
+        uint256 assets2 = vault.convertToAssets(shares);
+
+        assertGt(assets, assets2, "initial assets should be gt assets2");
+    }
 }
