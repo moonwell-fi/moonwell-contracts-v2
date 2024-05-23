@@ -388,6 +388,15 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
         assertGt(assets, assets2, "initial assets should be gt assets2");
     }
 
+    function testConvertFromSharesToAssetsRoundsDown(uint256 shares) public {
+        shares = _bound(shares, 1, 1_000_000 * 1e18);
+
+        uint256 assets = vault.convertToAssets(shares);
+        uint256 shares2 = vault.convertToShares(assets);
+
+        assertGt(shares, shares2, "initial shares should be gt shares2");
+    }
+
     /// receive ether for withdrawing assets from the vault
     receive() external payable {}
 }
