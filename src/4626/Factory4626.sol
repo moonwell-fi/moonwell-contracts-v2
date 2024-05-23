@@ -1,5 +1,7 @@
 pragma solidity 0.8.19;
 
+import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
@@ -7,6 +9,8 @@ import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
 import {Comptroller as IMoontroller} from "@protocol/Comptroller.sol";
 
 contract Factory4626 {
+    using SafeERC20 for *;
+
     /// ------------------------------------------------
     /// ------------------------------------------------
     /// ------------------ IMMUTABLES ------------------
@@ -65,19 +69,13 @@ contract Factory4626 {
 
         uint256 initialMintAmount = 10 ** ((ERC20(asset).decimals() * 2) / 3);
 
-        require(
-            ERC20(asset).transferFrom(
-                msg.sender,
-                address(this),
-                initialMintAmount
-            ),
-            "transferFrom failed"
+        IERC20(asset).safeTransferFrom(
+            msg.sender,
+            address(this),
+            initialMintAmount
         );
 
-        require(
-            ERC20(asset).approve(vault, initialMintAmount),
-            "approve failed"
-        );
+        IERC20(asset).safeApprove(vault, initialMintAmount);
 
         require(
             MoonwellERC4626(vault).deposit(initialMintAmount, address(0)) > 0,
