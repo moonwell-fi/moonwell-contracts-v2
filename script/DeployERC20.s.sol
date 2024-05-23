@@ -9,6 +9,8 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import {MockERC20WithDecimals} from "../test/mock/MockERC20WithDecimals.sol";
 
+import {String} from "../src/utils/String.sol";
+
 // forge script script/DeployERC20.s.sol --rpc-url baseSepolia --broadcast
 // --verify --sender ${SENDER_WALLET} --account ${WALLET}
 contract DeployERC20 is Script {
@@ -23,27 +25,12 @@ contract DeployERC20 is Script {
         MockERC20WithDecimals token = new MockERC20WithDecimals(
             name,
             symbol,
-            stringToUint8(decimals)
+            decimals.toUint8()
         );
         vm.stopBroadcast();
 
         addresses.changeAddress(symbol, address(token), true);
 
         addresses.printJSONChanges();
-    }
-
-    function stringToUint8(string memory str) public pure returns (uint8) {
-        bytes memory b = bytes(str);
-        uint result = 0;
-        for (uint i = 0; i < b.length; i++) {
-            if (b[i] >= 0x30 && b[i] <= 0x39) {
-                // ensure it's a numeric character (0-9)
-                result = result * 10 + (uint8(b[i]) - 48); // ASCII value for '0' is 48
-            } else {
-                revert("Non-numeric character.");
-            }
-        }
-        require(result <= 255, "Value does not fit in uint8.");
-        return uint8(result);
     }
 }

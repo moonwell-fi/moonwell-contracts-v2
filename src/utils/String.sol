@@ -122,4 +122,37 @@ library String {
 
         return splitStrings;
     }
+
+    function toUint8(string memory str) public pure returns (uint8) {
+        require(bytes(str).length > 0, "Empty string");
+
+        require(bytes(str).length <= 3, "Value does not fit in uint8");
+
+        bytes memory b = bytes(str);
+        uint result = 0;
+        for (uint i = 0; i < b.length; i++) {
+            if (b[i] >= 0x30 && b[i] <= 0x39) {
+                // ensure it's a numeric character (0-9)
+                result = result * 10 + (uint8(b[i]) - 48); // ASCII value for '0' is 48
+            } else {
+                revert("Non-numeric character.");
+            }
+        }
+        require(result <= 255, "Value does not fit in uint8.");
+        return uint8(result);
+    }
+
+    function toUint256(string memory str) public pure returns (uint256) {
+        bytes memory b = bytes(str);
+        uint256 result = 0;
+        for (uint i = 0; i < b.length; i++) {
+            if (b[i] >= 0x30 && b[i] <= 0x39) {
+                // check it's a numeric character (0-9)
+                result = result * 10 + (uint256(uint8(b[i])) - 48); // ASCII '0' is 48
+            } else {
+                revert("Non-numeric character.");
+            }
+        }
+        return result;
+    }
 }

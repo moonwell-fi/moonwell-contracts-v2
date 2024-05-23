@@ -7,6 +7,8 @@ import {Script} from "@forge-std/Script.sol";
 
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
+import {String} from "../src/utils/String.sol";
+
 interface IMorphoBlue {
     struct MarketParams {
         address loanToken;
@@ -47,6 +49,8 @@ interface IMorphoBlue {
 // forge script script/DeployMorphoMarket.s.sol --rpc-url baseSepolia --broadcast
 // --verify --sender ${SENDER_WALLET} --account ${WALLET}
 contract DeployMorphoMarket is Script {
+    using String for string;
+
     function run() public {
         Addresses addresses = new Addresses();
 
@@ -70,7 +74,7 @@ contract DeployMorphoMarket is Script {
             collateralTokenAddress,
             oracleAddress,
             irmAddress,
-            stringToUint256(lltv)
+            lltv.toUint256()
         );
 
         vm.startBroadcast();
@@ -78,19 +82,5 @@ contract DeployMorphoMarket is Script {
         IMorphoBlue(morpho).createMarket(params);
 
         vm.stopBroadcast();
-    }
-
-    function stringToUint256(string memory str) public pure returns (uint256) {
-        bytes memory b = bytes(str);
-        uint256 result = 0;
-        for (uint i = 0; i < b.length; i++) {
-            if (b[i] >= 0x30 && b[i] <= 0x39) {
-                // check it's a numeric character (0-9)
-                result = result * 10 + (uint256(uint8(b[i])) - 48); // ASCII '0' is 48
-            } else {
-                revert("Non-numeric character.");
-            }
-        }
-        return result;
     }
 }
