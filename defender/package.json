@@ -7,7 +7,6 @@
     "devDependencies": {
         "@openzeppelin/defender-sdk": "^1.11.0",
         "axios": "^1.6.7",
-
         "ethers": "^6.11.1"
     }
 }
