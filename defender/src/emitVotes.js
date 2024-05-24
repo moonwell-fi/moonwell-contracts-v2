@@ -5,21 +5,31 @@ const {Defender} = require('@openzeppelin/defender-sdk');
 const {KeyValueStoreClient} = require('defender-kvstore-client');
 const axios = require('axios');
 
-// moonbeam is for Base Mainnet
-//const network = 'moonbeam'
+//const network = 'base'
 // moonbeam is for Base testnet
-//const network = 'moonbase';
+const network = 'baseSepolia';
 
-const tgAddress =
-    network === 'moonbase'
-        ? '0xc01EA381A64F8BE3bDBb01A7c34D809f80783662' // TemporalGovernor on Base Sepolia
-        : '0x8b621804a7637b781e2BbD58e256a591F2dF7d51'; // TemporalGovernor on Base
+const voteCollectionAddress =
+    network === 'base'
+        ?  '0xe0278B32c627FF6fFbbe7de6A18Ade145603e949'// TemporalGovernor on Base 
+        : '0xBdD86164da753C1a25e72603d266Dc1CC32e8acf'; // TemporalGovernor on Base Sepolia
+
+const governorAddress = network === base ? '0x9A8464C4C11CeA17e191653Deb7CdC1bE30F1Af4' // Multichain Governor on Moonbeam
+  : '0xf152d75fe4cBB11AE224B94110c31F0bdDb55850' // Multichain Governor on Moonbase
+
+const voteCollectionABI = [];
+
+const governorABI = [
+  'function liveProposals() external view returns (uint256[] memory)'
+  'function state(uint256 proposalId) external view returns (uint8)'
+  'function crossChainVoteCollectionPeriod() external view returns (uint256)'
+];
 
 // Block explorer URL
 const blockExplorer =
-    network === 'moonbase'
-        ? 'https://goerli.basescan.org/tx/'
-        : 'https://basescan.org/tx/';
+    network === 'base'
+        ? 'https://basescan.org/tx/'
+      : 'https://sepolia.basescan.org/tx/';
 
 class MoonwellEvent {
     async sendDiscordMessage(url, payload) {
@@ -45,16 +55,9 @@ class MoonwellEvent {
         console.log('Sent Discord message!');
     }
 
-    discordMessagePayload(color, txURL, networkName, sequence, timestamp) {
-        const mipNumber = sequence - 1;
-        let mipString = '';
-        if (mipNumber < 10) {
-            mipString = `MIP-B0${mipNumber}`;
-        } else {
-            mipString = `MIP-B${mipNumber}`;
-        }
-        const text = `Scheduled cross-chain execution of ${mipString} on ${networkName}`;
-        const details = `Upon successful completion of ${mipString}, it should be automatically executed on the ${networkName} network exactly 24 hours from now.`;
+    discordMessagePayload(color, txURL, networkName, id, timestamp) {
+      const text = `Scheduled execution of proposal ${id} on ${networkName}`;
+      const details = `If the proposal reaches quorum, once the cross-chain vote collection period finishes it will be automatically executed.`;
         const baseFields = [
             {
                 name: 'Network',
@@ -114,95 +117,80 @@ class MoonwellEvent {
     }
 }
 
-const fetchVAA = async (sequence, retries = 5, delay = 2000) => {
-    const apiEndpoint = `https://vaa-fetch.moonwell.workers.dev/?network=${network}&sequence=${sequence}`;
-    for (let i = 0; i <= retries; i++) {
-        try {
-            const response = await fetch(apiEndpoint, {
-                method: 'GET',
-                headers: {
-                    accept: 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const jsonResponse = await response.json();
-            return jsonResponse.vaa;
-        } catch (error) {
-            if (i === retries) {
-                throw error; // if it's the last retry, throw the error
-            }
-
-            // Wait for an exponentially increasing amount of time
-            await new Promise((res) => setTimeout(res, delay * 2 ** i));
-        }
-    }
-    throw new Error('Failed to fetch VAA after multiple retries');
-};
-
-async function storeVAA(event, sequence, timestamp) {
-    console.log('Storing sequence in KV store...');
+async function storeProposal(event, id, timestamp) {
+    console.log('Storing proposal id in KV store...');
     const kvStore = new KeyValueStoreClient(event);
     let value = await kvStore.get(network);
     console.log(`Initial KV store value for ${network}: ${value}`);
     if (value !== null) {
-        value += `,${sequence}`;
+        value += `,${id}`;
     } else {
-        value = sequence;
+        value = id;
     }
     await kvStore.put(network, value);
     console.log(`Updated KV store value for ${network}: ${value}`);
-    await kvStore.put(`${network}-${sequence}`, timestamp.toString());
-    console.log(`Stored ${network}-${sequence} with expiry ${timestamp}`);
+    await kvStore.put(`${network}-${id}`, timestamp.toString());
+    console.log(`Stored ${network}-${id} with expiry ${timestamp}`);
 }
 
 // Entrypoint for the action
 exports.handler = async function (event, context) {
-    console.log('Received event:', JSON.stringify(event.request.body, null, 2));
-
-    const sequence = event.request.body.matchReasons[0].params.sequence;
-    const vaa = await fetchVAA(sequence);
+    console.log('Received event:', JSON.stringify(event, null, 2));
 
     const client = new Defender(event);
 
     const provider = client.relaySigner.getProvider();
     const signer = client.relaySigner.getSigner(provider, {speed: 'fast'});
 
-    const contract = new ethers.Contract(
-        tgAddress,
-        temporalGovernorABI,
+    const governor = new ethers.Contract(
+        governorAddress,
+        governorABI,
         signer,
     );
 
-    const tx = await contract.queueProposal(vaa);
-    console.log(`Called queueProposal in ${tx.hash}`);
-    let timestamp = Math.floor(Date.now() / 1000);
+    const liveProposals = await governor.liveProposals();
 
-    // On testnet, there is no 24 hour timelock
-    if (network == 'moonbeam') {
-        timestamp += 60 * 60 * 24 + 60; // 24 hours + 1 minute for buffer
+  for (const proposalId of liveProposals) {
+        const state = await governor.state(proposalId);
+
+    const crossChainVoteCollectionPeriod = await governor.crossChainVoteCollectionPeriod();
+        if (state == 1) {
+            console.log(`Proposal ${proposalId} is in the cross chain vote collection state`);
+
+            const voteCollection = new ethers.Contract(
+                voteCollectionAddress,
+                voteCollectionABI,
+                signer,
+            );
+
+          const timestamp = Math.floor(Date.now() / 1000) + crossChainVoteCollectionPeriod;
+
+          await storeProposal(event, proposalId, Math.floor(Date.now() / 1000));
+
+          const tx = await voteCollection.emitVotes(proposalId);
+          console.log(`Called emitVotes in ${tx.hash}`);
+
+          const {notificationClient} = context;
+          notificationClient.send({
+            channelAlias: 'Parameter Changes to Slack',
+            subject: `Votes emitted for proposal ${proposalId} on ${network}`,
+            message: `Saved proposal id with expiration at future timestamp ${timestamp}`,
+          });
+          const {GOVBOT_WEBHOOK} = event.secrets;
+          const moonwellEvent = new MoonwellEvent();
+          const discordPayload = moonwellEvent.discordMessagePayload(
+            0x00ff00,
+            blockExplorer + tx.hash,
+            network,
+            proposalId,
+            timestamp,
+          );
+          await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
+          return {tx: tx.hash};
+        }
     }
-    await storeVAA(event, sequence, timestamp);
 
-    const {notificationClient} = context;
-    notificationClient.send({
-        channelAlias: 'Parameter Changes to Slack',
-        subject: `Inserted queued VAA ${sequence} on ${network}`,
-        message: `Inserted a queued key/value at future timestamp ${timestamp} for ${network}`,
-    });
-    const {GOVBOT_WEBHOOK} = event.secrets;
-    const moonwellEvent = new MoonwellEvent();
-    const friendlyNetworkName = network === 'moonbase' ? 'Base Goerli' : 'Base';
-    const discordPayload = moonwellEvent.discordMessagePayload(
-        0x00ff00,
-        blockExplorer + tx.hash,
-        friendlyNetworkName,
-        sequence,
-        timestamp,
-    );
-    await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
-    return {tx: tx.hash};
+    console.log('No proposals in cross chain vote collection state');
+    return;
+
 };
