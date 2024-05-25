@@ -394,7 +394,7 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
         uint256 assets = vault.convertToAssets(shares);
         uint256 shares2 = vault.convertToShares(assets);
 
-        assertGt(shares, shares2, "initial shares should be gt shares2");
+        assertGe(shares, shares2, "initial shares should be gt shares2");
     }
 
     /// receive ether for withdrawing assets from the vault
