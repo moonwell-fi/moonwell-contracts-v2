@@ -240,7 +240,7 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         amount = _bound(
             amount,
             1_000e18,
-            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_cbETH")) - 100e18
+            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_cbETH"))
         );
 
         deal(addresses.getAddress("cbETH"), address(this), amount);
@@ -453,9 +453,13 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         uint256 totalCash = MToken(mToken).getCash();
         uint256 totalBorrows = MToken(mToken).totalBorrows();
         uint256 totalReserves = MToken(mToken).totalReserves();
+        console.log("total cash: %s", totalCash);
+        console.log("total borrows: %s", totalBorrows);
+        console.log("total reserves: %s", totalReserves);
 
         // totalSupplies = totalCash + totalBorrows - totalReserves
         uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+        console.log("total supplies: %s", totalSupplies);
 
         return supplyCap - totalSupplies - 1_000e6;
     }
