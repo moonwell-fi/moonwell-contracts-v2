@@ -81,7 +81,7 @@ contract LiveSystemTest is Test {
 
         MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
         {
-            // must calculate borrow index before updating supply speed
+            // must calculate borrow index before updating end time
             // otherwise the global timestamp will be equal to the current block timestamp
          MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
@@ -136,6 +136,28 @@ contract LiveSystemTest is Test {
     }
 
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
+        uint256 supplyIndex;
+
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        {
+            // must calculate supply index before updating end time
+            // otherwise the global timestamp will be equal to the current block timestamp
+         MultiRewardDistributorCommon.MarketConfig memory config = mrd
+            .getConfigForMarket(
+                mToken,
+                addresses.getAddress("WELL")
+            );
+
+         uint256 denominator = mToken.totalSupply();
+         uint256 deltaTimestamp = block.timestamp - config.supplyGlobalTimestamp;
+         uint256 tokenAccrued = deltaTimestamp * config.supplyEmissionsPerSec;
+         uint256 ratio = denominator > 0 ? (tokenAccrued * 1e36) // double scale
+             / denominator : 0; 
+         
+         supplyIndex = config.supplyGlobalIndex + ratio;
+
+        }
+
         testUpdateEmissionConfigEndTimeSuccess();
 
         vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
@@ -152,6 +174,8 @@ contract LiveSystemTest is Test {
             4 weeks * 1e18 /// fund for entire period
         );
 
+        {
+ 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_USDBC")),
@@ -172,7 +196,7 @@ contract LiveSystemTest is Test {
         );
         assertEq(
             config.supplyGlobalIndex,
-            1e36,
+            supplyIndex,
             "Supply global index incorrect"
         );
         assertEq(
@@ -180,6 +204,8 @@ contract LiveSystemTest is Test {
             1e36,
             "Borrow global index incorrect"
         );
+           
+        }
     }
 
     function testMintMTokenSucceeds() public {
@@ -422,83 +448,52 @@ contract LiveSystemTest is Test {
 
     function testLiquidateAccountReceivesRewards(uint256 toWarp) public {
         toWarp = _bound(toWarp, 1_000_000, 4 weeks);
-        console.log("toWarp: ", toWarp);
-
-        testUpdateEmissionConfigBorrowUsdcSuccess();
-
-        vm.warp(block.timestamp + 1);
 
         testUpdateEmissionConfigSupplyUsdcSuccess();
 
-        //        testBorrowMTokenSucceeds();
-        //
-        //        vm.warp(block.timestamp + toWarp);
-        //
-        //        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
-        //
-        //        /// borrower is now underwater on loan
-        //        deal(
-        //            address(mToken),
-        //            address(this),
-        //            mToken.balanceOf(address(this)) / 2
-        //        );
-        //
-        //        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
-        //            .getHypotheticalAccountLiquidity(
-        //                address(this),
-        //                address(mToken),
-        //                0,
-        //                0
-        //            );
-        //
-        //        assertEq(err, 0, "Error in hypothetical liquidity calculation");
-        //        assertEq(liquidity, 0, "Liquidity not 0");
-        //        assertGt(shortfall, 0, "Shortfall not gt 0");
-        //
-        //        uint256 repayAmt = 50e6;
-        //        address liquidator = address(100_000_000);
-        //        IERC20 usdc = IERC20(addresses.getAddress("USDBC"));
-        //
-        //        deal(addresses.getAddress("USDBC"), liquidator, repayAmt);
-        //        vm.prank(liquidator);
-        //        usdc.approve(address(mToken), repayAmt);
-        //
-        //        MultiRewardDistributorCommon.RewardInfo[] memory rewardsBefore = mrd
-        //            .getOutstandingRewardsForUser(
-        //                mToken,
-        //                address(this)
-        //            );
-        //
-        //        _liquidateAccount(
-        //            liquidator,
-        //            address(this),
-        //            MErc20(address(mToken)),
-        //            1e6
-        //        );
-        //
-        //        MultiRewardDistributorCommon.RewardInfo[] memory rewardsAfter = mrd
-        //            .getOutstandingRewardsForUser(
-        //                mToken,
-        //                address(this)
-        //            );
-        //
-        //        for (uint256 i = 0; i < rewardsBefore.length; i++) {
-        //            assertEq(
-        //                rewardsAfter[i].totalAmount,
-        //                rewardsBefore[i].totalAmount,
-        //                "Total rewards not equal"
-        //            );
-        //            assertEq(
-        //                rewardsAfter[i].borrowSide,
-        //                rewardsBefore[i].borrowSide,
-        //                "Borrow side rewards not equal"
-        //            );
-        //            assertEq(
-        //                rewardsAfter[i].supplySide,
-        //                rewardsBefore[i].supplySide,
-        //                "Supply side rewards not equal"
-        //            );
-        //        }
+        vm.warp(block.timestamp + 1);
+
+        testUpdateEmissionConfigBorrowUsdcSuccess();
+
+                testBorrowMTokenSucceeds();
+        
+                vm.warp(block.timestamp + toWarp);
+        
+                MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        
+                /// borrower is now underwater on loan
+                deal(
+                    address(mToken),
+                    address(this),
+                    mToken.balanceOf(address(this)) / 2
+                );
+        
+                (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+                    .getHypotheticalAccountLiquidity(
+                        address(this),
+                        address(mToken),
+                        0,
+                        0
+                    );
+        
+                assertEq(err, 0, "Error in hypothetical liquidity calculation");
+                assertEq(liquidity, 0, "Liquidity not 0");
+                assertGt(shortfall, 0, "Shortfall not gt 0");
+        
+                uint256 repayAmt = 50e6;
+                address liquidator = address(100_000_000);
+                IERC20 usdc = IERC20(addresses.getAddress("USDBC"));
+        
+                deal(addresses.getAddress("USDBC"), liquidator, repayAmt);
+                vm.prank(liquidator);
+                usdc.approve(address(mToken), repayAmt);
+                        
+                _liquidateAccount(
+                    liquidator,
+                    address(this),
+                    MErc20(address(mToken)),
+                    1e6
+                );
     }
 
     function _liquidateAccount(
