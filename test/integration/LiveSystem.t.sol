@@ -106,7 +106,7 @@ contract LiveSystemTest is Test {
         {
         vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
         mrd._updateSupplySpeed(
-            MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
+            mToken, /// reward mUSDbC
             well, /// rewards paid in WELL
             1e18 /// pay 1 well per second in rewards
         );
@@ -114,7 +114,7 @@ contract LiveSystemTest is Test {
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
-                MToken(addresses.getAddress("MOONWELL_USDBC")),
+                mToken,
                 addresses.getAddress("WELL")
             );
 
@@ -162,7 +162,7 @@ contract LiveSystemTest is Test {
 
         vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
         mrd._updateBorrowSpeed(
-            MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
+            mToken, /// reward mUSDbC
             well, /// rewards paid in WELL
             1e18 /// pay 1 well per second in rewards to borrowers
         );
@@ -178,7 +178,7 @@ contract LiveSystemTest is Test {
  
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
-                MToken(addresses.getAddress("MOONWELL_USDBC")),
+                mToken,
                 addresses.getAddress("WELL")
             );
 
