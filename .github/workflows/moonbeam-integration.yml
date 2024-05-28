@@ -4,6 +4,7 @@ on: [pull_request]
 
 env:
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
+  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
 
 jobs:
   run-moonbeam-tests:
