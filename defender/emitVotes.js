@@ -22,7 +22,10 @@ const governorAddress =
         ? '0x9A8464C4C11CeA17e191653Deb7CdC1bE30F1Af4' // Multichain Governor on Moonbeam
         : '0xf152d75fe4cBB11AE224B94110c31F0bdDb55850'; // Multichain Governor on Moonbase
 
-const voteCollectionABI = ['function emitVotes(uint256 proposalId) external'];
+const voteCollectionABI = [
+    'function emitVotes(uint256 proposalId) external payable',
+    'function bridgeCostAll() external view returns (uint256)',
+];
 
 const governorABI = [
     'function liveProposals() external view returns (uint256[] memory)',
@@ -36,91 +39,91 @@ const blockExplorer =
         ? 'https://basescan.org/tx/'
         : 'https://sepolia.basescan.org/tx/';
 
-//class MoonwellEvent {
-//    async sendDiscordMessage(url, payload) {
-//        console.log('Sending Discord message...');
-//        if (!url) {
-//            throw new Error('Discord webhook url is invalid!');
-//        }
-//        console.log('SENDING', JSON.stringify(payload, null, 2));
-//        try {
-//            const response = await axios.post(url, payload, {
-//                headers: {
-//                    Accept: 'application/json',
-//                    'Content-Type': 'application/json',
-//                },
-//            });
-//            console.log(`Status code: ${response.status}`);
-//            console.log(
-//                `Response data: ${JSON.stringify(response.data, null, 2)}`,
-//            );
-//        } catch (error) {
-//            console.error(`Error message: ${error.message}`);
-//        }
-//        console.log('Sent Discord message!');
-//    }
-//
-//    discordMessagePayload(color, txURL, networkName, id, timestamp) {
-//        const text = `Scheduled execution of proposal ${id} on ${networkName}`;
-//        const details = `If the proposal reaches quorum, once the cross-chain vote collection period finishes it will be automatically executed.`;
-//        const baseFields = [
-//            {
-//                name: 'Network',
-//                value: networkName,
-//                inline: true,
-//            },
-//            {
-//                name: 'Proposal',
-//                value: mipString,
-//                inline: true,
-//            },
-//        ];
-//
-//        if (timestamp && timestamp > 0) {
-//            baseFields.push({
-//                name: 'Will be executed at',
-//                value: `<t:${timestamp}>`,
-//                inline: true,
-//            });
-//        }
-//
-//        if (details) {
-//            baseFields.push({
-//                name: 'Details',
-//                value: details,
-//                inline: false,
-//            });
-//        }
-//
-//        return {
-//            content: '',
-//            embeds: [
-//                {
-//                    title: `${text}`,
-//                    color: color,
-//                    fields: baseFields,
-//                    url: txURL,
-//                },
-//            ],
-//        };
-//    }
-//
-//    discordFormatLink(text, url) {
-//        return `[${text}](${url})`;
-//    }
-//
-//    numberWithCommas(num) {
-//        if (!num.includes('.')) {
-//            num = num + '.0';
-//        }
-//        const parts = num.toString().split('.');
-//        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-//        return parts
-//            .join('.')
-//            .replace(/(\.\d+[1-9])0+$/, '$1')
-//            .replace(/\.0+$/, '');
-//    }
-//}
+class MoonwellEvent {
+    async sendDiscordMessage(url, payload) {
+        console.log('Sending Discord message...');
+        if (!url) {
+            throw new Error('Discord webhook url is invalid!');
+        }
+        console.log('SENDING', JSON.stringify(payload, null, 2));
+        try {
+            const response = await axios.post(url, payload, {
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                },
+            });
+            console.log(`Status code: ${response.status}`);
+            console.log(
+                `Response data: ${JSON.stringify(response.data, null, 2)}`,
+            );
+        } catch (error) {
+            console.error(`Error message: ${error.message}`);
+        }
+        console.log('Sent Discord message!');
+    }
+
+    discordMessagePayload(color, txURL, networkName, id, timestamp) {
+        const text = `Scheduled execution of proposal ${id} on ${networkName}`;
+        const details = `If the proposal reaches quorum, once the cross-chain vote collection period finishes it will be automatically executed.`;
+        const baseFields = [
+            {
+                name: 'Network',
+                value: networkName,
+                inline: true,
+            },
+            {
+                name: 'Proposal',
+                value: mipString,
+                inline: true,
+            },
+        ];
+
+        if (timestamp && timestamp > 0) {
+            baseFields.push({
+                name: 'Will be executed at',
+                value: `<t:${timestamp}>`,
+                inline: true,
+            });
+        }
+
+        if (details) {
+            baseFields.push({
+                name: 'Details',
+                value: details,
+                inline: false,
+            });
+        }
+
+        return {
+            content: '',
+            embeds: [
+                {
+                    title: `${text}`,
+                    color: color,
+                    fields: baseFields,
+                    url: txURL,
+                },
+            ],
+        };
+    }
+
+    discordFormatLink(text, url) {
+        return `[${text}](${url})`;
+    }
+
+    numberWithCommas(num) {
+        if (!num.includes('.')) {
+            num = num + '.0';
+        }
+        const parts = num.toString().split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts
+            .join('.')
+            .replace(/(\.\d+[1-9])0+$/, '$1')
+            .replace(/\.0+$/, '');
+    }
+}
 
 async function storeProposal(event, id, timestamp) {
     console.log('Storing proposal id in KV store...');
@@ -185,34 +188,45 @@ exports.handler = async function (event, context) {
             const timestamp =
                 Math.floor(Date.now() / 1000) + crossChainVoteCollectionPeriod;
 
-            await storeProposal(
-                event,
+            await storeProposal(event, proposalId, timestamp);
+
+            const bridgeCost = await voteCollection.bridgeCostAll();
+
+            const gasEstimate = await voteCollection.estimateGas.emitVotes(
                 proposalId,
-                Math.floor(Date.now() / 1000),
+                {
+                    value: bridgeCost,
+                },
             );
 
-            const tx = await voteCollection.emitVotes(proposalId);
-            console.log(`Called emitVotes in ${tx.hash}`);
+            // Add a buffer to the gas estimate
+            const gasLimit = gasEstimate.add(gasEstimate.div(5)); // Adding 20% extra gas as a buffer
 
-            // const {notificationClient} = context;
-            // notificationClient.send({
-            //     channelAlias: 'Parameter Changes to Slack',
-            //     subject: `Votes emitted for proposal ${proposalId} on ${network}`,
-            //     message: `Saved proposal id with expiration at future timestamp ${timestamp}`,
-            // });
-            // const {GOVBOT_WEBHOOK} = event.secrets;
-            // const moonwellEvent = new MoonwellEvent();
-            // const discordPayload = moonwellEvent.discordMessagePayload(
-            //     0x00ff00,
-            //     blockExplorer + tx.hash,
-            //     network,
-            //     proposalId,
-            //     timestamp,
-            // );
-            // await moonwellEvent.sendDiscordMessage(
-            //     GOVBOT_WEBHOOK,
-            //     discordPayload,
-            // );
+            const tx = await voteCollection.emitVotes(proposalId, {
+                value: bridgeCost,
+                gasLimit: gasLimit,
+            });
+
+            const {notificationClient} = context;
+            notificationClient.send({
+                channelAlias: 'Parameter Changes to Slack',
+                subject: `Votes emitted for proposal ${proposalId} on ${network}`,
+                message: `Saved proposal id with expiration at future timestamp ${timestamp}`,
+            });
+            const {GOVBOT_WEBHOOK} = event.secrets;
+            const moonwellEvent = new MoonwellEvent();
+            const discordPayload = moonwellEvent.discordMessagePayload(
+                0x00ff00,
+                blockExplorer + tx.hash,
+                network,
+                proposalId,
+                timestamp,
+            );
+            await moonwellEvent.sendDiscordMessage(
+                GOVBOT_WEBHOOK,
+                discordPayload,
+            );
+
             return {tx: tx.hash};
         }
     }
