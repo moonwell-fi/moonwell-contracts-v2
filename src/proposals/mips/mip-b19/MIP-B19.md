@@ -38,6 +38,6 @@ A proposal to adjust WETH, USDC and AERO's IR curve:
 | Jump Multiplier    | 3.15     | 3.15        |
 
 Our recommendation post is located in the forums, please refer to this
-[link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-03-26/841?u=gauntlet).
+[link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-05-29/957?u=gauntlet).
 By approving this proposal, you agree that any services provided by Gauntlet
 shall be governed by the terms of service available at gauntlet.network/tos
