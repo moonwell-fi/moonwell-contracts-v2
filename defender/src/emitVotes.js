@@ -11,25 +11,27 @@ const network = 'baseSepolia';
 
 const voteCollectionAddress =
     network === 'base'
-        ?  '0xe0278B32c627FF6fFbbe7de6A18Ade145603e949'// TemporalGovernor on Base 
+        ? '0xe0278B32c627FF6fFbbe7de6A18Ade145603e949' // TemporalGovernor on Base
         : '0xBdD86164da753C1a25e72603d266Dc1CC32e8acf'; // TemporalGovernor on Base Sepolia
 
-const governorAddress = network === base ? '0x9A8464C4C11CeA17e191653Deb7CdC1bE30F1Af4' // Multichain Governor on Moonbeam
-  : '0xf152d75fe4cBB11AE224B94110c31F0bdDb55850' // Multichain Governor on Moonbase
+const governorAddress =
+    network === base
+        ? '0x9A8464C4C11CeA17e191653Deb7CdC1bE30F1Af4' // Multichain Governor on Moonbeam
+        : '0xf152d75fe4cBB11AE224B94110c31F0bdDb55850'; // Multichain Governor on Moonbase
 
-const voteCollectionABI = [];
+const voteCollectionABI = ['function emitVotes(uint256 proposalId) external'];
 
 const governorABI = [
-  'function liveProposals() external view returns (uint256[] memory)'
-  'function state(uint256 proposalId) external view returns (uint8)'
-  'function crossChainVoteCollectionPeriod() external view returns (uint256)'
+    'function liveProposals() external view returns (uint256[] memory)',
+    'function state(uint256 proposalId) external view returns (uint8)',
+    'function crossChainVoteCollectionPeriod() external view returns (uint256)',
 ];
 
 // Block explorer URL
 const blockExplorer =
     network === 'base'
         ? 'https://basescan.org/tx/'
-      : 'https://sepolia.basescan.org/tx/';
+        : 'https://sepolia.basescan.org/tx/';
 
 class MoonwellEvent {
     async sendDiscordMessage(url, payload) {
@@ -56,8 +58,8 @@ class MoonwellEvent {
     }
 
     discordMessagePayload(color, txURL, networkName, id, timestamp) {
-      const text = `Scheduled execution of proposal ${id} on ${networkName}`;
-      const details = `If the proposal reaches quorum, once the cross-chain vote collection period finishes it will be automatically executed.`;
+        const text = `Scheduled execution of proposal ${id} on ${networkName}`;
+        const details = `If the proposal reaches quorum, once the cross-chain vote collection period finishes it will be automatically executed.`;
         const baseFields = [
             {
                 name: 'Network',
@@ -142,20 +144,31 @@ exports.handler = async function (event, context) {
     const provider = client.relaySigner.getProvider();
     const signer = client.relaySigner.getSigner(provider, {speed: 'fast'});
 
+    const moonbeamProvider = new providers.JsonRpcProvider(
+        'https://rpc.testnet.moonbeam.network',
+        {
+            chainId: 1287,
+            name: 'moonbase-alpha',
+        },
+    );
+
     const governor = new ethers.Contract(
         governorAddress,
         governorABI,
-        signer,
+        moonbeamProvider,
     );
 
     const liveProposals = await governor.liveProposals();
 
-  for (const proposalId of liveProposals) {
+    for (const proposalId of liveProposals) {
         const state = await governor.state(proposalId);
 
-    const crossChainVoteCollectionPeriod = await governor.crossChainVoteCollectionPeriod();
+        const crossChainVoteCollectionPeriod =
+            await governor.crossChainVoteCollectionPeriod();
         if (state == 1) {
-            console.log(`Proposal ${proposalId} is in the cross chain vote collection state`);
+            console.log(
+                `Proposal ${proposalId} is in the cross chain vote collection state`,
+            );
 
             const voteCollection = new ethers.Contract(
                 voteCollectionAddress,
@@ -163,34 +176,42 @@ exports.handler = async function (event, context) {
                 signer,
             );
 
-          const timestamp = Math.floor(Date.now() / 1000) + crossChainVoteCollectionPeriod;
+            const timestamp =
+                Math.floor(Date.now() / 1000) + crossChainVoteCollectionPeriod;
 
-          await storeProposal(event, proposalId, Math.floor(Date.now() / 1000));
+            await storeProposal(
+                event,
+                proposalId,
+                Math.floor(Date.now() / 1000),
+            );
 
-          const tx = await voteCollection.emitVotes(proposalId);
-          console.log(`Called emitVotes in ${tx.hash}`);
+            const tx = await voteCollection.emitVotes(proposalId);
+            console.log(`Called emitVotes in ${tx.hash}`);
 
-          const {notificationClient} = context;
-          notificationClient.send({
-            channelAlias: 'Parameter Changes to Slack',
-            subject: `Votes emitted for proposal ${proposalId} on ${network}`,
-            message: `Saved proposal id with expiration at future timestamp ${timestamp}`,
-          });
-          const {GOVBOT_WEBHOOK} = event.secrets;
-          const moonwellEvent = new MoonwellEvent();
-          const discordPayload = moonwellEvent.discordMessagePayload(
-            0x00ff00,
-            blockExplorer + tx.hash,
-            network,
-            proposalId,
-            timestamp,
-          );
-          await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
-          return {tx: tx.hash};
+            const {notificationClient} = context;
+            notificationClient.send({
+                channelAlias: 'Parameter Changes to Slack',
+                subject: `Votes emitted for proposal ${proposalId} on ${network}`,
+                message: `Saved proposal id with expiration at future timestamp ${timestamp}`,
+            });
+            const {GOVBOT_WEBHOOK} = event.secrets;
+            const moonwellEvent = new MoonwellEvent();
+            const discordPayload = moonwellEvent.discordMessagePayload(
+                0x00ff00,
+                blockExplorer + tx.hash,
+                network,
+                proposalId,
+                timestamp,
+            );
+            await moonwellEvent.sendDiscordMessage(
+                GOVBOT_WEBHOOK,
+                discordPayload,
+            );
+            return {tx: tx.hash};
         }
     }
 
     console.log('No proposals in cross chain vote collection state');
-    return;
 
+    return {};
 };
