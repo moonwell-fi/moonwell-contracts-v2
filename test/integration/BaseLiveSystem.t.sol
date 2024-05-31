@@ -106,7 +106,11 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
-        assertEq(config.supplyEmissionsPerSec, 1e18);
+        assertEq(
+            config.supplyEmissionsPerSec,
+            1e18,
+            "supply emissions per second incorrect"
+        );
     }
 
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
@@ -131,8 +135,12 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
             );
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
-        assertEq(config.emissionToken, well);
-        assertEq(config.borrowEmissionsPerSec, 1e18);
+        assertEq(config.emissionToken, well, "emission token not well");
+        assertEq(
+            config.borrowEmissionsPerSec,
+            1e18,
+            "well per second incorrect"
+        );
     }
 
     function testMintMWethMTokenSucceeds() public {
