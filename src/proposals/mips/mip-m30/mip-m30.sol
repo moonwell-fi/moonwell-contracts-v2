@@ -7,7 +7,6 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
 
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
-import {MToken} from "@protocol/MToken.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 
 contract mipm30 is Configs, GovernanceProposal {
