@@ -24,12 +24,6 @@
         "name": "MORPHO_BLUE"
     },
     {
-        "addr": "0x10e5196375e6461703662DE1c11F0C28884cBf3b",
-        "chainId": 84532,
-        "isContract": true,
-        "name": "METAMORPHO_USDC_VAULT_TESTNET"
-    },
-    {
         "addr": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
         "chainId": 84532,
         "isContract": true,
