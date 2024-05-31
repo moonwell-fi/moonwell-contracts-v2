@@ -118,7 +118,7 @@ contract SupplyBorrowCapsLiveSystemBaseTest is PostProposalCheck, Configs {
         uint256 usdcMintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_USDBC")
         ) - 1_000e6;
-        uint256 borrowAmount = 33_000_000e6;
+        uint256 borrowAmount = comptroller.borrowCaps(address(mUSDbC)) + 1;
         address underlying = address(mUSDbC.underlying());
 
         deal(underlying, address(this), usdcMintAmount);
@@ -130,6 +130,10 @@ contract SupplyBorrowCapsLiveSystemBaseTest is PostProposalCheck, Configs {
         mToken[0] = address(mUSDbC);
 
         comptroller.enterMarkets(mToken);
+
+        if (borrowAmount > mUSDbC.getCash()) {
+            deal(address(underlying), address(mUSDbC), borrowAmount);
+        }
 
         vm.expectRevert("market borrow cap reached");
         mUSDbC.borrow(borrowAmount);

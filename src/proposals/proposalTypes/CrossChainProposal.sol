@@ -9,6 +9,7 @@ import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
 abstract contract CrossChainProposal is
@@ -255,6 +256,44 @@ abstract contract CrossChainProposal is
         );
 
         return multichainPayload;
+    }
+
+    /// @notice Check if there are any on-chain proposals that match the
+    /// proposal calldata
+    function checkOnChainCalldata(
+        address governor,
+        address temporalGovernor,
+        address wormholeCore
+    ) public view returns (bool calldataExist) {
+        uint256 proposalCount = MultichainGovernor(governor).proposalCount();
+
+        while (proposalCount > 0) {
+            (
+                address[] memory targets,
+                uint256[] memory values,
+                bytes[] memory calldatas
+            ) = MultichainGovernor(governor).getProposalData(proposalCount);
+
+            bytes memory onchainCalldata = abi.encodeWithSignature(
+                "propose(address[],uint256[],bytes[],string)",
+                targets,
+                values,
+                calldatas,
+                PROPOSAL_DESCRIPTION
+            );
+
+            bytes memory proposalCalldata = getMultichainGovernorCalldata(
+                temporalGovernor,
+                wormholeCore
+            );
+
+            if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
+                return true;
+            }
+
+            proposalCount--;
+        }
+        return false;
     }
 
     /// @notice print the actions that will be executed by the proposal
