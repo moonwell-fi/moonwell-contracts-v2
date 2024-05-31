@@ -8,13 +8,13 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {LibCompound} from "@protocol/4626/LibCompound.sol";
-import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
+import {Comptroller as IMoontroller} from "@protocol/Comptroller.sol";
 import {MultiRewardDistributor, MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributor.sol";
 
-/// @title CompoundERC4626
+/// @title MoonwellERC4626
 /// @author zefram.eth
 /// @notice ERC4626 wrapper for Moonwell Finance
-contract CompoundERC4626 is ERC4626 {
+contract MoonwellERC4626 is ERC4626 {
     /// -----------------------------------------------------------------------
     /// Libraries usage
     /// -----------------------------------------------------------------------
@@ -53,7 +53,7 @@ contract CompoundERC4626 is ERC4626 {
     address public immutable rewardRecipient;
 
     /// @notice The Compound comptroller contract
-    IComptroller public immutable comptroller;
+    IMoontroller public immutable comptroller;
 
     /// -----------------------------------------------------------------------
     /// Constructor
@@ -63,7 +63,7 @@ contract CompoundERC4626 is ERC4626 {
         ERC20 asset_,
         MErc20 mToken_,
         address rewardRecipient_,
-        IComptroller comptroller_
+        IMoontroller comptroller_
     ) ERC4626(asset_, _vaultName(asset_), _vaultSymbol(asset_)) {
         mToken = mToken_;
         comptroller = comptroller_;
@@ -172,15 +172,6 @@ contract CompoundERC4626 is ERC4626 {
 
     /// @notice maximum amount of underlying tokens that can be deposited into the underlying protocol
     function maxDeposit(address) public view override returns (uint256) {
-        return maxMint(address(0));
-    }
-
-    /// @notice Returns the maximum amount of tokens that can be supplied
-    /// no way for this function to ever revert unless comptroller or mToken is broken
-    /// @dev accrue interest must be called before this function is called, otherwise
-    /// an outdated value will be fetched, and the returned value will be incorrect
-    /// (greater than actual amount available to be minted will be returned)
-    function maxMint(address) public view override returns (uint256) {
         if (comptroller.mintGuardianPaused(address(mToken))) {
             return 0;
         }
@@ -220,6 +211,20 @@ contract CompoundERC4626 is ERC4626 {
         }
 
         return type(uint256).max;
+    }
+
+    /// @notice Returns the maximum amount of tokens that can be supplied
+    /// no way for this function to ever revert unless comptroller or mToken is broken
+    /// @dev accrue interest must be called before this function is called, otherwise
+    /// an outdated value will be fetched, and the returned value will be incorrect
+    /// (greater than actual amount available to be minted will be returned)
+    function maxMint(address) public view override returns (uint256) {
+        uint256 mintAmount = maxDeposit(address(0));
+
+        return
+            mintAmount == type(uint256).max
+                ? mintAmount
+                : convertToShares(mintAmount);
     }
 
     /// @notice maximum amount of underlying tokens that can be withdrawn

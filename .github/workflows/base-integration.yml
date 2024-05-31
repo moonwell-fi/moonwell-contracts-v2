@@ -2,9 +2,6 @@ name: Foundry base integration tests
 
 on: [pull_request]
 
-env:
-  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
-
 jobs:
   run-base-tests:
     name: base-integration-tests
@@ -23,4 +20,6 @@ jobs:
         run: bash ./.github/helper/set-env-var.sh
 
       - name: Integration Tests Base Mainnet
-        run: time forge test --match-contract LiveSystemBaseTest --fork-url base -vvv
+        run:
+          time forge test --match-contract LiveSystemBaseTest --fork-url base
+          -vvv

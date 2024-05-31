@@ -31,4 +31,3 @@ Makefile
 
 # temporarily
 test/unit/SystemUpgrade.t.sol
-test/integration/LiveSystem.t.sol
