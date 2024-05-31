@@ -8,7 +8,6 @@ market. As a result, only the deprecated market (wBTC mad) was transferred,
 while the actual market was not.
 
 The purpose of this proposal is to transfer the wBTC market admin to the new
-Multichain Governor. To prevent similar issues in the future, the Solidity Labs
-engineers will ensure that all addresses saved in the Addresses.json file have
-their corresponding names, and that all deprecated markets are clearly labeled
-as "DEPRECATED" before the name.
+Multichain Governor. To enhance our processes and prevent similar issues in the
+future, an internal review will be conduct. This will likely include updating
+the naming conventions for addresses.
