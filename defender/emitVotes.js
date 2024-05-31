@@ -64,7 +64,7 @@ class MoonwellEvent {
     }
 
     discordMessagePayload(color, txURL, networkName, id, timestamp) {
-        const text = `Scheduled execution of proposal ${id} on ${networkName}`;
+        const text = `Votes emmited for proposal ${id} on ${networkName}`;
         const details = `If the proposal reaches quorum, once the cross-chain vote collection period finishes it will be automatically executed.`;
         const baseFields = [
             {
@@ -74,7 +74,7 @@ class MoonwellEvent {
             },
             {
                 name: 'Proposal',
-                value: mipString,
+                value: `${id}`,
                 inline: true,
             },
         ];
@@ -128,7 +128,7 @@ class MoonwellEvent {
 async function storeProposal(event, id, timestamp) {
     console.log('Storing proposal id in KV store...');
     const kvStore = new KeyValueStoreClient(event);
-    let value = await kvStore.get(network);
+    let value = await kvStore.get(`proposals-${network}`);
     console.log(`Initial KV store value for ${network}: ${value}`);
     if (value !== null) {
         value += `,${id}`;
@@ -137,7 +137,7 @@ async function storeProposal(event, id, timestamp) {
     }
     await kvStore.put(network, value);
     console.log(`Updated KV store value for ${network}: ${value}`);
-    await kvStore.put(`${network}-${id}`, timestamp.toString());
+    await kvStore.put(`proposals-${network}-${id}`, timestamp.toString());
     console.log(`Stored ${network}-${id} with expiry ${timestamp}`);
 }
 
