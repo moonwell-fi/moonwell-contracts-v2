@@ -9,5 +9,6 @@ while the actual market was not.
 
 The purpose of this proposal is to transfer the wBTC market admin to the new
 Multichain Governor. To enhance our processes and prevent similar issues in the
-future, an internal review will be conduct. This will likely include updating
-the naming conventions for addresses.
+future, an internal review will be conducted taking into account previous issues
+with Addresses.json and adding to a written postmortem report. This will likely
+include updating the naming conventions for addresses.
