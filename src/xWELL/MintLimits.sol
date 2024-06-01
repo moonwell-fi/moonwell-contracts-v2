@@ -18,7 +18,8 @@ abstract contract MintLimits {
     }
 
     /// @notice rate limit for each bridge contract
-    mapping(address bridge => RateLimitMidPoint bridgeRateLimit) public rateLimits;
+    mapping(address bridge => RateLimitMidPoint bridgeRateLimit)
+        public rateLimits;
 
     /// @notice emitted when a rate limit is added or removed
     /// @param bridge the bridge address

@@ -5,26 +5,18 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {Unitroller} from "@protocol/Unitroller.sol";
-import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {MIPProposal} from "@proposals/MIPProposal.s.sol";
-import {PriceOracle} from "@protocol/Oracles/PriceOracle.sol";
-import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
-import {TemporalGovernor} from "@protocol/Governance/TemporalGovernor.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/IRModels/JumpRateModel.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
 /// @notice This lists all new markets provided in `mainnetMTokens.json`
@@ -34,7 +26,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 contract mipb10 is Proposal, CrossChainProposal, Configs {
     /// @notice the name of the proposal
     /// Read more here: https://forum.moonwell.fi/t/mip-b10-onboard-reth-as-collateral-on-base-deployment/672
-    string public constant name = "MIP-B10 rETH Market Creation";
+    string public constant override name = "MIP-B10 rETH Market Creation";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;
@@ -133,6 +125,11 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
         console.log("\n\n");
     }
 
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
+
     /// @notice no contracts are deployed in this proposal
     function deploy(Addresses addresses, address deployer) public override {
         Configs.CTokenConfiguration[]
@@ -165,7 +162,8 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel)
+                        address(irModel),
+                        true
                     );
                 }
 
@@ -206,7 +204,11 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                     ""
                 );
 
-                addresses.addAddress(config.addressesString, address(mToken));
+                addresses.addAddress(
+                    config.addressesString,
+                    address(mToken),
+                    true
+                );
             }
         }
     }
@@ -404,7 +406,10 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
         address
     ) public override(CrossChainProposal, MIPProposal) {
         printCalldata(addresses);
-        _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        _simulateCrossChainActions(
+            addresses,
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}

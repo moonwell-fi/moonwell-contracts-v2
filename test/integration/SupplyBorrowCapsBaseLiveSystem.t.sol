@@ -23,7 +23,7 @@ contract SupplyBorrowCapsLiveSystemBaseTest is PostProposalCheck, Configs {
     uint256 public constant maxMintAmountUsdc = 40_000_000e6;
 
     /// @notice max mint amount for weth market
-    uint256 public constant maxMintAmountWeth = 10_500e18;
+    uint256 public constant maxMintAmountWeth = 40_000e18;
 
     /// @notice max mint amt for cbEth market
     uint256 public constant maxMintAmountcbEth = 5_000e18;
@@ -47,7 +47,7 @@ contract SupplyBorrowCapsLiveSystemBaseTest is PostProposalCheck, Configs {
     }
 
     function testSupplyingOverSupplyCapFailsWeth() public {
-        uint256 mintAmount = 11_000e18;
+        uint256 mintAmount = maxMintAmountWeth + 1e18;
         address underlying = address(mWeth.underlying());
         deal(underlying, address(this), mintAmount);
 
@@ -118,7 +118,7 @@ contract SupplyBorrowCapsLiveSystemBaseTest is PostProposalCheck, Configs {
         uint256 usdcMintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_USDBC")
         ) - 1_000e6;
-        uint256 borrowAmount = 33_000_000e6;
+        uint256 borrowAmount = comptroller.borrowCaps(address(mUSDbC)) + 1;
         address underlying = address(mUSDbC.underlying());
 
         deal(underlying, address(this), usdcMintAmount);
@@ -130,6 +130,10 @@ contract SupplyBorrowCapsLiveSystemBaseTest is PostProposalCheck, Configs {
         mToken[0] = address(mUSDbC);
 
         comptroller.enterMarkets(mToken);
+
+        if (borrowAmount > mUSDbC.getCash()) {
+            deal(address(underlying), address(mUSDbC), borrowAmount);
+        }
 
         vm.expectRevert("market borrow cap reached");
         mUSDbC.borrow(borrowAmount);

@@ -1,21 +1,25 @@
 pragma solidity 0.8.19;
 
-import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
-import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
-
 import "@forge-std/Test.sol";
 
-import {MoonwellArtemisGovernor} from "@protocol/Governance/deprecated/MoonwellArtemisGovernor.sol";
+import {Bytes} from "@utils/Bytes.sol";
+import {ChainIds} from "@test/utils/ChainIds.sol";
+import {Addresses} from "@proposals/Addresses.sol";
+import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
+import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
+import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
+import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
 abstract contract CrossChainProposal is
+    ChainIds,
+    ProposalChecker,
     MultisigProposal,
-    MarketCreationHook,
-    ChainIds
+    MarketCreationHook
 {
+    using Bytes for bytes;
+
     uint32 private constant nonce = 0; /// nonce for wormhole, unused by Temporal Governor
 
     /// instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
@@ -55,10 +59,72 @@ abstract contract CrossChainProposal is
     /// @param temporalGovAddress address of the cross chain governor executing the calls
     /// run pre and post proposal hooks to ensure that mToken markets created by the
     /// proposal are valid and mint at least 1 wei worth of mTokens to address 0
-    function _simulateCrossChainActions(address temporalGovAddress) internal {
+    function _simulateCrossChainActions(
+        Addresses addresses,
+        address temporalGovAddress
+    ) internal {
+        {
+            (address[] memory targets, , ) = getTargetsPayloadsValues(
+                addresses
+            );
+            checkBaseActions(targets, addresses);
+            checkMoonbeamBaseActions(
+                addresses,
+                actions,
+                new ProposalAction[](0)
+            );
+
+            bytes memory proposalCalldata = getMultichainGovernorCalldata(
+                temporalGovAddress,
+                addresses.getAddress(
+                    block.chainid == baseChainId ||
+                        block.chainid == moonBeamChainId
+                        ? "WORMHOLE_CORE_MOONBEAM"
+                        : "WORMHOLE_CORE_MOONBASE",
+                    block.chainid == baseChainId ||
+                        block.chainid == moonBeamChainId
+                        ? moonBeamChainId
+                        : moonBaseChainId
+                )
+            );
+
+            (address[] memory baseTargets, , , ) = abi.decode(
+                proposalCalldata.slice(4, proposalCalldata.length - 4),
+                (address[], uint256[], bytes[], string)
+            );
+
+            address expectedAddress = block.chainid == baseChainId ||
+                block.chainid == moonBeamChainId
+                ? addresses.getAddress(
+                    "WORMHOLE_CORE_MOONBEAM",
+                    moonBeamChainId
+                )
+                : addresses.getAddress(
+                    "WORMHOLE_CORE_MOONBASE",
+                    moonBaseChainId
+                );
+            require(baseTargets.length == 1);
+            require(
+                baseTargets[0] == expectedAddress,
+                "target incorrect, not wormhole core"
+            );
+        }
+
         _verifyActionsPreRun(actions);
         _simulateMultisigActions(temporalGovAddress);
         _verifyMTokensPostRun();
+    }
+
+    /// @notice calls getTargetsPayloadsValues()
+    function getTargetsPayloadsValues(
+        Addresses /// shhh
+    )
+        public
+        view
+        override
+        returns (address[] memory, uint256[] memory, bytes[] memory)
+    {
+        return getTargetsPayloadsValues();
     }
 
     /// @notice return arrays of all items in the proposal that the
@@ -86,16 +152,16 @@ abstract contract CrossChainProposal is
                 "Invalid target for governance"
             );
 
-            /// if there are no args and no eth, the action is not valid
+            /// if there is no calldata and no eth, the action is not valid
             require(
-                (actions[i].arguments.length == 0 && actions[i].value > 0) ||
-                    actions[i].arguments.length > 0,
+                (actions[i].data.length == 0 && actions[i].value > 0) ||
+                    actions[i].data.length > 0,
                 "Invalid arguments for governance"
             );
 
             targets[i] = actions[i].target;
             values[i] = actions[i].value;
-            payloads[i] = actions[i].arguments;
+            payloads[i] = actions[i].data;
         }
 
         return (targets, values, payloads);
@@ -105,43 +171,13 @@ abstract contract CrossChainProposal is
     /// @param temporalGovernor address of the cross chain governor executing the calls
     function getTemporalGovCalldata(
         address temporalGovernor
-    ) public returns (bytes memory timelockCalldata) {
+    ) public view returns (bytes memory timelockCalldata) {
         (
             address[] memory targets,
             uint256[] memory values,
             bytes[] memory payloads
         ) = getTargetsPayloadsValues();
 
-        require(
-            temporalGovernor != address(0),
-            "getTemporalGovCalldata: Invalid temporal governor"
-        );
-
-        timelockCalldata = abi.encodeWithSignature(
-            "publishMessage(uint32,bytes,uint8)",
-            nonce,
-            abi.encode(temporalGovernor, targets, values, payloads),
-            consistencyLevel
-        );
-
-        console.log(
-            "\ncalldata for execution on temporal gov: abi.encode(temporalGovernor, targets, values, payloads)"
-        );
-        emit log_bytes(abi.encode(temporalGovernor, targets, values, payloads));
-        console.log("");
-
-        require(
-            timelockCalldata.length <= 10_000,
-            "getTemporalGovCalldata: Timelock publish message calldata max size of 10kb exceeded"
-        );
-    }
-
-    function getTemporalGovCalldata(
-        address temporalGovernor,
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory payloads
-    ) public pure returns (bytes memory timelockCalldata) {
         require(
             temporalGovernor != address(0),
             "getTemporalGovCalldata: Invalid temporal governor"
@@ -163,17 +199,17 @@ abstract contract CrossChainProposal is
     /// @notice get the calldata for the Artemis Governor to propose the cross chain proposal on Moonbeam
     /// @param temporalGovernor address of the cross chain governor executing the calls
     /// @param wormholeCore address of the wormhole core contract
-    function getArtemisGovernorCalldata(
+    function getMultichainGovernorCalldata(
         address temporalGovernor,
         address wormholeCore
-    ) public returns (bytes memory) {
+    ) public view returns (bytes memory) {
         require(
             temporalGovernor != address(0),
-            "getArtemisGovernorCalldata: Invalid temporal governor"
+            "getMultichainGovernorCalldata: Invalid temporal governor"
         );
         require(
             wormholeCore != address(0),
-            "getArtemisGovernorCalldata: Invalid womrholecore"
+            "getMultichainGovernorCalldata: Invalid womrholecore"
         );
 
         bytes memory temporalGovCalldata = getTemporalGovCalldata(
@@ -181,25 +217,25 @@ abstract contract CrossChainProposal is
         );
 
         return
-            getArtemisGovernorCalldata(
+            getMultichainGovernorCalldata(
                 temporalGovernor,
                 wormholeCore,
                 temporalGovCalldata
             );
     }
 
-    function getArtemisGovernorCalldata(
+    function getMultichainGovernorCalldata(
         address temporalGovernor,
         address wormholeCore,
         bytes memory temporalGovCalldata
     ) public view returns (bytes memory) {
         require(
             temporalGovernor != address(0),
-            "getArtemisGovernorCalldata: Invalid temporal governor"
+            "getMultichainGovernorCalldata: Invalid temporal governor"
         );
         require(
             wormholeCore != address(0),
-            "getArtemisGovernorCalldata: Invalid womrholecore"
+            "getMultichainGovernorCalldata: Invalid Wormholecore"
         );
 
         address[] memory targets = new address[](1);
@@ -211,19 +247,53 @@ abstract contract CrossChainProposal is
         bytes[] memory payloads = new bytes[](1);
         payloads[0] = temporalGovCalldata;
 
-        string[] memory signatures = new string[](1);
-        signatures[0] = "";
-
-        bytes memory artemisPayload = abi.encodeWithSignature(
-            "propose(address[],uint256[],string[],bytes[],string)",
+        bytes memory multichainPayload = abi.encodeWithSignature(
+            "propose(address[],uint256[],bytes[],string)",
             targets,
             values,
-            signatures,
             payloads,
             string(PROPOSAL_DESCRIPTION)
         );
 
-        return artemisPayload;
+        return multichainPayload;
+    }
+
+    /// @notice Check if there are any on-chain proposals that match the
+    /// proposal calldata
+    function checkOnChainCalldata(
+        address governor,
+        address temporalGovernor,
+        address wormholeCore
+    ) public view returns (bool calldataExist) {
+        uint256 proposalCount = MultichainGovernor(governor).proposalCount();
+
+        while (proposalCount > 0) {
+            (
+                address[] memory targets,
+                uint256[] memory values,
+                bytes[] memory calldatas
+            ) = MultichainGovernor(governor).getProposalData(proposalCount);
+
+            bytes memory onchainCalldata = abi.encodeWithSignature(
+                "propose(address[],uint256[],bytes[],string)",
+                targets,
+                values,
+                calldatas,
+                PROPOSAL_DESCRIPTION
+            );
+
+            bytes memory proposalCalldata = getMultichainGovernorCalldata(
+                temporalGovernor,
+                wormholeCore
+            );
+
+            if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
+                return true;
+            }
+
+            proposalCount--;
+        }
+        return false;
     }
 
     /// @notice print the actions that will be executed by the proposal
@@ -233,32 +303,15 @@ abstract contract CrossChainProposal is
         address temporalGovernor,
         address wormholeCore
     ) public {
-        /// if temporal governor is address 0, catch in this function call
-        bytes memory temporalGovCalldata = getTemporalGovCalldata(
-            temporalGovernor
-        );
-
-        console.log("temporal governance calldata");
-        emit log_bytes(temporalGovCalldata);
-
-        bytes memory wormholeTemporalGovPayload = abi.encodeWithSignature(
-            "publishMessage(uint32,bytes,uint8)",
-            nonce,
-            temporalGovCalldata,
-            consistencyLevel
-        );
-
-        console.log("wormhole publish governance calldata");
-        emit log_bytes(wormholeTemporalGovPayload);
-
         /// if wormhole core is address 0, catch in this function call
-        bytes memory artemisPayload = getArtemisGovernorCalldata(
+        /// if temporal governor is address 0, catch in this function call
+        bytes memory multichainPayload = getMultichainGovernorCalldata(
             temporalGovernor,
             wormholeCore
         );
 
-        console.log("artemis governor queue governance calldata");
-        emit log_bytes(artemisPayload);
+        console.log("Multichain governor queue governance calldata");
+        emit log_bytes(multichainPayload);
     }
 
     function printProposalActionSteps() public override {
@@ -278,7 +331,7 @@ abstract contract CrossChainProposal is
                 actions[i].target,
                 actions[i].value
             );
-            emit log_bytes(actions[i].arguments);
+            emit log_bytes(actions[i].data);
 
             console.log("\n");
         }
@@ -287,14 +340,23 @@ abstract contract CrossChainProposal is
     function printCalldata(Addresses addresses) public override {
         printActions(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress(
-                "WORMHOLE_CORE",
-                sendingChainIdToReceivingChainId[block.chainid]
-            )
+            /// if moonbeam or base use wormhole core on moonbeam, else use moonbase
+            block.chainid == moonBeamChainId || block.chainid == baseChainId
+                ? addresses.getAddress(
+                    "WORMHOLE_CORE_MOONBEAM",
+                    moonBeamChainId
+                )
+                : addresses.getAddress(
+                    "WORMHOLE_CORE_MOONBASE",
+                    moonBaseChainId
+                )
         );
     }
 
     function run(Addresses addresses, address) public virtual override {
-        _simulateCrossChainActions(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        _simulateCrossChainActions(
+            addresses,
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
     }
 }

@@ -20,4 +20,5 @@ methods {
     function rateLimitPerSecond(address)           external returns (uint256) envfree;
     function minBufferCap()                        external returns (uint112) envfree;
     function maxRateLimitPerSecond()               external returns (uint128) envfree;
+    function rateLimits(address)                   external returns (uint128, uint112, uint32, uint112, uint112) envfree; 
 }

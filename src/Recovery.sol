@@ -2,7 +2,6 @@ pragma solidity 0.8.19;
 
 /// @notice contract to recover funds sent to an address that can be a smart contract
 contract Recovery {
-
     /// @notice address that owns this contract. Non-Transferrable
     address public immutable owner;
 

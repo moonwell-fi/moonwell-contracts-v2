@@ -13,7 +13,11 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {xwellDeployMoonbeam} from "@protocol/proposals/mips/mip-xwell/xwellDeployMoonbeam.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 
+import {Address} from "@utils/Address.sol";
+
 contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
+    using Address for address;
+
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
 
@@ -48,10 +52,6 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
         );
 
         deal(address(well), user, startingWellAmount);
-    }
-
-    function testValidate() public {
-        validate(addresses, address(0));
     }
 
     function testReinitializeFails() public {
@@ -89,7 +89,7 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
         assertEq(externalAddresses.length, 1, "incorrect trusted senders");
         assertEq(
             externalAddresses[0],
-            wormholeAdapter.addressToBytes(address(wormholeAdapter)),
+            address(wormholeAdapter).toBytes(),
             "incorrect actual trusted senders"
         );
         assertTrue(
@@ -210,16 +210,16 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
             xwell.buffer(address(wormholeAdapter))
         );
 
+        uint256 startingWellBalance = well.balanceOf(user);
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
         uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
         bytes memory payload = abi.encode(user, mintAmount);
-        bytes32 sender = wormholeAdapter.addressToBytes(
-            address(wormholeAdapter)
-        );
+        bytes32 sender = address(wormholeAdapter).toBytes();
         bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
+        deal(address(well), addresses.getAddress("xWELL_LOCKBOX"), mintAmount);
 
         vm.prank(address(wormholeAdapter.wormholeRelayer()));
         wormholeAdapter.receiveWormholeMessages(
@@ -230,20 +230,27 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
             nonce
         );
 
+        uint256 endingWellBalance = well.balanceOf(user);
         uint256 endingXWellBalance = xwell.balanceOf(user);
         uint256 endingXWellTotalSupply = xwell.totalSupply();
         uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
 
         assertEq(
             endingXWellBalance,
-            startingXWellBalance + mintAmount,
-            "user xWELL balance incorrect"
+            startingXWellBalance,
+            "user xWELL balance incorrect, should not change"
+        );
+        assertEq(
+            startingWellBalance + mintAmount,
+            endingWellBalance,
+            "user WELL balance incorrect, did not increase"
         );
         assertEq(
             endingXWellTotalSupply,
-            startingXWellTotalSupply + mintAmount,
-            "total xWELL supply incorrect"
+            startingXWellTotalSupply,
+            "total xWELL supply incorrect, should not change"
         );
+
         assertTrue(wormholeAdapter.processedNonces(nonce), "nonce not used");
         assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
     }

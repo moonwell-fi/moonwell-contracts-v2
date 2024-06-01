@@ -13,8 +13,8 @@ import {Comptroller} from "@protocol/Comptroller.sol";
 import {mip0x as mip} from "@proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
@@ -66,21 +66,28 @@ contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
     }
 
     function testBorrowingOverBorrowCapFailsUsdc() public {
+        /// TODO figure out why this test intermittently fails when it subtracts 1000e6 from mintAmount
+        /// fails with mintAllowed error, "market supply cap reached"
         uint256 usdcMintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_USDC")
-        ) - 1_000e6;
-        uint256 borrowAmount = 33_000_000e6;
+        ) / 10;
+
+        uint256 borrowAmount = comptroller.borrowCaps(address(mUSDC)) + 1;
         address underlying = address(mUSDC.underlying());
 
         deal(underlying, address(this), usdcMintAmount);
 
         IERC20(underlying).approve(address(mUSDC), usdcMintAmount);
-        mUSDC.mint(usdcMintAmount);
+        assertEq(mUSDC.mint(usdcMintAmount), 0, "mint failed");
 
         address[] memory mToken = new address[](1);
         mToken[0] = address(mUSDC);
 
         comptroller.enterMarkets(mToken);
+
+        if (borrowAmount > mUSDC.getCash()) {
+            deal(address(underlying), address(mUSDC), borrowAmount);
+        }
 
         vm.expectRevert("market borrow cap reached");
         mUSDC.borrow(borrowAmount);

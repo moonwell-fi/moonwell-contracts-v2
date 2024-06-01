@@ -8,13 +8,18 @@ import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 
 contract mipm16 is GovernanceProposal {
-    string public constant name = "MIP-M16";
+    string public constant override name = "MIP-M16";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile("./src/proposals/mips/mip-m16/MIP-M16.md")
         );
         _setProposalDescription(proposalDescription);
+    }
+
+    /// @notice proposal's actions all happen on moonbeam
+    function primaryForkId() public view override returns (uint256) {
+        return moonbeamForkId;
     }
 
     function deploy(Addresses addresses, address) public override {}
@@ -69,14 +74,18 @@ contract mipm16 is GovernanceProposal {
         );
 
         /// @dev Nomad reallocation multisig
-        address nomadReallocationMultisig = addresses.getAddress("NOMAD_REALLOCATION_MULTISIG");
+        address nomadReallocationMultisig = addresses.getAddress(
+            "NOMAD_REALLOCATION_MULTISIG"
+        );
 
         /// @dev transfer USDC from the timelock to the multisig
         _pushGovernanceAction(
             addresses.getAddress("madUSDC"),
             "Transfer madUSDC from the Timelock to the multisig",
             abi.encodeWithSignature(
-                "transfer(address,uint256)", nomadReallocationMultisig, mUSDCReserves
+                "transfer(address,uint256)",
+                nomadReallocationMultisig,
+                mUSDCReserves
             )
         );
 
@@ -85,7 +94,9 @@ contract mipm16 is GovernanceProposal {
             addresses.getAddress("madWETH"),
             "Transfer madETH from the Timelock to the multisig",
             abi.encodeWithSignature(
-                "transfer(address,uint256)", nomadReallocationMultisig, mETHReserves
+                "transfer(address,uint256)",
+                nomadReallocationMultisig,
+                mETHReserves
             )
         );
 
@@ -94,7 +105,9 @@ contract mipm16 is GovernanceProposal {
             addresses.getAddress("madWBTC"),
             "Transfer madWBTC from the Timelock to the multisig",
             abi.encodeWithSignature(
-                "transfer(address,uint256)", nomadReallocationMultisig, mwBTCReserves
+                "transfer(address,uint256)",
+                nomadReallocationMultisig,
+                mwBTCReserves
             )
         );
     }

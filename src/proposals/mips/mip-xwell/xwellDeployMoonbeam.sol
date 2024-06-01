@@ -1,22 +1,15 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
-import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-
 import "@forge-std/Test.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Recovery} from "@protocol/Recovery.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
-import {MIPProposal} from "@proposals/MIPProposal.s.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 
 /// to run locally:
@@ -24,7 +17,7 @@ import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 /// @dev do not use MIP as a base to fork off of, it will not work
 contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
     /// @notice the name of the proposal
-    string public constant name = "MIP xWELL Token Creation Moonbeam";
+    string public constant override name = "MIP xWELL Token Creation Moonbeam";
 
     /// @notice the buffer cap for the xWELL token on both base and moonbeam
     uint112 public constant bufferCap = 38_000_000 * 1e18;
@@ -45,6 +38,11 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
     /// once the contract has been paused, in this period of time, it will automatically
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
+
+    /// @notice proposal's actions all happen on moonbeam
+    function primaryForkId() public view override returns (uint256) {
+        return moonbeamForkId;
+    }
 
     function deploy(Addresses addresses, address) public override {
         /// --------------------------------------------------
@@ -100,7 +98,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
                 limits[1].rateLimitPerSecond = lockBoxRateLimitPerSecond;
                 limits[1].bufferCap = lockBoxBufferCap;
 
-                addresses.addAddress("xWELL_LOCKBOX", lockbox);
+                addresses.addAddress("xWELL_LOCKBOX", lockbox, true);
             }
 
             initializeXWell(
@@ -124,14 +122,16 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
             /// add to moonbeam addresses
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                wormholeAdapter
+                wormholeAdapter,
+                true
             );
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
-                wormholeAdapterLogic
+                wormholeAdapterLogic,
+                true
             );
-            addresses.addAddress("xWELL_LOGIC", xwellLogic);
-            addresses.addAddress("xWELL_PROXY", xwellProxy);
+            addresses.addAddress("xWELL_LOGIC", xwellLogic, true);
+            addresses.addAddress("xWELL_PROXY", xwellProxy, true);
 
             printAddresses(addresses);
             addresses.resetRecordingAddresses();
@@ -272,13 +272,14 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
     function printAddresses(Addresses addresses) private view {
         (
             string[] memory recordedNames,
+            ,
             address[] memory recordedAddresses
         ) = addresses.getRecordedAddresses();
         for (uint256 j = 0; j < recordedNames.length; j++) {
-            console.log('{\n        "addr": "%s", ', recordedAddresses[j]);
-            console.log('        "chainId": %d,', block.chainid);
+            console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
+            console.log("        'chainId': %d,", block.chainid);
             console.log(
-                '        "name": "%s"\n}%s',
+                "        'name': '%s'\n}%s",
                 recordedNames[j],
                 j < recordedNames.length - 1 ? "," : ""
             );

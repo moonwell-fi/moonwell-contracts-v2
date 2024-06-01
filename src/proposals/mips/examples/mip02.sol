@@ -10,12 +10,11 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {Unitroller} from "@protocol/Unitroller.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/IRModels/JumpRateModel.sol";
+import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
 /// @notice This MIP deploys and lists new MTokens for the protocol.
@@ -23,13 +22,18 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 /// @dev be sure to include all necessary underlying and price feed addresses in the Addresses.sol contract for the network
 /// the MTokens are being deployed to.
 contract mip02 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "MIP02";
+    string public constant override name = "MIP02";
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
 
     struct CTokenAddresses {
         address mTokenImpl;
         address irModel;
         address unitroller;
+    }
+
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
@@ -40,7 +44,11 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
 
         {
             MErc20Delegate mTokenLogic = new MErc20Delegate();
-            addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
+            addresses.addAddress(
+                "MTOKEN_IMPLEMENTATION",
+                address(mTokenLogic),
+                true
+            );
         }
 
         Configs.CTokenConfiguration[]
@@ -70,7 +78,8 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel)
+                        address(irModel),
+                        true
                     );
                 }
 
@@ -111,7 +120,11 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                     ""
                 );
 
-                addresses.addAddress(config.addressesString, address(mToken));
+                addresses.addAddress(
+                    config.addressesString,
+                    address(mToken),
+                    true
+                );
             }
         }
     }

@@ -1,14 +1,14 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
-import "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
+import "@protocol/rewards/MultiRewardDistributor.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {FaucetToken, FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
-import {InterestRateModel} from "@protocol/IRModels/InterestRateModel.sol";
+import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
-import {WhitePaperInterestRateModel} from "@protocol/IRModels/WhitePaperInterestRateModel.sol";
+import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
 
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin-contracts/contracts/utils/Strings.sol";
@@ -139,7 +139,6 @@ contract Common is Test, MultiRewardDistributorCommon {
         );
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
-
 
         // 1 year of rewards
         uint256 endTime = block.timestamp + (60 * 60 * 24 * 365);
@@ -536,7 +535,6 @@ contract MultiRewardSupplySideDistributorUnitTest is
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
 
-
         emissionToken.allocateTo(address(distributor), EMISSION_TOKEN_1 * 100);
 
         // Use a 10 digit mantissa token
@@ -737,7 +735,7 @@ contract MultiRewardSupplySideDistributorUnitTest is
             assertEq(
                 emissionTokens[i].balanceOf(address(this)),
                 1e18 * ITERATION_COUNT * (i + 1)
-            );   
+            );
         }
     }
 
@@ -807,7 +805,11 @@ contract MultiRewardSupplySideDistributorUnitTest is
     }
 }
 
-contract MultiRewardDistributorCommonUnitTest is Test, ExponentialNoError, Common {
+contract MultiRewardDistributorCommonUnitTest is
+    Test,
+    ExponentialNoError,
+    Common
+{
     MultiRewardDistributor distributor;
 
     function setUp() public {
@@ -1049,7 +1051,7 @@ contract MultiRewardDistributorCommonUnitTest is Test, ExponentialNoError, Commo
         uint256 supplySideEmissions = (SUPPLY_SPEED *
             TIME_DELTA *
             supplyRatio) / 1e36;
-        
+
         uint256 borrowRatio = fraction(user.borrowed, totalBorrows).mantissa;
         uint256 borrowSideEmissions = (BORROW_SPEED *
             TIME_DELTA *
@@ -1641,7 +1643,10 @@ contract MultiRewardDistributorCommonUnitTest is Test, ExponentialNoError, Commo
     function testGlobalSupplyIndexProperlyUpdates() public {
         testVariousSuppliersAndBorrowers(1e18, 0);
 
-        uint256 currSupplyIndex = distributor.getGlobalSupplyIndex(address(mToken), 0);
+        uint256 currSupplyIndex = distributor.getGlobalSupplyIndex(
+            address(mToken),
+            0
+        );
 
         assertTrue(currSupplyIndex > 1e36);
     }
@@ -1652,11 +1657,15 @@ contract MultiRewardDistributorCommonUnitTest is Test, ExponentialNoError, Commo
 
         testVariousSuppliersAndBorrowers(supplySpeed, 0);
 
-        uint256 rewardsSpent = type(uint256).max - emissionToken.balanceOf(address(distributor));
+        uint256 rewardsSpent = type(uint256).max -
+            emissionToken.balanceOf(address(distributor));
         uint256 endTime = block.timestamp;
         uint256 expectedRewards = (endTime - startTime) * supplySpeed;
-        uint256 currSupplyIndex = distributor.getGlobalSupplyIndex(address(mToken), 0);
-    
+        uint256 currSupplyIndex = distributor.getGlobalSupplyIndex(
+            address(mToken),
+            0
+        );
+
         assertTrue(currSupplyIndex > 1e36);
 
         assertApproxEqRel(
@@ -1884,10 +1893,7 @@ contract MultiRewardDistributorCommonUnitTest is Test, ExponentialNoError, Commo
         vm.prank(address(1));
         distributor._updateOwner(mToken, address(emissionToken), address(this));
 
-        config = distributor.getConfigForMarket(
-            mToken,
-            address(emissionToken)
-        );
+        config = distributor.getConfigForMarket(mToken, address(emissionToken));
 
         assertEq(config.owner, address(this));
     }

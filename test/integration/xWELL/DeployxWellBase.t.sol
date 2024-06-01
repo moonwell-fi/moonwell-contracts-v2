@@ -11,8 +11,11 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {xwellDeployBase} from "@protocol/proposals/mips/mip-xwell/xwellDeployBase.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {Address} from "@utils/Address.sol";
 
 contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
+    using Address for address;
+
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
 
@@ -38,10 +41,6 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         wormholeAdapter = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
-    }
-
-    function testValidate() public {
-        validate(addresses, address(0));
     }
 
     function testReinitializeFails() public {
@@ -79,7 +78,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         assertEq(externalAddresses.length, 1, "incorrect trusted senders");
         assertEq(
             externalAddresses[0],
-            wormholeAdapter.addressToBytes(address(wormholeAdapter)),
+            address(wormholeAdapter).toBytes(),
             "incorrect actual trusted senders"
         );
         assertTrue(
@@ -99,13 +98,6 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
         uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
-
-        console.log("block chain id: ", block.chainid);
-        console.log(
-            "wormholeAdapter relayer: ",
-            address(wormholeAdapter.wormholeRelayer())
-        );
-
         uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
         vm.deal(user, cost);
@@ -146,9 +138,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
 
         bytes memory payload = abi.encode(user, mintAmount);
-        bytes32 sender = wormholeAdapter.addressToBytes(
-            address(wormholeAdapter)
-        );
+        bytes32 sender = address(wormholeAdapter).toBytes();
         bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
 
         vm.prank(address(wormholeAdapter.wormholeRelayer()));

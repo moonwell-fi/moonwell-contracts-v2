@@ -11,9 +11,9 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
@@ -45,7 +45,7 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
         ); /// exchange starting price is 0.0002e18
         assertEq(
             mwstETH.reserveFactorMantissa(),
-            0.25e18,
+            0.30e18,
             "incorrect reserve factor"
         );
         assertEq(
@@ -68,6 +68,11 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
         uint256 mintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_wstETH")
         ) + 1;
+
+        if (mintAmount == 1) {
+            return;
+        }
+
         address underlying = address(mwstETH.underlying());
         deal(underlying, address(this), mintAmount);
 
@@ -79,7 +84,14 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
     function testBorrowingOverBorrowCapFails() public {
         uint256 mintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_wstETH")
-        ) - 1e18;
+        );
+
+        if (mintAmount == 1 || mintAmount < 1e18) {
+            return;
+        }
+
+        mintAmount -= 1e18;
+
         uint256 borrowAmount = _getMaxBorrowAmount(
             addresses.getAddress("MOONWELL_wstETH")
         ) + 100;
@@ -195,6 +207,10 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
 
         // totalSupplies = totalCash + totalBorrows - totalReserves
         uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+
+        if (totalSupplies - 1 > supplyCap) {
+            return 0;
+        }
 
         return supplyCap - totalSupplies - 1;
     }

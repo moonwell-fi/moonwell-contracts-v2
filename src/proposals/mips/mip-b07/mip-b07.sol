@@ -7,14 +7,17 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {TimelockProposal} from "@proposals/proposalTypes/TimelockProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/MultiRewardDistributor/MultiRewardDistributorCommon.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
 /// This MIP sets the reward speeds for different markets in the MultiRewardDistributor
 contract mipb07 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "MIPB07";
+    string public constant override name = "MIPB07";
+
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
 
     function deploy(Addresses addresses, address) public override {}
 
@@ -23,8 +26,12 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
     function afterDeploySetup(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-
-        string memory descriptionPath = vm.envString("LISTING_PATH");
+        string memory descriptionPath = vm.envOr(
+            "LISTING_PATH",
+            string(
+                "./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
+            )
+        );
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(descriptionPath)
         );
@@ -35,7 +42,12 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
         {
-            string memory mtokensPath = vm.envString("EMISSION_PATH");
+            string memory mtokensPath = vm.envOr(
+                "EMISSION_PATH",
+                string(
+                    "./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
+                )
+            );
             /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);

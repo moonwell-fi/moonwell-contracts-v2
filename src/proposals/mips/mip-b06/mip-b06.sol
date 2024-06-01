@@ -7,13 +7,12 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel} from "@protocol/IRModels/JumpRateModel.sol";
-import {TimelockProposal} from "@proposals/proposalTypes/TimelockProposal.sol";
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 
 contract mipb06 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "MIP-b06";
+    string public constant override name = "MIP-b06";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 
@@ -35,6 +34,11 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             vm.readFile("./src/proposals/mips/mip-b06/MIP-B06.md")
         );
         _setProposalDescription(proposalDescription);
+    }
+
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
     }
 
     function _validateJRM(

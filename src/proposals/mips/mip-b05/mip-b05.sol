@@ -7,13 +7,12 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel} from "@protocol/IRModels/JumpRateModel.sol";
-import {TimelockProposal} from "@proposals/proposalTypes/TimelockProposal.sol";
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 
 contract mipb05 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "MIP-b05";
+    string public constant override name = "MIP-b05";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 
@@ -40,9 +39,16 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
         _setProposalDescription(proposalDescription);
     }
 
-    function _validateJRM(address jrmAddress, address tokenAddress, IRParams memory params)
-        internal
-    {
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
+
+    function _validateJRM(
+        address jrmAddress,
+        address tokenAddress,
+        IRParams memory params
+    ) internal {
         JumpRateModel jrm = JumpRateModel(jrmAddress);
         assertEq(
             address(MToken(tokenAddress).interestRateModel()),
@@ -75,11 +81,17 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
         );
     }
 
-    function _validateCF(Addresses addresses, address tokenAddress, uint256 collateralFactor) internal {
+    function _validateCF(
+        Addresses addresses,
+        address tokenAddress,
+        uint256 collateralFactor
+    ) internal {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         Comptroller unitroller = Comptroller(unitrollerAddress);
 
-        (bool listed, uint256 collateralFactorMantissa) = unitroller.markets(tokenAddress);
+        (bool listed, uint256 collateralFactorMantissa) = unitroller.markets(
+            tokenAddress
+        );
 
         assertTrue(listed);
 
@@ -193,14 +205,25 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public override {
         // ======== ETH CF Update =========
-        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), ETH_NEW_CF);
+        _validateCF(
+            addresses,
+            addresses.getAddress("MOONWELL_WETH"),
+            ETH_NEW_CF
+        );
 
         // ======== cbETH CF Update =========
-        _validateCF(addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF);
+        _validateCF(
+            addresses,
+            addresses.getAddress("MOONWELL_cbETH"),
+            cbETH_NEW_CF
+        );
 
         // ======== DAI CF Update =========
-        _validateCF(addresses, addresses.getAddress("MOONWELL_DAI"), DAI_NEW_CF);
-
+        _validateCF(
+            addresses,
+            addresses.getAddress("MOONWELL_DAI"),
+            DAI_NEW_CF
+        );
 
         // =========== WETH IR Update ============
 

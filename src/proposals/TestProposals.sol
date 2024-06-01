@@ -8,9 +8,6 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 
-import {mipb00} from "@proposals/mips/mip-b00/mip-b00.sol";
-import {mipb01} from "@proposals/mips/mip-b01/mip-b01.sol";
-
 /*
 How to use:
 forge test --fork-url $ETH_RPC_URL --match-contract TestProposals -vvv
@@ -54,6 +51,7 @@ contract TestProposals is Test {
         DO_VALIDATE = vm.envOr("DO_VALIDATE", true);
 
         addresses = new Addresses();
+        vm.makePersistent(address(addresses));
 
         // proposals.push(Proposal(address(new mipb01())));
         nProposals = proposals.length;
@@ -102,22 +100,24 @@ contract TestProposals is Test {
             if (deploy) {
                 if (debug) {
                     console.log("Proposal", name, "deploy()");
-                    addresses.resetRecordingAddresses();
                 }
+                addresses.resetRecordingAddresses(); /// reset the recording addresses so deployment has clean slate
+
                 proposals[i].deploy(addresses, address(proposals[i])); /// mip itself is the deployer
                 if (debug) {
                     (
                         string[] memory recordedNames,
+                        ,
                         address[] memory recordedAddresses
                     ) = addresses.getRecordedAddresses();
                     for (uint256 j = 0; j < recordedNames.length; j++) {
                         console.log(
-                            '{\n        "addr": "%s", ',
+                            "{\n        'addr': '%s', ",
                             recordedAddresses[j]
                         );
-                        console.log('        "chainId": %d,', block.chainid);
+                        console.log("        'chainId': %d,", block.chainid);
                         console.log(
-                            '        "name": "%s"\n}%s',
+                            "        'name': '%s'\n}%s",
                             recordedNames[j],
                             j < recordedNames.length - 1 ? "," : ""
                         );
@@ -137,6 +137,12 @@ contract TestProposals is Test {
                 proposals[i].afterDeploySetup(addresses);
             }
 
+            // Teardown step
+            if (teardown) {
+                if (debug) console.log("Proposal", name, "teardown()");
+                proposals[i].teardown(addresses, address(proposals[i]));
+            }
+
             // Build step
             if (build) {
                 if (debug) console.log("Proposal", name, "build()");
@@ -147,12 +153,6 @@ contract TestProposals is Test {
             if (run) {
                 if (debug) console.log("Proposal", name, "run()");
                 proposals[i].run(addresses, address(proposals[i]));
-            }
-
-            // Teardown step
-            if (teardown) {
-                if (debug) console.log("Proposal", name, "teardown()");
-                proposals[i].teardown(addresses, address(proposals[i]));
             }
 
             // Validate step

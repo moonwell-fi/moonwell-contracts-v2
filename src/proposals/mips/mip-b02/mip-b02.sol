@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {WETH9} from "@protocol/router/IWETH.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
@@ -27,7 +26,7 @@ export DO_VALIDATE=true
 /// forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv
 
 contract mipb02 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "MIP-b02";
+    string public constant override name = "MIP-b02";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 
@@ -39,10 +38,15 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
         _setProposalDescription(proposalDescription);
     }
 
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
+    }
+
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers
     function deploy(Addresses addresses, address) public override {
         MWethDelegate mWethLogic = new MWethDelegate();
-        addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic));
+        addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic), true);
     }
 
     function afterDeploy(Addresses addresses, address) public override {}

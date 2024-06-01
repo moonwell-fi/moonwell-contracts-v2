@@ -9,21 +9,34 @@ import {SigUtils} from "@test/helper/SigUtils.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
-import {InterestRateModel} from "@protocol/IRModels/InterestRateModel.sol";
+import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
-import {MultiRewardDistributor} from "@protocol/MultiRewardDistributor/MultiRewardDistributor.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
-import {WhitePaperInterestRateModel} from "@protocol/IRModels/WhitePaperInterestRateModel.sol";
+import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
 
 interface InstrumentedExternalEvents {
-    event PricePosted(address asset, uint previousPriceMantissa, uint requestedPriceMantissa, uint newPriceMantissa);
-    event NewCollateralFactor(MToken mToken, uint oldCollateralFactorMantissa, uint newCollateralFactorMantissa);
+    event PricePosted(
+        address asset,
+        uint previousPriceMantissa,
+        uint requestedPriceMantissa,
+        uint newPriceMantissa
+    );
+    event NewCollateralFactor(
+        MToken mToken,
+        uint oldCollateralFactorMantissa,
+        uint newCollateralFactorMantissa
+    );
     event Transfer(address indexed from, address indexed to, uint amount);
     event Mint(address minter, uint mintAmount, uint mintTokens);
     event Approval(address indexed owner, address indexed spender, uint amount);
 }
 
-contract MErc20UnitTest is Test, InstrumentedExternalEvents, ComptrollerErrorReporter {
+contract MErc20UnitTest is
+    Test,
+    InstrumentedExternalEvents,
+    ComptrollerErrorReporter
+{
     Comptroller comptroller;
     SimplePriceOracle oracle;
     FaucetTokenWithPermit faucetToken;

@@ -375,6 +375,10 @@ contract xWELLUnitTest is BaseTest {
     ) public {
         xwellProxy.removeBridge(address(xerc20Lockbox));
 
+        if (xwellProxy.buffer(bridge) != 0) {
+            xwellProxy.removeBridge(bridge);
+        }
+
         /// bound input so bridge is not zero address
         bridge = address(
             uint160(_bound(uint256(uint160(bridge)), 1, type(uint160).max))

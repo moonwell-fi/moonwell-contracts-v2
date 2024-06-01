@@ -2,12 +2,11 @@
 pragma solidity 0.8.19;
 
 import {BaseMoonwellViews} from "@protocol/views/BaseMoonwellViews.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
-import {IMultiRewardDistributor} from "@protocol/MultiRewardDistributor/IMultiRewardDistributor.sol";
+import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
 import {MToken} from "@protocol/MToken.sol";
 
 /**
- * @title Moonwells Views Contract for V1 deployment (pre Basechain deployment)
+ * @title Moonwells Views Contract for V2 deployment (Basechain deployment)
  * @author Moonwell
  */
 contract MoonwellViewsV2 is BaseMoonwellViews {

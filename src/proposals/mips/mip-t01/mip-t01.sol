@@ -3,20 +3,17 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {TimelockProposal} from "@proposals/proposalTypes/TimelockProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {ChainlinkOracle} from "@protocol/Oracles/ChainlinkOracle.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 
 /// This MIP sets the price feeds for wstETH and cbETH.
 contract mipt01 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "mip-t01";
+    string public constant override name = "mip-t01";
 
     constructor() {
-        
         string memory descriptionPath = string(
             abi.encodePacked("proposals/mips/", name, "/", name, ".md")
         );
@@ -25,6 +22,11 @@ contract mipt01 is Proposal, CrossChainProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
+    }
+
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
     }
 
     function deploy(Addresses addresses, address) public override {}

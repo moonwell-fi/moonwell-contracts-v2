@@ -7,14 +7,13 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel} from "@protocol/IRModels/JumpRateModel.sol";
-import {TimelockProposal} from "@proposals/proposalTypes/TimelockProposal.sol";
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 
 /// This MIP sets the IRM for an MToken contract.
 /// It is intended to be used as a template for future MIPs that need to set IRM's.
 contract mipb01 is Proposal, CrossChainProposal, Configs {
-    string public constant name = "MIP-b01";
+    string public constant override name = "MIP-b01";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 
@@ -22,6 +21,11 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
         _setProposalDescription(
             bytes(vm.readFile("./src/proposals/mips/mip-b01/MIP-B01.md"))
         );
+    }
+
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
     }
 
     function deploy(Addresses addresses, address) public override {}

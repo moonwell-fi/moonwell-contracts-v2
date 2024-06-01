@@ -3,10 +3,13 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import "@test/helper/BaseTest.t.sol";
-
 import {MockWormholeReceiver} from "@test/mock/MockWormholeReceiver.sol";
 
+import {Address} from "@utils/Address.sol";
+
 contract WormholeBridgeAdapterUnitTest is BaseTest {
+    using Address for address;
+
     /// xerc20 bridge adapter events
 
     /// @notice emitted when tokens are bridged out
@@ -322,7 +325,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 100}(
             "",
             new bytes[](0),
-            addressToBytes(address(this)),
+            address(this).toBytes(),
             chainId,
             bytes32(type(uint256).max)
         );
@@ -334,7 +337,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
             "",
             new bytes[](0),
-            addressToBytes(address(this)),
+            address(this).toBytes(),
             chainId,
             bytes32(type(uint256).max)
         );
@@ -350,7 +353,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
             abi.encode(to, amount),
             new bytes[](0),
-            addressToBytes(address(wormholeBridgeAdapterProxy)),
+            address(wormholeBridgeAdapterProxy).toBytes(),
             chainId,
             nonce
         );
@@ -363,7 +366,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
             "",
             new bytes[](0),
-            addressToBytes(address(this)),
+            address(this).toBytes(),
             chainId,
             bytes32(type(uint256).max)
         );
@@ -385,7 +388,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
             abi.encode(to, amount),
             new bytes[](0),
-            addressToBytes(address(wormholeBridgeAdapterProxy)),
+            address(wormholeBridgeAdapterProxy).toBytes(),
             chainId,
             nonce
         );
@@ -419,7 +422,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
             abi.encode(to, amount),
             new bytes[](0),
-            addressToBytes(address(wormholeBridgeAdapterProxy)),
+            address(wormholeBridgeAdapterProxy).toBytes(),
             chainId,
             nonce
         );
@@ -493,13 +496,5 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
         emit TokensSent(chainId, to, amount);
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);
-    }
-
-    /// @notice Wormhole addresses are denominated in 32 byte chunks. Converting the address to a bytes20
-    /// then to a bytes32 *left* aligns it, so we right shift to get the proper data
-    /// @param addr The address to convert
-    /// @return The address as a bytes32
-    function addressToBytes(address addr) private pure returns (bytes32) {
-        return bytes32(bytes20(addr)) >> 96;
     }
 }

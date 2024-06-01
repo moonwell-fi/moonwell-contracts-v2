@@ -1,0 +1,25 @@
+name: Live Proposal Integration Tests
+on: [pull_request]
+
+jobs:
+  run-live-proposals-integration-tests:
+    name: live-proposals-integration-tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Live Proposal Integration Tests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x ./get-latest-base-proposal.sh
+          chmod +x ./get-latest-moonbeam-proposal.sh
+          time forge test --mc LiveProposalsIntegrationTest --ffi -vvv
+        shell: bash

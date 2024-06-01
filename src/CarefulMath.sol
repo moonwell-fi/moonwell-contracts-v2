@@ -2,13 +2,12 @@
 pragma solidity 0.8.19;
 
 /**
-  * @title Careful Math
-  * @author Moonwell
-  * @notice Derived from OpenZeppelin's SafeMath library
-  *         https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/math/SafeMath.sol
-  */
+ * @title Careful Math
+ * @author Moonwell
+ * @notice Derived from OpenZeppelin's SafeMath library
+ *         https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/math/SafeMath.sol
+ */
 contract CarefulMath {
-
     /**
      * @dev Possible error codes that we can return
      */
@@ -20,8 +19,8 @@ contract CarefulMath {
     }
 
     /**
-    * @dev Multiplies two numbers, returns an error on overflow.
-    */
+     * @dev Multiplies two numbers, returns an error on overflow.
+     */
     function mulUInt(uint a, uint b) internal pure returns (MathError, uint) {
         if (a == 0) {
             return (MathError.NO_ERROR, 0);
@@ -37,8 +36,8 @@ contract CarefulMath {
     }
 
     /**
-    * @dev Integer division of two numbers, truncating the quotient.
-    */
+     * @dev Integer division of two numbers, truncating the quotient.
+     */
     function divUInt(uint a, uint b) internal pure returns (MathError, uint) {
         if (b == 0) {
             return (MathError.DIVISION_BY_ZERO, 0);
@@ -48,8 +47,8 @@ contract CarefulMath {
     }
 
     /**
-    * @dev Subtracts two numbers, returns an error on overflow (i.e. if subtrahend is greater than minuend).
-    */
+     * @dev Subtracts two numbers, returns an error on overflow (i.e. if subtrahend is greater than minuend).
+     */
     function subUInt(uint a, uint b) internal pure returns (MathError, uint) {
         if (b <= a) {
             return (MathError.NO_ERROR, a - b);
@@ -59,8 +58,8 @@ contract CarefulMath {
     }
 
     /**
-    * @dev Adds two numbers, returns an error on overflow.
-    */
+     * @dev Adds two numbers, returns an error on overflow.
+     */
     function addUInt(uint a, uint b) internal pure returns (MathError, uint) {
         uint c = a + b;
 
@@ -72,9 +71,13 @@ contract CarefulMath {
     }
 
     /**
-    * @dev add a and b and then subtract c
-    */
-    function addThenSubUInt(uint a, uint b, uint c) internal pure returns (MathError, uint) {
+     * @dev add a and b and then subtract c
+     */
+    function addThenSubUInt(
+        uint a,
+        uint b,
+        uint c
+    ) internal pure returns (MathError, uint) {
         (MathError err0, uint sum) = addUInt(a, b);
 
         if (err0 != MathError.NO_ERROR) {

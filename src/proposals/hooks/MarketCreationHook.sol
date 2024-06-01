@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
+import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 
 contract MarketCreationHook {
     /// private so that contracts that inherit cannot write to functionDetectors
@@ -27,54 +27,66 @@ contract MarketCreationHook {
     /// @notice array of created mTokens in proposal
     address[] public createdMTokens;
 
-    address private comptroller;
+    /// @notice comptroller address as specified by an mToken being created
+    address public comptroller;
 
     constructor() {
         functionDetectors[detector] = true;
     }
 
+    function _verifyActionsPreRun(ProposalAction[] memory proposal) internal {
+        address[] memory targets = new address[](proposal.length);
+        uint256[] memory values = new uint256[](proposal.length);
+        bytes[] memory datas = new bytes[](proposal.length);
+
+        for (uint256 i = 0; i < proposal.length; i++) {
+            targets[i] = proposal[i].target;
+            values[i] = proposal[i].value;
+            datas[i] = proposal[i].data;
+        }
+
+        _verifyActionsPreRunSignatures(targets, values, datas);
+    }
+
     /// @notice function to verify market listing actions
     /// run against every MIP cross chain proposal to ensure that the
     /// proposal conforms to the expected market creation pattern.
-    function _verifyActionsPreRun(
-        MultisigProposal.MultisigAction[] memory proposal
+    function _verifyActionsPreRunSignatures(
+        address[] memory targets,
+        uint256[] memory,
+        bytes[] memory datas
     ) internal {
-        uint256 proposalLength = proposal.length;
+        uint256 proposalLength = targets.length;
         for (uint256 i = 0; i < proposalLength; i++) {
-            if (functionDetectors[bytesToBytes4(proposal[i].arguments)]) {
-                comptroller = proposal[i].target;
+            if (functionDetectors[bytesToBytes4(datas[i])]) {
+                comptroller = targets[i];
 
                 /// --------------- FUNCTION SIGNATURE VERIFICATION ---------------
 
                 require(
-                    bytesToBytes4(proposal[i + 1].arguments) ==
-                        orderedActions[1],
+                    bytesToBytes4(datas[i + 1]) == orderedActions[1],
                     "action 1 must accept admin"
                 );
                 require(
-                    bytesToBytes4(proposal[i + 2].arguments) ==
-                        orderedActions[2],
+                    bytesToBytes4(datas[i + 2]) == orderedActions[2],
                     "action 2 must approve underlying"
                 );
                 require(
-                    bytesToBytes4(proposal[i + 3].arguments) ==
-                        orderedActions[3],
+                    bytesToBytes4(datas[i + 3]) == orderedActions[3],
                     "action 3 must mint mtoken"
                 );
 
                 /// --------------- ARGUMENT VERIFICATION ---------------
 
-                address mtoken = extractAddress(proposal[i].arguments);
+                address mtoken = extractAddress(datas[i]);
 
-                address secondMToken = proposal[i + 3].target;
+                address secondMToken = targets[i + 3];
 
-                address approvalMToken = extractAddress(
-                    proposal[i + 2].arguments
-                );
+                address approvalMToken = extractAddress(datas[i + 2]);
 
-                uint256 tokenAmount = getTokenAmount(proposal[i + 2].arguments);
+                uint256 tokenAmount = getTokenAmount(datas[i + 2]);
 
-                uint256 mintAmount = getMintAmount(proposal[i + 3].arguments);
+                uint256 mintAmount = getMintAmount(datas[i + 3]);
 
                 require(mintAmount != 0, "mint amount must be greater than 0");
                 require(
@@ -113,6 +125,18 @@ contract MarketCreationHook {
                 MToken(createdMTokens[i]).balanceOf(address(0)) >= 1,
                 "mToken not minted and burned"
             );
+        }
+
+        if (address(comptroller) != address(0)) {
+            MToken[] memory markets = Comptroller(comptroller).getAllMarkets();
+
+            for (uint256 i = 0; i < markets.length; i++) {
+                require(markets[i].totalSupply() >= 1e8, "empty market");
+                require(
+                    markets[i].balanceOf(address(0)) > 0,
+                    "no burnt tokens"
+                );
+            }
         }
     }
 

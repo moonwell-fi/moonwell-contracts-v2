@@ -2,9 +2,23 @@ pragma solidity 0.8.19;
 
 import {Addresses} from "@proposals/Addresses.sol";
 
+struct ProposalAction {
+    /// address to call
+    address target;
+    /// value to send
+    uint256 value;
+    /// calldata to pass to the target
+    bytes data;
+    /// for human description
+    string description;
+}
+
 interface IProposal {
     // Proposal name, e.g. "ZIP16"
     function name() external view returns (string memory);
+
+    /// primary fork id for this proposal
+    function primaryForkId() external view returns (uint256);
 
     // Deploy contracts and add them to list of addresses
     function deploy(Addresses, address) external;
@@ -51,4 +65,13 @@ interface IProposal {
     /// print out proposal steps one by one
     /// print proposal description
     function printProposalActionSteps() external;
+
+    /// fork ID for base
+    function baseForkId() external view returns (uint256);
+
+    /// fork ID for moonbeam
+    function moonbeamForkId() external view returns (uint256);
+
+    /// set fork ID's for base and moonbeam
+    function setForkIds(uint256 baseForkId, uint256 moonbeamForkId) external;
 }

@@ -3,18 +3,14 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel} from "@protocol/IRModels/JumpRateModel.sol";
-import {TimelockProposal} from "@proposals/proposalTypes/TimelockProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
 
 contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
-    string public constant name = "MIP-b11";
+    string public constant override name = "MIP-b11";
 
     uint256 public constant wstETH_NEW_CF = 0.76e18;
 
@@ -23,6 +19,11 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b11/MIP-B11.md")
         );
         _setProposalDescription(proposalDescription);
+    }
+
+    /// @notice proposal's actions all happen on base
+    function primaryForkId() public view override returns (uint256) {
+        return baseForkId;
     }
 
     function deploy(Addresses addresses, address) public override {}

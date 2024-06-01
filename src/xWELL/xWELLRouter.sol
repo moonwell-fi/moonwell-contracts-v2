@@ -56,7 +56,7 @@ contract xWELLRouter {
     function bridgeCost() external view returns (uint256) {
         return wormholeBridge.bridgeCost(baseWormholeChainId);
     }
-    
+
     /// @notice bridge WELL to xWELL on the base chain
     /// receiver address to receive the xWELL is msg.sender
     /// @param amount amount of WELL to bridge
@@ -75,13 +75,20 @@ contract xWELLRouter {
     /// @param to address to receive the xWELL
     /// @param amount amount of WELL to bridge
     function _bridgeToBase(address to, uint256 amount) private {
+        uint256 bridgeCostGlmr = wormholeBridge.bridgeCost(baseWormholeChainId);
+
+        require(
+            bridgeCostGlmr <= msg.value,
+            "xWELLRouter: insufficient GLMR sent"
+        );
+
         /// transfer WELL to this contract from the sender
         well.safeTransferFrom(msg.sender, address(this), amount);
 
         /// approve the lockbox to spend the WELL
         well.approve(address(lockbox), amount);
 
-        /// deposit the WELL into the lockbox, which credits the lockbox with the xWELL
+        /// deposit the WELL into the lockbox, which credits the router contract the xWELL
         lockbox.deposit(amount);
 
         /// get the amount of xWELL credited to the lockbox
@@ -91,11 +98,18 @@ contract xWELLRouter {
         xwell.approve(address(wormholeBridge), xwellAmount);
 
         /// bridge the xWELL to the base chain
-        wormholeBridge.bridge{value: msg.value}(
+        wormholeBridge.bridge{value: bridgeCostGlmr}(
             baseWormholeChainId,
             xwellAmount,
             to
         );
+
+        if (address(this).balance != 0) {
+            (bool success, ) = msg.sender.call{value: address(this).balance}(
+                ""
+            );
+            require(success, "xWELLRouter: failed to refund excess GLMR");
+        }
 
         emit BridgeOutSuccess(to, amount);
     }
