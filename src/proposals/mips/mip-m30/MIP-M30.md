@@ -1,14 +1,14 @@
 # MIP-M30: Multichain Governor Migration - Transfer wBTC market admin
 
-During the Multichain Governor Migration on proposal MIP-M23, there was an
-oversight in transferring the wBTC market admin. Although the Solidity Labs team
-conducted a thorough line-by-line review of MIP-M23 and the MIP also underwent
-an external audit, the Addresses.json file pointed to the deprecated wBTC
-market. As a result, only the deprecated market (wBTC mad) was transferred,
-while the actual market was not.
-
-The purpose of this proposal is to transfer the wBTC market admin to the new
-Multichain Governor. To enhance our processes and prevent similar issues in the
-future, an internal review will be conducted taking into account previous issues
-with Addresses.json and adding to a written postmortem report. This will likely
-include updating the naming conventions for addresses.
+MIP-M23 was the starting point for the Governance migration for the new
+cross-chain contracts. This involved several crucial steps for the ratification
+of Cross-Chain Governance within the Moonwell contracts on the Base and Moonbeam
+networks. Among these steps was the transfer of admin privileges of the Moonwell
+Markets on Moonbeam to the new Governor. During MIP-M23, we successf ully
+transferred the admin privileges of BUSD, WETH, USDC, GLIMMER, DOT, FRAX, and
+WBTC with the DAO approval. However, two BTC markets needed to be transferred,
+and only one transfer was made on MIP-M23. This proposal aims to transfer the
+admin privileges of the remaining WBTC market to the new Multichain Governor.
+Despite a comprehensive line-by-line review of MIP-M23 by the Solidity Labs team
+and an external audit, the initial specification did not include this missing
+transfer. Therefore, this proposal is necessary.
