@@ -4,7 +4,7 @@ MIP-M23 was the starting point for the Governance migration for the new
 cross-chain contracts. This involved several crucial steps for the ratification
 of Cross-Chain Governance within the Moonwell contracts on the Base and Moonbeam
 networks. Among these steps was the transfer of admin privileges of the Moonwell
-Markets on Moonbeam to the new Governor. During MIP-M23, we successf ully
+Markets on Moonbeam to the new Governor. During MIP-M23, we successfully
 transferred the admin privileges of BUSD, WETH, USDC, GLIMMER, DOT, FRAX, and
 WBTC with the DAO approval. However, two BTC markets needed to be transferred,
 and only one transfer was made on MIP-M23. This proposal aims to transfer the
