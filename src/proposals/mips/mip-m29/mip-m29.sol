@@ -207,6 +207,31 @@ contract mipm29 is HybridProposal, ParameterValidation {
             "Set interest rate model for mFRAX to updated rate model",
             true
         );
+
+        // Adding transferFrom actions
+        _pushHybridAction(
+            addresses.getAddress("WELL"),
+            abi.encodeWithSignature(
+                "transferFrom(address,address,uint256)",
+                0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451,
+                0x7793E08Eb4525309C46C9BA394cE33361A167ba4,
+                6778847000000000000000000
+            ),
+            "Transfer 6778847 WELL from 0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451 to 0x7793E08Eb4525309C46C9BA394cE33361A167ba4",
+            true
+        );
+
+        _pushHybridAction(
+            addresses.getAddress("WELL"),
+            abi.encodeWithSignature(
+                "transferFrom(address,address,uint256)",
+                0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451,
+                0x8E00D5e02E65A19337Cdba98bbA9F84d4186a180,
+                6923077000000000000000000
+            ),
+            "Transfer 6923077 WELL from 0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451 to 0x8E00D5e02E65A19337Cdba98bbA9F84d4186a180",
+            true
+        );
     }
 
     function run(Addresses addresses, address) public override {
