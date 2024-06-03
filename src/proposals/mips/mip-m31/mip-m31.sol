@@ -7,7 +7,6 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
 
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
-import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {mipm30} from "@proposals/mips/mip-m30/mip-m30.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
