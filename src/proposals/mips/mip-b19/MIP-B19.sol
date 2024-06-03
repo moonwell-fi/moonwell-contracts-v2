@@ -5,6 +5,7 @@ import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+import {MIPProposal} from "@proposals/MIPProposal.s.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
@@ -24,7 +25,13 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         return baseForkId;
     }
 
-    function deploy(Addresses addresses, address) public override {
+    function deploy(Addresses addresses, address) public override {}
+
+    function afterDeploy(Addresses addresses, address) public override {}
+
+    function afterDeploySetup(Addresses addresses) public override {}
+
+    function build(Addresses addresses) public override {
         _pushCrossChainAction(
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
@@ -53,12 +60,15 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         );
     }
 
-    function afterDeploy(Addresses addresses, address) public override {}
-
-    function afterDeploySetup(Addresses addresses) public override {}
-
-    function build(Addresses addresses) public override {
-        address unitrollerAddress = addresses.getAddress("UNITROLLER");
+    function run(
+        Addresses addresses,
+        address
+    ) public override(CrossChainProposal, MIPProposal) {
+        printCalldata(addresses);
+        _simulateCrossChainActions(
+            addresses,
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}

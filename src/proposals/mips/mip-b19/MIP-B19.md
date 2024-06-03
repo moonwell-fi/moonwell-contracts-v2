@@ -27,7 +27,7 @@ A proposal to adjust WETH, USDC and AERO's IR curve:
 | ------------------ | --------- | ----------- |
 | Base               | 0         | 0           |
 | Kink               | 0.9       | 0.9         |
-| Multiplier         | **0.067** | **0.05**    |
+| Multiplier         | **0.067** | **0.061**   |
 | Jump Multiplier    | 9         | 9           |
 
 | AERO IR Parameters | Current  | Recommended |

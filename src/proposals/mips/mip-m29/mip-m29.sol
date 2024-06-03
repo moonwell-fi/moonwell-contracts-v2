@@ -15,11 +15,9 @@ contract mipm29 is HybridProposal, ParameterValidation {
 
     uint256 public constant NEW_MGLIMMER_RESERVE_FACTOR = 0.35e18;
     uint256 public constant NEW_MXC_DOT_RESERVE_FACTOR = 0.35e18;
-    uint256 public constant NEW_M_WBTCWH_RESERVE_FACTOR = 0.35e18;
     uint256 public constant NEW_M_ETHWH_RESERVE_FACTOR = 0.35e18;
 
     uint256 public constant NEW_M_ETHWH_COLLATERAL_FACTOR = 0.48e18;
-    uint256 public constant NEW_M_WBTCWH_COLLATERAL_FACTOR = 0.31e18;
     uint256 public constant NEW_M_USDCWH_COLLATERAL_FACTOR = 0.58e18;
 
     constructor() {
@@ -149,16 +147,6 @@ contract mipm29 is HybridProposal, ParameterValidation {
         );
 
         _pushHybridAction(
-            addresses.getAddress("mWBTCwh"),
-            abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                NEW_M_WBTCWH_RESERVE_FACTOR
-            ),
-            "Set reserve factor for mWBTCwh to updated reserve factor",
-            true
-        );
-
-        _pushHybridAction(
             addresses.getAddress("mETHwh"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
@@ -176,17 +164,6 @@ contract mipm29 is HybridProposal, ParameterValidation {
                 NEW_M_ETHWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of mETHwh",
-            true
-        );
-
-        _pushHybridAction(
-            addresses.getAddress("UNITROLLER"),
-            abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("mWBTCwh"),
-                NEW_M_WBTCWH_COLLATERAL_FACTOR
-            ),
-            "Set collateral factor of mWBTCwh",
             true
         );
 
@@ -251,23 +228,12 @@ contract mipm29 is HybridProposal, ParameterValidation {
 
         _validateRF(addresses.getAddress("mxcDOT"), NEW_MXC_DOT_RESERVE_FACTOR);
 
-        _validateRF(
-            addresses.getAddress("mWBTCwh"),
-            NEW_M_WBTCWH_RESERVE_FACTOR
-        );
-
         _validateRF(addresses.getAddress("mETHwh"), NEW_M_ETHWH_RESERVE_FACTOR);
 
         _validateCF(
             addresses,
             addresses.getAddress("mETHwh"),
             NEW_M_ETHWH_COLLATERAL_FACTOR
-        );
-
-        _validateCF(
-            addresses,
-            addresses.getAddress("mWBTCwh"),
-            NEW_M_WBTCWH_COLLATERAL_FACTOR
         );
 
         _validateCF(
