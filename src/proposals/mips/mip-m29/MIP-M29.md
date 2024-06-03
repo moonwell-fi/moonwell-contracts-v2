@@ -11,10 +11,8 @@ A proposal to adjust 12 total risk parameters:
 | BTC.wh Borrow Cap         | 5             | 2.5               |
 | WGLMR Reserve Factor      | 30%           | 35%               |
 | xcDOT Reserve Factor      | 25%           | 35%               |
-| BTC.wh Reserve Factor     | 25%           | 35%               |
 | ETH.wh Reserve Factor     | 25%           | 35%               |
 | ETH.wh Collateral Factor  | 49%           | 48%               |
-| WBTC.wh Collateral Factor | 32%           | 31%               |
 | USDC.wh Collateral Factor | 59%           | 58%               |
 
 A proposal to make an IR curve adjustments for xcUSDC:
