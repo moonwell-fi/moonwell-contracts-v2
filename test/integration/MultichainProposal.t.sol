@@ -2068,7 +2068,7 @@ contract MultichainProposalTest is
         targets[7] = addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER");
         calldatas[7] = transferOwnershipCalldata;
 
-        targets[8] = addresses.getAddress("MOONWELL_mwBTC");
+        targets[8] = addresses.getAddress("DEPRECATED_MOONWELL_mWBTC");
         calldatas[8] = _setPendingAdminCalldata;
 
         targets[9] = addresses.getAddress("MOONWELL_mBUSD");
@@ -2092,7 +2092,7 @@ contract MultichainProposalTest is
         targets[15] = addresses.getAddress("mFRAX");
         calldatas[15] = _setPendingAdminCalldata;
 
-        targets[16] = addresses.getAddress("mUSDCwh");
+        targets[16] = addresses.getAddress("MOONWELL_mWBTC");
         calldatas[16] = _setPendingAdminCalldata;
 
         targets[17] = addresses.getAddress("mxcUSDC");
@@ -2283,14 +2283,15 @@ contract MultichainProposalTest is
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mwBTC")).pendingAdmin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mWBTC"))
+                .pendingAdmin(),
             artemisTimelockAddress,
-            "MOONWELL_mwBTC pending admin incorrect"
+            "DEPRECATED_MOONWELL_mWBTC pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mwBTC")).admin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mWBTC")).admin(),
             address(governor),
-            "MOONWELL_mwBTC admin incorrect"
+            "DEPRECATED_MOONWELL_mWBTC admin incorrect"
         );
 
         assertEq(

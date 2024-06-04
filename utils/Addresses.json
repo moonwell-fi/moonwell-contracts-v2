@@ -866,7 +866,7 @@
     {
         "addr": "0x24A9d8f1f350d59cB0368D3d52A77dB29c833D1D",
         "chainId": 1284,
-        "name": "MOONWELL_mwBTC",
+        "name": "DEPRECATED_MOONWELL_mWBTC",
         "isContract": true
     },
     {
@@ -938,7 +938,7 @@
     {
         "addr": "0xaaa20c5a584a9fECdFEDD71E46DA7858B774A9ce",
         "chainId": 1284,
-        "name": "mWBTCwh",
+        "name": "MOONWELL_mWBTC",
         "isContract": true
     },
     {

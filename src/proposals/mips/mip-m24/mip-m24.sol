@@ -90,11 +90,11 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
 
         /// accept admin of .mad mTokens
 
-        /// accept admin of MOONWELL_mwBTC
+        /// accept admin of DEPRECATED_MOONWELL_mWBTC
         _pushHybridAction(
-            addresses.getAddress("MOONWELL_mwBTC"),
+            addresses.getAddress("DEPRECATED_MOONWELL_mWBTC"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of MOONWELL_mwBTC as the Multichain Governor",
+            "Accept admin of DEPRECATED_MOONWELL_mWBTC as the Multichain Governor",
             true
         );
 
@@ -324,14 +324,15 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mwBTC")).pendingAdmin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mWBTC"))
+                .pendingAdmin(),
             address(0),
-            "MOONWELL_mwBTC pending admin incorrect"
+            "DEPRECATED_MOONWELL_mWBTC pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mwBTC")).admin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mWBTC")).admin(),
             governor,
-            "MOONWELL_mwBTC admin incorrect"
+            "DEPRECATED_MOONWELL_mWBTC admin incorrect"
         );
 
         assertEq(

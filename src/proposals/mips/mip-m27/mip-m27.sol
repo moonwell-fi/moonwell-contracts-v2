@@ -172,10 +172,10 @@ contract mipm27 is HybridProposal, ParameterValidation {
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("mWBTCwh"),
+                addresses.getAddress("MOONWELL_mWBTC"),
                 NEW_M_WBTCWH_COLLATERAL_FACTOR
             ),
-            "Set collateral factor of mWBTCwh",
+            "Set collateral factor of MOONWELL_mWBTC",
             true
         );
 
@@ -266,7 +266,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
 
         _validateCF(
             addresses,
-            addresses.getAddress("mWBTCwh"),
+            addresses.getAddress("MOONWELL_mWBTC"),
             NEW_M_WBTCWH_COLLATERAL_FACTOR
         );
 

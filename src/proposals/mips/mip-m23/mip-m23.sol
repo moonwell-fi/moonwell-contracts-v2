@@ -203,14 +203,14 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             true
         );
 
-        /// set pending admin of MOONWELL_mwBTC to the Multichain Governor
+        /// set pending admin of DEPRECATED_MOONWELL_mWBTC to the Multichain Governor
         _pushHybridAction(
-            addresses.getAddress("MOONWELL_mwBTC"),
+            addresses.getAddress("DEPRECATED_MOONWELL_mWBTC"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
-            "Set the pending admin of MOONWELL_mwBTC to the Multichain Governor",
+            "Set the pending admin of DEPRECATED_MOONWELL_mWBTC to the Multichain Governor",
             true
         );
 
@@ -535,14 +535,15 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mwBTC")).pendingAdmin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mWBTC"))
+                .pendingAdmin(),
             governor,
-            "MOONWELL_mwBTC pending admin incorrect"
+            "DEPRECATED_MOONWELL_mWBTC pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mwBTC")).admin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mWBTC")).admin(),
             timelock,
-            "MOONWELL_mwBTC admin incorrect"
+            "DEPRECATED_MOONWELL_mWBTC admin incorrect"
         );
 
         assertEq(
