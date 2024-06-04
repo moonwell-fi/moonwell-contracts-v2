@@ -54,7 +54,12 @@ contract mipm31 is Configs, HybridProposal {
         /// safety check to ensure no base actions are run
         require(
             baseActions.length == 0,
-            "MIP-M27: should have no base actions"
+            "MIP-M31: should have no base actions"
+        );
+
+        require(
+            moonbeamActions.length == 1,
+            "MIP-M31: should have 1 moonbeam action"
         );
 
         /// only run actions on moonbeam
