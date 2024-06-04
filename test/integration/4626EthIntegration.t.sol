@@ -50,7 +50,7 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
 
         comptroller = IComptroller(addresses.getAddress("UNITROLLER"));
         weth = ERC20(addresses.getAddress("WETH"));
-        well = ERC20(addresses.getAddress("WELL"));
+        well = ERC20(addresses.getAddress("GOVTOKEN"));
     }
 
     function testSetup() public {

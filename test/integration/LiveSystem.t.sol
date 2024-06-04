@@ -92,7 +92,7 @@ contract LiveSystemTest is Test {
             // must calculate borrow index before updating end time
             // otherwise the global timestamp will be equal to the current block timestamp
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("WELL"));
+                .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
             uint256 denominator = (mToken.totalBorrows() * 1e18) / // exp scale
                 mToken.borrowIndex();
@@ -165,7 +165,7 @@ contract LiveSystemTest is Test {
             // must calculate supply index before updating end time
             // otherwise the global timestamp will be equal to the current block timestamp
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("WELL"));
+                .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
             uint256 denominator = mToken.totalSupply();
             uint256 deltaTimestamp = block.timestamp -
@@ -377,7 +377,7 @@ contract LiveSystemTest is Test {
         uint256 totalBorrow = mToken.totalBorrows();
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("WELL"));
+            .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
         // calculate expected borrow reward
         uint256 expectedBorrowReward = ((toWarp *
@@ -470,7 +470,7 @@ contract LiveSystemTest is Test {
             .getOutstandingRewardsForUser(mToken, address(this));
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("WELL"));
+            .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
         uint256 expectedSupplyReward;
         {
