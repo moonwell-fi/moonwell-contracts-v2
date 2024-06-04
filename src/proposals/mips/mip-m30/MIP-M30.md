@@ -12,3 +12,11 @@ privileges of the remaining WBTC market to the new Multichain Governor. Despite
 a comprehensive line-by-line review of MIP-M23 by the Solidity Labs team and an
 external audit, the initial specification did not include this missing transfer.
 Therefore, this proposal is necessary.
+
+Along with the above, A proposal to adjust 2 total risk parameters pertaining to
+WBTC.wh:
+
+| Parameter                 | Current Value | Recommended Value |
+| ------------------------- | ------------- | ----------------- |
+| WBTC.wh Reserve Factor    | 25%           | 35%               |
+| WBTC.wh Collateral Factor | 32%           | 31%               |

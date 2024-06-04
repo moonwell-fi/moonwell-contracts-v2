@@ -5,12 +5,14 @@ import "@forge-std/Test.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
-
-import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
+import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 
 contract mipm30 is Configs, GovernanceProposal {
     string public constant override name = "MIP-M30";
+
+    uint256 public constant NEW_M_WBTCWH_RESERVE_FACTOR = 0.35e18;
+    uint256 public constant NEW_M_WBTCWH_COLLATERAL_FACTOR = 0.31e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -43,6 +45,25 @@ contract mipm30 is Configs, GovernanceProposal {
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
+            )
+        );
+
+        _pushGovernanceAction(
+            addresses.getAddress("mWBTCwh"),
+            "Set reserve factor for mWBTCwh to updated reserve factor",
+            abi.encodeWithSignature(
+                "_setReserveFactor(uint256)",
+                NEW_M_WBTCWH_RESERVE_FACTOR
+            )
+        );
+
+        _pushGovernanceAction(
+            addresses.getAddress("UNITROLLER"),
+            "Set collateral factor of mWBTCwh",
+            abi.encodeWithSignature(
+                "_setCollateralFactor(address,uint256)",
+                addresses.getAddress("mWBTCwh"),
+                NEW_M_WBTCWH_COLLATERAL_FACTOR
             )
         );
     }
