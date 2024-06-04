@@ -582,12 +582,6 @@
         "isContract": true
     },
     {
-        "addr": "0xBb8d88bcD9749636BC4D2bE22aaC4Bb3B01A58F1",
-        "chainId": 1285,
-        "name": "GOVTOKEN",
-        "isContract": true
-    },
-    {
         "addr": "0x6a1A771C7826596652daDC9145fEAaE62b1cd07f",
         "chainId": 1285,
         "name": "MNATIVE",
