@@ -18,6 +18,18 @@
         "isContract": false
     },
     {
+        "addr": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "MORPHO_BLUE"
+    },
+    {
+        "addr": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "chainId": 84532,
+        "isContract": true,
+        "name": "USDC"
+    },
+    {
         "addr": "0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451",
         "chainId": 1284,
         "isContract": true,
@@ -48,6 +60,12 @@
         "name": "MFAM"
     },
     {
+        "addr": "0xCd76e63f3AbFA864c53b4B98F57c1aA6539FDa3a",
+        "chainId": 1285,
+        "isContract": true,
+        "name": "stkMFAM"
+    },
+    {
         "addr": "0x9A8464C4C11CeA17e191653Deb7CdC1bE30F1Af4",
         "chainId": 1284,
         "isContract": true,
@@ -58,6 +76,12 @@
         "chainId": 1284,
         "isContract": true,
         "name": "STELLASWAP_REWARDER"
+    },
+    {
+        "addr": "0x79a1a71786a325db7Fe70bbF080a1ee046F53c74",
+        "chainId": 1285,
+        "isContract": true,
+        "name": "STELLASWAP_REWARDER_MOVR"
     },
     {
         "addr": "0x14eBB684bBa5FFd7881590c7540bC3b85B550023",
