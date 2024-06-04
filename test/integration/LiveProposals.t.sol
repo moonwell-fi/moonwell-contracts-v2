@@ -54,6 +54,11 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
         string memory output = string(vm.ffi(inputs));
 
+        if (bytes(output).length == 0) {
+            console.log("no proposal found");
+            return;
+        }
+
         Proposal proposal = Proposal(deployCode(output));
         vm.makePersistent(address(proposal));
 
