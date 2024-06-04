@@ -842,7 +842,7 @@
     {
         "addr": "0xc3090f41Eb54A7f18587FD6651d4D3ab477b07a4",
         "chainId": 1284,
-        "name": "MOONWELL_mETH",
+        "name": "DEPRECATED_MOONWELL_mETH",
         "isContract": true
     },
     {
@@ -932,7 +932,7 @@
     {
         "addr": "0xb6c94b3a378537300387b57ab1cc0d2083f9aeac",
         "chainId": 1284,
-        "name": "mETHwh",
+        "name": "MOONWELL_mETH",
         "isContract": true
     },
     {

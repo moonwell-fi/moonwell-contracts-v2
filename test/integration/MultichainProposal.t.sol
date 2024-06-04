@@ -2074,7 +2074,7 @@ contract MultichainProposalTest is
         targets[9] = addresses.getAddress("MOONWELL_mBUSD");
         calldatas[9] = _setPendingAdminCalldata;
 
-        targets[10] = addresses.getAddress("MOONWELL_mETH");
+        targets[10] = addresses.getAddress("DEPRECATED_MOONWELL_mETH");
         calldatas[10] = _setPendingAdminCalldata;
 
         targets[11] = addresses.getAddress("MOONWELL_mUSDC");
@@ -2098,7 +2098,7 @@ contract MultichainProposalTest is
         targets[17] = addresses.getAddress("mxcUSDC");
         calldatas[17] = _setPendingAdminCalldata;
 
-        targets[18] = addresses.getAddress("mETHwh");
+        targets[18] = addresses.getAddress("MOONWELL_mETH");
         calldatas[18] = _setPendingAdminCalldata;
 
         bytes[] memory temporalGovCalldatas = new bytes[](1);
@@ -2184,14 +2184,14 @@ contract MultichainProposalTest is
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mETHwh")).pendingAdmin(),
+            Timelock(addresses.getAddress("MOONWELL_mETH")).pendingAdmin(),
             artemisTimelockAddress,
-            "mETHwh pending admin incorrect"
+            "MOONWELL_mETH pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mETHwh")).admin(),
+            Timelock(addresses.getAddress("MOONWELL_mETH")).admin(),
             address(governor),
-            "mETHwh admin incorrect"
+            "MOONWELL_mETH admin incorrect"
         );
 
         assertEq(
@@ -2295,14 +2295,15 @@ contract MultichainProposalTest is
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mETH")).pendingAdmin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mETH"))
+                .pendingAdmin(),
             artemisTimelockAddress,
-            "MOONWELL_mETH pending admin incorrect"
+            "DEPRECATED_MOONWELL_mETH pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mETH")).admin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mETH")).admin(),
             address(governor),
-            "MOONWELL_mETH admin incorrect"
+            "DEPRECATED_MOONWELL_mETH admin incorrect"
         );
 
         assertEq(

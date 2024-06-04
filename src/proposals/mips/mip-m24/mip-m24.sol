@@ -106,11 +106,11 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             true
         );
 
-        /// accept admin of MOONWELL_mETH
+        /// accept admin of DEPRECATED_MOONWELL_mETH
         _pushHybridAction(
-            addresses.getAddress("MOONWELL_mETH"),
+            addresses.getAddress("DEPRECATED_MOONWELL_mETH"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of MOONWELL_mETH as the Multichain Governor",
+            "Accept admin of DEPRECATED_MOONWELL_mETH as the Multichain Governor",
             true
         );
 
@@ -170,11 +170,11 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             true
         );
 
-        /// accept admin of mETHwh
+        /// accept admin of MOONWELL_mETH
         _pushHybridAction(
-            addresses.getAddress("mETHwh"),
+            addresses.getAddress("MOONWELL_mETH"),
             abi.encodeWithSignature("_acceptAdmin()"),
-            "Accept admin of mETHwh as the Multichain Governor",
+            "Accept admin of MOONWELL_mETH as the Multichain Governor",
             true
         );
     }
@@ -225,14 +225,14 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mETHwh")).admin(),
+            Timelock(addresses.getAddress("MOONWELL_mETH")).admin(),
             governor,
-            "mETHwh admin incorrect"
+            "MOONWELL_mETH admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mETHwh")).pendingAdmin(),
+            Timelock(addresses.getAddress("MOONWELL_mETH")).pendingAdmin(),
             address(0),
-            "mETHwh pending admin incorrect"
+            "MOONWELL_mETH pending admin incorrect"
         );
 
         assertEq(
@@ -313,14 +313,15 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mETH")).pendingAdmin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mETH"))
+                .pendingAdmin(),
             address(0),
-            "MOONWELL_mETH pending admin incorrect"
+            "DEPRECATED_MOONWELL_mETH pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mETH")).admin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mETH")).admin(),
             governor,
-            "MOONWELL_mETH admin incorrect"
+            "DEPRECATED_MOONWELL_mETH admin incorrect"
         );
 
         assertEq(

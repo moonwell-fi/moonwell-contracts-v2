@@ -85,7 +85,7 @@ contract BreakGlass is Script, mipm23c {
         });
 
         calls[7] = Calls({
-            target: addresses.getAddress("MOONWELL_mETH"),
+            target: addresses.getAddress("DEPRECATED_MOONWELL_mETH"),
             call: approvedCalldata[1] /// _setPendingAdmin
         });
 
