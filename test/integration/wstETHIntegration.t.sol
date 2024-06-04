@@ -68,6 +68,11 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
         uint256 mintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_wstETH")
         ) + 1;
+
+        if (mintAmount == 1) {
+            return;
+        }
+
         address underlying = address(mwstETH.underlying());
         deal(underlying, address(this), mintAmount);
 
@@ -79,7 +84,14 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
     function testBorrowingOverBorrowCapFails() public {
         uint256 mintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_wstETH")
-        ) - 1e18;
+        );
+
+        if (mintAmount == 1 || mintAmount < 1e18) {
+            return;
+        }
+
+        mintAmount -= 1e18;
+
         uint256 borrowAmount = _getMaxBorrowAmount(
             addresses.getAddress("MOONWELL_wstETH")
         ) + 100;
@@ -195,6 +207,10 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
 
         // totalSupplies = totalCash + totalBorrows - totalReserves
         uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+
+        if (totalSupplies - 1 > supplyCap) {
+            return 0;
+        }
 
         return supplyCap - totalSupplies - 1;
     }

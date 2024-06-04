@@ -80,9 +80,19 @@ contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
         uint256 mintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_rETH")
         );
+        /// filter out case where no minting allowed
+        if (mintAmount == 0) {
+            return;
+        }
         uint256 borrowAmount = _getMaxBorrowAmount(
             addresses.getAddress("MOONWELL_rETH")
-        ) + 100;
+        );
+        /// filter out case where no borrowing allowed
+        if (borrowAmount == 0) {
+            return;
+        }
+        borrowAmount += 100;
+
         address underlying = address(mwstETH.underlying());
 
         deal(underlying, address(this), mintAmount);
@@ -104,6 +114,11 @@ contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
         uint256 mintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_rETH")
         ) / 2;
+
+        /// filter out zero mint case
+        if (mintAmount == 0) {
+            return;
+        }
 
         MErc20Delegator mToken = MErc20Delegator(
             payable(addresses.getAddress("MOONWELL_rETH"))
@@ -195,6 +210,10 @@ contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
 
         // totalSupplies = totalCash + totalBorrows - totalReserves
         uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+
+        if (totalSupplies - 1 > supplyCap) {
+            return 0;
+        }
 
         return supplyCap - totalSupplies - 1;
     }

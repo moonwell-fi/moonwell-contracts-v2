@@ -1,4 +1,4 @@
-#  MIP-B15: Gauntlet's Base Recommendations
+# MIP-B15: Gauntlet's Base Recommendations
 
 A proposal to adjust 5 risk parameters:
 
@@ -10,12 +10,11 @@ A proposal to adjust 5 risk parameters:
 | wstETH Borrow Cap | 800           | 900               |
 | USDbC RF          | 15%           | 20%               |
 
-
-<sub> *Cap Recommendations will be implemented via Guardian </sub>
+<sub> \*Cap Recommendations will be implemented via Guardian </sub>
 
 ### IR Parameters
 
-A proposal to adjust USDC's IR curve: 
+A proposal to adjust USDC's IR curve:
 
 | USDC IR Parameters | Current   | Recommended |
 | ------------------ | --------- | ----------- |
@@ -24,5 +23,7 @@ A proposal to adjust USDC's IR curve:
 | Multiplier         | **0.065** | **0.067**   |
 | Jump Multiplier    | **8.6**   | **9.0**     |
 
-
-Our recommendation post is located in the forums, please refer to this [link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-03-26/841?u=gauntlet). By approving this proposal, you agree that any services provided by Gauntlet shall be governed by the terms of service available at gauntlet.network/tos
+Our recommendation post is located in the forums, please refer to this
+[link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-03-26/841?u=gauntlet).
+By approving this proposal, you agree that any services provided by Gauntlet
+shall be governed by the terms of service available at gauntlet.network/tos
