@@ -133,7 +133,7 @@ contract MultichainProposalTest is
             addresses.getAddress("WORMHOLE_CORE_MOONBEAM", moonBeamChainId)
         );
 
-        well = ERC20Votes(addresses.getAddress("WELL", moonBeamChainId));
+        well = ERC20Votes(addresses.getAddress("GOVTOKEN", moonBeamChainId));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY", moonBeamChainId));
         // make xwell persistent so votes are valid on both chains
         vm.makePersistent(address(xwell));
