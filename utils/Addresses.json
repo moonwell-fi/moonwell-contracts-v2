@@ -1,19 +1,7 @@
 [
     {
-        "addr": "0x74Cbb1E8B68dDD13B28684ECA202a351afD45EAa",
-        "chainId": 84531,
-        "name": "EMISSIONS_ADMIN",
-        "isContract": false
-    },
-    {
         "addr": "0xc191A4db4E05e478778eDB6a201cb7F13A257C23",
         "chainId": 31337,
-        "name": "TEMPORAL_GOVERNOR_GUARDIAN",
-        "isContract": false
-    },
-    {
-        "addr": "0xc191A4db4E05e478778eDB6a201cb7F13A257C23",
-        "chainId": 84531,
         "name": "TEMPORAL_GOVERNOR_GUARDIAN",
         "isContract": false
     },
@@ -132,12 +120,6 @@
         "isContract": true
     },
     {
-        "addr": "0x4200000000000000000000000000000000000006",
-        "chainId": 84531,
-        "name": "WETH",
-        "isContract": true
-    },
-    {
         "addr": "0x3a9249d70dCb4A4E9ef4f3AF99a3A130452ec19B",
         "chainId": 1284,
         "name": "MOONBEAM_TIMELOCK",
@@ -192,12 +174,6 @@
         "isContract": true
     },
     {
-        "addr": "0x23908A62110e21C04F3A4e011d24F901F911744A",
-        "chainId": 84531,
-        "name": "WORMHOLE_CORE",
-        "isContract": true
-    },
-    {
         "addr": "0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901",
         "chainId": 1287,
         "name": "WORMHOLE_CORE_MOONBASE",
@@ -214,12 +190,6 @@
         "chainId": 1284,
         "name": "WORMHOLE_CORE_MOONBEAM",
         "isContract": true
-    },
-    {
-        "addr": "0xc191A4db4E05e478778eDB6a201cb7F13A257C23",
-        "chainId": 84531,
-        "name": "PAUSE_GUARDIAN",
-        "isContract": false
     },
     {
         "addr": "0x8967d9F9fdD2be7A712d83dD15D79123BdAe872e",
@@ -669,12 +639,6 @@
         "addr": "0x6834770ABA6c2028f448E3259DDEE4BCB879d459",
         "chainId": 8453,
         "name": "MOONWELL_VIEWS_PROXY",
-        "isContract": true
-    },
-    {
-        "addr": "0x6834770ABA6c2028f448E3259DDEE4BCB879d459",
-        "chainId": 84531,
-        "name": "MOONWELL_VIEWS_IMPLEMENTATION",
         "isContract": true
     },
     {
