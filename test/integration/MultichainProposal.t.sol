@@ -2295,6 +2295,17 @@ contract MultichainProposalTest is
         );
 
         assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mWBTC")).pendingAdmin(),
+            artemisTimelockAddress,
+            "MOONWELL_mWBTC pending admin incorrect"
+        );
+        assertEq(
+            Timelock(addresses.getAddress("MOONWELL_mWBTC")).admin(),
+            address(governor),
+            "MOONWELL_mWBTC admin incorrect"
+        );
+
+        assertEq(
             Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mETH"))
                 .pendingAdmin(),
             artemisTimelockAddress,
