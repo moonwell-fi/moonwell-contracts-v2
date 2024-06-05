@@ -77,10 +77,7 @@ contract ParameterValidation is Test {
         );
     }
 
-    function _validateRF(
-        address tokenAddress,
-        uint256 reserveFactor
-    ) internal {
+    function _validateRF(address tokenAddress, uint256 reserveFactor) internal {
         MToken token = MToken(tokenAddress);
 
         uint256 reserveFactorMantissa = token.reserveFactorMantissa();

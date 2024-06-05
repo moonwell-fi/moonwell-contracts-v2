@@ -546,23 +546,25 @@ const chainIdMapping = {
     moonBeamChainId: 1284,
     moonBaseChainId: 1287,
     sepoliaChainId: 11155111,
-    goerliChainId: 5
+    goerliChainId: 5,
 };
 
-const regex = /_addAddress\s*\(\s*"([^"]+)"\s*,\s*([\w\d]+)\s*,\s*(0x[a-fA-F0-9]+)\s*\)/gs;
+const regex =
+    /_addAddress\s*\(\s*"([^"]+)"\s*,\s*([\w\d]+)\s*,\s*(0x[a-fA-F0-9]+)\s*\)/gs;
 
 const matches = [...script.matchAll(regex)];
 
-const jsonData = matches.map(match => {
-    const chainId = isNaN(Number(match[2])) ? chainIdMapping[match[2]] : Number(match[2]);
+const jsonData = matches.map((match) => {
+    const chainId = isNaN(Number(match[2]))
+        ? chainIdMapping[match[2]]
+        : Number(match[2]);
 
     return {
         addr: match[3],
         chainId,
-        name: match[1]
+        name: match[1],
     };
 });
-
 
 const jsonOutput = JSON.stringify(jsonData, null, 2);
 

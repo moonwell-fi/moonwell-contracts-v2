@@ -136,10 +136,8 @@ contract MoonwellViewsV3 is BaseMoonwellViews {
         address _user
     ) public view override returns (Votes memory _result) {
         if (address(safetyModule) != address(0)) {
-            uint _priorVotes = SafetyModuleInterfaceV1(address(safetyModule)).getPriorVotes(
-                _user,
-                block.timestamp - 1
-            );
+            uint _priorVotes = SafetyModuleInterfaceV1(address(safetyModule))
+                .getPriorVotes(_user, block.timestamp - 1);
             _result = Votes(
                 _priorVotes,
                 safetyModule.balanceOf(_user),
@@ -147,5 +145,4 @@ contract MoonwellViewsV3 is BaseMoonwellViews {
             );
         }
     }
-    
 }
