@@ -546,12 +546,6 @@
         "isContract": true
     },
     {
-        "addr": "0x8568A675384d761f36eC269D695d6Ce4423cfaB1",
-        "chainId": 1284,
-        "name": "STKGOVTOKEN",
-        "isContract": true
-    },
-    {
         "addr": "0x091608f4e4a15335145be0A279483C0f8E4c7955",
         "chainId": 1284,
         "name": "MNATIVE",
@@ -572,7 +566,7 @@
     {
         "addr": "0xCd76e63f3AbFA864c53b4B98F57c1aA6539FDa3a",
         "chainId": 1285,
-        "name": "STKGOVTOKEN",
+        "name": "STK_GOVTOKEN",
         "isContract": true
     },
     {
@@ -717,13 +711,13 @@
         "addr": "0xe66E3A37C3274Ac24FE8590f7D84A2427194DC17",
         "chainId": 8453,
         "isContract": true,
-        "name": "STKNATIVE"
+        "name": "STK_GOVTOKEN"
     },
     {
         "addr": "0x4439640C018E541eC6b29a5828bc876327cf556C",
         "chainId": 8453,
         "isContract": true,
-        "name": "STKNATIVE_IMPL"
+        "name": "STK_GOVTOKEN_IMPL"
     },
     {
         "addr": "0xe0278B32c627FF6fFbbe7de6A18Ade145603e949",
@@ -824,7 +818,7 @@
     {
         "addr": "0x8568A675384d761f36eC269D695d6Ce4423cfaB1",
         "chainId": 1284,
-        "name": "STKNATIVE",
+        "name": "STK_GOVTOKEN",
         "isContract": true
     },
     {
@@ -1149,13 +1143,13 @@
         "addr": "0x136b89Fc7e52493AadC7710a64603793a857dAfA",
         "chainId": 84532,
         "isContract": true,
-        "name": "STKNATIVE"
+        "name": "STK_GOVTOKEN"
     },
     {
         "addr": "0xa48382Da31A70EFecDF0a77d454cdE07b25b4B8D",
         "chainId": 84532,
         "isContract": true,
-        "name": "STKNATIVE_IMPL"
+        "name": "STK_GOVTOKEN_IMPL"
     },
     {
         "addr": "0xBdD86164da753C1a25e72603d266Dc1CC32e8acf",
@@ -1196,13 +1190,13 @@
     {
         "addr": "0x7E498C2aae7fA815B71B39cd1351b7b5ee9D2a60",
         "chainId": 1287,
-        "name": "STKNATIVE_IMPL",
+        "name": "STK_GOVTOKEN_IMPL",
         "isContract": true
     },
     {
         "addr": "0xCBfcab5e2E9DdC0B5Fa8B06Cd0e7a928c6D58DC0",
         "chainId": 1287,
-        "name": "STKNATIVE",
+        "name": "STK_GOVTOKEN",
         "isContract": true
     },
     {

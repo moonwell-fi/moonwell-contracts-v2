@@ -53,8 +53,12 @@ contract DeployStkWell is Script, ChainIds, MultichainGovernorDeploy {
 
         vm.stopBroadcast();
 
-        addresses.addAddress("STKNATIVE_IMPL", address(implementation), true);
-        addresses.addAddress("STKNATIVE", address(proxy), true);
+        addresses.addAddress(
+            "STK_GOVTOKEN_IMPL",
+            address(implementation),
+            true
+        );
+        addresses.addAddress("STK_GOVTOKEN", address(proxy), true);
         addresses.addAddress(
             "ECOSYSTEM_RESERVE_PROXY",
             address(ecosystemReserveProxy),

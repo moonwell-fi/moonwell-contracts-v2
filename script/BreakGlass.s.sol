@@ -110,7 +110,7 @@ contract BreakGlass is Script, mipm23c {
         });
 
         calls[12] = Calls({
-            target: addresses.getAddress("STKNATIVE"),
+            target: addresses.getAddress("STK_GOVTOKEN"),
             call: approvedCalldata[3] /// setEmissionsManager
         });
 

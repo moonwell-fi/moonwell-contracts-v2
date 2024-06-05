@@ -24,7 +24,7 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 /// src/proposals/mips/mip-m23/mip-m23b.sol:mipm23b
 /// --broadcast --slow --fork-url base
 /// Once the proposal is execute, VOTE_COLLECTION_PROXY, VOTE_COLLECTION_IMPL,
-/// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, STKNATIVE, STKNATIVE_IMPL
+/// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, STK_GOVTOKEN, STK_GOVTOKEN_IMPL
 /// and xWELL_PROXY must be added to the addresses.json file.
 contract mipm23b is HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment of the Multichain Vote Collection Contract to Base
@@ -51,7 +51,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
     function deploy(Addresses addresses, address) public override {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
-        if (!addresses.isAddressSet("STKNATIVE", block.chainid)) {
+        if (!addresses.isAddressSet("STK_GOVTOKEN", block.chainid)) {
             /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
             (
                 address ecosystemReserveProxy,
@@ -88,8 +88,8 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                     address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
                     proxyAdmin
                 );
-                addresses.addAddress("STKNATIVE", stkWellProxy, true);
-                addresses.addAddress("STKNATIVE_IMPL", stkWellImpl, true);
+                addresses.addAddress("STK_GOVTOKEN", stkWellProxy, true);
+                addresses.addAddress("STK_GOVTOKEN_IMPL", stkWellImpl, true);
             }
         }
 
@@ -99,7 +99,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                 address collectionImpl
             ) = deployVoteCollection(
                     addresses.getAddress("xWELL_PROXY"),
-                    addresses.getAddress("STKNATIVE"),
+                    addresses.getAddress("STK_GOVTOKEN"),
                     addresses.getAddress( /// fetch multichain governor address on Moonbeam
                             "MULTICHAIN_GOVERNOR_PROXY",
                             sendingChainIdToReceivingChainId[block.chainid]
@@ -148,7 +148,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         /// approve stkWELL contract to spend xWELL from the ecosystem reserve contract
         ecosystemReserveController.approve(
             addresses.getAddress("xWELL_PROXY"),
-            addresses.getAddress("STKNATIVE"),
+            addresses.getAddress("STK_GOVTOKEN"),
             approvalAmount
         );
 
@@ -186,10 +186,10 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
             validateProxy(
                 vm,
-                addresses.getAddress("STKNATIVE"),
-                addresses.getAddress("STKNATIVE_IMPL"),
+                addresses.getAddress("STK_GOVTOKEN"),
+                addresses.getAddress("STK_GOVTOKEN_IMPL"),
                 addresses.getAddress("MRD_PROXY_ADMIN"),
-                "STKNATIVE validation"
+                "STK_GOVTOKEN validation"
             );
 
             validateProxy(
@@ -237,7 +237,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             assertEq(
                 xWell.allowance(
                     address(ecosystemReserve),
-                    addresses.getAddress("STKNATIVE")
+                    addresses.getAddress("STK_GOVTOKEN")
                 ),
                 approvalAmount,
                 "ecosystem reserve not approved to give stkWELL_PROXY approvalAmount"
@@ -256,7 +256,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         /// validate stkWELL contract
         {
             IStakedWellUplift stkWell = IStakedWellUplift(
-                addresses.getAddress("STKNATIVE")
+                addresses.getAddress("STK_GOVTOKEN")
             );
 
             /// stake and reward token are the same
@@ -325,7 +325,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
             assertEq(
                 address(voteCollection.stkWell()),
-                addresses.getAddress("STKNATIVE"),
+                addresses.getAddress("STK_GOVTOKEN"),
                 "incorrect stkWELL"
             );
 

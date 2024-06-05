@@ -139,7 +139,7 @@ contract MultichainProposalTest is
         vm.makePersistent(address(xwell));
 
         stakedWellMoonbeam = IStakedWell(
-            addresses.getAddress("STKNATIVE", moonBeamChainId)
+            addresses.getAddress("STK_GOVTOKEN", moonBeamChainId)
         );
 
         distributor = TokenSaleDistributorInterfaceV1(
@@ -209,7 +209,7 @@ contract MultichainProposalTest is
                 "incorrect gas limit vote collection"
             );
 
-            stakedWellBase = IStakedWell(addresses.getAddress("STKNATIVE"));
+            stakedWellBase = IStakedWell(addresses.getAddress("STK_GOVTOKEN"));
         }
     }
 
@@ -231,7 +231,7 @@ contract MultichainProposalTest is
         );
         assertEq(
             address(voteCollection.stkWell()),
-            addresses.getAddress("STKNATIVE"),
+            addresses.getAddress("STK_GOVTOKEN"),
             "incorrect xWELL contract"
         );
 
@@ -2059,7 +2059,7 @@ contract MultichainProposalTest is
         targets[4] = addresses.getAddress("CHAINLINK_ORACLE");
         calldatas[4] = changeAdminCalldata;
 
-        targets[5] = addresses.getAddress("STKNATIVE");
+        targets[5] = addresses.getAddress("STK_GOVTOKEN");
         calldatas[5] = setEmissionsManagerCalldata;
 
         targets[6] = addresses.getAddress("UNITROLLER");
@@ -2142,7 +2142,7 @@ contract MultichainProposalTest is
         governor.executeBreakGlass(targets, calldatas);
 
         assertEq(
-            IStakedWellUplift(addresses.getAddress("STKNATIVE"))
+            IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"))
                 .EMISSION_MANAGER(),
             artemisTimelockAddress,
             "stkWELL EMISSIONS MANAGER"
@@ -2380,7 +2380,7 @@ contract MultichainProposalTest is
         ///
         uint256 mintAmount = 1_000_000 * 1e18;
         IStakedWellUplift stkwell = IStakedWellUplift(
-            addresses.getAddress("STKNATIVE")
+            addresses.getAddress("STK_GOVTOKEN")
         );
         assertGt(
             stkwell.DISTRIBUTION_END(),
@@ -2503,7 +2503,7 @@ contract MultichainProposalTest is
         ///
         uint256 mintAmount = 1_000_000 * 1e18;
         IStakedWellUplift stkwell = IStakedWellUplift(
-            addresses.getAddress("STKNATIVE")
+            addresses.getAddress("STK_GOVTOKEN")
         );
         assertGt(
             stkwell.DISTRIBUTION_END(),
