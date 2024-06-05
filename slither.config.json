@@ -1,4 +1,4 @@
 {
-  "filter_paths": "(test/|forge-test/|lib/)",
-  "foundry_out_directory": "artifacts/foundry/"
+    "filter_paths": "(test/|forge-test/|lib/)",
+    "foundry_out_directory": "artifacts/foundry/"
 }
