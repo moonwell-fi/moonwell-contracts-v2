@@ -2095,14 +2095,14 @@ contract MultichainProposalTest is
         targets[16] = addresses.getAddress("mUSDCwh");
         calldatas[16] = _setPendingAdminCalldata;
 
-        targets[16] = addresses.getAddress("MOONWELL_mWBTC");
-        calldatas[16] = _setPendingAdminCalldata;
+        targets[17] = addresses.getAddress("MOONWELL_mWBTC");
+        calldatas[1] = _setPendingAdminCalldata;
 
-        targets[17] = addresses.getAddress("mxcUSDC");
-        calldatas[17] = _setPendingAdminCalldata;
-
-        targets[18] = addresses.getAddress("MOONWELL_mETH");
+        targets[18] = addresses.getAddress("mxcUSDC");
         calldatas[18] = _setPendingAdminCalldata;
+
+        targets[19] = addresses.getAddress("MOONWELL_mETH");
+        calldatas[19] = _setPendingAdminCalldata;
 
         bytes[] memory temporalGovCalldatas = new bytes[](1);
         bytes memory temporalGovExecData;
