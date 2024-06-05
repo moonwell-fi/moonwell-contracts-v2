@@ -12,4 +12,3 @@ privileges of the remaining WBTC market to the new Multichain Governor. Despite
 a comprehensive line-by-line review of MIP-M23 by the Solidity Labs team and an
 external audit, the initial specification did not include this missing transfer.
 Therefore, this proposal is necessary.
-

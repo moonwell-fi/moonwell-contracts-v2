@@ -11,4 +11,3 @@ WBTC.wh:
 | ------------------------- | ------------- | ----------------- |
 | WBTC.wh Reserve Factor    | 25%           | 35%               |
 | WBTC.wh Collateral Factor | 32%           | 31%               |
-
