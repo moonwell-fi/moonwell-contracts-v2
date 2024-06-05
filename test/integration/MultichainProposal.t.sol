@@ -2041,8 +2041,8 @@ contract MultichainProposalTest is
         /// skip wormhole for now, circle back to that later and make array size 18
 
         /// targets
-        address[] memory targets = new address[](19);
-        bytes[] memory calldatas = new bytes[](19);
+        address[] memory targets = new address[](20);
+        bytes[] memory calldatas = new bytes[](20);
 
         targets[0] = addresses.getAddress("WORMHOLE_CORE_MOONBEAM");
         calldatas[0] = proposalC.approvedCalldata(0);
