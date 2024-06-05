@@ -84,8 +84,8 @@ contract mipm31 is Configs, HybridProposal, ParameterValidation {
         );
 
         require(
-            moonbeamActions.length == 1,
-            "MIP-M31: should have 1 moonbeam action"
+            moonbeamActions.length == 3,
+            "MIP-M31: should have 3 moonbeam actions"
         );
 
         /// only run actions on moonbeam
