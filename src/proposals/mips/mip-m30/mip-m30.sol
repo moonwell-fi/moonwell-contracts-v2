@@ -7,8 +7,9 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 
-contract mipm30 is Configs, GovernanceProposal {
+contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
     string public constant override name = "MIP-M30";
 
     uint256 public constant NEW_M_WBTCWH_RESERVE_FACTOR = 0.35e18;
@@ -88,6 +89,17 @@ contract mipm30 is Configs, GovernanceProposal {
             Timelock(addresses.getAddress("mWBTCwh")).pendingAdmin(),
             governor,
             "mWBTCwh pending admin incorrect"
+        );
+
+        _validateRF(
+            addresses.getAddress("mWBTCwh"),
+            NEW_M_WBTCWH_RESERVE_FACTOR
+        );
+
+        _validateCF(
+            addresses,
+            addresses.getAddress("mWBTCwh"),
+            NEW_M_WBTCWH_COLLATERAL_FACTOR
         );
     }
 }
