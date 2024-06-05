@@ -11,8 +11,13 @@ import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {mipm30} from "@proposals/mips/mip-m30/mip-m30.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
 
-contract mipm31 is Configs, HybridProposal {
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+
+contract mipm31 is Configs, HybridProposal, ParameterValidation {
     string public constant override name = "MIP-M30";
+
+    uint256 public constant NEW_M_WBTCWH_RESERVE_FACTOR = 0.35e18;
+    uint256 public constant NEW_M_WBTCWH_COLLATERAL_FACTOR = 0.31e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -48,6 +53,27 @@ contract mipm31 is Configs, HybridProposal {
             "Accept the admin transfer of the new wBTC market to the Multichain Governor",
             true
         );
+
+        _pushHybridAction(
+            addresses.getAddress("mWBTCwh"),
+            abi.encodeWithSignature(
+                "_setReserveFactor(uint256)",
+                NEW_M_WBTCWH_RESERVE_FACTOR
+            ),
+            "Set reserve factor for mWBTCwh to updated reserve factor",
+            true
+        );
+
+        _pushHybridAction(
+            addresses.getAddress("UNITROLLER"),
+            abi.encodeWithSignature(
+                "_setCollateralFactor(address,uint256)",
+                addresses.getAddress("mWBTCwh"),
+                NEW_M_WBTCWH_COLLATERAL_FACTOR
+            ),
+            "Set collateral factor of mWBTCwh",
+            true
+        );
     }
 
     function run(Addresses addresses, address) public override {
@@ -73,6 +99,17 @@ contract mipm31 is Configs, HybridProposal {
             Timelock(addresses.getAddress("mWBTCwh")).admin(),
             governor,
             "mWBTCwh admin incorrect"
+        );
+
+        _validateRF(
+            addresses.getAddress("mWBTCwh"),
+            NEW_M_WBTCWH_RESERVE_FACTOR
+        );
+
+        _validateCF(
+            addresses,
+            addresses.getAddress("mWBTCwh"),
+            NEW_M_WBTCWH_COLLATERAL_FACTOR
         );
     }
 }

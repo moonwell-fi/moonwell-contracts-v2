@@ -12,9 +12,6 @@ import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
     string public constant override name = "MIP-M30";
 
-    uint256 public constant NEW_M_WBTCWH_RESERVE_FACTOR = 0.35e18;
-    uint256 public constant NEW_M_WBTCWH_COLLATERAL_FACTOR = 0.31e18;
-
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile("./src/proposals/mips/mip-m30/MIP-M30.md")
@@ -48,25 +45,6 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
                 multichainGovernorAddress
             )
         );
-
-        _pushGovernanceAction(
-            addresses.getAddress("mWBTCwh"),
-            "Set reserve factor for mWBTCwh to updated reserve factor",
-            abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                NEW_M_WBTCWH_RESERVE_FACTOR
-            )
-        );
-
-        _pushGovernanceAction(
-            addresses.getAddress("UNITROLLER"),
-            "Set collateral factor of mWBTCwh",
-            abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("mWBTCwh"),
-                NEW_M_WBTCWH_COLLATERAL_FACTOR
-            )
-        );
     }
 
     function run(Addresses addresses, address) public override {
@@ -89,17 +67,6 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
             Timelock(addresses.getAddress("mWBTCwh")).pendingAdmin(),
             governor,
             "mWBTCwh pending admin incorrect"
-        );
-
-        _validateRF(
-            addresses.getAddress("mWBTCwh"),
-            NEW_M_WBTCWH_RESERVE_FACTOR
-        );
-
-        _validateCF(
-            addresses,
-            addresses.getAddress("mWBTCwh"),
-            NEW_M_WBTCWH_COLLATERAL_FACTOR
         );
     }
 }
