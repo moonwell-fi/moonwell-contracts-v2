@@ -220,7 +220,7 @@ exports.handler = async function (credentials, context) {
     console.log(`Checking for executable proposals on ${network}...`);
 
     const kvStore = new KeyValueStoreClient(credentials);
-    let ids = (await kvStore.get(`proposals-${network}`))?.split(',');
+    let ids = (await kvStore.get(`proposals-${network}-`))?.split(',');
 
     if (!ids) {
         console.log('No proposal found in KV store.');
