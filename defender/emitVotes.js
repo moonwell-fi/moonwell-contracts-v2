@@ -1,14 +1,10 @@
 // Script compatible with Defender v2
 const {ethers} = require('ethers');
 const {Defender} = require('@openzeppelin/defender-sdk');
-const {
-    DefenderRelaySigner,
-    DefenderRelayProvider,
-} = require('defender-relay-client/lib/ethers');
 const {KeyValueStoreClient} = require('defender-kvstore-client');
 const axios = require('axios');
 
-//const network = 'base'
+// const network = 'base'
 // moonbeam is for Base testnet
 const network = 'baseSepolia';
 
@@ -25,6 +21,7 @@ const governorAddress =
 const voteCollectionABI = [
     'function emitVotes(uint256 proposalId) external payable',
     'function bridgeCostAll() external view returns (uint256)',
+    'function proposalInformation(uint256 proposalId) external view returns(uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256)',
 ];
 
 const governorABI = [
@@ -113,10 +110,11 @@ class MoonwellEvent {
     }
 
     numberWithCommas(num) {
-        if (!num.includes('.')) {
-            num = num + '.0';
+        const numStr = num.toString();
+        if (!numStr.includes('.')) {
+            numStr = numStr + '.0';
         }
-        const parts = num.toString().split('.');
+        const parts = numStr.split('.');
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return parts
             .join('.')
@@ -145,16 +143,28 @@ async function storeProposal(event, id, timestamp) {
 exports.handler = async function (event, context) {
     console.log('Received event:', JSON.stringify(event, null, 2));
 
-    const client = new Defender(event);
+    const moonbeamProvider =
+        network == 'baseSepolia'
+            ? new ethers.providers.JsonRpcProvider(
+                  'https://rpc.testnet.moonbeam.network',
+                  {
+                      chainId: 1287,
+                      name: 'moonbase-alpha',
+                  },
+              )
+            : new ethers.providers.JsonRpcProvider(
+                  'https://rpc.moonbeam.network',
+                  {
+                      chainId: 1284,
+                      name: 'moonbeam',
+                  },
+              );
 
-    // TODO make this compatible with mainnet
-    const moonbeamProvider = new ethers.providers.JsonRpcProvider(
-        'https://rpc.testnet.moonbeam.network',
-        {
-            chainId: 1287,
-            name: 'moonbase-alpha',
-        },
-    );
+    const kvStore = new KeyValueStoreClient(event);
+    console.log(`Fetching proposals from KV store for ${network}`);
+
+    const ids = (await kvStore.get(`proposals-${network}`))?.split(',');
+    console.log(`Stored proposals: ${ids}`);
 
     const governor = new ethers.Contract(
         governorAddress,
@@ -164,16 +174,26 @@ exports.handler = async function (event, context) {
 
     const liveProposals = await governor.liveProposals();
 
-    const provider = new DefenderRelayProvider(event);
-    const signer = new DefenderRelaySigner(event, provider, {
+    const client = new Defender(event);
+    const provider = client.relaySigner.getProvider();
+    const signer = await client.relaySigner.getSigner(provider, {
         speed: 'fast',
     });
 
     for (const proposalId of liveProposals) {
         const state = await governor.state(proposalId);
+        console.log(`Proposal ${proposalId} state: ${state}`);
 
+        // Check if proposal is not already stored
+        if (ids && ids.includes(proposalId.toString())) {
+            console.log(`Proposal ${proposalId} is already stored`);
+            continue;
+        }
+
+        // Check if proposal is in cross chain vote collection state
         const crossChainVoteCollectionPeriod =
             await governor.crossChainVoteCollectionPeriod();
+
         if (state == 1) {
             console.log(
                 `Proposal ${proposalId} is in the cross chain vote collection state`,
@@ -190,44 +210,58 @@ exports.handler = async function (event, context) {
 
             await storeProposal(event, proposalId, timestamp);
 
-            const bridgeCost = await voteCollection.bridgeCostAll();
+            const proposalInformation =
+                await voteCollection.proposalInformation(proposalId);
+            console.log(`Proposal information: ${proposalInformation}`);
 
-            const gasEstimate = await voteCollection.estimateGas.emitVotes(
-                proposalId,
-                {
+            // only emit votes if proposal total votes is greater than 0
+            if (proposalInformation[5] > 0) {
+                const bridgeCost = await voteCollection.bridgeCostAll();
+                console.log(`Bridge cost: ${bridgeCost}`);
+
+                const gasEstimate = await voteCollection.estimateGas.emitVotes(
+                    proposalId,
+                    {
+                        value: bridgeCost,
+                    },
+                );
+                console.log(`Gas estimate: ${gasEstimate.toString()}`);
+
+                // Add a buffer to the gas estimate
+                const gasLimit = gasEstimate.add(gasEstimate.div(5)); // Adding 20% extra gas as a buffer
+                console.log(`Gas limit: ${gasLimit.toString()}`);
+
+                const tx = await voteCollection.emitVotes(proposalId, {
                     value: bridgeCost,
-                },
-            );
+                    gasLimit: gasLimit,
+                });
+                console.log(`Transaction hash: ${tx.hash}`);
 
-            // Add a buffer to the gas estimate
-            const gasLimit = gasEstimate.add(gasEstimate.div(5)); // Adding 20% extra gas as a buffer
+                // Slack
+                const {notificationClient} = context;
+                notificationClient.send({
+                    channelAlias: 'Parameter Changes to Slack',
+                    subject: `Votes emitted for proposal ${proposalId} on ${network}`,
+                    message: `Saved proposal id with expiration at future timestamp ${timestamp}`,
+                });
 
-            const tx = await voteCollection.emitVotes(proposalId, {
-                value: bridgeCost,
-                gasLimit: gasLimit,
-            });
+                // Discord
+                const {GOVBOT_WEBHOOK} = event.secrets;
+                const moonwellEvent = new MoonwellEvent();
+                const discordPayload = moonwellEvent.discordMessagePayload(
+                    0x00ff00,
+                    blockExplorer + tx.hash,
+                    network,
+                    proposalId,
+                    timestamp,
+                );
+                await moonwellEvent.sendDiscordMessage(
+                    GOVBOT_WEBHOOK,
+                    discordPayload,
+                );
 
-            const {notificationClient} = context;
-            notificationClient.send({
-                channelAlias: 'Parameter Changes to Slack',
-                subject: `Votes emitted for proposal ${proposalId} on ${network}`,
-                message: `Saved proposal id with expiration at future timestamp ${timestamp}`,
-            });
-            const {GOVBOT_WEBHOOK} = event.secrets;
-            const moonwellEvent = new MoonwellEvent();
-            const discordPayload = moonwellEvent.discordMessagePayload(
-                0x00ff00,
-                blockExplorer + tx.hash,
-                network,
-                proposalId,
-                timestamp,
-            );
-            await moonwellEvent.sendDiscordMessage(
-                GOVBOT_WEBHOOK,
-                discordPayload,
-            );
-
-            return {tx: tx.hash};
+                return {tx: tx.hash};
+            }
         }
     }
 
