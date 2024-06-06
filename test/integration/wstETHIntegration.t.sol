@@ -26,7 +26,7 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
     function setUp() public override {
         super.setUp();
 
-        well = addresses.getAddress("WELL");
+        well = addresses.getAddress("GOVTOKEN");
         mwstETH = MErc20(addresses.getAddress("MOONWELL_wstETH"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
@@ -184,7 +184,7 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_wstETH")),
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(

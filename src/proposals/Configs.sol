@@ -255,7 +255,7 @@ contract Configs is Test {
 
         if (
             (block.chainid == _localChainId) &&
-            addresses.getAddress("WELL") == address(0)
+            addresses.getAddress("GOVTOKEN") == address(0)
         ) {
             FaucetTokenWithPermit token = new FaucetTokenWithPermit(
                 1e18,
@@ -279,7 +279,7 @@ contract Configs is Test {
                     EmissionConfig memory emissionConfig = EmissionConfig({
                         mToken: mTokenConfigs[i].addressesString,
                         owner: "EMISSIONS_ADMIN",
-                        emissionToken: addresses.getAddress("WELL"),
+                        emissionToken: addresses.getAddress("GOVTOKEN"),
                         supplyEmissionPerSec: 0,
                         borrowEmissionsPerSec: 0,
                         endTime: block.timestamp + 4 weeks

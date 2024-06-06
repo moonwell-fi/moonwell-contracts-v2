@@ -49,7 +49,7 @@ contract xWellRouterTest is Test, ChainIds {
     function setUp() public {
         addresses = new Addresses();
 
-        well = IERC20(addresses.getAddress("WELL"));
+        well = IERC20(addresses.getAddress("GOVTOKEN"));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
         wormholeAdapter = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
@@ -58,7 +58,7 @@ contract xWellRouterTest is Test, ChainIds {
 
         router = new xWELLRouter(
             address(xwell),
-            addresses.getAddress("WELL"),
+            addresses.getAddress("GOVTOKEN"),
             addresses.getAddress("xWELL_LOCKBOX"),
             address(wormholeAdapter)
         );
@@ -74,7 +74,7 @@ contract xWellRouterTest is Test, ChainIds {
         );
         assertEq(
             address(router.well()),
-            addresses.getAddress("WELL"),
+            addresses.getAddress("GOVTOKEN"),
             "Well address incorrect"
         );
         assertEq(

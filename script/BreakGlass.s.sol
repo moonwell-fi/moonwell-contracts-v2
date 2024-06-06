@@ -75,7 +75,7 @@ contract BreakGlass is Script, mipm23c {
         });
 
         calls[5] = Calls({
-            target: addresses.getAddress("mGLIMMER"),
+            target: addresses.getAddress("MNATIVE"),
             call: approvedCalldata[1] /// _setPendingAdmin
         });
 
@@ -85,7 +85,7 @@ contract BreakGlass is Script, mipm23c {
         });
 
         calls[7] = Calls({
-            target: addresses.getAddress("MOONWELL_mETH"),
+            target: addresses.getAddress("DEPRECATED_MOONWELL_mETH"),
             call: approvedCalldata[1] /// _setPendingAdmin
         });
 
@@ -95,7 +95,7 @@ contract BreakGlass is Script, mipm23c {
         });
 
         calls[9] = Calls({
-            target: addresses.getAddress("MOONWELL_mwBTC"),
+            target: addresses.getAddress("DEPRECATED_MOONWELL_mWBTC"),
             call: approvedCalldata[1] /// _setPendingAdmin
         });
 
@@ -110,7 +110,7 @@ contract BreakGlass is Script, mipm23c {
         });
 
         calls[12] = Calls({
-            target: addresses.getAddress("stkWELL_PROXY"),
+            target: addresses.getAddress("STK_GOVTOKEN"),
             call: approvedCalldata[3] /// setEmissionsManager
         });
 
@@ -132,6 +132,11 @@ contract BreakGlass is Script, mipm23c {
         calls[16] = Calls({
             target: addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
             call: approvedCalldata[5] /// transferOwnership
+        });
+
+        calls[17] = Calls({
+            target: addresses.getAddress("MOONWELL_mWBTC"),
+            call: approvedCalldata[1] /// _setPendingAdmin
         });
 
         address[] memory targets = new address[](calls.length);

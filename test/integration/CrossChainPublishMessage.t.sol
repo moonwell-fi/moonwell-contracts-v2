@@ -106,7 +106,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
         wormhole = IWormhole(
             addresses.getAddress("WORMHOLE_CORE_MOONBEAM", moonBeamChainId)
         );
-        well = ERC20Votes(addresses.getAddress("WELL", moonBeamChainId));
+        well = ERC20Votes(addresses.getAddress("GOVTOKEN", moonBeamChainId));
 
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
