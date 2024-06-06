@@ -126,7 +126,7 @@ class MoonwellEvent {
 async function storeProposal(event, id, timestamp) {
     console.log('Storing proposal id in KV store...');
     const kvStore = new KeyValueStoreClient(event);
-    let value = await kvStore.get(`proposals-${network}`);
+    let value = await kvStore.get(`proposals-${network}-`);
     console.log(`Initial KV store value for ${network}: ${value}`);
     if (value !== null) {
         value += `,${id}`;
@@ -136,7 +136,7 @@ async function storeProposal(event, id, timestamp) {
     await kvStore.put(network, value);
     console.log(`Updated KV store value for ${network}: ${value}`);
     await kvStore.put(`proposals-${network}-${id}`, timestamp.toString());
-    console.log(`Stored ${network}-${id} with expiry ${timestamp}`);
+    console.log(`Stored proposals-${network}-${id} with expiry ${timestamp}`);
 }
 
 // Entrypoint for the action
@@ -163,7 +163,7 @@ exports.handler = async function (event, context) {
     const kvStore = new KeyValueStoreClient(event);
     console.log(`Fetching proposals from KV store for ${network}`);
 
-    const ids = (await kvStore.get(`proposals-${network}`))?.split(',');
+    const ids = (await kvStore.get(`proposals-${network}-`))?.split(',');
     console.log(`Stored proposals: ${ids}`);
 
     const governor = new ethers.Contract(
@@ -179,6 +179,11 @@ exports.handler = async function (event, context) {
     const signer = await client.relaySigner.getSigner(provider, {
         speed: 'fast',
     });
+
+    if (liveProposals.length === 0) {
+        console.log('No live proposals found');
+        return {};
+    }
 
     for (const proposalId of liveProposals) {
         const state = await governor.state(proposalId);
@@ -212,12 +217,10 @@ exports.handler = async function (event, context) {
 
             const proposalInformation =
                 await voteCollection.proposalInformation(proposalId);
-            console.log(`Proposal information: ${proposalInformation}`);
 
             // only emit votes if proposal total votes is greater than 0
             if (proposalInformation[5] > 0) {
                 const bridgeCost = await voteCollection.bridgeCostAll();
-                console.log(`Bridge cost: ${bridgeCost}`);
 
                 const gasEstimate = await voteCollection.estimateGas.emitVotes(
                     proposalId,
@@ -225,11 +228,9 @@ exports.handler = async function (event, context) {
                         value: bridgeCost,
                     },
                 );
-                console.log(`Gas estimate: ${gasEstimate.toString()}`);
 
                 // Add a buffer to the gas estimate
                 const gasLimit = gasEstimate.add(gasEstimate.div(5)); // Adding 20% extra gas as a buffer
-                console.log(`Gas limit: ${gasLimit.toString()}`);
 
                 const tx = await voteCollection.emitVotes(proposalId, {
                     value: bridgeCost,
@@ -264,8 +265,6 @@ exports.handler = async function (event, context) {
             }
         }
     }
-
-    console.log('No proposals in cross chain vote collection state');
 
     return {};
 };
