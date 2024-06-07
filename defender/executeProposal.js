@@ -3,15 +3,10 @@ const {Defender} = require('@openzeppelin/defender-sdk');
 const {KeyValueStoreClient} = require('defender-kvstore-client');
 const axios = require('axios');
 
-const temporalGovernorABI = [
-    'function queueProposal(bytes VAA)',
-    'function executeProposal(bytes VAA)',
-];
-
-// Use Moonbeam for Base
 // const network = 'moonbeam';
-// Use Moonbase Alpha for Base Sepolia
 const network = 'moonbase';
+
+const senderNetwork = network === 'moonbeam' ? 'base' : 'baseSepolia';
 
 const governorAddress =
     network === 'moonbeam'
@@ -54,7 +49,7 @@ class MoonwellEvent {
         console.log('Sent Discord message!');
     }
 
-    discordMessagePayload(color, txURL, networkName, id, timestamp) {
+    discordMessagePayload(color, txURL, networkName, id) {
         const text = `Proposal ${id} executed on ${networkName}`;
         const baseFields = [
             {
@@ -68,14 +63,6 @@ class MoonwellEvent {
                 inline: true,
             },
         ];
-
-        if (timestamp && timestamp > 0) {
-            baseFields.push({
-                name: 'Will be executed at',
-                value: `<t:${timestamp}>`,
-                inline: true,
-            });
-        }
 
         return {
             content: '',
@@ -107,109 +94,89 @@ class MoonwellEvent {
     }
 }
 
-async function processProposal(credentials, id, context) {
-    const kvStore = new KeyValueStoreClient(credentials);
-    const {notificationClient} = context;
-    const expiry = await kvStore.get(`proposals-${network}-${id}`);
-    // If the id is not in the KV store, return true to remove it from the network proposals ids array
-    if (!expiry) return true;
-    const expiryTimestamp = parseInt(expiry, 10); // Parse expiry string to integer
-    const now = Math.floor(Date.now() / 1000);
-    if (now >= expiryTimestamp) {
-        console.log(`Proposal ${id} is ready, executing...`);
+async function processProposal(governor, secrets, id, context) {
+    console.log(`Proposal ${id} is ready, executing...`);
 
-        const provider = new DefenderRelayProvider(credentials);
-        const signer = new DefenderRelaySigner(credentials, provider, {
-            speed: 'fast',
-        });
+    const state = await governor.state(proposalId);
 
-        const governor = new ethers.Contract(
-            governorAddress,
-            governorABI,
-            provider,
-        );
+    // Proposal is succeeded
+    if (state == 4) {
+        try {
+            const tx = await governor.execute(id);
 
-        const state = await governor.state(proposalId);
-
-        // Proposal is succeeded
-        if (state == 4) {
-            try {
-                const tx = await governor.execute(id);
-
-                if (tx) {
-                    console.log(`Called execute in ${tx.hash}`);
-                    console.log(`Removing proposal ${id} from KV store...`);
-                    await kvStore.del(`proposals-${network}-${id}`);
-                    notificationClient.send({
-                        channelAlias: 'Parameter Changes to Slack',
-                        subject: `Executed Proposal ${id} on ${network}`,
-                        message: `Successfully executed transaction: ${blockExplorer}${tx.hash}.
-              Removed proposals-${network}-${id} from the KV store.`,
-                    });
-
-                    const {GOVBOT_WEBHOOK} = credentials.secrets;
-                    const moonwellEvent = new MoonwellEvent();
-
-                    const discordPayload = moonwellEvent.discordMessagePayload(
-                        0x42b24e, // Green (Go color in Moonwell Guide)
-                        `successfully executed`,
-                        blockExplorer + tx.hash,
-                        network,
-                        id,
-                        expiryTimestamp,
-                    );
-
-                    await moonwellEvent.sendDiscordMessage(
-                        GOVBOT_WEBHOOK,
-                        discordPayload,
-                    );
-                    return true;
-                }
-            } catch (error) {
-                console.log(
-                    `Failed to execute proposal ${id}, error message: ${error}`,
-                );
+            if (tx) {
+                console.log(`Called execute in ${tx.hash}`);
                 console.log(`Removing proposal ${id} from KV store...`);
-                await kvStore.del(`proposals-${network}-${id}`);
+                await kvStore.del(`${network}-${id}`);
+
+                const {notificationClient} = context;
                 notificationClient.send({
                     channelAlias: 'Parameter Changes to Slack',
-                    subject: `Failed to Execute Proposal ${id} on ${network}`,
-                    message: `Removed proposals-${network}-${id} from the KV store`,
+                    subject: `Executed Proposal ${id} on ${network}`,
+                    message: `Successfully executed transaction: ${blockExplorer}${tx.hash}.
+                    Removed ${network}-${id} from the KV store.`,
                 });
-                const {GOVBOT_WEBHOOK} = credentials.secrets;
+
+                const {GOVBOT_WEBHOOK} = secrets;
                 const moonwellEvent = new MoonwellEvent();
+
                 const discordPayload = moonwellEvent.discordMessagePayload(
-                    0xe83938, // Red (Caution color in Moonwell Guide)
-                    `failed to execute`,
-                    'https://moonwell.fi/governance',
+                    0x42b24e, // Green (Go color in Moonwell Guide)
+                    `successfully executed`,
+                    blockExplorer + tx.hash,
                     network,
                     id,
-                    expiryTimestamp,
                 );
+
                 await moonwellEvent.sendDiscordMessage(
                     GOVBOT_WEBHOOK,
                     discordPayload,
                 );
                 return true;
             }
-
-            // Proposal is defeated, canceled or executed
-        } else if (state == 2 || state == 3 || state == 5) {
+        } catch (error) {
+            console.log(
+                `Failed to execute proposal ${id}, error message: ${error}`,
+            );
             console.log(`Removing proposal ${id} from KV store...`);
-
-            await kvStore.del(`proposals-${network}-${id}`);
-
+            await kvStore.del(`${network}-${id}`);
             notificationClient.send({
                 channelAlias: 'Parameter Changes to Slack',
-                subject: `Removed Proposal ${id} from ${network} as it is ${state == 2 ? 'defeated' : state == 3 ? 'canceled' : 'executed'}`,
-                message: `Removed ${network}-${id} from the KV store`,
+                subject: `Failed to Execute Proposal ${id} on ${network}`,
+                message: `Removed proposals-${network}-${id} from the KV store`,
             });
-
-            return true; // Return true to remove the id from the proposals array
+            const {GOVBOT_WEBHOOK} = credentials.secrets;
+            const moonwellEvent = new MoonwellEvent();
+            const discordPayload = moonwellEvent.discordMessagePayload(
+                0xe83938, // Red (Caution color in Moonwell Guide)
+                `failed to execute`,
+                'https://moonwell.fi/governance',
+                network,
+                id,
+            );
+            await moonwellEvent.sendDiscordMessage(
+                GOVBOT_WEBHOOK,
+                discordPayload,
+            );
+            return true;
         }
+
+        // Proposal is defeated, canceled or executed
+    } else if (state == 2 || state == 3 || state == 5) {
+        console.log(`Removing proposal ${id} from KV store...`);
+
+        await kvStore.del(`${network}-${id}`);
+
+        notificationClient.send({
+            channelAlias: 'Parameter Changes to Slack',
+            subject: `Removed Proposal ${id} from ${network} as it is ${state == 2 ? 'defeated' : state == 3 ? 'canceled' : 'executed'}`,
+            message: `Removed ${network}-${id} from the KV store`,
+        });
+
+        return true; // Return true to remove the id from the proposals array
     } else {
         console.log(
-            `Proposal ${id} will finish the vote collection period at ${expiry} (currently ${now}), skipping...`,
+            `Proposal ${id} is still in the cross chain vote collection state, skipping...`,
         );
         return false;
     }
@@ -219,9 +186,20 @@ async function processProposal(credentials, id, context) {
 exports.handler = async function (credentials, context) {
     console.log(`Checking for executable proposals on ${network}...`);
 
+    const client = new Defender(event);
+    const provider = client.relaySigner.getProvider();
+    const signer = await client.relaySigner.getSigner(provider, {
+        speed: 'fast',
+    });
+
+    const governor = new ethers.Contract(governorAddress, governorABI, signer);
+
+    const liveProposals = await governor.liveProposals();
+
     const kvStore = new KeyValueStoreClient(credentials);
-    const data = await kvStore.get(`proposals-${network}-`);
+    const data = await kvStore.get(`${senderNetwork}-`);
     console.log(`Data: ${data}`);
+    return;
     let ids = data?.split(',');
 
     if (!ids) {
@@ -235,7 +213,12 @@ exports.handler = async function (credentials, context) {
     for (let i = 0; i < ids.length; i++) {
         const id = ids[i];
 
-        const isProcessed = await processProposal(credentials, id, context);
+        const isProcessed = await processProposal(
+            governor,
+            credentials.secrets,
+            id,
+            context,
+        );
 
         if (isProcessed) {
             anyProcessed = true;
