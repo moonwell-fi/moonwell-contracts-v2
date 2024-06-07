@@ -60,7 +60,7 @@ class MoonwellEvent {
         console.log('Sent Discord message!');
     }
 
-    discordMessagePayload(color, txURL, networkName, id, timestamp) {
+    discordMessagePayload(color, txURL, networkName, id) {
         const text = `Votes emmited for proposal ${id} on ${networkName}`;
         const details = `If the proposal reaches quorum, once the cross-chain vote collection period finishes it will be automatically executed.`;
         const baseFields = [
@@ -74,23 +74,12 @@ class MoonwellEvent {
                 value: `${id}`,
                 inline: true,
             },
-        ];
-
-        if (timestamp && timestamp > 0) {
-            baseFields.push({
-                name: 'Will be executed at',
-                value: `<t:${timestamp}>`,
-                inline: true,
-            });
-        }
-
-        if (details) {
-            baseFields.push({
+            {
                 name: 'Details',
                 value: details,
                 inline: false,
-            });
-        }
+            },
+        ];
 
         return {
             content: '',
@@ -123,20 +112,10 @@ class MoonwellEvent {
     }
 }
 
-async function storeProposal(event, id, timestamp) {
-    console.log('Storing proposal id in KV store...');
-    const kvStore = new KeyValueStoreClient(event);
-    let value = await kvStore.get(`proposals-${network}-`);
-    console.log(`Initial KV store value for ${network}: ${value}`);
-    if (value !== null) {
-        value += `,${id}`;
-    } else {
-        value = `${id}`;
-    }
-    await kvStore.put(network, value);
+async function storeProposal(kvStore, id) {
+    console.log('Storing proposal ${id} in KV store...');
+    await kvStore.put(`${network}-${id}`, '1');
     console.log(`Updated KV store value for ${network}: ${value}`);
-    await kvStore.put(`proposals-${network}-${id}`, timestamp.toString());
-    console.log(`Stored proposals-${network}-${id} with expiry ${timestamp}`);
 }
 
 // Entrypoint for the action
@@ -160,12 +139,6 @@ exports.handler = async function (event, context) {
                   },
               );
 
-    const kvStore = new KeyValueStoreClient(event);
-    console.log(`Fetching proposals from KV store for ${network}`);
-
-    const ids = (await kvStore.get(`proposals-${network}-`))?.split(',');
-    console.log(`Stored proposals: ${ids}`);
-
     const governor = new ethers.Contract(
         governorAddress,
         governorABI,
@@ -185,35 +158,31 @@ exports.handler = async function (event, context) {
         return {};
     }
 
+    const voteCollection = new ethers.Contract(
+        voteCollectionAddress,
+        voteCollectionABI,
+        signer,
+    );
+
     for (const proposalId of liveProposals) {
         const state = await governor.state(proposalId);
         console.log(`Proposal ${proposalId} state: ${state}`);
 
-        // Check if proposal is not already stored
-        if (ids && ids.includes(proposalId.toString())) {
-            console.log(`Proposal ${proposalId} is already stored`);
+        const kvStore = new KeyValueStoreClient(event);
+        const voteEmitted = await kvStore.get(
+            `${network}-${proposalId.toString()}`,
+        );
+        console.log(`Proposal ${proposalId} vote emitted: ${voteEmitted}`);
+
+        if (voteEmitted == '1') {
+            console.log(`Proposal ${proposalId} already emitted votes`);
             continue;
         }
-
-        // Check if proposal is in cross chain vote collection state
-        const crossChainVoteCollectionPeriod =
-            await governor.crossChainVoteCollectionPeriod();
 
         if (state == 1) {
             console.log(
                 `Proposal ${proposalId} is in the cross chain vote collection state`,
             );
-
-            const voteCollection = new ethers.Contract(
-                voteCollectionAddress,
-                voteCollectionABI,
-                signer,
-            );
-
-            const timestamp =
-                Math.floor(Date.now() / 1000) + crossChainVoteCollectionPeriod;
-
-            await storeProposal(event, proposalId, timestamp);
 
             const proposalInformation =
                 await voteCollection.proposalInformation(proposalId);
@@ -232,18 +201,27 @@ exports.handler = async function (event, context) {
                 // Add a buffer to the gas estimate
                 const gasLimit = gasEstimate.add(gasEstimate.div(5)); // Adding 20% extra gas as a buffer
 
-                const tx = await voteCollection.emitVotes(proposalId, {
-                    value: bridgeCost,
-                    gasLimit: gasLimit,
-                });
-                console.log(`Transaction hash: ${tx.hash}`);
+                try {
+                    const tx = await voteCollection.emitVotes(proposalId, {
+                        value: bridgeCost,
+                        gasLimit: gasLimit,
+                    });
+                    console.log(`Transaction hash: ${tx.hash}`);
+
+                    await storeProposal(kvStore, proposalId);
+                } catch (error) {
+                    console.error(
+                        `Error emitting votes for proposal ${proposalId}: ${error.message}`,
+                    );
+                    continue;
+                }
 
                 // Slack
                 const {notificationClient} = context;
                 notificationClient.send({
                     channelAlias: 'Parameter Changes to Slack',
                     subject: `Votes emitted for proposal ${proposalId} on ${network}`,
-                    message: `Saved proposal id with expiration at future timestamp ${timestamp}`,
+                    message: `Successfully emitted votes for proposal ${proposalId} on ${network}. If the proposal reaches quorum, once the cross-chain vote collection period finishes it will be automatically executed.`,
                 });
 
                 // Discord
@@ -254,7 +232,6 @@ exports.handler = async function (event, context) {
                     blockExplorer + tx.hash,
                     network,
                     proposalId,
-                    timestamp,
                 );
                 await moonwellEvent.sendDiscordMessage(
                     GOVBOT_WEBHOOK,
