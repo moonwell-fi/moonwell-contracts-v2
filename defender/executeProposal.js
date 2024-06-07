@@ -3,7 +3,7 @@ const {Defender} = require('@openzeppelin/defender-sdk');
 const {KeyValueStoreClient} = require('defender-kvstore-client');
 const axios = require('axios');
 
-const network = 'moonbase';
+const network = 'moonbeam';
 const senderNetwork = network === 'moonbeam' ? 'base' : 'baseSepolia';
 
 const governorAddress =

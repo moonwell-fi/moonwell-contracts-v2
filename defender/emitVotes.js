@@ -112,7 +112,7 @@ exports.handler = async function (event, context) {
                   },
               )
             : new ethers.providers.JsonRpcProvider(
-                  'https://rpc.moonbeam.network',
+                  'https://moonbeam-rpc.publicnode.com	',
                   {
                       chainId: 1284,
                       name: 'moonbeam',
