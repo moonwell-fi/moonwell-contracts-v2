@@ -175,7 +175,9 @@ exports.handler = async function (event, context) {
     const client = new Defender(event);
 
     const provider = client.relaySigner.getProvider();
-    const signer = client.relaySigner.getSigner(provider, {speed: 'fast'});
+    const signer = await client.relaySigner.getSigner(provider, {
+        speed: 'fast',
+    });
 
     const contract = new ethers.Contract(
         tgAddress,
