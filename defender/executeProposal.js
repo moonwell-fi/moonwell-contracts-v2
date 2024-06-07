@@ -4,15 +4,13 @@ const {KeyValueStoreClient} = require('defender-kvstore-client');
 const axios = require('axios');
 
 const network = 'moonbase';
-
 const senderNetwork = network === 'moonbeam' ? 'base' : 'baseSepolia';
 
 const governorAddress =
     network === 'moonbeam'
-        ? '0x9A8464C4C11CeA17e191653Deb7CdC1bE30F1Af4' // Multichain Governor on Moonbeam
-        : '0xf152d75fe4cBB11AE224B94110c31F0bdDb55850'; // Multichain Governor on Moonbase
+        ? '0x9A8464C4C11CeA17e191653Deb7CdC1bE30F1Af4'
+        : '0xf152d75fe4cBB11AE224B94110c31F0bdDb55850';
 
-// Block explorer URL
 const blockExplorer =
     network === 'moonbeam'
         ? 'https://moonbeam.moonscan.io/tx/'
@@ -27,9 +25,7 @@ const governorABI = [
 class MoonwellEvent {
     async sendDiscordMessage(url, payload) {
         console.log('Sending Discord message...');
-        if (!url) {
-            throw new Error('Discord webhook url is invalid!');
-        }
+        if (!url) throw new Error('Discord webhook url is invalid!');
         try {
             const response = await axios.post(url, payload, {
                 headers: {
@@ -48,21 +44,13 @@ class MoonwellEvent {
     }
 
     discordMessagePayload(color, message, details) {
-        const baseFields = [
-            {
-                name: 'Details',
-                value: details,
-                inline: false,
-            },
-        ];
-
         return {
             content: '',
             embeds: [
                 {
                     title: `${message}`,
                     color: color,
-                    fields: baseFields,
+                    fields: [{name: 'Details', value: details, inline: false}],
                 },
             ],
         };
@@ -73,9 +61,7 @@ class MoonwellEvent {
     }
 
     numberWithCommas(num) {
-        if (!num.includes('.')) {
-            num = num + '.0';
-        }
+        if (!num.includes('.')) num = num + '.0';
         const parts = num.toString().split('.');
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return parts
@@ -89,18 +75,12 @@ async function processProposal(governor, secrets, kvStore, id, context) {
     console.log(`Proposal ${id} is ready, executing...`);
 
     const {notificationClient} = context;
-
     const state = await governor.state(id);
-    let subject;
-    let message;
-    let shouldDelete;
-    let color;
+    let subject, message, shouldDelete, color;
 
-    // Proposal is succeeded
     if (state == 4) {
         try {
             const tx = await governor.execute(id);
-
             console.log(`Called execute in ${tx.hash}`);
             subject = `Executed Proposal ${id} on ${network}`;
             message = `Successfully executed transaction: ${blockExplorer}${tx.hash}.`;
@@ -115,8 +95,6 @@ async function processProposal(governor, secrets, kvStore, id, context) {
             shouldDelete = true;
             color = 0xe83938; // Red
         }
-
-        // Proposal is defeated, canceled or executed
     } else if (state == 2 || state == 3 || state == 5) {
         subject = `Proposal ${id} is ${state == 2 ? 'canceled' : state == 3 ? 'defeated' : 'executed'}`;
         message = `Removed from KV store.`;
@@ -126,7 +104,7 @@ async function processProposal(governor, secrets, kvStore, id, context) {
         console.log(
             `Proposal ${id} is still in the cross chain vote collection state, skipping...`,
         );
-        return false; // Skip the slack/discord notification
+        return false;
     }
 
     notificationClient.send({
@@ -137,23 +115,18 @@ async function processProposal(governor, secrets, kvStore, id, context) {
 
     const {GOVBOT_WEBHOOK} = secrets;
     const moonwellEvent = new MoonwellEvent();
-
     const discordPayload = moonwellEvent.discordMessagePayload(
         color,
         subject,
         message,
     );
-
     await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
 
-    if (shouldDelete) {
-        await kvStore.del(`${network}-${id}`);
-    }
+    if (shouldDelete) await kvStore.del(`${network}-${id}`);
 
     return shouldDelete;
 }
 
-// Entrypoint for the Autotask
 exports.handler = async function (credentials, context) {
     console.log(`Checking for executable proposals on ${network}...`);
 
@@ -162,9 +135,7 @@ exports.handler = async function (credentials, context) {
     const signer = await client.relaySigner.getSigner(provider, {
         speed: 'fast',
     });
-
     const governor = new ethers.Contract(governorAddress, governorABI, signer);
-
     const liveProposals = await governor.liveProposals();
 
     const kvStore = new KeyValueStoreClient(credentials);
@@ -183,7 +154,6 @@ exports.handler = async function (credentials, context) {
     let anyProcessed = false;
     for (let i = 0; i < ids.length; i++) {
         const id = ids[i];
-
         const isProcessed = await processProposal(
             governor,
             credentials.secrets,
@@ -191,15 +161,12 @@ exports.handler = async function (credentials, context) {
             id,
             context,
         );
-
         if (isProcessed) {
             anyProcessed = true;
-            // If processed, remove this sequence from the array
             ids.splice(i, 1);
-            i--; // Adjust the index due to the removal
+            i--;
         }
     }
 
-    // Store the updated array of strings back to the key/value store
     if (anyProcessed) await kvStore.put(senderNetwork, ids.join(','));
 };
