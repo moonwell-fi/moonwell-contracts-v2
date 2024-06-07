@@ -28,7 +28,7 @@ contract DeployStkWell is Script, ChainIds, MultichainGovernorDeploy {
     function run() public {
         address proxyAdmin = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
 
-        address well = addresses.getAddress("WELL");
+        address well = addresses.getAddress("GOVTOKEN");
 
         vm.startBroadcast(PRIVATE_KEY);
 
@@ -53,8 +53,12 @@ contract DeployStkWell is Script, ChainIds, MultichainGovernorDeploy {
 
         vm.stopBroadcast();
 
-        addresses.addAddress("stkWELL_IMPL", address(implementation), true);
-        addresses.addAddress("stkWELL_PROXY", address(proxy), true);
+        addresses.addAddress(
+            "STK_GOVTOKEN_IMPL",
+            address(implementation),
+            true
+        );
+        addresses.addAddress("STK_GOVTOKEN", address(proxy), true);
         addresses.addAddress(
             "ECOSYSTEM_RESERVE_PROXY",
             address(ecosystemReserveProxy),

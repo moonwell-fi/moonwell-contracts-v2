@@ -17,7 +17,7 @@ contract StakeWell is Script, Test {
     }
 
     function run() public {
-        address stkWell = addresses.getAddress("stkWELL_PROXY");
+        address stkWell = addresses.getAddress("STK_GOVTOKEN");
         address xwell = addresses.getAddress("xWELL_PROXY");
 
         bytes memory data = abi.encodeWithSignature(

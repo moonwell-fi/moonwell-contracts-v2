@@ -40,7 +40,7 @@ contract CalldataExecute is Test, Configs {
     /// forge test --mt testSimExistingProposalMoonbeam --fork-url moonbeam -vvvv
     function testSimExistingProposalMoonbeam() public {
         address caller = addresses.getAddress("WELL_FOUNDATION_MULTISIG");
-        address governanceToken = addresses.getAddress("WELL");
+        address governanceToken = addresses.getAddress("GOVTOKEN");
         address governorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );
@@ -98,7 +98,7 @@ contract CalldataExecute is Test, Configs {
     /// forge test --mt testSimulateExecMoonbeam --fork-url moonbeam -vvvv
     function testSimulateExecMoonbeam() public {
         address caller = address(this);
-        address governanceToken = addresses.getAddress("WELL");
+        address governanceToken = addresses.getAddress("GOVTOKEN");
         address governorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );
@@ -162,7 +162,7 @@ contract CalldataExecute is Test, Configs {
     /// forge test --mt testSimulateExecMoonriver --fork-url moonriver -vvvv
     function testSimulateExecMoonriver() public {
         address caller = address(this);
-        address governanceToken = addresses.getAddress("MFAM");
+        address governanceToken = addresses.getAddress("GOVTOKEN");
         address governorAddress = addresses.getAddress("APOLLO_GOVERNOR");
         IArtemisGovernor governor = IArtemisGovernor(governorAddress);
 

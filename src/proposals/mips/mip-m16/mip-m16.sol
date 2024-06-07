@@ -30,8 +30,10 @@ contract mipm16 is GovernanceProposal {
 
     function build(Addresses addresses) public override {
         address mUSDCAddress = addresses.getAddress("MOONWELL_mUSDC");
-        address mETHAddress = addresses.getAddress("MOONWELL_mETH");
-        address mwBTCAddress = addresses.getAddress("MOONWELL_mwBTC");
+        address mETHAddress = addresses.getAddress("DEPRECATED_MOONWELL_mETH");
+        address mwBTCAddress = addresses.getAddress(
+            "DEPRECATED_MOONWELL_mWBTC"
+        );
 
         /// @dev mUSDC.mad
         MErc20Delegator mUSDC = MErc20Delegator(payable(mUSDCAddress));

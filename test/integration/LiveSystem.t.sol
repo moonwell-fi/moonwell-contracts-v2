@@ -26,7 +26,7 @@ contract LiveSystemTest is Test {
     function setUp() public {
         addresses = new Addresses();
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
-        well = addresses.getAddress("WELL");
+        well = addresses.getAddress("GOVTOKEN");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
     }
 
@@ -67,7 +67,7 @@ contract LiveSystemTest is Test {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_USDBC")),
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(
@@ -92,7 +92,7 @@ contract LiveSystemTest is Test {
             // must calculate borrow index before updating end time
             // otherwise the global timestamp will be equal to the current block timestamp
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("WELL"));
+                .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
             uint256 denominator = (mToken.totalBorrows() * 1e18) / // exp scale
                 mToken.borrowIndex();
@@ -120,7 +120,7 @@ contract LiveSystemTest is Test {
             vm.stopPrank();
 
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("WELL"));
+                .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
             deal(
                 well,
@@ -165,7 +165,7 @@ contract LiveSystemTest is Test {
             // must calculate supply index before updating end time
             // otherwise the global timestamp will be equal to the current block timestamp
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("WELL"));
+                .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
             uint256 denominator = mToken.totalSupply();
             uint256 deltaTimestamp = block.timestamp -
@@ -195,37 +195,35 @@ contract LiveSystemTest is Test {
             4 weeks * 1e18 /// fund for entire period
         );
 
-        {
-            MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("WELL"));
+        MultiRewardDistributorCommon.MarketConfig memory config = mrd
+            .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
-            assertEq(
-                config.owner,
-                addresses.getAddress("EMISSIONS_ADMIN"),
-                "Owner incorrect"
-            );
-            assertEq(config.emissionToken, well, "Emission token incorrect");
-            assertEq(
-                config.borrowEmissionsPerSec,
-                1e18,
-                "Borrow emissions incorrect"
-            );
-            assertEq(
-                config.endTime,
-                block.timestamp + 4 weeks,
-                "End time incorrect"
-            );
-            assertEq(
-                config.supplyGlobalIndex,
-                supplyIndex,
-                "Supply global index incorrect"
-            );
-            assertEq(
-                config.borrowGlobalIndex,
-                1e36,
-                "Borrow global index incorrect"
-            );
-        }
+        assertEq(
+            config.owner,
+            addresses.getAddress("EMISSIONS_ADMIN"),
+            "Owner incorrect"
+        );
+        assertEq(config.emissionToken, well, "Emission token incorrect");
+        assertEq(
+            config.borrowEmissionsPerSec,
+            1e18,
+            "Borrow emissions incorrect"
+        );
+        assertEq(
+            config.endTime,
+            block.timestamp + 4 weeks,
+            "End time incorrect"
+        );
+        assertEq(
+            config.supplyGlobalIndex,
+            supplyIndex,
+            "Supply global index incorrect"
+        );
+        assertEq(
+            config.borrowGlobalIndex,
+            1e36,
+            "Borrow global index incorrect"
+        );
     }
 
     function testMintMTokenSucceeds() public {
@@ -342,7 +340,7 @@ contract LiveSystemTest is Test {
         uint256 totalSupply = mToken.totalSupply();
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("WELL"));
+            .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
         uint256 expectedReward = ((toWarp * config.supplyEmissionsPerSec) *
             balance) / totalSupply;
@@ -379,7 +377,7 @@ contract LiveSystemTest is Test {
         uint256 totalBorrow = mToken.totalBorrows();
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("WELL"));
+            .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
         // calculate expected borrow reward
         uint256 expectedBorrowReward = ((toWarp *
@@ -422,7 +420,7 @@ contract LiveSystemTest is Test {
         uint256 totalSupply = mToken.totalSupply();
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("WELL"));
+            .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
         uint256 expectedSupplyReward = ((toWarp *
             config.supplyEmissionsPerSec) * balance) / totalSupply;
@@ -472,7 +470,7 @@ contract LiveSystemTest is Test {
             .getOutstandingRewardsForUser(mToken, address(this));
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("WELL"));
+            .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
         uint256 expectedSupplyReward;
         {
