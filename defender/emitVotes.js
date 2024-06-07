@@ -62,7 +62,7 @@ class MoonwellEvent {
 
     discordMessagePayload(color, txURL, networkName, id) {
         const text = `Votes emmited for proposal ${id} on ${networkName}`;
-        const details = `If the proposal reaches quorum, once the cross-chain vote collection period finishes it will be automatically executed.`;
+        const details = `If the proposal reaches quorum, it will be executed automatically once the cross-chain vote collection period finishes.`;
         const baseFields = [
             {
                 name: 'Network',
@@ -113,9 +113,9 @@ class MoonwellEvent {
 }
 
 async function storeProposal(kvStore, id) {
-    console.log('Storing proposal ${id} in KV store...');
+    console.log(`Storing proposal ${id} in KV store...`);
     await kvStore.put(`${network}-${id}`, '1');
-    console.log(`Updated KV store value for ${network}: ${value}`);
+    console.log(`Updated KV store value for ${network}-${id}`);
 }
 
 // Entrypoint for the action
@@ -153,7 +153,7 @@ exports.handler = async function (event, context) {
         speed: 'fast',
     });
 
-    if (liveProposals.length === 0) {
+    if (liveProposals.length == 0) {
         console.log('No live proposals found');
         return {};
     }
@@ -172,10 +172,9 @@ exports.handler = async function (event, context) {
         const voteEmitted = await kvStore.get(
             `${network}-${proposalId.toString()}`,
         );
-        console.log(`Proposal ${proposalId} vote emitted: ${voteEmitted}`);
 
         if (voteEmitted == '1') {
-            console.log(`Proposal ${proposalId} already emitted votes`);
+            console.log(`Votes already emitted for proposal ${proposalId}`);
             continue;
         }
 
@@ -187,21 +186,21 @@ exports.handler = async function (event, context) {
             const proposalInformation =
                 await voteCollection.proposalInformation(proposalId);
 
+            let txHash;
+
             // only emit votes if proposal total votes is greater than 0
             if (proposalInformation[5] > 0) {
-                const bridgeCost = await voteCollection.bridgeCostAll();
-
-                const gasEstimate = await voteCollection.estimateGas.emitVotes(
-                    proposalId,
-                    {
-                        value: bridgeCost,
-                    },
-                );
-
-                // Add a buffer to the gas estimate
-                const gasLimit = gasEstimate.add(gasEstimate.div(5)); // Adding 20% extra gas as a buffer
-
                 try {
+                    const bridgeCost = await voteCollection.bridgeCostAll();
+
+                    const gasEstimate =
+                        await voteCollection.estimateGas.emitVotes(proposalId, {
+                            value: bridgeCost,
+                        });
+
+                    // Add a buffer to the gas estimate
+                    const gasLimit = gasEstimate.add(gasEstimate.div(5)); // Adding 20% extra gas as a buffer
+
                     const tx = await voteCollection.emitVotes(proposalId, {
                         value: bridgeCost,
                         gasLimit: gasLimit,
@@ -209,6 +208,8 @@ exports.handler = async function (event, context) {
                     console.log(`Transaction hash: ${tx.hash}`);
 
                     await storeProposal(kvStore, proposalId);
+
+                    txHash = tx.hash;
                 } catch (error) {
                     console.error(
                         `Error emitting votes for proposal ${proposalId}: ${error.message}`,
@@ -221,7 +222,7 @@ exports.handler = async function (event, context) {
                 notificationClient.send({
                     channelAlias: 'Parameter Changes to Slack',
                     subject: `Votes emitted for proposal ${proposalId} on ${network}`,
-                    message: `Successfully emitted votes for proposal ${proposalId} on ${network}. If the proposal reaches quorum, once the cross-chain vote collection period finishes it will be automatically executed.`,
+                    message: `If the proposal reaches quorum, it will be executed automatically once the cross-chain vote collection period finishes.`,
                 });
 
                 // Discord
@@ -229,7 +230,7 @@ exports.handler = async function (event, context) {
                 const moonwellEvent = new MoonwellEvent();
                 const discordPayload = moonwellEvent.discordMessagePayload(
                     0x00ff00,
-                    blockExplorer + tx.hash,
+                    blockExplorer + txHash,
                     network,
                     proposalId,
                 );
@@ -238,8 +239,14 @@ exports.handler = async function (event, context) {
                     discordPayload,
                 );
 
-                return {tx: tx.hash};
+                return {tx: txHash};
+            } else {
+                console.log(`Proposal ${proposalId} has no votes, skipping...`);
             }
+        } else {
+            console.log(
+                `Proposal ${proposalId} is not in the cross chain vote collection state, skipping...`,
+            );
         }
     }
 
