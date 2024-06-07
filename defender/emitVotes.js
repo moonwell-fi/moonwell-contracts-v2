@@ -185,7 +185,6 @@ exports.handler = async function (event, context) {
                         value: bridgeCost,
                         gasLimit: gasLimit,
                     });
-                    console.log(`Transaction hash: ${tx.hash}`);
 
                     subject = `Votes emitted for proposal ${proposalId} on ${network}`;
                     message = `If the proposal reaches quorum, it will be executed automatically once the cross-chain vote collection period finishes.`;

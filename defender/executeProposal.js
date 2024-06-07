@@ -3,7 +3,6 @@ const {Defender} = require('@openzeppelin/defender-sdk');
 const {KeyValueStoreClient} = require('defender-kvstore-client');
 const axios = require('axios');
 
-// const network = 'moonbeam';
 const network = 'moonbase';
 
 const senderNetwork = network === 'moonbeam' ? 'base' : 'baseSepolia';
@@ -31,7 +30,6 @@ class MoonwellEvent {
         if (!url) {
             throw new Error('Discord webhook url is invalid!');
         }
-        console.log('SENDING', JSON.stringify(payload, null, 2));
         try {
             const response = await axios.post(url, payload, {
                 headers: {
@@ -49,18 +47,12 @@ class MoonwellEvent {
         console.log('Sent Discord message!');
     }
 
-    discordMessagePayload(color, txURL, networkName, id) {
-        const text = `Proposal ${id} executed on ${networkName}`;
+    discordMessagePayload(color, message, details) {
         const baseFields = [
             {
-                name: 'Network',
-                value: networkName,
-                inline: true,
-            },
-            {
-                name: 'Proposal',
-                value: `${id}`,
-                inline: true,
+                name: 'Details',
+                value: details,
+                inline: false,
             },
         ];
 
@@ -68,10 +60,9 @@ class MoonwellEvent {
             content: '',
             embeds: [
                 {
-                    title: `${text}`,
+                    title: `${message}`,
                     color: color,
                     fields: baseFields,
-                    url: txURL,
                 },
             ],
         };
@@ -94,99 +85,79 @@ class MoonwellEvent {
     }
 }
 
-async function processProposal(governor, secrets, id, context) {
+async function processProposal(governor, secrets, kvStore, id, context) {
     console.log(`Proposal ${id} is ready, executing...`);
 
-    const state = await governor.state(proposalId);
+    const {notificationClient} = context;
+
+    const state = await governor.state(id);
+    let subject;
+    let message;
+    let shouldDelete;
+    let color;
 
     // Proposal is succeeded
     if (state == 4) {
         try {
             const tx = await governor.execute(id);
 
-            if (tx) {
-                console.log(`Called execute in ${tx.hash}`);
-                console.log(`Removing proposal ${id} from KV store...`);
-                await kvStore.del(`${network}-${id}`);
-
-                const {notificationClient} = context;
-                notificationClient.send({
-                    channelAlias: 'Parameter Changes to Slack',
-                    subject: `Executed Proposal ${id} on ${network}`,
-                    message: `Successfully executed transaction: ${blockExplorer}${tx.hash}.
-                    Removed ${network}-${id} from the KV store.`,
-                });
-
-                const {GOVBOT_WEBHOOK} = secrets;
-                const moonwellEvent = new MoonwellEvent();
-
-                const discordPayload = moonwellEvent.discordMessagePayload(
-                    0x42b24e, // Green (Go color in Moonwell Guide)
-                    `successfully executed`,
-                    blockExplorer + tx.hash,
-                    network,
-                    id,
-                );
-
-                await moonwellEvent.sendDiscordMessage(
-                    GOVBOT_WEBHOOK,
-                    discordPayload,
-                );
-                return true;
-            }
+            console.log(`Called execute in ${tx.hash}`);
+            subject = `Executed Proposal ${id} on ${network}`;
+            message = `Successfully executed transaction: ${blockExplorer}${tx.hash}.`;
+            shouldDelete = true;
+            color = 0x42b24e; // Green
         } catch (error) {
             console.log(
                 `Failed to execute proposal ${id}, error message: ${error}`,
             );
-            console.log(`Removing proposal ${id} from KV store...`);
-            await kvStore.del(`${network}-${id}`);
-            notificationClient.send({
-                channelAlias: 'Parameter Changes to Slack',
-                subject: `Failed to Execute Proposal ${id} on ${network}`,
-                message: `Removed proposals-${network}-${id} from the KV store`,
-            });
-            const {GOVBOT_WEBHOOK} = credentials.secrets;
-            const moonwellEvent = new MoonwellEvent();
-            const discordPayload = moonwellEvent.discordMessagePayload(
-                0xe83938, // Red (Caution color in Moonwell Guide)
-                `failed to execute`,
-                'https://moonwell.fi/governance',
-                network,
-                id,
-            );
-            await moonwellEvent.sendDiscordMessage(
-                GOVBOT_WEBHOOK,
-                discordPayload,
-            );
-            return true;
+            subject = `Failed to Execute Proposal ${id} on ${network}`;
+            message = `Manual execution required.`;
+            shouldDelete = true;
+            color = 0xe83938; // Red
         }
 
         // Proposal is defeated, canceled or executed
     } else if (state == 2 || state == 3 || state == 5) {
-        console.log(`Removing proposal ${id} from KV store...`);
-
-        await kvStore.del(`${network}-${id}`);
-
-        notificationClient.send({
-            channelAlias: 'Parameter Changes to Slack',
-            subject: `Removed Proposal ${id} from ${network} as it is ${state == 2 ? 'defeated' : state == 3 ? 'canceled' : 'executed'}`,
-            message: `Removed ${network}-${id} from the KV store`,
-        });
-
-        return true; // Return true to remove the id from the proposals array
+        subject = `Proposal ${id} is ${state == 2 ? 'canceled' : state == 3 ? 'defeated' : 'executed'}`;
+        message = `Removed from KV store.`;
+        shouldDelete = true;
+        color = 0xffa500; // Orange
     } else {
         console.log(
             `Proposal ${id} is still in the cross chain vote collection state, skipping...`,
         );
-        return false;
+        shouldDelete = false;
     }
+
+    notificationClient.send({
+        channelAlias: 'Parameter Changes to Slack',
+        subject,
+        message,
+    });
+
+    const {GOVBOT_WEBHOOK} = secrets;
+    const moonwellEvent = new MoonwellEvent();
+
+    const discordPayload = moonwellEvent.discordMessagePayload(
+        color,
+        subject,
+        message,
+    );
+
+    await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
+
+    if (shouldDelete) {
+        await kvStore.del(`${network}-${id}`);
+    }
+
+    return shouldDelete;
 }
 
 // Entrypoint for the Autotask
 exports.handler = async function (credentials, context) {
     console.log(`Checking for executable proposals on ${network}...`);
 
-    const client = new Defender(event);
+    const client = new Defender(credentials);
     const provider = client.relaySigner.getProvider();
     const signer = await client.relaySigner.getSigner(provider, {
         speed: 'fast',
@@ -197,10 +168,10 @@ exports.handler = async function (credentials, context) {
     const liveProposals = await governor.liveProposals();
 
     const kvStore = new KeyValueStoreClient(credentials);
-    const data = await kvStore.get(`${senderNetwork}-`);
-    console.log(`Data: ${data}`);
-    return;
-    let ids = data?.split(',');
+    const kvStoreValue = await kvStore.get(`${senderNetwork}`);
+    console.log(`kvStoreValue: ${kvStoreValue}`);
+
+    let ids = kvStoreValue?.split(',');
 
     if (!ids) {
         console.log('No proposal found in KV store.');
@@ -216,6 +187,7 @@ exports.handler = async function (credentials, context) {
         const isProcessed = await processProposal(
             governor,
             credentials.secrets,
+            kvStore,
             id,
             context,
         );
@@ -229,5 +201,5 @@ exports.handler = async function (credentials, context) {
     }
 
     // Store the updated array of strings back to the key/value store
-    if (anyProcessed) await kvStore.put(network, ids.join(','));
+    if (anyProcessed) await kvStore.put(senderNetwork, ids.join(','));
 };
