@@ -126,7 +126,7 @@ async function processProposal(governor, secrets, kvStore, id, context) {
         console.log(
             `Proposal ${id} is still in the cross chain vote collection state, skipping...`,
         );
-        shouldDelete = false;
+        return false; // Skip the slack/discord notification
     }
 
     notificationClient.send({
