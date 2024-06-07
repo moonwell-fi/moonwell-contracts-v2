@@ -1,4 +1,3 @@
-// Script compatible with Defender v2
 const {ethers} = require('ethers');
 const {Defender} = require('@openzeppelin/defender-sdk');
 const {KeyValueStoreClient} = require('defender-kvstore-client');
@@ -60,20 +59,8 @@ class MoonwellEvent {
         console.log('Sent Discord message!');
     }
 
-    discordMessagePayload(color, txURL, networkName, id) {
-        const text = `Votes emmited for proposal ${id} on ${networkName}`;
-        const details = `If the proposal reaches quorum, it will be executed automatically once the cross-chain vote collection period finishes.`;
+    discordMessagePayload(color, message, details) {
         const baseFields = [
-            {
-                name: 'Network',
-                value: networkName,
-                inline: true,
-            },
-            {
-                name: 'Proposal',
-                value: `${id}`,
-                inline: true,
-            },
             {
                 name: 'Details',
                 value: details,
@@ -85,10 +72,9 @@ class MoonwellEvent {
             content: '',
             embeds: [
                 {
-                    title: `${text}`,
+                    title: `${message}`,
                     color: color,
                     fields: baseFields,
-                    url: txURL,
                 },
             ],
         };
@@ -99,7 +85,7 @@ class MoonwellEvent {
     }
 
     numberWithCommas(num) {
-        const numStr = num.toString();
+        let numStr = num.toString();
         if (!numStr.includes('.')) {
             numStr = numStr + '.0';
         }
@@ -111,8 +97,6 @@ class MoonwellEvent {
             .replace(/\.0+$/, '');
     }
 }
-
-async function storeProposal(kvStore, kvStoreValue, id) {}
 
 // Entrypoint for the action
 exports.handler = async function (event, context) {
@@ -165,11 +149,10 @@ exports.handler = async function (event, context) {
         console.log(`Proposal ${proposalId} state: ${state}`);
 
         const kvStore = new KeyValueStoreClient(event);
-        const kvStoreValue = await kvStore.get(`${network}`);
+        let kvStoreValue = await kvStore.get(`${network}`);
+        const ids = kvStoreValue?.split(',') || [];
 
-        const ids = kvStoreValue?.split(',');
-
-        if (ids && ids.includes(proposalId.toString())) {
+        if (ids.includes(proposalId.toString())) {
             console.log(`Votes already emitted for proposal ${proposalId}`);
             continue;
         }
@@ -182,7 +165,9 @@ exports.handler = async function (event, context) {
             const proposalInformation =
                 await voteCollection.proposalInformation(proposalId);
 
-            let txHash;
+            const {notificationClient} = context;
+            let subject;
+            let message;
 
             // only emit votes if proposal total votes is greater than 0
             if (proposalInformation[5] > 0) {
@@ -196,37 +181,37 @@ exports.handler = async function (event, context) {
 
                     // Add a buffer to the gas estimate
                     const gasLimit = gasEstimate.add(gasEstimate.div(5)); // Adding 20% extra gas as a buffer
-
-                    const tx = await voteCollection.emitVotes(proposalId, {
+                    await voteCollection.emitVotes(proposalId, {
                         value: bridgeCost,
                         gasLimit: gasLimit,
                     });
                     console.log(`Transaction hash: ${tx.hash}`);
 
-                    if (kvStoreValue) {
-                        kvStoreValue += `,${id}`;
-                    } else {
-                        kvStoreValue = `${id}`;
-                    }
-
-                    console.log(`Storing proposal ${id} in KV store...`);
-                    await kvStore.put(`${network}`, kvStoreValue);
-                    console.log(`Updated KV store value for ${network}`);
-
-                    txHash = tx.hash;
+                    subject = `Votes emitted for proposal ${proposalId} on ${network}`;
+                    message = `If the proposal reaches quorum, it will be executed automatically once the cross-chain vote collection period finishes.`;
                 } catch (error) {
                     console.error(
                         `Error emitting votes for proposal ${proposalId}: ${error.message}`,
                     );
-                    continue;
+                    subject = `Error emitting votes for proposal ${proposalId} on ${network}`;
+                    message = `Error: ${error.message}. Manual intervention required.`;
                 }
 
+                if (kvStoreValue) {
+                    kvStoreValue += `,${proposalId}`;
+                } else {
+                    kvStoreValue = `${proposalId}`;
+                }
+
+                console.log(`Storing proposal ${proposalId} in KV store...`);
+                await kvStore.put(`${network}`, kvStoreValue);
+                console.log(`Updated KV store value for ${network}`);
+
                 // Slack
-                const {notificationClient} = context;
                 notificationClient.send({
                     channelAlias: 'Parameter Changes to Slack',
-                    subject: `Votes emitted for proposal ${proposalId} on ${network}`,
-                    message: `If the proposal reaches quorum, it will be executed automatically once the cross-chain vote collection period finishes.`,
+                    subject,
+                    message,
                 });
 
                 // Discord
@@ -234,16 +219,15 @@ exports.handler = async function (event, context) {
                 const moonwellEvent = new MoonwellEvent();
                 const discordPayload = moonwellEvent.discordMessagePayload(
                     0x00ff00,
-                    blockExplorer + txHash,
-                    network,
-                    proposalId,
+                    subject,
+                    message,
                 );
                 await moonwellEvent.sendDiscordMessage(
                     GOVBOT_WEBHOOK,
                     discordPayload,
                 );
 
-                return {tx: txHash};
+                return;
             } else {
                 console.log(`Proposal ${proposalId} has no votes, skipping...`);
             }
