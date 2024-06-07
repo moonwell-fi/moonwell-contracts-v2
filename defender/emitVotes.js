@@ -42,7 +42,7 @@ class MoonwellEvent {
         if (!url) {
             throw new Error('Discord webhook url is invalid!');
         }
-        console.log('SENDING', JSON.stringify(payload, null, 2));
+
         try {
             const response = await axios.post(url, payload, {
                 headers: {
@@ -112,11 +112,7 @@ class MoonwellEvent {
     }
 }
 
-async function storeProposal(kvStore, id) {
-    console.log(`Storing proposal ${id} in KV store...`);
-    await kvStore.put(`${network}-${id}`, '1');
-    console.log(`Updated KV store value for ${network}-${id}`);
-}
+async function storeProposal(kvStore, kvStoreValue, id) {}
 
 // Entrypoint for the action
 exports.handler = async function (event, context) {
@@ -169,11 +165,11 @@ exports.handler = async function (event, context) {
         console.log(`Proposal ${proposalId} state: ${state}`);
 
         const kvStore = new KeyValueStoreClient(event);
-        const voteEmitted = await kvStore.get(
-            `${network}-${proposalId.toString()}`,
-        );
+        const kvStoreValue = await kvStore.get(`${network}`);
 
-        if (voteEmitted == '1') {
+        const ids = kvStoreValue?.split(',');
+
+        if (ids && ids.includes(proposalId.toString())) {
             console.log(`Votes already emitted for proposal ${proposalId}`);
             continue;
         }
@@ -207,7 +203,15 @@ exports.handler = async function (event, context) {
                     });
                     console.log(`Transaction hash: ${tx.hash}`);
 
-                    await storeProposal(kvStore, proposalId);
+                    if (kvStoreValue) {
+                        kvStoreValue += `,${id}`;
+                    } else {
+                        kvStoreValue = `${id}`;
+                    }
+
+                    console.log(`Storing proposal ${id} in KV store...`);
+                    await kvStore.put(`${network}`, kvStoreValue);
+                    console.log(`Updated KV store value for ${network}`);
 
                     txHash = tx.hash;
                 } catch (error) {
