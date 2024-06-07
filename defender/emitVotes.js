@@ -9,8 +9,8 @@ const network = 'baseSepolia';
 
 const voteCollectionAddress =
     network === 'base'
-        ? '0xe0278B32c627FF6fFbbe7de6A18Ade145603e949' // TemporalGovernor on Base
-        : '0xBdD86164da753C1a25e72603d266Dc1CC32e8acf'; // TemporalGovernor on Base Sepolia
+        ? '0xe0278B32c627FF6fFbbe7de6A18Ade145603e949' // Vote Collection on Base
+        : '0xBdD86164da753C1a25e72603d266Dc1CC32e8acf'; // Vote Collection on Base Sepolia
 
 const governorAddress =
     network === 'base'

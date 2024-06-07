@@ -20,6 +20,7 @@ const governorABI = [
     'function liveProposals() external view returns (uint256[] memory)',
     'function state(uint256 proposalId) external view returns (uint8)',
     'function crossChainVoteCollectionPeriod() external view returns (uint256)',
+    'function execute(uint256 proposalId) external payable',
 ];
 
 class MoonwellEvent {
