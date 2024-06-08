@@ -12,6 +12,12 @@
         "name": "MORPHO_BLUE"
     },
     {
+        "addr": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "MORPHO_BLUE"
+    },
+    {
         "addr": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
         "chainId": 84532,
         "isContract": true,
@@ -226,6 +232,24 @@
         "chainId": 1287,
         "name": "PAUSE_GUARDIAN",
         "isContract": false
+    },
+    {
+        "addr": "0xA9c3D3a366466Fa809d1Ae982Fb2c46E5fC41101",
+        "chainId": 8453,
+        "name": "META_MORPHO_FACTORY",
+        "isContract": true
+    },
+    {
+        "addr": "0x4756c26E01E61c7c2F86b10f4316e179db8F9425",
+        "chainId": 8453,
+        "name": "MORPHO_CHAINLINK_cbETH_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x46415998764C29aB2a25CbeA6254146D50D22687",
+        "chainId": 8453,
+        "name": "MORPHO_ADAPTIVE_CURVE_IRM",
+        "isContract": true
     },
     {
         "addr": "0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6",
