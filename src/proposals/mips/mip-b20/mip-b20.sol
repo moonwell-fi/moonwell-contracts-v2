@@ -11,15 +11,15 @@ import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.so
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
-/// src/proposals/mips/mip-b19/mip-b19.sol:mipb19
-contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
-    string public constant override name = "MIP-B19";
+/// src/proposals/mips/mip-b20/mip-b20.sol:mipb20
+contract mipb20 is Proposal, CrossChainProposal, Configs, ParameterValidation {
+    string public constant override name = "MIP-B20";
 
     uint128 public constant NEW_REWARD_SPEED = 2.475835385901440000 * 1e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-B19/MIP-B19.md")
+            vm.readFile("./src/proposals/mips/mip-B20/MIP-B20.md")
         );
 
         _setProposalDescription(proposalDescription);
