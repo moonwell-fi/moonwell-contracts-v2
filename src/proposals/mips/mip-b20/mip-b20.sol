@@ -19,7 +19,7 @@ contract mipb20 is Proposal, CrossChainProposal, Configs, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-B20/MIP-B20.md")
+            vm.readFile("./src/proposals/mips/mip-b20/MIP-B20.md")
         );
 
         _setProposalDescription(proposalDescription);
