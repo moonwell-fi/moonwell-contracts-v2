@@ -86,26 +86,20 @@ contract FeeSplitter {
         /// send 4626 vault tokens to receiver b
         IERC20(metaMorphoVault).safeTransfer(b, amountB);
 
-        /// 1. get amount to withdraw from MetaMorpho Vault
-        /// accept that there is some slippage when withdrawing shares
-        uint256 withdrawableAssets = IERC4626(metaMorphoVault).previewRedeem(
-            amountA
-        );
-
         /// 2. call withdraw on MetaMorpho Vault
-        IERC4626(metaMorphoVault).withdraw(
-            withdrawableAssets,
+        uint256 withdrawnAssets = IERC4626(metaMorphoVault).redeem(
+            amountA,
             address(this),
             address(this)
         );
 
         /// 3. call approve on underlying token to approve mToken to spend
-        /// withdrawableAssets amount
-        token.safeApprove(mToken, withdrawableAssets);
+        /// withdrawnAssets amount
+        token.safeApprove(mToken, withdrawnAssets);
 
         /// 4. call addReserves on the mToken
         require(
-            MErc20(mToken)._addReserves(withdrawableAssets) == 0,
+            MErc20(mToken)._addReserves(withdrawnAssets) == 0,
             "FeeSplitter: add reserves failure"
         );
 
