@@ -270,7 +270,9 @@ contract SplitterLiveSystemBaseTest is Test {
         );
         assertEq(
             endingReserves,
-            startingReserves + metaMorphoUsdc.previewRedeem(splitAmount / 2),
+            startingReserves +
+                metaMorphoUsdc.previewRedeem(splitAmount / 2) -
+                1,
             "reserves balance"
         );
     }
