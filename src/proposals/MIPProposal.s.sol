@@ -111,6 +111,12 @@ abstract contract MIPProposal is Script {
 
     function printProposalActionSteps() public virtual;
 
+    /// @notice check if there are any on-chain proposal that matches the
+    /// proposal calldata
+    function checkOnChainCalldata(
+        address
+    ) public view virtual returns (bool matches);
+
     /// @notice set the fork IDs for base and moonbeam
     function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) public {
         require(

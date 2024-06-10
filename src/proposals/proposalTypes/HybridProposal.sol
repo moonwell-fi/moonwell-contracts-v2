@@ -455,6 +455,56 @@ abstract contract HybridProposal is
 
     function run(Addresses, address) public virtual override {}
 
+    /// @notice Check if there are any on-chain proposals that match the
+    /// proposal calldata
+    function checkOnChainCalldata(
+        address governorAddress
+    ) public view override returns (bool calldataExist) {
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas,
+            ,
+
+        ) = getProposalActionSteps();
+
+        MultichainGovernor governor = MultichainGovernor(governorAddress);
+
+        uint256 proposalCount = governor.proposalCount();
+
+        for (uint256 i = 0; i < proposalCount; i++) {
+            (
+                address[] memory proposalTargets,
+                uint256[] memory proposalValues,
+                bytes[] memory proposalCalldatas
+            ) = governor.getProposalData(i);
+
+            if (
+                proposalTargets.length == targets.length &&
+                proposalValues.length == values.length &&
+                proposalCalldatas.length == calldatas.length
+            ) {
+                bool matches = true;
+                for (uint256 j = 0; j < targets.length; j++) {
+                    if (
+                        proposalTargets[j] != targets[j] ||
+                        proposalValues[j] != values[j] ||
+                        keccak256(proposalCalldatas[j]) !=
+                        keccak256(calldatas[j])
+                    ) {
+                        matches = false;
+                        break;
+                    }
+                }
+
+                if (matches) {
+                    calldataExist = true;
+                    break;
+                }
+            }
+        }
+    }
+
     /// @notice Runs the proposal on moonbeam, verifying the actions through the hook
     /// @param addresses the addresses contract
     /// @param caller the proposer address
