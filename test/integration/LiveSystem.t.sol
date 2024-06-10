@@ -530,7 +530,7 @@ contract LiveSystemTest is Test {
             liquidator,
             address(this),
             MErc20(address(mToken)),
-            1e6
+            1e5
         );
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewardsAfter = mrd
