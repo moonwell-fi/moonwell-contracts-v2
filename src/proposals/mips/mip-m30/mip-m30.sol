@@ -36,9 +36,9 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
             "MULTICHAIN_GOVERNOR_PROXY"
         );
 
-        /// set pending admin of mWBTCwh to the Multichain Governor
+        /// set pending admin of MOONWELL_mWBTC to the Multichain Governor
         _pushGovernanceAction(
-            addresses.getAddress("mWBTCwh"),
+            addresses.getAddress("MOONWELL_mWBTC"),
             "Set the pending admin of the new wBTC market to the Multichain Governor",
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
@@ -64,9 +64,9 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
 
         assertEq(
-            Timelock(addresses.getAddress("mWBTCwh")).pendingAdmin(),
+            Timelock(addresses.getAddress("MOONWELL_mWBTC")).pendingAdmin(),
             governor,
-            "mWBTCwh pending admin incorrect"
+            "MOONWELL_mWBTC pending admin incorrect"
         );
     }
 }

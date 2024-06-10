@@ -38,7 +38,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
     function afterDeploySetup(Addresses) public override {}
 
     function teardown(Addresses addresses, address caller) public override {
-        // we must run first mip-m30 to set the pending admin of mWBTCwh to the Multichain Governor
+        // we must run first mip-m30 to set the pending admin of MOONWELL_mWBTC to the Multichain Governor
         IProposal mip30 = IProposal(address(new mipm30()));
         mip30.build(addresses);
         mip30.run(addresses, caller);
@@ -46,21 +46,21 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
 
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
-        /// accept admin of mWBTCwh to the Multichain Governor
+        /// accept admin of MOONWELL_mWBTC to the Multichain Governor
         _pushHybridAction(
-            addresses.getAddress("mWBTCwh"),
+            addresses.getAddress("MOONWELL_mWBTC"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept the admin transfer of the new wBTC market to the Multichain Governor",
             true
         );
 
         _pushHybridAction(
-            addresses.getAddress("mWBTCwh"),
+            addresses.getAddress("MOONWELL_mWBTC"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_M_WBTCWH_RESERVE_FACTOR
             ),
-            "Set reserve factor for mWBTCwh to updated reserve factor",
+            "Set reserve factor for MOONWELL_mWBTC to updated reserve factor",
             true
         );
 
@@ -68,10 +68,10 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("mWBTCwh"),
+                addresses.getAddress("MOONWELL_mWBTC"),
                 NEW_M_WBTCWH_COLLATERAL_FACTOR
             ),
-            "Set collateral factor of mWBTCwh",
+            "Set collateral factor of MOONWELL_mWBTC",
             true
         );
     }
@@ -96,19 +96,19 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
 
         assertEq(
-            Timelock(addresses.getAddress("mWBTCwh")).admin(),
+            Timelock(addresses.getAddress("MOONWELL_mWBTC")).admin(),
             governor,
-            "mWBTCwh admin incorrect"
+            "MOONWELL_mWBTC admin incorrect"
         );
 
         _validateRF(
-            addresses.getAddress("mWBTCwh"),
+            addresses.getAddress("MOONWELL_mWBTC"),
             NEW_M_WBTCWH_RESERVE_FACTOR
         );
 
         _validateCF(
             addresses,
-            addresses.getAddress("mWBTCwh"),
+            addresses.getAddress("MOONWELL_mWBTC"),
             NEW_M_WBTCWH_COLLATERAL_FACTOR
         );
     }
