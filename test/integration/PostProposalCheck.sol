@@ -3,10 +3,11 @@ pragma solidity 0.8.19;
 
 import {Test} from "@forge-std/Test.sol";
 
+import {String} from "@utils/String.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {CreateCode} from "@proposals/utils/CreateCode.sol";
-import {String} from "@utils/String.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
+import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 
 contract PostProposalCheck is CreateCode {
     using String for string;
