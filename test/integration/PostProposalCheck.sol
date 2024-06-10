@@ -66,5 +66,84 @@ contract PostProposalCheck is CreateCode {
         );
 
         addresses = proposals.addresses();
+
+        /// only etch out precompile contracts if on the moonbeam chain
+        if (addresses.isAddressSet("xcUSDT")) {
+            MockERC20Params mockUSDT = new MockERC20Params(
+                "Mock xcUSDT",
+                "xcUSDT"
+            );
+            address mockUSDTAddress = address(mockUSDT);
+            uint256 codeSize;
+            assembly {
+                codeSize := extcodesize(mockUSDTAddress)
+            }
+
+            bytes memory runtimeBytecode = new bytes(codeSize);
+
+            assembly {
+                extcodecopy(
+                    mockUSDTAddress,
+                    add(runtimeBytecode, 0x20),
+                    0,
+                    codeSize
+                )
+            }
+
+            vm.etch(addresses.getAddress("xcUSDT"), runtimeBytecode);
+            MockERC20Params(addresses.getAddress("xcUSDT")).setSymbol("xcUSDT");
+        }
+
+        if (addresses.isAddressSet("xcUSDC")) {
+            MockERC20Params mockUSDC = new MockERC20Params(
+                "USD Coin",
+                "xcUSDC"
+            );
+            address mockUSDCAddress = address(mockUSDC);
+            uint256 codeSize;
+            assembly {
+                codeSize := extcodesize(mockUSDCAddress)
+            }
+
+            bytes memory runtimeBytecode = new bytes(codeSize);
+
+            assembly {
+                extcodecopy(
+                    mockUSDCAddress,
+                    add(runtimeBytecode, 0x20),
+                    0,
+                    codeSize
+                )
+            }
+
+            vm.etch(addresses.getAddress("xcUSDC"), runtimeBytecode);
+            MockERC20Params(addresses.getAddress("xcUSDC")).setSymbol("xcUSDC");
+        }
+
+        if (addresses.isAddressSet("xcDOT")) {
+            MockERC20Params mockDot = new MockERC20Params(
+                "Mock xcDOT",
+                "xcDOT"
+            );
+            address mockDotAddress = address(mockDot);
+            uint256 codeSize;
+            assembly {
+                codeSize := extcodesize(mockDotAddress)
+            }
+
+            bytes memory runtimeBytecode = new bytes(codeSize);
+
+            assembly {
+                extcodecopy(
+                    mockDotAddress,
+                    add(runtimeBytecode, 0x20),
+                    0,
+                    codeSize
+                )
+            }
+
+            vm.etch(addresses.getAddress("xcDOT"), runtimeBytecode);
+            MockERC20Params(addresses.getAddress("xcDOT")).setSymbol("xcDOT");
+        }
     }
 }
