@@ -42,7 +42,7 @@ contract mipb20 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             abi.encodeWithSignature(
                 "configureAsset(uint128,address)",
                 NEW_REWARD_SPEED,
-                addresses.getAddress("xWELL_PROXY")
+                addresses.getAddress("STK_GOVTOKEN")
             ),
             "Set new reward speed to 2.475835385901440000 WELL per second"
         );
@@ -57,7 +57,7 @@ contract mipb20 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             addresses.getAddress("STK_GOVTOKEN")
         );
         (uint128 emissionsPerSecond, , ) = stkWell.assets(
-            addresses.getAddress("xWELL_PROXY")
+            addresses.getAddress("STK_GOVTOKEN")
         );
 
         assertEq(emissionsPerSecond, NEW_REWARD_SPEED, "emissionsPerSecond");
