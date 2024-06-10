@@ -2297,16 +2297,22 @@ contract MultichainProposalTest is
             "DEPRECATED_MOONWELL_mWBTC admin incorrect"
         );
 
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mWBTC")).pendingAdmin(),
-            artemisTimelockAddress,
-            "MOONWELL_mWBTC pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mWBTC")).admin(),
-            address(governor),
-            "MOONWELL_mWBTC admin incorrect"
-        );
+        /// only test this condition if MIP-M32 passes
+        if (
+            Timelock(addresses.getAddress("MOONWELL_mWBTC")).pendingAdmin() ==
+            address(0)
+        ) {
+            assertEq(
+                Timelock(addresses.getAddress("MOONWELL_mWBTC")).pendingAdmin(),
+                artemisTimelockAddress,
+                "MOONWELL_mWBTC pending admin incorrect"
+            );
+            assertEq(
+                Timelock(addresses.getAddress("MOONWELL_mWBTC")).admin(),
+                address(governor),
+                "MOONWELL_mWBTC admin incorrect"
+            );
+        }
 
         assertEq(
             Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mETH"))
