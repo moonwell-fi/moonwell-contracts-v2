@@ -2096,7 +2096,7 @@ contract MultichainProposalTest is
         calldatas[16] = _setPendingAdminCalldata;
 
         targets[17] = addresses.getAddress("MOONWELL_mWBTC");
-        calldatas[1] = _setPendingAdminCalldata;
+        calldatas[17] = _setPendingAdminCalldata;
 
         targets[18] = addresses.getAddress("mxcUSDC");
         calldatas[18] = _setPendingAdminCalldata;
