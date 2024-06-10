@@ -8,6 +8,7 @@ artifacts
 .github
 .husky
 other
+.certora_internal/
 
 # files
 *.env
@@ -31,4 +32,3 @@ Makefile
 
 # temporarily
 test/unit/SystemUpgrade.t.sol
-test/integration/LiveSystem.t.sol

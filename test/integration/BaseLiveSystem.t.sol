@@ -32,7 +32,7 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         super.setUp();
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
-        well = addresses.getAddress("WELL");
+        well = addresses.getAddress("GOVTOKEN");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         router = WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));
         oracle = ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"));
@@ -101,12 +101,16 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_USDBC")),
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
-        assertEq(config.supplyEmissionsPerSec, 1e18);
+        assertEq(
+            config.supplyEmissionsPerSec,
+            1e18,
+            "supply emissions per second incorrect"
+        );
     }
 
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
@@ -127,12 +131,16 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_USDBC")),
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
-        assertEq(config.emissionToken, well);
-        assertEq(config.borrowEmissionsPerSec, 1e18);
+        assertEq(config.emissionToken, well, "emission token not well");
+        assertEq(
+            config.borrowEmissionsPerSec,
+            1e18,
+            "well per second incorrect"
+        );
     }
 
     function testMintMWethMTokenSucceeds() public {

@@ -12,7 +12,6 @@ A proposal to adjust 7 total risk parameters:
 | xcUSDT Reserve Factor      | 20%           | 25%               |
 | xcUSDC Reserve Factor      | 20%           | 25%               |
 
-
 A proposal to make a IR curve adjustments for USDC.wh:
 
 | USDC.wh IR Parameters | Current    | Recommended |
@@ -30,7 +29,6 @@ A proposal to make an IR curve adjustments for xcUSDC:
 | Kink                 | 0.8        | 0.8         |
 | Multiplier           | **0.0814** | **0.0875**  |
 | Jump Multiplier      | **7.0**    | **7.4**     |
-
 
 A proposal to make a IR curve adjustments for xcUSDT:
 
@@ -50,5 +48,7 @@ A proposal to make an IR curve adjustments for FRAX:
 | Multiplier         | **0.01** | **0.0563**  |
 | Jump Multiplier    | **0.01** | **4**       |
 
-
-Our recommendation post is located in the forums, please refer to this [link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-03-26/841?u=gauntlet). By approving this proposal, you agree that any services provided by Gauntlet shall be governed by the terms of service available at gauntlet.network/tos
+Our recommendation post is located in the forums, please refer to this
+[link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-03-26/841?u=gauntlet).
+By approving this proposal, you agree that any services provided by Gauntlet
+shall be governed by the terms of service available at gauntlet.network/tos

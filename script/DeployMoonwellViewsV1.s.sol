@@ -37,10 +37,10 @@ contract DeployMoonwellViewsV1 is Script, Test {
 
         address unitroller = addresses.getAddress("UNITROLLER");
         address tokenSaleDistributor = addresses.getAddress("TOKENSALE");
-        address safetyModule = addresses.getAddress("STWELL");
-        address governanceToken = addresses.getAddress("WELL");
-        address nativeMarket = addresses.getAddress("mGLIMMER");
-        address governanceTokenLP = addresses.getAddress("WELL_LP");
+        address safetyModule = addresses.getAddress("STKGOVTOKEN");
+        address governanceToken = addresses.getAddress("GOVTOKEN");
+        address nativeMarket = addresses.getAddress("MNATIVE");
+        address governanceTokenLP = addresses.getAddress("GOVTOKEN_LP");
 
         MoonwellViewsV1 viewsContract = new MoonwellViewsV1();
 

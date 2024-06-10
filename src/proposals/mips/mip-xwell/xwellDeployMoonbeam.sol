@@ -70,7 +70,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
             address relayer = addresses.getAddress("WORMHOLE_BRIDGE_RELAYER");
 
             /// @notice the well token address
-            address wellAddress = addresses.getAddress("WELL");
+            address wellAddress = addresses.getAddress("GOVTOKEN");
 
             address xwellLogic;
             address xwellProxy;

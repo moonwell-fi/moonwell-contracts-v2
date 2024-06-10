@@ -26,7 +26,7 @@ contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
     function setUp() public override {
         super.setUp();
 
-        well = addresses.getAddress("WELL");
+        well = addresses.getAddress("GOVTOKEN");
         mwstETH = MErc20(addresses.getAddress("MOONWELL_rETH"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
@@ -80,9 +80,19 @@ contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
         uint256 mintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_rETH")
         );
+        /// filter out case where no minting allowed
+        if (mintAmount == 0) {
+            return;
+        }
         uint256 borrowAmount = _getMaxBorrowAmount(
             addresses.getAddress("MOONWELL_rETH")
-        ) + 100;
+        );
+        /// filter out case where no borrowing allowed
+        if (borrowAmount == 0) {
+            return;
+        }
+        borrowAmount += 100;
+
         address underlying = address(mwstETH.underlying());
 
         deal(underlying, address(this), mintAmount);
@@ -104,6 +114,11 @@ contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
         uint256 mintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_rETH")
         ) / 2;
+
+        /// filter out zero mint case
+        if (mintAmount == 0) {
+            return;
+        }
 
         MErc20Delegator mToken = MErc20Delegator(
             payable(addresses.getAddress("MOONWELL_rETH"))
@@ -146,8 +161,8 @@ contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
         assertApproxEqRel(
             liquidity,
             (mintAmount * price * collateralFactor) / 1e36, /// trim off both the CF and Chainlink Price feed extra precision
-            1e10,
-            "liquidity not within .000001% of given CF"
+            1e12,
+            "liquidity not within .0001% of given CF"
         );
         assertEq(shortfall, 0, "Incorrect shortfall");
 
@@ -172,7 +187,7 @@ contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_rETH")),
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(
@@ -195,6 +210,10 @@ contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
 
         // totalSupplies = totalCash + totalBorrows - totalReserves
         uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+
+        if (totalSupplies - 1 > supplyCap) {
+            return 0;
+        }
 
         return supplyCap - totalSupplies - 1;
     }

@@ -24,4 +24,6 @@ jobs:
         run: bash ./.github/helper/set-env-var.sh
 
       - name: Integration Tests Base Mainnet
-        run: time forge test --match-contract LiveSystemBaseTest --fork-url base -vvv
+        run:
+          time forge test --match-contract LiveSystemBaseTest --fork-url base
+          -vvv

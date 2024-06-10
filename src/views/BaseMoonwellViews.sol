@@ -416,9 +416,7 @@ contract BaseMoonwellViews is Initializable {
         address _user
     ) public view returns (UserStakingInfo memory _result) {
         if (address(safetyModule) != address(0)) {
-            _result.pendingRewards = safetyModule.getTotalRewardsBalance(
-                _user
-            );
+            _result.pendingRewards = safetyModule.getTotalRewardsBalance(_user);
             _result.cooldown = safetyModule.stakersCooldowns(_user);
             _result.totalStaked = safetyModule.balanceOf(_user);
         }
