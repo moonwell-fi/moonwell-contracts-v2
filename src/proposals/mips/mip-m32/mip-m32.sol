@@ -13,7 +13,7 @@ import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
 
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 
-contract mipm31 is Configs, HybridProposal, ParameterValidation {
+contract mipm32 is Configs, HybridProposal, ParameterValidation {
     string public constant override name = "MIP-M30";
 
     uint256 public constant NEW_M_WBTCWH_RESERVE_FACTOR = 0.35e18;
@@ -21,7 +21,7 @@ contract mipm31 is Configs, HybridProposal, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m31/MIP-M31.md")
+            vm.readFile("./src/proposals/mips/mip-m32/MIP-M32.md")
         );
         _setProposalDescription(proposalDescription);
     }
