@@ -24,5 +24,5 @@ MIP_NUM=${LATEST_MIP_DIR:5:2}
 if [[ $MIP_NUM == 27 ]]; then
     echo ""
 else
-    echo "${BASE_DIR}/${LATEST_MIP_DIR}/mipb${MIP_NUM}.json"
+    echo "${BASE_DIR}/${LATEST_MIP_DIR}/mipm${MIP_NUM}.json"
 fi
