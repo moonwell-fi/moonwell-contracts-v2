@@ -254,7 +254,6 @@ contract MoonwellERC4626 is ERC4626 {
         vaultName = string.concat("ERC4626-Wrapped Moonwell ", asset_.symbol());
     }
 
-    /// vault symbol is wm + asset symbol
     function _vaultSymbol(
         ERC20 asset_
     ) internal view virtual returns (string memory vaultSymbol) {
