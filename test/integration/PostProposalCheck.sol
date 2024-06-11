@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {Test} from "@forge-std/Test.sol";
 
-import {String} from "@utils/String.sol";
+import {;\\\String} from "@utils/String.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
@@ -17,21 +17,38 @@ contract PostProposalCheck is Test {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        // get the latest base proposal
+        // get the latest moonbeam proposal
         string[] memory inputs = new string[](1);
         inputs[0] = "./get-latest-moonbeam-proposal.sh";
 
         string memory output = string(vm.ffi(inputs));
 
-        Proposal latestProposal = Proposal(deployCode(output));
-        latestProposal.build(addresses);
+        Proposal moonbeamProposal = Proposal(deployCode(output));
+        moonbeamProposal.build(addresses);
 
         if (
-            latestProposal.checkOnChainCalldata(
+            moonbeamProposal.checkOnChainCalldata(
                 addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
             )
         ) {
-            latestProposal.run();
+            moonbeamProposal.run();
+        }
+
+        // get the latest base proposal
+        inputs[0] = "./get-latest-base-proposal.sh";
+
+        output = string(vm.ffi(inputs));
+
+        Proposal baseProposal = Proposal(deployCode(output));
+
+        baseProposal.build(addresses);
+
+        if (
+            baseProposal.checkOnChainCalldata(
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            )
+        ) {
+            baseProposal.run();
         }
 
         /// only etch out precompile contracts if on the moonbeam chain
