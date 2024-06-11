@@ -76,9 +76,13 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
         }
 
         for (uint256 i = 0; i < proposals.length; i++) {
-            bytes memory artemisQueuePayload = CrossChainProposal(
+            CrossChainProposal proposal = CrossChainProposal(
                 address(proposals[i])
-            ).getMultichainGovernorCalldata(
+            );
+            proposal.build(addresses);
+
+            bytes memory artemisQueuePayload = proposal
+                .getMultichainGovernorCalldata(
                     addresses.getAddress("TEMPORAL_GOVERNOR"), /// call temporal gov on base
                     addresses.getAddress( /// call wormhole on moonbeam
                             "WORMHOLE_CORE_MOONBEAM",
@@ -104,8 +108,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
                 address[] memory targets,
                 uint256[] memory values,
                 bytes[] memory payloads
-            ) = CrossChainProposal(address(proposals[i]))
-                    .getTargetsPayloadsValues();
+            ) = proposal.getTargetsPayloadsValues();
 
             vm.selectFork(moonbeamForkId);
 
