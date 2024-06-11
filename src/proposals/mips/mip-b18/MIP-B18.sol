@@ -10,7 +10,7 @@ import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.so
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
-/// src/proposals/mips/mip-b18/mip-b18.sol:mipb18
+/// src/proposals/mips/mip-b18/mip-b18.sol
 contract mipb18 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B18";
 
