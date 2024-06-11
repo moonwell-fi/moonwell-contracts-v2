@@ -15,8 +15,10 @@ contract Deploy4626RouterFactories is Script {
     }
 
     function run() public {
+        vm.startBroadcast();
         deployFactory(addresses);
         deployFactoryEth(addresses);
         deploy4626Router(addresses);
+        vm.stopBroadcast();
     }
 }
