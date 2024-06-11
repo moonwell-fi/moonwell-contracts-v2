@@ -23,11 +23,13 @@ contract FeeSplitter is Script, Test {
         /// splitter is for
         /// - MTOKEN - the address name in Addresses.json of mToken to add
         /// reserves to
+        vm.startBroadcast();
         splitter = new Splitter(
             addresses.getAddress(vm.envString("EXTERNAL_REWARD_RECIPIENT")),
             vm.envUint("SPLIT_A"),
             addresses.getAddress(vm.envString("MORPHO_VAULT")),
             addresses.getAddress(vm.envString("MTOKEN"))
         );
+        vm.stopBroadcast();
     }
 }
