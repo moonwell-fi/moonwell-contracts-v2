@@ -15,6 +15,7 @@ contract FeeSplitter {
     /// ------------------------------------------------
 
     /// @notice the percentage of tokens given to address A
+    /// this is the mToken's split
     uint256 public immutable splitA;
 
     /// @notice the percentage of tokens given to address B
@@ -23,7 +24,7 @@ contract FeeSplitter {
     /// @notice the address given split of splitB
     address public immutable b;
 
-    /// @notice reference to the mToken where reserves will be added
+    /// @notice the mToken where reserves will be added from splitA
     address public immutable mToken;
 
     /// @notice reference to the MetaMorpho Vault
