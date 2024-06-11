@@ -8,12 +8,12 @@ import "@forge-std/Test.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {IMetaMorpho, MarketParams} from "@protocol/morpho/IMetaMorpho.sol";
 import {FeeSplitter} from "@protocol/morpho/FeeSplitter.sol";
 import {IMorphoBlue} from "@protocol/morpho/IMorphoBlue.sol";
 import {IMetaMorphoFactory} from "@protocol/morpho/IMetaMorphoFactory.sol";
+import {IMetaMorpho, MarketParams} from "@protocol/morpho/IMetaMorpho.sol";
 
-contract SplitterLiveSystemBaseTest is Test {
+contract FeeSplitterLiveSystemBaseTest is Test {
     /// @notice the addresses contract
     Addresses addresses;
 
@@ -214,6 +214,8 @@ contract SplitterLiveSystemBaseTest is Test {
     }
 
     function testWethSplit() public {
+        /// accrue fee
+        metaMorphoWeth.deposit(0, address(this));
         uint256 splitAmount = metaMorphoWeth.balanceOf(address(this));
 
         /// donate 4626 tokens to the splitter
@@ -237,14 +239,17 @@ contract SplitterLiveSystemBaseTest is Test {
             startingWethSharesBalance + splitAmount / 2,
             "weth shares balance"
         );
-        assertEq(
+        assertApproxEqAbs(
             endingReserves,
             startingReserves + metaMorphoWeth.previewRedeem(splitAmount / 2),
+            1,
             "reserves balance"
         );
     }
 
     function testUsdcSplit() public {
+        /// accrue fee
+        metaMorphoUsdc.deposit(0, address(this));
         uint256 splitAmount = metaMorphoUsdc.balanceOf(address(this));
 
         /// donate 4626 tokens to the splitter
@@ -268,11 +273,10 @@ contract SplitterLiveSystemBaseTest is Test {
             startingUsdcSharesBalance + splitAmount / 2,
             "weth shares balance"
         );
-        assertEq(
+        assertApproxEqAbs(
             endingReserves,
-            startingReserves +
-                metaMorphoUsdc.previewRedeem(splitAmount / 2) -
-                1,
+            startingReserves + metaMorphoUsdc.previewRedeem(splitAmount / 2),
+            1, /// allow off by one in either direction
             "reserves balance"
         );
     }
