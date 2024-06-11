@@ -228,6 +228,24 @@
         "isContract": false
     },
     {
+        "addr": "0xe770BD40b6976Efbbb095174395DD2cb794c938a",
+        "chainId": 8453,
+        "name": "ERC20_FACTORY_4626",
+        "isContract": true
+    },
+    {
+        "addr": "0x6250e204bA6f722c7d498f659f8d3C5550Ec811E",
+        "chainId": 8453,
+        "name": "ETH_FACTORY_4626",
+        "isContract": true
+    },
+    {
+        "addr": "0xc095cb1A6B41A5Cd7dAaF993a904afDD74758D71",
+        "chainId": 8453,
+        "name": "ETH_ROUTER_4626",
+        "isContract": true
+    },
+    {
         "addr": "0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6",
         "chainId": 8453,
         "name": "WORMHOLE_CORE_BASE",
