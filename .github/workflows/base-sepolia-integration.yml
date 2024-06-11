@@ -3,7 +3,8 @@ name: Foundry base sepolia integration tests
 on: [pull_request]
 
 env:
-  BASE_SEPOLIA_RPC_URL: ${{secrets.BASE_SEPOLIA_RPC_URL}}
+  BASE_RPC_URL: ${{secrets.BASE_SEPOLIA_RPC_URL}}
+  MOONBEAM_RPC_URL: ${{secrets.MOONBASE_RPC_URL}}
 
 jobs:
   run-base-tests:
@@ -21,4 +22,4 @@ jobs:
       
       - name: Integration Tests Base Sepolia
         run: time forge test --match-contract LiveSystemTest --fork-url
-        baseSepolia -vvv --ffi
+        base -vvv --ffi
