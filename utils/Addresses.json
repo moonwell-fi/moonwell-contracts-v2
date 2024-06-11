@@ -12,6 +12,12 @@
         "name": "MORPHO_BLUE"
     },
     {
+        "addr": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "MORPHO_BLUE"
+    },
+    {
         "addr": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
         "chainId": 84532,
         "isContract": true,
@@ -246,6 +252,24 @@
         "isContract": false
     },
     {
+        "addr": "0xA9c3D3a366466Fa809d1Ae982Fb2c46E5fC41101",
+        "chainId": 8453,
+        "name": "META_MORPHO_FACTORY",
+        "isContract": true
+    },
+    {
+        "addr": "0x4756c26E01E61c7c2F86b10f4316e179db8F9425",
+        "chainId": 8453,
+        "name": "MORPHO_CHAINLINK_cbETH_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x46415998764C29aB2a25CbeA6254146D50D22687",
+        "chainId": 8453,
+        "name": "MORPHO_ADAPTIVE_CURVE_IRM",
+        "isContract": true
+    },
+    {
         "addr": "0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6",
         "chainId": 8453,
         "name": "WORMHOLE_CORE_BASE",
@@ -256,6 +280,30 @@
         "chainId": 8453,
         "name": "USDBC",
         "isContract": true
+    },
+    {
+        "addr": "0x1e1b4a620d1A840bcD56706d87903e3583c8B26f",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "USDC_METAMORPHO_FEE_SPLITTER"
+    },
+    {
+        "addr": "0xd5F9BaE72F6D8334ac4BB6C14463A81A43037E1C",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "ETH_METAMORPHO_FEE_SPLITTER"
+    },
+    {
+        "addr": "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "USDC_METAMORPHO_VAULT"
+    },
+    {
+        "addr": "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "ETH_METAMORPHO_VAULT"
     },
     {
         "addr": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
