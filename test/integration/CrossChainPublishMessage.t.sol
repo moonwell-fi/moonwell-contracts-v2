@@ -24,7 +24,6 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
     MultichainGovernor public governor;
     TestProposals public proposals;
     IWormhole public wormhole;
-    Addresses public addresses;
     ERC20Votes public well;
 
     event LogMessagePublished(
