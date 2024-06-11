@@ -7,8 +7,9 @@ import {String} from "@utils/String.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+import {ChainIds} from "@test/utils/ChainIds.sol";
 
-contract PostProposalCheck is Test {
+contract PostProposalCheck is Test, ChainIds {
     using String for string;
 
     Addresses public addresses;
@@ -23,16 +24,22 @@ contract PostProposalCheck is Test {
 
         string memory output = string(vm.ffi(inputs));
 
+        address deployer = address(this);
+
         Proposal moonbeamProposal = Proposal(deployCode(output));
         vm.selectFork(moonbeamProposal.primaryForkId());
+        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+
+        moonbeamProposal.deploy(addresses, deployer);
+        moonbeamProposal.afterDeploy(addresses, deployer);
+        moonbeamProposal.afterDeploySetup(addresses);
+        moonbeamProposal.teardown(addresses, deployer);
         moonbeamProposal.build(addresses);
 
-        if (
-            moonbeamProposal.checkOnChainCalldata(
-                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-            )
-        ) {
-            moonbeamProposal.run();
+        // only runs the proposal if the proposal has not been executed yet
+        if (!proposal.checkOnChainCalldata(governor)) {
+            moonbeamProposal.run(addresses, deployer);
+            moonbeamProposal.validate(addresses, deployer);
         }
 
         // get the latest base proposal
@@ -43,14 +50,16 @@ contract PostProposalCheck is Test {
         Proposal baseProposal = Proposal(deployCode(output));
         vm.selectFork(baseProposal.primaryForkId());
 
+        baseProposal.deploy(addresses, deployer);
+        baseProposal.afterDeploy(addresses, deployer);
+        baseProposal.afterDeploySetup(addresses);
+        baseProposal.teardown(addresses, deployer);
         baseProposal.build(addresses);
 
-        if (
-            baseProposal.checkOnChainCalldata(
-                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-            )
-        ) {
-            baseProposal.run();
+        // only runs the proposal if the proposal has not been executed yet
+        if (!proposal.checkOnChainCalldata(governor)) {
+            baseProposal.run(addresses, deployer);
+            baseProposal.validate(addresses, deployer);
         }
 
         /// only etch out precompile contracts if on the moonbeam chain
