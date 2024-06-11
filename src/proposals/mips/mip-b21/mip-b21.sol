@@ -9,7 +9,6 @@ import "@forge-std/Test.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {FeeSplitter as Splitter} from "@protocol/morpho/FeeSplitter.sol";
