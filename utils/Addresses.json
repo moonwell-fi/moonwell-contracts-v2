@@ -18,6 +18,12 @@
         "name": "USDC"
     },
     {
+        "addr": "0x091608f4e4a15335145be0A279483C0f8E4c7955",
+        "chainId": 1284,
+        "name": "mGLIMMER",
+        "isContract": true
+    },
+    {
         "addr": "0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451",
         "chainId": 1284,
         "isContract": true,
@@ -34,6 +40,18 @@
         "chainId": 1284,
         "isContract": false,
         "name": "CURLY"
+    },
+    {
+        "addr": "0xb6c94b3a378537300387b57ab1cc0d2083f9aeac",
+        "chainId": 1284,
+        "name": "mETHwh",
+        "isContract": true
+    },
+    {
+        "addr": "0x511aB53F793683763E5a8829738301368a2411E3",
+        "chainId": 1284,
+        "name": "WELL",
+        "isContract": true
     },
     {
         "addr": "0x2BE2e230e89c59c8E20E633C524AD2De246e7370",
