@@ -8,17 +8,17 @@ import "@forge-std/Test.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {String} from "@utils/String.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
 /// then switch back to moonbeam to run the test with the generated calldata
-contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
+contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
     using String for string;
 
     MultichainGovernor public governor;
@@ -46,70 +46,14 @@ contract CrossChainPublishMessageTest is Test, ChainIds, CreateCode {
 
     address public constant voter = address(100_000_000);
 
-    function setUp() public {
-        vm.selectFork(baseForkId);
+    function setUp() public override {
+        super.setUp();
 
-        string memory path = getPath();
-        // Run all pending proposals before doing e2e tests
-        address[] memory mips = new address[](1);
-
-        if (
-            keccak256(bytes(path)) == keccak256('""') || bytes(path).length == 0
-        ) {
-            /// empty string on both mac and unix, no proposals to run
-            mips = new address[](0);
-
-            proposals = new TestProposals(mips);
-        } else if (path.hasChar(",")) {
-            string[] memory mipPaths = path.split(",");
-            if (mipPaths.length < 2) {
-                revert(
-                    "Invalid path(s) provided. If you want to deploy a single mip, do not use a comma."
-                );
-            }
-            mips = new address[](mipPaths.length); /// expand mips size if multiple mips
-
-            /// guzzle all of the memory, quadratic cost, but we don't care
-            for (uint256 i = 0; i < mipPaths.length; i++) {
-                /// deploy each mip and add it to the array
-                bytes memory code = getCode(mipPaths[i]);
-
-                mips[i] = deployCode(code);
-            }
-            proposals = new TestProposals(mips);
-        } else {
-            bytes memory code = getCode(path);
-            mips[0] = deployCode(code);
-            proposals = new TestProposals(mips);
-        }
-
-        vm.makePersistent(address(proposals));
-
-        proposals.setUp();
-        /// run all proposal steps
-        proposals.testProposals(
-            false, /// do not log debug output
-            /// -------------------------------
-            true, /// do deploy
-            true, /// do after deploy
-            true, /// do after deploy setup
-            true, /// do build
-            /// -------------------------------
-            false, /// do not run,
-            false, /// do not teardown,
-            false /// do not validate
-        ); /// only setup, after deploy, build, do not validate, run, teardown
-
-        addresses = proposals.addresses();
-        vm.makePersistent(address(addresses));
-
-        wormhole = IWormhole(
-            addresses.getAddress("WORMHOLE_CORE_MOONBEAM", moonBeamChainId)
-        );
-        well = ERC20Votes(addresses.getAddress("GOVTOKEN", moonBeamChainId));
+        wormhole = IWormhole(addresses.getAddress("WORMHOLE_CORE_MOONBEAM"));
+        well = ERC20Votes(addresses.getAddress("GOVTOKEN"));
 
         governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
 
         vm.selectFork(moonbeamForkId);

@@ -14,7 +14,6 @@ import {MToken} from "@protocol/MToken.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
-import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
@@ -52,12 +51,7 @@ export DO_TEARDOWN=true
 export DO_VALIDATE=true
 
 */
-contract MultichainProposalTest is
-    Test,
-    ChainIds,
-    CreateCode,
-    TestMultichainProposals
-{
+contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
     MultichainVoteCollection public voteCollection;
     MultichainGovernor public governor;
     IWormhole public wormhole;
