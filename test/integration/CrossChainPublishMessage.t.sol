@@ -69,7 +69,6 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
     }
 
     function testQueueAndPublishMessageRawBytes() public {
-        vm.selectFork(baseForkId);
         if (proposals.length == 0) {
             /// if no proposals to execute, return
             return;
@@ -79,14 +78,15 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             CrossChainProposal proposal = CrossChainProposal(
                 address(proposals[i])
             );
+            vm.selectFork(proposal.primaryForkId());
             proposal.build(addresses);
 
             bytes memory artemisQueuePayload = proposal
                 .getMultichainGovernorCalldata(
-                    addresses.getAddress("TEMPORAL_GOVERNOR"), /// call temporal gov on base
+                    addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId), /// call temporal gov on base
                     addresses.getAddress( /// call wormhole on moonbeam
                             "WORMHOLE_CORE_MOONBEAM",
-                            sendingChainIdToReceivingChainId[block.chainid]
+                            moonBeamChainId
                         )
                 );
 
@@ -171,8 +171,6 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
                 200 /// consistency level is hardcoded at 200 in CrossChainProposal.sol
             );
             governor.execute(proposalId);
-
-            vm.selectFork(baseForkId); /// switch to base fork
         }
     }
 
