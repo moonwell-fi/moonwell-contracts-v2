@@ -6,31 +6,31 @@ is still operating normally.
 
 ## How to add a new proposal
 
-View the `IProposal` file, it defines the interface for a Moonwell Improvement
-Proposal.
+[IProposal.sol](../../src/proposals/proposalTypes/IProposal.sol) defines the
+interface for a Moonwell Improvement Proposal.
 
-The follow naming convention should be followed for the proposal folder:
+Please ensure that the following naming convention is used for new proposals:
 
 If the proposal is a base proposal, the folder should be named `mip-bXX`, where
-`XX` is the number of the proposal and should be 1 greater than the last base
-proposal created. Inside the folder, create a file named `mip-bXX.sol`.
+`XX` is the proposal number and should be 1 greater than the last base proposal
+created. Inside the folder, create a file named `mip-bXX.sol`.
 
 If the proposal is a moonbeam proposal, the folder should be named `mip-mXX`,
-where `XX` is the number of the proposal and should be 1 greater than the last
-moonbeam proposal created. Inside the folder, create a file named `mip-mXX.sol`.
+where `XX` is the proposal number and should be 1 greater than the last moonbeam
+proposal created. Inside the folder, create a file named `mip-mXX.sol`.
 
-Fill the Solidity file with everything the proposal should do in each step. Be
-sure to inherit from
+Include all the necessary details in the Solidity file for each step of the
+proposal. Make sure to inherit from
 [HybridProposal](../../src/proposals/proposalTypes/HybridProposal.sol).
 
 ## How to test a proposal
 
 `forge test --match-contract LiveSystemBaseTest --fork-url base -vvv`
 
-Integration tests inherit from `PostProposalCheck` which will run the latest
+Integration tests inherit from `PostProposalCheck`, which will run the latest
 proposals from both base and moonbeam. Combining the proposal execution with the
-integration tests gives a good idea of how the system will behave after proposal
-execution.
+integration tests provides a clear idea of how the system will behave after
+proposal execution.
 
 ## Nonce
 
@@ -40,9 +40,9 @@ completely extraneous as this field is not used in the Temporal Governor when it
 processes cross chain messages. There is no need to set this field in any cross
 chain proposal.
 
-### Generating Calldata for an Existing Proposal
+## Generating Calldata for an Existing Proposal
 
-#### Environment Variables
+### Environment Variables
 
 First, set the environment variables for which actions you want to be run during
 this proposal. The following environment variables are available:
@@ -66,7 +66,7 @@ this proposal. The following environment variables are available:
   [`mip-market-listing.sol`](./src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol)
   proposal.
 
-#### Sample Environment Variables For Deploying and Building Calldata for a Market Listing Proposal
+### Sample Environment Variables For Deploying and Building Calldata for a Market Listing Proposal
 
 ```
 export DO_DEPLOY=true
@@ -139,7 +139,7 @@ add the following flags to deploy and verify against the base network:
 
 `forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify --slow`
 
-##### Debugging
+### Debugging
 
 If running the script is failing, the first thing you should do is double check
 that your environment variables are set correctly. If they aren't, the script

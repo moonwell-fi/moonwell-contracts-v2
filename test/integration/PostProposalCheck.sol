@@ -22,6 +22,9 @@ contract PostProposalCheck is Test {
     uint256 public baseForkId =
         vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
 
+    /// @notice  proposals array
+    Proposal[] public proposals;
+
     function setUp() public virtual {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
@@ -34,7 +37,11 @@ contract PostProposalCheck is Test {
 
         address deployer = address(this);
 
+        proposals = new Proposal[](2);
+
         Proposal moonbeamProposal = Proposal(deployCode(output));
+        proposals[0] = moonbeamProposal;
+
         moonbeamProposal.setForkIds(baseForkId, moonbeamForkId);
 
         vm.selectFork(moonbeamProposal.primaryForkId());
@@ -58,6 +65,8 @@ contract PostProposalCheck is Test {
         output = string(vm.ffi(inputs));
 
         Proposal baseProposal = Proposal(deployCode(output));
+        proposals[1] = baseProposal;
+
         baseProposal.setForkIds(baseForkId, moonbeamForkId);
 
         vm.selectFork(baseProposal.primaryForkId());
