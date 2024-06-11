@@ -111,7 +111,9 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     function testActiveProposals() public {
         vm.selectFork(moonbeamForkId);
 
-        uint256[] memory proposalIds = governor.liveProposals();
+        MultichainGovernor governorContract = MultichainGovernor(governor);
+
+        uint256[] memory proposalIds = governorContract.liveProposals();
 
         for (uint256 i = 0; i < proposalIds.length; i++) {
             /// always need to select moonbeamForkId before executing a
@@ -119,8 +121,11 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
             vm.selectFork(moonbeamForkId);
 
             uint256 proposalId = proposalIds[i];
-            (address[] memory targets, , bytes[] memory calldatas) = governor
-                .getProposalData(proposalId);
+            (
+                address[] memory targets,
+                ,
+                bytes[] memory calldatas
+            ) = governorContract.getProposalData(proposalId);
 
             checkMoonbeamActions(targets, addresses);
             {
@@ -135,15 +140,15 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     ,
                     ,
 
-                ) = governor.proposalInformation(proposalId);
+                ) = governorContract.proposalInformation(proposalId);
 
                 address well = addresses.getAddress("xWELL_PROXY");
                 vm.warp(voteSnapshotTimestamp - 1);
-                deal(well, address(this), governor.quorum());
+                deal(well, address(this), governorContract.quorum());
                 xWELL(well).delegate(address(this));
 
                 vm.warp(votingStartTime);
-                governor.castVote(proposalId, 0);
+                governorContract.castVote(proposalId, 0);
                 vm.warp(crossChainVoteCollectionEndTimestamp + 1);
             }
 
@@ -157,7 +162,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
             if (targets[lastIndex] == wormholeCore) {
                 /// increments each time the Multichain Governor publishes a message
                 uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
-                    address(governor)
+                    governor
                 );
 
                 // decode calldatas
@@ -174,14 +179,14 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
                 /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
                 emit LogMessagePublished(
-                    address(governor),
+                    governor,
                     nextSequence,
                     0,
                     payload,
                     200
                 );
             }
-            governor.execute(proposalId);
+            governorContract.execute(proposalId);
 
             if (targets[lastIndex] == wormholeCore) {
                 vm.selectFork(baseForkId);
@@ -212,7 +217,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                 bytes memory vaa = generateVAA(
                     uint32(block.timestamp),
                     uint16(chainIdToWormHoleId[block.chainid]),
-                    address(governor).toBytes(),
+                    governor.toBytes(),
                     payload
                 );
 
