@@ -94,7 +94,7 @@ contract xWELLDeploy {
 
         lockbox = deployLockBox(
             xwellProxy, /// proxy is actually the xWELL token contract
-            addresses.getAddress("WELL")
+            addresses.getAddress("GOVTOKEN")
         );
 
         MintLimits.RateLimitMidPointInfo[]

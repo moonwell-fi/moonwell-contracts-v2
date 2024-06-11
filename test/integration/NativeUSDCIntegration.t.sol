@@ -27,7 +27,7 @@ contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
     function setUp() public override {
         super.setUp();
 
-        well = addresses.getAddress("WELL");
+        well = addresses.getAddress("GOVTOKEN");
         mUSDC = MErc20(addresses.getAddress("MOONWELL_USDC"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
@@ -72,7 +72,7 @@ contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
             addresses.getAddress("MOONWELL_USDC")
         ) / 10;
 
-        uint256 borrowAmount = 33_000_000e6;
+        uint256 borrowAmount = comptroller.borrowCaps(address(mUSDC)) + 1;
         address underlying = address(mUSDC.underlying());
 
         deal(underlying, address(this), usdcMintAmount);
@@ -84,6 +84,10 @@ contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
         mToken[0] = address(mUSDC);
 
         comptroller.enterMarkets(mToken);
+
+        if (borrowAmount > mUSDC.getCash()) {
+            deal(address(underlying), address(mUSDC), borrowAmount);
+        }
 
         vm.expectRevert("market borrow cap reached");
         mUSDC.borrow(borrowAmount);
@@ -155,7 +159,7 @@ contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_USDC")),
-                addresses.getAddress("WELL")
+                addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(

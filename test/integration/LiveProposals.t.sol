@@ -54,28 +54,10 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
         string memory output = string(vm.ffi(inputs));
 
-        Proposal proposal = Proposal(deployCode(output));
-        vm.makePersistent(address(proposal));
-
-        proposal.setForkIds(baseForkId, moonbeamForkId);
-
-        vm.selectFork(proposal.primaryForkId());
-
-        proposal.deploy(addresses, deployer);
-        proposal.afterDeploy(addresses, deployer);
-        proposal.afterDeploySetup(addresses);
-        proposal.build(addresses);
-        proposal.run(addresses, deployer);
-        proposal.validate(addresses, deployer);
-    }
-
-    function testLatestMoonbeamProposal() public {
-        address deployer = address(this);
-
-        string[] memory inputs = new string[](1);
-        inputs[0] = "./get-latest-moonbeam-proposal.sh";
-
-        string memory output = string(vm.ffi(inputs));
+        if (bytes(output).length == 0) {
+            console.log("no proposal found");
+            return;
+        }
 
         Proposal proposal = Proposal(deployCode(output));
         vm.makePersistent(address(proposal));
@@ -87,6 +69,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         proposal.deploy(addresses, deployer);
         proposal.afterDeploy(addresses, deployer);
         proposal.afterDeploySetup(addresses);
+        proposal.teardown(addresses, deployer);
         proposal.build(addresses);
         proposal.run(addresses, deployer);
         proposal.validate(addresses, deployer);
@@ -102,6 +85,10 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         uint256[] memory proposalIds = governor.liveProposals();
 
         for (uint256 i = 0; i < proposalIds.length; i++) {
+            /// always need to select moonbeamForkId before executing a
+            /// proposal as end of loop could switch to base for execution
+            vm.selectFork(moonbeamForkId);
+
             uint256 proposalId = proposalIds[i];
             (address[] memory targets, , bytes[] memory calldatas) = governor
                 .getProposalData(proposalId);
@@ -246,6 +233,30 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
             consistencyLevel,
             payload
         );
+    }
+
+    function testLatestMoonbeamProposal() public {
+        address deployer = address(this);
+
+        string[] memory inputs = new string[](1);
+        inputs[0] = "./get-latest-moonbeam-proposal.sh";
+
+        string memory output = string(vm.ffi(inputs));
+
+        Proposal proposal = Proposal(deployCode(output));
+        vm.makePersistent(address(proposal));
+
+        proposal.setForkIds(baseForkId, moonbeamForkId);
+
+        vm.selectFork(proposal.primaryForkId());
+
+        proposal.deploy(addresses, deployer);
+        proposal.afterDeploy(addresses, deployer);
+        proposal.afterDeploySetup(addresses);
+        proposal.teardown(addresses, deployer);
+        proposal.build(addresses);
+        proposal.run(addresses, deployer);
+        proposal.validate(addresses, deployer);
     }
 
     function getTargetsPayloadsValues(

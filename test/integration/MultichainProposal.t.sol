@@ -133,13 +133,13 @@ contract MultichainProposalTest is
             addresses.getAddress("WORMHOLE_CORE_MOONBEAM", moonBeamChainId)
         );
 
-        well = ERC20Votes(addresses.getAddress("WELL", moonBeamChainId));
+        well = ERC20Votes(addresses.getAddress("GOVTOKEN", moonBeamChainId));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY", moonBeamChainId));
         // make xwell persistent so votes are valid on both chains
         vm.makePersistent(address(xwell));
 
         stakedWellMoonbeam = IStakedWell(
-            addresses.getAddress("stkWELL_PROXY", moonBeamChainId)
+            addresses.getAddress("STK_GOVTOKEN", moonBeamChainId)
         );
 
         distributor = TokenSaleDistributorInterfaceV1(
@@ -209,7 +209,7 @@ contract MultichainProposalTest is
                 "incorrect gas limit vote collection"
             );
 
-            stakedWellBase = IStakedWell(addresses.getAddress("stkWELL_PROXY"));
+            stakedWellBase = IStakedWell(addresses.getAddress("STK_GOVTOKEN"));
         }
     }
 
@@ -231,7 +231,7 @@ contract MultichainProposalTest is
         );
         assertEq(
             address(voteCollection.stkWell()),
-            addresses.getAddress("stkWELL_PROXY"),
+            addresses.getAddress("STK_GOVTOKEN"),
             "incorrect xWELL contract"
         );
 
@@ -2041,8 +2041,8 @@ contract MultichainProposalTest is
         /// skip wormhole for now, circle back to that later and make array size 18
 
         /// targets
-        address[] memory targets = new address[](19);
-        bytes[] memory calldatas = new bytes[](19);
+        address[] memory targets = new address[](20);
+        bytes[] memory calldatas = new bytes[](20);
 
         targets[0] = addresses.getAddress("WORMHOLE_CORE_MOONBEAM");
         calldatas[0] = proposalC.approvedCalldata(0);
@@ -2059,7 +2059,7 @@ contract MultichainProposalTest is
         targets[4] = addresses.getAddress("CHAINLINK_ORACLE");
         calldatas[4] = changeAdminCalldata;
 
-        targets[5] = addresses.getAddress("stkWELL_PROXY");
+        targets[5] = addresses.getAddress("STK_GOVTOKEN");
         calldatas[5] = setEmissionsManagerCalldata;
 
         targets[6] = addresses.getAddress("UNITROLLER");
@@ -2068,19 +2068,19 @@ contract MultichainProposalTest is
         targets[7] = addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER");
         calldatas[7] = transferOwnershipCalldata;
 
-        targets[8] = addresses.getAddress("MOONWELL_mwBTC");
+        targets[8] = addresses.getAddress("DEPRECATED_MOONWELL_mWBTC");
         calldatas[8] = _setPendingAdminCalldata;
 
         targets[9] = addresses.getAddress("MOONWELL_mBUSD");
         calldatas[9] = _setPendingAdminCalldata;
 
-        targets[10] = addresses.getAddress("MOONWELL_mETH");
+        targets[10] = addresses.getAddress("DEPRECATED_MOONWELL_mETH");
         calldatas[10] = _setPendingAdminCalldata;
 
         targets[11] = addresses.getAddress("MOONWELL_mUSDC");
         calldatas[11] = _setPendingAdminCalldata;
 
-        targets[12] = addresses.getAddress("mGLIMMER");
+        targets[12] = addresses.getAddress("MNATIVE");
         calldatas[12] = _setPendingAdminCalldata;
 
         targets[13] = addresses.getAddress("mxcDOT");
@@ -2095,11 +2095,14 @@ contract MultichainProposalTest is
         targets[16] = addresses.getAddress("mUSDCwh");
         calldatas[16] = _setPendingAdminCalldata;
 
-        targets[17] = addresses.getAddress("mxcUSDC");
+        targets[17] = addresses.getAddress("MOONWELL_mWBTC");
         calldatas[17] = _setPendingAdminCalldata;
 
-        targets[18] = addresses.getAddress("mETHwh");
+        targets[18] = addresses.getAddress("mxcUSDC");
         calldatas[18] = _setPendingAdminCalldata;
+
+        targets[19] = addresses.getAddress("MOONWELL_mETH");
+        calldatas[19] = _setPendingAdminCalldata;
 
         bytes[] memory temporalGovCalldatas = new bytes[](1);
         bytes memory temporalGovExecData;
@@ -2139,7 +2142,7 @@ contract MultichainProposalTest is
         governor.executeBreakGlass(targets, calldatas);
 
         assertEq(
-            IStakedWellUplift(addresses.getAddress("stkWELL_PROXY"))
+            IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"))
                 .EMISSION_MANAGER(),
             artemisTimelockAddress,
             "stkWELL EMISSIONS MANAGER"
@@ -2184,14 +2187,14 @@ contract MultichainProposalTest is
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mETHwh")).pendingAdmin(),
+            Timelock(addresses.getAddress("MOONWELL_mETH")).pendingAdmin(),
             artemisTimelockAddress,
-            "mETHwh pending admin incorrect"
+            "MOONWELL_mETH pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mETHwh")).admin(),
+            Timelock(addresses.getAddress("MOONWELL_mETH")).admin(),
             address(governor),
-            "mETHwh admin incorrect"
+            "MOONWELL_mETH admin incorrect"
         );
 
         assertEq(
@@ -2250,14 +2253,14 @@ contract MultichainProposalTest is
         );
 
         assertEq(
-            Timelock(addresses.getAddress("mGLIMMER")).pendingAdmin(),
+            Timelock(addresses.getAddress("MNATIVE")).pendingAdmin(),
             artemisTimelockAddress,
-            "mGLIMMER pending admin incorrect"
+            "MNATIVE pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("mGLIMMER")).admin(),
+            Timelock(addresses.getAddress("MNATIVE")).admin(),
             address(governor),
-            "mGLIMMER admin incorrect"
+            "MNATIVE admin incorrect"
         );
 
         assertEq(
@@ -2283,25 +2286,44 @@ contract MultichainProposalTest is
         );
 
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mwBTC")).pendingAdmin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mWBTC"))
+                .pendingAdmin(),
             artemisTimelockAddress,
-            "MOONWELL_mwBTC pending admin incorrect"
+            "DEPRECATED_MOONWELL_mWBTC pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mwBTC")).admin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mWBTC")).admin(),
             address(governor),
-            "MOONWELL_mwBTC admin incorrect"
+            "DEPRECATED_MOONWELL_mWBTC admin incorrect"
         );
 
+        /// only test this condition if MIP-M32 passes
+        if (
+            Timelock(addresses.getAddress("MOONWELL_mWBTC")).pendingAdmin() ==
+            address(0)
+        ) {
+            assertEq(
+                Timelock(addresses.getAddress("MOONWELL_mWBTC")).pendingAdmin(),
+                artemisTimelockAddress,
+                "MOONWELL_mWBTC pending admin incorrect"
+            );
+            assertEq(
+                Timelock(addresses.getAddress("MOONWELL_mWBTC")).admin(),
+                address(governor),
+                "MOONWELL_mWBTC admin incorrect"
+            );
+        }
+
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mETH")).pendingAdmin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mETH"))
+                .pendingAdmin(),
             artemisTimelockAddress,
-            "MOONWELL_mETH pending admin incorrect"
+            "DEPRECATED_MOONWELL_mETH pending admin incorrect"
         );
         assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mETH")).admin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mETH")).admin(),
             address(governor),
-            "MOONWELL_mETH admin incorrect"
+            "DEPRECATED_MOONWELL_mETH admin incorrect"
         );
 
         assertEq(
@@ -2364,7 +2386,7 @@ contract MultichainProposalTest is
         ///
         uint256 mintAmount = 1_000_000 * 1e18;
         IStakedWellUplift stkwell = IStakedWellUplift(
-            addresses.getAddress("stkWELL_PROXY")
+            addresses.getAddress("STK_GOVTOKEN")
         );
         assertGt(
             stkwell.DISTRIBUTION_END(),
@@ -2487,7 +2509,7 @@ contract MultichainProposalTest is
         ///
         uint256 mintAmount = 1_000_000 * 1e18;
         IStakedWellUplift stkwell = IStakedWellUplift(
-            addresses.getAddress("stkWELL_PROXY")
+            addresses.getAddress("STK_GOVTOKEN")
         );
         assertGt(
             stkwell.DISTRIBUTION_END(),

@@ -9,14 +9,16 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 
-contract mipB18 is Proposal, CrossChainProposal, Configs, ParameterValidation {
+/// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
+/// src/proposals/mips/mip-b18/mip-b18.sol:mipb18
+contract mipb18 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B18";
 
     uint256 public constant AERO_NEW_CF = 0.65e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-B18/MIP-B18.md")
+            vm.readFile("./src/proposals/mips/mip-b18/MIP-B18.md")
         );
         _setProposalDescription(proposalDescription);
     }
