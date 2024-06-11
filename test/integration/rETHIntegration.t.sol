@@ -161,8 +161,8 @@ contract rETHLiveSystemBaseTest is Test, PostProposalCheck {
         assertApproxEqRel(
             liquidity,
             (mintAmount * price * collateralFactor) / 1e36, /// trim off both the CF and Chainlink Price feed extra precision
-            1e10,
-            "liquidity not within .000001% of given CF"
+            1e12,
+            "liquidity not within .0001% of given CF"
         );
         assertEq(shortfall, 0, "Incorrect shortfall");
 

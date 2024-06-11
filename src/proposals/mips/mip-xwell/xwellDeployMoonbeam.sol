@@ -44,6 +44,12 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
         return moonbeamForkId;
     }
 
+    /// @notice check if there are any on-chain proposal that matches the
+    /// proposal calldata
+    function checkOnChainCalldata(
+        address
+    ) public view override returns (bool matches) {}
+
     function deploy(Addresses addresses, address) public override {
         /// --------------------------------------------------
         /// --------------------------------------------------

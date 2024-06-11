@@ -28,6 +28,12 @@ abstract contract CrossChainProposal is
     /// @notice hex encoded description of the proposal
     bytes public PROPOSAL_DESCRIPTION;
 
+    /// @notice check if there are any on-chain proposal that matches the
+    /// proposal calldata
+    function checkOnChainCalldata(
+        address
+    ) public view override returns (bool matches) {}
+
     /// @notice set the governance proposal's description
     function _setProposalDescription(
         bytes memory newProposalDescription
