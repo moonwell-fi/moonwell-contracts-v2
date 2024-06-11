@@ -85,6 +85,10 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         uint256[] memory proposalIds = governor.liveProposals();
 
         for (uint256 i = 0; i < proposalIds.length; i++) {
+            /// always need to select moonbeamForkId before executing a
+            /// proposal as end of loop could switch to base for execution
+            vm.selectFork(moonbeamForkId);
+
             uint256 proposalId = proposalIds[i];
             (address[] memory targets, , bytes[] memory calldatas) = governor
                 .getProposalData(proposalId);
