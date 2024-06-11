@@ -29,8 +29,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")));
 
     /// @notice fork ID for base
-    uint256 public baseForkId =
-        vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+    uint256 public baseForkId = vm.createFork(vm.envString("BASE_RPC_URL"));
 
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
