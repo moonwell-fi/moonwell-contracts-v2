@@ -7,9 +7,8 @@ import {String} from "@utils/String.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 
-contract PostProposalCheck is Test, ChainIds {
+contract PostProposalCheck is Test {
     using String for string;
 
     Addresses public addresses;
@@ -37,7 +36,7 @@ contract PostProposalCheck is Test, ChainIds {
         moonbeamProposal.build(addresses);
 
         // only runs the proposal if the proposal has not been executed yet
-        if (!proposal.checkOnChainCalldata(governor)) {
+        if (!moonbeamProposal.checkOnChainCalldata(governor)) {
             moonbeamProposal.run(addresses, deployer);
             moonbeamProposal.validate(addresses, deployer);
         }
@@ -57,7 +56,7 @@ contract PostProposalCheck is Test, ChainIds {
         baseProposal.build(addresses);
 
         // only runs the proposal if the proposal has not been executed yet
-        if (!proposal.checkOnChainCalldata(governor)) {
+        if (!baseProposal.checkOnChainCalldata(governor)) {
             baseProposal.run(addresses, deployer);
             baseProposal.validate(addresses, deployer);
         }
