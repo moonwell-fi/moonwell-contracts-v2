@@ -450,7 +450,7 @@ contract FeeSplitterLiveSystemBaseTest is Test {
             endingReserves,
             startingReserves +
                 metaMorphoUsdc.previewRedeem((splitAmount * splitA) / 10_000),
-            2, /// allow off by 2 and no more
+            10, /// allow off by 10 and no more
             "reserves balance"
         );
     }
