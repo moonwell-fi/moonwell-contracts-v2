@@ -156,7 +156,7 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         metaMorphoWeth.deposit(wethMintAmount, address(this));
     }
 
-    function testSetup() public view {
+    function testSetup() public {
         assertEq(usdcSplitter.b(), rewardRecipientB);
         assertEq(usdcSplitter.splitA(), 5_000);
         assertEq(usdcSplitter.splitB(), 5_000);
