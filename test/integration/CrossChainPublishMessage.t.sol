@@ -42,14 +42,13 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
     function setUp() public override {
         super.setUp();
 
+        vm.selectFork(moonbeamForkId);
         wormhole = IWormhole(addresses.getAddress("WORMHOLE_CORE_MOONBEAM"));
         well = ERC20Votes(addresses.getAddress("GOVTOKEN"));
 
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
-
-        vm.selectFork(moonbeamForkId);
     }
 
     function testMintSelf() public {
