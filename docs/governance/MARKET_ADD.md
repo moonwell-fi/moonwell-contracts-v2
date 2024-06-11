@@ -122,16 +122,6 @@ export MTOKENS_PATH="./src/proposals/mips/mip-bxx/MTokens.json"
 export EMISSION_PATH="./src/proposals/mips/mip-bxx/RewardStreams.json"
 ```
 
-To get local tests running a chainfork with the new proposal type, set the
-`PROPOSAL_ARTIFACT_PATH` to the path of the proposal artifact. For example, if
-the proposal artifact is located at `artifacts/foundry/mip-b05.sol/mipb05.json`,
-the environment variable should be set to:
-
-`export PROPOSAL_ARTIFACT_PATH=artifacts/foundry/mip-b05.sol/mipb05.json`
-
-Once this has been set, then integration tests can be created which ensure the
-proposal is working as expected.
-
 If deploying and generating calldata for the first time, environment variable
 `DO_AFTER_DEPLOY_MTOKEN_BROADCAST` should be set to true. After doing deploy and
 setting the addresses in `Addresses.json`, this variable should be set to false.
@@ -199,9 +189,11 @@ period, then execute it.
 
 ## 6. Testing
 
-To test the changes introduced by creating these market(s) and ensure the system
-solvency, set the `PROPOSAL_ARTIFACT_PATH` which will be read by the
-`PostProposalCheck` contract.
+Integration tests can be created which ensure the proposal is working as
+expected. The integration tests must inherit from
+[PostProposalCheck](../../test/integration/PostProposalCheck.sol). This contract
+will execute the new mip-bxx as xx corresponds to the greatest MIP number in the
+`proposals/mips` folder.
 
 Copy the [HundredFinanceExploit](./test/unit/HundredFinanceExploit.t.sol)
 example file, and replicate the structure where the PostProposalCheck contract

@@ -9,26 +9,28 @@ is still operating normally.
 View the `IProposal` file, it defines the interface for a Moonwell Improvement
 Proposal.
 
-Make a new folder under the `proposals/mips/` directory named `mip-bXX`, create
-file `mip-bxx.sol` in the same folder that was just created. Fill in everything
-the proposal should do in each step. Be sure to use the CrossChainProposal and
-not any other proposal type for proposals happening on Base.
+The follow naming convention should be followed for the proposal folder:
 
-Import the TestProposals file into a new file, and create tests to ensure the
-system operates normally after the governance proposal. These tests should
-follow the same pattern as found in `LiveSystemTest` and `SystemUpgradeUnitTest`
+If the proposal is a base proposal, the folder should be named `mip-bXX`, where
+`XX` is the number of the proposal and should be 1 greater than the last base
+proposal created. Inside the folder, create a file named `mip-bXX.sol`.
 
-Now set the environment variable to your new proposal, and run the integration
-tests. They will now validate the state change after your proposal passes.
+If the proposal is a moonbeam proposal, the folder should be named `mip-mXX`,
+where `XX` is the number of the proposal and should be 1 greater than the last
+moonbeam proposal created. Inside the folder, create a file named `mip-mXX.sol`.
 
-`export PROPOSAL_ARTIFACT_PATH=artifacts/foundry/mip-b05.sol/mipb05.json`
+Fill the Solidity file with everything the proposal should do in each step. Be
+sure to inherit from
+[HybridProposal](../../src/proposals/proposalTypes/HybridProposal.sol).
 
-Run the tests with the fork test.
+## How to test a proposal
 
 `forge test --match-contract LiveSystemBaseTest --fork-url base -vvv`
 
-Example proposal MIPB-01, can be found, which creates reward streams for the
-system on base.
+Integration tests inherit from `PostProposalCheck` which will run the latest
+proposals from both base and moonbeam. Combining the proposal execution with the
+integration tests gives a good idea of how the system will behave after proposal
+execution.
 
 ## Nonce
 

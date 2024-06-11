@@ -175,7 +175,4 @@ as they might affect the mutation output.
 
 ## Running All Tests
 
-1. Set `PROPOSAL_ARTIFACT_PATH` environment variables
-   > Run `./.github/helper/get-env-var.sh` to find the last proposal artifact
-   > path
-2. Run [run.sh](./run.sh) to execute all the different tests
+Run [run.sh](./run.sh) to execute all the different tests

@@ -24,6 +24,7 @@ contract PostProposalCheck is Test {
         string memory output = string(vm.ffi(inputs));
 
         Proposal moonbeamProposal = Proposal(deployCode(output));
+        vm.selectFork(moonbeamProposal.primaryForkId());
         moonbeamProposal.build(addresses);
 
         if (
@@ -40,6 +41,7 @@ contract PostProposalCheck is Test {
         output = string(vm.ffi(inputs));
 
         Proposal baseProposal = Proposal(deployCode(output));
+        vm.selectFork(baseProposal.primaryForkId());
 
         baseProposal.build(addresses);
 
