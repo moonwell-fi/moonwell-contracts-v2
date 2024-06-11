@@ -282,6 +282,12 @@
         "isContract": true
     },
     {
+        "addr": "0x9e3380f8B29E8f85cA19EFFA80Fb41149417D943",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "MOONWELL_METAMORPHO_URD"
+    },
+    {
         "addr": "0x1e1b4a620d1A840bcD56706d87903e3583c8B26f",
         "chainId": 8453,
         "isContract": true,
@@ -291,7 +297,7 @@
         "addr": "0xd5F9BaE72F6D8334ac4BB6C14463A81A43037E1C",
         "chainId": 8453,
         "isContract": true,
-        "name": "ETH_METAMORPHO_FEE_SPLITTER"
+        "name": "WETH_METAMORPHO_FEE_SPLITTER"
     },
     {
         "addr": "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca",
@@ -303,7 +309,7 @@
         "addr": "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1",
         "chainId": 8453,
         "isContract": true,
-        "name": "ETH_METAMORPHO_VAULT"
+        "name": "WETH_METAMORPHO_VAULT"
     },
     {
         "addr": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
