@@ -14,9 +14,4 @@ done
 # Extract the MIP number from the latest file
 MIP_NUM=${LATEST_MIP_DIR:5:2}
 
-# Skip MIP-B18 as it has already executed
-if [[ $MIP_NUM == 18 ]]; then
-    echo ""
-else
-    echo "${BASE_DIR}/${LATEST_MIP_DIR}/mipb${MIP_NUM}.json"
-fi
+echo "${BASE_DIR}/${LATEST_MIP_DIR}/mipb${MIP_NUM}.json"

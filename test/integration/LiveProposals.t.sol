@@ -32,6 +32,9 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     uint256 public baseForkId =
         vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
 
+    /// @notice Multichain Governor address
+    address governor;
+
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
         address indexed sender,
@@ -44,6 +47,9 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     function setUp() public {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
+
+        vm.selectFork(moonbeamForkId);
+        governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
     }
 
     function testLatestBaseProposal() public {
@@ -53,11 +59,6 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         inputs[0] = "./get-latest-base-proposal.sh";
 
         string memory output = string(vm.ffi(inputs));
-
-        if (bytes(output).length == 0) {
-            console.log("no proposal found");
-            return;
-        }
 
         Proposal proposal = Proposal(deployCode(output));
         vm.makePersistent(address(proposal));
@@ -71,16 +72,44 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         proposal.afterDeploySetup(addresses);
         proposal.teardown(addresses, deployer);
         proposal.build(addresses);
-        proposal.run(addresses, deployer);
-        proposal.validate(addresses, deployer);
+
+        // only runs the proposal if the proposal has not been executed yet
+        if (!proposal.checkOnChainCalldata(governor)) {
+            proposal.run(addresses, deployer);
+            proposal.validate(addresses, deployer);
+        }
+    }
+
+    function testLatestMoonbeamProposal() public {
+        address deployer = address(this);
+
+        string[] memory inputs = new string[](1);
+        inputs[0] = "./get-latest-moonbeam-proposal.sh";
+
+        string memory output = string(vm.ffi(inputs));
+
+        Proposal proposal = Proposal(deployCode(output));
+        vm.makePersistent(address(proposal));
+
+        proposal.setForkIds(baseForkId, moonbeamForkId);
+
+        vm.selectFork(proposal.primaryForkId());
+
+        proposal.deploy(addresses, deployer);
+        proposal.afterDeploy(addresses, deployer);
+        proposal.afterDeploySetup(addresses);
+        proposal.teardown(addresses, deployer);
+        proposal.build(addresses);
+
+        // only runs the proposal if the proposal has not been executed yet
+        if (!proposal.checkOnChainCalldata(governor)) {
+            proposal.run(addresses, deployer);
+            proposal.validate(addresses, deployer);
+        }
     }
 
     function testActiveProposals() public {
         vm.selectFork(moonbeamForkId);
-
-        MultichainGovernor governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        );
 
         uint256[] memory proposalIds = governor.liveProposals();
 
@@ -233,30 +262,6 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
             consistencyLevel,
             payload
         );
-    }
-
-    function testLatestMoonbeamProposal() public {
-        address deployer = address(this);
-
-        string[] memory inputs = new string[](1);
-        inputs[0] = "./get-latest-moonbeam-proposal.sh";
-
-        string memory output = string(vm.ffi(inputs));
-
-        Proposal proposal = Proposal(deployCode(output));
-        vm.makePersistent(address(proposal));
-
-        proposal.setForkIds(baseForkId, moonbeamForkId);
-
-        vm.selectFork(proposal.primaryForkId());
-
-        proposal.deploy(addresses, deployer);
-        proposal.afterDeploy(addresses, deployer);
-        proposal.afterDeploySetup(addresses);
-        proposal.teardown(addresses, deployer);
-        proposal.build(addresses);
-        proposal.run(addresses, deployer);
-        proposal.validate(addresses, deployer);
     }
 
     function getTargetsPayloadsValues(
