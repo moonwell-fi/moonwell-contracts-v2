@@ -37,12 +37,6 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
     string public constant BASE_RPC_ENV_NAME = "BASE_RPC_URL";
     string public constant DEFAULT_BASE_RPC_URL = "https://mainnet.base.org";
 
-    uint256 public baseForkId =
-        vm.createFork(vm.envOr(BASE_RPC_ENV_NAME, DEFAULT_BASE_RPC_URL));
-
-    uint256 public moonbeamForkId =
-        vm.createFork("https://rpc.api.moonbeam.network");
-
     address public constant voter = address(100_000_000);
 
     function setUp() public override {

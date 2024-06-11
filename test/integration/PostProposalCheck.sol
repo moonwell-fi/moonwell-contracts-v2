@@ -11,7 +11,16 @@ import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 contract PostProposalCheck is Test {
     using String for string;
 
+    /// @notice addresses contract
     Addresses public addresses;
+
+    /// @notice fork ID for moonbeam
+    uint256 public moonbeamForkId =
+        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")));
+
+    /// @notice fork ID for base
+    uint256 public baseForkId =
+        vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
 
     function setUp() public virtual {
         addresses = new Addresses();
@@ -26,6 +35,8 @@ contract PostProposalCheck is Test {
         address deployer = address(this);
 
         Proposal moonbeamProposal = Proposal(deployCode(output));
+        moonbeamProposal.setForkIds(baseForkId, moonbeamForkId);
+
         vm.selectFork(moonbeamProposal.primaryForkId());
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
 
@@ -47,6 +58,8 @@ contract PostProposalCheck is Test {
         output = string(vm.ffi(inputs));
 
         Proposal baseProposal = Proposal(deployCode(output));
+        baseProposal.setForkIds(baseForkId, moonbeamForkId);
+
         vm.selectFork(baseProposal.primaryForkId());
 
         baseProposal.deploy(addresses, deployer);
