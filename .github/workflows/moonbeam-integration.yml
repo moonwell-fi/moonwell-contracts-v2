@@ -20,8 +20,5 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Set PROPOSAL_ARTIFACT_PATH environment variable
-        run: bash ./.github/helper/set-env-var.sh
-
       - name: Integration Tests Moonbeam Mainnet
         run: time forge test --match-contract MoonbeamTest --fork-url moonbeam -vvv

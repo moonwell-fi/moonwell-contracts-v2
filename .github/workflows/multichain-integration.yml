@@ -20,8 +20,5 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Set PROPOSAL_ARTIFACT_PATH environment variable
-        run: bash ./.github/helper/set-env-var.sh
-
       - name: Integration Test Proposals Multichain
         run: time forge test --match-contract MultichainProposalTest -vvv
