@@ -247,6 +247,135 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         );
     }
 
+    function testWethSplitSixtyForty() public {
+        wethSplitter = new FeeSplitter(
+            rewardRecipientB,
+            6_000,
+            address(metaMorphoWeth),
+            mWeth
+        );
+
+        /// accrue fee
+        metaMorphoWeth.deposit(0, address(this));
+        uint256 splitAmount = metaMorphoWeth.balanceOf(address(this));
+
+        /// donate 4626 tokens to the splitter
+        metaMorphoWeth.transfer(address(wethSplitter), splitAmount);
+        assertEq(MErc20(mWeth).accrueInterest(), 0, "accrue interest failed");
+
+        uint256 startingReserves = MErc20(mWeth).totalReserves();
+        uint256 startingWethSharesBalance = metaMorphoWeth.balanceOf(
+            rewardRecipientB
+        );
+
+        wethSplitter.split();
+
+        uint256 endingWethSharesBalance = metaMorphoWeth.balanceOf(
+            rewardRecipientB
+        );
+        uint256 endingReserves = MErc20(mWeth).totalReserves();
+
+        assertEq(
+            endingWethSharesBalance,
+            startingWethSharesBalance + (splitAmount * 4000) / 10_000,
+            "weth shares balance"
+        );
+        assertApproxEqAbs(
+            endingReserves,
+            startingReserves +
+                metaMorphoWeth.previewRedeem((splitAmount * 6000) / 10_000),
+            1,
+            "reserves balance"
+        );
+    }
+
+    function testWethSplitSeventyThirty() public {
+        wethSplitter = new FeeSplitter(
+            rewardRecipientB,
+            7_000,
+            address(metaMorphoWeth),
+            mWeth
+        );
+
+        /// accrue fee
+        metaMorphoWeth.deposit(0, address(this));
+        uint256 splitAmount = metaMorphoWeth.balanceOf(address(this));
+
+        /// donate 4626 tokens to the splitter
+        metaMorphoWeth.transfer(address(wethSplitter), splitAmount);
+        assertEq(MErc20(mWeth).accrueInterest(), 0, "accrue interest failed");
+
+        uint256 startingReserves = MErc20(mWeth).totalReserves();
+        uint256 startingWethSharesBalance = metaMorphoWeth.balanceOf(
+            rewardRecipientB
+        );
+
+        wethSplitter.split();
+
+        uint256 endingWethSharesBalance = metaMorphoWeth.balanceOf(
+            rewardRecipientB
+        );
+        uint256 endingReserves = MErc20(mWeth).totalReserves();
+
+        assertEq(
+            endingWethSharesBalance,
+            startingWethSharesBalance + (splitAmount * 3_000) / 10_000,
+            "weth shares balance"
+        );
+        assertApproxEqAbs(
+            endingReserves,
+            startingReserves +
+                metaMorphoWeth.previewRedeem((splitAmount * 7_000) / 10_000),
+            1,
+            "reserves balance"
+        );
+    }
+
+    function testWethSplitFuzz(uint256 splitA) public {
+        splitA = _bound(splitA, 1, 10_000);
+        uint256 splitB = 10_000 - splitA;
+
+        wethSplitter = new FeeSplitter(
+            rewardRecipientB,
+            splitA,
+            address(metaMorphoWeth),
+            mWeth
+        );
+
+        /// accrue fee
+        metaMorphoWeth.deposit(0, address(this));
+        uint256 splitAmount = metaMorphoWeth.balanceOf(address(this));
+
+        /// donate 4626 tokens to the splitter
+        metaMorphoWeth.transfer(address(wethSplitter), splitAmount);
+        assertEq(MErc20(mWeth).accrueInterest(), 0, "accrue interest failed");
+
+        uint256 startingReserves = MErc20(mWeth).totalReserves();
+        uint256 startingWethSharesBalance = metaMorphoWeth.balanceOf(
+            rewardRecipientB
+        );
+
+        wethSplitter.split();
+
+        uint256 endingWethSharesBalance = metaMorphoWeth.balanceOf(
+            rewardRecipientB
+        );
+        uint256 endingReserves = MErc20(mWeth).totalReserves();
+
+        assertEq(
+            endingWethSharesBalance,
+            startingWethSharesBalance + (splitAmount * splitB) / 10_000,
+            "weth shares balance"
+        );
+        assertApproxEqAbs(
+            endingReserves,
+            startingReserves +
+                metaMorphoWeth.previewRedeem((splitAmount * splitA) / 10_000),
+            1,
+            "reserves balance"
+        );
+    }
+
     function testUsdcSplit() public {
         /// accrue fee
         metaMorphoUsdc.deposit(0, address(this));
@@ -277,6 +406,51 @@ contract FeeSplitterLiveSystemBaseTest is Test {
             endingReserves,
             startingReserves + metaMorphoUsdc.previewRedeem(splitAmount / 2),
             1, /// allow off by one in either direction
+            "reserves balance"
+        );
+    }
+
+    function testUsdcSplitFuzz(uint256 splitA) public {
+        splitA = bound(splitA, 1_000, 8_000);
+        uint256 splitB = 10_000 - splitA;
+
+        usdcSplitter = new FeeSplitter(
+            rewardRecipientB,
+            splitA,
+            address(metaMorphoUsdc),
+            mUsdc
+        );
+
+        /// accrue fee
+        metaMorphoUsdc.deposit(0, address(this));
+        uint256 splitAmount = metaMorphoUsdc.balanceOf(address(this));
+
+        /// donate 4626 tokens to the splitter
+        metaMorphoUsdc.transfer(address(usdcSplitter), splitAmount);
+        assertEq(MErc20(mUsdc).accrueInterest(), 0, "accrue interest failed");
+
+        uint256 startingReserves = MErc20(mUsdc).totalReserves();
+        uint256 startingUsdcSharesBalance = metaMorphoUsdc.balanceOf(
+            rewardRecipientB
+        );
+
+        usdcSplitter.split();
+
+        uint256 endingUsdcSharesBalance = metaMorphoUsdc.balanceOf(
+            rewardRecipientB
+        );
+        uint256 endingReserves = MErc20(mUsdc).totalReserves();
+
+        assertEq(
+            endingUsdcSharesBalance,
+            startingUsdcSharesBalance + (splitAmount * splitB) / 10_000,
+            "weth shares balance"
+        );
+        assertApproxEqAbs(
+            endingReserves,
+            startingReserves +
+                metaMorphoUsdc.previewRedeem((splitAmount * splitA) / 10_000),
+            2, /// allow off by 2 and no more
             "reserves balance"
         );
     }
