@@ -9,19 +9,39 @@ is still operating normally.
 [IProposal.sol](../../src/proposals/proposalTypes/IProposal.sol) defines the
 interface for a Moonwell Improvement Proposal.
 
-Please ensure that the following naming convention is used for new proposals:
+When creating new proposals, please follow the naming conventions and guidelines
+outlined below
 
-If the proposal is a base proposal, the folder should be named `mip-bXX`, where
-`XX` is the proposal number and should be 1 greater than the last base proposal
-created. Inside the folder, create a file named `mip-bXX.sol`.
+### Naming Convention
 
-If the proposal is a moonbeam proposal, the folder should be named `mip-mXX`,
-where `XX` is the proposal number and should be 1 greater than the last moonbeam
-proposal created. Inside the folder, create a file named `mip-mXX.sol`.
+1. **Base Proposals:**
 
-Include all the necessary details in the Solidity file for each step of the
-proposal. Make sure to inherit from
-[HybridProposal](../../src/proposals/proposalTypes/HybridProposal.sol).
+   - **Folder Name:** Use the format `mip-bXX`, where `XX` is the proposal
+     number, incremented by 1 from the last base proposal.
+   - **File Name:** Inside the folder, create a file named `mip-bXX.sol`.
+
+2. **Moonbeam Proposals:**
+
+   - **Folder Name:** Use the format `mip-mXX`, where `XX` is the proposal
+     number, incremented by 1 from the last moonbeam proposal.
+   - **File Name:** Inside the folder, create a file named `mip-mXX.sol`.
+
+3. **Case Sensitivity:**
+   - **Folders and Solidity Files:** Use lowercase letters.
+   - **Markdown Files:** Use uppercase letters, e.g., `MIP-BXX.md`.
+
+### Guidelines for Pull Requests and Branches
+
+All pull requests must adhere to the style guidelines detailed in
+[GUIDELINES.md](../GUIDELINES.md).
+
+### Proposal Structure
+
+- Ensure that each step of the proposal is thoroughly documented within the
+  Solidity file.
+- Inherit from
+  [HybridProposal](../../src/proposals/proposalTypes/HybridProposal.sol) and
+  include all necessary details.
 
 ## How to test a proposal
 

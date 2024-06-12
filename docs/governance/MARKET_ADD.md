@@ -192,8 +192,8 @@ period, then execute it.
 Integration tests can be created which ensure the proposal is working as
 expected. The integration tests must inherit from
 [PostProposalCheck](../../test/integration/PostProposalCheck.sol). This contract
-will execute the new mip-bxx as xx corresponds to the greatest MIP number in the
-`proposals/mips` folder.
+will execute the new mip-[b or m]xx as xx corresponds to the greatest MIP number
+in the `proposals/mips` folder.
 
 Copy the [HundredFinanceExploit](./test/unit/HundredFinanceExploit.t.sol)
 example file, and replicate the structure where the PostProposalCheck contract

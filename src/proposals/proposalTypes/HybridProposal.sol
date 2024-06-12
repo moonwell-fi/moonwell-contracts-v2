@@ -472,7 +472,8 @@ abstract contract HybridProposal is
 
         uint256 proposalCount = governor.proposalCount();
 
-        for (uint256 i = 0; i < proposalCount; i++) {
+        // Check if the proposal calldata already exists starting index from the latest proposal
+        for (uint256 i = proposalCount; i > 0; i++) {
             (
                 address[] memory proposalTargets,
                 uint256[] memory proposalValues,
