@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-or-late
 pragma solidity 0.8.19;
 
 import {Test} from "@forge-std/Test.sol";
@@ -29,58 +29,12 @@ contract PostProposalCheck is Test {
         vm.makePersistent(address(addresses));
 
         // get the latest moonbeam proposal
-        string[] memory inputs = new string[](1);
-        inputs[0] = "./get-latest-moonbeam-proposal.sh";
-
-        string memory output = string(vm.ffi(inputs));
-
-        address deployer = address(this);
-
-        proposals = new Proposal[](2);
-
-        Proposal moonbeamProposal = Proposal(deployCode(output));
-        proposals[0] = moonbeamProposal;
-
-        moonbeamProposal.setForkIds(baseForkId, moonbeamForkId);
-
-        vm.selectFork(moonbeamProposal.primaryForkId());
-        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
-
-        moonbeamProposal.deploy(addresses, deployer);
-        moonbeamProposal.afterDeploy(addresses, deployer);
-        moonbeamProposal.afterDeploySetup(addresses);
-        moonbeamProposal.teardown(addresses, deployer);
-        moonbeamProposal.build(addresses);
-
-        // only runs the proposal if the proposal has not been executed yet
-        if (!moonbeamProposal.checkOnChainCalldata(governor)) {
-            moonbeamProposal.run(addresses, deployer);
-            moonbeamProposal.validate(addresses, deployer);
-        }
+        string memory input = "./get-latest-moonbeam-proposal.sh";
+        proposals.push(checkAndRunLatestProposal(input));
 
         // get the latest base proposal
-        inputs[0] = "./get-latest-base-proposal.sh";
-
-        output = string(vm.ffi(inputs));
-
-        Proposal baseProposal = Proposal(deployCode(output));
-        proposals[1] = baseProposal;
-
-        baseProposal.setForkIds(baseForkId, moonbeamForkId);
-
-        vm.selectFork(baseProposal.primaryForkId());
-
-        baseProposal.deploy(addresses, deployer);
-        baseProposal.afterDeploy(addresses, deployer);
-        baseProposal.afterDeploySetup(addresses);
-        baseProposal.teardown(addresses, deployer);
-        baseProposal.build(addresses);
-
-        // only runs the proposal if the proposal has not been executed yet
-        if (!baseProposal.checkOnChainCalldata(governor)) {
-            baseProposal.run(addresses, deployer);
-            baseProposal.validate(addresses, deployer);
-        }
+        input = "./get-latest-base-proposal.sh";
+        proposals.push(checkAndRunLatestProposal(input));
 
         /// only etch out precompile contracts if on the moonbeam chain
         if (addresses.isAddressSet("xcUSDT")) {
@@ -160,5 +114,39 @@ contract PostProposalCheck is Test {
             vm.etch(addresses.getAddress("xcDOT"), runtimeBytecode);
             MockERC20Params(addresses.getAddress("xcDOT")).setSymbol("xcDOT");
         }
+    }
+
+    function checkAndRunLatestProposal(
+        string memory scriptPath
+    ) private returns (Proposal) {
+        string[] memory inputs = new string[](1);
+        inputs[0] = scriptPath;
+
+        string memory output = string(vm.ffi(inputs));
+
+        proposals = new Proposal[](2);
+
+        Proposal proposal = Proposal(deployCode(output));
+
+        proposal.setForkIds(baseForkId, moonbeamForkId);
+
+        vm.selectFork(proposal.primaryForkId());
+
+        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        address deployer = address(this);
+
+        proposal.deploy(addresses, deployer);
+        proposal.afterDeploy(addresses, deployer);
+        proposal.afterDeploySetup(addresses);
+        proposal.teardown(addresses, deployer);
+        proposal.build(addresses);
+
+        // only runs the proposal if the proposal has not been executed yet
+        if (!proposal.checkOnChainCalldata(governor)) {
+            proposal.run(addresses, deployer);
+            proposal.validate(addresses, deployer);
+        }
+
+        return proposal;
     }
 }

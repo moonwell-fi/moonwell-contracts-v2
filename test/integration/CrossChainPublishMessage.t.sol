@@ -88,14 +88,14 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             vm.selectFork(proposal.primaryForkId());
             proposal.build(addresses);
 
+            // returns the correct address as block.chainid is base/base sepolia
+            address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
+
             /// this returns the moonbeam address as block.chainid is base/base sepolia
             address wormholeCore = addresses.getAddress(
                 "WORMHOLE_CORE_MOONBEAM",
                 sendingChainIdToReceivingChainId[block.chainid]
             );
-
-            // returns the correct address as block.chainid is base/base sepolia
-            address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
 
             bytes memory artemisQueuePayload = proposal
                 .getMultichainGovernorCalldata(temporalGov, wormholeCore);
@@ -113,14 +113,16 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             vm.selectFork(moonbeamForkId);
 
             testMintSelf();
-            uint256 cost = governor.bridgeCostAll();
-            vm.deal(voter, cost);
-            vm.prank(voter);
-            (bool success, ) = address(governor).call{value: cost}(
-                artemisQueuePayload
-            );
+            {
+                uint256 cost = governor.bridgeCostAll();
+                vm.deal(voter, cost);
+                vm.prank(voter);
+                (bool success, ) = address(governor).call{value: cost}(
+                    artemisQueuePayload
+                );
 
-            require(success, "proposing gov proposal on moonbeam failed");
+                require(success, "proposing gov proposal on moonbeam failed");
+            }
 
             /// -----------------------------------------------------------
             /// -----------------------------------------------------------
