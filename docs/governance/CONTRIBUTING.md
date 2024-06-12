@@ -19,12 +19,16 @@ outlined below
    - **Folder Name:** Use the format `mip-bXX`, where `XX` is the proposal
      number, incremented by 1 from the last base proposal.
    - **File Name:** Inside the folder, create a file named `mip-bXX.sol`.
+   - **Contract Name:** Inside the file, the proposal should be named
+     `contract mipbXX`
 
 2. **Moonbeam Proposals:**
 
    - **Folder Name:** Use the format `mip-mXX`, where `XX` is the proposal
      number, incremented by 1 from the last moonbeam proposal.
    - **File Name:** Inside the folder, create a file named `mip-mXX.sol`.
+   - **Contract Name:** Inside the file, the proposal should be named
+     `contract mipmXX`
 
 3. **Case Sensitivity:**
    - **Folders and Solidity Files:** Use lowercase letters.
@@ -48,9 +52,9 @@ All pull requests must adhere to the style guidelines detailed in
 `forge test --match-contract LiveSystemBaseTest --fork-url base -vvv`
 
 Integration tests inherit from `PostProposalCheck`, which will run the latest
-proposals from both base and moonbeam. Combining the proposal execution with the
-integration tests provides a clear idea of how the system will behave after
-proposal execution.
+proposals from both base and moonbeam if they have not already been proposed on
+mainnet. Combining the proposal execution with the integration tests provides a
+clear idea of how the system will behave after proposal execution.
 
 ## Nonce
 
