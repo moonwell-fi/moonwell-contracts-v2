@@ -78,6 +78,12 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             CrossChainProposal proposal = CrossChainProposal(
                 address(proposals[i])
             );
+
+            // only run test if is a base proposal
+            if (proposal.primaryForkId() == moonbeamForkId) {
+                return;
+            }
+
             vm.selectFork(proposal.primaryForkId());
             proposal.build(addresses);
 
