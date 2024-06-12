@@ -7,6 +7,7 @@ import {String} from "@utils/String.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 contract PostProposalCheck is Test {
     using String for string;
@@ -24,17 +25,29 @@ contract PostProposalCheck is Test {
     /// @notice  proposals array
     Proposal[] public proposals;
 
+    /// @notice governor address
+    MultichainGovernor governor;
+
     function setUp() public virtual {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
+        proposals = new Proposal[](2);
+
+        vm.selectFork(moonbeamForkId);
+        governor = MultichainGovernor(
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+        );
+
         // get the latest moonbeam proposal
-        string memory input = "./get-latest-moonbeam-proposal.sh";
-        proposals.push(checkAndRunLatestProposal(input));
+        proposals[0] = checkAndRunLatestProposal(
+            "./get-latest-moonbeam-proposal.sh"
+        );
 
         // get the latest base proposal
-        input = "./get-latest-base-proposal.sh";
-        proposals.push(checkAndRunLatestProposal(input));
+        proposals[1] = checkAndRunLatestProposal(
+            "./get-latest-base-proposal.sh"
+        );
 
         /// only etch out precompile contracts if on the moonbeam chain
         if (addresses.isAddressSet("xcUSDT")) {
@@ -124,15 +137,13 @@ contract PostProposalCheck is Test {
 
         string memory output = string(vm.ffi(inputs));
 
-        proposals = new Proposal[](2);
-
         Proposal proposal = Proposal(deployCode(output));
+        vm.makePersistent(address(proposal));
 
         proposal.setForkIds(baseForkId, moonbeamForkId);
 
         vm.selectFork(proposal.primaryForkId());
 
-        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
         address deployer = address(this);
 
         proposal.deploy(addresses, deployer);
@@ -142,7 +153,7 @@ contract PostProposalCheck is Test {
         proposal.build(addresses);
 
         // only runs the proposal if the proposal has not been executed yet
-        if (!proposal.checkOnChainCalldata(governor)) {
+        if (!proposal.checkOnChainCalldata(address(governor))) {
             proposal.run(addresses, deployer);
             proposal.validate(addresses, deployer);
         }

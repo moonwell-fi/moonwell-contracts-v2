@@ -11,7 +11,6 @@ import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {String} from "@utils/String.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
@@ -21,7 +20,6 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
     using String for string;
 
-    MultichainGovernor public governor;
     IWormhole public wormhole;
     ERC20Votes public well;
 
@@ -33,25 +31,18 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
         uint8 consistencyLevel
     );
 
-    string public constant BASE_RPC_ENV_NAME = "BASE_RPC_URL";
-    string public constant DEFAULT_BASE_RPC_URL = "https://mainnet.base.org";
-
     address public constant voter = address(100_000_000);
 
     function setUp() public override {
         super.setUp();
 
         vm.selectFork(moonbeamForkId);
+
         wormhole = IWormhole(addresses.getAddress("WORMHOLE_CORE_MOONBEAM"));
         vm.makePersistent(address(wormhole));
 
         well = ERC20Votes(addresses.getAddress("GOVTOKEN"));
         vm.makePersistent(address(well));
-
-        governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        );
-        vm.makePersistent(address(governor));
     }
 
     function testMintSelf() public {
