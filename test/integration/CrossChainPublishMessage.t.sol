@@ -183,18 +183,22 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
     function testExecuteTemporalGovMessage() public {
         testQueueAndPublishMessageRawBytes();
 
-        console.log(
-            "TEMPORAL_GOVERNOR: ",
-            addresses.getAddress("TEMPORAL_GOVERNOR")
-        );
-
         for (uint256 j = 0; j < proposals.length; j++) {
+            CrossChainProposal proposal = CrossChainProposal(
+                address(proposals[j])
+            );
+
+            // only run test if is a base proposal
+            if (proposal.primaryForkId() == moonbeamForkId) {
+                return;
+            }
+
+            vm.selectFork(proposal.primaryForkId());
             (
                 address[] memory targets, /// contracts to call /// native token amount to send is ignored as temporal gov cannot accept eth
                 ,
                 bytes[] memory calldatas
-            ) = CrossChainProposal(address(proposals[j]))
-                    .getTargetsPayloadsValues();
+            ) = proposal.getTargetsPayloadsValues();
 
             vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
