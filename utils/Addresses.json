@@ -252,6 +252,24 @@
         "isContract": false
     },
     {
+        "addr": "0xe770BD40b6976Efbbb095174395DD2cb794c938a",
+        "chainId": 8453,
+        "name": "ERC20_FACTORY_4626",
+        "isContract": true
+    },
+    {
+        "addr": "0x6250e204bA6f722c7d498f659f8d3C5550Ec811E",
+        "chainId": 8453,
+        "name": "ETH_FACTORY_4626",
+        "isContract": true
+    },
+    {
+        "addr": "0xc095cb1A6B41A5Cd7dAaF993a904afDD74758D71",
+        "chainId": 8453,
+        "name": "ETH_ROUTER_4626",
+        "isContract": true
+    },
+    {
         "addr": "0xA9c3D3a366466Fa809d1Ae982Fb2c46E5fC41101",
         "chainId": 8453,
         "name": "META_MORPHO_FACTORY",
