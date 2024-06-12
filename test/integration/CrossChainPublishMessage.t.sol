@@ -79,35 +79,29 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
                 address(proposals[i])
             );
 
-            // only run test if is a base proposal
+            //  only run tests against a base proposal
             if (proposal.primaryForkId() == moonbeamForkId) {
                 return;
             }
 
+            // At this point the primaryForkId should not be moonbeam
             vm.selectFork(proposal.primaryForkId());
             proposal.build(addresses);
 
+            /// this returns the moonbeam address as block.chainid is base/base sepolia
+            address wormholeCore = addresses.getAddress(
+                "WORMHOLE_CORE_MOONBEAM",
+                sendingChainIdToReceivingChainId[block.chainid]
+            );
+
+            // returns the correct address as block.chainid is base/base sepolia
+            address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
+
             bytes memory artemisQueuePayload = proposal
-                .getMultichainGovernorCalldata(
-                    addresses.getAddress("TEMPORAL_GOVERNOR", baseChainId), /// call temporal gov on base
-                    addresses.getAddress( /// call wormhole on moonbeam
-                            "WORMHOLE_CORE_MOONBEAM",
-                            moonBeamChainId
-                        )
-                );
+                .getMultichainGovernorCalldata(temporalGov, wormholeCore);
 
             console.log("artemis governor queue governance calldata");
             emit log_bytes(artemisQueuePayload);
-
-            /// on moonbeam network so this should return proper addresses
-            address wormholeCore = addresses.getAddress(
-                "WORMHOLE_CORE_MOONBEAM",
-                moonBeamChainId
-            );
-            address temporalGov = addresses.getAddress(
-                "TEMPORAL_GOVERNOR",
-                baseChainId
-            );
 
             /// iterate over and execute all proposals consecutively
             (
@@ -188,11 +182,12 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
                 address(proposals[j])
             );
 
-            // only run test if is a base proposal
+            //  only run tests against a base proposal
             if (proposal.primaryForkId() == moonbeamForkId) {
                 return;
             }
 
+            // At this point the primaryForkId should not be moonbeam
             vm.selectFork(proposal.primaryForkId());
             (
                 address[] memory targets, /// contracts to call /// native token amount to send is ignored as temporal gov cannot accept eth
