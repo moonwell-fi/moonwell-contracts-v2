@@ -270,7 +270,7 @@ abstract contract CrossChainProposal is
         address governor,
         address temporalGovernor,
         address wormholeCore
-    ) public view returns (bool calldataExist) {
+    ) public view returns (bool calldataExists) {
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 
         while (proposalCount > 0) {

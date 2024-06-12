@@ -459,7 +459,7 @@ abstract contract HybridProposal is
     /// proposal calldata
     function checkOnChainCalldata(
         address governorAddress
-    ) public view override returns (bool calldataExist) {
+    ) public view override returns (bool calldataExists) {
         (
             address[] memory targets,
             uint256[] memory values,
@@ -473,7 +473,7 @@ abstract contract HybridProposal is
         uint256 proposalCount = governor.proposalCount();
 
         // Check if the proposal calldata already exists starting index from the latest proposal
-        for (uint256 i = proposalCount; i > 0; i++) {
+        for (uint256 i = proposalCount; i > 0; i--) {
             (
                 address[] memory proposalTargets,
                 uint256[] memory proposalValues,
@@ -499,7 +499,7 @@ abstract contract HybridProposal is
                 }
 
                 if (matches) {
-                    calldataExist = true;
+                    calldataExists = true;
                     break;
                 }
             }
