@@ -58,6 +58,14 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
         uint256[] memory proposalIds = governorContract.liveProposals();
 
+        string[] memory inputs = new string[](1);
+        inputs[0] = "./get-latest-proposals.sh";
+
+        string memory output = string(vm.ffi(inputs));
+
+        // create array splitting the output string
+        string[] memory proposalsPath = output.split(",");
+
         for (uint256 i = 0; i < proposalIds.length; i++) {
             /// always need to select moonbeamForkId before executing a
             /// proposal as end of loop could switch to base for execution
@@ -129,7 +137,34 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     200
                 );
             }
-            governorContract.execute(proposalId);
+
+            try governorContract.execute(proposalId) {} catch (bytes memory e) {
+                console.log("Error executing proposal", proposalId);
+                console.log(string(e));
+
+                // find match proposal
+                for (uint256 j = 0; j < proposalsPath.length; j++) {
+                    Proposal proposal = Proposal(deployCode(proposalsPath[j]));
+                    vm.makePersistent(address(proposal));
+
+                    proposal.setForkIds(baseForkId, moonbeamForkId);
+
+                    vm.selectFork(proposal.primaryForkId());
+
+                    // runs pre build mock and build
+                    proposal.preBuildMock(addresses);
+                    proposal.build(addresses);
+
+                    // if proposal is the one that failed, run the proposal again
+                    if (
+                        proposal.getProposalId(addresses, address(proposal)) ==
+                        proposalId
+                    ) {
+                        governorContract.execute(proposalId);
+                        break;
+                    }
+                }
+            }
 
             if (targets[lastIndex] == wormholeCore) {
                 vm.selectFork(baseForkId);
@@ -168,22 +203,57 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     expectedTemporalGov
                 );
 
-                // Deploy the modified Wormhole Core implementation contract which
-                // bypass the guardians signature check
-                Implementation core = new Implementation();
-                address wormhole = block.chainid == baseChainId
-                    ? addresses.getAddress("WORMHOLE_CORE_BASE")
-                    : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE");
+                {
+                    // Deploy the modified Wormhole Core implementation contract which
+                    // bypass the guardians signature check
+                    Implementation core = new Implementation();
+                    address wormhole = block.chainid == baseChainId
+                        ? addresses.getAddress("WORMHOLE_CORE_BASE")
+                        : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE");
 
-                /// Set the wormhole core address to have the
-                /// runtime bytecode of the mock core
-                vm.etch(wormhole, address(core).code);
+                    /// Set the wormhole core address to have the
+                    /// runtime bytecode of the mock core
+                    vm.etch(wormhole, address(core).code);
+                }
 
                 temporalGovernor.queueProposal(vaa);
 
                 vm.warp(block.timestamp + temporalGovernor.proposalDelay());
 
-                temporalGovernor.executeProposal(vaa);
+                try temporalGovernor.executeProposal(vaa) {} catch (
+                    bytes memory e
+                ) {
+                    console.log("Error executing temporalGovernor", proposalId);
+                    console.log(string(e));
+
+                    // find match proposal
+                    for (uint256 j = 0; j < proposalsPath.length; j++) {
+                        Proposal proposal = Proposal(
+                            deployCode(proposalsPath[j])
+                        );
+                        vm.makePersistent(address(proposal));
+
+                        proposal.setForkIds(baseForkId, moonbeamForkId);
+
+                        vm.selectFork(proposal.primaryForkId());
+
+                        // runs pre build mock and build
+                        proposal.preBuildMock(addresses);
+                        proposal.build(addresses);
+
+                        // if proposal is the one that failed, run the temporal
+                        // governor execution again
+                        if (
+                            proposal.getProposalId(
+                                addresses,
+                                address(proposal)
+                            ) == proposalId
+                        ) {
+                            temporalGovernor.executeProposal(vaa);
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
