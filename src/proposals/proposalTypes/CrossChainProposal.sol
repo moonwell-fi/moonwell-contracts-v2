@@ -266,6 +266,8 @@ abstract contract CrossChainProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
+        vm.selectFork(moonbeamForkId);
+
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 
         while (proposalCount > 0) {
@@ -298,12 +300,14 @@ abstract contract CrossChainProposal is
             );
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
-                return proposalId;
+                proposalId == proposalCount;
+                break;
             }
 
             proposalCount--;
         }
-        return 0;
+
+        vm.selectFork(primaryForkId());
     }
 
     /// @notice print the actions that will be executed by the proposal

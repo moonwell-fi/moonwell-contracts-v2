@@ -55,14 +55,14 @@ abstract contract MIPProposal is Script {
 
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
+    }
 
+    function run() public virtual {
         setForkIds(
             vm.createFork(vm.envOr("BASE_RPC_URL", string("base"))),
             vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")))
         );
-    }
 
-    function run() public virtual {
         vm.selectFork(primaryForkId());
 
         address deployerAddress = vm.addr(PRIVATE_KEY);

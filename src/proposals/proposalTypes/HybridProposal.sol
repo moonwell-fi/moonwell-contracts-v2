@@ -472,6 +472,7 @@ abstract contract HybridProposal is
         address governor
     ) public override returns (uint256 proposalId) {
         vm.selectFork(moonbeamForkId);
+
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 
         // Loop through all proposals to find the one that matches
@@ -494,7 +495,8 @@ abstract contract HybridProposal is
             bytes memory proposalCalldata = getCalldata(addresses);
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
-                proposalId;
+                proposalId == proposalCount;
+                break;
             }
 
             proposalCount--;
