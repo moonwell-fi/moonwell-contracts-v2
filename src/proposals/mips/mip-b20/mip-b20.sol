@@ -34,7 +34,7 @@ contract mipb20 is Proposal, CrossChainProposal, Configs, ParameterValidation {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         _pushCrossChainAction(

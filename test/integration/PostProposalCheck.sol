@@ -148,7 +148,7 @@ contract PostProposalCheck is Test {
 
         proposal.deploy(addresses, deployer);
         proposal.afterDeploy(addresses, deployer);
-        proposal.afterDeploySetup(addresses);
+        proposal.preBuildMock(addresses);
         proposal.teardown(addresses, deployer);
         proposal.build(addresses);
 

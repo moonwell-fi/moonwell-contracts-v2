@@ -72,7 +72,7 @@ abstract contract MIPProposal is Script {
         vm.startBroadcast(PRIVATE_KEY);
         if (DO_DEPLOY) deploy(addresses, deployerAddress);
         if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
-        if (DO_AFTER_DEPLOY_SETUP) afterDeploySetup(addresses);
+        if (DO_AFTER_DEPLOY_SETUP) preBuildMock(addresses);
         vm.stopBroadcast();
 
         if (DO_TEARDOWN) teardown(addresses, deployerAddress);
@@ -97,7 +97,7 @@ abstract contract MIPProposal is Script {
 
     function afterDeploy(Addresses, address) public virtual;
 
-    function afterDeploySetup(Addresses) public virtual;
+    function preBuildMock(Addresses) public virtual;
 
     function build(Addresses) public virtual;
 

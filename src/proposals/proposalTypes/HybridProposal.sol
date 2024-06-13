@@ -447,7 +447,7 @@ abstract contract HybridProposal is
 
     function afterDeploy(Addresses, address) public virtual override {}
 
-    function afterDeploySetup(Addresses) public virtual override {}
+    function preBuildMock(Addresses) public virtual override {}
 
     function build(Addresses) public virtual override {}
 

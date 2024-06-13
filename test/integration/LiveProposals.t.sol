@@ -68,7 +68,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
         proposal.deploy(addresses, deployer);
         proposal.afterDeploy(addresses, deployer);
-        proposal.afterDeploySetup(addresses);
+        proposal.preBuildMock(addresses);
         proposal.teardown(addresses, deployer);
         proposal.build(addresses);
 
@@ -96,7 +96,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
         proposal.deploy(addresses, deployer);
         proposal.afterDeploy(addresses, deployer);
-        proposal.afterDeploySetup(addresses);
+        proposal.preBuildMock(addresses);
         proposal.teardown(addresses, deployer);
         proposal.build(addresses);
 
