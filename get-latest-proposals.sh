@@ -1,4 +1,5 @@
 #!/bin/bash
+BASE_DIR="artifacts/foundry"
 
 cd ./src/proposals/mips
 
@@ -14,9 +15,19 @@ intercalate() {
     local b_arr=($2)
     local max_index=$(( ${#m_arr[@]} > ${#b_arr[@]} ? ${#m_arr[@]} : ${#b_arr[@]} ))
     local result=""
+    local moonbeamPath
+    local basePath
+    
     for (( i=0; i<$max_index; i++ )); do
-        [[ -n "${m_arr[i]}" ]] && result+="${m_arr[i]},"
-        [[ -n "${b_arr[i]}" ]] && result+="${b_arr[i]},"
+        moonbeamPath="${BASE_DIR}/${m_arr[i]}/${m_arr[i]}.sol"
+        basePath="${BASE_DIR}/${b_arr[i]}/${b_arr[i]}.sol"
+        
+        if [[ -n "${m_arr[i]}" ]]; then
+            result+="${moonbeamPath},"
+        fi
+        if [[ -n "${b_arr[i]}" ]]; then
+            result+="${basePath},"
+        fi
     done
     echo "${result%,}"
 }
@@ -27,4 +38,3 @@ b_dirs="${b_dirs//$'\n'/ }"
 
 # Call intercalate and trim the last comma
 intercalate "$m_dirs" "$b_dirs"
-
