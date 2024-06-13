@@ -52,12 +52,12 @@ abstract contract MIPProposal is Script {
         DO_TEARDOWN = vm.envOr("DO_TEARDOWN", true);
         DO_VALIDATE = vm.envOr("DO_VALIDATE", true);
         DO_PRINT = vm.envOr("DO_PRINT", true);
-
-        addresses = new Addresses();
-        vm.makePersistent(address(addresses));
     }
 
     function run() public virtual {
+        addresses = new Addresses();
+        vm.makePersistent(address(addresses));
+
         setForkIds(
             vm.createFork(vm.envOr("BASE_RPC_URL", string("base"))),
             vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")))

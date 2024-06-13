@@ -301,7 +301,7 @@ abstract contract CrossChainProposal is
             );
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
-                proposalId == proposalCount;
+                proposalId = proposalCount;
                 break;
             }
 

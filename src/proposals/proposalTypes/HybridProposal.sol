@@ -495,7 +495,7 @@ abstract contract HybridProposal is
             bytes memory proposalCalldata = getCalldata(addresses);
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
-                proposalId == proposalCount;
+                proposalId = proposalCount;
                 break;
             }
 
