@@ -157,7 +157,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
                     // if proposal is the one that failed, run the proposal again
                     if (
-                        proposal.getProposalId(addresses, address(proposal)) ==
+                        proposal.getProposalId(addresses, governor) ==
                         proposalId
                     ) {
                         governorContract.execute(proposalId);
@@ -243,10 +243,8 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         // if proposal is the one that failed, run the temporal
                         // governor execution again
                         if (
-                            proposal.getProposalId(
-                                addresses,
-                                address(proposal)
-                            ) == proposalId
+                            proposal.getProposalId(addresses, governor) ==
+                            proposalId
                         ) {
                             temporalGovernor.executeProposal(vaa);
                             break;
