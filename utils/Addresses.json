@@ -252,6 +252,24 @@
         "isContract": false
     },
     {
+        "addr": "0xe770BD40b6976Efbbb095174395DD2cb794c938a",
+        "chainId": 8453,
+        "name": "ERC20_FACTORY_4626",
+        "isContract": true
+    },
+    {
+        "addr": "0x6250e204bA6f722c7d498f659f8d3C5550Ec811E",
+        "chainId": 8453,
+        "name": "ETH_FACTORY_4626",
+        "isContract": true
+    },
+    {
+        "addr": "0xc095cb1A6B41A5Cd7dAaF993a904afDD74758D71",
+        "chainId": 8453,
+        "name": "ETH_ROUTER_4626",
+        "isContract": true
+    },
+    {
         "addr": "0xA9c3D3a366466Fa809d1Ae982Fb2c46E5fC41101",
         "chainId": 8453,
         "name": "META_MORPHO_FACTORY",
@@ -282,6 +300,12 @@
         "isContract": true
     },
     {
+        "addr": "0x9e3380f8B29E8f85cA19EFFA80Fb41149417D943",
+        "chainId": 8453,
+        "isContract": true,
+        "name": "MOONWELL_METAMORPHO_URD"
+    },
+    {
         "addr": "0x1e1b4a620d1A840bcD56706d87903e3583c8B26f",
         "chainId": 8453,
         "isContract": true,
@@ -291,7 +315,7 @@
         "addr": "0xd5F9BaE72F6D8334ac4BB6C14463A81A43037E1C",
         "chainId": 8453,
         "isContract": true,
-        "name": "ETH_METAMORPHO_FEE_SPLITTER"
+        "name": "WETH_METAMORPHO_FEE_SPLITTER"
     },
     {
         "addr": "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca",
@@ -303,7 +327,7 @@
         "addr": "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1",
         "chainId": 8453,
         "isContract": true,
-        "name": "ETH_METAMORPHO_VAULT"
+        "name": "WETH_METAMORPHO_VAULT"
     },
     {
         "addr": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
