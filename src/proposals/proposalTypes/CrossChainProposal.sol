@@ -265,7 +265,7 @@ abstract contract CrossChainProposal is
     function getProposalId(
         Addresses addresses,
         address governor
-    ) public view override returns (uint256 proposalId) {
+    ) public override returns (uint256 proposalId) {
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 
         while (proposalCount > 0) {

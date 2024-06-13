@@ -118,7 +118,7 @@ abstract contract MIPProposal is Script {
     function getProposalId(
         Addresses,
         address
-    ) public view virtual returns (uint256 proposalId);
+    ) public virtual returns (uint256 proposalId);
 
     /// @notice set the fork IDs for base and moonbeam
     function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) public {

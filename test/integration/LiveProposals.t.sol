@@ -234,7 +234,6 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         vm.makePersistent(address(proposal));
 
                         proposal.setForkIds(baseForkId, moonbeamForkId);
-
                         vm.selectFork(proposal.primaryForkId());
 
                         // runs pre build mock and build

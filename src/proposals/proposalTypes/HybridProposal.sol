@@ -470,12 +470,13 @@ abstract contract HybridProposal is
     function getProposalId(
         Addresses addresses,
         address governor
-    ) public view override returns (uint256 proposalId) {
+    ) public override returns (uint256 proposalId) {
+        vm.selectFork(moonbeamForkId);
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 
         // Loop through all proposals to find the one that matches
         // Start from the latest proposal as it is more likely to be the one
-        while (proposalCount > 0) {
+        while (proposalCount > 0 && proposalId == 0) {
             (
                 address[] memory targets,
                 uint256[] memory values,
@@ -493,13 +494,13 @@ abstract contract HybridProposal is
             bytes memory proposalCalldata = getCalldata(addresses);
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
-                return proposalId;
+                proposalId;
             }
 
             proposalCount--;
         }
 
-        return 0;
+        vm.selectFork(primaryForkId());
     }
 
     /// @notice Runs the proposal on moonbeam, verifying the actions through the hook

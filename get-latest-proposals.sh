@@ -28,8 +28,8 @@ intercalate() {
     for (( i=0; i<$max_index; i++ )); do
 
         # Construct the paths, removing the dash from the directory name to get the file name
-        moonbeamPath="${BASE_DIR}/${m_arr[i]}/${m_arr[i]//-/}.json"
-        basePath="${BASE_DIR}/${b_arr[i]}/${b_arr[i]//-/}.json"
+        moonbeamPath="${BASE_DIR}/${m_arr[i]}.sol/${m_arr[i]//-/}.json"
+        basePath="${BASE_DIR}/${b_arr[i]}.sol/${b_arr[i]//-/}.json"
         
         # Append the paths to the result string if they are not empty
         if [[ -n "${m_arr[i]}" ]]; then
