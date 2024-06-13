@@ -168,6 +168,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
             if (targets[lastIndex] == wormholeCore) {
                 vm.selectFork(baseForkId);
+
                 address expectedTemporalGov = addresses.getAddress(
                     "TEMPORAL_GOVERNOR"
                 );
@@ -223,7 +224,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                 try temporalGovernor.executeProposal(vaa) {} catch (
                     bytes memory e
                 ) {
-                    console.log("Error executing temporalGovernor", proposalId);
+                    console.log("Error executing proposal", proposalId);
                     console.log(string(e));
 
                     // find match proposal
@@ -246,6 +247,12 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                             proposal.getProposalId(addresses, governor) ==
                             proposalId
                         ) {
+                            // foundry selectFork resets warp, so we need to warp again
+                            vm.warp(
+                                block.timestamp +
+                                    temporalGovernor.proposalDelay()
+                            );
+
                             temporalGovernor.executeProposal(vaa);
                             break;
                         }
