@@ -33,7 +33,7 @@ abstract contract MIPProposal is Script {
     bool private DEBUG;
     bool private DO_DEPLOY;
     bool private DO_AFTER_DEPLOY;
-    bool private DO_AFTER_DEPLOY_SETUP;
+    bool private DO_PRE_BUILD_MOCK;
     bool private DO_BUILD;
     bool private DO_RUN;
     bool private DO_TEARDOWN;
@@ -46,7 +46,7 @@ abstract contract MIPProposal is Script {
         DEBUG = vm.envOr("DEBUG", true);
         DO_DEPLOY = vm.envOr("DO_DEPLOY", true);
         DO_AFTER_DEPLOY = vm.envOr("DO_AFTER_DEPLOY", true);
-        DO_AFTER_DEPLOY_SETUP = vm.envOr("DO_AFTER_DEPLOY_SETUP", true);
+        DO_PRE_BUILD_MOCK = vm.envOr("DO_PRE_BUILD_MOCK", true);
         DO_BUILD = vm.envOr("DO_BUILD", true);
         DO_RUN = vm.envOr("DO_RUN", true);
         DO_TEARDOWN = vm.envOr("DO_TEARDOWN", true);
@@ -72,7 +72,7 @@ abstract contract MIPProposal is Script {
         vm.startBroadcast(PRIVATE_KEY);
         if (DO_DEPLOY) deploy(addresses, deployerAddress);
         if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
-        if (DO_AFTER_DEPLOY_SETUP) preBuildMock(addresses);
+        if (DO_PRE_BUILD_MOCK) preBuildMock(addresses);
         vm.stopBroadcast();
 
         if (DO_TEARDOWN) teardown(addresses, deployerAddress);
