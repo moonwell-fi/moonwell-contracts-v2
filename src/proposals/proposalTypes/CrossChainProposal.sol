@@ -266,6 +266,7 @@ abstract contract CrossChainProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         vm.selectFork(moonbeamForkId);
 
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
@@ -286,7 +287,7 @@ abstract contract CrossChainProposal is
             );
 
             bytes memory proposalCalldata = getMultichainGovernorCalldata(
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                temporalGovernor,
                 addresses.getAddress(
                     block.chainid == baseChainId ||
                         block.chainid == moonBeamChainId
