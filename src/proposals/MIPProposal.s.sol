@@ -72,11 +72,13 @@ abstract contract MIPProposal is Script {
         vm.startBroadcast(PRIVATE_KEY);
         if (DO_DEPLOY) deploy(addresses, deployerAddress);
         if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
-        if (DO_PRE_BUILD_MOCK) preBuildMock(addresses);
         vm.stopBroadcast();
 
-        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
+        if (DO_PRE_BUILD_MOCK) preBuildMock(addresses);
+
         if (DO_BUILD) build(addresses);
+
+        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
         if (DO_RUN) run(addresses, deployerAddress);
         if (DO_VALIDATE) {
             validate(addresses, deployerAddress);
@@ -111,11 +113,12 @@ abstract contract MIPProposal is Script {
 
     function printProposalActionSteps() public virtual;
 
-    /// @notice check if there are any on-chain proposal that matches the
-    /// proposal calldata
-    function checkOnChainCalldata(
+    // @notice search for a on-chain proposal that matches the proposal calldata
+    // @returns the proposal id, 0 if no proposal is found
+    function getProposalId(
+        Addresses,
         address
-    ) public view virtual returns (bool matches);
+    ) public view virtual returns (uint256 proposalId);
 
     /// @notice set the fork IDs for base and moonbeam
     function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) public {

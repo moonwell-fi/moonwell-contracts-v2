@@ -51,62 +51,6 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
     }
 
-    function testLatestBaseProposal() public {
-        address deployer = address(this);
-
-        string[] memory inputs = new string[](1);
-        inputs[0] = "./get-latest-base-proposal.sh";
-
-        string memory output = string(vm.ffi(inputs));
-
-        Proposal proposal = Proposal(deployCode(output));
-        vm.makePersistent(address(proposal));
-
-        proposal.setForkIds(baseForkId, moonbeamForkId);
-
-        vm.selectFork(proposal.primaryForkId());
-
-        proposal.deploy(addresses, deployer);
-        proposal.afterDeploy(addresses, deployer);
-        proposal.preBuildMock(addresses);
-        proposal.teardown(addresses, deployer);
-        proposal.build(addresses);
-
-        // only runs the proposal if the proposal has not been executed yet
-        if (!proposal.checkOnChainCalldata(governor)) {
-            proposal.run(addresses, deployer);
-            proposal.validate(addresses, deployer);
-        }
-    }
-
-    function testLatestMoonbeamProposal() public {
-        address deployer = address(this);
-
-        string[] memory inputs = new string[](1);
-        inputs[0] = "./get-latest-moonbeam-proposal.sh";
-
-        string memory output = string(vm.ffi(inputs));
-
-        Proposal proposal = Proposal(deployCode(output));
-        vm.makePersistent(address(proposal));
-
-        proposal.setForkIds(baseForkId, moonbeamForkId);
-
-        vm.selectFork(proposal.primaryForkId());
-
-        proposal.deploy(addresses, deployer);
-        proposal.afterDeploy(addresses, deployer);
-        proposal.preBuildMock(addresses);
-        proposal.teardown(addresses, deployer);
-        proposal.build(addresses);
-
-        // only runs the proposal if the proposal has not been executed yet
-        if (!proposal.checkOnChainCalldata(governor)) {
-            proposal.run(addresses, deployer);
-            proposal.validate(addresses, deployer);
-        }
-    }
-
     function testActiveProposals() public {
         vm.selectFork(moonbeamForkId);
 

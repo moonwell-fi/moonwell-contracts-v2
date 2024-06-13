@@ -28,12 +28,6 @@ abstract contract CrossChainProposal is
     /// @notice hex encoded description of the proposal
     bytes public PROPOSAL_DESCRIPTION;
 
-    /// @notice check if there are any on-chain proposal that matches the
-    /// proposal calldata
-    function checkOnChainCalldata(
-        address
-    ) public view override returns (bool matches) {}
-
     /// @notice set the governance proposal's description
     function _setProposalDescription(
         bytes memory newProposalDescription
@@ -264,13 +258,14 @@ abstract contract CrossChainProposal is
         return multichainPayload;
     }
 
-    /// @notice Check if there are any on-chain proposals that match the
-    /// proposal calldata
-    function checkOnChainCalldata(
-        address governor,
-        address temporalGovernor,
-        address wormholeCore
-    ) public view returns (bool calldataExists) {
+    /// @notice search for a on-chain proposal that matches the proposal calldata
+    /// @param addresses the addresses contract
+    /// @param governor the governor address
+    // /// @return proposalId the proposal id, 0 if no proposal is found
+    function getProposalId(
+        Addresses addresses,
+        address governor
+    ) public view override returns (uint256 proposalId) {
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 
         while (proposalCount > 0) {
@@ -289,17 +284,26 @@ abstract contract CrossChainProposal is
             );
 
             bytes memory proposalCalldata = getMultichainGovernorCalldata(
-                temporalGovernor,
-                wormholeCore
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                addresses.getAddress(
+                    block.chainid == baseChainId ||
+                        block.chainid == moonBeamChainId
+                        ? "WORMHOLE_CORE_MOONBEAM"
+                        : "WORMHOLE_CORE_MOONBASE",
+                    block.chainid == baseChainId ||
+                        block.chainid == moonBeamChainId
+                        ? moonBeamChainId
+                        : moonBaseChainId
+                )
             );
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
-                return true;
+                return proposalId;
             }
 
             proposalCount--;
         }
-        return false;
+        return 0;
     }
 
     /// @notice print the actions that will be executed by the proposal

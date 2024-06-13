@@ -153,7 +153,7 @@ contract PostProposalCheck is Test {
         proposal.build(addresses);
 
         // only runs the proposal if the proposal has not been executed yet
-        if (!proposal.checkOnChainCalldata(address(governor))) {
+        if (proposal.getProposalId(addresses, address(governor)) == 0) {
             proposal.run(addresses, deployer);
             proposal.validate(addresses, deployer);
         }

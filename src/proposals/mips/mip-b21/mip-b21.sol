@@ -66,7 +66,6 @@ contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         address foundationMultisig = addresses.getAddress(
             "FOUNDATION_MULTISIG"
         );
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         ERC20Upgradeable well = ERC20Upgradeable(
             addresses.getAddress("xWELL_PROXY")
         );
