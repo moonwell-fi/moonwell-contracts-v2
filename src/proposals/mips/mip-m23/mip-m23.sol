@@ -608,7 +608,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         );
 
         TemporalGovernor temporalGovernor = TemporalGovernor(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
         assertTrue(

@@ -277,7 +277,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             /// set temporal governor as owner of the proxy admin
             proxyAdmin.transferOwnership(governor);
 
-            TemporalGovernor(governor).transferOwnership(
+            TemporalGovernor(payable(governor)).transferOwnership(
                 addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN")
             );
 
@@ -506,7 +506,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
 
     function validate(Addresses addresses, address) public override {
         TemporalGovernor governor = TemporalGovernor(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
         assertEq(

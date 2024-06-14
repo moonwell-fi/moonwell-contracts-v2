@@ -246,7 +246,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// We explicitly don't care who is relaying this, as long
     /// as the VAA is only processed once AND, critically, intended for this contract.
     /// @param VAA The signed Verified Action Approval to process
-    function executeProposal(bytes memory VAA) public whenNotPaused {
+    function executeProposal(bytes memory VAA) public payable whenNotPaused {
         _executeProposal(VAA, false);
     }
 
@@ -275,7 +275,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// @param VAA The signed Verified Action Approval to process
     function fastTrackProposalExecution(
         bytes memory VAA
-    ) external onlyOwner whenPaused {
+    ) external payable onlyOwner whenPaused {
         _executeProposal(VAA, true); /// override timestamp checks and execute
     }
 
@@ -433,4 +433,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
             "TemporalGovernor: Arity mismatch for payload"
         );
     }
+
+    /// @notice function to receive Ether
+    receive() external payable {}
 }

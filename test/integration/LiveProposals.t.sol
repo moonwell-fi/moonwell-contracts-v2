@@ -205,7 +205,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                 );
 
                 TemporalGovernor temporalGovernor = TemporalGovernor(
-                    expectedTemporalGov
+                    payable(expectedTemporalGov)
                 );
 
                 {

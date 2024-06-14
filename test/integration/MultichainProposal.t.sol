@@ -230,7 +230,7 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
         );
 
         temporalGov = TemporalGovernor(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
         /// artemis timelock does not start off as trusted sender
         assertFalse(
@@ -1994,7 +1994,7 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
         {
             vm.selectFork(baseForkId);
             temporalGov = TemporalGovernor(
-                addresses.getAddress("TEMPORAL_GOVERNOR")
+                payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
             );
             /// artemis timelock does not start off as trusted sender
             assertFalse(
@@ -2347,7 +2347,7 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
 
         vm.selectFork(baseForkId);
         temporalGov = TemporalGovernor(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
         vm.startPrank(address(temporalGov));
 

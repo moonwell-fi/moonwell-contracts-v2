@@ -116,6 +116,21 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         governor.togglePause();
     }
 
+    function testSendEthToTemporalGovernorSucceeds() public {
+        uint256 value = 1000 ether;
+
+        vm.deal(address(this), value);
+
+        (bool success, ) = address(governor).call{value: value}("");
+
+        assertEq(
+            address(governor).balance,
+            value,
+            "governor did not receive value"
+        );
+        assertTrue(success, "send eth failed");
+    }
+
     function testsetTrustedSendersAsTemporalGovernorSucceeds() public {
         address newAdmin = address(100_000_001);
         TemporalGovernor.TrustedSender[]
