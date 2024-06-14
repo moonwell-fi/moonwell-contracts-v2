@@ -477,7 +477,7 @@ abstract contract HybridProposal is
 
         // Loop through all proposals to find the one that matches
         // Start from the latest proposal as it is more likely to be the one
-        while (proposalCount > 0 && proposalId == 0) {
+        while (proposalCount > 0) {
             (
                 address[] memory targets,
                 uint256[] memory values,
