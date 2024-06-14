@@ -66,12 +66,12 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         // create array splitting the output string
         string[] memory proposalsPath = output.split(",");
 
-        for (uint256 i = 0; i < proposalIds.length; i++) {
+        for (uint256 i = proposalIds.length; i > 0; i--) {
             /// always need to select moonbeamForkId before executing a
             /// proposal as end of loop could switch to base for execution
             vm.selectFork(moonbeamForkId);
 
-            uint256 proposalId = proposalIds[i];
+            uint256 proposalId = proposalIds[i - 1];
             (
                 address[] memory targets,
                 ,
