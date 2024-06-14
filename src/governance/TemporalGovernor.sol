@@ -246,7 +246,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// We explicitly don't care who is relaying this, as long
     /// as the VAA is only processed once AND, critically, intended for this contract.
     /// @param VAA The signed Verified Action Approval to process
-    function executeProposal(bytes memory VAA) public whenNotPaused {
+    function executeProposal(bytes memory VAA) public payable whenNotPaused {
         _executeProposal(VAA, false);
     }
 
