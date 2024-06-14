@@ -43,28 +43,7 @@ contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     function afterDeploy(Addresses addresses, address) public override {}
 
     function afterDeploySetup(Addresses addresses) public override {
-        address usdcMetaMorphoVault = addresses.getAddress(
-            "USDC_METAMORPHO_VAULT"
-        );
-        address wethMetaMorphoVault = addresses.getAddress(
-            "WETH_METAMORPHO_VAULT"
-        );
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        bytes32 pendingOwner = bytes32(uint256(uint160(temporalGovernor)));
-
-        if (
-            Ownable2StepUpgradeable(usdcMetaMorphoVault).pendingOwner() !=
-            temporalGovernor
-        ) {
-            vm.store(usdcMetaMorphoVault, PENDING_OWNER_SLOT, pendingOwner);
-        }
-        if (
-            Ownable2StepUpgradeable(wethMetaMorphoVault).pendingOwner() !=
-            temporalGovernor
-        ) {
-            vm.store(wethMetaMorphoVault, PENDING_OWNER_SLOT, pendingOwner);
-        }
-
         startingWellAllowance = ERC20Upgradeable(
             addresses.getAddress("xWELL_PROXY")
         ).allowance(
@@ -74,25 +53,6 @@ contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     }
 
     function build(Addresses addresses) public override {
-        address foundationMultisig = addresses.getAddress(
-            "FOUNDATION_MULTISIG"
-        );
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        ERC20Upgradeable well = ERC20Upgradeable(
-            addresses.getAddress("xWELL_PROXY")
-        );
-
-        if (
-            well.allowance(foundationMultisig, temporalGovernor) < WELL_AMOUNT
-        ) {
-            vm.prank(foundationMultisig);
-            well.approve(temporalGovernor, WELL_AMOUNT);
-        }
-
-        if (well.balanceOf(foundationMultisig) < WELL_AMOUNT) {
-            deal(address(well), foundationMultisig, WELL_AMOUNT);
-        }
-
         _pushCrossChainAction(
             addresses.getAddress("USDC_METAMORPHO_VAULT"),
             abi.encodeWithSignature("acceptOwnership()"),
