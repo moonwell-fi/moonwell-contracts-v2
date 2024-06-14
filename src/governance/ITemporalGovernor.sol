@@ -92,7 +92,7 @@ interface ITemporalGovernor {
     function togglePause() external;
 
     /// @notice fast track execution of a VAA as a VAA, ignoring any waiting times and pauses
-    function fastTrackProposalExecution(bytes memory VAA) external;
+    function fastTrackProposalExecution(bytes memory VAA) external payable;
 
     /// ------------- GOVERNOR ONLY APIs -------------
 

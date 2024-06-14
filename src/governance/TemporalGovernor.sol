@@ -275,7 +275,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// @param VAA The signed Verified Action Approval to process
     function fastTrackProposalExecution(
         bytes memory VAA
-    ) external onlyOwner whenPaused {
+    ) external payable onlyOwner whenPaused {
         _executeProposal(VAA, true); /// override timestamp checks and execute
     }
 
