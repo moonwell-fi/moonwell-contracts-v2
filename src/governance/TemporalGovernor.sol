@@ -433,4 +433,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
             "TemporalGovernor: Arity mismatch for payload"
         );
     }
+
+    /// @notice function to receive Ether
+    receive() external payable {}
 }
