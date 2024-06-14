@@ -13,7 +13,7 @@ import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.so
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {FeeSplitter as Splitter} from "@protocol/morpho/FeeSplitter.sol";
 
-/// DO_AFTER_DEPLOY_SETUP=true DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
+/// DO_PRE_BUILD_MOCK=true DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b21/mip-b21.sol:mipb21
 contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B21";
