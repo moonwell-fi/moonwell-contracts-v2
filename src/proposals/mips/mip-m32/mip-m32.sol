@@ -35,7 +35,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
 
     function afterDeploy(Addresses, address) public override {}
 
-    function afterDeploySetup(Addresses) public override {}
+    function preBuildMock(Addresses) public override {}
 
     function teardown(Addresses addresses, address caller) public override {
         // we must run first mip-m30 to set the pending admin of MOONWELL_mWBTC to the Multichain Governor

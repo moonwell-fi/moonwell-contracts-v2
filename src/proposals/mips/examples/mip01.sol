@@ -27,7 +27,7 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         /// -------------- EMISSION CONFIGURATION --------------

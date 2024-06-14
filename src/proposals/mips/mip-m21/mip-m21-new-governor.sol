@@ -40,7 +40,7 @@ contract mipm21newGovernor is HybridProposal {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         /// @dev Upgrade wormhole bridge adapter to wormhole unwrapper adapter

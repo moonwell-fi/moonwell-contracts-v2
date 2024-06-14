@@ -157,7 +157,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
         }
     }
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         ChainlinkOracle oracle = ChainlinkOracle(

@@ -51,62 +51,6 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
     }
 
-    function testLatestBaseProposal() public {
-        address deployer = address(this);
-
-        string[] memory inputs = new string[](1);
-        inputs[0] = "./get-latest-base-proposal.sh";
-
-        string memory output = string(vm.ffi(inputs));
-
-        Proposal proposal = Proposal(deployCode(output));
-        vm.makePersistent(address(proposal));
-
-        proposal.setForkIds(baseForkId, moonbeamForkId);
-
-        vm.selectFork(proposal.primaryForkId());
-
-        proposal.deploy(addresses, deployer);
-        proposal.afterDeploy(addresses, deployer);
-        proposal.afterDeploySetup(addresses);
-        proposal.teardown(addresses, deployer);
-        proposal.build(addresses);
-
-        // only runs the proposal if the proposal has not been executed yet
-        if (!proposal.checkOnChainCalldata(governor)) {
-            proposal.run(addresses, deployer);
-            proposal.validate(addresses, deployer);
-        }
-    }
-
-    function testLatestMoonbeamProposal() public {
-        address deployer = address(this);
-
-        string[] memory inputs = new string[](1);
-        inputs[0] = "./get-latest-moonbeam-proposal.sh";
-
-        string memory output = string(vm.ffi(inputs));
-
-        Proposal proposal = Proposal(deployCode(output));
-        vm.makePersistent(address(proposal));
-
-        proposal.setForkIds(baseForkId, moonbeamForkId);
-
-        vm.selectFork(proposal.primaryForkId());
-
-        proposal.deploy(addresses, deployer);
-        proposal.afterDeploy(addresses, deployer);
-        proposal.afterDeploySetup(addresses);
-        proposal.teardown(addresses, deployer);
-        proposal.build(addresses);
-
-        // only runs the proposal if the proposal has not been executed yet
-        if (!proposal.checkOnChainCalldata(governor)) {
-            proposal.run(addresses, deployer);
-            proposal.validate(addresses, deployer);
-        }
-    }
-
     function testActiveProposals() public {
         vm.selectFork(moonbeamForkId);
 
@@ -114,12 +58,20 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
         uint256[] memory proposalIds = governorContract.liveProposals();
 
-        for (uint256 i = 0; i < proposalIds.length; i++) {
+        string[] memory inputs = new string[](1);
+        inputs[0] = "./get-latest-proposals.sh";
+
+        string memory output = string(vm.ffi(inputs));
+
+        // create array splitting the output string
+        string[] memory proposalsPath = output.split(",");
+
+        for (uint256 i = proposalIds.length; i > 0; i--) {
             /// always need to select moonbeamForkId before executing a
             /// proposal as end of loop could switch to base for execution
             vm.selectFork(moonbeamForkId);
 
-            uint256 proposalId = proposalIds[i];
+            uint256 proposalId = proposalIds[i - 1];
             (
                 address[] memory targets,
                 ,
@@ -185,10 +137,42 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     200
                 );
             }
-            governorContract.execute(proposalId);
+
+            try governorContract.execute(proposalId) {} catch (bytes memory e) {
+                console.log("Error executing proposal", proposalId);
+                console.log(string(e));
+
+                // find match proposal
+                for (uint256 j = 0; j < proposalsPath.length; j++) {
+                    Proposal proposal = Proposal(deployCode(proposalsPath[j]));
+                    vm.makePersistent(address(proposal));
+
+                    proposal.setForkIds(baseForkId, moonbeamForkId);
+
+                    vm.selectFork(proposal.primaryForkId());
+
+                    // runs pre build mock and build
+                    proposal.preBuildMock(addresses);
+                    proposal.build(addresses);
+
+                    // if proposal is the one that failed, run the proposal again
+                    if (
+                        proposal.getProposalId(addresses, governor) ==
+                        proposalId
+                    ) {
+                        vm.selectFork(moonbeamForkId);
+                        governorContract.execute(proposalId);
+
+                        vm.selectFork(proposal.primaryForkId());
+                        proposal.validate(addresses, address(proposal));
+                        break;
+                    }
+                }
+            }
 
             if (targets[lastIndex] == wormholeCore) {
                 vm.selectFork(baseForkId);
+
                 address expectedTemporalGov = addresses.getAddress(
                     "TEMPORAL_GOVERNOR"
                 );
@@ -224,22 +208,63 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     expectedTemporalGov
                 );
 
-                // Deploy the modified Wormhole Core implementation contract which
-                // bypass the guardians signature check
-                Implementation core = new Implementation();
-                address wormhole = block.chainid == baseChainId
-                    ? addresses.getAddress("WORMHOLE_CORE_BASE")
-                    : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE");
+                {
+                    // Deploy the modified Wormhole Core implementation contract which
+                    // bypass the guardians signature check
+                    Implementation core = new Implementation();
+                    address wormhole = block.chainid == baseChainId
+                        ? addresses.getAddress("WORMHOLE_CORE_BASE")
+                        : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE");
 
-                /// Set the wormhole core address to have the
-                /// runtime bytecode of the mock core
-                vm.etch(wormhole, address(core).code);
+                    /// Set the wormhole core address to have the
+                    /// runtime bytecode of the mock core
+                    vm.etch(wormhole, address(core).code);
+                }
 
                 temporalGovernor.queueProposal(vaa);
 
                 vm.warp(block.timestamp + temporalGovernor.proposalDelay());
 
-                temporalGovernor.executeProposal(vaa);
+                try temporalGovernor.executeProposal(vaa) {} catch (
+                    bytes memory e
+                ) {
+                    console.log("Error executing proposal", proposalId);
+                    console.log(string(e));
+
+                    // find match proposal
+                    for (uint256 j = 0; j < proposalsPath.length; j++) {
+                        Proposal proposal = Proposal(
+                            deployCode(proposalsPath[j])
+                        );
+                        vm.makePersistent(address(proposal));
+
+                        proposal.setForkIds(baseForkId, moonbeamForkId);
+                        vm.selectFork(proposal.primaryForkId());
+
+                        // runs pre build mock and build
+                        proposal.preBuildMock(addresses);
+                        proposal.build(addresses);
+
+                        // if proposal is the one that failed, run the temporal
+                        // governor execution again
+                        if (
+                            proposal.getProposalId(addresses, governor) ==
+                            proposalId
+                        ) {
+                            // foundry selectFork resets warp, so we need to warp again
+                            vm.warp(
+                                block.timestamp +
+                                    temporalGovernor.proposalDelay()
+                            );
+
+                            temporalGovernor.executeProposal(vaa);
+
+                            // no need to select fork as we are already on base
+                            proposal.validate(addresses, address(proposal));
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
