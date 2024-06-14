@@ -3,8 +3,8 @@ name: Foundry base integration tests
 on: [pull_request]
 
 env:
-  MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+  MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
 
 jobs:
   run-base-tests:
@@ -20,8 +20,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Set PROPOSAL_ARTIFACT_PATH environment variable
-        run: bash ./.github/helper/set-env-var.sh
-
       - name: Integration Tests Base Mainnet
-        run: time forge test --match-contract LiveSystemBaseTest --fork-url $BASE_RPC_URL -vvv
+        run:
+          time forge test --match-contract LiveSystemBaseTest --fork-url base
+          -vvv --ffi

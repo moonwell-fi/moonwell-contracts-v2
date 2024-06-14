@@ -40,7 +40,7 @@ contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {
+    function preBuildMock(Addresses addresses) public override {
         address usdcMetaMorphoVault = addresses.getAddress(
             "USDC_METAMORPHO_VAULT"
         );
@@ -62,13 +62,10 @@ contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         ) {
             vm.store(wethMetaMorphoVault, PENDING_OWNER_SLOT, pendingOwner);
         }
-    }
 
-    function build(Addresses addresses) public override {
         address foundationMultisig = addresses.getAddress(
             "FOUNDATION_MULTISIG"
         );
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         ERC20Upgradeable well = ERC20Upgradeable(
             addresses.getAddress("xWELL_PROXY")
         );
@@ -83,7 +80,9 @@ contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         if (well.balanceOf(foundationMultisig) < WELL_AMOUNT) {
             deal(address(well), foundationMultisig, WELL_AMOUNT);
         }
+    }
 
+    function build(Addresses addresses) public override {
         _pushCrossChainAction(
             addresses.getAddress("USDC_METAMORPHO_VAULT"),
             abi.encodeWithSignature("acceptOwnership()"),

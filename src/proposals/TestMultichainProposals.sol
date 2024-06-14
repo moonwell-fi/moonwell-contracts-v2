@@ -29,7 +29,7 @@ contract TestMultichainProposals is Test, Initializable {
     bool public DEBUG;
     bool public DO_DEPLOY;
     bool public DO_AFTER_DEPLOY;
-    bool public DO_AFTER_DEPLOY_SETUP;
+    bool public DO_PRE_BUILD_MOCK;
     bool public DO_BUILD;
     bool public DO_RUN;
     bool public DO_TEARDOWN;
@@ -46,7 +46,7 @@ contract TestMultichainProposals is Test, Initializable {
         DEBUG = vm.envOr("DEBUG", true);
         DO_DEPLOY = vm.envOr("DO_DEPLOY", true);
         DO_AFTER_DEPLOY = vm.envOr("DO_AFTER_DEPLOY", true);
-        DO_AFTER_DEPLOY_SETUP = vm.envOr("DO_AFTER_DEPLOY_SETUP", true);
+        DO_PRE_BUILD_MOCK = vm.envOr("DO_PRE_BUILD_MOCK", true);
         DO_BUILD = vm.envOr("DO_BUILD", true);
         DO_RUN = vm.envOr("DO_RUN", true);
         DO_TEARDOWN = vm.envOr("DO_TEARDOWN", true);
@@ -80,7 +80,7 @@ contract TestMultichainProposals is Test, Initializable {
         bool debug,
         bool deploy,
         bool afterDeploy,
-        bool afterDeploySetup,
+        bool preBuildMock,
         bool build,
         bool run,
         bool teardown,
@@ -137,9 +137,9 @@ contract TestMultichainProposals is Test, Initializable {
             }
 
             // After-deploy-setup step
-            if (afterDeploySetup) {
-                if (debug) console.log("Proposal", name, "afterDeploySetup()");
-                proposals[i].afterDeploySetup(addresses);
+            if (preBuildMock) {
+                if (debug) console.log("Proposal", name, "preBuildMock()");
+                proposals[i].preBuildMock(addresses);
             }
 
             // Build step
@@ -178,7 +178,7 @@ contract TestMultichainProposals is Test, Initializable {
             DEBUG,
             DO_DEPLOY,
             DO_AFTER_DEPLOY,
-            DO_AFTER_DEPLOY_SETUP,
+            DO_PRE_BUILD_MOCK,
             DO_BUILD,
             DO_RUN,
             DO_TEARDOWN,

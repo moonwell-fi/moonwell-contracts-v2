@@ -258,13 +258,21 @@ abstract contract CrossChainProposal is
         return multichainPayload;
     }
 
-    /// @notice Check if there are any on-chain proposals that match the
-    /// proposal calldata
-    function checkOnChainCalldata(
-        address governor,
-        address temporalGovernor,
-        address wormholeCore
-    ) public view returns (bool calldataExist) {
+    /// @notice search for a on-chain proposal that matches the proposal calldata
+    /// @param addresses the addresses contract
+    /// @param governor the governor address
+    // /// @return proposalId the proposal id, 0 if no proposal is found
+    function getProposalId(
+        Addresses addresses,
+        address governor
+    ) public override returns (uint256 proposalId) {
+        vm.selectFork(moonbeamForkId);
+
+        address temporalGovernor = addresses.getAddress(
+            "TEMPORAL_GOVERNOR",
+            sendingChainIdToReceivingChainId[block.chainid]
+        );
+
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 
         while (proposalCount > 0) {
@@ -284,16 +292,25 @@ abstract contract CrossChainProposal is
 
             bytes memory proposalCalldata = getMultichainGovernorCalldata(
                 temporalGovernor,
-                wormholeCore
+                addresses.getAddress(
+                    block.chainid == moonBeamChainId
+                        ? "WORMHOLE_CORE_MOONBEAM"
+                        : "WORMHOLE_CORE_MOONBASE",
+                    block.chainid == moonBeamChainId
+                        ? moonBeamChainId
+                        : moonBaseChainId
+                )
             );
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
-                return true;
+                proposalId = proposalCount;
+                break;
             }
 
             proposalCount--;
         }
-        return false;
+
+        vm.selectFork(primaryForkId());
     }
 
     /// @notice print the actions that will be executed by the proposal
