@@ -75,11 +75,9 @@ abstract contract MIPProposal is Script {
         vm.stopBroadcast();
 
         if (DO_PRE_BUILD_MOCK) preBuildMock(addresses);
-
         if (DO_BUILD) build(addresses);
-
-        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
         if (DO_RUN) run(addresses, deployerAddress);
+        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
         if (DO_VALIDATE) {
             validate(addresses, deployerAddress);
             console.log("Validation completed for proposal ", this.name());

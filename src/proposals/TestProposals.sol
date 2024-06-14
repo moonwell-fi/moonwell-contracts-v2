@@ -143,16 +143,16 @@ contract TestProposals is Test {
                 proposals[i].build(addresses);
             }
 
-            // Teardown step
-            if (teardown) {
-                if (debug) console.log("Proposal", name, "teardown()");
-                proposals[i].teardown(addresses, address(proposals[i]));
-            }
-
             // Run step
             if (run) {
                 if (debug) console.log("Proposal", name, "run()");
                 proposals[i].run(addresses, address(proposals[i]));
+            }
+
+            // Teardown step
+            if (teardown) {
+                if (debug) console.log("Proposal", name, "teardown()");
+                proposals[i].teardown(addresses, address(proposals[i]));
             }
 
             // Validate step

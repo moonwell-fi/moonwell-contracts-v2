@@ -149,11 +149,11 @@ contract PostProposalCheck is Test {
         proposal.deploy(addresses, deployer);
         proposal.afterDeploy(addresses, deployer);
         proposal.preBuildMock(addresses);
-        proposal.teardown(addresses, deployer);
         proposal.build(addresses);
 
         // only runs the proposal if the proposal has not been executed yet
         if (proposal.getProposalId(addresses, address(governor)) == 0) {
+            proposal.teardown(addresses, deployer);
             proposal.run(addresses, deployer);
             proposal.validate(addresses, deployer);
         }
