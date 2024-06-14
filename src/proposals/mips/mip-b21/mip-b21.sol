@@ -13,7 +13,7 @@ import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.so
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {FeeSplitter as Splitter} from "@protocol/morpho/FeeSplitter.sol";
 
-/// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
+/// DO_AFTER_DEPLOY_SETUP=true DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b21/mip-b21.sol:mipb21
 contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B21";
@@ -22,6 +22,8 @@ contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
 
     /// @notice metamorpho storage slot offset for pending owner
     bytes32 public constant PENDING_OWNER_SLOT = bytes32(uint256(9));
+
+    uint256 public startingWellAllowance;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -62,6 +64,13 @@ contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         ) {
             vm.store(wethMetaMorphoVault, PENDING_OWNER_SLOT, pendingOwner);
         }
+
+        startingWellAllowance = ERC20Upgradeable(
+            addresses.getAddress("xWELL_PROXY")
+        ).allowance(
+                addresses.getAddress("FOUNDATION_MULTISIG"),
+                temporalGovernor
+            );
     }
 
     function build(Addresses addresses) public override {
@@ -110,7 +119,7 @@ contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
 
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         /// --------------------- WELL ---------------------
         ERC20Upgradeable well = ERC20Upgradeable(
             addresses.getAddress("xWELL_PROXY")
@@ -122,12 +131,13 @@ contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "well amount incorrect"
         );
         assertEq(
-            well.allowance(
-                addresses.getAddress("FOUNDATION_MULTISIG"),
-                addresses.getAddress("TEMPORAL_GOVERNOR")
-            ),
-            0,
-            "well allowance incorrect"
+            startingWellAllowance -
+                well.allowance(
+                    addresses.getAddress("FOUNDATION_MULTISIG"),
+                    addresses.getAddress("TEMPORAL_GOVERNOR")
+                ),
+            WELL_AMOUNT,
+            "well allowance decrease incorrect"
         );
 
         /// --------------------- METAMORPHO VAULTS ---------------------
