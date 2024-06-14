@@ -187,7 +187,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                 );
 
                 TemporalGovernor temporalGovernor = TemporalGovernor(
-                    expectedTemporalGov
+                    payable(expectedTemporalGov)
                 );
 
                 // Deploy the modified Wormhole Core implementation contract which

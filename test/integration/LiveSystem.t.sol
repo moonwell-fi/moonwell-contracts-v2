@@ -32,7 +32,7 @@ contract LiveSystemTest is Test {
 
     function testGuardianCanPauseTemporalGovernor() public {
         TemporalGovernor gov = TemporalGovernor(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN"));
