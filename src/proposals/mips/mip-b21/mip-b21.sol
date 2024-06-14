@@ -42,7 +42,7 @@ contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {
+    function preBuildMock(Addresses addresses) public override {
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         startingWellAllowance = ERC20Upgradeable(
             addresses.getAddress("xWELL_PROXY")

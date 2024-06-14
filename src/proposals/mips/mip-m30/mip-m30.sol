@@ -28,7 +28,7 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
 
     function afterDeploy(Addresses, address) public override {}
 
-    function afterDeploySetup(Addresses) public override {}
+    function preBuildMock(Addresses) public override {}
 
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {

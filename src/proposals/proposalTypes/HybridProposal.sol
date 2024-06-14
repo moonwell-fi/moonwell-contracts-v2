@@ -258,6 +258,29 @@ abstract contract HybridProposal is
         );
     }
 
+    /// @notice Getter function for `GovernorBravoDelegate.propose()` calldata
+    function getProposeCalldata(
+        address wormoholeCore,
+        address temporalGovernor
+    ) public view returns (bytes memory proposeCalldata) {
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = getTargetsPayloadsValues(wormoholeCore, temporalGovernor);
+
+        string[] memory signatures = new string[](targets.length);
+
+        proposeCalldata = abi.encodeWithSignature(
+            "propose(address[],uint256[],string[],bytes[],string)",
+            targets,
+            values,
+            signatures,
+            calldatas,
+            string(PROPOSAL_DESCRIPTION)
+        );
+    }
+
     /// @notice return arrays of all items in the proposal that the
     /// temporal governor will receive
     /// all items are in the same order as the proposal
@@ -390,36 +413,10 @@ abstract contract HybridProposal is
     }
 
     /// @notice Getter function for `GovernorBravoDelegate.propose()` calldata
-    function getProposeCalldata(
-        address wormoholeCore,
-        address temporalGovernor
-    ) public view returns (bytes memory proposeCalldata) {
-        (
-            address[] memory targets,
-            uint256[] memory values,
-            bytes[] memory calldatas
-        ) = getTargetsPayloadsValues(wormoholeCore, temporalGovernor);
-
-        string[] memory signatures = new string[](targets.length);
-
-        proposeCalldata = abi.encodeWithSignature(
-            "propose(address[],uint256[],string[],bytes[],string)",
-            targets,
-            values,
-            signatures,
-            calldatas,
-            string(PROPOSAL_DESCRIPTION)
-        );
-    }
-
-    /// -----------------------------------------------------
-    /// -----------------------------------------------------
-    /// -------------------- OVERRIDES ----------------------
-    /// -----------------------------------------------------
-    /// -----------------------------------------------------
-
-    /// @notice Print out the proposal action steps and which chains they were run on
-    function printCalldata(Addresses addresses) public view override {
+    /// @param addresses the addresses contract
+    function getCalldata(
+        Addresses addresses
+    ) public view returns (bytes memory) {
         require(
             bytes(PROPOSAL_DESCRIPTION).length > 0,
             "No proposal description"
@@ -431,7 +428,7 @@ abstract contract HybridProposal is
             bytes[] memory payloads
         ) = getTargetsPayloadsValues(addresses);
 
-        bytes memory payloadMultichainGovernor = abi.encodeWithSignature(
+        bytes memory proposalCalldata = abi.encodeWithSignature(
             "propose(address[],uint256[],bytes[],string)",
             targets,
             values,
@@ -439,21 +436,74 @@ abstract contract HybridProposal is
             string(PROPOSAL_DESCRIPTION)
         );
 
+        return proposalCalldata;
+    }
+
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
+    /// -------------------- OVERRIDES ----------------------
+    /// -----------------------------------------------------
+    /// -----------------------------------------------------
+
+    /// @notice Print out the proposal action steps and which chains they were run on
+    function printCalldata(Addresses addresses) public view override {
         console.log("Governor multichain proposal calldata");
-        console.logBytes(payloadMultichainGovernor);
+        console.logBytes(getCalldata(addresses));
     }
 
     function deploy(Addresses, address) public virtual override {}
 
     function afterDeploy(Addresses, address) public virtual override {}
 
-    function afterDeploySetup(Addresses) public virtual override {}
+    function preBuildMock(Addresses) public virtual override {}
 
     function build(Addresses) public virtual override {}
 
     function teardown(Addresses, address) public virtual override {}
 
     function run(Addresses, address) public virtual override {}
+
+    /// @notice search for a on-chain proposal that matches the proposal calldata
+    /// @param addresses the addresses contract
+    /// @param governor the governor address
+    /// @return proposalId the proposal id, 0 if no proposal is found
+    function getProposalId(
+        Addresses addresses,
+        address governor
+    ) public override returns (uint256 proposalId) {
+        vm.selectFork(moonbeamForkId);
+
+        uint256 proposalCount = MultichainGovernor(governor).proposalCount();
+
+        // Loop through all proposals to find the one that matches
+        // Start from the latest proposal as it is more likely to be the one
+        while (proposalCount > 0) {
+            (
+                address[] memory targets,
+                uint256[] memory values,
+                bytes[] memory calldatas
+            ) = MultichainGovernor(governor).getProposalData(proposalCount);
+
+            bytes memory onchainCalldata = abi.encodeWithSignature(
+                "propose(address[],uint256[],bytes[],string)",
+                targets,
+                values,
+                calldatas,
+                PROPOSAL_DESCRIPTION
+            );
+
+            bytes memory proposalCalldata = getCalldata(addresses);
+
+            if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
+                proposalId = proposalCount;
+                break;
+            }
+
+            proposalCount--;
+        }
+
+        vm.selectFork(primaryForkId());
+    }
 
     /// @notice Runs the proposal on moonbeam, verifying the actions through the hook
     /// @param addresses the addresses contract
