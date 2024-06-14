@@ -160,7 +160,11 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         proposal.getProposalId(addresses, governor) ==
                         proposalId
                     ) {
+                        vm.selectFork(moonbeamForkId);
                         governorContract.execute(proposalId);
+
+                        vm.selectFork(proposal.primaryForkId());
+                        proposal.validate(addresses, address(proposal));
                         break;
                     }
                 }
@@ -254,6 +258,9 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                             );
 
                             temporalGovernor.executeProposal(vaa);
+
+                            // no need to select fork as we are already on base
+                            proposal.validate(addresses, address(proposal));
                             break;
                         }
                     }
