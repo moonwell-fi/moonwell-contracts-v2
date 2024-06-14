@@ -49,7 +49,9 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
     function getProposalId(
         Addresses,
         address
-    ) public override returns (uint256) {}
+    ) public override returns (uint256) {
+        revert("Not implemented");
+    }
 
     function deploy(Addresses addresses, address) public override {
         /// --------------------------------------------------

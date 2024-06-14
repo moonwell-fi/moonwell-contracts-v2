@@ -93,7 +93,9 @@ abstract contract GovernanceProposal is Proposal {
     function getProposalId(
         Addresses,
         address
-    ) public override returns (uint256) {}
+    ) public override returns (uint256) {
+        revert("Not implemented");
+    }
 
     /// @notice print the proposal action steps
     function printProposalActionSteps() public override {
