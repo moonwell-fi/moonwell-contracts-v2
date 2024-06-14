@@ -293,12 +293,10 @@ abstract contract CrossChainProposal is
             bytes memory proposalCalldata = getMultichainGovernorCalldata(
                 temporalGovernor,
                 addresses.getAddress(
-                    block.chainid == baseChainId ||
-                        block.chainid == moonBeamChainId
+                    block.chainid == moonBeamChainId
                         ? "WORMHOLE_CORE_MOONBEAM"
                         : "WORMHOLE_CORE_MOONBASE",
-                    block.chainid == baseChainId ||
-                        block.chainid == moonBeamChainId
+                    block.chainid == moonBeamChainId
                         ? moonBeamChainId
                         : moonBaseChainId
                 )
