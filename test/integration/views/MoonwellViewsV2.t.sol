@@ -53,24 +53,24 @@ contract MoonwellViewsV2Test is Test, PostProposalCheck {
         vm.rollFork(5349000);
     }
 
-    function testComptrollerIsSet() public {
+    function testComptrollerIsSet() public view {
         address _addy = address(viewsContract.comptroller());
         assertEq(_addy, comptroller);
     }
 
-    function testMarketsSize() public {
+    function testMarketsSize() public view {
         MoonwellViewsV2.Market[] memory _markets = viewsContract
             .getAllMarketsInfo();
         assertEq(_markets.length, 5);
     }
 
-    function testUserBalances() public {
+    function testUserBalances() public view {
         MoonwellViewsV2.Balances[] memory _balances = viewsContract
             .getUserBalances(user);
         assertEq(_balances.length, 11);
     }
 
-    function testUserRewards() public {
+    function testUserRewards() public view {
         MoonwellViewsV2.Rewards[] memory _rewards = viewsContract
             .getUserRewards(user);
 

@@ -57,12 +57,12 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
         vm.rollFork(4717310);
     }
 
-    function testComptrollerIsSet() public {
+    function testComptrollerIsSet() public view {
         address _addy = address(viewsContract.comptroller());
         assertEq(_addy, comptroller);
     }
 
-    function testMarketsSize() public {
+    function testMarketsSize() public view {
         MoonwellViewsV1.Market memory _market = viewsContract.getMarketInfo(
             MToken(0x091608f4e4a15335145be0A279483C0f8E4c7955)
         );
@@ -70,7 +70,7 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
         assertEq(_market.isListed, true);
     }
 
-    function testUserVotingPower() public {
+    function testUserVotingPower() public view {
         MoonwellViewsV1.UserVotes memory _votes = viewsContract
             .getUserVotingPower(user);
 
@@ -82,7 +82,7 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
         );
     }
 
-    function testUserStakingInfo() public {
+    function testUserStakingInfo() public view {
         MoonwellViewsV1.UserStakingInfo memory _stakingInfo = viewsContract
             .getUserStakingInfo(user);
 

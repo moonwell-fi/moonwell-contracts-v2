@@ -118,7 +118,7 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
 
     function teardown(Addresses addresses, address) public pure override {}
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         /// do validation for base network, then do validation for moonbeam network
         //// ensure chainId is correct and non zero
         /// ensure correct owner

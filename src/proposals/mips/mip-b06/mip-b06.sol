@@ -45,7 +45,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
         address jrmAddress,
         address tokenAddress,
         IRParams memory params
-    ) internal {
+    ) internal view {
         JumpRateModel jrm = JumpRateModel(jrmAddress);
         assertEq(
             address(MToken(tokenAddress).interestRateModel()),
@@ -82,7 +82,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
         Addresses addresses,
         address tokenAddress,
         uint256 collateralFactor
-    ) internal {
+    ) internal view {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         Comptroller unitroller = Comptroller(unitrollerAddress);
 
@@ -195,7 +195,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
 
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         // ======== WETH CF Update =========
         _validateCF(
             addresses,

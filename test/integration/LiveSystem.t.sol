@@ -195,35 +195,37 @@ contract LiveSystemTest is Test {
             4 weeks * 1e18 /// fund for entire period
         );
 
-        MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
+        {
+            MultiRewardDistributorCommon.MarketConfig memory config = mrd
+                .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
 
-        assertEq(
-            config.owner,
-            addresses.getAddress("EMISSIONS_ADMIN"),
-            "Owner incorrect"
-        );
-        assertEq(config.emissionToken, well, "Emission token incorrect");
-        assertEq(
-            config.borrowEmissionsPerSec,
-            1e18,
-            "Borrow emissions incorrect"
-        );
-        assertEq(
-            config.endTime,
-            block.timestamp + 4 weeks,
-            "End time incorrect"
-        );
-        assertEq(
-            config.supplyGlobalIndex,
-            supplyIndex,
-            "Supply global index incorrect"
-        );
-        assertEq(
-            config.borrowGlobalIndex,
-            1e36,
-            "Borrow global index incorrect"
-        );
+            assertEq(
+                config.owner,
+                addresses.getAddress("EMISSIONS_ADMIN"),
+                "Owner incorrect"
+            );
+            assertEq(config.emissionToken, well, "Emission token incorrect");
+            assertEq(
+                config.borrowEmissionsPerSec,
+                1e18,
+                "Borrow emissions incorrect"
+            );
+            assertEq(
+                config.endTime,
+                block.timestamp + 4 weeks,
+                "End time incorrect"
+            );
+            assertEq(
+                config.supplyGlobalIndex,
+                supplyIndex,
+                "Supply global index incorrect"
+            );
+            assertEq(
+                config.borrowGlobalIndex,
+                1e36,
+                "Borrow global index incorrect"
+            );
+        }
     }
 
     function testMintMTokenSucceeds() public {

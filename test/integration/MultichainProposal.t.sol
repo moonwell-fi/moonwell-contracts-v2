@@ -286,7 +286,7 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
         }
     }
 
-    function testGetAllMarketConfigs() public {
+    function testGetAllMarketConfigs() public view {
         MultiRewardDistributor mrd = MultiRewardDistributor(
             addresses.getAddress("MRD_PROXY")
         );

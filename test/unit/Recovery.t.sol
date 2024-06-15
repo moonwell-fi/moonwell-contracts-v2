@@ -13,7 +13,7 @@ contract RecoveryUnitTest is Test, RecoveryDeploy {
         recover = deploy(address(this));
     }
 
-    function testOwner() public {
+    function testOwner() public view {
         assertEq(recover.owner(), address(this));
     }
 
@@ -90,9 +90,6 @@ contract RecoveryUnitTest is Test, RecoveryDeploy {
         vm.expectRevert("Recovery: underlying call reverted");
         recover.emergencyAction(calls);
     }
-
-    /// to receive eth from recovery contract
-    fallback() external payable {}
 
     /// to receive eth from recovery contract
     receive() external payable {}

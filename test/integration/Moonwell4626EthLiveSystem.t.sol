@@ -53,7 +53,7 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         weth = WETH9(addresses.getAddress("WETH"));
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(
             address(router.weth()),
             addresses.getAddress("WETH"),

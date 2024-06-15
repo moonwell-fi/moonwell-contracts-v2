@@ -24,7 +24,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
         uint256 abstainVotes
     );
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(
             governor.getVotes(
                 address(this),

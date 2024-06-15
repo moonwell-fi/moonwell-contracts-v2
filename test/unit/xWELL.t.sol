@@ -11,7 +11,7 @@ contract xWELLUnitTest is BaseTest {
         xwellProxy.acceptOwnership();
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertTrue(
             xwellProxy.DOMAIN_SEPARATOR() != bytes32(0),
             "domain separator not set"

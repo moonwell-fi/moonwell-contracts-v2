@@ -6,28 +6,28 @@ import "@forge-std/Test.sol";
 contract StringTest is Test {
     using String for string;
 
-    function testHasChar() public {
+    function testHasChar() public pure {
         string memory testString = "hello world";
         bytes1 delimiter = " ";
         bool result = testString.hasChar(delimiter);
         assertEq(result, true, "hasChar failed");
     }
 
-    function testCountWords() public {
+    function testCountWords() public pure {
         string memory testString = "hello world test";
         bytes1 delimiter = " ";
         uint256 count = testString.countWords(delimiter);
         assertEq(count, 3, "countWords failed");
     }
 
-    function testCheckNoDoubleDelimiters() public {
+    function testCheckNoDoubleDelimiters() public pure {
         string memory testString = "hello  world";
         bytes1 delimiter = " ";
         bool result = testString.checkNoDoubleDelimiters(delimiter);
         assertEq(result, false, "checkNoDoubleDelimiters failed");
     }
 
-    function testSplitTwoWords() public {
+    function testSplitTwoWords() public pure {
         string memory testString = "hello world";
         bytes1 delimiter = " ";
         string[] memory splitResult = testString.split(delimiter);
@@ -36,7 +36,7 @@ contract StringTest is Test {
         assertEq(splitResult[1], "world", "split failed");
     }
 
-    function testSplitThreeWords() public {
+    function testSplitThreeWords() public pure {
         string memory testString = "hello world test";
         bytes1 delimiter = " ";
         string[] memory splitResult = testString.split(delimiter);
@@ -46,7 +46,7 @@ contract StringTest is Test {
         assertEq(splitResult[2], "test", "split failed, word 3");
     }
 
-    function testSplitFourChars() public {
+    function testSplitFourChars() public pure {
         string memory testString = "a b c d";
         bytes1 delimiter = " ";
         string[] memory splitResult = testString.split(delimiter);
@@ -57,7 +57,7 @@ contract StringTest is Test {
         assertEq(splitResult[3], "d", "split failed, word 4");
     }
 
-    function testSplitCommaDelimitedPaths() public {
+    function testSplitCommaDelimitedPaths() public pure {
         string
             memory testString = "artifacts/foundry/mip-b05.sol/mipb05.json,artifacts/foundry/mip-b04.sol/mipb04.json,artifacts/foundry/mip-b03.sol/mipb03.json";
         bytes1 delimiter = ",";
@@ -80,7 +80,7 @@ contract StringTest is Test {
         );
     }
 
-    function testSplitCommaDelimitedMixed() public {
+    function testSplitCommaDelimitedMixed() public pure {
         string
             memory testString = "hello,world,artifacts/foundry/mip-b05.sol/mipb05.json";
         bytes1 delimiter = ",";
@@ -95,7 +95,7 @@ contract StringTest is Test {
         );
     }
 
-    function testSplitCommaDelimitedSingle() public {
+    function testSplitCommaDelimitedSingle() public pure {
         string memory testString = "artifacts/foundry/mip-b05.sol/mipb05.json";
         bytes1 delimiter = ",";
         string[] memory splitResult = testString.split(delimiter);

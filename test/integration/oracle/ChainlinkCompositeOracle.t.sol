@@ -24,13 +24,13 @@ contract ChainlinkCompositeOracleIntegrationTest is Test {
         );
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(oracle.base(), ethUsdOracle);
         assertEq(oracle.multiplier(), cbEthEthOracle);
         assertEq(oracle.decimals(), 18);
     }
 
-    function testcbETH_USD_CompositeOracle() public {
+    function testcbETH_USD_CompositeOracle() public view {
         uint256 price = oracle.getDerivedPrice(
             cbEthEthOracle,
             ethUsdOracle,
@@ -39,7 +39,7 @@ contract ChainlinkCompositeOracleIntegrationTest is Test {
         assertTrue(price > 0, "Price should be greater than 0");
     }
 
-    function testTestLatestRoundData() public {
+    function testTestLatestRoundData() public view {
         (
             uint80 roundId, /// always 0, value unused in ChainlinkOracle.sol
             int256 answer, /// the composite price
@@ -66,7 +66,7 @@ contract ChainlinkCompositeOracleIntegrationTest is Test {
         int256 price,
         uint8 priceDecimals,
         uint8 expectedDecimals
-    ) public {
+    ) public view {
         price = int256(_bound(uint256(price), 100, 10_000e18)); /// bound price between 100 and 10_000e18
         priceDecimals = uint8(_bound(priceDecimals, 0, 18)); /// bound priceDecimals between 0 and 18
         expectedDecimals = uint8(_bound(expectedDecimals, 0, 18)); /// bound expectedDecimals between 0 and 18
@@ -101,7 +101,7 @@ contract ChainlinkCompositeOracleIntegrationTest is Test {
         int256 basePrice,
         int256 priceMultiplier,
         uint8 decimals
-    ) public {
+    ) public view {
         basePrice = int256(_bound(uint256(basePrice), 100, 10_000e18)); /// bound price between 100 and 10_000e18
         priceMultiplier = int256(
             _bound(uint256(priceMultiplier), 1e18, 10_000e18)

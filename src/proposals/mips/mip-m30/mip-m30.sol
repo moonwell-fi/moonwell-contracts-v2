@@ -60,7 +60,7 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
 
     function teardown(Addresses addresses, address) public pure override {}
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
 
         assertEq(

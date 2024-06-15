@@ -165,7 +165,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         ecosystemReserveContract.initialize(address(1));
     }
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         /// proxy validation
         {
             validateProxy(

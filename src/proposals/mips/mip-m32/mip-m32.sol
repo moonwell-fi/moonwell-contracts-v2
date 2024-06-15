@@ -92,7 +92,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
     }
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
 
         assertEq(

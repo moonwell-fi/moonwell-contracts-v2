@@ -38,7 +38,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         vm.warp(block.timestamp + 1);
     }
 
-    function testGovernorSetup() public {
+    function testGovernorSetup() public view {
         assertFalse(
             governor.useTimestamps(),
             "useTimestamps should start off false after initialization"
@@ -123,7 +123,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function testVoteCollectionSetup() public {
+    function testVoteCollectionSetup() public view {
         assertEq(
             address(voteCollection.xWell()),
             address(xwell),
