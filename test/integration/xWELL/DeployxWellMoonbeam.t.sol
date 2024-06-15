@@ -74,7 +74,7 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
         );
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         address externalChainAddress = wormholeAdapter.targetAddress(
             wormholeBaseChainid
         );

@@ -71,7 +71,7 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
 
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         assertTrue(
             addresses.getAddress("MOONWELL_WETH") != address(0),
             "MOONWELL_WETH not set"

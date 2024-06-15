@@ -206,7 +206,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         governor.initialize(initData, trustedSenders, approvedCalldata);
     }
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         MultichainGovernor governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );

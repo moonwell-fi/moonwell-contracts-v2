@@ -93,7 +93,7 @@ abstract contract GovernanceProposal is Proposal {
     function getProposalId(
         Addresses,
         address
-    ) public override returns (uint256) {
+    ) public pure override returns (uint256) {
         revert("Not implemented");
     }
 

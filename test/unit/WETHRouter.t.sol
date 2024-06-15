@@ -74,7 +74,7 @@ contract WETHRouterUnitTest is Test {
         router = new WETHRouter(WETH9(address(weth)), MErc20(address(mToken)));
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(address(router.weth()), address(weth));
         assertEq(address(router.mToken()), address(mToken));
     }

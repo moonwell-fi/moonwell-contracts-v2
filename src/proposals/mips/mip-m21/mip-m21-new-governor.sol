@@ -72,7 +72,7 @@ contract mipm21newGovernor is HybridProposal {
 
     function teardown(Addresses addresses, address) public pure override {}
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         validateProxy(
             vm,
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),

@@ -91,7 +91,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.roll(block.number + 1);
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(
             governor.getVotes(
                 address(this),

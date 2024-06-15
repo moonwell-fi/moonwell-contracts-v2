@@ -66,7 +66,7 @@ contract xWellRouterTest is Test, ChainIds {
         fallbackReverts = false; /// default to not revert
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(
             address(router.xwell()),
             address(xwell),

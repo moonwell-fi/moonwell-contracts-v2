@@ -530,7 +530,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
     function _validateCaps(
         Addresses addresses,
         Configs.CTokenConfiguration memory config
-    ) private {
+    ) private view {
         {
             if (config.supplyCap != 0 || config.borrowCap != 0) {
                 uint8 decimals = EIP20Interface(

@@ -60,7 +60,7 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
         weth = WETH9(addresses.getAddress("WETH"));
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(
             factory.weth(),
             addresses.getAddress("WETH"),

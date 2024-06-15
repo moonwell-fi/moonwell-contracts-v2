@@ -31,7 +31,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         vm.warp(block.timestamp + 1);
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(
             voteCollection.getAllTargetChains().length,
             1,
@@ -44,7 +44,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         );
     }
 
-    function testTrustedSenderCorrectInGovernor() public {
+    function testTrustedSenderCorrectInGovernor() public view {
         assertTrue(
             governor.isTrustedSender(
                 baseWormholeChainId,
@@ -54,7 +54,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         );
     }
 
-    function testTrustedSenderCorrectInVoteCollector() public {
+    function testTrustedSenderCorrectInVoteCollector() public view {
         assertTrue(
             voteCollection.isTrustedSender(
                 moonBeamWormholeChainId,
@@ -64,7 +64,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         );
     }
 
-    function testTrustedSenderInVoteCollectionFromWormholeFormat() public {
+    function testTrustedSenderInVoteCollectionFromWormholeFormat() public view {
         bytes32 trustedSenderBytes32 = bytes32(
             uint256(uint160(address(governor)))
         );
@@ -91,7 +91,7 @@ contract WormholeBridgeBaseUnitTest is MultichainBaseTest {
         );
     }
 
-    function testTrustedSenderInGovernorFromWormholeFormat() public {
+    function testTrustedSenderInGovernorFromWormholeFormat() public view {
         bytes32 trustedSenderBytes32 = bytes32(
             uint256(uint160(address(voteCollection)))
         );

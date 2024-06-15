@@ -245,7 +245,7 @@ contract mipm29 is HybridProposal, ParameterValidation {
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
     }
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         _validateRF(
             addresses.getAddress("mGLIMMER"),
             NEW_MGLIMMER_RESERVE_FACTOR

@@ -49,7 +49,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
     function getProposalId(
         Addresses,
         address
-    ) public override returns (uint256) {
+    ) public pure override returns (uint256) {
         revert("Not implemented");
     }
 
@@ -162,7 +162,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
 
     function teardown(Addresses addresses, address) public pure override {}
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         /// do validation for base network, then do validation for moonbeam network
         /// ensure chainId is correct and non zero
         /// ensure correct owner

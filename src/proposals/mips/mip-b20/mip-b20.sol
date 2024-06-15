@@ -52,7 +52,7 @@ contract mipb20 is Proposal, CrossChainProposal, Configs, ParameterValidation {
 
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         IStakedWellUplift stkWell = IStakedWellUplift(
             addresses.getAddress("STK_GOVTOKEN")
         );

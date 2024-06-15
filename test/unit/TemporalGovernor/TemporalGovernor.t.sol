@@ -61,7 +61,7 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         );
     }
 
-    function testSetupCorrectly() public {
+    function testSetup() public view {
         assertTrue(
             governor.isTrustedSender(block.chainid.toUint16(), admin.toBytes())
         );
@@ -301,7 +301,7 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         governor.togglePause();
     }
 
-    function _postRevokeAssertions() private {
+    function _postRevokeAssertions() private view {
         assertFalse(governor.paused());
         assertEq(governor.lastPauseTime(), 0);
         assertEq(governor.owner(), address(0));

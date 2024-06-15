@@ -120,7 +120,7 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
         amount = 100 * 1e18;
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertTrue(adapter.validChainId(block.chainid), "invalid chain id");
         assertTrue(adapter.validAxelarChainid(axelarId), "invalid axelar id");
         assertEq(adapter.owner(), owner, "invalid owner");

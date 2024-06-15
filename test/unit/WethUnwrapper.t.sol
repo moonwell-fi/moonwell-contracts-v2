@@ -17,7 +17,7 @@ contract WethUnwrapperUnitTest is Test {
         acceptEth = true;
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(unwrapper.mToken(), mToken);
         assertEq(unwrapper.weth(), address(weth));
     }

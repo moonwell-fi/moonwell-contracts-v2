@@ -53,7 +53,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         well = ERC20(addresses.getAddress("GOVTOKEN"));
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(address(vault.asset()), address(underlying));
         assertEq(
             address(vault.mToken()),
@@ -206,7 +206,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         assertEq(vault.maxMint(address(0)), type(uint256).max);
     }
 
-    function testMaxMint() public {
+    function testMaxMint() public view {
         uint256 maxMint = vault.maxMint(address(this));
         uint256 supplyCap = comptroller.supplyCaps(
             addresses.getAddress("MOONWELL_USDBC")
@@ -374,7 +374,9 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         vm.stopPrank();
     }
 
-    function testConvertToShareThenAssetsRoundsDown(uint256 assets) public {
+    function testConvertToShareThenAssetsRoundsDown(
+        uint256 assets
+    ) public view {
         assets = _bound(assets, 1, 100_000_000 * 1e18);
 
         uint256 shares = vault.convertToShares(assets);
@@ -383,7 +385,9 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         assertGt(assets, assets2, "initial assets should be gt assets2");
     }
 
-    function testConvertFromSharesToAssetsRoundsDown(uint256 shares) public {
+    function testConvertFromSharesToAssetsRoundsDown(
+        uint256 shares
+    ) public view {
         shares = _bound(shares, 1, 1_000_000 * 1e18);
 
         uint256 assets = vault.convertToAssets(shares);

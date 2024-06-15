@@ -137,7 +137,7 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
             .setLockbox(address(xerc20Lockbox));
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(wormholeBridgeAdapterProxy.owner(), owner, "invalid owner");
         assertEq(
             address(wormholeBridgeAdapterProxy.wormholeRelayer()),
@@ -183,7 +183,7 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
         );
     }
 
-    function testAllTrustedSendersTrusted() public {
+    function testAllTrustedSendersTrusted() public view {
         bytes32[] memory trustedSenders = wormholeBridgeAdapterProxy
             .allTrustedSenders(chainId);
 

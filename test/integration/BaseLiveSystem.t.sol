@@ -39,7 +39,7 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         weth = WETH9(addresses.getAddress("WETH"));
     }
 
-    function testOraclesReturnCorrectValues() public {
+    function testOraclesReturnCorrectValues() public view {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         unchecked {

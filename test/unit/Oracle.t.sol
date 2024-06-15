@@ -22,7 +22,7 @@ contract OracleUnitTest is Test {
         );
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(oracle.decimals(), 18);
 
         assertEq(oracle.base(), address(chainlinkOracleA));
@@ -68,7 +68,7 @@ contract OracleUnitTest is Test {
         );
     }
 
-    function testCompositeOracleTwoAddresses() public {
+    function testCompositeOracleTwoAddresses() public view {
         uint256 price = oracle.getDerivedPrice(
             address(chainlinkOracleA),
             address(chainlinkOracleB),
@@ -78,7 +78,7 @@ contract OracleUnitTest is Test {
         assertEq(price, (((1e18 * 1.1e18) / 1e18) * 1.2e18) / 1e18);
     }
 
-    function testCompositeOracleThreeAddresses() public {
+    function testCompositeOracleThreeAddresses() public view {
         uint256 price = oracle.getDerivedPriceThreeOracles(
             address(chainlinkOracleA),
             address(chainlinkOracleB),
@@ -92,7 +92,7 @@ contract OracleUnitTest is Test {
         );
     }
 
-    function testTestLatestRoundData() public {
+    function testLatestRoundData() public view {
         (
             uint80 roundId, /// always 0, value unused in ChainlinkOracle.sol
             int256 answer, /// the composite price
@@ -176,7 +176,7 @@ contract OracleUnitTest is Test {
         int256 price,
         uint8 priceDecimals,
         uint8 expectedDecimals
-    ) public {
+    ) public view {
         price = int256(_bound(uint256(price), 100, 10_000e18)); /// bound price between 100 and 10_000e18
         priceDecimals = uint8(_bound(priceDecimals, 0, 18)); /// bound priceDecimals between 0 and 18
         expectedDecimals = uint8(_bound(expectedDecimals, 0, 18)); /// bound expectedDecimals between 0 and 18
@@ -211,7 +211,7 @@ contract OracleUnitTest is Test {
         int256 basePrice,
         int256 priceMultiplier,
         uint8 decimals
-    ) public {
+    ) public view {
         basePrice = int256(_bound(uint256(basePrice), 100, 10_000e18)); /// bound price between 100 and 10_000e18
         priceMultiplier = int256(
             _bound(uint256(priceMultiplier), 1e18, 10_000e18)
