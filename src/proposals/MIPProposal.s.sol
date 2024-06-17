@@ -21,11 +21,7 @@ to verify after deploy:
 
 */
 abstract contract MIPProposal is Script {
-    /// @notice fork ID for base
-    uint256 public baseForkId;
-
-    /// @notice fork ID for moonbeam
-    uint256 public moonbeamForkId;
+    uint256[] public forkIds;
 
     uint256 private PRIVATE_KEY;
     Addresses private addresses;
@@ -58,12 +54,16 @@ abstract contract MIPProposal is Script {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        setForkIds(
-            vm.createFork(vm.envOr("BASE_RPC_URL", string("base"))),
-            vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")))
+        uint256[] memory _forkIds = new uint256[](2);
+
+        _forkIds[0] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+        _forkIds[1] = vm.createFork(
+            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
         );
 
-        vm.selectFork(primaryForkId());
+        setForkIds(_forkIds);
+
+        vm.selectFork(_forkIds[0]);
 
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
@@ -91,8 +91,6 @@ abstract contract MIPProposal is Script {
 
     function name() external view virtual returns (string memory);
 
-    function primaryForkId() public view virtual returns (uint256);
-
     function deploy(Addresses, address) public virtual;
 
     function afterDeploy(Addresses, address) public virtual;
@@ -119,15 +117,7 @@ abstract contract MIPProposal is Script {
     ) public virtual returns (uint256 proposalId);
 
     /// @notice set the fork IDs for base and moonbeam
-    function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) public {
-        require(
-            _baseForkId != _moonbeamForkId,
-            "setForkIds: fork IDs cannot be the same"
-        );
-
-        baseForkId = _baseForkId;
-        moonbeamForkId = _moonbeamForkId;
-    }
+    function setForkIds(uint256[] memory forkIds) public {}
 
     /// @dev Print recorded addresses
     function _printAddressesChanges() private view {
