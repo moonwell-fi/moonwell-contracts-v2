@@ -21,12 +21,6 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     using Bytes for bytes;
     using Address for address;
 
-    enum PrimaryFork {
-        Moonbeam,
-        Base,
-        Optimism
-    }
-
     /// @notice addresses contract
     Addresses addresses;
 
@@ -153,11 +147,11 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     Proposal proposal = Proposal(deployCode(proposalsPath[j]));
                     vm.makePersistent(address(proposal));
 
-                    PrimaryFork fork = checkPath(proposalsPath[j]);
+                    Proposal.PrimaryFork fork = checkPath(proposalsPath[j]);
 
                     // TODO make this compatible with Optimism
                     uint256[] memory forkIds = new uint256[](2);
-                    if (fork == PrimaryFork.Moonbeam) {
+                    if (fork == Proposal.PrimaryFork.Moonbeam) {
                         forkIds[0] = moonbeamForkId;
                         forkIds[1] = baseForkId;
                     } else {
@@ -256,11 +250,11 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         );
                         vm.makePersistent(address(proposal));
 
-                        PrimaryFork fork = checkPath(proposalsPath[j]);
+                        Proposal.PrimaryFork fork = checkPath(proposalsPath[j]);
 
                         // TODO make this compatible with Optimism
                         uint256[] memory forkIds = new uint256[](2);
-                        if (fork == PrimaryFork.Moonbeam) {
+                        if (fork == Proposal.PrimaryFork.Moonbeam) {
                             forkIds[0] = moonbeamForkId;
                             forkIds[1] = baseForkId;
                         } else {
@@ -333,7 +327,9 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         returns (address[] memory, uint256[] memory, bytes[] memory)
     {}
 
-    function checkPath(string memory path) private pure returns (PrimaryFork) {
+    function checkPath(
+        string memory path
+    ) private pure returns (Proposal.PrimaryFork) {
         bytes memory pathBytes = bytes(path);
 
         // Look for the position of ".sol/"

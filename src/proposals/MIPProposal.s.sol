@@ -21,6 +21,12 @@ to verify after deploy:
 
 */
 abstract contract MIPProposal is Script {
+    enum PrimaryFork {
+        Moonbeam,
+        Base,
+        Optimism
+    }
+
     uint256[] public forkIds;
 
     uint256 private PRIVATE_KEY;
@@ -107,7 +113,7 @@ abstract contract MIPProposal is Script {
         address
     ) public virtual returns (uint256 proposalId);
 
-    /// @notice set the fork IDs for base and moonbeam
+    /// @notice set the fork IDs
     function setForkIds(uint256[] memory forkIds) public {}
 
     /// @dev Print recorded addresses
