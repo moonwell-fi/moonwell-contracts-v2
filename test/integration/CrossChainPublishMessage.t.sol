@@ -76,7 +76,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             }
 
             // At this point the primaryForkId should not be moonbeam
-            vm.selectFork(proposal.primaryForkId());
+            vm.selectFork(proposal.forkIds(0));
             proposal.build(addresses);
 
             // returns the correct address as block.chainid is base/base sepolia

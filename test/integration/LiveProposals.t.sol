@@ -21,6 +21,12 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     using Bytes for bytes;
     using Address for address;
 
+    enum PrimaryFork {
+        Moonbeam,
+        Base,
+        Optimism
+    }
+
     /// @notice addresses contract
     Addresses addresses;
 
@@ -147,9 +153,21 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     Proposal proposal = Proposal(deployCode(proposalsPath[j]));
                     vm.makePersistent(address(proposal));
 
-                    proposal.setForkIds(baseForkId, moonbeamForkId);
+                    PrimaryFork fork = checkPath(proposalsPath[j]);
 
-                    vm.selectFork(proposal.primaryForkId());
+                    // TODO make this compatible with Optimism
+                    uint256[] memory forkIds = new uint256[](2);
+                    if (fork == PrimaryFork.Moonbeam) {
+                        forkIds[0] = moonbeamForkId;
+                        forkIds[1] = baseForkId;
+                    } else {
+                        forkIds[0] = baseForkId;
+                        forkIds[1] = moonbeamForkId;
+                    }
+
+                    proposal.setForkIds(forkIds[0], forkIds[1]);
+
+                    vm.selectFork(proposal.forkIds(0));
 
                     // runs pre build mock and build
                     proposal.preBuildMock(addresses);
@@ -238,8 +256,21 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         );
                         vm.makePersistent(address(proposal));
 
-                        proposal.setForkIds(baseForkId, moonbeamForkId);
-                        vm.selectFork(proposal.primaryForkId());
+                        PrimaryFork fork = checkPath(proposalsPath[j]);
+
+                        // TODO make this compatible with Optimism
+                        uint256[] memory forkIds = new uint256[](2);
+                        if (fork == PrimaryFork.Moonbeam) {
+                            forkIds[0] = moonbeamForkId;
+                            forkIds[1] = baseForkId;
+                        } else {
+                            forkIds[0] = baseForkId;
+                            forkIds[1] = moonbeamForkId;
+                        }
+
+                        proposal.setForkIds(forkIds[0], forkIds[1]);
+
+                        vm.selectFork(proposal.forkIds(0));
 
                         // runs pre build mock and build
                         proposal.preBuildMock(addresses);
@@ -301,4 +332,40 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         override
         returns (address[] memory, uint256[] memory, bytes[] memory)
     {}
+
+    function checkPath(string memory path) private pure returns (PrimaryFork) {
+        bytes memory pathBytes = bytes(path);
+
+        // Look for the position of ".sol/"
+        bytes memory sol = bytes(".sol/");
+        uint start = 0;
+
+        for (uint i = 0; i < pathBytes.length - sol.length + 1; i++) {
+            bool matches = true;
+            // finds the position of ".sol/"
+            for (uint j = 0; j < sol.length; j++) {
+                if (pathBytes[i + j] != sol[j]) {
+                    matches = false;
+                    break;
+                }
+            }
+
+            // if ".sol/" is found, set the start position
+            if (matches) {
+                start = i + sol.length;
+                break;
+            }
+        }
+
+        // Check if the character after ".sol/" is 'm' or 'b'
+        if (start < pathBytes.length) {
+            if (pathBytes[start] == "m") {
+                return PrimaryFork.Moonbeam;
+            } else if (pathBytes[start] == "b") {
+                return PrimaryFork.Base;
+            } else if (pathBytes[start] == "o") {
+                return PrimaryFork.Optimism;
+            }
+        }
+    }
 }
