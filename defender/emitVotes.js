@@ -225,8 +225,6 @@ exports.handler = async function (event, context) {
                     GOVBOT_WEBHOOK,
                     discordPayload,
                 );
-
-                return;
             } else {
                 console.log(`Proposal ${proposalId} has no votes, skipping...`);
             }

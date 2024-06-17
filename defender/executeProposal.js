@@ -17,7 +17,6 @@ const blockExplorer =
         : 'https://moonbase.moonscan.io/tx/';
 
 const governorABI = [
-    'function liveProposals() external view returns (uint256[] memory)',
     'function state(uint256 proposalId) external view returns (uint8)',
     'function crossChainVoteCollectionPeriod() external view returns (uint256)',
     'function execute(uint256 proposalId) external payable',
@@ -73,13 +72,12 @@ class MoonwellEvent {
 }
 
 async function processProposal(governor, secrets, kvStore, id, context) {
-    console.log(`Proposal ${id} is ready, executing...`);
-
     const {notificationClient} = context;
     const state = await governor.state(id);
     let subject, message, shouldDelete, color;
 
     if (state == 4) {
+        console.log(`Proposal ${id} is ready, executing...`);
         try {
             const tx = await governor.execute(id);
             console.log(`Called execute in ${tx.hash}`);
@@ -123,8 +121,6 @@ async function processProposal(governor, secrets, kvStore, id, context) {
     );
     await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
 
-    if (shouldDelete) await kvStore.del(`${network}-${id}`);
-
     return shouldDelete;
 }
 
@@ -137,7 +133,6 @@ exports.handler = async function (credentials, context) {
         speed: 'fast',
     });
     const governor = new ethers.Contract(governorAddress, governorABI, signer);
-    const liveProposals = await governor.liveProposals();
 
     const kvStore = new KeyValueStoreClient(credentials);
     const kvStoreValue = await kvStore.get(`${senderNetwork}`);
