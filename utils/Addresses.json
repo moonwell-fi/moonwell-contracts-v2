@@ -108,6 +108,18 @@
         "isContract": true
     },
     {
+        "addr": "0x6fBe2692d6E63F453A167cBA89a3C402C491F63a",
+        "chainId": 10,
+        "name": "OPTIMISM_SECURITY_COUNCIL",
+        "isContract": true
+    },
+    {
+        "addr": "0xf9564270C1a08b386E77397d38E90bde96f900e2",
+        "chainId": 10,
+        "name": "OPTIMISM_GUARDIAN",
+        "isContract": true
+    },
+    {
         "addr": "0xc191A4db4E05e478778eDB6a201cb7F13A257C23",
         "chainId": 31337,
         "name": "TEMPORAL_GOVERNOR_GUARDIAN",
