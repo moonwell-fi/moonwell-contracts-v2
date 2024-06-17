@@ -60,12 +60,6 @@
         "isContract": true
     },
     {
-        "addr": "",
-        "chainId": 10,
-        "name": "CHAINLINK_STETH_ETH",
-        "isContract": true
-    },
-    {
         "addr": "0xadDb6A0412DE1BA0F936DCaeb8Aaa24578dcF3B2",
         "chainId": 10,
         "name": "cbETH",
