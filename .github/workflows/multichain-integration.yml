@@ -2,6 +2,10 @@ name: Foundry multichain integration tests
 
 on: [pull_request]
 
+env:
+  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+  MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
+
 jobs:
   run-moonbeam-tests:
     name: moonbeam-integration-tests
@@ -15,9 +19,6 @@ jobs:
 
       - name: Setup Environment
         uses: ./.github/actions
-
-      - name: Set PROPOSAL_ARTIFACT_PATH environment variable
-        run: bash ./.github/helper/set-env-var.sh
 
       - name: Integration Test Proposals Multichain
         run: time forge test --match-contract MultichainProposalTest -vvv

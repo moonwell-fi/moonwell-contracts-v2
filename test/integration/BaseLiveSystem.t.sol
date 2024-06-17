@@ -39,7 +39,7 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
         weth = WETH9(addresses.getAddress("WETH"));
     }
 
-    function testOraclesReturnCorrectValues() public {
+    function testOraclesReturnCorrectValues() public view {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         unchecked {
@@ -61,7 +61,7 @@ contract LiveSystemBaseTest is PostProposalCheck, Configs {
 
     function testGuardianCanPauseTemporalGovernor() public {
         TemporalGovernor gov = TemporalGovernor(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN"));

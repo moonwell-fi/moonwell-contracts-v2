@@ -44,6 +44,15 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
         return moonbeamForkId;
     }
 
+    // @notice search for a on-chain proposal that matches the proposal calldata
+    // @returns the proposal id, 0 if no proposal is found
+    function getProposalId(
+        Addresses,
+        address
+    ) public pure override returns (uint256) {
+        revert("Not implemented");
+    }
+
     function deploy(Addresses addresses, address) public override {
         /// --------------------------------------------------
         /// --------------------------------------------------
@@ -140,7 +149,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
 
@@ -153,7 +162,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
 
     function teardown(Addresses addresses, address) public pure override {}
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         /// do validation for base network, then do validation for moonbeam network
         /// ensure chainId is correct and non zero
         /// ensure correct owner

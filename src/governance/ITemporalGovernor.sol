@@ -81,7 +81,7 @@ interface ITemporalGovernor {
     /// @notice permissionless function to execute a queued VAA
     /// @param VAA The signed Verified Action Approval to process
     /// @dev callable only when unpaused
-    function executeProposal(bytes memory VAA) external;
+    function executeProposal(bytes memory VAA) external payable;
 
     /// @notice unpauses the contract, and blocks the guardian from pausing again until governance reapproves them
     function permissionlessUnpause() external;
@@ -92,7 +92,7 @@ interface ITemporalGovernor {
     function togglePause() external;
 
     /// @notice fast track execution of a VAA as a VAA, ignoring any waiting times and pauses
-    function fastTrackProposalExecution(bytes memory VAA) external;
+    function fastTrackProposalExecution(bytes memory VAA) external payable;
 
     /// ------------- GOVERNOR ONLY APIs -------------
 

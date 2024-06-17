@@ -33,7 +33,7 @@ contract mipt01 is Proposal, CrossChainProposal, Configs {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         /// -------------- FEED CONFIGURATION --------------
@@ -68,7 +68,7 @@ contract mipt01 is Proposal, CrossChainProposal, Configs {
     /// @notice assert that all the configurations are correctly set
     /// @dev this function is called after the proposal is executed to
     /// validate that all state transitions worked correctly
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         address chainlinkOracleAddress = addresses.getAddress(
             "CHAINLINK_ORACLE"
         );

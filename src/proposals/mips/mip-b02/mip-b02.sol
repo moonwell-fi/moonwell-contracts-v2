@@ -16,7 +16,7 @@ import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.so
 /*
 export DO_DEPLOY=false
 export DO_AFTER_DEPLOY=false
-export DO_AFTER_DEPLOY_SETUP=false
+export DO_PRE_BUILD_MOCK=false
 export DO_BUILD=true
 export DO_RUN=true
 export DO_TEARDOWN=false
@@ -51,7 +51,7 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         /// point weth mToken to new logic contract
@@ -71,7 +71,7 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
 
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         assertTrue(
             addresses.getAddress("MOONWELL_WETH") != address(0),
             "MOONWELL_WETH not set"

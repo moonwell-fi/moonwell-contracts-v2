@@ -229,8 +229,7 @@ contract mipm25 is HybridProposal, ParameterValidation {
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
     }
 
-    /// TODO fill out validations on Moonbeam
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         _validateCF(
             addresses,
             addresses.getAddress("mxcUSDC"),

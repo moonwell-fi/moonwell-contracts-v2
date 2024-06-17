@@ -55,7 +55,7 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
         deal(address(well), user, startingWellAmount);
     }
 
-    function testValidate() public {
+    function testValidate() public view {
         validate(addresses, address(0));
     }
 
@@ -92,7 +92,7 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
         );
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         address externalChainAddress = wormholeAdapter.targetAddress(
             wormholeBaseChainid
         );

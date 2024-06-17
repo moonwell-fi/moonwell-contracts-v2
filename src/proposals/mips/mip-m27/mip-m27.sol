@@ -242,7 +242,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
     }
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         _validateRF(
             addresses.getAddress("mxcUSDC"),
             NEW_MXC_USDC_RESERVE_FACTOR

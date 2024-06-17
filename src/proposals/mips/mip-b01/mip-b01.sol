@@ -32,7 +32,7 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         _pushCrossChainAction(
@@ -48,7 +48,7 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
 
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         JumpRateModel jrm = JumpRateModel(
             addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH")
         );

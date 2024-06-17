@@ -361,7 +361,7 @@ contract MultichainBaseTest is
         }
     }
 
-    function _assertGovernanceBalance() internal {
+    function _assertGovernanceBalance() internal view {
         // governor and vote collection should never have ether at the end of a test
         assertEq(address(governor).balance, 0, "governor has ether");
         assertEq(

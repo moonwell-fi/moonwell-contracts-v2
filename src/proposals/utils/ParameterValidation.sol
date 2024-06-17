@@ -23,7 +23,7 @@ contract ParameterValidation is Test {
         address jrmAddress,
         address tokenAddress,
         IRParams memory params
-    ) internal {
+    ) internal view {
         JumpRateModel jrm = JumpRateModel(jrmAddress);
         assertEq(
             address(MToken(tokenAddress).interestRateModel()),
@@ -60,7 +60,7 @@ contract ParameterValidation is Test {
         Addresses addresses,
         address tokenAddress,
         uint256 collateralFactor
-    ) internal {
+    ) internal view {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         Comptroller unitroller = Comptroller(unitrollerAddress);
 
@@ -77,7 +77,10 @@ contract ParameterValidation is Test {
         );
     }
 
-    function _validateRF(address tokenAddress, uint256 reserveFactor) internal {
+    function _validateRF(
+        address tokenAddress,
+        uint256 reserveFactor
+    ) internal view {
         MToken token = MToken(tokenAddress);
 
         uint256 reserveFactorMantissa = token.reserveFactorMantissa();

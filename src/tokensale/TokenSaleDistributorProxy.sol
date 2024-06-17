@@ -15,7 +15,7 @@ contract TokenSaleDistributorProxy is
     /** The implementation was changed */
     event ImplChanged(address newImpl);
 
-    constructor() public {
+    constructor() {
         admin = msg.sender;
     }
 

@@ -37,7 +37,7 @@ contract mipm21 is GovernanceProposal {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         /// @dev Upgrade wormhole bridge adapter to wormhole unwrapper adapter
@@ -74,7 +74,7 @@ contract mipm21 is GovernanceProposal {
 
     function teardown(Addresses addresses, address) public pure override {}
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         validateProxy(
             vm,
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),

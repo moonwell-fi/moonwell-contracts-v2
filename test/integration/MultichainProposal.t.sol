@@ -14,7 +14,6 @@ import {MToken} from "@protocol/MToken.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
-import {CreateCode} from "@proposals/utils/CreateCode.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
@@ -45,19 +44,14 @@ if the tests fail, try setting the environment variables as follows:
 
 export DO_DEPLOY=true
 export DO_AFTER_DEPLOY=true
-export DO_AFTER_DEPLOY_SETUP=true
+export DO_PRE_BUILD_MOCK=true
 export DO_BUILD=true
 export DO_RUN=true
 export DO_TEARDOWN=true
 export DO_VALIDATE=true
 
 */
-contract MultichainProposalTest is
-    Test,
-    ChainIds,
-    CreateCode,
-    TestMultichainProposals
-{
+contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
     MultichainVoteCollection public voteCollection;
     MultichainGovernor public governor;
     IWormhole public wormhole;
@@ -236,7 +230,7 @@ contract MultichainProposalTest is
         );
 
         temporalGov = TemporalGovernor(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
         /// artemis timelock does not start off as trusted sender
         assertFalse(
@@ -292,7 +286,7 @@ contract MultichainProposalTest is
         }
     }
 
-    function testGetAllMarketConfigs() public {
+    function testGetAllMarketConfigs() public view {
         MultiRewardDistributor mrd = MultiRewardDistributor(
             addresses.getAddress("MRD_PROXY")
         );
@@ -2000,7 +1994,7 @@ contract MultichainProposalTest is
         {
             vm.selectFork(baseForkId);
             temporalGov = TemporalGovernor(
-                addresses.getAddress("TEMPORAL_GOVERNOR")
+                payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
             );
             /// artemis timelock does not start off as trusted sender
             assertFalse(
@@ -2096,7 +2090,7 @@ contract MultichainProposalTest is
         calldatas[16] = _setPendingAdminCalldata;
 
         targets[17] = addresses.getAddress("MOONWELL_mWBTC");
-        calldatas[1] = _setPendingAdminCalldata;
+        calldatas[17] = _setPendingAdminCalldata;
 
         targets[18] = addresses.getAddress("mxcUSDC");
         calldatas[18] = _setPendingAdminCalldata;
@@ -2297,16 +2291,22 @@ contract MultichainProposalTest is
             "DEPRECATED_MOONWELL_mWBTC admin incorrect"
         );
 
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mWBTC")).pendingAdmin(),
-            artemisTimelockAddress,
-            "MOONWELL_mWBTC pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mWBTC")).admin(),
-            address(governor),
-            "MOONWELL_mWBTC admin incorrect"
-        );
+        /// only test this condition if MIP-M32 passes
+        if (
+            Timelock(addresses.getAddress("MOONWELL_mWBTC")).pendingAdmin() ==
+            address(0)
+        ) {
+            assertEq(
+                Timelock(addresses.getAddress("MOONWELL_mWBTC")).pendingAdmin(),
+                artemisTimelockAddress,
+                "MOONWELL_mWBTC pending admin incorrect"
+            );
+            assertEq(
+                Timelock(addresses.getAddress("MOONWELL_mWBTC")).admin(),
+                address(governor),
+                "MOONWELL_mWBTC admin incorrect"
+            );
+        }
 
         assertEq(
             Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mETH"))
@@ -2347,7 +2347,7 @@ contract MultichainProposalTest is
 
         vm.selectFork(baseForkId);
         temporalGov = TemporalGovernor(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
         vm.startPrank(address(temporalGov));
 

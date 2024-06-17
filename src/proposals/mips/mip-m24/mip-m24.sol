@@ -362,7 +362,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
 
         // check that the multichain governor now is the only trusted sender on the temporal governor
         TemporalGovernor temporalGovernor = TemporalGovernor(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
+            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
         bytes32[] memory trustedSenders = temporalGovernor.allTrustedSenders(

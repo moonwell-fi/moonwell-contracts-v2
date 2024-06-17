@@ -88,6 +88,15 @@ abstract contract GovernanceProposal is Proposal {
         printActions();
     }
 
+    // @notice search for a on-chain proposal that matches the proposal calldata
+    // @returns the proposal id, 0 if no proposal is found
+    function getProposalId(
+        Addresses,
+        address
+    ) public pure override returns (uint256) {
+        revert("Not implemented");
+    }
+
     /// @notice print the proposal action steps
     function printProposalActionSteps() public override {
         console.log(
