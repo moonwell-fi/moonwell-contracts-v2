@@ -18,9 +18,17 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 contract mipb01 is Proposal, CrossChainProposal, Configs {
     string public constant override name = "MIP01";
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function run() public override {
+        uint256[] memory _forkIds = new uint256[](2);
+
+        _forkIds[0] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+        _forkIds[1] = vm.createFork(
+            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
+        );
+
+        setForkIds(_forkIds);
+
+        super.run();
     }
 
     function deploy(Addresses addresses, address) public override {}

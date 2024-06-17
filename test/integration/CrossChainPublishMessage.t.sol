@@ -71,7 +71,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             );
 
             //  only run tests against a base proposal
-            if (proposal.primaryForkId() == moonbeamForkId) {
+            if (proposal.forkIds(0) == moonbeamForkId) {
                 return;
             }
 
@@ -176,12 +176,12 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             );
 
             //  only run tests against a base proposal
-            if (proposal.primaryForkId() == moonbeamForkId) {
+            if (proposal.forkIds(0) == moonbeamForkId) {
                 return;
             }
 
             // At this point the primaryForkId should not be moonbeam
-            vm.selectFork(proposal.primaryForkId());
+            vm.selectFork(proposal.forkIds(0));
             (
                 address[] memory targets, /// contracts to call /// native token amount to send is ignored as temporal gov cannot accept eth
                 ,

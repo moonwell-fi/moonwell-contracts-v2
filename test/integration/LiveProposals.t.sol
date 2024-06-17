@@ -181,7 +181,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         vm.selectFork(moonbeamForkId);
                         governorContract.execute(proposalId);
 
-                        vm.selectFork(proposal.primaryForkId());
+                        vm.selectFork(proposal.forkIds(0));
                         proposal.validate(addresses, address(proposal));
                         break;
                     }
