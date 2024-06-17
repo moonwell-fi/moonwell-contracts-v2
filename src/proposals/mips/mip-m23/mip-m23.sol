@@ -43,14 +43,22 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         _setProposalDescription(proposalDescription);
     }
 
-    /// @notice proposal's actions mostly happen on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function run() public override {
+        uint256[] memory _forkIds = new uint256[](2);
+
+        _forkIds[0] = vm.createFork(
+            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
+        );
+        _forkIds[1] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+
+        setForkIds(_forkIds);
+
+        super.run();
     }
 
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(forkIds(0));
 
         address multichainGovernorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
@@ -377,13 +385,13 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(baseForkId);
+        vm.selectFork(forkIds(1));
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
-        vm.selectFork(primaryForkId());
+        vm.selectFork(forkIds(0));
     }
 
     function validate(Addresses addresses, address) public override {
@@ -590,7 +598,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             "xWELL rate limit per second incorrect"
         );
 
-        vm.selectFork(baseForkId);
+        vm.selectFork(forkIds(1));
 
         assertEq(
             xWELL(addresses.getAddress("xWELL_PROXY")).bufferCap(
@@ -696,6 +704,6 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             }
         }
 
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(forkIds(0));
     }
 }

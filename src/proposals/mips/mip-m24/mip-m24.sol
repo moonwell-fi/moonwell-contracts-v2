@@ -28,9 +28,17 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         _setProposalDescription(proposalDescription);
     }
 
-    /// @notice proposal's actions mostly happen on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function run() public override {
+        uint256[] memory _forkIds = new uint256[](2);
+
+        _forkIds[0] = vm.createFork(
+            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
+        );
+        _forkIds[1] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+
+        setForkIds(_forkIds);
+
+        super.run();
     }
 
     /// run this action through the Multichain Governor
@@ -180,17 +188,17 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(forkIds(0));
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(baseForkId);
+        vm.selectFork(forkIds(1));
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(forkIds(0));
     }
 
     function validate(Addresses addresses, address) public override {
@@ -358,7 +366,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             "UNITROLLER admin incorrect"
         );
 
-        vm.selectFork(baseForkId);
+        vm.selectFork(forkIds(1));
 
         // check that the multichain governor now is the only trusted sender on the temporal governor
         TemporalGovernor temporalGovernor = TemporalGovernor(
@@ -382,6 +390,6 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             "MultichainGovernor not trusted sender"
         );
 
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(forkIds(0));
     }
 }

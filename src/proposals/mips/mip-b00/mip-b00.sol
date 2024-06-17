@@ -56,7 +56,6 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
     }
 
     constructor() {
-        vm.selectFork(primaryForkId());
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(
                 string(
@@ -70,15 +69,17 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
         _setProposalDescription(proposalDescription);
     }
 
-    /// @dev change this if wanting to deploy to a different chain
-    /// double check addresses and change the WORMHOLE_CORE to the correct chain
-    function primaryForkId()
-        public
-        view
-        override(MIPProposal)
-        returns (uint256)
-    {
-        return baseForkId;
+    function run() public override {
+        uint256[] memory _forkIds = new uint256[](2);
+
+        _forkIds[0] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+        _forkIds[1] = vm.createFork(
+            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
+        );
+
+        setForkIds(_forkIds);
+
+        super.run();
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as

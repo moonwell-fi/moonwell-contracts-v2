@@ -33,14 +33,22 @@ contract HybridProposalExample is
         _setProposalDescription(proposalDescription);
     }
 
-    /// @notice proposal's actions mostly happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function run() public override {
+        uint256[] memory _forkIds = new uint256[](2);
+
+        _forkIds[0] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+        _forkIds[1] = vm.createFork(
+            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
+        );
+
+        setForkIds(_forkIds);
+
+        super.run();
     }
 
     /// @notice create proposal actions
     function build(Addresses addresses) public override {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(forkIds(1));
 
         _pushHybridAction(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
@@ -52,7 +60,7 @@ contract HybridProposalExample is
             ProposalType.Moonbeam
         );
 
-        vm.selectFork(baseForkId);
+        vm.selectFork(forkIds(0));
 
         /// ensure no existing reward configs have already been loaded from Configs.sol
         require(
@@ -105,21 +113,21 @@ contract HybridProposalExample is
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(forkIds(1));
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(baseForkId);
+        vm.selectFork(forkIds(1));
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
         // switch back to the base fork so we can run the validations
-        vm.selectFork(primaryForkId());
+        vm.selectFork(forkIds(0));
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(forkIds(1));
 
         IMultichainGovernor governor = IMultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
@@ -131,7 +139,7 @@ contract HybridProposalExample is
             "voting period not set correctly"
         );
 
-        vm.selectFork(baseForkId);
+        vm.selectFork(forkIds(0));
 
         /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
@@ -188,6 +196,6 @@ contract HybridProposalExample is
             }
         }
 
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(forkIds(1));
     }
 }

@@ -36,12 +36,21 @@ contract mipb16 is
     }
 
     /// @notice proposal's actions happen only on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function run() public override {
+        uint256[] memory _forkIds = new uint256[](2);
+
+        _forkIds[0] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+        _forkIds[1] = vm.createFork(
+            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
+        );
+
+        setForkIds(_forkIds);
+
+        super.run();
     }
 
     function teardown(Addresses addresses, address) public override {
-        vm.selectFork(baseForkId);
+        vm.selectFork(forkIds(0));
 
         /// stop errors on unit tests of proposal infrastructure
         if (address(addresses) != address(0)) {
@@ -95,18 +104,18 @@ contract mipb16 is
             moonbeamActions.length == 0,
             "MIP-B16: should have no moonbeam actions"
         );
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(forkIds(1));
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(baseForkId);
+        vm.selectFork(forkIds(0));
 
         _runBase(addresses, addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
     /// @notice validations on Base
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(baseForkId);
+        vm.selectFork(forkIds(0));
 
         address stkWellProxy = addresses.getAddress("STK_GOVTOKEN");
         (
