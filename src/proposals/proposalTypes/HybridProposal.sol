@@ -58,9 +58,10 @@ abstract contract HybridProposal is
         uint8 consistencyLevel
     );
 
-    enum ProposalType {
-        Moonbeam,
-        Base
+    ProposalType public proposalType;
+
+    function setProposalType(ProposalType _proposalType) public {
+        proposalType = _proposalType;
     }
 
     /// @notice set the governance proposal's description
@@ -74,19 +75,19 @@ abstract contract HybridProposal is
     /// @param target the target contract
     /// @param data calldata to pass to the target
     /// @param description description of the action
-    /// @param proposalType whether this action is on moonbeam or base
+    /// @param _proposalType whether this action is on moonbeam or base
     function _pushHybridAction(
         address target,
         bytes memory data,
         string memory description,
-        ProposalType proposalType
+        ProposalType _proposalType
     ) internal {
         _pushHybridAction(
             target,
             0,
             data,
             description,
-            proposalType == ProposalType.Moonbeam
+            _proposalType == ProposalType.Moonbeam
         );
     }
 
@@ -95,20 +96,20 @@ abstract contract HybridProposal is
     /// @param value msg.value to send to target
     /// @param data calldata to pass to the target
     /// @param description description of the action
-    /// @param proposalType whether this action is on moonbeam or base
+    /// @param _proposalType whether this action is on moonbeam or base
     function _pushHybridAction(
         address target,
         uint256 value,
         bytes memory data,
         string memory description,
-        ProposalType proposalType
+        ProposalType _proposalType
     ) internal {
         _pushHybridAction(
             target,
             value,
             data,
             description,
-            proposalType == ProposalType.Moonbeam
+            _proposalType == ProposalType.Moonbeam
         );
     }
 
@@ -471,7 +472,9 @@ abstract contract HybridProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(
+            proposalType == ProposalType.Moonbeam ? forkIds(0) : forkIds(1)
+        );
 
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 
@@ -502,7 +505,7 @@ abstract contract HybridProposal is
             proposalCount--;
         }
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(forkIds(0));
     }
 
     /// @notice Runs the proposal on moonbeam, verifying the actions through the hook

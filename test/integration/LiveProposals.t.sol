@@ -147,11 +147,11 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     Proposal proposal = Proposal(deployCode(proposalsPath[j]));
                     vm.makePersistent(address(proposal));
 
-                    Proposal.PrimaryFork fork = checkPath(proposalsPath[j]);
+                    Proposal.ProposalType fork = checkPath(proposalsPath[j]);
 
                     // TODO make this compatible with Optimism
                     uint256[] memory forkIds = new uint256[](2);
-                    if (fork == Proposal.PrimaryFork.Moonbeam) {
+                    if (fork == Proposal.ProposalType.Moonbeam) {
                         forkIds[0] = moonbeamForkId;
                         forkIds[1] = baseForkId;
                     } else {
@@ -250,11 +250,13 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         );
                         vm.makePersistent(address(proposal));
 
-                        Proposal.PrimaryFork fork = checkPath(proposalsPath[j]);
+                        Proposal.ProposalType fork = checkPath(
+                            proposalsPath[j]
+                        );
 
                         // TODO make this compatible with Optimism
                         uint256[] memory forkIds = new uint256[](2);
-                        if (fork == Proposal.PrimaryFork.Moonbeam) {
+                        if (fork == Proposal.ProposalType.Moonbeam) {
                             forkIds[0] = moonbeamForkId;
                             forkIds[1] = baseForkId;
                         } else {
@@ -329,7 +331,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
     function checkPath(
         string memory path
-    ) private pure returns (Proposal.PrimaryFork) {
+    ) private pure returns (Proposal.ProposalType) {
         bytes memory pathBytes = bytes(path);
 
         // Look for the position of ".sol/"

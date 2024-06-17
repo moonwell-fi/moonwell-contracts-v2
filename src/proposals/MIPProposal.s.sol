@@ -21,7 +21,7 @@ to verify after deploy:
 
 */
 abstract contract MIPProposal is Script {
-    enum PrimaryFork {
+    enum ProposalType {
         Moonbeam,
         Base,
         Optimism
@@ -60,7 +60,7 @@ abstract contract MIPProposal is Script {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        vm.selectFork(_forkIds[0]);
+        vm.selectFork(forkIds[0]);
 
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
@@ -114,7 +114,9 @@ abstract contract MIPProposal is Script {
     ) public virtual returns (uint256 proposalId);
 
     /// @notice set the fork IDs
-    function setForkIds(uint256[] memory forkIds) public {}
+    function setForkIds(uint256[] memory _forkIds) public {
+        forkIds = _forkIds;
+    }
 
     /// @dev Print recorded addresses
     function _printAddressesChanges() private view {

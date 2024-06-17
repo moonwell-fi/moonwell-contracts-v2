@@ -28,7 +28,7 @@ contract BreakGlass is Script, mipm23c {
 
     function run() public override {
         /// ensure script runs on moonbeam
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(forkIds(0));
 
         addresses = new Addresses();
         buildCalldata(addresses);
