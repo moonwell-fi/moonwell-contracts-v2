@@ -31,7 +31,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
         address unitroller;
     }
 
-    function primaryForkId() public view override returns (ProposalType) {
+    function primaryForkId() public pure override returns (ProposalType) {
         return ProposalType.Base;
     }
 

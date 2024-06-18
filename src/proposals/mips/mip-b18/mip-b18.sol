@@ -23,7 +23,7 @@ contract mipb18 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public view override returns (ProposalType) {
+    function primaryForkId() public pure override returns (ProposalType) {
         return ProposalType.Base;
     }
 

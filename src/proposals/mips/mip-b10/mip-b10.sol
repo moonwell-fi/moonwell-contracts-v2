@@ -125,7 +125,7 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
         console.log("\n\n");
     }
 
-    function primaryForkId() public view override returns (ProposalType) {
+    function primaryForkId() public pure override returns (ProposalType) {
         return ProposalType.Base;
     }
 

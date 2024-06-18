@@ -43,7 +43,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
     /// @notice approval amount for ecosystem reserve to give stkWELL in xWELL xD
     uint256 public constant approvalAmount = 5_000_000_000 * 1e18;
 
-    function primaryForkId() public view override returns (ProposalType) {
+    function primaryForkId() public pure override returns (ProposalType) {
         return ProposalType.Base;
     }
 
