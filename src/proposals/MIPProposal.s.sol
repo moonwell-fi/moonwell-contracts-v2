@@ -27,8 +27,6 @@ abstract contract MIPProposal is Script {
         Optimism
     }
 
-    uint256[] public forkIds;
-
     Addresses public addresses;
 
     uint256 private PRIVATE_KEY;
@@ -58,10 +56,14 @@ abstract contract MIPProposal is Script {
     }
 
     function run() public virtual {
+        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")));
+
+        vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
 
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
@@ -86,6 +88,8 @@ abstract contract MIPProposal is Script {
             _printAddressesChanges();
         }
     }
+
+    function primaryForkId() public view virtual returns (ProposalType);
 
     function name() external view virtual returns (string memory);
 
@@ -113,11 +117,6 @@ abstract contract MIPProposal is Script {
         Addresses,
         address
     ) public virtual returns (uint256 proposalId);
-
-    /// @notice set the fork IDs
-    function setForkIds(uint256[] memory _forkIds) public {
-        forkIds = _forkIds;
-    }
 
     /// @dev Print recorded addresses
     function _printAddressesChanges() private view {

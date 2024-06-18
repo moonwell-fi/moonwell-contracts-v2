@@ -26,17 +26,8 @@ contract mipm25 is HybridProposal, ParameterValidation {
         _setProposalDescription(proposalDescription);
     }
 
-    function run() public override {
-        uint256[] memory _forkIds = new uint256[](2);
-
-        _forkIds[0] = vm.createFork(
-            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
-        );
-        _forkIds[1] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
-
-        setForkIds(_forkIds);
-
-        super.run();
+    function primaryForkId() public override returns (ProposalType) {
+        return ProposalType.Moonbeam;
     }
 
     function deploy(Addresses addresses, address) public override {
