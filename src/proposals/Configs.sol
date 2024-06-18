@@ -47,6 +47,7 @@ contract Configs is Test {
     /// mapping of all emission configs per chainid
     mapping(uint256 => EmissionConfig[]) public emissions;
 
+    uint256 public constant _optimismSepoliaChainId = 11155420;
     uint256 public constant _baseSepoliaChainId = 84532;
     uint256 public constant _localChainId = 31337;
     uint256 public constant _baseChainId = 8453;
@@ -108,7 +109,10 @@ contract Configs is Test {
     }
 
     function deployAndMint(Addresses addresses) public {
-        if (block.chainid == _baseSepoliaChainId) {
+        if (
+            block.chainid == _baseSepoliaChainId ||
+            block.chainid == _optimismSepoliaChainId
+        ) {
             // allocate tokens to temporal governor
 
             // USDBC
