@@ -27,6 +27,19 @@ abstract contract MIPProposal is Script {
         Optimism
     }
 
+    struct ProposalAction {
+        /// address to call
+        address target;
+        /// value to send
+        uint256 value;
+        /// calldata to pass to the target
+        bytes data;
+        /// for human description
+        string description;
+        // wheter is a Moonbeam, Base or Optimism proposal
+        ProposalType proposalType;
+    }
+
     uint256[] public forkIds;
 
     Addresses public addresses;
