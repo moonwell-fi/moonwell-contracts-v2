@@ -20,6 +20,16 @@
         "isContract": true
     },
     {
+        "addr": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+        "name": "DAI",
+        "isContract": true
+    },
+    {
+        "addr": "0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6",
+        "name": "CHAINLINK_DAI_USD",
+        "isContract": true
+    },
+    {
         "addr": "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
         "name": "USDT",
         "isContract": true
@@ -86,22 +96,32 @@
     },
     {
         "addr": "0x4200000000000000000000000000000000000042",
-        "name": "OPTIMISM",
+        "name": "OP",
         "isContract": true
     },
     {
         "addr": "0x0D276FC14719f9292D5C1eA2198673d1f4269246",
-        "name": "CHAINLINK_OPTIMISM_USD",
+        "name": "CHAINLINK_OP_USD",
         "isContract": true
     },
     {
         "addr": "0x3c8B650257cFb5f272f799F5e2b4e65093a11a05",
-        "name": "VELODROME",
+        "name": "VELO",
         "isContract": true
     },
     {
         "addr": "0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120",
-        "name": "CHAINLINK_VELODROME_USD",
+        "name": "CHAINLINK_VELO_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0x355F7b5edbfbfb5cCc7a3C67Dab2f99A72FDDa09",
+        "name": "OPTIMISM_SECURITY_COUNCIL",
+        "isContract": true
+    },
+    {
+        "addr": "0xf9564270C1a08b386E77397d38E90bde96f900e2",
+        "name": "OPTIMISM_CAP_GUARDIAN",
         "isContract": true
     }
 ]
