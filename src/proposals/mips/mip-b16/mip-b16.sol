@@ -40,7 +40,7 @@ contract mipb16 is
     }
 
     function teardown(Addresses addresses, address) public override {
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
 
         /// stop errors on unit tests of proposal infrastructure
         if (address(addresses) != address(0)) {
@@ -94,18 +94,18 @@ contract mipb16 is
             moonbeamActions.length == 0,
             "MIP-B16: should have no moonbeam actions"
         );
-        vm.selectFork(forkIds[1]);
+        vm.selectFork(ProposalType.Moonbeam);
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
 
         _runBase(addresses, addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
     /// @notice validations on Base
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
 
         address stkWellProxy = addresses.getAddress("STK_GOVTOKEN");
         (

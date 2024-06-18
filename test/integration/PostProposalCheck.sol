@@ -153,7 +153,7 @@ contract PostProposalCheck is Test {
 
         proposal.setForkIds(forkIds);
 
-        vm.selectFork(proposal.forkIds(0));
+        vm.selectFork(primaryForkId());
 
         address deployer = address(this);
 

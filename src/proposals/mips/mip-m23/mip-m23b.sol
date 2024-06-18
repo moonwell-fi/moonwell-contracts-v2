@@ -43,17 +43,8 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
     /// @notice approval amount for ecosystem reserve to give stkWELL in xWELL xD
     uint256 public constant approvalAmount = 5_000_000_000 * 1e18;
 
-    function run() public override {
-        uint256[] memory _forkIds = new uint256[](2);
-
-        _forkIds[0] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
-        _forkIds[1] = vm.createFork(
-            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
-        );
-
-        setForkIds(_forkIds);
-
-        super.run();
+    function primaryForkId() public override returns (ProposalType) {
+        return ProposalType.Base;
     }
 
     function deploy(Addresses addresses, address) public override {

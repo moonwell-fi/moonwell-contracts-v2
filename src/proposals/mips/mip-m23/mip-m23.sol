@@ -49,7 +49,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
 
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
 
         address multichainGovernorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
@@ -376,13 +376,13 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(forkIds[1]);
+        vm.selectFork(ProposalType.Base);
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public override {
@@ -589,7 +589,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             "xWELL rate limit per second incorrect"
         );
 
-        vm.selectFork(forkIds[1]);
+        vm.selectFork(ProposalType.Base);
 
         assertEq(
             xWELL(addresses.getAddress("xWELL_PROXY")).bufferCap(
@@ -695,6 +695,6 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             }
         }
 
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
     }
 }

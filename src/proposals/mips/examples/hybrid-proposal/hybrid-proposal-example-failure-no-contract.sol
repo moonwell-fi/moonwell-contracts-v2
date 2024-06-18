@@ -62,7 +62,7 @@ contract HybridProposalExample is
             ProposalType.Base
         );
 
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
 
         /// ensure no existing reward configs have already been loaded from Configs.sol
         require(
@@ -119,13 +119,13 @@ contract HybridProposalExample is
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
         // switch back to the base fork so we can run the validations
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public override {
@@ -141,7 +141,7 @@ contract HybridProposalExample is
             "voting period not set correctly"
         );
 
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
 
         /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
