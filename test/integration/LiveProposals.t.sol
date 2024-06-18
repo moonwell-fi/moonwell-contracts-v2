@@ -358,11 +358,11 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         // Check if the character after ".sol/" is 'm' or 'b'
         if (start < pathBytes.length) {
             if (pathBytes[start] == "m") {
-                return PrimaryFork.Moonbeam;
+                return Proposal.ProposalType.Moonbeam;
             } else if (pathBytes[start] == "b") {
-                return PrimaryFork.Base;
+                return Proposal.ProposalType.Base;
             } else if (pathBytes[start] == "o") {
-                return PrimaryFork.Optimism;
+                return Proposal.ProposalType.Optimism;
             }
         }
     }

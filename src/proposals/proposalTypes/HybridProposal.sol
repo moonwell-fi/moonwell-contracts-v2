@@ -473,7 +473,7 @@ abstract contract HybridProposal is
         address governor
     ) public override returns (uint256 proposalId) {
         vm.selectFork(
-            proposalType == ProposalType.Moonbeam ? forkIds(0) : forkIds(1)
+            proposalType == ProposalType.Moonbeam ? forkIds[0] : forkIds[1]
         );
 
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
@@ -505,7 +505,7 @@ abstract contract HybridProposal is
             proposalCount--;
         }
 
-        vm.selectFork(forkIds(0));
+        vm.selectFork(forkIds[0]);
     }
 
     /// @notice Runs the proposal on moonbeam, verifying the actions through the hook

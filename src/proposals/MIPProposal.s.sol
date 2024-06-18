@@ -29,8 +29,9 @@ abstract contract MIPProposal is Script {
 
     uint256[] public forkIds;
 
+    Addresses public addresses;
+
     uint256 private PRIVATE_KEY;
-    Addresses private addresses;
 
     bool private DEBUG;
     bool private DO_DEPLOY;
