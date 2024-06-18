@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -96,7 +97,7 @@ contract TestMultichainProposals is Test, Initializable {
 
         for (uint256 i = 0; i < proposals.length; i++) {
             string memory name = IProposal(address(proposals[i])).name();
-            uint256 forkId = proposals[i].primaryForkId();
+            uint256 forkId = uint256(proposals[i].primaryForkId());
 
             vm.selectFork(forkId);
 

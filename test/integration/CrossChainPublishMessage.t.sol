@@ -71,7 +71,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             );
 
             //  only run tests against a base proposal
-            if (proposal.primaryForkId() == moonbeamForkId) {
+            if (uint256(proposal.primaryForkId()) == moonbeamForkId) {
                 return;
             }
 
@@ -176,7 +176,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             );
 
             //  only run tests against a base proposal
-            if (proposal.primaryForkId() == moonbeamForkId) {
+            if (uint256(proposal.primaryForkId()) == moonbeamForkId) {
                 return;
             }
 
