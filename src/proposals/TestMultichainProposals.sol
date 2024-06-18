@@ -96,7 +96,7 @@ contract TestMultichainProposals is Test, Initializable {
 
         for (uint256 i = 0; i < proposals.length; i++) {
             string memory name = IProposal(address(proposals[i])).name();
-            uint256 forkId = MIPProposal(address(proposals[i])).forkIds(0);
+            uint256 forkId = proposals[i].primaryForkId();
 
             vm.selectFork(forkId);
 

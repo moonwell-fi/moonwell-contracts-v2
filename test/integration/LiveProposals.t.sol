@@ -147,7 +147,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     Proposal proposal = Proposal(deployCode(proposalsPath[j]));
                     vm.makePersistent(address(proposal));
 
-                    vm.selectFork(primaryForkId());
+                    vm.selectFork(proposal.primaryForkId());
 
                     // runs pre build mock and build
                     proposal.preBuildMock(addresses);
@@ -161,7 +161,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         vm.selectFork(moonbeamForkId);
                         governorContract.execute(proposalId);
 
-                        vm.selectFork(primaryForkId());
+                        vm.selectFork(proposal.primaryForkId());
                         proposal.validate(addresses, address(proposal));
                         break;
                     }
@@ -236,11 +236,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         );
                         vm.makePersistent(address(proposal));
 
-                        Proposal.ProposalType fork = checkPath(
-                            proposalsPath[j]
-                        );
-
-                        vm.selectFork(primaryForkId());
+                        vm.selectFork(proposal.primaryForkId());
 
                         // runs pre build mock and build
                         proposal.preBuildMock(addresses);

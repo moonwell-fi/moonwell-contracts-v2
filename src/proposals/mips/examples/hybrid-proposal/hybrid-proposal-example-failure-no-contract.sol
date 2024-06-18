@@ -33,21 +33,12 @@ contract HybridProposalExample is
         _setProposalDescription(proposalDescription);
     }
 
-    function run() public override {
-        uint256[] memory _forkIds = new uint256[](2);
-
-        _forkIds[0] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
-        _forkIds[1] = vm.createFork(
-            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
-        );
-
-        setForkIds(_forkIds);
-
-        super.run();
+    function primaryForkId() public override returns (ProposalType) {
+        return ProposalType.Base;
     }
 
     function build(Addresses addresses) public override {
-        vm.selectFork(forkIds[1]);
+        vm.selectFork(ProposalType.Moonbeam);
 
         /// action to set the voting period on the Multichain Governor on Base
         /// this is incorrect and will cause a failure in the HybridProposal contract
@@ -115,7 +106,7 @@ contract HybridProposalExample is
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(forkIds[1]);
+        vm.selectFork(ProposalType.Moonbeam);
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
@@ -129,7 +120,7 @@ contract HybridProposalExample is
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(forkIds[1]);
+        vm.selectFork(ProposalType.Moonbeam);
 
         IMultichainGovernor governor = IMultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
@@ -198,6 +189,6 @@ contract HybridProposalExample is
             }
         }
 
-        vm.selectFork(forkIds[1]);
+        vm.selectFork(primaryForkId());
     }
 }

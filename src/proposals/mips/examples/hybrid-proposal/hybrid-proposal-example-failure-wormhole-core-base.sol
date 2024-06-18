@@ -33,21 +33,12 @@ contract HybridProposalExample is
         _setProposalDescription(proposalDescription);
     }
 
-    function run() public override {
-        uint256[] memory _forkIds = new uint256[](2);
-
-        _forkIds[0] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
-        _forkIds[1] = vm.createFork(
-            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
-        );
-
-        setForkIds(_forkIds);
-
-        super.run();
+    function primaryForkId() public override returns (ProposalType) {
+        return ProposalType.Moonbeam;
     }
 
     function build(Addresses addresses) public override {
-        vm.selectFork(forkIds[1]);
+        vm.selectFork(ProposalType.Base);
 
         /// action to call the Wormhole Core contract on Base from Moonbeam
         /// this is incorrect and will cause a failure in the HybridProposal contract
@@ -117,12 +108,10 @@ contract HybridProposalExample is
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(forkIds[1]);
-
+        vm.selectFork(primaryForkId());
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(primaryForkId());
-
+        vm.selectFork(ProposalType.Base);
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
@@ -131,7 +120,7 @@ contract HybridProposalExample is
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(forkIds[1]);
+        vm.selectFork(primaryForkId());
 
         IMultichainGovernor governor = IMultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
@@ -143,7 +132,7 @@ contract HybridProposalExample is
             "voting period not set correctly"
         );
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(ProposalType.Base);
 
         /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
@@ -200,6 +189,6 @@ contract HybridProposalExample is
             }
         }
 
-        vm.selectFork(forkIds[1]);
+        vm.selectFork(primaryForkId());
     }
 }

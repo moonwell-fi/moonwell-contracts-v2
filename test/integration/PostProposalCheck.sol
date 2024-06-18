@@ -140,7 +140,7 @@ contract PostProposalCheck is Test {
         Proposal proposal = Proposal(deployCode(output));
         vm.makePersistent(address(proposal));
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(proposal.primaryForkId());
 
         address deployer = address(this);
 

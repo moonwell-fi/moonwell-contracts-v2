@@ -312,7 +312,7 @@ abstract contract CrossChainProposal is
             proposalCount--;
         }
 
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
     }
 
     /// @notice print the actions that will be executed by the proposal

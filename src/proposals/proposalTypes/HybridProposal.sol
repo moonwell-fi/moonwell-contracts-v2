@@ -61,10 +61,6 @@ abstract contract HybridProposal is
     /// @notice the primary proposal type
     ProposalType public primaryType;
 
-    function setPrimaryType(ProposalType proposalType) public {
-        primaryType = proposalType;
-    }
-
     /// @notice set the governance proposal's description
     function _setProposalDescription(
         bytes memory newProposalDescription
@@ -504,7 +500,7 @@ abstract contract HybridProposal is
             proposalCount--;
         }
 
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
     }
 
     /// @notice Runs the proposal on moonbeam, verifying the actions through the hook
