@@ -10,7 +10,6 @@ import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
@@ -40,11 +39,8 @@ abstract contract HybridProposal is
     /// @notice instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
     uint8 public constant consistencyLevel = 200;
 
-    /// @notice actions to run against contracts live on moonbeam
-    ProposalAction[] public moonbeamActions;
-
-    /// @notice actions to run against contracts live on base
-    ProposalAction[] public baseActions;
+    /// @notice actions to run against contracts
+    ProposalAction[] public actions;
 
     /// @notice hex encoded description of the proposal
     bytes public PROPOSAL_DESCRIPTION;
@@ -76,19 +72,21 @@ abstract contract HybridProposal is
     /// @param target the target contract
     /// @param data calldata to pass to the target
     /// @param description description of the action
-    /// @param proposalType whether this action is on moonbeam or base
+    /// @param proposalType whether this action is on moonbeam, base or optimism
     function _pushHybridAction(
         address target,
         bytes memory data,
         string memory description,
         ProposalType proposalType
     ) internal {
-        _pushHybridAction(
-            target,
-            0,
-            data,
-            description,
-            proposalType == ProposalType.Moonbeam
+        actions.push(
+            ProposalAction({
+                target: target,
+                value: 0,
+                data: data,
+                description: description,
+                proposalType: proposalType
+            })
         );
     }
 
@@ -97,7 +95,7 @@ abstract contract HybridProposal is
     /// @param value msg.value to send to target
     /// @param data calldata to pass to the target
     /// @param description description of the action
-    /// @param proposalType whether this action is on moonbeam or base
+    /// @param proposalType whether this action is on moonbeam, base or optimism
     function _pushHybridAction(
         address target,
         uint256 value,
@@ -105,13 +103,7 @@ abstract contract HybridProposal is
         string memory description,
         ProposalType proposalType
     ) internal {
-        _pushHybridAction(
-            target,
-            value,
-            data,
-            description,
-            proposalType == ProposalType.Moonbeam
-        );
+        _pushHybridAction(target, value, data, description, proposalType);
     }
 
     /// @notice push an action to the Hybrid proposal
@@ -119,33 +111,23 @@ abstract contract HybridProposal is
     /// @param value msg.value to send to target
     /// @param data calldata to pass to the target
     /// @param description description of the action
-    /// @param isMoonbeam whether this action is on moonbeam or base
+    /// @param proposalType whether this action is on moonbeam, base or optimism
     function _pushHybridAction(
         address target,
         uint256 value,
         bytes memory data,
         string memory description,
-        bool isMoonbeam
+        ProposalType proposalType
     ) internal {
-        if (isMoonbeam) {
-            moonbeamActions.push(
-                ProposalAction({
-                    target: target,
-                    value: value,
-                    data: data,
-                    description: description
-                })
-            );
-        } else {
-            baseActions.push(
-                ProposalAction({
-                    target: target,
-                    value: value,
-                    data: data,
-                    description: description
-                })
-            );
-        }
+        actions.push(
+            ProposalAction({
+                target: target,
+                value: value,
+                data: data,
+                description: description,
+                proposalType: proposalType
+            })
+        );
     }
 
     /// @notice push an action to the Hybrid proposal with 0 value
@@ -187,43 +169,23 @@ abstract contract HybridProposal is
             address[] memory,
             uint256[] memory,
             bytes[] memory,
-            bool[] memory,
+            ProposalType[] memory,
             string[] memory
         )
     {
-        address[] memory targets = new address[](
-            moonbeamActions.length + baseActions.length
-        );
-        uint256[] memory values = new uint256[](
-            moonbeamActions.length + baseActions.length
-        );
-        bytes[] memory calldatas = new bytes[](
-            moonbeamActions.length + baseActions.length
-        );
-        bool[] memory isMoonbeam = new bool[](
-            moonbeamActions.length + baseActions.length
-        );
-        string[] memory descriptions = new string[](
-            moonbeamActions.length + baseActions.length
-        );
+        uint256 length = actions.length;
+        address[] memory targets = new address[](length);
+        uint256[] memory values = new uint256[](length);
+        bytes[] memory calldatas = new bytes[](length);
+        bool[] memory isMoonbeam = new bool[](length);
+        string[] memory descriptions = new string[](length);
 
-        /// moonbeam actions
-        for (uint256 i = 0; i < moonbeamActions.length; i++) {
-            targets[i] = moonbeamActions[i].target;
-            values[i] = moonbeamActions[i].value;
-            calldatas[i] = moonbeamActions[i].data;
-            descriptions[i] = moonbeamActions[i].description;
-            isMoonbeam[i] = true;
-        }
-
-        /// base actions
-        uint256 indexStart = moonbeamActions.length;
-        for (uint256 i = 0; i < baseActions.length; i++) {
-            targets[i + indexStart] = baseActions[i].target;
-            values[i + indexStart] = baseActions[i].value;
-            calldatas[i + indexStart] = baseActions[i].data;
-            descriptions[i + indexStart] = baseActions[i].description;
-            isMoonbeam[i + indexStart] = false;
+        for (uint256 i = 0; i < actions.length; i++) {
+            targets[i] = actions[i].target;
+            values[i] = actions[i].value;
+            calldatas[i] = actions[i].data;
+            descriptions[i] = actions[i].description;
+            proposalTypes[i] = actions[i].proposalType;
         }
 
         return (targets, values, calldatas, isMoonbeam, descriptions);
@@ -320,7 +282,7 @@ abstract contract HybridProposal is
     }
 
     /// @notice return arrays of all items in the proposal that the
-    /// temporal governor will receive
+    /// Multichain Governor will receive
     /// all items are in the same order as the proposal
     /// the length of each array is the same as the number of actions in the proposal
     function getTargetsPayloadsValues(
@@ -331,7 +293,13 @@ abstract contract HybridProposal is
         /// value can be 0
         /// arguments can be 0 as long as eth is sent
 
+        ProposalAction[] memory moonbeamActions = actions.filter(
+            ProposalType.Moonbeam
+        );
+
         uint256 proposalLength = moonbeamActions.length;
+
+        ProposalAction[] memory baseActions = actions.filter(ProposalType.Base);
 
         if (baseActions.length != 0) {
             proposalLength += 1;
@@ -516,6 +484,10 @@ abstract contract HybridProposal is
         Addresses addresses,
         address caller
     ) internal {
+        ProposalAction[] memory moonbeamActions = actions.filter(
+            ProposalType.Moonbeam
+        );
+
         _verifyActionsPreRun(moonbeamActions);
 
         address governanceToken = addresses.getAddress("GOVTOKEN");
@@ -539,6 +511,7 @@ abstract contract HybridProposal is
             vm.roll(block.number + 1);
         }
 
+        ProposalAction[] memory baseActions = actions.filter(ProposalType.Base);
         bytes memory data;
         {
             (

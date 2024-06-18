@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
-import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {AddressToString} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
+import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
 
 abstract contract ProposalChecker is ChainIds {
     using AddressToString for address;
@@ -122,8 +122,8 @@ abstract contract ProposalChecker is ChainIds {
     /// @param moonbeamActions the list of actions for the moonbeam chain
     function checkMoonbeamBaseActions(
         Addresses addresses,
-        ProposalAction[] memory baseActions,
-        ProposalAction[] memory moonbeamActions
+        Proposal.ProposalAction[] memory baseActions,
+        Proposal.ProposalAction[] memory moonbeamActions
     ) public view {
         {
             address wormholeCoreBase = addresses.getAddress(

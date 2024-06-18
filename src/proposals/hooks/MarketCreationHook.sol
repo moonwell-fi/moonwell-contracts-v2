@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
+import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
 
 contract MarketCreationHook {
     /// private so that contracts that inherit cannot write to functionDetectors
@@ -34,7 +34,9 @@ contract MarketCreationHook {
         functionDetectors[detector] = true;
     }
 
-    function _verifyActionsPreRun(ProposalAction[] memory proposal) internal {
+    function _verifyActionsPreRun(
+        Proposal.ProposalAction[] memory proposal
+    ) internal {
         address[] memory targets = new address[](proposal.length);
         uint256[] memory values = new uint256[](proposal.length);
         bytes[] memory datas = new bytes[](proposal.length);

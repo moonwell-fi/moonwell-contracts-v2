@@ -6,6 +6,8 @@ import {Script} from "@forge-std/Script.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
 
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+
 /*
 How to use:
 forge script src/proposals/MIPProposal.s.sol:DeployProposal \
@@ -21,10 +23,25 @@ to verify after deploy:
 
 */
 abstract contract MIPProposal is Script {
+    using ProposalActions for ProposalAction[];
+
     enum ProposalType {
         Moonbeam,
         Base,
         Optimism
+    }
+
+    struct ProposalAction {
+        /// address to call
+        address target;
+        /// value to send
+        uint256 value;
+        /// calldata to pass to the target
+        bytes data;
+        /// for human description
+        string description;
+        // wheter is a Moonbeam, Base or Optimism proposal
+        ProposalType proposalType;
     }
 
     uint256[] public forkIds;

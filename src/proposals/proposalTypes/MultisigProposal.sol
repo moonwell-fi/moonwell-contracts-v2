@@ -1,7 +1,6 @@
 pragma solidity 0.8.19;
 
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 
 abstract contract MultisigProposal is Proposal {
     ProposalAction[] public actions;
