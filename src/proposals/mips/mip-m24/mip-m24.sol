@@ -188,17 +188,17 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(forkIds(0));
+        vm.selectFork(forkIds[0]);
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(forkIds(1));
+        vm.selectFork(forkIds[1]);
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
-        vm.selectFork(forkIds(0));
+        vm.selectFork(forkIds[0]);
     }
 
     function validate(Addresses addresses, address) public override {
@@ -366,7 +366,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             "UNITROLLER admin incorrect"
         );
 
-        vm.selectFork(forkIds(1));
+        vm.selectFork(forkIds[1]);
 
         // check that the multichain governor now is the only trusted sender on the temporal governor
         TemporalGovernor temporalGovernor = TemporalGovernor(
@@ -390,6 +390,6 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             "MultichainGovernor not trusted sender"
         );
 
-        vm.selectFork(forkIds(0));
+        vm.selectFork(forkIds[0]);
     }
 }

@@ -417,7 +417,7 @@ abstract contract HybridProposal is
     /// @param addresses the addresses contract
     function getCalldata(
         Addresses addresses
-    ) public view returns (bytes memory) {
+    ) public view virtual returns (bytes memory) {
         require(
             bytes(PROPOSAL_DESCRIPTION).length > 0,
             "No proposal description"

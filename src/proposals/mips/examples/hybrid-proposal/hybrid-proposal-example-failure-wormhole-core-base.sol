@@ -47,7 +47,7 @@ contract HybridProposalExample is
     }
 
     function build(Addresses addresses) public override {
-        vm.selectFork(forkIds(1));
+        vm.selectFork(forkIds[1]);
 
         /// action to call the Wormhole Core contract on Base from Moonbeam
         /// this is incorrect and will cause a failure in the HybridProposal contract
@@ -64,7 +64,7 @@ contract HybridProposalExample is
             ProposalType.Moonbeam
         );
 
-        vm.selectFork(forkIds(0));
+        vm.selectFork(forkIds[0]);
 
         /// ensure no existing reward configs have already been loaded from Configs.sol
         require(
@@ -117,21 +117,21 @@ contract HybridProposalExample is
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(forkIds(1));
+        vm.selectFork(forkIds[1]);
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(forkIds(0));
+        vm.selectFork(forkIds[0]);
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
         // switch back to the base fork so we can run the validations
-        vm.selectFork(forkIds(0));
+        vm.selectFork(forkIds[0]);
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(forkIds(1));
+        vm.selectFork(forkIds[1]);
 
         IMultichainGovernor governor = IMultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
@@ -143,7 +143,7 @@ contract HybridProposalExample is
             "voting period not set correctly"
         );
 
-        vm.selectFork(forkIds(0));
+        vm.selectFork(forkIds[0]);
 
         /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
@@ -200,6 +200,6 @@ contract HybridProposalExample is
             }
         }
 
-        vm.selectFork(forkIds(1));
+        vm.selectFork(forkIds[1]);
     }
 }

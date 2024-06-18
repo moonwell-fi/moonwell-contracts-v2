@@ -16,9 +16,6 @@ import {Address} from "@utils/Address.sol";
 contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
     using Address for address;
 
-    /// @notice addresses contract, stores all addresses
-    Addresses public addresses;
-
     /// @notice logic contract, not initializable
     xWELL public xwell;
 

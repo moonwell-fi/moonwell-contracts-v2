@@ -159,7 +159,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         forkIds[1] = moonbeamForkId;
                     }
 
-                    proposal.setForkIds(forkIds[0], forkIds[1]);
+                    proposal.setForkIds(forkIds);
 
                     vm.selectFork(proposal.forkIds(0));
 
@@ -264,7 +264,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                             forkIds[1] = moonbeamForkId;
                         }
 
-                        proposal.setForkIds(forkIds[0], forkIds[1]);
+                        proposal.setForkIds(forkIds);
 
                         vm.selectFork(proposal.forkIds(0));
 

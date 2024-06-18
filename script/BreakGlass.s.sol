@@ -156,7 +156,7 @@ contract BreakGlass is Script, HybridProposal {
 
     function getCalldata(
         Addresses addresses
-    ) public view returns (bytes memory) {
+    ) public view override returns (bytes memory) {
         Calls[] memory calls = new Calls[](17);
 
         calls[0] = Calls({
