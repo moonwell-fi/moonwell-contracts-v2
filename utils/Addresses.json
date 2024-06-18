@@ -24,6 +24,18 @@
         "isContract": true
     },
     {
+        "addr": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+        "chainId": 10,
+        "name": "DAI",
+        "isContract": true
+    },
+    {
+        "addr": "0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6",
+        "chainId": 10,
+        "name": "CHAINLINK_DAI_USD",
+        "isContract": true
+    },
+    {
         "addr": "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
         "chainId": 10,
         "name": "USDT",
