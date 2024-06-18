@@ -1,0 +1,57 @@
+[
+    {
+        "addr": "0x2BE2e230e89c59c8E20E633C524AD2De246e7370",
+        "isContract": true,
+        "name": "APOLLO_GOVERNOR"
+    },
+    {
+        "addr": "0xBb8d88bcD9749636BC4D2bE22aaC4Bb3B01A58F1",
+        "isContract": true,
+        "name": "GOVTOKEN"
+    },
+    {
+        "addr": "0xCd76e63f3AbFA864c53b4B98F57c1aA6539FDa3a",
+        "isContract": true,
+        "name": "stkMFAM"
+    },
+    {
+        "addr": "0x79a1a71786a325db7Fe70bbF080a1ee046F53c74",
+        "isContract": true,
+        "name": "STELLASWAP_REWARDER_MOVR"
+    },
+    {
+        "addr": "0x0b7a0EAA884849c6Af7a129e899536dDDcA4905E",
+        "name": "UNITROLLER",
+        "isContract": true
+    },
+    {
+        "addr": "0xCd76e63f3AbFA864c53b4B98F57c1aA6539FDa3a",
+        "name": "STK_GOVTOKEN",
+        "isContract": true
+    },
+    {
+        "addr": "0x6a1A771C7826596652daDC9145fEAaE62b1cd07f",
+        "name": "MNATIVE",
+        "isContract": true
+    },
+    {
+        "addr": "0xE6Bfc609A2e58530310D6964ccdd236fc93b4ADB",
+        "name": "GOVTOKEN_LP",
+        "isContract": true
+    },
+    {
+        "addr": "0x2a55ba986a8c6EE17979f6233985414A865a280f",
+        "name": "MOONWELL_VIEWS_IMPLEMENTATION",
+        "isContract": true
+    },
+    {
+        "addr": "0x6658ed2f38E4e76BA8F3cb88061372bFdA2821A0",
+        "name": "MOONWELL_VIEWS_PROXY_ADMIN",
+        "isContract": true
+    },
+    {
+        "addr": "0xb4104C02BBf4E9be85AAa41a62974E4e28D59A33",
+        "name": "MOONWELL_VIEWS_PROXY",
+        "isContract": true
+    }
+]
