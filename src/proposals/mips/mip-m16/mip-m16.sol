@@ -17,7 +17,7 @@ contract mipm16 is GovernanceProposal {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public override returns (ProposalType) {
+    function primaryForkId() public view override returns (ProposalType) {
         return ProposalType.Moonbeam;
     }
 

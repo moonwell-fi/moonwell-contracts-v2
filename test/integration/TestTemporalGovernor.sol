@@ -22,7 +22,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public override returns (ProposalType) {
+    function primaryForkId() public view override returns (ProposalType) {
         return ProposalType.Moonbeam;
     }
 
@@ -47,7 +47,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(ProposalType.Base);
+        vm.selectFork(uint256(ProposalType.Base));
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
@@ -55,7 +55,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(ProposalType.Base);
+        vm.selectFork(uint256(ProposalType.Base));
 
         Comptroller unitroller = Comptroller(
             addresses.getAddress("UNITROLLER")

@@ -28,7 +28,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public override returns (ProposalType) {
+    function primaryForkId() public view override returns (ProposalType) {
         return ProposalType.Moonbeam;
     }
 
@@ -183,7 +183,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(ProposalType.Base);
+        vm.selectFork(uint256(ProposalType.Base));
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
@@ -357,7 +357,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             "UNITROLLER admin incorrect"
         );
 
-        vm.selectFork(ProposalType.Base);
+        vm.selectFork(uint256(ProposalType.Base));
 
         // check that the multichain governor now is the only trusted sender on the temporal governor
         TemporalGovernor temporalGovernor = TemporalGovernor(

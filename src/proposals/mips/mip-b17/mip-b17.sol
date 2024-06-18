@@ -46,7 +46,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
         address unitroller;
     }
 
-    function primaryForkId() public override returns (ProposalType) {
+    function primaryForkId() public view override returns (ProposalType) {
         return ProposalType.Base;
     }
 

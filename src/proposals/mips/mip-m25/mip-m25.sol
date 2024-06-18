@@ -26,7 +26,7 @@ contract mipm25 is HybridProposal, ParameterValidation {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public override returns (ProposalType) {
+    function primaryForkId() public view override returns (ProposalType) {
         return ProposalType.Moonbeam;
     }
 

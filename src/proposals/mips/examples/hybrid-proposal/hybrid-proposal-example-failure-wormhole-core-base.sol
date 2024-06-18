@@ -33,12 +33,12 @@ contract HybridProposalExample is
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public override returns (ProposalType) {
+    function primaryForkId() public view override returns (ProposalType) {
         return ProposalType.Moonbeam;
     }
 
     function build(Addresses addresses) public override {
-        vm.selectFork(ProposalType.Base);
+        vm.selectFork(uint256(ProposalType.Base));
 
         /// action to call the Wormhole Core contract on Base from Moonbeam
         /// this is incorrect and will cause a failure in the HybridProposal contract
@@ -111,7 +111,7 @@ contract HybridProposalExample is
         vm.selectFork(primaryForkId());
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(ProposalType.Base);
+        vm.selectFork(uint256(ProposalType.Base));
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
@@ -132,7 +132,7 @@ contract HybridProposalExample is
             "voting period not set correctly"
         );
 
-        vm.selectFork(ProposalType.Base);
+        vm.selectFork(uint256(ProposalType.Base));
 
         /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
