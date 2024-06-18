@@ -473,9 +473,7 @@ abstract contract HybridProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        vm.selectFork(
-            primaryType == ProposalType.Moonbeam ? forkIds[0] : forkIds[1]
-        );
+        vm.selectFork(ProposalType.Moonbeam);
 
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 

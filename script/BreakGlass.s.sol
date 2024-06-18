@@ -39,21 +39,16 @@ contract BreakGlass is Script, HybridProposal {
     /// @notice trusted senders for the temporal governor
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
+    function primaryForkId() public override returns (ProposalType) {
+        return ProposalType.Moonbeam;
+    }
+
     function run() public override {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        uint256[] memory _forkIds = new uint256[](2);
-
-        _forkIds[0] = vm.createFork(
-            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
-        );
-        _forkIds[1] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
-
-        setForkIds(_forkIds);
-
         /// ensure script runs on moonbeam
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
 
         buildCalldata(addresses);
         bytes memory data = getCalldata(addresses);

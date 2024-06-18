@@ -39,24 +39,14 @@ contract PostProposalCheck is Test {
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
 
-        uint256[] memory forkIds = new uint256[](2);
-        // first should always be the primary fork
-        forkIds[0] = moonbeamForkId;
-        forkIds[1] = baseForkId;
-
         // get the latest moonbeam proposal
         proposals[0] = checkAndRunLatestProposal(
-            "./get-latest-moonbeam-proposal.sh",
-            forkIds
+            "./get-latest-moonbeam-proposal.sh"
         );
-
-        forkIds[0] = baseForkId;
-        forkIds[1] = moonbeamForkId;
 
         // get the latest base proposal
         proposals[1] = checkAndRunLatestProposal(
-            "./get-latest-base-proposal.sh",
-            forkIds
+            "./get-latest-base-proposal.sh"
         );
 
         /// only etch out precompile contracts if on the moonbeam chain
@@ -140,8 +130,7 @@ contract PostProposalCheck is Test {
     }
 
     function checkAndRunLatestProposal(
-        string memory scriptPath,
-        uint256[] memory forkIds
+        string memory scriptPath
     ) private returns (Proposal) {
         string[] memory inputs = new string[](1);
         inputs[0] = scriptPath;
@@ -150,8 +139,6 @@ contract PostProposalCheck is Test {
 
         Proposal proposal = Proposal(deployCode(output));
         vm.makePersistent(address(proposal));
-
-        proposal.setForkIds(forkIds);
 
         vm.selectFork(primaryForkId());
 

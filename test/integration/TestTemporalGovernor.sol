@@ -22,17 +22,8 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         _setProposalDescription(proposalDescription);
     }
 
-    function run() public override {
-        uint256[] memory _forkIds = new uint256[](2);
-
-        _forkIds[0] = vm.createFork(
-            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
-        );
-        _forkIds[1] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
-
-        setForkIds(_forkIds);
-
-        super.run();
+    function primaryForkId() public override returns (ProposalType) {
+        return ProposalType.Moonbeam;
     }
 
     /// run this action through the Artemis Governor
@@ -56,15 +47,15 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(forkIds[1]);
+        vm.selectFork(ProposalType.Base);
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(forkIds[1]);
+        vm.selectFork(ProposalType.Base);
 
         Comptroller unitroller = Comptroller(
             addresses.getAddress("UNITROLLER")
@@ -75,6 +66,6 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         );
         assertEq(collateralFactorMantissa, collateralFactor);
 
-        vm.selectFork(forkIds[0]);
+        vm.selectFork(primaryForkId());
     }
 }

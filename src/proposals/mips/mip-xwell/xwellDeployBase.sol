@@ -34,17 +34,8 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
 
-    function run() public override {
-        uint256[] memory _forkIds = new uint256[](2);
-
-        _forkIds[0] = vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
-        _forkIds[1] = vm.createFork(
-            vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))
-        );
-
-        setForkIds(_forkIds);
-
-        super.run();
+    function primaryForkId() public override returns (ProposalType) {
+        return ProposalType.Base;
     }
 
     function deploy(Addresses addresses, address) public override {

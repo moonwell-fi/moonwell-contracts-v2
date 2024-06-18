@@ -1,4 +1,4 @@
-pragma solidity 0.8.19;
+pragma solidiy 0.8.19;
 
 import "@forge-std/Test.sol";
 import {console} from "@forge-std/console.sol";
@@ -147,22 +147,6 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     Proposal proposal = Proposal(deployCode(proposalsPath[j]));
                     vm.makePersistent(address(proposal));
 
-                    Proposal.ProposalType fork = checkPath(proposalsPath[j]);
-
-                    {
-                        // TODO make this compatible with Optimism
-                        uint256[] memory forkIds = new uint256[](2);
-                        if (fork == Proposal.ProposalType.Moonbeam) {
-                            forkIds[0] = moonbeamForkId;
-                            forkIds[1] = baseForkId;
-                        } else {
-                            forkIds[0] = baseForkId;
-                            forkIds[1] = moonbeamForkId;
-                        }
-
-                        proposal.setForkIds(forkIds);
-                    }
-
                     vm.selectFork(primaryForkId());
 
                     // runs pre build mock and build
@@ -256,20 +240,6 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                             proposalsPath[j]
                         );
 
-                        {
-                            // TODO make this compatible with Optimism
-                            uint256[] memory forkIds = new uint256[](2);
-                            if (fork == Proposal.ProposalType.Moonbeam) {
-                                forkIds[0] = moonbeamForkId;
-                                forkIds[1] = baseForkId;
-                            } else {
-                                forkIds[0] = baseForkId;
-                                forkIds[1] = moonbeamForkId;
-                            }
-
-                            proposal.setForkIds(forkIds);
-                        }
-
                         vm.selectFork(primaryForkId());
 
                         // runs pre build mock and build
@@ -332,42 +302,4 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         override
         returns (address[] memory, uint256[] memory, bytes[] memory)
     {}
-
-    function checkPath(
-        string memory path
-    ) private pure returns (Proposal.ProposalType proposalType) {
-        bytes memory pathBytes = bytes(path);
-
-        // Look for the position of ".sol/"
-        bytes memory sol = bytes(".sol/");
-        uint start = 0;
-
-        for (uint i = 0; i < pathBytes.length - sol.length + 1; i++) {
-            bool matches = true;
-            // finds the position of ".sol/"
-            for (uint j = 0; j < sol.length; j++) {
-                if (pathBytes[i + j] != sol[j]) {
-                    matches = false;
-                    break;
-                }
-            }
-
-            // if ".sol/" is found, set the start position
-            if (matches) {
-                start = i + sol.length;
-                break;
-            }
-        }
-
-        // Check if the character after ".sol/" is 'm' or 'b'
-        if (start < pathBytes.length) {
-            if (pathBytes[start] == "m") {
-                proposalType = Proposal.ProposalType.Moonbeam;
-            } else if (pathBytes[start] == "b") {
-                proposalType = Proposal.ProposalType.Base;
-            } else if (pathBytes[start] == "o") {
-                proposalType = Proposal.ProposalType.Optimism;
-            }
-        }
-    }
 }
