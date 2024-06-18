@@ -297,7 +297,7 @@ abstract contract HybridProposal is
     }
 
     /// @notice return arrays of all items in the proposal that the
-    /// temporal governor will receive
+    /// Multichain Governor will receive
     /// all items are in the same order as the proposal
     /// the length of each array is the same as the number of actions in the proposal
     function getTargetsPayloadsValues(
