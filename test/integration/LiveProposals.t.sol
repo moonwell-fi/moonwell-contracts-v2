@@ -335,7 +335,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
     function checkPath(
         string memory path
-    ) private pure returns (Proposal.ProposalType) {
+    ) private pure returns (Proposal.ProposalType proposalType) {
         bytes memory pathBytes = bytes(path);
 
         // Look for the position of ".sol/"
@@ -362,11 +362,11 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         // Check if the character after ".sol/" is 'm' or 'b'
         if (start < pathBytes.length) {
             if (pathBytes[start] == "m") {
-                return Proposal.ProposalType.Moonbeam;
+                proposalType = Proposal.ProposalType.Moonbeam;
             } else if (pathBytes[start] == "b") {
-                return Proposal.ProposalType.Base;
+                proposalType = Proposal.ProposalType.Base;
             } else if (pathBytes[start] == "o") {
-                return Proposal.ProposalType.Optimism;
+                proposalType = Proposal.ProposalType.Optimism;
             }
         }
     }
