@@ -49,7 +49,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
 
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
 
         address multichainGovernorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
@@ -382,7 +382,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         _runBase(addresses, temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 
     function validate(Addresses addresses, address) public override {
@@ -695,6 +695,6 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             }
         }
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 }

@@ -55,7 +55,7 @@ contract HybridProposalExample is
             ProposalType.Moonbeam
         );
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
 
         /// ensure no existing reward configs have already been loaded from Configs.sol
         require(
@@ -108,7 +108,7 @@ contract HybridProposalExample is
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         vm.selectFork(uint256(ProposalType.Base));
@@ -116,11 +116,11 @@ contract HybridProposalExample is
         _runBase(addresses, temporalGovernor);
 
         // switch back to the base fork so we can run the validations
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
 
         IMultichainGovernor governor = IMultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
@@ -189,6 +189,6 @@ contract HybridProposalExample is
             }
         }
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 }

@@ -179,7 +179,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
@@ -189,7 +189,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         _runBase(addresses, temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 
     function validate(Addresses addresses, address) public override {
@@ -381,6 +381,6 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             "MultichainGovernor not trusted sender"
         );
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 }

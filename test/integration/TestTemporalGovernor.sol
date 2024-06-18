@@ -51,7 +51,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 
     function validate(Addresses addresses, address) public override {
@@ -66,6 +66,6 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         );
         assertEq(collateralFactorMantissa, collateralFactor);
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 }

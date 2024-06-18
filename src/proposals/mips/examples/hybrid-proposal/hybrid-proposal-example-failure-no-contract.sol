@@ -38,7 +38,7 @@ contract HybridProposalExample is
     }
 
     function build(Addresses addresses) public override {
-        vm.selectFork(ProposalType.Moonbeam);
+        vm.selectFork(uint256(ProposalType.Moonbeam));
 
         /// action to set the voting period on the Multichain Governor on Base
         /// this is incorrect and will cause a failure in the HybridProposal contract
@@ -53,7 +53,7 @@ contract HybridProposalExample is
             ProposalType.Base
         );
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
 
         /// ensure no existing reward configs have already been loaded from Configs.sol
         require(
@@ -106,21 +106,21 @@ contract HybridProposalExample is
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(ProposalType.Moonbeam);
+        vm.selectFork(uint256(ProposalType.Moonbeam));
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
         // switch back to the base fork so we can run the validations
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(ProposalType.Moonbeam);
+        vm.selectFork(uint256(ProposalType.Moonbeam));
 
         IMultichainGovernor governor = IMultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
@@ -132,7 +132,7 @@ contract HybridProposalExample is
             "voting period not set correctly"
         );
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
 
         /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
@@ -189,6 +189,6 @@ contract HybridProposalExample is
             }
         }
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 }

@@ -268,7 +268,7 @@ abstract contract CrossChainProposal is
     ) public override returns (uint256 proposalId) {
         // CrossChainProposal is only used for proposals that the primery type
         // is Base, this is a temporary solution until we get rid of CrossChainProposal
-        vm.selectFork(ProposalType.Base);
+        vm.selectFork(uint256(ProposalType.Base));
 
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
@@ -312,7 +312,7 @@ abstract contract CrossChainProposal is
             proposalCount--;
         }
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 
     /// @notice print the actions that will be executed by the proposal

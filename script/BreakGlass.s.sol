@@ -48,7 +48,7 @@ contract BreakGlass is Script, HybridProposal {
         vm.makePersistent(address(addresses));
 
         /// ensure script runs on moonbeam
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
 
         buildCalldata(addresses);
         bytes memory data = getCalldata(addresses);
