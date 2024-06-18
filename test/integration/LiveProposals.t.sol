@@ -149,17 +149,19 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
                     Proposal.ProposalType fork = checkPath(proposalsPath[j]);
 
-                    // TODO make this compatible with Optimism
-                    uint256[] memory forkIds = new uint256[](2);
-                    if (fork == Proposal.ProposalType.Moonbeam) {
-                        forkIds[0] = moonbeamForkId;
-                        forkIds[1] = baseForkId;
-                    } else {
-                        forkIds[0] = baseForkId;
-                        forkIds[1] = moonbeamForkId;
-                    }
+                    {
+                        // TODO make this compatible with Optimism
+                        uint256[] memory forkIds = new uint256[](2);
+                        if (fork == Proposal.ProposalType.Moonbeam) {
+                            forkIds[0] = moonbeamForkId;
+                            forkIds[1] = baseForkId;
+                        } else {
+                            forkIds[0] = baseForkId;
+                            forkIds[1] = moonbeamForkId;
+                        }
 
-                    proposal.setForkIds(forkIds);
+                        proposal.setForkIds(forkIds);
+                    }
 
                     vm.selectFork(proposal.forkIds(0));
 
@@ -254,17 +256,19 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                             proposalsPath[j]
                         );
 
-                        // TODO make this compatible with Optimism
-                        uint256[] memory forkIds = new uint256[](2);
-                        if (fork == Proposal.ProposalType.Moonbeam) {
-                            forkIds[0] = moonbeamForkId;
-                            forkIds[1] = baseForkId;
-                        } else {
-                            forkIds[0] = baseForkId;
-                            forkIds[1] = moonbeamForkId;
-                        }
+                        {
+                            // TODO make this compatible with Optimism
+                            uint256[] memory forkIds = new uint256[](2);
+                            if (fork == Proposal.ProposalType.Moonbeam) {
+                                forkIds[0] = moonbeamForkId;
+                                forkIds[1] = baseForkId;
+                            } else {
+                                forkIds[0] = baseForkId;
+                                forkIds[1] = moonbeamForkId;
+                            }
 
-                        proposal.setForkIds(forkIds);
+                            proposal.setForkIds(forkIds);
+                        }
 
                         vm.selectFork(proposal.forkIds(0));
 
