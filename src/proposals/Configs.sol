@@ -4,7 +4,7 @@ import "@forge-std/Test.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";

@@ -4,7 +4,7 @@ import {TransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pro
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {AxelarBridgeAdapter} from "@protocol/xWELL/AxelarBridgeAdapter.sol";

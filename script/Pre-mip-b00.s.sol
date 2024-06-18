@@ -5,7 +5,7 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";

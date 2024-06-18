@@ -12,7 +12,7 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MIPProposal} from "@proposals/MIPProposal.s.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
@@ -98,9 +98,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
 
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
-                block.chainid == baseChainId
-                    ? addresses.getAddress("WORMHOLE_CORE_BASE")
-                    : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE"), /// get wormhole core address for the chain deployment is on
+                addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
                 chainIdTemporalGovTimelock[block.chainid], /// get timelock period for deployment chain is on
                 permissionlessUnpauseTime,
                 trustedSenders

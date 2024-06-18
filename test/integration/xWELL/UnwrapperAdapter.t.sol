@@ -9,7 +9,7 @@ import "@forge-std/Test.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {mipm21} from "@proposals/mips/mip-m21/mip-m21.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";

@@ -6,7 +6,7 @@ import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensio
 import "@forge-std/Test.sol";
 
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {String} from "@utils/String.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";

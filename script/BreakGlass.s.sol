@@ -5,7 +5,7 @@ import {Script} from "@forge-std/Script.sol";
 import "@forge-std/Test.sol";
 
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 
 /// Performs the following actions which hand off direct or pending ownership

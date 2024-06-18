@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
 
 /*

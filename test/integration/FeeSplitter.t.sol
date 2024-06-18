@@ -7,7 +7,7 @@ import "@forge-std/Test.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {FeeSplitter} from "@protocol/morpho/FeeSplitter.sol";
 import {IMorphoBlue} from "@protocol/morpho/IMorphoBlue.sol";
 import {IMetaMorphoFactory} from "@protocol/morpho/IMetaMorphoFactory.sol";

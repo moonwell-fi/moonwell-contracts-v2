@@ -7,7 +7,7 @@ import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/mult
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {String} from "@utils/String.sol";
 import {Bytes} from "@utils/Bytes.sol";

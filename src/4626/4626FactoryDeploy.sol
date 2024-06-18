@@ -1,7 +1,7 @@
 pragma solidity 0.8.19;
 
 import {WETH9} from "@protocol/router/IWETH.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Factory4626} from "@protocol/4626/Factory4626.sol";
 import {Factory4626Eth} from "@protocol/4626/Factory4626Eth.sol";
 import {ERC4626EthRouter} from "@protocol/router/ERC4626EthRouter.sol";
