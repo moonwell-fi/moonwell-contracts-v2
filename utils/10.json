@@ -60,6 +60,11 @@
         "isContract": true
     },
     {
+        "addr": "0xe770BD40b6976Efbbb095174395DD2cb794c938a",
+        "name": "CHAINLINK_WSTETH_USD_COMPOSITE_ORACLE",
+        "isContract": true
+    },
+    {
         "addr": "0xadDb6A0412DE1BA0F936DCaeb8Aaa24578dcF3B2",
         "name": "cbETH",
         "isContract": true
@@ -70,6 +75,11 @@
         "isContract": true
     },
     {
+        "addr": "0x6250e204bA6f722c7d498f659f8d3C5550Ec811E",
+        "name": "CHAINLINK_cbETH_USD_COMPOSITE_ORACLE",
+        "isContract": true
+    },
+    {
         "addr": "0x9Bcef72be871e61ED4fBbc7630889beE758eb81D",
         "name": "rETH",
         "isContract": true
@@ -77,6 +87,11 @@
     {
         "addr": "0xb429DE60943a8e6DeD356dca2F93Cd31201D9ed0",
         "name": "CHAINLINK_RETH_ETH",
+        "isContract": true
+    },
+    {
+        "addr": "0xc095cb1A6B41A5Cd7dAaF993a904afDD74758D71",
+        "name": "CHAINLINK_RETH_USD_COMPOSITE_ORACLE",
         "isContract": true
     },
     {
@@ -107,6 +122,11 @@
     {
         "addr": "0xf9564270C1a08b386E77397d38E90bde96f900e2",
         "name": "OPTIMISM_CAP_GUARDIAN",
+        "isContract": true
+    },
+    {
+        "addr": "0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722",
+        "name": "WORMHOLE_CORE",
         "isContract": true
     }
 ]
