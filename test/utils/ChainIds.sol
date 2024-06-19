@@ -20,6 +20,14 @@ contract ChainIds {
     uint256 public constant moonBaseChainId = 1287;
     uint16 public constant moonBaseWormholeChainId = 16;
 
+    /// ------------ OPTIMISM ------------
+
+    uint256 public constant opChainId = 10;
+    uint256 public constant opWormholeChainId = 24;
+
+    uint256 public constant opSepoliaWormholeChainId = 10005;
+    uint256 public constant opSepoliaChainId = 11155420;
+
     /// ------------ SEPOLIA ------------
 
     uint256 public constant sepoliaChainId = 11155111;
@@ -54,5 +62,19 @@ contract ChainIds {
 
         chainIdTemporalGovTimelock[baseSepoliaChainId] = 0; /// no wait on testnet
         chainIdTemporalGovTimelock[baseChainId] = 1 days;
+    }
+
+    function moonbeamChainId(uint256 chainId) public pure returns (uint256) {
+        if (chainId == baseChainId) {
+            return moonBeamChainId;
+        } else if (chainId == baseSepoliaChainId) {
+            return moonBaseChainId;
+        } else if (chainId == opChainId) {
+            return moonBeamChainId;
+        } else if (chainId == opSepoliaChainId) {
+            return moonBaseChainId;
+        } else {
+            revert("chain id not supported");
+        }
     }
 }
