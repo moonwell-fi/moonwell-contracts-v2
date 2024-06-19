@@ -52,13 +52,6 @@ contract ChainIds {
         chainIdToWormHoleId[baseChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
         chainIdToWormHoleId[moonBeamChainId] = baseWormholeChainId; /// moonbeam goes to base
         chainIdToWormHoleId[moonBaseChainId] = baseSepoliaWormholeChainId; /// moonbase goes to base
-        sendingChainIdToReceivingChainId[baseSepoliaChainId] = moonBaseChainId; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
-        sendingChainIdToReceivingChainId[baseChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking base, and sending from moonbeam
-        sendingChainIdToReceivingChainId[moonBeamChainId] = baseChainId;
-
-        sendingChainIdToReceivingChainId[moonBaseChainId] = baseSepoliaChainId;
-
-        sendingChainIdToReceivingChainId[localChainId] = localChainId; // unit tests
 
         chainIdTemporalGovTimelock[baseSepoliaChainId] = 0; /// no wait on testnet
         chainIdTemporalGovTimelock[baseChainId] = 1 days;
@@ -83,8 +76,26 @@ contract ChainIds {
             return baseChainId;
         } else if (chainId == moonBaseChainId) {
             return baseSepoliaChainId;
+        } else if (chainId == opChainId) {
+            return baseChainId;
+        } else if (chainId == opSepoliaChainId) {
+            return baseSepoliaChainId;
         } else {
             revert("chain id not supported");
         }
     }
 
+    function toOpChainId(uint256 chainId) public pure returns (uint256) {
+        if (chainId == moonBeamChainId) {
+            return opChainId;
+        } else if (chainId == moonBaseChainId) {
+            return opSepoliaChainId;
+        } else if (chainId == baseChainId) {
+            return opChainId;
+        } else if (chainId == baseSepoliaChainId) {
+            return opSepoliaChainId;
+        } else {
+            revert("chain id not supported");
+        }
+    }
+}
