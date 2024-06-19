@@ -44,6 +44,10 @@ contract BreakGlass is Script, HybridProposal {
     }
 
     function run() public override {
+        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")));
+
+        vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
@@ -152,7 +156,7 @@ contract BreakGlass is Script, HybridProposal {
     function getCalldata(
         Addresses addresses
     ) public view override returns (bytes memory) {
-        Calls[] memory calls = new Calls[](17);
+        Calls[] memory calls = new Calls[](18);
 
         calls[0] = Calls({
             target: addresses.getAddress("mxcUSDC"),
