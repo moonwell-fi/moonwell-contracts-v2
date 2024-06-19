@@ -71,7 +71,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         _pushHybridAction(
             addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
+                toBaseChainId(block.chainid)
             ),
             abi.encodeWithSignature(
                 "setTrustedSenders((uint16,address)[])",
@@ -340,7 +340,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         );
         address mrd = addresses.getAddress(
             "MRD_PROXY",
-            sendingChainIdToReceivingChainId[block.chainid]
+            toBaseChainId(block.chainid)
         );
 
         unchecked {
@@ -353,11 +353,11 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
                         addresses.getAddress(
                             config.mToken,
-                            sendingChainIdToReceivingChainId[block.chainid]
+                            toBaseChainId(block.chainid)
                         ),
                         addresses.getAddress(
                             config.owner,
-                            sendingChainIdToReceivingChainId[block.chainid]
+                            toBaseChainId(block.chainid)
                         ),
                         config.emissionToken,
                         config.supplyEmissionPerSec,
@@ -616,7 +616,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 chainIdToWormHoleId[block.chainid],
                 addresses.getAddress(
                     "MOONBEAM_TIMELOCK",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    toBaseChainId(block.chainid)
                 )
             ),
             "timelock not trusted sender"
@@ -627,7 +627,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 chainIdToWormHoleId[block.chainid],
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    toBaseChainId(block.chainid)
                 )
             ),
             "MultichainGovernor not trusted sender"
@@ -643,7 +643,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
 
         /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            sendingChainIdToReceivingChainId[block.chainid]
+            toBaseChainId(block.chainid)
         );
         MultiRewardDistributor distributor = MultiRewardDistributor(
             addresses.getAddress("MRD_PROXY")

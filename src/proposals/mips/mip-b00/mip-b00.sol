@@ -93,7 +93,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid];
             trustedSenders[0].addr = addresses.getAddress(
                 "MOONBEAM_TIMELOCK",
-                sendingChainIdToReceivingChainId[block.chainid]
+                toMoonbeamChainId(block.chainid)
             );
 
             /// this will be the governor for all the contracts
@@ -694,7 +694,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 addresses
                     .getAddress(
                         "MOONBEAM_TIMELOCK",
-                        sendingChainIdToReceivingChainId[block.chainid]
+                        toMoonbeamChainId(block.chainid)
                     )
                     .toBytes()
             )

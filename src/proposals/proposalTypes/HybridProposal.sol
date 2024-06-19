@@ -299,7 +299,7 @@ abstract contract HybridProposal is
         } else {
             temporalGovernor = addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
+                toBaseChainId(block.chainid)
             );
         }
         return
@@ -640,7 +640,7 @@ abstract contract HybridProposal is
 
             address temporalGov = addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
+                toBaseChainId(block.chainid)
             );
 
             if (baseActions.length != 0) {
@@ -737,7 +737,7 @@ abstract contract HybridProposal is
         bytes32 governor = addresses
             .getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
-                sendingChainIdToReceivingChainId[block.chainid]
+                toMoonbeamChainId(block.chainid)
             )
             .toBytes();
 

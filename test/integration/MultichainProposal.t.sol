@@ -238,7 +238,7 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
                 moonBeamWormholeChainId,
                 addresses.getAddress(
                     "MOONBEAM_TIMELOCK",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    toMoonbeamChainId(block.chainid)
                 )
             ),
             "artemis timelock should not be trusted sender"
@@ -248,7 +248,7 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
                 moonBeamWormholeChainId,
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    toMoonbeamChainId(block.chainid)
                 )
             ),
             "multichain governor should be trusted sender"
@@ -2002,7 +2002,7 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
                     uint16(moonBeamWormholeChainId),
                     addresses.getAddress(
                         "MOONBEAM_TIMELOCK",
-                        sendingChainIdToReceivingChainId[block.chainid]
+                        toMoonbeamChainId(block.chainid)
                     )
                 ),
                 "artemis timelock should not be trusted sender"

@@ -74,7 +74,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            sendingChainIdToReceivingChainId[block.chainid]
+            toBaseChainId(block.chainid)
         );
 
         /// add temporal governor to list
@@ -164,7 +164,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         /// executing proposal on moonbeam, but this proposal needs an address from base
         address multichainVoteCollection = addresses.getAddress(
             "VOTE_COLLECTION_PROXY",
-            sendingChainIdToReceivingChainId[block.chainid]
+            toBaseChainId(block.chainid)
         );
 
         WormholeTrustedSender.TrustedSender[]
@@ -306,7 +306,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
             governor.targetAddress(chainIdToWormHoleId[block.chainid]),
             addresses.getAddress(
                 "VOTE_COLLECTION_PROXY",
-                sendingChainIdToReceivingChainId[block.chainid]
+                toBaseChainId(block.chainid)
             ),
             "vote collection proxy not in target address"
         );
@@ -325,7 +325,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
                 chainIdToWormHoleId[block.chainid],
                 addresses.getAddress(
                     "VOTE_COLLECTION_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    toBaseChainId(block.chainid)
                 )
             ),
             "vote collection proxy not trusted sender"

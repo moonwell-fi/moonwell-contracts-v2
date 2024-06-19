@@ -64,7 +64,7 @@ contract ChainIds {
         chainIdTemporalGovTimelock[baseChainId] = 1 days;
     }
 
-    function moonbeamChainId(uint256 chainId) public pure returns (uint256) {
+    function toMoonbeamChainId(uint256 chainId) public pure returns (uint256) {
         if (chainId == baseChainId) {
             return moonBeamChainId;
         } else if (chainId == baseSepoliaChainId) {
@@ -77,4 +77,14 @@ contract ChainIds {
             revert("chain id not supported");
         }
     }
-}
+
+    function toBaseChainId(uint256 chainId) public pure returns (uint256) {
+        if (chainId == moonBeamChainId) {
+            return baseChainId;
+        } else if (chainId == moonBaseChainId) {
+            return baseSepoliaChainId;
+        } else {
+            revert("chain id not supported");
+        }
+    }
+

@@ -85,7 +85,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             /// this returns the moonbeam address as block.chainid is base/base sepolia
             address wormholeCore = addresses.getAddress(
                 "WORMHOLE_CORE_MOONBEAM",
-                sendingChainIdToReceivingChainId[block.chainid]
+                toMoonbeamChainId(block.chainid)
             );
 
             bytes memory artemisQueuePayload = proposal

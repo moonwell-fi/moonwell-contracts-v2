@@ -51,7 +51,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         _pushHybridAction(
             addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
+                toBaseChainId(block.chainid)
             ),
             abi.encodeWithSignature(
                 "unSetTrustedSenders((uint16,address)[])",
@@ -376,7 +376,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
                 chainIdToWormHoleId[block.chainid],
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    toBaseChainId(block.chainid)
                 )
             ),
             "MultichainGovernor not trusted sender"

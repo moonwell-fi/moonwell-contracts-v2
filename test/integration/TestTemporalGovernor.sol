@@ -32,13 +32,13 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         _pushHybridAction(
             addresses.getAddress(
                 "UNITROLLER",
-                sendingChainIdToReceivingChainId[block.chainid]
+                toMoonbeamChainId(block.chainid)
             ),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
                 addresses.getAddress(
                     "MOONWELL_WETH",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    toMoonbeamChainId(block.chainid)
                 ),
                 collateralFactor
             ),

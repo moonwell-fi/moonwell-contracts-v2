@@ -102,7 +102,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                     addresses.getAddress("STK_GOVTOKEN"),
                     addresses.getAddress( /// fetch multichain governor address on Moonbeam
                             "MULTICHAIN_GOVERNOR_PROXY",
-                            sendingChainIdToReceivingChainId[block.chainid]
+                            toBaseChainId(block.chainid)
                         ),
                     addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
                     chainIdToWormHoleId[block.chainid],
@@ -362,7 +362,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                 ),
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    toBaseChainId(block.chainid)
                 ),
                 "target address not multichain governor on moonbeam"
             );
@@ -372,7 +372,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                     chainIdToWormHoleId[block.chainid],
                     addresses.getAddress(
                         "MULTICHAIN_GOVERNOR_PROXY",
-                        sendingChainIdToReceivingChainId[block.chainid]
+                        toBaseChainId(block.chainid)
                     )
                 ),
                 "multichain governor not trusted sender"

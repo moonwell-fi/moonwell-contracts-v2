@@ -46,7 +46,7 @@ contract PrintCalldataTest is Test, ChainIds {
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             addresses.getAddress(
                 "WORMHOLE_CORE_MOONBASE",
-                sendingChainIdToReceivingChainId[block.chainid]
+                toMoonbeamChainId(block.chainid)
             ) /// get moonbase wormhole address so proposal will work
         );
 

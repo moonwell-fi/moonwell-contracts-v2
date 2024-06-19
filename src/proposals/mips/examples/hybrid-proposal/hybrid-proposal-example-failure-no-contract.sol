@@ -137,7 +137,7 @@ contract HybridProposalExample is
 
         /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            sendingChainIdToReceivingChainId[block.chainid]
+            toMoonbeamChainId(block.chainid)
         );
         MultiRewardDistributor distributor = MultiRewardDistributor(
             addresses.getAddress("MRD_PROXY")

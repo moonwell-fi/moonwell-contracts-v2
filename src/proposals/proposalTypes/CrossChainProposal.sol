@@ -270,7 +270,7 @@ abstract contract CrossChainProposal is
 
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            sendingChainIdToReceivingChainId[block.chainid]
+            toBaseChainId(block.chainid)
         );
 
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
