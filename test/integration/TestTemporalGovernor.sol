@@ -22,8 +22,8 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ProposalType) {
-        return ProposalType.Moonbeam;
+    function primaryForkId() public pure override returns (PrimaryFork) {
+        return PrimaryFork.Moonbeam;
     }
 
     /// run this action through the Artemis Governor
@@ -47,7 +47,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ProposalType.Base));
+        vm.selectFork(uint256(PrimaryFork.Base));
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
@@ -55,7 +55,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ProposalType.Base));
+        vm.selectFork(uint256(PrimaryFork.Base));
 
         Comptroller unitroller = Comptroller(
             addresses.getAddress("UNITROLLER")

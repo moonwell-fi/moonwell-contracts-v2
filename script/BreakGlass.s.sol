@@ -39,8 +39,8 @@ contract BreakGlass is Script, HybridProposal {
     /// @notice trusted senders for the temporal governor
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
-    function primaryForkId() public pure override returns (ProposalType) {
-        return ProposalType.Moonbeam;
+    function primaryForkId() public pure override returns (PrimaryFork) {
+        return PrimaryFork.Moonbeam;
     }
 
     function run() public override {

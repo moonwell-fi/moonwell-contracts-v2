@@ -28,7 +28,7 @@ contract PostProposalCheck is Test {
     /// @notice governor address
     MultichainGovernor governor;
 
-    function test_setUp() public virtual {
+    function setUp() public virtual {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
@@ -140,9 +140,7 @@ contract PostProposalCheck is Test {
         Proposal proposal = Proposal(deployCode(output));
         vm.makePersistent(address(proposal));
 
-        proposal.setForkIds(baseForkId, moonbeamForkId);
-
-        vm.selectFork(proposal.primaryForkId());
+        vm.selectFork(uint256(proposal.primaryForkId()));
 
         address deployer = address(this);
 
