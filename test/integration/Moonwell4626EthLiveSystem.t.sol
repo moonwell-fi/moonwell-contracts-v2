@@ -31,10 +31,6 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
     ERC4626EthRouter router;
 
     function setUp() public {
-        vm.createFork(vm.envString("MOONBEAM_RPC_URL")); // always fork 0
-
-        vm.createSelectFork(vm.envString("BASE_RPC_URL")); // always fork 1
-
         addresses = new Addresses();
 
         router = deploy4626Router(addresses);

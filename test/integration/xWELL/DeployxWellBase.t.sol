@@ -32,10 +32,6 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         uint16(moonBeamWormholeChainId);
 
     function setUp() public {
-        vm.createFork(vm.envString("MOONBEAM_RPC_URL")); // always fork 0
-
-        vm.createSelectFork(vm.envString("BASE_RPC_URL")); // always fork 1
-
         addresses = new Addresses();
 
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
