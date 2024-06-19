@@ -5,6 +5,7 @@ on: [pull_request]
 env:
   BASE_RPC_URL: ${{secrets.BASE_SEPOLIA_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBASE_RPC_URL}}
+  OP_RPC_URL: ${{secrets.OP_SEPOLIA_RPC_URL}}
 
 jobs:
   run-base-tests:
