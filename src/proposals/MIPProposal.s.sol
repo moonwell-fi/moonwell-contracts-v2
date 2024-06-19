@@ -5,6 +5,7 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 /*
 How to use:
@@ -21,12 +22,6 @@ to verify after deploy:
 
 */
 abstract contract MIPProposal is Script {
-    enum PrimaryFork {
-        Moonbeam,
-        Base,
-        Optimism
-    }
-
     Addresses public addresses;
 
     uint256 private PRIVATE_KEY;

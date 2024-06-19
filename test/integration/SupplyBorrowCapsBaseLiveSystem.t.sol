@@ -13,7 +13,12 @@ import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
-contract SupplyBorrowCapsLiveSystemBaseTest is PostProposalCheck, Configs {
+import {PrimaryFork} from "@utils/Enums.sol";
+
+contract SupplyBorrowCapsLiveSystemBasePostProposalTest is
+    PostProposalCheck,
+    Configs
+{
     Comptroller comptroller;
     MErc20 mUSDbC;
     MErc20 mWeth;
@@ -30,6 +35,8 @@ contract SupplyBorrowCapsLiveSystemBaseTest is PostProposalCheck, Configs {
 
     function setUp() public override {
         super.setUp();
+
+        vm.selectFork(uint256(PrimaryFork.Base));
 
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mUSDbC = MErc20(addresses.getAddress("MOONWELL_USDBC"));

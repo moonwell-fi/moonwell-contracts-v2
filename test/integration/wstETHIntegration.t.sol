@@ -3,8 +3,6 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import "@forge-std/Test.sol";
-
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Addresses} from "@proposals/Addresses.sol";
@@ -15,8 +13,9 @@ import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.s
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
-contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
+contract wstETHLiveSystemBasePostProposalTest is PostProposalCheck {
     MultiRewardDistributor mrd;
     Comptroller comptroller;
     address well;
@@ -24,6 +23,8 @@ contract wstETHLiveSystemBaseTest is Test, PostProposalCheck {
 
     function setUp() public override {
         super.setUp();
+
+        vm.selectFork(uint256(PrimaryFork.Base));
 
         well = addresses.getAddress("GOVTOKEN");
         mwstETH = MErc20(addresses.getAddress("MOONWELL_wstETH"));
