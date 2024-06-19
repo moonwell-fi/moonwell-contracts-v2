@@ -28,6 +28,10 @@ contract ReentrancyLiveSystemBaseTest is
     WETHRouter router;
 
     function setUp() public {
+        vm.createFork(vm.envString("MOONBEAM_RPC_URL")); // always fork 0
+
+        vm.createSelectFork(vm.envString("BASE_RPC_URL")); // always fork 1
+
         address[] memory mips = new address[](1);
         mips[0] = address(new mip());
 

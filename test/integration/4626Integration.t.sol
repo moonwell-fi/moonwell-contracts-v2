@@ -30,6 +30,10 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
     MoonwellERC4626 public vault;
 
     function setUp() public {
+        vm.createFork(vm.envString("MOONBEAM_RPC_URL")); // always fork 0
+
+        vm.createSelectFork(vm.envString("BASE_RPC_URL")); // always fork 1
+
         addresses = new Addresses();
 
         addresses.addAddress("REWARDS_RECEIVER", rewardRecipient, false);

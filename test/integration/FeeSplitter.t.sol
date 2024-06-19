@@ -54,6 +54,10 @@ contract FeeSplitterLiveSystemBaseTest is Test {
     uint256 internal constant MARKET_PARAMS_BYTES_LENGTH = 5 * 32;
 
     function setUp() public {
+        vm.createFork(vm.envString("MOONBEAM_RPC_URL")); // always fork 0
+
+        vm.createSelectFork(vm.envString("BASE_RPC_URL")); // always fork 1
+
         /// addresses
         addresses = new Addresses();
 
