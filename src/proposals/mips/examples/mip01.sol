@@ -18,8 +18,8 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 contract mipb01 is Proposal, CrossChainProposal, Configs {
     string public constant override name = "MIP01";
 
-    function primaryForkId() public pure override returns (ProposalType) {
-        return ProposalType.Base;
+    function primaryForkId() public pure override returns (PrimaryFork) {
+        return PrimaryFork.Base;
     }
 
     function deploy(Addresses addresses, address) public override {}

@@ -23,8 +23,8 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
         );
     }
 
-    function primaryForkId() public pure override returns (ProposalType) {
-        return ProposalType.Moonbeam;
+    function primaryForkId() public pure override returns (PrimaryFork) {
+        return PrimaryFork.Base;
     }
 
     function deploy(Addresses addresses, address) public override {}

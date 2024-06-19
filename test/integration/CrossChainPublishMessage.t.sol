@@ -60,7 +60,6 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
     }
 
     function testQueueAndPublishMessageRawBytes() public {
-        console.log("moonbeamForkId", moonbeamForkId);
         if (proposals.length == 0) {
             /// if no proposals to execute, return
             return;

@@ -38,8 +38,8 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ProposalType) {
-        return ProposalType.Base;
+    function primaryForkId() public pure override returns (PrimaryFork) {
+        return PrimaryFork.Base;
     }
 
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers

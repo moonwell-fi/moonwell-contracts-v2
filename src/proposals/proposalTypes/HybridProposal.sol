@@ -58,9 +58,6 @@ abstract contract HybridProposal is
         uint8 consistencyLevel
     );
 
-    /// @notice the primary proposal type
-    ProposalType public primaryType;
-
     /// @notice set the governance proposal's description
     function _setProposalDescription(
         bytes memory newProposalDescription
@@ -77,14 +74,14 @@ abstract contract HybridProposal is
         address target,
         bytes memory data,
         string memory description,
-        ProposalType proposalType
+        PrimaryFork proposalType
     ) internal {
         _pushHybridAction(
             target,
             0,
             data,
             description,
-            proposalType == ProposalType.Moonbeam
+            proposalType == PrimaryFork.Moonbeam
         );
     }
 
@@ -99,14 +96,14 @@ abstract contract HybridProposal is
         uint256 value,
         bytes memory data,
         string memory description,
-        ProposalType proposalType
+        PrimaryFork proposalType
     ) internal {
         _pushHybridAction(
             target,
             value,
             data,
             description,
-            proposalType == ProposalType.Moonbeam
+            proposalType == PrimaryFork.Moonbeam
         );
     }
 
@@ -469,7 +466,7 @@ abstract contract HybridProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        vm.selectFork(uint256(ProposalType.Moonbeam));
+        vm.selectFork(uint256(PrimaryFork.Moonbeam));
 
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 

@@ -31,8 +31,8 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
         address unitroller;
     }
 
-    function primaryForkId() public pure override returns (ProposalType) {
-        return ProposalType.Base;
+    function primaryForkId() public pure override returns (PrimaryFork) {
+        return PrimaryFork.Base;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as

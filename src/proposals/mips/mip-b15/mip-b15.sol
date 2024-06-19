@@ -21,8 +21,8 @@ contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ProposalType) {
-        return ProposalType.Base;
+    function primaryForkId() public pure override returns (PrimaryFork) {
+        return PrimaryFork.Base;
     }
 
     function deploy(Addresses addresses, address) public override {}

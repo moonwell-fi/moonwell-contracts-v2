@@ -35,8 +35,8 @@ contract mipb16 is
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ProposalType) {
-        return ProposalType.Base;
+    function primaryForkId() public pure override returns (PrimaryFork) {
+        return PrimaryFork.Base;
     }
 
     function teardown(Addresses addresses, address) public override {
@@ -94,7 +94,7 @@ contract mipb16 is
             moonbeamActions.length == 0,
             "MIP-B16: should have no moonbeam actions"
         );
-        vm.selectFork(uint256(ProposalType.Moonbeam));
+        vm.selectFork(uint256(PrimaryFork.Moonbeam));
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 

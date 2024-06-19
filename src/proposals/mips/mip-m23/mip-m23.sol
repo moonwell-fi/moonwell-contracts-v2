@@ -43,8 +43,8 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ProposalType) {
-        return ProposalType.Moonbeam;
+    function primaryForkId() public pure override returns (PrimaryFork) {
+        return PrimaryFork.Moonbeam;
     }
 
     /// run this action through the Artemis Governor
@@ -376,7 +376,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ProposalType.Base));
+        vm.selectFork(uint256(PrimaryFork.Base));
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
@@ -589,7 +589,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             "xWELL rate limit per second incorrect"
         );
 
-        vm.selectFork(uint256(ProposalType.Base));
+        vm.selectFork(uint256(PrimaryFork.Base));
 
         assertEq(
             xWELL(addresses.getAddress("xWELL_PROXY")).bufferCap(

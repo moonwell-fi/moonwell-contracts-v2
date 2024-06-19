@@ -33,12 +33,12 @@ contract HybridProposalExample is
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ProposalType) {
-        return ProposalType.Moonbeam;
+    function primaryForkId() public pure override returns (PrimaryFork) {
+        return PrimaryFork.Base;
     }
 
     function build(Addresses addresses) public override {
-        vm.selectFork(uint256(ProposalType.Base));
+        vm.selectFork(uint256(PrimaryFork.Base));
 
         /// action to call the Wormhole Core contract on Base from Moonbeam
         /// this is incorrect and will cause a failure in the HybridProposal contract
@@ -52,7 +52,7 @@ contract HybridProposalExample is
                 0
             ),
             "Call publish message on Base Wormhole Core with no data on Moonbeam",
-            ProposalType.Moonbeam
+            PrimaryFork.Moonbeam
         );
 
         vm.selectFork(uint256(primaryForkId()));
@@ -101,7 +101,7 @@ contract HybridProposalExample is
                             config.mToken
                         )
                     ),
-                    ProposalType.Base
+                    PrimaryFork.Base
                 );
             }
         }
@@ -111,7 +111,7 @@ contract HybridProposalExample is
         vm.selectFork(uint256(primaryForkId()));
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(uint256(ProposalType.Base));
+        vm.selectFork(uint256(PrimaryFork.Base));
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
@@ -132,7 +132,7 @@ contract HybridProposalExample is
             "voting period not set correctly"
         );
 
-        vm.selectFork(uint256(ProposalType.Base));
+        vm.selectFork(uint256(PrimaryFork.Base));
 
         /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(

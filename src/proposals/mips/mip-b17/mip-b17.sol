@@ -46,8 +46,8 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
         address unitroller;
     }
 
-    function primaryForkId() public pure override returns (ProposalType) {
-        return ProposalType.Base;
+    function primaryForkId() public pure override returns (PrimaryFork) {
+        return PrimaryFork.Base;
     }
 
     /// @notice Aero market mToken and corresponding IRM is deployed in this proposal

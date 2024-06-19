@@ -21,7 +21,7 @@ to verify after deploy:
 
 */
 abstract contract MIPProposal is Script {
-    enum ProposalType {
+    enum PrimaryFork {
         Moonbeam,
         Base,
         Optimism
@@ -56,9 +56,9 @@ abstract contract MIPProposal is Script {
     }
 
     function run() public virtual {
-        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")));
-
-        vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+        vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
+        vm.createFork(vm.envString("BASE_RPC_URL"));
+        vm.createFork(vm.envString("OP_RPC_URL"));
 
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
@@ -89,7 +89,7 @@ abstract contract MIPProposal is Script {
         }
     }
 
-    function primaryForkId() public pure virtual returns (ProposalType);
+    function primaryForkId() public pure virtual returns (PrimaryFork);
 
     function name() external view virtual returns (string memory);
 
