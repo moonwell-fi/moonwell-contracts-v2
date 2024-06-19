@@ -9,6 +9,7 @@ import {Configs} from "@proposals/Configs.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     string public constant override name = "TEST_TEMPORAL_GOVERNOR";

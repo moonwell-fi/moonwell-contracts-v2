@@ -11,6 +11,7 @@ import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 /// Proposal to run on Base to create the Multichain Vote Collection Contract
 /// As well as the Ecosystem Reserve and Ecosystem Reserve Controller.

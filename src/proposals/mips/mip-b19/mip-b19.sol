@@ -9,6 +9,7 @@ import {MIPProposal} from "@proposals/MIPProposal.s.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B19";

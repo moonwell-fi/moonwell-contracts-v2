@@ -10,6 +10,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 /// This MIP sets the reward speeds for different markets in the MultiRewardDistributor
 /// contract. It is intended to be used as a template for future MIPs that need to set reward speeds.

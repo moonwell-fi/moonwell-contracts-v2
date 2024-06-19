@@ -6,6 +6,7 @@ import "@forge-std/Test.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 contract mipm16 is GovernanceProposal {
     string public constant override name = "MIP-M16";

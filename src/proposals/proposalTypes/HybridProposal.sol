@@ -17,6 +17,7 @@ import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {Address} from "@utils/Address.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.

@@ -7,6 +7,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 /// rewrite of mip-m19 to use HybridProposal and generate calldata for
 /// the Multichain Governor.

@@ -27,6 +27,7 @@ import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol"
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
 import {Address} from "@utils/Address.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 contract mipb00 is Proposal, CrossChainProposal, Configs {
     using Address for address;

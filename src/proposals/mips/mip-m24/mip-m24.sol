@@ -12,6 +12,7 @@ import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 /// Proposal to run on Moonbeam to accept governance powers, finalizing
 /// the transfer of admin and owner from the current Artemis Timelock to the

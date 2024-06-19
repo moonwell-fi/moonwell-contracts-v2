@@ -9,6 +9,7 @@ import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 /// Performs the following actions which hand off direct or pending ownership
 /// of the contracts from the Multichain Governor to the Artemis Timelock contract:

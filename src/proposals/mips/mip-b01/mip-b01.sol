@@ -9,6 +9,7 @@ import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 /// This MIP sets the IRM for an MToken contract.
 /// It is intended to be used as a template for future MIPs that need to set IRM's.

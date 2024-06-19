@@ -10,6 +10,7 @@ import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
 abstract contract CrossChainProposal is

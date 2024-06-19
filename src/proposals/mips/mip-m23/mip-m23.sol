@@ -21,6 +21,7 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the

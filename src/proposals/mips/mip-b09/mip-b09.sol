@@ -8,6 +8,7 @@ import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 contract mipb09 is Proposal, CrossChainProposal, Configs {
     string public constant override name = "MIP-b09";

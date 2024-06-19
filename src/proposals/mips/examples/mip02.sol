@@ -16,6 +16,7 @@ import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 /// @notice This MIP deploys and lists new MTokens for the protocol.
 /// It reads in the configuration from Config.sol, which reads in the mainnetMTokens.json file and deploys the MTokens specified in that file.

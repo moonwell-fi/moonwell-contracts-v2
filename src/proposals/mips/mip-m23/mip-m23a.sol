@@ -6,8 +6,8 @@ import "@forge-std/Test.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 /// Proposal to run on Moonbeam to create the Multichain Governor contract
 /// to simulate: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script

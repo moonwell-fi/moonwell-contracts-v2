@@ -12,6 +12,7 @@ import {mipm30} from "@proposals/mips/mip-m30/mip-m30.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
 
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {PrimaryFork} from "@utils/Enums.sol";
 
 contract mipm32 is Configs, HybridProposal, ParameterValidation {
     string public constant override name = "MIP-M30";
