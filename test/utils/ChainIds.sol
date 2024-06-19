@@ -72,5 +72,8 @@ contract ChainIds {
 
         chainIdTemporalGovTimelock[baseSepoliaChainId] = 0; /// no wait on testnet
         chainIdTemporalGovTimelock[baseChainId] = 1 days;
+
+        chainIdTemporalGovTimelock[optimismSepoliaChainId] = 0; /// no wait on testnet
+        chainIdTemporalGovTimelock[optimismChainId] = 1 days;
     }
 }
