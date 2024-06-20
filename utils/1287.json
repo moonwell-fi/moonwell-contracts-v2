@@ -1,0 +1,237 @@
+[
+    {
+        "addr": "0x5713dd9a2b2ce515cf9232f48b457aebfb04b292",
+        "name": "ARTEMIS_GOVERNOR",
+        "isContract": true
+    },
+    {
+        "addr": "0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901",
+        "name": "WORMHOLE_CORE_MOONBASE",
+        "isContract": true
+    },
+    {
+        "addr": "0x43A720C2690B00Ae0a0F9E4b79ED24184D9e8F0A",
+        "name": "MOONBEAM_TIMELOCK",
+        "isContract": true
+    },
+    {
+        "addr": "0x8967d9F9fdD2be7A712d83dD15D79123BdAe872e",
+        "name": "EMISSIONS_ADMIN",
+        "isContract": false
+    },
+    {
+        "addr": "0xc191A4db4E05e478778eDB6a201cb7F13A257C23",
+        "name": "PAUSE_GUARDIAN",
+        "isContract": false
+    },
+    {
+        "addr": "0x2E58a9BCEA402936f3a110386318d087A6B0b623",
+        "name": "xWELL_ROUTER",
+        "isContract": true
+    },
+    {
+        "addr": "0x82444B6B58f1f65dBE228feBaf0ae6b59Eb55B59",
+        "name": "MOONBEAM_PROXY_ADMIN",
+        "isContract": true
+    },
+    {
+        "addr": "0x8967d9F9fdD2be7A712d83dD15D79123BdAe872e",
+        "name": "MOONBEAM_PAUSE_GUARDIAN_MULTISIG",
+        "isContract": false
+    },
+    {
+        "addr": "0x0591C25ebd0580E0d4F27A82Fc2e24E7489CB5e0",
+        "name": "WORMHOLE_BRIDGE_RELAYER",
+        "isContract": true
+    },
+    {
+        "addr": "0x96d50c8b4072A1246d40c4455D7b6D748f7D4BD3",
+        "name": "GOVTOKEN",
+        "isContract": true
+    },
+    {
+        "addr": "0x751E27d340EFe99e35C4E68f9c3dF94BB4BE2aEA",
+        "name": "xWELL_LOCKBOX",
+        "isContract": true
+    },
+    {
+        "addr": "0x6bD7f004Dda748dB47Eb764a816eD2AA26EB4e40",
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0xF81d39f4F2f98B5D804FCCF3Db194D17c78145Ff",
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0xd3e4bC4dEF4CfD0ddD67a8DaBA4C40644d63850a",
+        "name": "xWELL_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0xE8F339C51cb2700113ec6ef552eE1D6cCA3BfB95",
+        "name": "xWELL_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0x599D4a1538d686814eE11b331EACBBa166D7C41a",
+        "name": "MULTICHAIN_GOVERNOR_IMPL",
+        "isContract": true
+    },
+    {
+        "addr": "0xf152d75fe4cBB11AE224B94110c31F0bdDb55850",
+        "name": "MULTICHAIN_GOVERNOR_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0x876fa6f4EB3Aad22f9893f82784095401499d6cA",
+        "name": "WORMHOLE_UNWRAPPER_ADAPTER",
+        "isContract": true
+    },
+    {
+        "addr": "0xD2D73F763745777599b21F5725181B8ccD08B060",
+        "name": "TOKEN_SALE_DISTRIBUTOR_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0x8cfFC77e13368A3E922dCB552878A21532EB439c",
+        "name": "TOKEN_SALE_DISTRIBUTOR_IMPL",
+        "isContract": true
+    },
+    {
+        "addr": "0x8967d9F9fdD2be7A712d83dD15D79123BdAe872e",
+        "name": "BREAK_GLASS_GUARDIAN",
+        "isContract": false
+    },
+    {
+        "addr": "0x7E498C2aae7fA815B71B39cd1351b7b5ee9D2a60",
+        "name": "STK_GOVTOKEN_IMPL",
+        "isContract": true
+    },
+    {
+        "addr": "0xCBfcab5e2E9DdC0B5Fa8B06Cd0e7a928c6D58DC0",
+        "name": "STK_GOVTOKEN",
+        "isContract": true
+    },
+    {
+        "addr": "0xE126DF7e1976D59c2a9b4d41E666aB88B4594711",
+        "name": "ECOSYSTEM_RESERVE_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0x1a64904d0494AB6CF60ABd3B1b469Db8ED1074bE",
+        "name": "ECOSYSTEM_RESERVE_IMPL",
+        "isContract": true
+    },
+    {
+        "addr": "0xf095450C4e080d1E4Ac33d7fAcE648881d4A2BB7",
+        "name": "ECOSYSTEM_RESERVE_CONTROLLER",
+        "isContract": true
+    },
+    {
+        "addr": "0xDe71A6CFD13dE924c84C3a11f6c96Ef083df017d",
+        "name": "BTC",
+        "isContract": true
+    },
+    {
+        "addr": "0x460dCc00F0D24e56D6C8a4B5dDFf6333403aCdB3",
+        "name": "WETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x1AC96f01B9d2c6AdD1cEEBDEeA0B6B48Db6C0827",
+        "name": "USDC",
+        "isContract": true
+    },
+    {
+        "addr": "0xef388dA299f5E75b4e935B7eC9602097aA89b76f",
+        "name": "USDT",
+        "isContract": true
+    },
+    {
+        "addr": "0x224506760E75bCF6Ed3A80880e86F159189cE04f",
+        "name": "FRAX",
+        "isContract": true
+    },
+    {
+        "addr": "0xF43Cd9e03d925Dd9c660b46AE86eA350b2C299D2",
+        "name": "MOONWELL_WBTC",
+        "isContract": true
+    },
+    {
+        "addr": "0xBaeEd251E950D6C7c7Ec92FfAfC571da8e85f50B",
+        "name": "MOONWELL_WETH",
+        "isContract": true
+    },
+    {
+        "addr": "0xbd17C45DB7C9782B34A5e6b22Be9755f62545009",
+        "name": "MOONWELL_USDC",
+        "isContract": true
+    },
+    {
+        "addr": "0x1dcCaE91438EA28A7e2e9178D9ADAd7096F47beF",
+        "name": "MOONWELL_USDT",
+        "isContract": true
+    },
+    {
+        "addr": "0x07bca43B75AbEd7496561130ab42CE7d9D08E978",
+        "name": "MOONWELL_FRAX",
+        "isContract": true
+    },
+    {
+        "addr": "0xC409e77229B6eCA42EA19E7AcF2d6b99Ebc02626",
+        "name": "MNATIVE",
+        "isContract": true
+    },
+    {
+        "addr": "0x6A055083c8Af769Ce04E9A6E8987E7e9707368DA",
+        "name": "COMPTROLLER",
+        "isContract": true
+    },
+    {
+        "addr": "0x1a14f9af09648F6550c339A71D3e449e31B8E0Ae",
+        "name": "UNITROLLER",
+        "isContract": true
+    },
+    {
+        "addr": "0xd5448A26b31ff94F62C8301577f7A3980CFdcd2d",
+        "name": "CHAINLINK_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x9347F66FFCfaBc2ed22F3BDa4184f61E135C9481",
+        "name": "JUMP_RATE_MODEL",
+        "isContract": true
+    },
+    {
+        "addr": "0x778BEfb5d7AcBB62e8a2C6768B1589f2F00014b9",
+        "name": "CHAINLINK_GLIMMER_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0x0309E61a9e15f5afbC90F30582b82a37dfc41925",
+        "name": "CHAINLINK_BTC_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0x945343e642b0Bbcf31c6F695109322F454E5A4cF",
+        "name": "CHAINLINK_ETH_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0x649eEF5014a50D9795CB70949F27e10fB34C414a",
+        "name": "CHAINLINK_USDC_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0xf0DE766Bfd7fFA029E5329c14f5E5b4309cD1bC6",
+        "name": "CHAINLINK_USDT_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0xcBCdB2Eaec20A5FD489960D7968F3b3b09308a46",
+        "name": "CHAINLINK_FRAX_USD",
+        "isContract": true
+    }
+]

@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
 
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";

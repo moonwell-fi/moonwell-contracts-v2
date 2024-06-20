@@ -4,12 +4,13 @@ import {Script} from "@forge-std/Script.sol";
 
 import "@forge-std/Test.sol";
 
-import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {ForkID} from "@utils/Enums.sol";
+import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
+import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// Performs the following actions which hand off direct or pending ownership
 /// of the contracts from the Multichain Governor to the Artemis Timelock contract:

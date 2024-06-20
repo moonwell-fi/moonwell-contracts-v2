@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";

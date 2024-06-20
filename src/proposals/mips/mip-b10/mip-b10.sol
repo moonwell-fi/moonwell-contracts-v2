@@ -9,7 +9,7 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MIPProposal} from "@proposals/MIPProposal.s.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";

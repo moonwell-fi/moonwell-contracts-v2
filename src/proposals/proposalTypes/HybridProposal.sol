@@ -8,7 +8,7 @@ import "@forge-std/Test.sol";
 
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";

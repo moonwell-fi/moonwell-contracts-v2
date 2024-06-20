@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Unitroller} from "@protocol/Unitroller.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";

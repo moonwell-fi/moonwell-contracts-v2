@@ -7,7 +7,7 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "@forge-std/Test.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {xwellDeployMoonbeam} from "@protocol/proposals/mips/mip-xwell/xwellDeployMoonbeam.sol";

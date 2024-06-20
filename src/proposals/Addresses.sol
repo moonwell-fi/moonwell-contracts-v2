@@ -24,8 +24,6 @@ contract Addresses is IAddresses, Test {
     struct SavedAddresses {
         /// address to store
         address addr;
-        /// chain id of network to store for
-        uint256 chainId;
         /// whether the address is a contract
         bool isContract;
         /// name of contract to store
@@ -51,25 +49,38 @@ contract Addresses is IAddresses, Test {
     // @notice array of addresses changed during a proposal
     ChangedAddress[] private changedAddresses;
 
-    string public addressesPath = "./utils/Addresses.json";
+    constructor(uint256[] memory chainids) {
+        string memory projectRoot = vm.projectRoot();
 
-    constructor() {
-        string memory data = vm.readFile(addressesPath);
-        bytes memory parsedJson = vm.parseJson(data);
-
-        SavedAddresses[] memory savedAddresses = abi.decode(
-            parsedJson,
-            (SavedAddresses[])
-        );
-
-        uint256 length = savedAddresses.length;
-        for (uint256 i = 0; i < length; i++) {
-            _addAddress(
-                savedAddresses[i].name,
-                savedAddresses[i].addr,
-                savedAddresses[i].chainId,
-                savedAddresses[i].isContract
+        for (uint256 j = 0; j < chainids.length; j++) {
+            /// fetch <chainid>.json file path and read its raw contents
+            string memory data = vm.readFile(
+                string(
+                    abi.encodePacked(
+                        projectRoot,
+                        "/utils/",
+                        vm.toString(chainids[j]),
+                        ".json"
+                    )
+                )
             );
+            bytes memory parsedJson = vm.parseJson(data);
+
+            SavedAddresses[] memory savedAddresses = abi.decode(
+                parsedJson,
+                (SavedAddresses[])
+            );
+
+            uint256 length = savedAddresses.length;
+            uint256 chainId = chainids[j];
+            for (uint256 i = 0; i < length; i++) {
+                _addAddress(
+                    savedAddresses[i].name,
+                    savedAddresses[i].addr,
+                    chainId,
+                    savedAddresses[i].isContract
+                );
+            }
         }
     }
 
@@ -394,4 +405,18 @@ contract Addresses is IAddresses, Test {
             }
         }
     }
+}
+
+contract AllChainAddresses is Addresses {
+    uint256[] public supportedChainIds = [
+        8453,
+        84532,
+        1285,
+        1284,
+        1287,
+        11155111,
+        31337,
+        10
+    ];
+    constructor() Addresses(supportedChainIds) {}
 }

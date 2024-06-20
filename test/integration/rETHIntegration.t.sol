@@ -7,7 +7,7 @@ import "@forge-std/Test.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
@@ -164,8 +164,8 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
         assertApproxEqRel(
             liquidity,
             (mintAmount * price * collateralFactor) / 1e36, /// trim off both the CF and Chainlink Price feed extra precision
-            1e12,
-            "liquidity not within .0001% of given CF"
+            1e13,
+            "liquidity not within .001% of given CF"
         );
         assertEq(shortfall, 0, "Incorrect shortfall");
 

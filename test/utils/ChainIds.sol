@@ -2,6 +2,19 @@
 pragma solidity 0.8.19;
 
 contract ChainIds {
+    /// all wormhole chain ids are defined here:
+    /// https://docs.wormhole.com/wormhole/reference/constants
+
+    /// all regular chain ids are defined here:
+    /// https://chainlist.org/
+
+    /// ------------ OPTIMISM ------------
+    uint256 public constant optimismChainId = 10;
+    uint16 public constant optimismWormholeChainId = 24;
+
+    uint256 public constant optimismSepoliaChainId = 11155420;
+    uint16 public constant optimismSepoliaWormholeChainId = 10005;
+
     /// ------------ BASE ------------
 
     uint256 public constant baseChainId = 8453;
@@ -40,15 +53,20 @@ contract ChainIds {
 
     constructor() {
         chainIdToWormHoleId[baseSepoliaChainId] = moonBaseWormholeChainId; /// base deployment is owned by moonbeam governance
+        chainIdToWormHoleId[optimismSepoliaChainId] = moonBaseWormholeChainId; /// optimism deployment is owned by moonbeam governance
 
+        chainIdToWormHoleId[optimismChainId] = moonBeamWormholeChainId; /// optimism deployment is owned by moonbeam governance
         chainIdToWormHoleId[baseChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
         chainIdToWormHoleId[moonBeamChainId] = baseWormholeChainId; /// moonbeam goes to base
         chainIdToWormHoleId[moonBaseChainId] = baseSepoliaWormholeChainId; /// moonbase goes to base
+
         sendingChainIdToReceivingChainId[baseSepoliaChainId] = moonBaseChainId; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
+        sendingChainIdToReceivingChainId[moonBaseChainId] = baseSepoliaChainId;
+
         sendingChainIdToReceivingChainId[baseChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking base, and sending from moonbeam
         sendingChainIdToReceivingChainId[moonBeamChainId] = baseChainId;
 
-        sendingChainIdToReceivingChainId[moonBaseChainId] = baseSepoliaChainId;
+        sendingChainIdToReceivingChainId[optimismChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking optimism, and sending from moonbeam
 
         sendingChainIdToReceivingChainId[localChainId] = localChainId; // unit tests
 
