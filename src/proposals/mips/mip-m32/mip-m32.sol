@@ -12,7 +12,7 @@ import {mipm30} from "@proposals/mips/mip-m30/mip-m30.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
 
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {PrimaryFork} from "@utils/Enums.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 contract mipm32 is Configs, HybridProposal, ParameterValidation {
     string public constant override name = "MIP-M30";
@@ -27,8 +27,8 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (PrimaryFork) {
-        return PrimaryFork.Moonbeam;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Moonbeam;
     }
 
     function deploy(Addresses, address) public override {}

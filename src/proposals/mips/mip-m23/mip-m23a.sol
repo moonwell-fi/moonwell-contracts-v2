@@ -7,7 +7,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
-import {PrimaryFork} from "@utils/Enums.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// Proposal to run on Moonbeam to create the Multichain Governor contract
 /// to simulate: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
@@ -22,8 +22,8 @@ contract mipm23a is HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment name
     string public constant override name = "MIP-M23A";
 
-    function primaryForkId() public pure override returns (PrimaryFork) {
-        return PrimaryFork.Moonbeam;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Moonbeam;
     }
 
     function deploy(Addresses addresses, address) public override {

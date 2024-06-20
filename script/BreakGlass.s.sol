@@ -9,7 +9,7 @@ import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {PrimaryFork} from "@utils/Enums.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// Performs the following actions which hand off direct or pending ownership
 /// of the contracts from the Multichain Governor to the Artemis Timelock contract:
@@ -40,8 +40,8 @@ contract BreakGlass is Script, HybridProposal {
     /// @notice trusted senders for the temporal governor
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
-    function primaryForkId() public pure override returns (PrimaryFork) {
-        return PrimaryFork.Moonbeam;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Moonbeam;
     }
 
     function run() public override {

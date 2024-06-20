@@ -18,7 +18,7 @@ import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.s
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {PrimaryFork} from "@utils/Enums.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// @notice This lists all new markets provided in `mainnetMTokens.json`
 /// This is a template of a MIP proposal that can be used to add new mTokens
@@ -47,8 +47,8 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
         address unitroller;
     }
 
-    function primaryForkId() public pure override returns (PrimaryFork) {
-        return PrimaryFork.Base;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Base;
     }
 
     /// @notice Aero market mToken and corresponding IRM is deployed in this proposal

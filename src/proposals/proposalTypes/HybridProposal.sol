@@ -17,7 +17,7 @@ import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {Address} from "@utils/Address.sol";
-import {PrimaryFork} from "@utils/Enums.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -75,14 +75,14 @@ abstract contract HybridProposal is
         address target,
         bytes memory data,
         string memory description,
-        PrimaryFork proposalType
+        ForkID proposalType
     ) internal {
         _pushHybridAction(
             target,
             0,
             data,
             description,
-            proposalType == PrimaryFork.Moonbeam
+            proposalType == ForkID.Moonbeam
         );
     }
 
@@ -97,14 +97,14 @@ abstract contract HybridProposal is
         uint256 value,
         bytes memory data,
         string memory description,
-        PrimaryFork proposalType
+        ForkID proposalType
     ) internal {
         _pushHybridAction(
             target,
             value,
             data,
             description,
-            proposalType == PrimaryFork.Moonbeam
+            proposalType == ForkID.Moonbeam
         );
     }
 
@@ -467,7 +467,7 @@ abstract contract HybridProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        vm.selectFork(uint256(PrimaryFork.Moonbeam));
+        vm.selectFork(uint256(ForkID.Moonbeam));
 
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 

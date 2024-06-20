@@ -10,7 +10,7 @@ import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {MWethDelegate} from "@protocol/MWethDelegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {PrimaryFork} from "@utils/Enums.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// how to generate calldata:
 /// first set up environment variables:
@@ -39,8 +39,8 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (PrimaryFork) {
-        return PrimaryFork.Base;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Base;
     }
 
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers

@@ -27,7 +27,7 @@ import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol"
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
 import {Address} from "@utils/Address.sol";
-import {PrimaryFork} from "@utils/Enums.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 contract mipb00 is Proposal, CrossChainProposal, Configs {
     using Address for address;
@@ -69,8 +69,8 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (PrimaryFork) {
-        return PrimaryFork.Base;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Base;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as

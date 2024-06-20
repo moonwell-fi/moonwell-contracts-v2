@@ -19,7 +19,7 @@ import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {PrimaryFork} from "@utils/Enums.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 contract LiveSystemBasePostProposalTest is PostProposalCheck, Configs {
     MultiRewardDistributor mrd;
@@ -32,7 +32,7 @@ contract LiveSystemBasePostProposalTest is PostProposalCheck, Configs {
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(uint256(PrimaryFork.Base));
+        vm.selectFork(uint256(ForkID.Base));
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         well = addresses.getAddress("GOVTOKEN");

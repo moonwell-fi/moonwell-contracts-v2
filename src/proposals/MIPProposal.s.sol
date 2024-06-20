@@ -5,7 +5,7 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
 import {Addresses} from "@proposals/Addresses.sol";
-import {PrimaryFork} from "@utils/Enums.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /*
 How to use:
@@ -84,7 +84,7 @@ abstract contract MIPProposal is Script {
         }
     }
 
-    function primaryForkId() public pure virtual returns (PrimaryFork);
+    function primaryForkId() public pure virtual returns (ForkID);
 
     function name() external view virtual returns (string memory);
 

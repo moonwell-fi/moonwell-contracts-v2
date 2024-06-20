@@ -9,7 +9,7 @@ import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {PrimaryFork} from "@utils/Enums.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// This MIP sets the IRM for an MToken contract.
 /// It is intended to be used as a template for future MIPs that need to set IRM's.
@@ -24,8 +24,8 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
         );
     }
 
-    function primaryForkId() public pure override returns (PrimaryFork) {
-        return PrimaryFork.Base;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Base;
     }
 
     function deploy(Addresses addresses, address) public override {}

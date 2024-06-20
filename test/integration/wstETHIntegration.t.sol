@@ -13,7 +13,7 @@ import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.s
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
-import {PrimaryFork} from "@utils/Enums.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 contract wstETHLiveSystemBasePostProposalTest is PostProposalCheck {
     MultiRewardDistributor mrd;
@@ -24,7 +24,7 @@ contract wstETHLiveSystemBasePostProposalTest is PostProposalCheck {
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(uint256(PrimaryFork.Base));
+        vm.selectFork(uint256(ForkID.Base));
 
         well = addresses.getAddress("GOVTOKEN");
         mwstETH = MErc20(addresses.getAddress("MOONWELL_wstETH"));

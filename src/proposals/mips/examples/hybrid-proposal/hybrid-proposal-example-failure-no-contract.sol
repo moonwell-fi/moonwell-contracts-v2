@@ -11,7 +11,7 @@ import {IMultichainGovernor} from "@protocol/governance/multichain/IMultichainGo
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {PrimaryFork} from "@utils/Enums.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// @notice DO NOT USE THIS IN PRODUCTION, this is a completely hypothetical example
 /// adds stkwell as reward streams, completely hypothetical situation that makes no sense and would not work in production
@@ -34,12 +34,12 @@ contract HybridProposalExample is
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (PrimaryFork) {
-        return PrimaryFork.Base;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Base;
     }
 
     function build(Addresses addresses) public override {
-        vm.selectFork(uint256(PrimaryFork.Moonbeam));
+        vm.selectFork(uint256(ForkID.Moonbeam));
 
         /// action to set the voting period on the Multichain Governor on Base
         /// this is incorrect and will cause a failure in the HybridProposal contract
@@ -51,7 +51,7 @@ contract HybridProposalExample is
                 NEW_VOTING_PERIOD
             ),
             "Set voting period on Multichain Governor to 6 days",
-            PrimaryFork.Base
+            ForkID.Base
         );
 
         vm.selectFork(uint256(primaryForkId()));
@@ -100,14 +100,14 @@ contract HybridProposalExample is
                             config.mToken
                         )
                     ),
-                    PrimaryFork.Base
+                    ForkID.Base
                 );
             }
         }
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(PrimaryFork.Moonbeam));
+        vm.selectFork(uint256(ForkID.Moonbeam));
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
@@ -121,7 +121,7 @@ contract HybridProposalExample is
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(uint256(PrimaryFork.Moonbeam));
+        vm.selectFork(uint256(ForkID.Moonbeam));
 
         IMultichainGovernor governor = IMultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
