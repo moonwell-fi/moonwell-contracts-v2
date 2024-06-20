@@ -7,6 +7,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m25/mip-m25.sol:mipm25
@@ -26,9 +27,8 @@ contract mipm25 is HybridProposal, ParameterValidation {
         _setProposalDescription(proposalDescription);
     }
 
-    /// @notice proposal's actions happen only on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Moonbeam;
     }
 
     function deploy(Addresses addresses, address) public override {

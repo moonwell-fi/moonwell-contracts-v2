@@ -12,6 +12,7 @@ import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// Proposal to run on Moonbeam to accept governance powers, finalizing
 /// the transfer of admin and owner from the current Artemis Timelock to the
@@ -28,9 +29,8 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         _setProposalDescription(proposalDescription);
     }
 
-    /// @notice proposal's actions mostly happen on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Moonbeam;
     }
 
     /// run this action through the Multichain Governor
@@ -180,17 +180,17 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(uint256(primaryForkId()));
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(baseForkId);
+        vm.selectFork(uint256(ForkID.Base));
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(uint256(primaryForkId()));
     }
 
     function validate(Addresses addresses, address) public override {
@@ -358,7 +358,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             "UNITROLLER admin incorrect"
         );
 
-        vm.selectFork(baseForkId);
+        vm.selectFork(uint256(ForkID.Base));
 
         // check that the multichain governor now is the only trusted sender on the temporal governor
         TemporalGovernor temporalGovernor = TemporalGovernor(
@@ -382,6 +382,6 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             "MultichainGovernor not trusted sender"
         );
 
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(uint256(primaryForkId()));
     }
 }

@@ -7,6 +7,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// rewrite of mip-m19 to use HybridProposal and generate calldata for
 /// the Multichain Governor.
@@ -21,9 +22,8 @@ contract mipm21newGovernor is HybridProposal {
         _setProposalDescription(proposalDescription);
     }
 
-    /// @notice proposal's actions mostly happen on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Moonbeam;
     }
 
     function deploy(Addresses addresses, address) public override {

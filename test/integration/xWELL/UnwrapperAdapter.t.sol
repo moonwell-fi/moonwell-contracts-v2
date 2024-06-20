@@ -19,9 +19,6 @@ import {Address} from "@utils/Address.sol";
 contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21, ChainIds {
     using Address for address;
 
-    /// @notice addresses contract, stores all addresses
-    Addresses public addresses;
-
     /// @notice lockbox contract
     XERC20Lockbox public xerc20Lockbox;
 

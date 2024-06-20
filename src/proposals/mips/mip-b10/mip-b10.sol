@@ -18,6 +18,7 @@ import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.s
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// @notice This lists all new markets provided in `mainnetMTokens.json`
 /// This is a template of a MIP proposal that can be used to add new mTokens
@@ -125,9 +126,8 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
         console.log("\n\n");
     }
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Base;
     }
 
     /// @notice no contracts are deployed in this proposal

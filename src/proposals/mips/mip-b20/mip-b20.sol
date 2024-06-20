@@ -9,6 +9,7 @@ import {Addresses} from "@proposals/Addresses.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b20/mip-b20.sol:mipb20
@@ -25,9 +26,8 @@ contract mipb20 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         _setProposalDescription(proposalDescription);
     }
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Base;
     }
 
     function deploy(Addresses addresses, address) public override {}

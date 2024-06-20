@@ -17,8 +17,13 @@ import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.s
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {ForkID} from "@utils/Enums.sol";
 
-contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
+contract NativeUSDCLiveSystemBasePostProposalTest is
+    Test,
+    PostProposalCheck,
+    Configs
+{
     MultiRewardDistributor mrd;
     Comptroller comptroller;
     address well;
@@ -26,6 +31,8 @@ contract NativeUSDCLiveSystemBaseTest is Test, PostProposalCheck, Configs {
 
     function setUp() public override {
         super.setUp();
+
+        vm.selectFork(uint256(ForkID.Base));
 
         well = addresses.getAddress("GOVTOKEN");
         mUSDC = MErc20(addresses.getAddress("MOONWELL_USDC"));
