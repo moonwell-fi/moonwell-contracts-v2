@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
 How to use:
