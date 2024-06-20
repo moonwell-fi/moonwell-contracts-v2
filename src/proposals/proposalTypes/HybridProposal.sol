@@ -725,7 +725,7 @@ abstract contract HybridProposal is
         }
 
         checkMoonbeamBaseActions(addresses, baseActions, moonbeamActions);
-        checkBaseActions(targets, addresses);
+        checkBaseOptimismActions(targets, addresses);
 
         bytes memory payload = abi.encode(
             temporalGovernorAddress,
