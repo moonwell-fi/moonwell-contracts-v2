@@ -72,6 +72,10 @@ interface IProposal {
     /// fork ID for moonbeam
     function moonbeamForkId() external view returns (uint256);
 
-    /// set fork ID's for base and moonbeam
-    function setForkIds(uint256 baseForkId, uint256 moonbeamForkId) external;
+    /// set fork ID's for base, moonbeam and optimism
+    function setForkIds(
+        uint256 baseForkId,
+        uint256 moonbeamForkId,
+        uint256 optimismForkId
+    ) external;
 }
