@@ -13,9 +13,9 @@
         "addressesString": "MOONWELL_USDC",
         "jrm": {
             "baseRatePerYear": 0,
-            "multiplierPerYear": 0.05e18,
-            "jumpMultiplierPerYear": 2.5e18,
-            "kink": 0.8e18
+            "multiplierPerYear": 0.057e18,
+            "jumpMultiplierPerYear": 5.7e18,
+            "kink": 0.7e18
         }
     },
     {
