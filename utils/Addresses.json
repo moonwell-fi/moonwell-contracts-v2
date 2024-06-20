@@ -1,5 +1,17 @@
 [
     {
+        "addr": "0x6b9C8671cdDC8dEab9c719bB87cBd3e782bA6a35",
+        "chainId": 11155420,
+        "name": "WORMHOLE_CORE",
+        "isContract": true
+    },
+    {
+        "addr": "0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722",
+        "chainId": 10,
+        "name": "WORMHOLE_CORE",
+        "isContract": true
+    },
+    {
         "addr": "0x4200000000000000000000000000000000000006",
         "chainId": 10,
         "name": "WETH",
@@ -72,6 +84,12 @@
         "isContract": true
     },
     {
+        "addr": "0xe770BD40b6976Efbbb095174395DD2cb794c938a",
+        "chainId": 10,
+        "name": "CHAINLINK_WSTETH_USD_COMPOSITE_ORACLE",
+        "isContract": true
+    },
+    {
         "addr": "0xadDb6A0412DE1BA0F936DCaeb8Aaa24578dcF3B2",
         "chainId": 10,
         "name": "cbETH",
@@ -84,6 +102,12 @@
         "isContract": true
     },
     {
+        "addr": "0x6250e204bA6f722c7d498f659f8d3C5550Ec811E",
+        "chainId": 10,
+        "name": "CHAINLINK_cbETH_USD_COMPOSITE_ORACLE",
+        "isContract": true
+    },
+    {
         "addr": "0x9Bcef72be871e61ED4fBbc7630889beE758eb81D",
         "chainId": 10,
         "name": "rETH",
@@ -93,6 +117,12 @@
         "addr": "0xb429DE60943a8e6DeD356dca2F93Cd31201D9ed0",
         "chainId": 10,
         "name": "CHAINLINK_RETH_ETH",
+        "isContract": true
+    },
+    {
+        "addr": "0xc095cb1A6B41A5Cd7dAaF993a904afDD74758D71",
+        "chainId": 10,
+        "name": "CHAINLINK_RETH_USD_COMPOSITE_ORACLE",
         "isContract": true
     },
     {
