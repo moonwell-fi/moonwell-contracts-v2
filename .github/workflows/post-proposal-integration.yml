@@ -3,9 +3,9 @@ name: Foundry post proposal integration tests
 on: [pull_request]
 
 env:
+  OP_RPC_URL: ${{secrets.OP_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
-  OP_RPC_URL: ${{secrets.OP_RPC_URL}}
 
 jobs:
   run-tests:
@@ -22,5 +22,4 @@ jobs:
         uses: ./.github/actions
 
       - name: Integration Tests Base Mainnet
-        run:
-          time forge test --match-contract PostProposalTest -vvv --ffi
+        run: time forge test --match-contract PostProposalTest -vvv --ffi
