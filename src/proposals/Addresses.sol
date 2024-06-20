@@ -415,6 +415,7 @@ contract AllChainAddresses is Addresses {
         1284,
         1287,
         11155111,
+        11155420,
         31337,
         10
     ];
