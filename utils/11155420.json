@@ -3,5 +3,20 @@
         "addr": "0x6b9C8671cdDC8dEab9c719bB87cBd3e782bA6a35",
         "name": "WORMHOLE_CORE",
         "isContract": true
+    },
+    {
+        "addr": "0x61Ec26aA57019C486B10502285c5A3D4A4750AD7",
+        "name": "CHAINLINK_ETH_USD",
+        "isContract": true
+    },
+    {
+        "addr": "0x119784b4b2A1D536db6C43E932675A1dA37E8EEE",
+        "name": "CHAINLINK_STETH_ETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x926462a9E1184a5E6EE24Db86cA9E0445E5A3643",
+        "name": "CHAINLINK_WSTETH_USD_COMPOSITE_ORACLE",
+        "isContract": true
     }
 ]
