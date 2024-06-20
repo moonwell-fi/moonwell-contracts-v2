@@ -27,6 +27,9 @@ abstract contract MIPProposal is Script {
     /// @notice fork ID for moonbeam
     uint256 public moonbeamForkId;
 
+    /// @notice fork ID for optimism
+    uint256 public optimismForkId;
+
     uint256 private PRIVATE_KEY;
     Addresses private addresses;
 
@@ -60,7 +63,8 @@ abstract contract MIPProposal is Script {
 
         setForkIds(
             vm.createFork(vm.envOr("BASE_RPC_URL", string("base"))),
-            vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")))
+            vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))),
+            vm.createFork(vm.envString("OPTIMISM_RPC_URL"))
         );
 
         vm.selectFork(primaryForkId());
@@ -119,14 +123,21 @@ abstract contract MIPProposal is Script {
     ) public virtual returns (uint256 proposalId);
 
     /// @notice set the fork IDs for base and moonbeam
-    function setForkIds(uint256 _baseForkId, uint256 _moonbeamForkId) public {
+    function setForkIds(
+        uint256 _baseForkId,
+        uint256 _moonbeamForkId,
+        uint256 _optimismForkId
+    ) public {
         require(
-            _baseForkId != _moonbeamForkId,
+            _baseForkId != _moonbeamForkId &&
+                _baseForkId != _optimismForkId &&
+                _moonbeamForkId != _optimismForkId,
             "setForkIds: fork IDs cannot be the same"
         );
 
         baseForkId = _baseForkId;
         moonbeamForkId = _moonbeamForkId;
+        optimismForkId = _optimismForkId;
     }
 
     /// @dev Print recorded addresses
