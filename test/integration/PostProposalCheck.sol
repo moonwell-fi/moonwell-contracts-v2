@@ -22,6 +22,10 @@ contract PostProposalCheck is Test {
     /// @notice fork ID for base
     uint256 public baseForkId = vm.createFork(vm.envString("BASE_RPC_URL"));
 
+    /// @notice fork ID for optimism
+    uint256 public optimismForkId =
+        vm.createFork(vm.envString("OPTIMISM_RPC_URL"));
+
     /// @notice  proposals array
     Proposal[] public proposals;
 
@@ -140,7 +144,7 @@ contract PostProposalCheck is Test {
         Proposal proposal = Proposal(deployCode(output));
         vm.makePersistent(address(proposal));
 
-        proposal.setForkIds(baseForkId, moonbeamForkId);
+        proposal.setForkIds(baseForkId, moonbeamForkId, optimismForkId);
 
         vm.selectFork(proposal.primaryForkId());
 
