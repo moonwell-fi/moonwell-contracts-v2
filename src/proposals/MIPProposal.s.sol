@@ -64,7 +64,7 @@ abstract contract MIPProposal is Script {
         setForkIds(
             vm.createFork(vm.envOr("BASE_RPC_URL", string("base"))),
             vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))),
-            vm.createFork(vm.envString("OPTIMISM_RPC_URL"))
+            vm.createFork(vm.envString("OP_RPC_URL"))
         );
 
         vm.selectFork(primaryForkId());

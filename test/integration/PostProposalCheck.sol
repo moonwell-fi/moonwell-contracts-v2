@@ -23,8 +23,7 @@ contract PostProposalCheck is Test {
     uint256 public baseForkId = vm.createFork(vm.envString("BASE_RPC_URL"));
 
     /// @notice fork ID for optimism
-    uint256 public optimismForkId =
-        vm.createFork(vm.envString("OPTIMISM_RPC_URL"));
+    uint256 public optimismForkId = vm.createFork(vm.envString("OP_RPC_URL"));
 
     /// @notice  proposals array
     Proposal[] public proposals;
