@@ -7,6 +7,7 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
+import {ForkID} from "@utils/Enums.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
@@ -30,7 +31,8 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
-/// DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 -vvv --fork-url optimism
+/// export OP_RPC_URL="${OP_RPC_URL}"
+/// DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 -vvv
 contract mipo00 is Proposal, CrossChainProposal, Configs {
     using Address for address;
 
@@ -66,7 +68,6 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
     }
 
     constructor() {
-        vm.selectFork(primaryForkId());
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(
                 string(
@@ -79,7 +80,23 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
+    }
 
+    /// @dev change this if wanting to deploy to a different chain
+    /// double check addresses and change the WORMHOLE_CORE to the correct chain
+    function primaryForkId()
+        public
+        pure
+        override(MIPProposal)
+        returns (ForkID)
+    {
+        return ForkID.Optimism;
+    }
+
+    /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
+    /// listed to be able to deploy on base. This allows the deployer to be able to initialize the
+    /// markets with a balance to avoid exploits
+    function deploy(Addresses addresses, address deployer) public override {
         _setMTokenConfiguration(
             "./src/proposals/mips/mip-o00/optimismMTokens.json"
         );
@@ -97,23 +114,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 emissions[block.chainid].length,
             "emissions length not equal to cTokenConfigurations length"
         );
-    }
 
-    /// @dev change this if wanting to deploy to a different chain
-    /// double check addresses and change the WORMHOLE_CORE to the correct chain
-    function primaryForkId()
-        public
-        view
-        override(MIPProposal)
-        returns (uint256)
-    {
-        return optimismForkId;
-    }
-
-    /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
-    /// listed to be able to deploy on base. This allows the deployer to be able to initialize the
-    /// markets with a balance to avoid exploits
-    function deploy(Addresses addresses, address deployer) public override {
         /// ------- TemporalGovernor -------
         {
             TemporalGovernor.TrustedSender[]
