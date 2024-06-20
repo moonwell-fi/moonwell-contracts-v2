@@ -35,11 +35,11 @@ contract HybridProposalExample is
     }
 
     function primaryForkId() public pure override returns (PrimaryFork) {
-        return PrimaryFork.Base;
+        return PrimaryFork.Moonbeam;
     }
 
     function build(Addresses addresses) public override {
-        vm.selectFork(uint256(PrimaryFork.Base));
+        vm.selectFork(uint256(primaryFork()));
 
         /// action to call the Wormhole Core contract on Base from Moonbeam
         /// this is incorrect and will cause a failure in the HybridProposal contract
@@ -56,7 +56,7 @@ contract HybridProposalExample is
             PrimaryFork.Moonbeam
         );
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(uint256(PrimaryFork.Base));
 
         /// ensure no existing reward configs have already been loaded from Configs.sol
         require(
