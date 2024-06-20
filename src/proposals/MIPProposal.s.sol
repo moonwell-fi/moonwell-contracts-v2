@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
+import {ForkID} from "@utils/Enums.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
@@ -21,17 +22,12 @@ to verify after deploy:
 
 */
 abstract contract MIPProposal is Script {
-    /// @notice fork ID for base
-    uint256 public baseForkId;
-
-    /// @notice fork ID for moonbeam
-    uint256 public moonbeamForkId;
+    Addresses public addresses;
 
     /// @notice fork ID for optimism
     uint256 public optimismForkId;
 
     uint256 private PRIVATE_KEY;
-    Addresses private addresses;
 
     bool private DEBUG;
     bool private DO_DEPLOY;
@@ -58,16 +54,14 @@ abstract contract MIPProposal is Script {
     }
 
     function run() public virtual {
+        vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
+        vm.createFork(vm.envString("BASE_RPC_URL"));
+        vm.createFork(vm.envString("OP_RPC_URL"));
+
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        setForkIds(
-            vm.createFork(vm.envOr("BASE_RPC_URL", string("base"))),
-            vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam"))),
-            vm.createFork(vm.envString("OP_RPC_URL"))
-        );
-
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
 
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
@@ -93,9 +87,9 @@ abstract contract MIPProposal is Script {
         }
     }
 
-    function name() external view virtual returns (string memory);
+    function primaryForkId() public pure virtual returns (ForkID);
 
-    function primaryForkId() public view virtual returns (uint256);
+    function name() external view virtual returns (string memory);
 
     function deploy(Addresses, address) public virtual;
 
@@ -121,24 +115,6 @@ abstract contract MIPProposal is Script {
         Addresses,
         address
     ) public virtual returns (uint256 proposalId);
-
-    /// @notice set the fork IDs for base and moonbeam
-    function setForkIds(
-        uint256 _baseForkId,
-        uint256 _moonbeamForkId,
-        uint256 _optimismForkId
-    ) public {
-        require(
-            _baseForkId != _moonbeamForkId &&
-                _baseForkId != _optimismForkId &&
-                _moonbeamForkId != _optimismForkId,
-            "setForkIds: fork IDs cannot be the same"
-        );
-
-        baseForkId = _baseForkId;
-        moonbeamForkId = _moonbeamForkId;
-        optimismForkId = _optimismForkId;
-    }
 
     /// @dev Print recorded addresses
     function _printAddressesChanges() private view {

@@ -8,6 +8,7 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "@forge-std/Test.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
+import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Address} from "@utils/Address.sol";
@@ -66,7 +67,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
     }
 
     constructor() {
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(
                 string(
@@ -101,13 +102,8 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
     /// @dev change this if wanting to deploy to a different chain
     /// double check addresses and change the WORMHOLE_CORE to the correct chain
-    function primaryForkId()
-        public
-        view
-        override(MIPProposal)
-        returns (uint256)
-    {
-        return optimismForkId;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Optimism;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as

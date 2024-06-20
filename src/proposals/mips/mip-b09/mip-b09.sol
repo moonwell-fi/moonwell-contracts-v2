@@ -8,6 +8,7 @@ import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 contract mipb09 is Proposal, CrossChainProposal, Configs {
     string public constant override name = "MIP-b09";
@@ -30,9 +31,8 @@ contract mipb09 is Proposal, CrossChainProposal, Configs {
         _setProposalDescription(proposalDescription);
     }
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Base;
     }
 
     function _validateCF(

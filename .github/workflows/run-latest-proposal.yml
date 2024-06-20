@@ -1,9 +1,10 @@
 name: "Run Latest Proposal"
 
 env:
-    FOUNDRY_PROFILE: "ci"
-    BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
-    MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
+  FOUNDRY_PROFILE: "ci"
+  OP_RPC_URL: ${{secrets.OP_RPC_URL}}
+  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+  MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
 
 on:
   workflow_dispatch:

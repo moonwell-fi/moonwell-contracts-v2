@@ -10,6 +10,7 @@ import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
 abstract contract CrossChainProposal is
@@ -267,7 +268,9 @@ abstract contract CrossChainProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        vm.selectFork(moonbeamForkId);
+        // CrossChainProposal is only used for proposals that the primery type
+        // is Base, this is a temporary solution until we get rid of CrossChainProposal
+        vm.selectFork(uint256(ForkID.Moonbeam));
 
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
@@ -311,7 +314,7 @@ abstract contract CrossChainProposal is
             proposalCount--;
         }
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 
     /// @notice print the actions that will be executed by the proposal

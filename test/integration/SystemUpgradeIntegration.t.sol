@@ -4,15 +4,22 @@ pragma solidity 0.8.19;
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import "@forge-std/Test.sol";
-
 import {Configs} from "@proposals/Configs.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {_IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
+import {ForkID} from "@utils/Enums.sol";
 
-contract SystemUpgradeLiveSystemBaseTest is PostProposalCheck, Configs {
+contract SystemUpgradeLiveSystemBasePostProposalTest is
+    PostProposalCheck,
+    Configs
+{
+    function setUp() public override {
+        super.setUp();
+
+        vm.selectFork(uint256(ForkID.Base));
+    }
     function testSystemUpgradeAsTemporalGovernorSucceeds() public {
         address newProxyImplementation = address(this);
 

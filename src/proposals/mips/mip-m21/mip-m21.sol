@@ -7,6 +7,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 contract mipm21 is GovernanceProposal {
     string public constant override name = "MIP-M19";
@@ -18,9 +19,8 @@ contract mipm21 is GovernanceProposal {
         _setProposalDescription(proposalDescription);
     }
 
-    /// @notice proposal's actions all happen on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Moonbeam;
     }
 
     function deploy(Addresses addresses, address) public override {
