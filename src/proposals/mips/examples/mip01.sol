@@ -10,6 +10,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// This MIP sets the reward speeds for different markets in the MultiRewardDistributor
 /// contract. It is intended to be used as a template for future MIPs that need to set reward speeds.
@@ -18,9 +19,8 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 contract mipb01 is Proposal, CrossChainProposal, Configs {
     string public constant override name = "MIP01";
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Base;
     }
 
     function deploy(Addresses addresses, address) public override {}

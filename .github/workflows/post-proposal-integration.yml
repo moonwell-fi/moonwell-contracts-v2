@@ -1,4 +1,4 @@
-name: Foundry multichain integration tests
+name: Foundry post proposal integration tests
 
 on: [pull_request]
 
@@ -8,8 +8,8 @@ env:
   OP_RPC_URL: ${{secrets.OP_RPC_URL}}
 
 jobs:
-  run-moonbeam-tests:
-    name: moonbeam-integration-tests
+  run-tests:
+    name: post-proposal-integration-tests
     runs-on: ubuntu-latest
 
     steps:
@@ -21,5 +21,6 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Test Proposals Multichain
-        run: time forge test --match-contract MultichainProposalTest -vvv
+      - name: Integration Tests Base Mainnet
+        run:
+          time forge test --match-contract PostProposalTest -vvv --ffi

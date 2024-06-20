@@ -143,9 +143,7 @@ contract PostProposalCheck is Test {
         Proposal proposal = Proposal(deployCode(output));
         vm.makePersistent(address(proposal));
 
-        proposal.setForkIds(baseForkId, moonbeamForkId, optimismForkId);
-
-        vm.selectFork(proposal.primaryForkId());
+        vm.selectFork(uint256(proposal.primaryForkId()));
 
         address deployer = address(this);
 

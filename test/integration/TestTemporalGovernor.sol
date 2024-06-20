@@ -9,6 +9,7 @@ import {Configs} from "@proposals/Configs.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     string public constant override name = "TEST_TEMPORAL_GOVERNOR";
@@ -22,9 +23,8 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         _setProposalDescription(proposalDescription);
     }
 
-    /// @notice proposal's actions mostly happen on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Moonbeam;
     }
 
     /// run this action through the Artemis Governor
@@ -48,15 +48,15 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(baseForkId);
+        vm.selectFork(uint256(ForkID.Base));
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(baseForkId);
+        vm.selectFork(uint256(ForkID.Base));
 
         Comptroller unitroller = Comptroller(
             addresses.getAddress("UNITROLLER")
@@ -66,5 +66,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
             addresses.getAddress("MOONWELL_WETH")
         );
         assertEq(collateralFactorMantissa, collateralFactor);
+
+        vm.selectFork(uint256(primaryForkId()));
     }
 }

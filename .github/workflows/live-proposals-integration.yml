@@ -5,6 +5,7 @@ env:
   OP_RPC_URL: ${{secrets.OP_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
+  OP_RPC_URL: ${{secrets.OP_RPC_URL}}
 
 jobs:
   run-live-proposals-integration-tests:

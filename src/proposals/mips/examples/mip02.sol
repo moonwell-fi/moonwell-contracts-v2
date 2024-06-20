@@ -16,6 +16,7 @@ import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// @notice This MIP deploys and lists new MTokens for the protocol.
 /// It reads in the configuration from Config.sol, which reads in the mainnetMTokens.json file and deploys the MTokens specified in that file.
@@ -31,9 +32,8 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
         address unitroller;
     }
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (ForkID) {
+        return ForkID.Base;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
