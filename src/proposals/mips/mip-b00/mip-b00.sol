@@ -14,7 +14,6 @@ import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {MIPProposal} from "@proposals/MIPProposal.s.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
