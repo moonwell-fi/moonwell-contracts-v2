@@ -68,6 +68,10 @@ contract ChainIds {
 
         sendingChainIdToReceivingChainId[optimismChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking optimism, and sending from moonbeam
 
+        sendingChainIdToReceivingChainId[
+            optimismSepoliaChainId
+        ] = moonBaseChainId; /// simulate a cross chain proposal by forking optimism testnet, and sending from moonbase testnet
+
         sendingChainIdToReceivingChainId[localChainId] = localChainId; // unit tests
 
         chainIdTemporalGovTimelock[baseSepoliaChainId] = 0; /// no wait on testnet
