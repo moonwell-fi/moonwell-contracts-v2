@@ -10,13 +10,15 @@ import "@forge-std/Test.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
+import {Address} from "@utils/Address.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MIPProposal} from "@proposals/MIPProposal.s.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {MIPProposal} from "@proposals/MIPProposal.s.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
+import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
+import {MWethDelegate} from "@protocol/MWethDelegate.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
@@ -24,11 +26,11 @@ import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
-import {Address} from "@utils/Address.sol";
-
+/// DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 -vvv --fork-url optimism
 contract mipo00 is Proposal, CrossChainProposal, Configs {
     using Address for address;
 
@@ -48,14 +50,14 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
     bytes32 public constant _IMPLEMENTATION_SLOT =
         0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
-    /// --------------------------------------------------------------------------------------------------///
-    /// Chain Name	       Wormhole Chain ID   Network ID	Address                                      |///
-    ///  Ethereum (Goerli)   	  2	                5	    0x706abc4E45D419950511e474C7B9Ed348A4a716c   |///
-    ///  Ethereum (Sepolia)	  10002          11155111	    0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78   |///
-    ///  Base	                 30    	        84531	    0xA31aa3FDb7aF7Db93d18DDA4e19F811342EDF780   |///
-    ///  Moonbeam	             16	             1284 	    0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3   |///
-    ///  Moonbase alpha          16	             1287	    0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901
-    /// --------------------------------------------------------------------------------------------------///
+    /// -------------------------------------------------------------------------------------------------- ///
+    /// Chain Name	       Wormhole Chain ID   Network ID	Address                                      | ///
+    ///  Ethereum (Goerli)   	  2	                5	    0x706abc4E45D419950511e474C7B9Ed348A4a716c   | ///
+    ///  Ethereum (Sepolia)	  10002          11155111	    0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78   | ///
+    ///  Base	                 30    	        84531	    0xA31aa3FDb7aF7Db93d18DDA4e19F811342EDF780   | ///
+    ///  Moonbeam	             16	             1284 	    0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3   | ///
+    ///  Moonbase alpha          16	             1287	    0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901   | ///
+    /// -------------------------------------------------------------------------------------------------- ///
 
     struct CTokenAddresses {
         address mTokenImpl;
@@ -105,8 +107,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
         override(MIPProposal)
         returns (uint256)
     {
-        /// TODO change this to optimism once this change lands
-        return baseForkId;
+        return optimismForkId;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
@@ -183,12 +184,20 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 true
             );
         }
+        WethUnwrapper unwrapper = new WethUnwrapper(
+            addresses.getAddress("WETH")
+        );
+
+        MWethDelegate delegate = new MWethDelegate(address(unwrapper));
+
+        addresses.addAddress("WETH_UNWRAPPER", address(unwrapper), true);
+        addresses.addAddress("MWETH_IMPLEMENTATION", address(delegate), true);
 
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
-        uint256 cTokenConfigsLength = cTokenConfigs.length;
+
         //// create all of the CTokens according to the configuration in Config.sol
-        for (uint256 i = 0; i < cTokenConfigsLength; i++) {
+        for (uint256 i = 0; i < cTokenConfigs.length; i++) {
             Configs.CTokenConfiguration memory config = cTokenConfigs[i];
             /// ----- Jump Rate IRM -------
             {
@@ -214,7 +223,11 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
             /// stack isn't too deep
             CTokenAddresses memory addr = CTokenAddresses({
-                mTokenImpl: addresses.getAddress("MTOKEN_IMPLEMENTATION"),
+                mTokenImpl: keccak256(
+                    abi.encodePacked(config.addressesString)
+                ) == keccak256(abi.encodePacked("MOONWELL_WETH"))
+                    ? addresses.getAddress("MWETH_IMPLEMENTATION")
+                    : addresses.getAddress("MTOKEN_IMPLEMENTATION"),
                 irModel: addresses.getAddress(
                     string(
                         abi.encodePacked(
@@ -235,6 +248,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             uint256 initialExchangeRate = (10 **
                 (ERC20(addresses.getAddress(config.tokenAddressName))
                     .decimals() + 8)) * 2;
+
             MErc20Delegator mToken = new MErc20Delegator(
                 addresses.getAddress(config.tokenAddressName),
                 ComptrollerInterface(addr.unitroller),
@@ -247,6 +261,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 addr.mTokenImpl,
                 ""
             );
+
             addresses.addAddress(config.addressesString, address(mToken), true);
         }
 
@@ -254,7 +269,6 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
         ChainlinkOracle oracle = new ChainlinkOracle("null_asset");
         addresses.addAddress("CHAINLINK_ORACLE", address(oracle), true);
 
-        /// TODO remove if WETH mToken does not make it into this proposal
         WETHRouter router = new WETHRouter(
             WETH9(addresses.getAddress("WETH")),
             MErc20(addresses.getAddress("MOONWELL_WETH"))
@@ -601,7 +615,39 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             );
         }
 
-        /// TODO remove if WETH delegate does not make it into this proposal
+        /// TODO test mWETH delegate logic contract
+        /// assert weth unwrapper is properly tied to the weth contract and
+        /// that mWETH delegate is tied to the unwrapper
+
+        {
+            WethUnwrapper unwrapper = WethUnwrapper(
+                payable(addresses.getAddress("WETH_UNWRAPPER"))
+            );
+            assertEq(
+                unwrapper.weth(),
+                addresses.getAddress("WETH"),
+                "weth incorrectly set in unwrapper"
+            );
+
+            MWethDelegate delegate = MWethDelegate(
+                addresses.getAddress("MWETH_IMPLEMENTATION")
+            );
+            assertEq(
+                delegate.wethUnwrapper(),
+                address(unwrapper),
+                "unwrapper incorrectly set in delegate"
+            );
+
+            MWethDelegate mToken = MWethDelegate(
+                addresses.getAddress("MOONWELL_WETH")
+            );
+            assertEq(
+                mToken.wethUnwrapper(),
+                address(unwrapper),
+                "unwrapper incorrectly set in mToken proxy"
+            );
+        }
+
         /// assert WETH router is properly wired into the system
         {
             WETHRouter router = WETHRouter(
@@ -687,12 +733,14 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 chainIdToWormHoleId[block.chainid],
                 addresses
                     .getAddress(
-                        "MOONBEAM_TIMELOCK",
+                        "MULTICHAIN_GOVERNOR_PROXY",
                         sendingChainIdToReceivingChainId[block.chainid]
                     )
                     .toBytes()
-            )
+            ),
+            "multichain governor not trusted"
         );
+
         {
             Comptroller comptroller = Comptroller(
                 addresses.getAddress("UNITROLLER")
@@ -789,14 +837,30 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                         addresses.getAddress(config.tokenAddressName)
                     );
 
-                    /// assert mToken delegate is uniform across contracts
-                    assertEq(
-                        address(
-                            MErc20Delegator(payable(address(mToken)))
-                                .implementation()
-                        ),
-                        addresses.getAddress("MTOKEN_IMPLEMENTATION")
-                    );
+                    if (
+                        address(mToken.underlying()) ==
+                        addresses.getAddress("WETH")
+                    ) {
+                        /// assert mToken delegate for MOONWELL_WETH is mWETH_DELEGATE
+                        assertEq(
+                            address(
+                                MErc20Delegator(payable(address(mToken)))
+                                    .implementation()
+                            ),
+                            addresses.getAddress("MWETH_IMPLEMENTATION"),
+                            "mweth delegate implementation address incorrect"
+                        );
+                    } else {
+                        /// assert mToken delegate is uniform across contracts
+                        assertEq(
+                            address(
+                                MErc20Delegator(payable(address(mToken)))
+                                    .implementation()
+                            ),
+                            addresses.getAddress("MTOKEN_IMPLEMENTATION"),
+                            "mtoken delegate implementation address incorrect"
+                        );
+                    }
 
                     uint256 initialExchangeRate = (10 **
                         (8 +
