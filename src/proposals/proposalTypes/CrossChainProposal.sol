@@ -67,12 +67,13 @@ abstract contract CrossChainProposal is
             (address[] memory targets, , ) = getTargetsPayloadsValues(
                 addresses
             );
-            checkBaseActions(targets, addresses);
+
             checkMoonbeamBaseActions(
                 addresses,
                 actions,
                 new ProposalAction[](0)
             );
+            checkBaseOptimismActions(targets, addresses);
 
             bytes memory proposalCalldata = getMultichainGovernorCalldata(
                 temporalGovAddress,
@@ -191,8 +192,8 @@ abstract contract CrossChainProposal is
         );
 
         require(
-            timelockCalldata.length <= 10_000,
-            "getTemporalGovCalldata: Timelock publish message calldata max size of 10kb exceeded"
+            timelockCalldata.length <= 25_000,
+            "getTemporalGovCalldata: Timelock publish message calldata max size of 25kb exceeded"
         );
     }
 
