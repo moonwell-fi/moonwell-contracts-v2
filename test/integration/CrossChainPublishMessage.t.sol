@@ -71,12 +71,12 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             );
 
             //  only run tests against a base proposal
-            if (proposal.primaryForkId() == moonbeamForkId) {
+            if (uint256(proposal.primaryForkId()) == moonbeamForkId) {
                 return;
             }
 
             // At this point the primaryForkId should not be moonbeam
-            vm.selectFork(proposal.primaryForkId());
+            vm.selectFork(uint256(proposal.primaryForkId()));
             proposal.build(addresses);
 
             // returns the correct address as block.chainid is base/base sepolia
@@ -176,12 +176,12 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             );
 
             //  only run tests against a base proposal
-            if (proposal.primaryForkId() == moonbeamForkId) {
+            if (uint256(proposal.primaryForkId()) == moonbeamForkId) {
                 return;
             }
 
             // At this point the primaryForkId should not be moonbeam
-            vm.selectFork(proposal.primaryForkId());
+            vm.selectFork(uint256(proposal.primaryForkId()));
             (
                 address[] memory targets, /// contracts to call /// native token amount to send is ignored as temporal gov cannot accept eth
                 ,

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
@@ -147,9 +148,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     Proposal proposal = Proposal(deployCode(proposalsPath[j]));
                     vm.makePersistent(address(proposal));
 
-                    proposal.setForkIds(baseForkId, moonbeamForkId);
-
-                    vm.selectFork(proposal.primaryForkId());
+                    vm.selectFork(uint256(proposal.primaryForkId()));
 
                     // runs pre build mock and build
                     proposal.preBuildMock(addresses);
@@ -163,7 +162,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         vm.selectFork(moonbeamForkId);
                         governorContract.execute(proposalId);
 
-                        vm.selectFork(proposal.primaryForkId());
+                        vm.selectFork(uint256(proposal.primaryForkId()));
                         proposal.validate(addresses, address(proposal));
                         break;
                     }
@@ -238,8 +237,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         );
                         vm.makePersistent(address(proposal));
 
-                        proposal.setForkIds(baseForkId, moonbeamForkId);
-                        vm.selectFork(proposal.primaryForkId());
+                        vm.selectFork(uint256(proposal.primaryForkId()));
 
                         // runs pre build mock and build
                         proposal.preBuildMock(addresses);

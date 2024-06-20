@@ -17,6 +17,7 @@ import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {Address} from "@utils/Address.sol";
+import {ForkID} from "@utils/Enums.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -58,11 +59,6 @@ abstract contract HybridProposal is
         uint8 consistencyLevel
     );
 
-    enum ProposalType {
-        Moonbeam,
-        Base
-    }
-
     /// @notice set the governance proposal's description
     function _setProposalDescription(
         bytes memory newProposalDescription
@@ -79,14 +75,14 @@ abstract contract HybridProposal is
         address target,
         bytes memory data,
         string memory description,
-        ProposalType proposalType
+        ForkID proposalType
     ) internal {
         _pushHybridAction(
             target,
             0,
             data,
             description,
-            proposalType == ProposalType.Moonbeam
+            proposalType == ForkID.Moonbeam
         );
     }
 
@@ -101,14 +97,14 @@ abstract contract HybridProposal is
         uint256 value,
         bytes memory data,
         string memory description,
-        ProposalType proposalType
+        ForkID proposalType
     ) internal {
         _pushHybridAction(
             target,
             value,
             data,
             description,
-            proposalType == ProposalType.Moonbeam
+            proposalType == ForkID.Moonbeam
         );
     }
 
@@ -416,7 +412,7 @@ abstract contract HybridProposal is
     /// @param addresses the addresses contract
     function getCalldata(
         Addresses addresses
-    ) public view returns (bytes memory) {
+    ) public view virtual returns (bytes memory) {
         require(
             bytes(PROPOSAL_DESCRIPTION).length > 0,
             "No proposal description"
@@ -471,7 +467,7 @@ abstract contract HybridProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(uint256(ForkID.Moonbeam));
 
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 
@@ -502,7 +498,7 @@ abstract contract HybridProposal is
             proposalCount--;
         }
 
-        vm.selectFork(primaryForkId());
+        vm.selectFork(uint256(primaryForkId()));
     }
 
     /// @notice Runs the proposal on moonbeam, verifying the actions through the hook

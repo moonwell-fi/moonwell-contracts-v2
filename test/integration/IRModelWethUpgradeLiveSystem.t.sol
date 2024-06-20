@@ -12,8 +12,12 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {ForkID} from "@utils/Enums.sol";
 
-contract IRModelWethUpgradeLiveSystemBaseTest is PostProposalCheck, Configs {
+contract IRModelWethUpgradeLiveSystemBasePostProposalTest is
+    PostProposalCheck,
+    Configs
+{
     Comptroller comptroller;
     MErc20 mUSDbC;
     MErc20 mWeth;
@@ -21,6 +25,8 @@ contract IRModelWethUpgradeLiveSystemBaseTest is PostProposalCheck, Configs {
 
     function setUp() public override {
         super.setUp();
+
+        vm.selectFork(uint256(ForkID.Base));
 
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mUSDbC = MErc20(addresses.getAddress("MOONWELL_USDBC"));
