@@ -31,6 +31,10 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     /// @notice fork ID for base
     uint256 public baseForkId = vm.createFork(vm.envString("BASE_RPC_URL"));
 
+    /// @notice fork ID for optimism
+    uint256 public optimismForkId =
+        vm.createFork(vm.envString("OPTIMISM_RPC_URL"));
+
     /// @notice Multichain Governor address
     address governor;
 
@@ -147,7 +151,11 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     Proposal proposal = Proposal(deployCode(proposalsPath[j]));
                     vm.makePersistent(address(proposal));
 
-                    proposal.setForkIds(baseForkId, moonbeamForkId);
+                    proposal.setForkIds(
+                        baseForkId,
+                        moonbeamForkId,
+                        optimismForkId
+                    );
 
                     vm.selectFork(proposal.primaryForkId());
 
@@ -194,7 +202,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         "Temporal Governor address mismatch"
                     );
 
-                    checkBaseActions(baseTargets, addresses);
+                    checkBaseOptimismActions(baseTargets, addresses);
                 }
 
                 bytes memory vaa = generateVAA(
@@ -238,7 +246,11 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         );
                         vm.makePersistent(address(proposal));
 
-                        proposal.setForkIds(baseForkId, moonbeamForkId);
+                        proposal.setForkIds(
+                            baseForkId,
+                            moonbeamForkId,
+                            optimismForkId
+                        );
                         vm.selectFork(proposal.primaryForkId());
 
                         // runs pre build mock and build
