@@ -36,7 +36,6 @@ contract DeployWethUnwrapper is Script {
         vm.startBroadcast(PRIVATE_KEY);
 
         WethUnwrapper unwrapper = new WethUnwrapper(
-            addresses.getAddress("MOONWELL_WETH"),
             addresses.getAddress("WETH")
         );
 
