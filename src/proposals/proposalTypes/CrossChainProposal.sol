@@ -263,7 +263,7 @@ abstract contract CrossChainProposal is
     /// @notice search for a on-chain proposal that matches the proposal calldata
     /// @param addresses the addresses contract
     /// @param governor the governor address
-    // /// @return proposalId the proposal id, 0 if no proposal is found
+    /// @return proposalId the proposal id, 0 if no proposal is found
     function getProposalId(
         Addresses addresses,
         address governor
