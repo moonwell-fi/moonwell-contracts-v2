@@ -277,7 +277,21 @@ abstract contract CrossChainProposal is
             sendingChainIdToReceivingChainId[block.chainid]
         );
 
-        uint256 proposalCount = MultichainGovernor(governor).proposalCount();
+        uint256 proposalCount = onchainProposalId != 0
+            ? onchainProposalId
+            : MultichainGovernor(governor).proposalCount();
+
+        bytes memory proposalCalldata = getMultichainGovernorCalldata(
+            temporalGovernor,
+            addresses.getAddress(
+                block.chainid == moonBeamChainId
+                    ? "WORMHOLE_CORE_MOONBEAM"
+                    : "WORMHOLE_CORE_MOONBASE",
+                block.chainid == moonBeamChainId
+                    ? moonBeamChainId
+                    : moonBaseChainId
+            )
+        );
 
         while (proposalCount > 0) {
             (
@@ -292,18 +306,6 @@ abstract contract CrossChainProposal is
                 values,
                 calldatas,
                 PROPOSAL_DESCRIPTION
-            );
-
-            bytes memory proposalCalldata = getMultichainGovernorCalldata(
-                temporalGovernor,
-                addresses.getAddress(
-                    block.chainid == moonBeamChainId
-                        ? "WORMHOLE_CORE_MOONBEAM"
-                        : "WORMHOLE_CORE_MOONBASE",
-                    block.chainid == moonBeamChainId
-                        ? moonBeamChainId
-                        : moonBaseChainId
-                )
             );
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {

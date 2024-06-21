@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ForkID} from "@utils/Enums.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipm21 is GovernanceProposal {
     string public constant override name = "MIP-M19";

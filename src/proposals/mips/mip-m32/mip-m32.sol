@@ -15,7 +15,7 @@ import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {ForkID} from "@utils/Enums.sol";
 
 contract mipm32 is Configs, HybridProposal, ParameterValidation {
-    string public constant override name = "MIP-M30";
+    string public constant override name = "MIP-M32";
 
     uint256 public constant NEW_M_WBTCWH_RESERVE_FACTOR = 0.35e18;
     uint256 public constant NEW_M_WBTCWH_COLLATERAL_FACTOR = 0.31e18;
@@ -25,6 +25,8 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-m32/MIP-M32.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 20;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

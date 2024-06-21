@@ -102,7 +102,25 @@ abstract contract GovernanceProposal is Proposal {
         MoonwellArtemisGovernor governorContract = MoonwellArtemisGovernor(
             governor
         );
-        uint256 proposalCount = MultichainGovernor(governor).proposalCount();
+        uint256 proposalCount = onchainProposalId != 0
+            ? onchainProposalId
+            : MultichainGovernor(governor).proposalCount();
+
+        (
+            address[] memory proposalTargets,
+            uint256[] memory proposalValues,
+            string[] memory proposalSignatures,
+            bytes[] memory proposalCalldatas
+        ) = _getActions();
+
+        bytes memory governorCalldata = abi.encodeWithSignature(
+            "propose(address[],uint256[],string[],bytes[],string)",
+            proposalTargets,
+            proposalValues,
+            proposalSignatures,
+            proposalCalldatas,
+            PROPOSAL_DESCRIPTION
+        );
 
         while (proposalCount > 0) {
             (
@@ -118,22 +136,6 @@ abstract contract GovernanceProposal is Proposal {
                 onchainValues,
                 onchainSignatures,
                 onchainCalldatas,
-                PROPOSAL_DESCRIPTION
-            );
-
-            (
-                address[] memory proposalTargets,
-                uint256[] memory proposalValues,
-                string[] memory proposalSignatures,
-                bytes[] memory proposalCalldatas
-            ) = _getActions();
-
-            bytes memory governorCalldata = abi.encodeWithSignature(
-                "propose(address[],uint256[],string[],bytes[],string)",
-                proposalTargets,
-                proposalValues,
-                proposalSignatures,
-                proposalCalldatas,
                 PROPOSAL_DESCRIPTION
             );
 

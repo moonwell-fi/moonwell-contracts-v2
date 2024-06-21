@@ -22,6 +22,8 @@ contract mipb13 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b13/MIP-B13.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 71;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -71,7 +73,7 @@ contract mipb13 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             addresses.getAddress("MOONWELL_cbETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_cbETH")
+                0xE1Dd796dBEB5A67CE37CbC52dCD164D0535c901E
             ),
             "Set interest rate model for Moonwell cbETH to updated rate model"
         );
@@ -80,7 +82,7 @@ contract mipb13 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC")
+                0x24bdAcf6bbEBAf567123Da16CDb79A266597e92B
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
