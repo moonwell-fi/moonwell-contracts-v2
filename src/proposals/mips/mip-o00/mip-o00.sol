@@ -84,17 +84,6 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
     /// @dev change this if wanting to deploy to a different chain
     /// double check addresses and change the WORMHOLE_CORE to the correct chain
-    function primaryForkId()
-        public
-        pure
-        override(MIPProposal)
-        returns (ForkID)
-    {
-        return ForkID.Optimism;
-    }
-
-    /// @dev change this if wanting to deploy to a different chain
-    /// double check addresses and change the WORMHOLE_CORE to the correct chain
     function primaryForkId() public pure override returns (ForkID) {
         return ForkID.Optimism;
     }
