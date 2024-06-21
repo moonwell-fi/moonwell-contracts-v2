@@ -134,16 +134,30 @@ contract Configs is Test {
         }
         if (block.chainid == _optimismSepoliaChainId) {
             // allocate tokens to temporal governor
+            FaucetTokenWithPermit usdc = new FaucetTokenWithPermit(
+                1e18,
+                "USD Coin",
+                6, /// 6 decimals
+                "USDC"
+            );
 
-            // USDC
-            address usdc = addresses.getAddress("USDC");
+            addresses.addAddress("USDC", address(usdc), true);
+
+            FaucetTokenWithPermit wsteth = new FaucetTokenWithPermit(
+                1e18,
+                "wstETH",
+                18, /// 18 decimals
+                "wstETH"
+            );
+
+            addresses.addAddress("wstETH", address(wsteth), true);
+
             FaucetTokenWithPermit(usdc).allocateTo(
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 initialMintAmount
             );
 
             // wstETH
-            address wsteth = addresses.getAddress("wstETH");
             FaucetTokenWithPermit(wsteth).allocateTo(
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 initialMintAmount
@@ -268,28 +282,6 @@ contract Configs is Test {
                     true
                 );
             }
-
-            return;
-        }
-
-        if (block.chainid == _optimismSepoliaChainId) {
-            FaucetTokenWithPermit usdc = new FaucetTokenWithPermit(
-                1e18,
-                "USD Coin",
-                6, /// 6 decimals
-                "USDC"
-            );
-
-            addresses.addAddress("USDC", address(usdc), true);
-
-            FaucetTokenWithPermit wsteth = new FaucetTokenWithPermit(
-                1e18,
-                "wstETH",
-                18, /// 18 decimals
-                "wstETH"
-            );
-
-            addresses.addAddress("wstETH", address(wsteth), true);
 
             return;
         }

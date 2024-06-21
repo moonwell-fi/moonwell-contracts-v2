@@ -25,18 +25,13 @@
         "isContract": true
     },
     {
-        "addr": "0x5fd84259d66cd46123540766be93dfe6d43130d7",
-        "name": "USDC",
-        "isContract": true
-    },
-    {
         "addr": "0x74a4a85c611679b73f402b36c0f84a7d2ccdfda3",
         "name": "WETH",
         "isContract": true
     },
     {
-        "addr": "0x91eC29AB1efedb051253A3283E7e3b3B517A079f",
-        "name": "wstETH",
-        "isContract": true
+        "addr": "0x354804005a80e5f87cf43beD9Bd4fCc6512Be98c",
+        "name": "OPTIMISM_SECURITY_COUNCIL",
+        "isContract": false
     }
 ]
