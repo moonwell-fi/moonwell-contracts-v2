@@ -33,5 +33,10 @@
         "addr": "0x354804005a80e5f87cf43beD9Bd4fCc6512Be98c",
         "name": "OPTIMISM_SECURITY_COUNCIL",
         "isContract": false
+    },
+    {
+        "addr": "0x354804005a80e5f87cf43beD9Bd4fCc6512Be98c",
+        "name": "OPTIMISM_CAP_GUARDIAN",
+        "isContract": false
     }
 ]
