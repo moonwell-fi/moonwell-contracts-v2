@@ -81,3 +81,31 @@ contract ChainIds {
         chainIdTemporalGovTimelock[optimismChainId] = 1 days;
     }
 }
+
+library ChainLib {
+    uint256 public constant moonbeamForkId = 0;
+    uint256 public constant baseForkId = 1;
+    uint256 public constant optimismForkId = 2;
+
+    uint256 public constant moonbeamChainId = 1284;
+    uint256 public constant baseChainId = 8453;
+    uint256 public constant optimismChainId = 10;
+
+    uint256 public constant moonbaseChainId = 1287;
+    uint256 public constant baseSepoliaChainId = 84532;
+    uint256 public constant optimismSepoliaChainId = 11155420;
+
+    function toForkId(uint256 chainId) internal pure returns (uint256) {
+        if (chainId == moonbeamChainId || chainId == moonbaseChainId) {
+            return moonbeamForkId;
+        } else if (chainId == baseChainId || chainId == baseSepoliaChainId) {
+            return baseForkId;
+        } else if (
+            chainId == optimismChainId || chainId == optimismSepoliaChainId
+        ) {
+            return optimismForkId;
+        } else {
+            revert("ChainLib: invalid chain id");
+        }
+    }
+}
