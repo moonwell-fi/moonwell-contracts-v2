@@ -7,17 +7,20 @@ import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract TestProposalCalldataGeneration is Test {
+    Addresses public addresses;
+
     function setUp() public {
         vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
         vm.createFork(vm.envString("BASE_RPC_URL"));
         vm.createFork(vm.envString("OP_RPC_URL"));
 
+        addresses = new Addresses();
+
         vm.makePersistent(address(this));
+        vm.makePersistent(address(addresses));
     }
 
     function testMoonbeamCalldataGeneration() public {
-        Addresses addresses = new Addresses();
-
         string[] memory inputs = new string[](1);
         inputs[0] = "./get-mip-m-proposals.sh";
 
@@ -67,14 +70,16 @@ contract TestProposalCalldataGeneration is Test {
                     proposalContract.name()
                 );
             } else {
-                console.log("Found Proposal ID for ", proposalContract.name());
+                console.log(
+                    "Found Proposal ID for %s, %d",
+                    proposalContract.name(),
+                    proposalId
+                );
             }
         }
     }
 
     function testBaseCalldataGeneration() public {
-        Addresses addresses = new Addresses();
-
         string[] memory inputs = new string[](1);
         inputs[0] = "./get-mip-b-proposals.sh";
 
@@ -124,7 +129,11 @@ contract TestProposalCalldataGeneration is Test {
                     proposalContract.name()
                 );
             } else {
-                console.log("Found Proposal ID for ", proposalContract.name());
+                console.log(
+                    "Found Proposal ID for %s, %d",
+                    proposalContract.name(),
+                    proposalId
+                );
             }
         }
     }
