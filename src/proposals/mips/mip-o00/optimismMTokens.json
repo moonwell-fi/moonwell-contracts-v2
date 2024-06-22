@@ -38,7 +38,7 @@
         }
     },
     {
-        "initialMintAmount": 1e12,
+        "initialMintAmount": 1e18,
         "collateralFactor": 0,
         "reserveFactor": 0.15e18,
         "seizeShare": 0.03e18,

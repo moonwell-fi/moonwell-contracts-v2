@@ -88,10 +88,11 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
         return ForkID.Optimism;
     }
 
-    /// @notice the deployer should have both USDC, WETH and any other assets that will be started as
-    /// listed to be able to deploy on optimism. This allows the deployer to be able to initialize the
+    /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
+    /// listed to be able to deploy on base. This allows the deployer to be able to initialize the
     /// markets with a balance to avoid exploits
     function deploy(Addresses addresses, address deployer) public override {
+        /// MToken/Emission configurations
         _setMTokenConfiguration(
             "./src/proposals/mips/mip-o00/optimismMTokens.json"
         );
