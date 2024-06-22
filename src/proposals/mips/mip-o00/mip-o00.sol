@@ -7,6 +7,7 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
+import {ForkID} from "@utils/Enums.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
@@ -30,7 +31,8 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
-/// DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 -vvv --fork-url optimism
+/// DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true DO_RUN=true DO_VALIDATE=true
+// forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 -vvv --etherscan-api-key $OPSCAN_API_KEY --chain optimism-sepolia --broadcast
 contract mipo00 is Proposal, CrossChainProposal, Configs {
     using Address for address;
 
@@ -91,7 +93,6 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
     /// markets with a balance to avoid exploits
     function deploy(Addresses addresses, address deployer) public override {
         /// MToken/Emission configurations
-
         _setMTokenConfiguration(
             "./src/proposals/mips/mip-o00/optimismMTokens.json"
         );
