@@ -4,14 +4,14 @@ pragma solidity 0.8.19;
 import {Test} from "@forge-std/Test.sol";
 import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IAddresses} from "./IAddresses.sol";
-import {ChainLib} from "@test/utils/ChainIds.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 
 /// @notice This is a contract that stores addresses for different networks.
 /// It allows a project to have a single source of truth to get all the addresses
 /// for a given network.
 contract Addresses is IAddresses, Test {
     using Strings for uint256;
-    using ChainLib for uint256;
+    using ChainIds for uint256;
 
     struct Address {
         address addr;
