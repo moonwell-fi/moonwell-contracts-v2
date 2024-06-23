@@ -7,7 +7,6 @@ import {console} from "@forge-std/console.sol";
 import {ForkID} from "@utils/Enums.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {ITimelock} from "@protocol/interfaces/ITimelock.sol";
-import {IArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
