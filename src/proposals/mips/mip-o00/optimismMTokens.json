@@ -13,9 +13,9 @@
         "addressesString": "MOONWELL_USDC",
         "jrm": {
             "baseRatePerYear": 0,
-            "multiplierPerYear": 0.057e18,
-            "jumpMultiplierPerYear": 5.7e18,
-            "kink": 0.7e18
+            "multiplierPerYear": 0.075e18,
+            "jumpMultiplierPerYear": 2.5e18,
+            "kink": 0.8e18
         }
     },
     {
@@ -32,7 +32,7 @@
         "addressesString": "MOONWELL_USDT",
         "jrm": {
             "baseRatePerYear": 0,
-            "multiplierPerYear": 0.05e18,
+            "multiplierPerYear": 0.075e18,
             "jumpMultiplierPerYear": 2.5e18,
             "kink": 0.8e18
         }
@@ -51,7 +51,7 @@
         "addressesString": "MOONWELL_DAI",
         "jrm": {
             "baseRatePerYear": 0,
-            "multiplierPerYear": 0.05e18,
+            "multiplierPerYear": 0.075e18,
             "jumpMultiplierPerYear": 2.5e18,
             "kink": 0.8e18
         }
@@ -70,7 +70,7 @@
         "addressesString": "MOONWELL_WBTC",
         "jrm": {
             "baseRatePerYear": 0.02e18,
-            "multiplierPerYear": 0.15e18,
+            "multiplierPerYear": 0.065e18,
             "jumpMultiplierPerYear": 3e18,
             "kink": 0.6e18
         }
@@ -89,9 +89,9 @@
         "addressesString": "MOONWELL_WETH",
         "jrm": {
             "baseRatePerYear": 0.02e18,
-            "multiplierPerYear": 0.15e18,
-            "jumpMultiplierPerYear": 3e18,
-            "kink": 0.6e18
+            "multiplierPerYear": 0.055e18,
+            "jumpMultiplierPerYear": 5e18,
+            "kink": 0.8e18
         }
     },
     {
@@ -108,9 +108,9 @@
         "addressesString": "MOONWELL_wstETH",
         "jrm": {
             "baseRatePerYear": 0.02e18,
-            "multiplierPerYear": 0.15e18,
+            "multiplierPerYear": 0.065e18,
             "jumpMultiplierPerYear": 3e18,
-            "kink": 0.6e18
+            "kink": 0.45e18
         }
     },
     {
@@ -126,8 +126,8 @@
         "symbol": "mcbETH",
         "addressesString": "MOONWELL_cbETH",
         "jrm": {
-            "baseRatePerYear": 0.01e18,
-            "multiplierPerYear": 0.2e18,
+            "baseRatePerYear": 0.02e18,
+            "multiplierPerYear": 0.065e18,
             "jumpMultiplierPerYear": 3e18,
             "kink": 0.45e18
         }
@@ -145,8 +145,8 @@
         "symbol": "mrETH",
         "addressesString": "MOONWELL_rETH",
         "jrm": {
-            "baseRatePerYear": 0.01e18,
-            "multiplierPerYear": 0.2e18,
+            "baseRatePerYear": 0.02e18,
+            "multiplierPerYear": 0.065e18,
             "jumpMultiplierPerYear": 3e18,
             "kink": 0.45e18
         }
@@ -164,9 +164,9 @@
         "symbol": "mVELO",
         "addressesString": "MOONWELL_VELO",
         "jrm": {
-            "baseRatePerYear": 0.01e18,
-            "multiplierPerYear": 0.2e18,
-            "jumpMultiplierPerYear": 3e18,
+            "baseRatePerYear": 0.02e18,
+            "multiplierPerYear": 0.1e18,
+            "jumpMultiplierPerYear": 3.15e18,
             "kink": 0.45e18
         }
     },
@@ -183,9 +183,9 @@
         "symbol": "mOP",
         "addressesString": "MOONWELL_OP",
         "jrm": {
-            "baseRatePerYear": 0.01e18,
-            "multiplierPerYear": 0.2e18,
-            "jumpMultiplierPerYear": 3e18,
+            "baseRatePerYear": 0.02e18,
+            "multiplierPerYear": 0.1e18,
+            "jumpMultiplierPerYear": 3.15e18,
             "kink": 0.45e18
         }
     }
