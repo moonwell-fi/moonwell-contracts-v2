@@ -16,6 +16,10 @@ import {ForkID} from "@utils/Enums.sol";
 contract mipb07 is Proposal, CrossChainProposal, Configs {
     string public constant override name = "MIPB07";
 
+    constructor() {
+        isArtemisProposal = true;
+    }
+
     function primaryForkId() public pure override returns (ForkID) {
         return ForkID.Base;
     }

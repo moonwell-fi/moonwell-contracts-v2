@@ -3,14 +3,15 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Bytes} from "@utils/Bytes.sol";
+import {ForkID} from "@utils/Enums.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
+import {IArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {ForkID} from "@utils/Enums.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
 abstract contract CrossChainProposal is
@@ -21,7 +22,9 @@ abstract contract CrossChainProposal is
 {
     using Bytes for bytes;
 
-    uint32 private constant nonce = 0; /// nonce for wormhole, unused by Temporal Governor
+    bool public isArtemisProposal;
+
+    uint32 public nonce; /// nonce for wormhole, unused by Temporal Governor, starts at 0
 
     /// instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
     uint16 public constant consistencyLevel = 200;
@@ -268,8 +271,9 @@ abstract contract CrossChainProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        // CrossChainProposal is only used for proposals that the primery type
-        // is Base, this is a temporary solution until we get rid of CrossChainProposal
+        /// CrossChainProposal is only used for proposals destined for
+        /// Base and Optimism. This is a temporary solution until we get rid of
+        /// CrossChainProposal.
         vm.selectFork(uint256(ForkID.Moonbeam));
 
         address temporalGovernor = addresses.getAddress(
@@ -309,6 +313,55 @@ abstract contract CrossChainProposal is
             );
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
+                proposalId = proposalCount;
+                break;
+            }
+
+            proposalCount--;
+        }
+
+        vm.selectFork(uint256(primaryForkId()));
+    }
+
+    /// @notice search for a on-chain proposal that matches the proposal calldata
+    /// @param addresses the addresses contract
+    /// @param governor the governor address
+    /// @return proposalId the proposal id, 0 if no proposal is found
+    function getArtemisProposalId(
+        Addresses addresses,
+        address governor,
+        uint256 minProposalId
+    ) public override returns (uint256 proposalId) {
+        /// CrossChainProposal is only used for proposals destined for
+        /// Base and Optimism. This is a temporary solution until we get rid of
+        /// CrossChainProposal.
+        vm.selectFork(uint256(ForkID.Moonbeam));
+
+        address temporalGovernor = addresses.getAddress(
+            "TEMPORAL_GOVERNOR",
+            sendingChainIdToReceivingChainId[block.chainid]
+        );
+
+        uint256 proposalCount = onchainProposalId != 0
+            ? onchainProposalId
+            : MultichainGovernor(governor).proposalCount();
+
+        bytes memory proposalCalldata = getTemporalGovCalldata(
+            temporalGovernor
+        );
+
+        while (proposalCount > 0 && proposalCount > minProposalId) {
+            (
+                address[] memory targets,
+                ,
+                ,
+                bytes[] memory calldatas
+            ) = IArtemisGovernor(governor).getActions(proposalCount);
+
+            if (
+                targets.length == 1 &&
+                keccak256(proposalCalldata) == keccak256(calldatas[0])
+            ) {
                 proposalId = proposalCount;
                 break;
             }

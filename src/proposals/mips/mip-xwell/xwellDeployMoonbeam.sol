@@ -53,6 +53,14 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
         revert("Not implemented");
     }
 
+    function getArtemisProposalId(
+        Addresses,
+        address,
+        uint256
+    ) public pure override returns (uint256) {
+        revert("Not implemented");
+    }
+
     function deploy(Addresses addresses, address) public override {
         /// --------------------------------------------------
         /// --------------------------------------------------

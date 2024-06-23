@@ -7,6 +7,7 @@ import {console} from "@forge-std/console.sol";
 import {ForkID} from "@utils/Enums.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {ITimelock} from "@protocol/interfaces/ITimelock.sol";
+import {IArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
@@ -148,6 +149,18 @@ abstract contract GovernanceProposal is Proposal {
         }
 
         vm.selectFork(uint256(primaryForkId()));
+    }
+
+    /// @notice search for a on-chain proposal that matches the proposal calldata
+    /// @param addresses the addresses contract
+    /// @param governor the governor address
+    /// @return proposalId the proposal id, 0 if no proposal is found
+    function getArtemisProposalId(
+        Addresses addresses,
+        address governor,
+        uint256 /// shhhh
+    ) public override returns (uint256 proposalId) {
+        return getProposalId(addresses, governor);
     }
 
     /// @notice print the proposal action steps

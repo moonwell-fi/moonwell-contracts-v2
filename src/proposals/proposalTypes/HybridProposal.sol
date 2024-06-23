@@ -6,18 +6,19 @@ import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import "@forge-std/Test.sol";
 
+import {ForkID} from "@utils/Enums.sol";
+import {Address} from "@utils/Address.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
-import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
-import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
+import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
+import {IArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {Address} from "@utils/Address.sol";
-import {ForkID} from "@utils/Enums.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -487,6 +488,60 @@ abstract contract HybridProposal is
                 "propose(address[],uint256[],bytes[],string)",
                 targets,
                 values,
+                calldatas,
+                PROPOSAL_DESCRIPTION
+            );
+
+            if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
+                proposalId = proposalCount;
+                break;
+            }
+
+            proposalCount--;
+        }
+
+        vm.selectFork(uint256(primaryForkId()));
+    }
+
+    function getArtemisProposalId(
+        Addresses addresses,
+        address governor,
+        uint256 minimumProposalId
+    ) public override returns (uint256 proposalId) {
+        vm.selectFork(uint256(ForkID.Moonbeam));
+
+        bytes memory proposalCalldata = getProposeCalldata(
+            addresses.getAddress(
+                "TEMPORAL_GOVERNOR",
+                sendingChainIdToReceivingChainId[block.chainid]
+            ),
+            addresses.getAddress(
+                block.chainid == moonBeamChainId
+                    ? "WORMHOLE_CORE_MOONBEAM"
+                    : "WORMHOLE_CORE_MOONBASE",
+                block.chainid == moonBeamChainId
+                    ? moonBeamChainId
+                    : moonBaseChainId
+            )
+        );
+
+        uint256 proposalCount = onchainProposalId != 0
+            ? onchainProposalId
+            : MultichainGovernor(governor).proposalCount();
+
+        while (proposalCount > 0 && proposalCount >= minimumProposalId) {
+            (
+                address[] memory targets,
+                uint256[] memory values,
+                string[] memory signatures,
+                bytes[] memory calldatas
+            ) = IArtemisGovernor(governor).getActions(proposalCount);
+
+            bytes memory onchainCalldata = abi.encodeWithSignature(
+                "propose(address[],uint256[],string[],bytes[],string)",
+                targets,
+                values,
+                signatures,
                 calldatas,
                 PROPOSAL_DESCRIPTION
             );

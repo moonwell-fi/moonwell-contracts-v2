@@ -3,12 +3,12 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {ForkID} from "@utils/Enums.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {ForkID} from "@utils/Enums.sol";
 
 contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-b15";
@@ -20,6 +20,7 @@ contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b15/MIP-B15.md")
         );
         _setProposalDescription(proposalDescription);
+        isArtemisProposal = false;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

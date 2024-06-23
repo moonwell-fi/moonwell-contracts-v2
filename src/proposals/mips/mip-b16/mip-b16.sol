@@ -38,6 +38,10 @@ contract mipb16 is
         onchainProposalId = 5;
     }
 
+    function isArtemisProposal() public view returns (bool) {
+        return false;
+    }
+
     function primaryForkId() public pure override returns (ForkID) {
         return ForkID.Base;
     }

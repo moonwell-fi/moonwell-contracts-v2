@@ -24,6 +24,7 @@ contract mipb13 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 71;
+        isArtemisProposal = true;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

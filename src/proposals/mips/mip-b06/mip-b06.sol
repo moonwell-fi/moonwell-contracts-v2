@@ -35,6 +35,9 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             vm.readFile("./src/proposals/mips/mip-b06/MIP-B06.md")
         );
         _setProposalDescription(proposalDescription);
+
+        isArtemisProposal = true;
+        onchainProposalId = 54;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -141,7 +144,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH")
+                0x142DCAEC322aAA25141B2597bf348487aDBd596d
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
@@ -153,7 +156,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_DAI"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI")
+                0x492dcEF1fc5253413fC5576B9522840a1A774DCe
             ),
             "Set interest rate model for Moonwell DAI to updated rate model"
         );
@@ -163,7 +166,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC")
+                0x492dcEF1fc5253413fC5576B9522840a1A774DCe
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
@@ -173,7 +176,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_USDBC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDBC")
+                0x492dcEF1fc5253413fC5576B9522840a1A774DCe
             ),
             "Set interest rate model for Moonwell USDbC to updated rate model"
         );
@@ -185,7 +188,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_cbETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_cbETH")
+                0x78Fe5d0427E669ba9F964C3495fF381a805a0487
             ),
             "Set interest rate model for Moonwell cbETH to updated rate model"
         );

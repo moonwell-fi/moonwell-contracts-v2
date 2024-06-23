@@ -22,6 +22,11 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
         _setProposalDescription(
             bytes(vm.readFile("./src/proposals/mips/mip-b01/MIP-B01.md"))
         );
+
+        onchainProposalId = 41;
+        nonce = 2;
+
+        isArtemisProposal = true;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -39,7 +44,7 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH")
+                0x4393277B02ef3cA293990A772B7160a8c76F2443
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );

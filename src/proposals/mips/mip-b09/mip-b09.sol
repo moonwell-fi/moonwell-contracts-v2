@@ -29,6 +29,9 @@ contract mipb09 is Proposal, CrossChainProposal, Configs {
             vm.readFile("./src/proposals/mips/mip-b09/MIP-B09.md")
         );
         _setProposalDescription(proposalDescription);
+
+        isArtemisProposal = true;
+        onchainProposalId = 59;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

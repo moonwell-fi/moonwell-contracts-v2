@@ -38,6 +38,8 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
             vm.readFile("./src/proposals/mips/mip-b05/MIP-B05.md")
         );
         _setProposalDescription(proposalDescription);
+
+        isArtemisProposal = true;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

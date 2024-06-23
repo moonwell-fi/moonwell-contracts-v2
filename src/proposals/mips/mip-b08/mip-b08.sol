@@ -90,6 +90,9 @@ contract mipb08 is Proposal, CrossChainProposal, Configs {
                 }
 
                 cTokenConfigurations[block.chainid].push(decodedJson[i]);
+
+                supplyCaps.push(decodedJson[i].supplyCap);
+                borrowCaps.push(decodedJson[i].borrowCap);
             }
         }
 
@@ -123,6 +126,8 @@ contract mipb08 is Proposal, CrossChainProposal, Configs {
             emissions[block.chainid].length
         );
         console.log("\n\n");
+
+        isArtemisProposal = true;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -220,8 +225,6 @@ contract mipb08 is Proposal, CrossChainProposal, Configs {
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-                supplyCaps.push(config.supplyCap);
-                borrowCaps.push(config.borrowCap);
 
                 /// get the mToken
                 mTokens.push(

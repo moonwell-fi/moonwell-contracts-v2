@@ -3,10 +3,10 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ForkID} from "@utils/Enums.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipm16 is GovernanceProposal {
     string public constant override name = "MIP-M16";
@@ -16,6 +16,8 @@ contract mipm16 is GovernanceProposal {
             vm.readFile("./src/proposals/mips/mip-m16/MIP-M16.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 70;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
