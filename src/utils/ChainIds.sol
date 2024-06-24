@@ -3,22 +3,72 @@ pragma solidity 0.8.19;
 
 import {Vm} from "@forge-std/Vm.sol";
 
+// Fork Ids
 uint256 constant MOONBEAM_FORK_ID = 0;
 uint256 constant BASE_FORK_ID = 1;
 uint256 constant OPTIMISM_FORK_ID = 2;
 
+// Mainnet Chain Ids
 uint256 constant MOONBEAM_CHAIN_ID = 1284;
 uint256 constant BASE_CHAIN_ID = 8453;
 uint256 constant OPTIMISM_CHAIN_ID = 10;
 
+// Testnet Chain Ids
 uint256 constant MOONBASE_CHAIN_ID = 1287;
 uint256 constant BASE_SEPOLIA_CHAIN_ID = 84532;
 uint256 constant OPTIMISM_SEPOLIA_CHAIN_ID = 11155420;
+
+// Wormhole Mainnet Chain Ids
+uint16 constant MOONBEAM_WORMHOLE_CHAIN_ID = 16;
+uint16 constant BASE_WORMHOLE_CHAIN_ID = 30;
+uint16 constant OPTIMISM_WORMHOLE_CHAIN_ID = 24;
+
+// Wormhole Testnet Chain Ids
+uint16 constant MOONBASE_WORMHOLE_CHAIN_ID = 16;
+uint16 constant BASE_WORMHOLE_SEPOLIA_CHAIN_ID = 10004;
+uint16 constant OPTIMISM_WORMHOLE_SEPOLIA_CHAIN_ID = 10005;
 
 library ChainIds {
     address constant CHEATCODE_ADDRESS =
         0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
     Vm constant vm = Vm(CHEATCODE_ADDRESS);
+
+    function toMoonbeamChainId(
+        uint256 chainId
+    ) internal pure returns (uint256) {
+        if (chainId == BASE_CHAIN_ID || chainId == OPTIMISM_CHAIN_ID) {
+            return MOONBEAM_CHAIN_ID;
+        } else if (
+            chainId == BASE_SEPOLIA_CHAIN_ID ||
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID
+        ) {
+            return MOONBASE_CHAIN_ID;
+        } else {
+            revert("ChainIds: invalid chain id");
+        }
+    }
+
+    function toBaseChainId(uint256 chainId) internal pure returns (uint256) {
+        if (chainId == MOONBEAM_CHAIN_ID) {
+            return BASE_CHAIN_ID;
+        } else if (chainId == MOONBASE_CHAIN_ID) {
+            return BASE_SEPOLIA_CHAIN_ID;
+        } else {
+            revert("ChainIds: invalid chain id");
+        }
+    }
+
+    function toOptimismChainId(
+        uint256 chainId
+    ) internal pure returns (uint256) {
+        if (chainId == MOONBEAM_CHAIN_ID) {
+            return OPTIMISM_CHAIN_ID;
+        } else if (chainId == MOONBASE_CHAIN_ID) {
+            return OPTIMISM_SEPOLIA_CHAIN_ID;
+        } else {
+            revert("ChainIds: invalid chain id");
+        }
+    }
 
     function toForkId(uint256 chainId) internal pure returns (uint256) {
         if (chainId == MOONBEAM_CHAIN_ID || chainId == MOONBASE_CHAIN_ID) {
