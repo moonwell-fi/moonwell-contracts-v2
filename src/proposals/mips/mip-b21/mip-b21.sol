@@ -12,7 +12,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {FeeSplitter as Splitter} from "@protocol/morpho/FeeSplitter.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// DO_PRE_BUILD_MOCK=true DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b21/mip-b21.sol:mipb21
@@ -34,8 +34,8 @@ contract mipb21 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {}

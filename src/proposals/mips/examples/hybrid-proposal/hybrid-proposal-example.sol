@@ -11,7 +11,7 @@ import {IMultichainGovernor} from "@protocol/governance/multichain/IMultichainGo
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// @notice DO NOT USE THIS IN PRODUCTION, this is a completely hypothetical example
 /// adds stkwell as reward streams, completely hypothetical situation that makes no sense and would not work in production
@@ -34,8 +34,8 @@ contract HybridProposalExample is
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     /// @notice create proposal actions

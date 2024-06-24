@@ -10,7 +10,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract mipb06 is Proposal, CrossChainProposal, Configs {
     string public constant override name = "MIP-b06";
@@ -37,8 +37,8 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function _validateJRM(

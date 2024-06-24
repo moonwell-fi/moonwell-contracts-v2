@@ -13,7 +13,7 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// how to run locally:
 ///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployBase.sol:xwellDeployBase --fork-url base
@@ -35,8 +35,8 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {
