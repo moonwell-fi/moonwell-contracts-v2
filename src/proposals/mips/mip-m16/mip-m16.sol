@@ -6,7 +6,7 @@ import "@forge-std/Test.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 contract mipm16 is GovernanceProposal {
     string public constant override name = "MIP-M16";
@@ -18,8 +18,8 @@ contract mipm16 is GovernanceProposal {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {}

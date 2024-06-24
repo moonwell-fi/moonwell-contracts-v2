@@ -29,8 +29,8 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     /// run this action through the Multichain Governor

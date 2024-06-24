@@ -6,6 +6,7 @@ import {Script} from "@forge-std/Script.sol";
 
 import {ForkID} from "@utils/Enums.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 
 /*
 How to use:
@@ -22,6 +23,8 @@ to verify after deploy:
 
 */
 abstract contract MIPProposal is Script {
+    using ChainIds for uint256;
+
     Addresses public addresses;
 
     /// @notice fork ID for optimism
@@ -54,9 +57,7 @@ abstract contract MIPProposal is Script {
     }
 
     function run() public virtual {
-        vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
-        vm.createFork(vm.envString("BASE_RPC_URL"));
-        vm.createFork(vm.envString("OP_RPC_URL"));
+        primaryForkId().createForksAndSelect();
 
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
@@ -87,7 +88,7 @@ abstract contract MIPProposal is Script {
         }
     }
 
-    function primaryForkId() public pure virtual returns (ForkID);
+    function primaryForkId() public pure virtual returns (uint256);
 
     function name() external view virtual returns (string memory);
 

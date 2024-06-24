@@ -21,7 +21,7 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the
@@ -44,8 +44,8 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     /// run this action through the Artemis Governor

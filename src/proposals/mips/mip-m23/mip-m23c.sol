@@ -49,8 +49,8 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
     /// @notice duration of the cross chain vote collection period
     uint256 public constant crossChainVoteCollectionPeriod = 1 days;
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function buildCalldata(Addresses addresses) public {

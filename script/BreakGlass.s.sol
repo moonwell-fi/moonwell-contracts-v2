@@ -4,7 +4,7 @@ import {Script} from "@forge-std/Script.sol";
 
 import "@forge-std/Test.sol";
 
-import {ForkID} from "@utils/Enums.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
@@ -41,8 +41,8 @@ contract BreakGlass is Script, HybridProposal {
     /// @notice trusted senders for the temporal governor
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function run() public override {
