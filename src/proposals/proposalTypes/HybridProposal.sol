@@ -17,7 +17,7 @@ import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {Address} from "@utils/Address.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -32,6 +32,11 @@ abstract contract HybridProposal is
     ProposalChecker,
     MarketCreationHook
 {
+    enum ActionType {
+        Moonbeam,
+        Base,
+        Optimism
+    }
     using Strings for string;
     using Address for address;
 
@@ -75,14 +80,14 @@ abstract contract HybridProposal is
         address target,
         bytes memory data,
         string memory description,
-        ForkID proposalType
+        ActionType proposalType
     ) internal {
         _pushHybridAction(
             target,
             0,
             data,
             description,
-            proposalType == ForkID.Moonbeam
+            proposalType == ActionType.Moonbeam
         );
     }
 
@@ -97,14 +102,14 @@ abstract contract HybridProposal is
         uint256 value,
         bytes memory data,
         string memory description,
-        ForkID proposalType
+        ActionType proposalType
     ) internal {
         _pushHybridAction(
             target,
             value,
             data,
             description,
-            proposalType == ForkID.Moonbeam
+            proposalType == ActionType.Moonbeam
         );
     }
 
@@ -467,7 +472,7 @@ abstract contract HybridProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         uint256 proposalCount = MultichainGovernor(governor).proposalCount();
 

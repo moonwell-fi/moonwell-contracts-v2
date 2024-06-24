@@ -9,7 +9,7 @@ import "@forge-std/Test.sol";
 
 import {OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Address} from "@utils/Address.sol";
@@ -84,7 +84,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
     /// @dev change this if wanting to deploy to a different chain
     /// double check addresses and change the WORMHOLE_CORE to the correct chain
-    function primaryForkId() public pure override returns (ForkID) {
+    function primaryForkId() public pure override returns (uint256) {
         return OPTIMISM_FORK_ID;
     }
 
