@@ -16,24 +16,16 @@ import {Address} from "@utils/Address.sol";
 import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
+import {MOONBEAM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 
 contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     using String for string;
     using Bytes for bytes;
     using Address for address;
+    using ChainIds for uint256;
 
     /// @notice addresses contract
     Addresses addresses;
-
-    /// @notice fork ID for moonbeam
-    uint256 public moonbeamForkId =
-        vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
-
-    /// @notice fork ID for base
-    uint256 public baseForkId = vm.createFork(vm.envString("BASE_RPC_URL"));
-
-    /// @notice fork ID for optimism
-    uint256 public optimismForkId = vm.createFork(vm.envString("OP_RPC_URL"));
 
     /// @notice Multichain Governor address
     address governor;
@@ -48,10 +40,11 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     );
 
     function setUp() public {
+        MOONBEAM_CHAIN_ID.createForksAndSelect();
+
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        vm.selectFork(moonbeamForkId);
         governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
     }
 

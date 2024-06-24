@@ -8,6 +8,7 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 
 import "@forge-std/Test.sol";
 
+import {MOONBEAM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MToken} from "@protocol/MToken.sol";
@@ -52,6 +53,8 @@ export DO_VALIDATE=true
 
 */
 contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
+    using ChainIds for uint256;
+
     MultichainVoteCollection public voteCollection;
     MultichainGovernor public governor;
     IWormhole public wormhole;
@@ -94,23 +97,11 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
 
     WormholeRelayerAdapter wormholeRelayerAdapterBase;
 
-    string public constant DEFAULT_BASE_RPC_URL = "https://mainnet.base.org";
-
-    /// @notice fork ID for base
-    uint256 public baseForkId =
-        vm.createFork(vm.envOr("BASE_RPC_URL", DEFAULT_BASE_RPC_URL));
-
-    string public constant DEFAULT_MOONBEAM_RPC_URL =
-        "https://rpc.api.moonbeam.network";
-
-    /// @notice fork ID for moonbeam
-    uint256 public moonbeamForkId =
-        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", DEFAULT_MOONBEAM_RPC_URL));
-
     function setUp() public override {
+        MOONBEAM_CHAIN_ID.createForksAndSelect();
         super.setUp();
 
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         proposalC = new mipm23c();
         proposalC.buildCalldata(addresses);
