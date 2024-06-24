@@ -61,7 +61,7 @@ abstract contract MIPProposal is Script {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
 
         address deployerAddress = vm.addr(PRIVATE_KEY);
 

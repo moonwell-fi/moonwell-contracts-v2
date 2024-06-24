@@ -39,7 +39,7 @@ contract HybridProposalExample is
     }
 
     function build(Addresses addresses) public override {
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
 
         /// action to call the Wormhole Core contract on Base from Moonbeam
         /// this is incorrect and will cause a failure in the HybridProposal contract
@@ -109,7 +109,7 @@ contract HybridProposalExample is
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         vm.selectFork(BASE_FORK_ID);
@@ -117,11 +117,11 @@ contract HybridProposalExample is
         _runBase(addresses, temporalGovernor);
 
         // switch back to the base fork so we can run the validations
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
 
         IMultichainGovernor governor = IMultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
@@ -190,6 +190,6 @@ contract HybridProposalExample is
             }
         }
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 }

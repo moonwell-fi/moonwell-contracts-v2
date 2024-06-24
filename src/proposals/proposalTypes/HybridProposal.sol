@@ -503,7 +503,7 @@ abstract contract HybridProposal is
             proposalCount--;
         }
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 
     /// @notice Runs the proposal on moonbeam, verifying the actions through the hook
