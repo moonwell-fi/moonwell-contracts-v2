@@ -122,4 +122,18 @@ library String {
 
         return splitStrings;
     }
+
+    function toBytes32(string memory _string) internal pure returns (bytes32) {
+        bytes memory stringBytes = bytes(_string);
+
+        require(stringBytes.length <= 32, "String too long");
+
+        bytes32 result;
+
+        assembly {
+            result := mload(add(_string, 32))
+        }
+
+        return result;
+    }
 }

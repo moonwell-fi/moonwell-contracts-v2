@@ -1,21 +1,34 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
+import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 
 import {console} from "@forge-std/console.sol";
 import {ForkID} from "@utils/Enums.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
+import {String} from "@utils/String.sol";
+import {Bytes} from "@utils/Bytes.sol";
 
 contract TestProposalCalldataGeneration is Test {
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+    using String for string;
+    using Bytes for bytes32;
+
     Addresses public addresses;
 
     MultichainGovernor public governor;
+    MoonwellArtemisGovernor public artemisGovernor;
+
     mapping(uint256 proposalId => bytes32 hash) public proposalHashes;
+    mapping(uint256 proposalId => bytes32 hash) public artemisProposalHashes;
+    EnumerableSet.Bytes32Set notFoundPaths;
 
     struct ProposalAction {
         /// address to call
@@ -40,6 +53,10 @@ contract TestProposalCalldataGeneration is Test {
 
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+        );
+
+        artemisGovernor = MoonwellArtemisGovernor(
+            addresses.getAddress("ARTEMIS_GOVERNOR")
         );
     }
 
@@ -122,6 +139,7 @@ contract TestProposalCalldataGeneration is Test {
 
                 // if proposalId is 0, then the proposal was not found
                 if (proposalId == 0) {
+                    // notFoundPaths.add(proposalsPath[i - 1].toBytes32());
                     console.log(
                         "Proposal ID not found for ",
                         proposalContract.name()
@@ -130,6 +148,198 @@ contract TestProposalCalldataGeneration is Test {
 
                 vm.selectFork(uint256(ForkID.Moonbeam));
             }
+        }
+
+        console.log(
+            "----------------- SEARCHING CROSS CHAIN PROPOSALS -----------------"
+        );
+
+        // find cross chain proposal matches
+        {
+            uint256 proposalCount = governor.proposalCount();
+
+            string[] memory inputs = new string[](1);
+            inputs[0] = "./get-crosschain-proposals.sh";
+
+            string memory output = string(vm.ffi(inputs));
+
+            // create array splitting the output string
+            string[] memory proposalsPath = vm.split(output, "\n");
+
+            for (uint256 i = proposalsPath.length; i > 0; i--) {
+                address proposal = deployCode(proposalsPath[i - 1]);
+                if (proposal == address(0)) {
+                    continue;
+                }
+
+                vm.makePersistent(proposal);
+
+                CrossChainProposal proposalContract = CrossChainProposal(
+                    proposal
+                );
+                vm.selectFork(uint256(proposalContract.primaryForkId()));
+                proposalContract.build(addresses);
+
+                address target = addresses.getAddress(
+                    "WORMHOLE_CORE_MOONBEAM",
+                    1284
+                );
+
+                bytes memory payload = proposalContract
+                    .getMultichainGovernorCalldata(
+                        addresses.getAddress("TEMPORAL_GOVERNOR"),
+                        target
+                    );
+
+                address[] memory targets = new address[](1);
+                targets[0] = target;
+
+                uint256[] memory values = new uint256[](1);
+                values[0] = 0;
+
+                bytes[] memory calldatas = new bytes[](1);
+                calldatas[0] = payload;
+
+                bytes32 hash = keccak256(
+                    abi.encode(targets, values, calldatas)
+                );
+
+                uint256 proposalId = proposalCount;
+
+                // see if the hash of the proposal actions is the same as one of the
+                // proposals fetched from the Artemis Governor
+                while (proposalId > 0) {
+                    if (proposalHashes[proposalId] == hash) {
+                        console.log(
+                            "Proposal ID found for %s, %d",
+                            proposalContract.name(),
+                            proposalId
+                        );
+
+                        // delete from the proposalHashes mapping
+                        delete proposalHashes[proposalId];
+
+                        break;
+                    }
+                    proposalId--;
+                }
+
+                // if proposalId is 0, then the proposal was not found
+                if (proposalId == 0) {
+                    console.log(
+                        "Proposal ID not found for ",
+                        proposalContract.name()
+                    );
+                }
+
+                vm.selectFork(uint256(ForkID.Moonbeam));
+            }
+        }
+
+        // try to find the not found paths in artemis governor
+        {
+            uint256 proposalId = artemisGovernor.proposalCount();
+
+            // first save all the proposals actions
+            while (proposalId > 0) {
+                (
+                    address[] memory targets,
+                    uint256[] memory values,
+                    ,
+                    bytes[] memory calldatas
+                ) = MoonwellArtemisGovernor(artemisGovernor).getActions(
+                        proposalId
+                    );
+
+                bytes32 hash = keccak256(
+                    abi.encode(targets, values, calldatas)
+                );
+
+                artemisProposalHashes[proposalId] = hash;
+
+                proposalId--;
+            }
+        }
+
+        console.log(
+            "----------------- SEARCHING ARTEMIS GOVERNOR -----------------"
+        );
+
+        for (uint256 i = notFoundPaths.length(); i > 0; i--) {
+            console.log(notFoundPaths.at(i - 1).toString());
+        }
+
+        {
+            uint256 proposalCount = artemisGovernor.proposalCount();
+
+            for (uint256 i = notFoundPaths.length(); i > 0; i--) {
+                address proposal = deployCode(
+                    notFoundPaths.at(i - 1).toString()
+                );
+                if (proposal == address(0)) {
+                    continue;
+                }
+
+                vm.makePersistent(proposal);
+
+                IProposal proposalContract = IProposal(proposal);
+                vm.selectFork(uint256(proposalContract.primaryForkId()));
+                proposalContract.build(addresses);
+
+                // get proposal actions
+                (
+                    address[] memory targets,
+                    uint256[] memory values,
+                    bytes[] memory calldatas
+                ) = proposalContract.getTargetsPayloadsValues(addresses);
+
+                bytes32 hash = keccak256(
+                    abi.encode(targets, values, calldatas)
+                );
+
+                uint256 proposalId = proposalCount;
+
+                // see if the hash of the proposal actions is the same as one of the
+                // proposals fetched from the Artemis Governor
+                while (proposalId > 0) {
+                    if (artemisProposalHashes[proposalId] == hash) {
+                        console.log(
+                            "Proposal ID found for %s, %d",
+                            proposalContract.name(),
+                            proposalId
+                        );
+
+                        // delete from the proposalHashes mapping
+                        delete artemisProposalHashes[proposalId];
+
+                        // delete from not found paths
+                        notFoundPaths.remove(notFoundPaths.at(i - 1));
+
+                        break;
+                    }
+                    proposalId--;
+                }
+
+                // if proposalId is 0, then the proposal was not found
+                if (proposalId == 0) {
+                    console.log(
+                        "Proposal ID not found for ",
+                        proposalContract.name()
+                    );
+                }
+
+                vm.selectFork(uint256(ForkID.Moonbeam));
+            }
+        }
+
+        // log not found
+        console.log("-------------- FINISHED --------------");
+        console.log("NOT FOUND LENGTH: ", notFoundPaths.length());
+        for (uint256 i = notFoundPaths.length(); i > 0; i--) {
+            console.log(
+                "Proposal not found for ",
+                notFoundPaths.at(i - 1).toString()
+            );
         }
     }
 
