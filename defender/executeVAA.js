@@ -182,7 +182,9 @@ async function processSequence(credentials, sequence, context) {
         // Initialize defender relayer provider and signer
         const client = new Defender(credentials);
         const provider = client.relaySigner.getProvider();
-        const signer = client.relaySigner.getSigner(provider, {speed: 'fast'});
+        const signer = await client.relaySigner.getSigner(provider, {
+            speed: 'fast',
+        });
 
         // Create contract instance from the signer and use it to send a tx
         const contract = new ethers.Contract(

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-// Script compatible with Defender v2
+// Script compatible with Defender v1
 const {ethers} = require('ethers');
 const {Defender} = require('@openzeppelin/defender-sdk');
 const {KeyValueStoreClient} = require('defender-kvstore-client');
@@ -166,15 +166,18 @@ async function storeVAA(event, sequence, timestamp) {
 
 // Entrypoint for the action
 exports.handler = async function (event, context) {
-    console.log('Received event:', JSON.stringify(event.request.body, null, 2));
+    const {events} = event.request.body;
 
-    const sequence = event.request.body.matchReasons[0].params.sequence;
+    const sequence = events[0].matchReasons[0].params.sequence;
+
     const vaa = await fetchVAA(sequence);
 
     const client = new Defender(event);
 
     const provider = client.relaySigner.getProvider();
-    const signer = client.relaySigner.getSigner(provider, {speed: 'fast'});
+    const signer = await client.relaySigner.getSigner(provider, {
+        speed: 'fast',
+    });
 
     const contract = new ethers.Contract(
         tgAddress,
@@ -190,6 +193,7 @@ exports.handler = async function (event, context) {
     if (network == 'moonbeam') {
         timestamp += 60 * 60 * 24 + 60; // 24 hours + 1 minute for buffer
     }
+
     await storeVAA(event, sequence, timestamp);
 
     const {notificationClient} = context;
