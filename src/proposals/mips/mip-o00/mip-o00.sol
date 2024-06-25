@@ -30,8 +30,14 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
-/// DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true DO_RUN=true DO_VALIDATE=true
-// forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 -vvv --etherscan-api-key $OPSCAN_API_KEY --chain optimism-sepolia --broadcast
+/*
+
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 \
+ -vvv --etherscan-api-key $OPSCAN_API_KEY --broadcast
+
+*/
+
 contract mipo00 is Proposal, CrossChainProposal, Configs {
     using Address for address;
 
@@ -439,6 +445,13 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
+        if (cTokenConfigs.length == 0) {
+            /// MToken/Emission configurations
+            _setMTokenConfiguration(
+                "./src/proposals/mips/mip-o00/optimismMTokens.json"
+            );
+        }
+
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
 
         /// set mint unpaused for all of the deployed MTokens
@@ -525,40 +538,6 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 1 days,
                 "proposal delay is not 1 day"
             );
-        }
-
-        {
-            ChainlinkOracle oracle = ChainlinkOracle(
-                addresses.getAddress("CHAINLINK_ORACLE")
-            );
-
-            assertEq(oracle.admin(), address(governor));
-            /// validate chainlink price feeds are correctly set according to config in oracle
-
-            Configs.CTokenConfiguration[]
-                memory cTokenConfigs = getCTokenConfigurations(block.chainid);
-
-            //// set mint paused for all of the deployed MTokens
-            unchecked {
-                for (uint256 i = 0; i < cTokenConfigs.length; i++) {
-                    Configs.CTokenConfiguration memory config = cTokenConfigs[
-                        i
-                    ];
-
-                    assertEq(
-                        address(
-                            oracle.getFeed(
-                                ERC20(
-                                    addresses.getAddress(
-                                        config.tokenAddressName
-                                    )
-                                ).symbol()
-                            )
-                        ),
-                        addresses.getAddress(config.priceFeedName)
-                    );
-                }
-            }
         }
 
         /// assert comptroller and unitroller are wired together properly
@@ -746,6 +725,11 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 comptroller.liquidationIncentiveMantissa(),
                 liquidationIncentive
             );
+            ChainlinkOracle oracle = ChainlinkOracle(
+                addresses.getAddress("CHAINLINK_ORACLE")
+            );
+
+            assertEq(oracle.admin(), address(governor));
 
             Configs.CTokenConfiguration[]
                 memory cTokenConfigs = getCTokenConfigurations(block.chainid);
@@ -755,6 +739,20 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                     Configs.CTokenConfiguration memory config = cTokenConfigs[
                         i
                     ];
+
+                    /// oracle price feed checks
+                    assertEq(
+                        address(
+                            oracle.getFeed(
+                                ERC20(
+                                    addresses.getAddress(
+                                        config.tokenAddressName
+                                    )
+                                ).symbol()
+                            )
+                        ),
+                        addresses.getAddress(config.priceFeedName)
+                    );
 
                     /// CToken Assertions
                     assertFalse(
