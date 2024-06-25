@@ -19,6 +19,7 @@ import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
 import {MWethDelegate} from "@protocol/MWethDelegate.sol";
+import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
@@ -29,7 +30,6 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {_IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
 
 /*
 
@@ -663,30 +663,12 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
         /// admin is owned by proxy admin
         {
-            bytes32 data = vm.load(
+            validateProxy(
+                vm,
                 addresses.getAddress("MRD_PROXY"),
-                _ADMIN_SLOT
-            );
-            assertEq(
-                bytes32(
-                    uint256(uint160(addresses.getAddress("MRD_PROXY_ADMIN")))
-                ),
-                data
-            );
-
-            data = vm.load(
-                addresses.getAddress("MRD_PROXY"),
-                _IMPLEMENTATION_SLOT
-            );
-            assertEq(
-                bytes32(
-                    uint256(
-                        uint160(
-                            addresses.getAddress("MULTI_REWARD_DISTRIBUTOR")
-                        )
-                    )
-                ),
-                data
+                addresses.getAddress("MULTI_REWARD_DISTRIBUTOR"),
+                addresses.getAddress("MRD_PROXY_ADMIN"),
+                "MRD_PROXY"
             );
         }
 
