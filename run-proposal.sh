@@ -1,37 +1,37 @@
 #!/bin/bash
 # This script is used on the CI to print proposal output for the highest numbered .sol file in the PR.
 
-# PR_CHANGED_FILES is a list of files changed in the PR, set by the CI
 CHANGED_FILES=$PR_CHANGED_FILES
 FOLDER=$PROPOSALS_FOLDER
 
 if [[ ! -z "$CHANGED_FILES" ]]; then
     IFS=' ' read -r -a files_array <<< "$CHANGED_FILES"
 
-      # Initialize an empty array to hold numbers and corresponding file names
+    # Initialize an empty array to hold numbers and corresponding file names
     max_number=-1
     selected_file=""
 
     for file in "${files_array[@]}"; do
         if [[ $file == "$FOLDER"/*.sol && $file != *"/examples/"* ]]; then
+            # Extract the number following 'm', 'b', or 'o' before '.sol', make sure to capture correctly and avoid non-numeric values
+            number=$(echo $file | grep -o -E '[mbo]([0-9]+)\.sol' | grep -o -E '[0-9]+')
 
-            # Extract the number following 'm', 'b', or 't' before '.sol'
-            number=$(echo $file | sed -E 's/.*[bmt]([0-9]+)\.sol/\1/')
+            # Logging for debugging
+            echo "File: $file, Extracted Number: $number"
 
-            # Check if a number was actually found; if not, skip this file
-            if [[ -z "$number" ]]; then
-                continue
+            # Only perform the comparison if number is not empty and is a numeric value
+            if [[ ! -z "$number" && "$number" =~ ^[0-9]+$ ]]; then
+                if [[ "$number" -gt "$max_number" ]]; then
+                    max_number=$number
+                    selected_file=$file
+                fi
+            else
+                echo "Skipping $file as no valid number was extracted."
             fi
-
-             # Check if this number is the highest found so far
-            if [[ "$number" -gt "$max_number" ]]; then
-                max_number=$number
-                selected_file=$file
-            fi        
         fi
     done
 
-    # If file was found
+    # If a file was found
     if [[ ! -z "$selected_file" ]]; then
         echo "Processing $selected_file..."
         output=$(forge script "$selected_file" 2>&1)
@@ -49,18 +49,17 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
         }
         ')
 
+        # Prepare JSON output
         json_output=""
-        # Write to JSON if selected_output otherwise write a failure message
-        if [ ! -z "$selected_output" ]; then
+        if [[ ! -z "$selected_output" ]]; then
             json_output=$(jq -n --arg file "$selected_file" --arg output "$selected_output" '{file: $file, output: $output}')
         else
             json_output=$(jq -n --arg file "$selected_file" --arg output "Proposal $selected_file failed. Check CI logs" '{file: $file, output: $output}')
         fi
 
         echo "Writing JSON to output.json..."
-        # Create output.json 
-        touch output.json
-        # Write JSON to output.json
         echo "$json_output" > output.json
+    else
+        echo "No suitable file found to process."
     fi
 fi
