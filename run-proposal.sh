@@ -5,6 +5,9 @@
 CHANGED_FILES=$PR_CHANGED_FILES
 FOLDER=$PROPOSALS_FOLDER
 
+# Files to exclude
+EXCLUDED_FILES=("src/proposals/mips/mip-m23/mip-m23c.sol" "src/proposals/mips/mip-o00/mip-o00.sol" "src/proposals/mips/examples/mip01.sol")
+
 if [[ ! -z "$CHANGED_FILES" ]]; then
     IFS=' ' read -r -a files_array <<< "$CHANGED_FILES"
 
@@ -13,16 +16,14 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
     selected_file=""
 
     for file in "${files_array[@]}"; do
-        if [[ $file == "$FOLDER"/*.sol && $file != *"/examples/"* ]]; then
+        if [[ $file == "$FOLDER"/*.sol && ! " ${EXCLUDED_FILES[@]} " =~ " ${file} " ]]; then
             echo "Processing file: $file"
-            
-            # Extract the number following 'm', 'b', or 'o' before '.sol'
-            number=$(echo $file | sed -E 's/.*[bmo]([0-9]+)\.sol$/\1/')
 
-
-            # Check if a number was actually found; if not, skip this file
-            if [[ -z "$number" ]]; then
-                echo "No number found in $file, skipping."
+            # Extract the number following 'm', 'b', or 'o' before '.sol' and exclude files with letters after the number
+            if [[ $file =~ [bmo]([0-9]+)\.sol$ ]]; then
+                number=${BASH_REMATCH[1]}
+            else
+                echo "No valid number found in $file, skipping."
                 continue
             fi
 
@@ -30,7 +31,7 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
             if [[ "$number" -gt "$max_number" ]]; then
                 max_number=$number
                 selected_file=$file
-            fi        
+            fi
         fi
     done
 
@@ -61,7 +62,7 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
         fi
 
         echo "Writing JSON to output.json..."
-        # Create output.json 
+        # Create output.json
         touch output.json
         # Write JSON to output.json
         echo "$json_output" > output.json
