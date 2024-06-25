@@ -2,23 +2,155 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {console} from "@forge-std/console.sol";
 import {ForkID} from "@utils/Enums.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 contract TestProposalCalldataGeneration is Test {
     Addresses public addresses;
 
+    MultichainGovernor public governor;
+    mapping(uint256 proposalId => bytes32 hash) public proposalHashes;
+
+    struct ProposalAction {
+        /// address to call
+        address target;
+        /// value to send
+        uint256 value;
+        /// calldata to pass to the target
+        bytes data;
+    }
+
     function setUp() public {
-        vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
-        vm.createFork(vm.envString("BASE_RPC_URL"));
+        vm.createFork(vm.envString("MOONBEAM_RPC_URL"), 6389419);
+        vm.createFork(vm.envString("BASE_RPC_URL"), 15841523);
         vm.createFork(vm.envString("OP_RPC_URL"));
 
         addresses = new Addresses();
 
         vm.makePersistent(address(this));
         vm.makePersistent(address(addresses));
+
+        vm.selectFork(uint256(ForkID.Moonbeam));
+
+        governor = MultichainGovernor(
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+        );
+    }
+
+    function testMultichainGovernorCalldataGeneration() public {
+        {
+            uint256 proposalId = governor.proposalCount();
+
+            // first save all the proposals actions
+            while (proposalId > 0) {
+                (
+                    address[] memory targets,
+                    uint256[] memory values,
+                    bytes[] memory calldatas
+                ) = MultichainGovernor(governor).getProposalData(proposalId);
+
+                console.log("Proposal ID: %d", proposalId);
+
+                for (uint256 i = 0; i < targets.length; i++) {
+                    console.log("Target: %s", targets[i]);
+                    console.log("Value: %d", values[i]);
+                    console.log("Calldata:");
+                    console.logBytes(calldatas[i]);
+                }
+
+                bytes32 hash = keccak256(
+                    abi.encode(targets, values, calldatas)
+                );
+
+                proposalHashes[proposalId] = hash;
+
+                console.logBytes32(hash);
+
+                console.log("==================");
+                proposalId--;
+            }
+        }
+
+        {
+            uint256 proposalCount = governor.proposalCount();
+
+            string[] memory inputs = new string[](1);
+            inputs[0] = "./get-mip-proposals.sh";
+
+            string memory output = string(vm.ffi(inputs));
+
+            // create array splitting the output string
+            string[] memory proposalsPath = vm.split(output, "\n");
+
+            for (uint256 i = proposalsPath.length; i > 0; i--) {
+                address proposal = deployCode(proposalsPath[i - 1]);
+                if (proposal == address(0)) {
+                    continue;
+                }
+
+                vm.makePersistent(proposal);
+
+                HybridProposal proposalContract = HybridProposal(proposal);
+                vm.selectFork(uint256(proposalContract.primaryForkId()));
+                proposalContract.preBuildMock(addresses);
+                proposalContract.build(addresses);
+
+                // get proposal actions
+                (
+                    address[] memory targets,
+                    uint256[] memory values,
+                    bytes[] memory calldatas,
+                    ,
+
+                ) = proposalContract.getProposalActionSteps();
+
+                for (uint256 i = 0; i < targets.length; i++) {
+                    console.log("Target: %s", targets[i]);
+                    console.log("Value: %d", values[i]);
+                    console.log("Calldata:");
+                    console.logBytes(calldatas[i]);
+                }
+
+                bytes32 hash = keccak256(
+                    abi.encode(targets, values, calldatas)
+                );
+                console.logBytes32(hash);
+
+                uint256 proposalId = proposalCount;
+
+                // see if the hash of the proposal actions is the same as one of the
+                // proposals fetched from the Multichain Governor
+                while (proposalId > 0) {
+                    if (proposalHashes[proposalId] == hash) {
+                        console.log(
+                            "Proposal ID found for %s, %d",
+                            proposalContract.name(),
+                            proposalId
+                        );
+
+                        // delete from the proposalHashes mapping
+                        delete proposalHashes[proposalId];
+                        break;
+                    }
+                    proposalId--;
+                }
+
+                // if proposalId is 0, then the proposal was not found
+                if (proposalId == 0) {
+                    console.log(
+                        "Proposal ID not found for ",
+                        proposalContract.name()
+                    );
+                }
+
+                vm.selectFork(uint256(ForkID.Moonbeam));
+            }
+        }
     }
 
     function testMoonbeamCalldataGeneration() public {
