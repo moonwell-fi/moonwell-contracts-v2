@@ -5,20 +5,17 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
+import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-import {ForkID} from "@utils/Enums.sol";
 
-contract SupplyBorrowCapsLiveSystemBasePostProposalTest is
-    PostProposalCheck,
-    Configs
-{
+contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     Comptroller comptroller;
     MErc20 mUSDbC;
     MErc20 mWeth;

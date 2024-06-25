@@ -14,10 +14,7 @@ import {TestProposals} from "@proposals/TestProposals.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ForkID} from "@utils/Enums.sol";
 
-contract IRModelWethUpgradeLiveSystemBasePostProposalTest is
-    PostProposalCheck,
-    Configs
-{
+contract IRModelWethUpgradePostProposalTest is PostProposalCheck, Configs {
     Comptroller comptroller;
     MErc20 mUSDbC;
     MErc20 mWeth;
