@@ -54,14 +54,12 @@ contract TestProposalCalldataGeneration is Test {
                     bytes[] memory calldatas
                 ) = MultichainGovernor(governor).getProposalData(proposalId);
 
-                console.log("Proposal ID: %d", proposalId);
-
-                for (uint256 i = 0; i < targets.length; i++) {
-                    console.log("Target: %s", targets[i]);
-                    console.log("Value: %d", values[i]);
-                    console.log("Calldata:");
-                    console.logBytes(calldatas[i]);
-                }
+                // for (uint256 i = 0; i < targets.length; i++) {
+                //     console.log("Target: %s", targets[i]);
+                //     console.log("Value: %d", values[i]);
+                //     console.log("Calldata:");
+                //     console.logBytes(calldatas[i]);
+                //}
 
                 bytes32 hash = keccak256(
                     abi.encode(targets, values, calldatas)
@@ -69,9 +67,9 @@ contract TestProposalCalldataGeneration is Test {
 
                 proposalHashes[proposalId] = hash;
 
-                console.logBytes32(hash);
+                // console.logBytes32(hash);
 
-                console.log("==================");
+                // console.log("==================");
                 proposalId--;
             }
         }
@@ -104,22 +102,20 @@ contract TestProposalCalldataGeneration is Test {
                 (
                     address[] memory targets,
                     uint256[] memory values,
-                    bytes[] memory calldatas,
-                    ,
+                    bytes[] memory calldatas
+                ) = proposalContract.getTargetsPayloadsValues(addresses);
 
-                ) = proposalContract.getProposalActionSteps();
-
-                for (uint256 i = 0; i < targets.length; i++) {
-                    console.log("Target: %s", targets[i]);
-                    console.log("Value: %d", values[i]);
-                    console.log("Calldata:");
-                    console.logBytes(calldatas[i]);
-                }
+                // for (uint256 i = 0; i < targets.length; i++) {
+                //     console.log("Target: %s", targets[i]);
+                //     console.log("Value: %d", values[i]);
+                //     console.log("Calldata:");
+                //     console.logBytes(calldatas[i]);
+                // }
 
                 bytes32 hash = keccak256(
                     abi.encode(targets, values, calldatas)
                 );
-                console.logBytes32(hash);
+                // console.logBytes32(hash);
 
                 uint256 proposalId = proposalCount;
 
