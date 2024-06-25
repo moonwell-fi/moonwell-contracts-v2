@@ -6,6 +6,7 @@ import {console} from "@forge-std/console.sol";
 import {ForkID} from "@utils/Enums.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
@@ -54,31 +55,23 @@ contract TestProposalCalldataGeneration is Test {
                     bytes[] memory calldatas
                 ) = MultichainGovernor(governor).getProposalData(proposalId);
 
-                // for (uint256 i = 0; i < targets.length; i++) {
-                //     console.log("Target: %s", targets[i]);
-                //     console.log("Value: %d", values[i]);
-                //     console.log("Calldata:");
-                //     console.logBytes(calldatas[i]);
-                //}
-
                 bytes32 hash = keccak256(
                     abi.encode(targets, values, calldatas)
                 );
 
                 proposalHashes[proposalId] = hash;
 
-                // console.logBytes32(hash);
-
                 // console.log("==================");
                 proposalId--;
             }
         }
 
+        // find hybrid proposals matches
         {
             uint256 proposalCount = governor.proposalCount();
 
             string[] memory inputs = new string[](1);
-            inputs[0] = "./get-mip-proposals.sh";
+            inputs[0] = "./get-hybrid-proposals.sh";
 
             string memory output = string(vm.ffi(inputs));
 
@@ -93,9 +86,8 @@ contract TestProposalCalldataGeneration is Test {
 
                 vm.makePersistent(proposal);
 
-                HybridProposal proposalContract = HybridProposal(proposal);
+                IProposal proposalContract = IProposal(proposal);
                 vm.selectFork(uint256(proposalContract.primaryForkId()));
-                proposalContract.preBuildMock(addresses);
                 proposalContract.build(addresses);
 
                 // get proposal actions
@@ -105,17 +97,9 @@ contract TestProposalCalldataGeneration is Test {
                     bytes[] memory calldatas
                 ) = proposalContract.getTargetsPayloadsValues(addresses);
 
-                // for (uint256 i = 0; i < targets.length; i++) {
-                //     console.log("Target: %s", targets[i]);
-                //     console.log("Value: %d", values[i]);
-                //     console.log("Calldata:");
-                //     console.logBytes(calldatas[i]);
-                // }
-
                 bytes32 hash = keccak256(
                     abi.encode(targets, values, calldatas)
                 );
-                // console.logBytes32(hash);
 
                 uint256 proposalId = proposalCount;
 
