@@ -5,12 +5,9 @@ import "@forge-std/Test.sol";
 
 import {ForkID} from "@utils/Enums.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipm01 is Configs, HybridProposal {
