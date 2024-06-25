@@ -14,7 +14,6 @@ import {TestProposals} from "@proposals/TestProposals.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-
 contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     Comptroller comptroller;
     MErc20 mUSDbC;
