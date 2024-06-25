@@ -18,7 +18,7 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract ReentrancyLiveSystemBaseTest is
+contract ReentrancyPostProposalTest is
     Configs,
     PostProposalCheck,
     ComptrollerErrorReporter
