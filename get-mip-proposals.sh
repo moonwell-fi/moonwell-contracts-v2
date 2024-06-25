@@ -12,9 +12,12 @@ for DIR in ${MIP_DIRS}; do
     for FILE in ${DIR}/*.sol; do
         # Check if file exists and is not the specific file to exclude
         if [ -f "$FILE" ] && [[ "$FILE" != "src/proposals/mips/mip-o00/mip-o00.sol" ]]; then
-            # Check if file contains the specified import line
+            # First, check if file contains the HybridProposal import line
             if grep -q 'import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";' "$FILE"; then
-                JSON_FILES+=("${FILE}")
+                # Then check if the file also contains the build function signature
+                if grep -q 'function build(Addresses addresses) public override {' "$FILE"; then
+                    JSON_FILES+=("${FILE}")
+                fi
             fi
         fi
     done
