@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Bytes} from "@utils/Bytes.sol";
+import {ForkID} from "@utils/Enums.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
@@ -10,7 +11,6 @@ import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {ForkID} from "@utils/Enums.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
 abstract contract CrossChainProposal is
