@@ -29,6 +29,7 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
+import {_IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
 
 /*
 
@@ -48,14 +49,6 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
     /// @notice time before anyone can unpause the contract after a guardian pause
     uint256 public constant permissionlessUnpauseTime = 30 days;
-
-    /// ------------ PROXY CONSTANTS ------------
-
-    bytes32 public constant _ADMIN_SLOT =
-        0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-
-    bytes32 public constant _IMPLEMENTATION_SLOT =
-        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     /// -------------------------------------------------------------------------------------------------- ///
     /// Chain Name	       Wormhole Chain ID   Network ID	Address                                      | ///
@@ -713,6 +706,13 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                     .toBytes()
             ),
             "multichain governor not trusted"
+        );
+        assertEq(
+            governor
+                .allTrustedSenders(chainIdToWormHoleId[block.chainid])
+                .length,
+            1,
+            "multichain governor incorrect trusted sender count from Moonbeam"
         );
 
         {
