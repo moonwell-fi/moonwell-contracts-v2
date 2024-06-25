@@ -16,8 +16,8 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
         if [[ $file == "$FOLDER"/*.sol && $file != *"/examples/"* ]]; then
             echo "Processing file: $file"
             
-            # Extract the number following 'm', 'b', or 't' before '.sol'
-            number=$(echo $file | sed -E 's/.*[bmt]([0-9]+)\.sol/\1/')
+            # Extract the number following 'm', 'b', or 'o' before '.sol'
+            number=$(echo $file | sed -E 's/.*[bmo]([0-9]+)\.sol/\1/')
 
             # Check if a number was actually found; if not, skip this file
             if [[ -z "$number" ]]; then
