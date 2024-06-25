@@ -22,7 +22,7 @@ import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// verify that the new MWETH Delegate and Unwrapper are working as expected
-contract WETHLiveSystemBaseTest is Configs, PostProposalCheck {
+contract WETHPostProposalCheck is Configs, PostProposalCheck {
     WethUnwrapper unwrapper;
     Comptroller comptroller;
     MErc20Delegator mToken;
