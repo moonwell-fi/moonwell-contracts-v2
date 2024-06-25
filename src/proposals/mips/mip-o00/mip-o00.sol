@@ -611,7 +611,6 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             );
         }
 
-        /// TODO test mWETH delegate logic contract
         /// assert weth unwrapper is properly tied to the weth contract and
         /// that mWETH delegate is tied to the unwrapper
 
