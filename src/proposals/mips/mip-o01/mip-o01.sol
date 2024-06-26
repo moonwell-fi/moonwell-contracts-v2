@@ -10,7 +10,14 @@ import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract mipm01 is Configs, HybridProposal {
+/*
+
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o01/mip-o01.sol:mipo01 \
+ -vvv
+
+*/
+contract mipo01 is Configs, HybridProposal {
     string public constant override name = "MIP-O01";
 
     /// @notice whitelisted calldata for the break glass guardian
@@ -55,7 +62,8 @@ contract mipm01 is Configs, HybridProposal {
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
             abi.encodeWithSignature(
                 "updateApprovedCalldata(bytes,bool)",
-                approvedCalldata
+                approvedCalldata,
+                true
             ),
             "Whitelist break glass calldata to add the Artemis Timelock as a trusted sender in the Temporal Governor on Optimism",
             ForkID.Moonbeam
@@ -66,12 +74,12 @@ contract mipm01 is Configs, HybridProposal {
         /// safety check to ensure no base actions are run
         require(
             baseActions.length == 0,
-            "MIP-M33: should have no base actions"
+            "MIP-O01: should have no base actions"
         );
 
         require(
             moonbeamActions.length == 1,
-            "MIP-M33: should have 1 moonbeam actions"
+            "MIP-O01: should have 1 moonbeam actions"
         );
 
         /// only run actions on moonbeam
