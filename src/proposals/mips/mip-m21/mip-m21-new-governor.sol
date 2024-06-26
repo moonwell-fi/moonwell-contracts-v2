@@ -32,8 +32,7 @@ contract mipm21newGovernor is HybridProposal {
 
             addresses.addAddress(
                 "WORMHOLE_UNWRAPPER_ADAPTER",
-                address(wormholeUnwrapperAdapter),
-                true
+                address(wormholeUnwrapperAdapter)
             );
         }
     }

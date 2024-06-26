@@ -113,8 +113,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel),
-                        true
+                        address(irModel)
                     );
                 }
 
@@ -161,8 +160,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
 
                     addresses.addAddress(
                         config.addressesString,
-                        address(mToken),
-                        true
+                        address(mToken)
                     );
                 }
             }

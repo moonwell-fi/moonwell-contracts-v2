@@ -30,7 +30,7 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
     function setUp() public {
         addresses = new Addresses();
 
-        addresses.addAddress("REWARDS_RECEIVER", rewardRecipient, false);
+        addresses.addAddressEOA("REWARDS_RECEIVER", rewardRecipient);
         Factory4626Eth factory = deployFactoryEth(addresses);
         underlying = ERC20(addresses.getAddress("WETH"));
 

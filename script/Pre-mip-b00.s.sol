@@ -58,12 +58,12 @@ contract PreMipB00Script is Script, Test {
 
         vm.stopBroadcast();
 
-        addresses.addAddress("USDBC", address(usdc), true);
-        addresses.addAddress("cbETH", address(cbETH), true);
-        addresses.addAddress("WETH", address(weth), true);
+        addresses.addAddress("USDBC", address(usdc));
+        addresses.addAddress("cbETH", address(cbETH));
+        addresses.addAddress("WETH", address(weth));
 
-        addresses.addAddress("USDC_ORACLE", address(usdcOracle), true);
-        addresses.addAddress("ETH_ORACLE", address(ethOracle), true);
+        addresses.addAddress("USDC_ORACLE", address(usdcOracle));
+        addresses.addAddress("ETH_ORACLE", address(ethOracle));
 
         vm.startBroadcast(PRIVATE_KEY);
 
@@ -77,7 +77,7 @@ contract PreMipB00Script is Script, Test {
 
         vm.stopBroadcast();
 
-        addresses.addAddress("cbETH_ORACLE", address(cbEthOracle), true);
+        addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
 
         (
             string[] memory recordedNames,
