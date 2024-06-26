@@ -100,36 +100,32 @@ contract Addresses is IAddresses, Test {
         return _getAddress(name, _chainId);
     }
 
+    /// it is assumed that all addresses added through this method are
+    /// contracts. any non contract address should be added through the
+    /// corresponding json file.
     /// @notice add an address for the current chainId
     /// @param name the name of the address
     /// @param addr the address to add
-    /// @param isContract whether the address is a contract
-    function addAddress(
-        string memory name,
-        address addr,
-        bool isContract
-    ) public {
-        _addAddress(name, addr, block.chainid, isContract);
+    function addAddress(string memory name, address addr) public override {
+        _addAddress(name, addr, block.chainid, true);
 
         recordedAddresses.push(
             RecordedAddress({name: name, chainId: block.chainid})
         );
     }
 
-    /// @notice add or change an address (if is aready set) for the current chainId
+    /// it is assumed that all addresses added through this method are EOA's
+    /// (without bytecode). any contract address should be added through the
+    /// addAddress method.
+    /// @notice add an address for the current chainId
     /// @param name the name of the address
-    /// @param addr the address to change to
-    /// @param isContract whether the address is a contract
-    function addOrChangeAddress(
-        string memory name,
-        address addr,
-        bool isContract
-    ) public {
-        if (isAddressSet(name)) {
-            changeAddress(name, addr, isContract);
-        } else {
-            addAddress(name, addr, isContract);
-        }
+    /// @param addr the address to add
+    function addAddressEOA(string memory name, address addr) public override {
+        _addAddress(name, addr, block.chainid, false);
+
+        recordedAddresses.push(
+            RecordedAddress({name: name, chainId: block.chainid})
+        );
     }
 
     /// @notice add an address for a specific chainId
