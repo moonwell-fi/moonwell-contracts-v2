@@ -129,7 +129,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 permissionlessUnpauseTime,
                 trustedSenders
             );
-            addresses.addAddress("TEMPORAL_GOVERNOR", address(governor), true);
+            addresses.addAddress("TEMPORAL_GOVERNOR", address(governor));
         }
 
         deployAndMint(addresses);
@@ -140,8 +140,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             MultiRewardDistributor distributor = new MultiRewardDistributor();
             addresses.addAddress(
                 "MULTI_REWARD_DISTRIBUTOR",
-                address(distributor),
-                true
+                address(distributor)
             );
         }
         {
@@ -151,12 +150,12 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             unitroller._setPendingImplementation(address(comptroller));
             comptroller._become(unitroller);
 
-            addresses.addAddress("COMPTROLLER", address(comptroller), true);
-            addresses.addAddress("UNITROLLER", address(unitroller), true);
+            addresses.addAddress("COMPTROLLER", address(comptroller));
+            addresses.addAddress("UNITROLLER", address(unitroller));
 
             /// ------- PROXY ADMIN/ MULTI_REWARD_DISTRIBUTOR -------
             ProxyAdmin proxyAdmin = new ProxyAdmin();
-            addresses.addAddress("MRD_PROXY_ADMIN", address(proxyAdmin), true);
+            addresses.addAddress("MRD_PROXY_ADMIN", address(proxyAdmin));
 
             bytes memory initData = abi.encodeWithSignature(
                 "initialize(address,address)",
@@ -168,16 +167,12 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                     address(proxyAdmin),
                     initData
                 );
-            addresses.addAddress("MRD_PROXY", address(mrdProxy), true);
+            addresses.addAddress("MRD_PROXY", address(mrdProxy));
         }
         /// ------ MTOKENS -------
         {
             MErc20Delegate mTokenLogic = new MErc20Delegate();
-            addresses.addAddress(
-                "MTOKEN_IMPLEMENTATION",
-                address(mTokenLogic),
-                true
-            );
+            addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
         }
         WethUnwrapper unwrapper = new WethUnwrapper(
             addresses.getAddress("WETH")
@@ -185,8 +180,8 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
         MWethDelegate delegate = new MWethDelegate(address(unwrapper));
 
-        addresses.addAddress("WETH_UNWRAPPER", address(unwrapper), true);
-        addresses.addAddress("MWETH_IMPLEMENTATION", address(delegate), true);
+        addresses.addAddress("WETH_UNWRAPPER", address(unwrapper));
+        addresses.addAddress("MWETH_IMPLEMENTATION", address(delegate));
 
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
@@ -211,8 +206,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                             config.addressesString
                         )
                     ),
-                    address(irModel),
-                    true
+                    address(irModel)
                 );
             }
 
@@ -257,18 +251,18 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 ""
             );
 
-            addresses.addAddress(config.addressesString, address(mToken), true);
+            addresses.addAddress(config.addressesString, address(mToken));
         }
 
         /// deploy oracle, set price oracle
         ChainlinkOracle oracle = new ChainlinkOracle("null_asset");
-        addresses.addAddress("CHAINLINK_ORACLE", address(oracle), true);
+        addresses.addAddress("CHAINLINK_ORACLE", address(oracle));
 
         WETHRouter router = new WETHRouter(
             WETH9(addresses.getAddress("WETH")),
             MErc20(addresses.getAddress("MOONWELL_WETH"))
         );
-        addresses.addAddress("WETH_ROUTER", address(router), true);
+        addresses.addAddress("WETH_ROUTER", address(router));
     }
 
     function afterDeploy(Addresses addresses, address) public override {

@@ -50,11 +50,7 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
                 addresses.getAddress("WETH_UNWRAPPER")
             );
 
-            addresses.addAddress(
-                "MWETH_IMPLEMENTATION",
-                address(mWethLogic),
-                true
-            );
+            addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic));
         }
     }
 

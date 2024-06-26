@@ -107,7 +107,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
                 limits[1].rateLimitPerSecond = lockBoxRateLimitPerSecond;
                 limits[1].bufferCap = lockBoxBufferCap;
 
-                addresses.addAddress("xWELL_LOCKBOX", lockbox, true);
+                addresses.addAddress("xWELL_LOCKBOX", lockbox);
             }
 
             initializeXWell(
@@ -131,16 +131,14 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
             /// add to moonbeam addresses
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                wormholeAdapter,
-                true
+                wormholeAdapter
             );
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
-                wormholeAdapterLogic,
-                true
+                wormholeAdapterLogic
             );
-            addresses.addAddress("xWELL_LOGIC", xwellLogic, true);
-            addresses.addAddress("xWELL_PROXY", xwellProxy, true);
+            addresses.addAddress("xWELL_LOGIC", xwellLogic);
+            addresses.addAddress("xWELL_PROXY", xwellProxy);
 
             printAddresses(addresses);
             addresses.resetRecordingAddresses();

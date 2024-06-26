@@ -29,8 +29,7 @@ contract mipm21 is GovernanceProposal {
 
             addresses.addAddress(
                 "WORMHOLE_UNWRAPPER_ADAPTER",
-                address(wormholeUnwrapperAdapter),
-                true
+                address(wormholeUnwrapperAdapter)
             );
         }
     }

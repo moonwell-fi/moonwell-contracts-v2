@@ -32,7 +32,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
     function setUp() public {
         addresses = new Addresses();
 
-        addresses.addAddress("REWARDS_RECEIVER", rewardRecipient, false);
+        addresses.addAddressEOA("REWARDS_RECEIVER", rewardRecipient);
         Factory4626 factory = deployFactory(addresses);
         underlying = ERC20(addresses.getAddress("USDBC"));
 
