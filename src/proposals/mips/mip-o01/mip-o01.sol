@@ -104,7 +104,7 @@ contract mipo01 is Configs, HybridProposal {
     }
 
     function _buildCalldata() internal {
-        address artemisTimelock = addresses.getAddress("ARTEMIS_TIMELOCK");
+        address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
         /// get temporal governor on Optimism
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
