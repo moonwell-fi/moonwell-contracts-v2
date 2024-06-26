@@ -17,6 +17,17 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
     string public constant override name = "MIPB07";
 
     constructor() {
+        string memory descriptionPath = vm.envOr(
+            "LISTING_PATH",
+            string(
+                "./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
+            )
+        );
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile(descriptionPath)
+        );
+
+        _setProposalDescription(proposalDescription);
         isArtemisProposal = true;
     }
 
@@ -31,27 +42,13 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
     function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-        string memory descriptionPath = vm.envOr(
-            "LISTING_PATH",
-            string(
-                "./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
-            )
-        );
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile(descriptionPath)
-        );
-
-        _setProposalDescription(proposalDescription);
-
         delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
         {
             string memory mtokensPath = vm.envOr(
                 "EMISSION_PATH",
-                string(
-                    "./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
-                )
+                string("./src/proposals/mips/mip-b07/RewardStreams.json")
             );
             /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
             string memory fileContents = vm.readFile(mtokensPath);
