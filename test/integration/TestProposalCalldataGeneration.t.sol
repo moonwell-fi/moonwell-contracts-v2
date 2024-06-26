@@ -206,7 +206,6 @@ contract TestProposalCalldataGeneration is Test {
 
             // create array splitting the output string
             string[] memory proposalsPath = vm.split(output, "\n");
-            proposalsPath[0] = "src/proposals/mips/mip-b13/mip-b13.sol";
 
             for (uint256 i = proposalsPath.length; i > 0; i--) {
                 address proposal = deployCode(proposalsPath[i - 1]);
@@ -422,6 +421,78 @@ contract TestProposalCalldataGeneration is Test {
                     proposalId
                 );
             }
+        }
+    }
+
+    function testMipB13() public {
+        {
+            uint256 proposalId = 71;
+
+            (
+                address[] memory targets,
+                uint256[] memory values,
+                ,
+                bytes[] memory calldatas
+            ) = MoonwellArtemisGovernor(artemisGovernor).getActions(proposalId);
+
+            for (uint256 i = 0; i < targets.length; i++) {
+                console.log("Targets: %s", targets[i]);
+                console.log("Values: %s", values[i]);
+                console.logBytes(calldatas[i]);
+            }
+
+            bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
+
+            artemisProposalHashes[proposalId] = hash;
+        }
+
+        address proposal = deployCode("src/proposals/mips/mip-b13/mip-b13.sol");
+
+        vm.makePersistent(proposal);
+
+        CrossChainProposal proposalContract = CrossChainProposal(proposal);
+        vm.selectFork(uint256(proposalContract.primaryForkId()));
+        proposalContract.build(addresses);
+
+        address target = addresses.getAddress("WORMHOLE_CORE_MOONBEAM", 1284);
+
+        bytes memory payload = proposalContract.getTemporalGovCalldata(
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
+
+        address[] memory targets = new address[](1);
+        targets[0] = target;
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = payload;
+
+        console.log("Targets: %s", targets[0]);
+        console.log("Values: %s", values[0]);
+        console.logBytes(payload);
+
+        bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
+
+        uint256 proposalId = 71;
+
+        bool found = false;
+
+        // see if the hash of the proposal actions is the same as one of
+        // the proposals fetched from the Artemis Governor
+
+        if (artemisProposalHashes[proposalId] == hash) {
+            console.log(
+                "Proposal ID found for %s, %d",
+                proposalContract.name(),
+                proposalId
+            );
+
+            // delete from the proposalHashes mapping
+            delete artemisProposalHashes[proposalId];
+
+            found = true;
         }
     }
 
