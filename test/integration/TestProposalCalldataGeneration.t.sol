@@ -227,11 +227,9 @@ contract TestProposalCalldataGeneration is Test {
                     1284
                 );
 
-                bytes memory payload = proposalContract
-                    .getMultichainGovernorCalldata(
-                        addresses.getAddress("TEMPORAL_GOVERNOR"),
-                        target
-                    );
+                bytes memory payload = proposalContract.getTemporalGovCalldata(
+                    addresses.getAddress("TEMPORAL_GOVERNOR")
+                );
 
                 address[] memory targets = new address[](1);
                 targets[0] = target;
@@ -251,7 +249,7 @@ contract TestProposalCalldataGeneration is Test {
                 bool found = false;
 
                 // see if the hash of the proposal actions is the same as one of the
-                // proposals fetched from the Artemis Governor
+                // proposals fetched from the MultichainGovernor
                 while (proposalId > 0) {
                     if (proposalHashes[proposalId] == hash) {
                         console.log(
@@ -278,7 +276,7 @@ contract TestProposalCalldataGeneration is Test {
                 while (proposalId > 0 && found == false) {
                     if (artemisProposalHashes[proposalId] == hash) {
                         console.log(
-                            "Proposal ID found on ArtemisGvernor for %s, %d",
+                            "Proposal ID found for %s, %d",
                             proposalContract.name(),
                             proposalId
                         );
@@ -302,89 +300,6 @@ contract TestProposalCalldataGeneration is Test {
 
                 vm.selectFork(uint256(ForkID.Moonbeam));
             }
-        }
-
-        // try to find the not found paths in artemis governor
-
-        console.log(
-            "----------------- SEARCHING ARTEMIS GOVERNOR -----------------"
-        );
-
-        for (uint256 i = notFoundPaths.length(); i > 0; i--) {
-            console.log(notFoundPaths.at(i - 1).toString());
-        }
-
-        {
-            uint256 proposalCount = artemisGovernor.proposalCount();
-
-            for (uint256 i = notFoundPaths.length(); i > 0; i--) {
-                address proposal = deployCode(
-                    notFoundPaths.at(i - 1).toString()
-                );
-                if (proposal == address(0)) {
-                    continue;
-                }
-
-                vm.makePersistent(proposal);
-
-                IProposal proposalContract = IProposal(proposal);
-                vm.selectFork(uint256(proposalContract.primaryForkId()));
-                proposalContract.build(addresses);
-
-                // get proposal actions
-                (
-                    address[] memory targets,
-                    uint256[] memory values,
-                    bytes[] memory calldatas
-                ) = proposalContract.getTargetsPayloadsValues(addresses);
-
-                bytes32 hash = keccak256(
-                    abi.encode(targets, values, calldatas)
-                );
-
-                uint256 proposalId = proposalCount;
-
-                // see if the hash of the proposal actions is the same as one of the
-                // proposals fetched from the Artemis Governor
-                while (proposalId > 0) {
-                    if (artemisProposalHashes[proposalId] == hash) {
-                        console.log(
-                            "Proposal ID found for %s, %d",
-                            proposalContract.name(),
-                            proposalId
-                        );
-
-                        // delete from the proposalHashes mapping
-                        delete artemisProposalHashes[proposalId];
-
-                        // delete from not found paths
-                        notFoundPaths.remove(notFoundPaths.at(i - 1));
-
-                        break;
-                    }
-                    proposalId--;
-                }
-
-                // if proposalId is 0, then the proposal was not found
-                if (proposalId == 0) {
-                    console.log(
-                        "Proposal ID not found for ",
-                        proposalContract.name()
-                    );
-                }
-
-                vm.selectFork(uint256(ForkID.Moonbeam));
-            }
-        }
-
-        // log not found
-        console.log("-------------- FINISHED --------------");
-        console.log("NOT FOUND LENGTH: ", notFoundPaths.length());
-        for (uint256 i = notFoundPaths.length(); i > 0; i--) {
-            console.log(
-                "Proposal not found for ",
-                notFoundPaths.at(i - 1).toString()
-            );
         }
     }
 
