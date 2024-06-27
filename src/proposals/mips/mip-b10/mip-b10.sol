@@ -268,6 +268,63 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
 
     function build(Addresses addresses) public override {
+        // workaround to find calldata on TestProposalCalldataGeneration
+        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
+        delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
+
+        {
+            string
+                memory mtokensPath = "./src/proposals/mips/mip-b10/MTokens.json";
+            /// MTOKENS_PATH="./src/proposals/mips/examples/mip-market-listing/MTokens.json"
+            string memory fileContents = vm.readFile(mtokensPath);
+            bytes memory rawJson = vm.parseJson(fileContents);
+
+            CTokenConfiguration[] memory decodedJson = abi.decode(
+                rawJson,
+                (CTokenConfiguration[])
+            );
+
+            for (uint256 i = 0; i < decodedJson.length; i++) {
+                require(
+                    decodedJson[i].collateralFactor <= 0.95e18,
+                    "collateral factor absurdly high, are you sure you want to proceed?"
+                );
+
+                /// possible to set supply caps and not borrow caps,
+                /// but not set borrow caps and not set supply caps
+                if (decodedJson[i].supplyCap != 0) {
+                    require(
+                        decodedJson[i].supplyCap > decodedJson[i].borrowCap,
+                        "borrow cap gte supply cap, are you sure you want to proceed?"
+                    );
+                } else if (decodedJson[i].borrowCap != 0) {
+                    revert("borrow cap must be set with a supply cap");
+                }
+
+                cTokenConfigurations[block.chainid].push(decodedJson[i]);
+            }
+        }
+
+        {
+            string
+                memory mtokensPath = "./src/proposals/mips/mip-b10/RewardStreams.json";
+            /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
+            string memory fileContents = vm.readFile(mtokensPath);
+            bytes memory rawJson = vm.parseJson(fileContents);
+            EmissionConfig[] memory decodedEmissions = abi.decode(
+                rawJson,
+                (EmissionConfig[])
+            );
+
+            for (uint256 i = 0; i < decodedEmissions.length; i++) {
+                require(
+                    decodedEmissions[i].borrowEmissionsPerSec != 0,
+                    "borrow speed must be gte 1"
+                );
+                emissions[block.chainid].push(decodedEmissions[i]);
+            }
+        }
+
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         address unitrollerAddress = addresses.getAddress("UNITROLLER");

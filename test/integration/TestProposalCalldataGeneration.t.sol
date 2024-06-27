@@ -424,9 +424,9 @@ contract TestProposalCalldataGeneration is Test {
         }
     }
 
-    function testMipB13() public {
+    function testMipB10() public {
         {
-            uint256 proposalId = 71;
+            uint256 proposalId = 61;
 
             (
                 address[] memory targets,
@@ -446,7 +446,7 @@ contract TestProposalCalldataGeneration is Test {
             artemisProposalHashes[proposalId] = hash;
         }
 
-        address proposal = deployCode("src/proposals/mips/mip-b13/mip-b13.sol");
+        address proposal = deployCode("src/proposals/mips/mip-b10/mip-b10.sol");
 
         vm.makePersistent(proposal);
 
@@ -455,6 +455,8 @@ contract TestProposalCalldataGeneration is Test {
         proposalContract.build(addresses);
 
         address target = addresses.getAddress("WORMHOLE_CORE_MOONBEAM", 1284);
+
+        proposalContract.printProposalActionSteps();
 
         bytes memory payload = proposalContract.getTemporalGovCalldata(
             addresses.getAddress("TEMPORAL_GOVERNOR")
@@ -475,7 +477,7 @@ contract TestProposalCalldataGeneration is Test {
 
         bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
 
-        uint256 proposalId = 71;
+        uint256 proposalId = 55;
 
         bool found = false;
 
