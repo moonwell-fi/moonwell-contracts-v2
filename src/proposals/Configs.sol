@@ -103,18 +103,13 @@ contract Configs is Test {
             /// create mock wormhole core for local testing
             MockWormholeCore wormholeCore = new MockWormholeCore();
 
-            addresses.addAddress("WORMHOLE_CORE", address(wormholeCore), true);
-            addresses.addAddress("PAUSE_GUARDIAN", address(this), true);
+            addresses.addAddress("WORMHOLE_CORE", address(wormholeCore));
+            addresses.addAddress("PAUSE_GUARDIAN", address(this));
         }
     }
 
     function deployAndMint(Addresses addresses) public {
-        if (
-            block.chainid == _baseSepoliaChainId ||
-            block.chainid == _optimismSepoliaChainId
-        ) {
-            // allocate tokens to temporal governor
-
+        if (block.chainid == _baseSepoliaChainId) {
             // USDBC
             address usdbc = addresses.getAddress("USDBC");
             FaucetTokenWithPermit(usdbc).allocateTo(
@@ -122,9 +117,48 @@ contract Configs is Test {
                 initialMintAmount
             );
 
-            // cbETH
             address cbeth = addresses.getAddress("cbETH");
             FaucetTokenWithPermit(cbeth).allocateTo(
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                initialMintAmount
+            );
+
+            // WETH
+            WETH9 weth = WETH9(addresses.getAddress("WETH"));
+            vm.deal(address(this), 0.00001e18);
+            weth.deposit{value: 0.00001e18}();
+            weth.transfer(
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                0.00001e18
+            );
+        }
+        if (block.chainid == _optimismSepoliaChainId) {
+            // allocate tokens to temporal governor
+            FaucetTokenWithPermit usdc = new FaucetTokenWithPermit(
+                1e18,
+                "USD Coin",
+                6, /// 6 decimals
+                "USDC"
+            );
+
+            addresses.addAddress("USDC", address(usdc));
+
+            FaucetTokenWithPermit wsteth = new FaucetTokenWithPermit(
+                1e18,
+                "wstETH",
+                18, /// 18 decimals
+                "wstETH"
+            );
+
+            addresses.addAddress("wstETH", address(wsteth));
+
+            FaucetTokenWithPermit(usdc).allocateTo(
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                initialMintAmount
+            );
+
+            // wstETH
+            FaucetTokenWithPermit(wsteth).allocateTo(
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 initialMintAmount
             );
@@ -167,9 +201,9 @@ contract Configs is Test {
                     initialMintAmount
                 );
 
-                addresses.addAddress("USDBC", address(token), true);
-                addresses.addAddress("USDC_ORACLE", address(usdcOracle), true);
-                addresses.addAddress("ETH_ORACLE", address(ethOracle), true);
+                addresses.addAddress("USDBC", address(token));
+                addresses.addAddress("USDC_ORACLE", address(usdcOracle));
+                addresses.addAddress("ETH_ORACLE", address(ethOracle));
 
                 JumpRateModelConfiguration
                     memory jrmConfig = JumpRateModelConfiguration(
@@ -203,7 +237,7 @@ contract Configs is Test {
                     addresses.getAddress("TEMPORAL_GOVERNOR"),
                     initialMintAmount
                 );
-                addresses.addAddress("WETH", address(token), true);
+                addresses.addAddress("WETH", address(token));
 
                 JumpRateModelConfiguration
                     memory jrmConfig = JumpRateModelConfiguration(
@@ -242,11 +276,7 @@ contract Configs is Test {
                         address(0)
                     );
 
-                addresses.addAddress(
-                    "cbETH_ORACLE",
-                    address(cbEthOracle),
-                    true
-                );
+                addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
             }
 
             return;
@@ -270,7 +300,7 @@ contract Configs is Test {
 
             token.allocateTo(addresses.getAddress("MRD_PROXY"), 100_000_000e18);
 
-            addresses.addAddress("WELL", address(token), true);
+            addresses.addAddress("WELL", address(token));
         }
 
         //// create reward configuration for all mTokens

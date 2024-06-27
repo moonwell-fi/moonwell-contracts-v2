@@ -42,7 +42,7 @@ contract DeployWell is Script, ChainIds {
         Well well = new Well(owner);
         vm.stopBroadcast();
 
-        addresses.addAddress("WELL", address(well), true);
+        addresses.addAddress("WELL", address(well));
 
         printAddresses();
     }

@@ -162,8 +162,7 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel),
-                        true
+                        address(irModel)
                     );
                 }
 
@@ -204,11 +203,7 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                     ""
                 );
 
-                addresses.addAddress(
-                    config.addressesString,
-                    address(mToken),
-                    true
-                );
+                addresses.addAddress(config.addressesString, address(mToken));
             }
         }
     }
@@ -230,14 +225,10 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                 );
 
                 _validateCaps(addresses, config); /// validate supply and borrow caps
-
-                /// defaults to true, then if you need to replicate a proposal and generate
-                /// calldata, set this to false as an env var, then run the proposal
-                if (vm.envOr("DO_AFTER_DEPLOY_MTOKEN_BROADCAST", true)) {
-                    mTokens[i]._setReserveFactor(config.reserveFactor);
-                    mTokens[i]._setProtocolSeizeShare(config.seizeShare);
-                    mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
-                }
+                /// calldata, set this to false as an env var, then run the proposa
+                mTokens[i]._setReserveFactor(config.reserveFactor);
+                mTokens[i]._setProtocolSeizeShare(config.seizeShare);
+                mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
             }
         }
     }
@@ -667,8 +658,6 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                     addresses.getAddress(config.tokenAddressName)
                 ).decimals();
 
-                /// override defaults to false, dev can set to true to override these checks
-
                 if (
                     config.supplyCap != 0 &&
                     !vm.envOr("OVERRIDE_SUPPLY_CAP", false)
@@ -676,10 +665,7 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                     /// strip off all the decimals
                     uint256 adjustedSupplyCap = config.supplyCap /
                         (10 ** decimals);
-                    require(
-                        adjustedSupplyCap < 120_000_000,
-                        "supply cap suspiciously high, if this is the right supply cap, set OVERRIDE_SUPPLY_CAP environment variable to true"
-                    );
+                    require(adjustedSupplyCap < 120_000_000);
                 }
 
                 if (
@@ -688,10 +674,7 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                 ) {
                     uint256 adjustedBorrowCap = config.borrowCap /
                         (10 ** decimals);
-                    require(
-                        adjustedBorrowCap < 120_000_000,
-                        "borrow cap suspiciously high, if this is the right borrow cap, set OVERRIDE_BORROW_CAP environment variable to true"
-                    );
+                    require(adjustedBorrowCap < 120_000_000);
                 }
             }
         }

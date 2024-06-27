@@ -34,4 +34,6 @@ opSepolia = "${OP_SEPOLIA_RPC_URL}"
 #sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
 #base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
 #baseSepolia = { key = "${BASESCAN_API_KEY}", url= "https://sepolia.basescan.org/api" }
+#opSepolia = { key = "${OPSCAN_API_KEY}", url= "https://api.optimistic.etherscan.io/api" }
+
 
