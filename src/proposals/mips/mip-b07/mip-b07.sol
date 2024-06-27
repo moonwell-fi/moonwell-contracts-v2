@@ -14,7 +14,7 @@ import {ForkID} from "@utils/Enums.sol";
 
 /// This MIP sets the reward speeds for different markets in the MultiRewardDistributor
 contract mipb07 is Proposal, CrossChainProposal, Configs {
-    string public constant override name = "MIPB07";
+    string public constant override name = "MIP-B07";
 
     constructor() {
         string memory descriptionPath = vm.envOr(
