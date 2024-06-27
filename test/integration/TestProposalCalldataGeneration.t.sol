@@ -12,13 +12,8 @@ import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.so
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
-import {String} from "@utils/String.sol";
-import {Bytes} from "@utils/Bytes.sol";
 
 contract TestProposalCalldataGeneration is Test {
-    using String for string;
-    using Bytes for bytes32;
-
     Addresses public addresses;
 
     MultichainGovernor public governor;
@@ -29,6 +24,9 @@ contract TestProposalCalldataGeneration is Test {
 
     mapping(uint256 proposalId => bytes32 hash) public proposalHashes;
     mapping(uint256 proposalId => bytes32 hash) public artemisProposalHashes;
+
+    uint256 proposalFilesCount;
+    uint256 matches;
 
     function setUp() public {
         vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
@@ -54,11 +52,10 @@ contract TestProposalCalldataGeneration is Test {
         artemisProposalCount = artemisGovernor.proposalCount();
     }
 
-    function testMultichainGovernorCalldataGeneration() public {
+    function testProposalToolingCalldataGeneration() public {
         {
             uint256 proposalId = governorProposalCount;
 
-            // first save all the proposals actions
             while (proposalId > 0) {
                 (
                     address[] memory targets,
@@ -72,7 +69,6 @@ contract TestProposalCalldataGeneration is Test {
 
                 proposalHashes[proposalId] = hash;
 
-                // console.log("==================");
                 proposalId--;
             }
         }
@@ -80,7 +76,6 @@ contract TestProposalCalldataGeneration is Test {
         {
             uint256 proposalId = artemisProposalCount;
 
-            // first save all the proposals actions
             while (proposalId > 0) {
                 (
                     address[] memory targets,
@@ -101,6 +96,10 @@ contract TestProposalCalldataGeneration is Test {
             }
         }
 
+        console.log(
+            "----------------- SEARCHING HYBRID PROPOSALS -----------------"
+        );
+
         // find hybrid proposals matches
         {
             string[] memory inputs = new string[](1);
@@ -110,6 +109,7 @@ contract TestProposalCalldataGeneration is Test {
 
             // create array splitting the output string
             string[] memory proposalsPath = vm.split(output, "\n");
+            proposalFilesCount += proposalsPath.length;
 
             for (uint256 i = proposalsPath.length; i > 0; i--) {
                 address proposal = deployCode(proposalsPath[i - 1]);
@@ -152,6 +152,7 @@ contract TestProposalCalldataGeneration is Test {
                         delete proposalHashes[proposalId];
 
                         found = true;
+                        matches++;
                         break;
                     }
                     proposalId--;
@@ -161,7 +162,6 @@ contract TestProposalCalldataGeneration is Test {
 
                 // see if the hash of the proposal actions is the same as one of
                 // the proposals fetched from the Artemis Governor
-
                 while (proposalId > 0 && found == false) {
                     if (artemisProposalHashes[proposalId] == hash) {
                         console.log(
@@ -173,6 +173,7 @@ contract TestProposalCalldataGeneration is Test {
                         // delete from the proposalHashes mapping
                         delete artemisProposalHashes[proposalId];
                         found = true;
+                        matches++;
                         break;
                     }
                     proposalId--;
@@ -202,6 +203,7 @@ contract TestProposalCalldataGeneration is Test {
 
             // create array splitting the output string
             string[] memory proposalsPath = vm.split(output, "\n");
+            proposalFilesCount += proposalsPath.length;
 
             for (uint256 i = proposalsPath.length; i > 0; i--) {
                 address proposal = deployCode(proposalsPath[i - 1]);
@@ -257,6 +259,7 @@ contract TestProposalCalldataGeneration is Test {
                         delete proposalHashes[proposalId];
 
                         found = true;
+                        matches++;
 
                         break;
                     }
@@ -267,7 +270,6 @@ contract TestProposalCalldataGeneration is Test {
 
                 // see if the hash of the proposal actions is the same as one of
                 // the proposals fetched from the Artemis Governor
-
                 while (proposalId > 0 && found == false) {
                     if (artemisProposalHashes[proposalId] == hash) {
                         console.log(
@@ -280,6 +282,8 @@ contract TestProposalCalldataGeneration is Test {
                         delete artemisProposalHashes[proposalId];
 
                         found = true;
+                        matches++;
+
                         break;
                     }
                     proposalId--;
@@ -300,7 +304,6 @@ contract TestProposalCalldataGeneration is Test {
             "----------------- SEARCHING GOVERNANCE PROPOSALS -----------------"
         );
 
-        // find cross chain proposal matches
         {
             string[] memory inputs = new string[](1);
             inputs[0] = "./get-governance-proposals.sh";
@@ -309,6 +312,7 @@ contract TestProposalCalldataGeneration is Test {
 
             // create array splitting the output string
             string[] memory proposalsPath = vm.split(output, "\n");
+            proposalFilesCount += proposalsPath.length;
 
             for (uint256 i = proposalsPath.length; i > 0; i--) {
                 address proposal = deployCode(proposalsPath[i - 1]);
@@ -342,7 +346,6 @@ contract TestProposalCalldataGeneration is Test {
 
                 // see if the hash of the proposal actions is the same as one of
                 // the proposals fetched from the Artemis Governor
-
                 while (proposalId > 0 && found == false) {
                     if (artemisProposalHashes[proposalId] == hash) {
                         console.log(
@@ -355,6 +358,8 @@ contract TestProposalCalldataGeneration is Test {
                         delete artemisProposalHashes[proposalId];
 
                         found = true;
+                        matches++;
+
                         break;
                     }
                     proposalId--;
@@ -370,6 +375,8 @@ contract TestProposalCalldataGeneration is Test {
                 vm.selectFork(uint256(ForkID.Moonbeam));
             }
         }
+
+        assertEq(proposalFilesCount, matches, "Not all proposals were found");
     }
 
     function testMipB16() public {
