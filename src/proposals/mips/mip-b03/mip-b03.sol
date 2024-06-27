@@ -49,7 +49,7 @@ contract mipb03 is Proposal, CrossChainProposal, Configs {
         /// for example, should be set to
         string memory descriptionPath = vm.envOr(
             "LISTING_PATH",
-            string("./src/proposals/mips/mip-b03/MIP-B03.md")
+            string("./src/proposals/mips/mip-b03/mip-b03.md")
         );
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(descriptionPath)
