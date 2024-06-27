@@ -502,60 +502,6 @@ abstract contract HybridProposal is
         vm.selectFork(uint256(primaryForkId()));
     }
 
-    function getArtemisProposalId(
-        Addresses addresses,
-        address governor,
-        uint256 minimumProposalId
-    ) public override returns (uint256 proposalId) {
-        vm.selectFork(uint256(ForkID.Moonbeam));
-
-        bytes memory proposalCalldata = getProposeCalldata(
-            addresses.getAddress(
-                "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
-            ),
-            addresses.getAddress(
-                block.chainid == moonBeamChainId
-                    ? "WORMHOLE_CORE_MOONBEAM"
-                    : "WORMHOLE_CORE_MOONBASE",
-                block.chainid == moonBeamChainId
-                    ? moonBeamChainId
-                    : moonBaseChainId
-            )
-        );
-
-        uint256 proposalCount = onchainProposalId != 0
-            ? onchainProposalId
-            : MultichainGovernor(governor).proposalCount();
-
-        while (proposalCount > 0 && proposalCount >= minimumProposalId) {
-            (
-                address[] memory targets,
-                uint256[] memory values,
-                string[] memory signatures,
-                bytes[] memory calldatas
-            ) = IArtemisGovernor(governor).getActions(proposalCount);
-
-            bytes memory onchainCalldata = abi.encodeWithSignature(
-                "propose(address[],uint256[],string[],bytes[],string)",
-                targets,
-                values,
-                signatures,
-                calldatas,
-                PROPOSAL_DESCRIPTION
-            );
-
-            if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
-                proposalId = proposalCount;
-                break;
-            }
-
-            proposalCount--;
-        }
-
-        vm.selectFork(uint256(primaryForkId()));
-    }
-
     /// @notice Runs the proposal on moonbeam, verifying the actions through the hook
     /// @param addresses the addresses contract
     /// @param caller the proposer address

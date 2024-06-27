@@ -321,55 +321,6 @@ abstract contract CrossChainProposal is
         vm.selectFork(uint256(primaryForkId()));
     }
 
-    /// @notice search for a on-chain proposal that matches the proposal calldata
-    /// @param addresses the addresses contract
-    /// @param governor the governor address
-    /// @return proposalId the proposal id, 0 if no proposal is found
-    function getArtemisProposalId(
-        Addresses addresses,
-        address governor,
-        uint256 minProposalId
-    ) public override returns (uint256 proposalId) {
-        /// CrossChainProposal is only used for proposals destined for
-        /// Base and Optimism. This is a temporary solution until we get rid of
-        /// CrossChainProposal.
-        vm.selectFork(uint256(ForkID.Moonbeam));
-
-        address temporalGovernor = addresses.getAddress(
-            "TEMPORAL_GOVERNOR",
-            sendingChainIdToReceivingChainId[block.chainid]
-        );
-
-        uint256 proposalCount = onchainProposalId != 0
-            ? onchainProposalId
-            : MultichainGovernor(governor).proposalCount();
-
-        bytes memory proposalCalldata = getTemporalGovCalldata(
-            temporalGovernor
-        );
-
-        while (proposalCount > 0 && proposalCount > minProposalId) {
-            (
-                address[] memory targets,
-                ,
-                ,
-                bytes[] memory calldatas
-            ) = IArtemisGovernor(governor).getActions(proposalCount);
-
-            if (
-                targets.length == 1 &&
-                keccak256(proposalCalldata) == keccak256(calldatas[0])
-            ) {
-                proposalId = proposalCount;
-                break;
-            }
-
-            proposalCount--;
-        }
-
-        vm.selectFork(uint256(primaryForkId()));
-    }
-
     /// @notice print the actions that will be executed by the proposal
     /// @param temporalGovernor address of the cross chain governor executing the calls
     /// @param wormholeCore address of the wormhole core contract

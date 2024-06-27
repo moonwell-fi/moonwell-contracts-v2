@@ -117,12 +117,6 @@ abstract contract MIPProposal is Script {
         address
     ) public virtual returns (uint256 proposalId);
 
-    function getArtemisProposalId(
-        Addresses,
-        address,
-        uint256
-    ) public virtual returns (uint256 proposalId);
-
     /// @dev Print recorded addresses
     function _printAddressesChanges() private view {
         (
