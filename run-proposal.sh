@@ -11,7 +11,7 @@ EXCLUDED_FILES=("src/proposals/mips/mip-m23/mip-m23c.sol" "src/proposals/mips/mi
 if [[ ! -z "$CHANGED_FILES" ]]; then
     IFS=' ' read -r -a files_array <<< "$CHANGED_FILES"
 
-    # Initialize an empty array to hold numbers and corresponding file names
+    # Initialize variables to hold the highest number and corresponding file name
     max_number=-1
     selected_file=""
 
@@ -22,14 +22,15 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
             # Extract the number following 'm', 'b', or 'o' before '.sol' and exclude files with letters after the number
             if [[ $file =~ [bmo]([0-9]+)\.sol$ ]]; then
                 number=${BASH_REMATCH[1]}
+                number_int=$(echo "$number" | sed 's/^0*//') # Remove leading zeros
             else
                 echo "No valid number found in $file, skipping."
                 continue
             fi
 
-            # Check if this number is the highest found so far
-            if [[ "$number" -gt "$max_number" ]]; then
-                max_number=$number
+            # Check if this number is the highest found so far (integer comparison)
+            if [[ "$number_int" -gt "$max_number" ]]; then
+                max_number=$number_int
                 selected_file=$file
             fi
         fi
