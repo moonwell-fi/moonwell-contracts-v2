@@ -20,7 +20,6 @@ contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b15/MIP-B15.md")
         );
         _setProposalDescription(proposalDescription);
-        isArtemisProposal = false;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
