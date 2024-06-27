@@ -38,6 +38,7 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
 
         _setProposalDescription(proposalDescription);
 
+        nonce = 2;
         isArtemisProposal = true;
     }
 
