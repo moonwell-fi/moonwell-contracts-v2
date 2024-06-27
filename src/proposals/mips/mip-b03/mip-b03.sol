@@ -47,7 +47,6 @@ contract mipb03 is Proposal, CrossChainProposal, Configs {
 
     constructor() {
         /// for example, should be set to
-        /// LISTING_PATH="./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
         string memory descriptionPath = vm.envOr(
             "LISTING_PATH",
             string("./src/proposals/mips/mip-b03/MIP-B03.md")
@@ -189,6 +188,7 @@ contract mipb03 is Proposal, CrossChainProposal, Configs {
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
 
     function build(Addresses addresses) public override {
+        // workaround to find calldata on TestProposalCalldataGeneration
         delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
@@ -231,7 +231,6 @@ contract mipb03 is Proposal, CrossChainProposal, Configs {
                 "EMISSION_PATH",
                 string("./src/proposals/mips/mip-b03/RewardStreams.json")
             );
-            /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
             EmissionConfig[] memory decodedEmissions = abi.decode(
@@ -257,6 +256,16 @@ contract mipb03 is Proposal, CrossChainProposal, Configs {
 
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
+        for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+            Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+            supplyCaps.push(config.supplyCap);
+            borrowCaps.push(config.borrowCap);
+
+            /// get the mToken
+            mTokens.push(MToken(addresses.getAddress(config.addressesString)));
+        }
+
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         address chainlinkOracleAddress = addresses.getAddress(
             "CHAINLINK_ORACLE"
