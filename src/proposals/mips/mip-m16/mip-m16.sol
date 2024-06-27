@@ -39,15 +39,15 @@ contract mipm16 is GovernanceProposal {
 
         /// @dev mUSDC.mad
         MErc20Delegator mUSDC = MErc20Delegator(payable(mUSDCAddress));
-        uint256 mUSDCReserves = mUSDC.totalReserves();
+        uint256 mUSDCReserves = 65456400996;
 
         /// @dev mETH.mad
         MErc20Delegator mETH = MErc20Delegator(payable(mETHAddress));
-        uint256 mETHReserves = mETH.totalReserves();
+        uint256 mETHReserves = 24519061554277751182;
 
         /// @dev mBTC.mad
         MErc20Delegator mwBTC = MErc20Delegator(payable(mwBTCAddress));
-        uint256 mwBTCReserves = mwBTC.totalReserves();
+        uint256 mwBTCReserves = 196336752;
 
         /// @dev set max operations on artemis governor to 1000
         _pushGovernanceAction(

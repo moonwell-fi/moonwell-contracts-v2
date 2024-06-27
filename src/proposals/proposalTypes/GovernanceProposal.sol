@@ -40,7 +40,7 @@ abstract contract GovernanceProposal is Proposal {
 
     /// @notice get actions
     function _getActions()
-        internal
+        public
         view
         returns (
             address[] memory,
