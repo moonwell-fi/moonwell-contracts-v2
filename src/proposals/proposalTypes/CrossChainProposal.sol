@@ -22,8 +22,6 @@ abstract contract CrossChainProposal is
 {
     using Bytes for bytes;
 
-    bool public isArtemisProposal;
-
     uint32 public nonce; /// nonce for wormhole, unused by Temporal Governor, starts at 0
 
     /// instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels

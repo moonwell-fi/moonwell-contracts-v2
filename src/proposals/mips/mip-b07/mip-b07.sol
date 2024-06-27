@@ -28,7 +28,6 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
-        isArtemisProposal = true;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

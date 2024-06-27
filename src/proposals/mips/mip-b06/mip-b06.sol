@@ -36,7 +36,6 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
         );
         _setProposalDescription(proposalDescription);
 
-        isArtemisProposal = true;
         onchainProposalId = 54;
     }
 

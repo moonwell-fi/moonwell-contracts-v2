@@ -25,8 +25,6 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
 
         onchainProposalId = 41;
         nonce = 2;
-
-        isArtemisProposal = true;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

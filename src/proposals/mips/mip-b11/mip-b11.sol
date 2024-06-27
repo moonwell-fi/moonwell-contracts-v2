@@ -21,7 +21,6 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         );
         _setProposalDescription(proposalDescription);
 
-        isArtemisProposal = true;
         onchainProposalId = 64;
     }
 

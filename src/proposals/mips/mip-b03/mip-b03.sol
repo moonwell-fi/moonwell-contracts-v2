@@ -129,8 +129,6 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
             emissions[block.chainid].length
         );
         console.log("\n\n");
-
-        isArtemisProposal = true;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
