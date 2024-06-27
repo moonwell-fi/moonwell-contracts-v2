@@ -7,7 +7,6 @@ import {ERC20Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/to
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";

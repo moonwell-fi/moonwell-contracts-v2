@@ -6,7 +6,6 @@ import "@forge-std/Test.sol";
 import {ForkID} from "@utils/Enums.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";

@@ -3,13 +3,12 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {ForkID} from "@utils/Enums.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// This MIP sets the IRM for an MToken contract.
 /// It is intended to be used as a template for future MIPs that need to set IRM's.

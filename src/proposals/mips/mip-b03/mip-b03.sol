@@ -5,19 +5,17 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
+import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {Proposal} from "@proposals/Proposal.sol";
-import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {ForkID} from "@utils/Enums.sol";
 
 /// @notice This lists all new markets provided in `mainnetMTokens.json`
 /// This is a template of a MIP proposal that can be used to add new mTokens

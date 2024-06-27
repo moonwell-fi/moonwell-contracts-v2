@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {ForkID} from "@utils/Enums.sol";
-import {ChainIdHelper} from "@protocol/utils/ChainIdHelper.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";

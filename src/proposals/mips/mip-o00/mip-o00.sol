@@ -14,7 +14,6 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Address} from "@utils/Address.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/Proposal.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";

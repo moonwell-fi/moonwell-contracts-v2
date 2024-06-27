@@ -3,12 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
 import {ForkID} from "@utils/Enums.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipb09 is HybridProposal, Configs {
     string public constant override name = "MIP-b09";

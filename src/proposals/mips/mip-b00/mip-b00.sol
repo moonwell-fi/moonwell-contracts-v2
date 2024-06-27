@@ -9,26 +9,24 @@ import "@forge-std/Test.sol";
 import "@protocol/utils/Constants.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
+import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
+import {Address} from "@utils/Address.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/Proposal.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-
-import {Address} from "@utils/Address.sol";
-import {ForkID} from "@utils/Enums.sol";
 
 contract mipb00 is HybridProposal, Configs {
     using Address for address;

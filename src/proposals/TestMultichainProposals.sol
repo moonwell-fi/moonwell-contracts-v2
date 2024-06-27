@@ -8,7 +8,6 @@ import {Test} from "@forge-std/Test.sol";
 
 import {Proposal} from "@proposals/Proposal.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
