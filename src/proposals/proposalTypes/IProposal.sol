@@ -71,8 +71,4 @@ interface IProposal {
 
     /// fork ID for moonbeam
     function moonbeamForkId() external view returns (uint256);
-
-    function getTargetsPayloadsValues(
-        Addresses
-    ) external returns (address[] memory, uint256[] memory, bytes[] memory);
 }
