@@ -22,11 +22,11 @@ contract TestProposalCalldataGeneration is Test {
     uint256 public governorProposalCount;
     uint256 public artemisProposalCount;
 
-    mapping(uint256 proposalId => bytes32 hash) public proposalHashes;
-    mapping(uint256 proposalId => bytes32 hash) public artemisProposalHashes;
-
     uint256 proposalFilesCount;
     uint256 matches;
+
+    mapping(uint256 proposalId => bytes32 hash) public proposalHashes;
+    mapping(uint256 proposalId => bytes32 hash) public artemisProposalHashes;
 
     function setUp() public {
         vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
@@ -103,7 +103,7 @@ contract TestProposalCalldataGeneration is Test {
         // find hybrid proposals matches
         {
             string[] memory inputs = new string[](1);
-            inputs[0] = "./get-hybrid-proposals.sh";
+            inputs[0] = "bin/get-hybrid-proposals.sh";
 
             string memory output = string(vm.ffi(inputs));
 
@@ -197,7 +197,7 @@ contract TestProposalCalldataGeneration is Test {
         // find cross chain proposal matches
         {
             string[] memory inputs = new string[](1);
-            inputs[0] = "./get-crosschain-proposals.sh";
+            inputs[0] = "bin/get-crosschain-proposals.sh";
 
             string memory output = string(vm.ffi(inputs));
 
@@ -306,7 +306,7 @@ contract TestProposalCalldataGeneration is Test {
 
         {
             string[] memory inputs = new string[](1);
-            inputs[0] = "./get-governance-proposals.sh";
+            inputs[0] = "bin/get-governance-proposals.sh";
 
             string memory output = string(vm.ffi(inputs));
 
@@ -401,7 +401,7 @@ contract TestProposalCalldataGeneration is Test {
             artemisProposalHashes[proposalId] = hash;
             console.log("hash");
             console.logBytes32(hash);
-            console.log("=-======================");
+            console.log("========================");
         }
 
         address proposal = deployCode("src/proposals/mips/mip-m16/mip-m16.sol");
