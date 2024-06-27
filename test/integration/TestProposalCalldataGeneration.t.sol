@@ -477,7 +477,7 @@ contract TestProposalCalldataGeneration is Test {
 
         bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
 
-        uint256 proposalId = 55;
+        uint256 proposalId = 61;
 
         bool found = false;
 
@@ -495,75 +495,6 @@ contract TestProposalCalldataGeneration is Test {
             delete artemisProposalHashes[proposalId];
 
             found = true;
-        }
-    }
-
-    function testMipB01() public {
-        address proposal = deployCode("src/proposals/mips/mip-b01/mip-b01.sol");
-
-        vm.makePersistent(proposal);
-
-        Proposal proposalContract = Proposal(proposal);
-        vm.selectFork(uint256(proposalContract.primaryForkId()));
-        proposalContract.build(addresses);
-
-        /// fetch proposal id on moonbeam
-        vm.selectFork(uint256(ForkID.Moonbeam));
-
-        uint256 proposalId;
-        /// proposal id could be either for Multichain Governor or Artemis Governor
-
-        try
-            proposalContract.getArtemisProposalId(
-                addresses,
-                addresses.getAddress("ARTEMIS_GOVERNOR"),
-                38
-            )
-        returns (uint256 result) {
-            proposalId = result;
-        } catch {
-            console.log("Error fetching proposal id");
-        }
-
-        if (proposalId == 0) {
-            console.log("Proposal ID not found for ", proposalContract.name());
-        } else {
-            console.log(
-                "Found Proposal ID for %s, %d",
-                proposalContract.name(),
-                proposalId
-            );
-        }
-    }
-
-    function testMipB17() public {
-        address proposal = deployCode("src/proposals/mips/mip-b17/mip-b17.sol");
-
-        vm.makePersistent(proposal);
-
-        Proposal proposalContract = Proposal(proposal);
-        vm.selectFork(uint256(proposalContract.primaryForkId()));
-        proposalContract.build(addresses);
-
-        /// fetch proposal id on moonbeam
-        vm.selectFork(uint256(ForkID.Moonbeam));
-
-        uint256 proposalId;
-
-        /// proposal id should be for Multichain Governor
-        proposalId = proposalContract.getProposalId(
-            addresses,
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        );
-
-        if (proposalId == 0) {
-            console.log("Proposal ID not found for ", proposalContract.name());
-        } else {
-            console.log(
-                "Found Proposal ID for %s, %d",
-                proposalContract.name(),
-                proposalId
-            );
         }
     }
 }
