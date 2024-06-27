@@ -43,25 +43,23 @@ contract mipm21newGovernor is HybridProposal {
 
     function build(Addresses addresses) public override {
         /// @dev Upgrade wormhole bridge adapter to wormhole unwrapper adapter
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
             abi.encodeWithSignature(
                 "upgrade(address,address)",
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
                 addresses.getAddress("WORMHOLE_UNWRAPPER_ADAPTER")
             ),
-            "Upgrade wormhole bridge adapter to wormhole unwrapper adapter",
-            true
+            "Upgrade wormhole bridge adapter to wormhole unwrapper adapter"
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
             abi.encodeWithSignature(
                 "setLockbox(address)",
                 addresses.getAddress("xWELL_LOCKBOX")
             ),
-            "Set lockbox on wormhole unwrapper adapter",
-            true
+            "Set lockbox on wormhole unwrapper adapter"
         );
     }
 

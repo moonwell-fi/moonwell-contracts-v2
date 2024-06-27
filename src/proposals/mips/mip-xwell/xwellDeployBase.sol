@@ -5,20 +5,21 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/Constants.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {ForkID} from "@utils/Enums.sol";
 
 /// how to run locally:
 ///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployBase.sol:xwellDeployBase --fork-url base
 /// @dev do not use MIP as a base to fork off of, it will not work
-contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
+contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
     /// @notice the name of the proposal
     string public constant override name = "MIP xWELL Token Creation Base";
 
@@ -112,7 +113,7 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
 
     /// no cross chain actions to run, so remove all code from this function
     /// @dev do not use MIP as a base to fork off of, it will not work
-    function run(Addresses, address) public override(CrossChainProposal) {}
+    function run(Addresses, address) public override(HybridProposal) {}
 
     function teardown(Addresses addresses, address) public pure override {}
 

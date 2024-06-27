@@ -30,6 +30,7 @@ contract WellDeployerNonceIncrement is Script, Test {
     }
 
     function run() public {
+        /// TODO change this later and remove the private key env var
         address deployerAddress = vm.addr(PRIVATE_KEY);
 
         uint256 expectedNonce = 387;

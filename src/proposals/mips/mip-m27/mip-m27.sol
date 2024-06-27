@@ -127,37 +127,37 @@ contract mipm27 is HybridProposal, ParameterValidation {
     function build(Addresses addresses) public override {
         /// Moonbeam actions
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_MXC_USDT_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcUSDT to updated reserve factor",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_MXC_USDC_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcUSDC to updated reserve factor",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_USDCWH_RESERVE_FACTOR
             ),
             "Set reserve factor for USDCwh to updated reserve factor",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -165,10 +165,10 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 NEW_M_USDCWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of mUSDCwh",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -176,10 +176,10 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 NEW_M_WBTCWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of MOONWELL_mWBTC",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -187,47 +187,47 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 NEW_M_ETHWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of MOONWELL_mETH",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 addresses.getAddress("JUMP_RATE_IRM_mxcUSDC")
             ),
             "Set interest rate model for mxcUSDC to updated rate model",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 addresses.getAddress("JUMP_RATE_IRM_mxcUSDT")
             ),
             "Set interest rate model for mxcUSDT to updated rate model",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mFRAX"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 addresses.getAddress("JUMP_RATE_IRM_mFRAX")
             ),
             "Set interest rate model for mFRAX to updated rate model",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 addresses.getAddress("JUMP_RATE_IRM_mUSDCwh")
             ),
             "Set interest rate model for mUSDCwh to updated rate model",
-            true
+            ForkID.Moonbeam
         );
     }
 

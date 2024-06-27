@@ -42,7 +42,7 @@ contract HybridProposalExample is
     function build(Addresses addresses) public override {
         vm.selectFork(uint256(ForkID.Moonbeam));
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
             abi.encodeWithSignature(
                 "updateVotingPeriod(uint256)",
@@ -81,7 +81,7 @@ contract HybridProposalExample is
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
 
-                _pushHybridAction(
+                _pushAction(
                     mrd,
                     abi.encodeWithSignature(
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",

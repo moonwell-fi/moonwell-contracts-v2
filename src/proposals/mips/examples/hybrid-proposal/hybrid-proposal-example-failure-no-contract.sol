@@ -44,7 +44,7 @@ contract HybridProposalExample is
         /// action to set the voting period on the Multichain Governor on Base
         /// this is incorrect and will cause a failure in the HybridProposal contract
         /// due to no contract bytecode at this address
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
             abi.encodeWithSignature(
                 "updateVotingPeriod(uint256)",
@@ -83,7 +83,7 @@ contract HybridProposalExample is
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
 
-                _pushHybridAction(
+                _pushAction(
                     mrd,
                     abi.encodeWithSignature(
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",

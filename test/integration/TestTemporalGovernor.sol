@@ -29,7 +29,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
 
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress(
                 "UNITROLLER",
                 sendingChainIdToReceivingChainId[block.chainid]
@@ -43,7 +43,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
                 collateralFactor
             ),
             "Set collateral factor",
-            false
+            ForkID.Base
         );
     }
 
@@ -51,6 +51,12 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         vm.selectFork(uint256(ForkID.Base));
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
+
+        require(baseActions.length == 1, "invalid base proposal length");
+        require(
+            moonbeamActions.length == 1,
+            "invalid moonbeam proposal length"
+        );
 
         vm.selectFork(uint256(primaryForkId()));
     }

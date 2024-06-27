@@ -1,46 +1,10 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-contract ChainIds {
-    /// all wormhole chain ids are defined here:
-    /// https://docs.wormhole.com/wormhole/reference/constants
+import "@protocol/utils/Constants.sol";
+import {ForkID} from "@utils/Enums.sol";
 
-    /// all regular chain ids are defined here:
-    /// https://chainlist.org/
-
-    /// ------------ OPTIMISM ------------
-    uint256 public constant optimismChainId = 10;
-    uint16 public constant optimismWormholeChainId = 24;
-
-    uint256 public constant optimismSepoliaChainId = 11155420;
-    uint16 public constant optimismSepoliaWormholeChainId = 10005;
-
-    /// ------------ BASE ------------
-
-    uint256 public constant baseChainId = 8453;
-    uint16 public constant baseWormholeChainId = 30;
-
-    uint256 public constant baseSepoliaChainId = 84532;
-    uint16 public constant baseSepoliaWormholeChainId = 10004;
-
-    /// ------------ MOONBEAM ------------
-
-    uint256 public constant moonRiverChainId = 1285;
-
-    uint256 public constant moonBeamChainId = 1284;
-    uint16 public constant moonBeamWormholeChainId = 16;
-
-    uint256 public constant moonBaseChainId = 1287;
-    uint16 public constant moonBaseWormholeChainId = 16;
-
-    /// ------------ SEPOLIA ------------
-
-    uint256 public constant sepoliaChainId = 11155111;
-    uint16 public constant sepoliaWormholeChainId = 10002;
-
-    /// ------------ LOCAL ------------
-    uint256 public constant localChainId = 31337;
-
+abstract contract ChainIds {
     /// @notice map a sending chain id to a wormhole chain id
     /// this way during a deployment, we can know which governance contract should own this deployment
     mapping(uint256 => uint16) public chainIdToWormHoleId;
@@ -50,6 +14,11 @@ contract ChainIds {
 
     /// @notice map a chain id to a temporal gov timelock period
     mapping(uint256 => uint256) public chainIdTemporalGovTimelock;
+
+    mapping(uint256 => string) public chainForkToName;
+
+    /// @notice a mapping of chain ids that are not moonbeam/moonbase chain ids
+    mapping(uint256 => bool) public nonMoonbeamChainIds;
 
     constructor() {
         chainIdToWormHoleId[baseSepoliaChainId] = moonBaseWormholeChainId; /// base deployment is owned by moonbeam governance
@@ -79,5 +48,15 @@ contract ChainIds {
 
         chainIdTemporalGovTimelock[optimismSepoliaChainId] = 0; /// no wait on testnet
         chainIdTemporalGovTimelock[optimismChainId] = 1 days;
+
+        chainForkToName[uint256(ForkID.Moonbeam)] = "Moonbeam";
+        chainForkToName[uint256(ForkID.Base)] = "Base";
+        chainForkToName[uint256(ForkID.Optimism)] = "Optimism";
+
+        nonMoonbeamChainIds[baseSepoliaChainId] = true;
+        nonMoonbeamChainIds[baseChainId] = true;
+
+        nonMoonbeamChainIds[optimismSepoliaChainId] = true;
+        nonMoonbeamChainIds[optimismChainId] = true;
     }
 }

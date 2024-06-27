@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/Constants.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -15,6 +16,9 @@ import {Address} from "@utils/Address.sol";
 
 contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
     using Address for address;
+
+    /// @notice all addresses
+    Addresses public addresses;
 
     /// @notice logic contract, not initializable
     xWELL public xwell;

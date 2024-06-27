@@ -60,7 +60,7 @@ contract mipb16 is
     function build(Addresses addresses) public override {
         /// Base actions
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("xWELL_PROXY"),
             abi.encodeWithSignature(
                 "transferFrom(address,address,uint256)",
@@ -68,19 +68,17 @@ contract mipb16 is
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"),
                 WELL_AMOUNT
             ),
-            "Transfer xWELL rewards to Ecosystem Reserve Proxy on Base",
-            false
+            "Transfer xWELL rewards to Ecosystem Reserve Proxy on Base"
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("STK_GOVTOKEN"),
             abi.encodeWithSignature(
                 "configureAsset(uint128,address)",
                 REWARD_SPEED,
                 addresses.getAddress("STK_GOVTOKEN")
             ),
-            "Set reward speed for the Safety Module on Base",
-            false
+            "Set reward speed for the Safety Module on Base"
         );
     }
 

@@ -2,16 +2,17 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/Constants.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {ForkID} from "@utils/Enums.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// to run locally:
 ///     DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployMoonbeam.sol:xwellDeployMoonbeam --fork-url moonbeam

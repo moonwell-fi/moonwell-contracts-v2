@@ -4,14 +4,14 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {MIPProposal} from "@proposals/MIPProposal.s.sol";
+import {Proposal} from "@proposals/Proposal.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {ForkID} from "@utils/Enums.sol";
 
-contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
+contract mipb19 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B19";
 
     constructor() {
@@ -32,7 +32,7 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -41,7 +41,7 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -50,7 +50,7 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_AERO"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -60,10 +60,7 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         );
     }
 
-    function run(
-        Addresses addresses,
-        address
-    ) public override(CrossChainProposal, MIPProposal) {
+    function run(Addresses addresses, address) public override {
         printCalldata(addresses);
         _simulateCrossChainActions(
             addresses,

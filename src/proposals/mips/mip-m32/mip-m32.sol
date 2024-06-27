@@ -47,24 +47,24 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
         /// accept admin of MOONWELL_mWBTC to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_mWBTC"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept the admin transfer of the new wBTC market to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_mWBTC"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_M_WBTCWH_RESERVE_FACTOR
             ),
             "Set reserve factor for MOONWELL_mWBTC to updated reserve factor",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -72,7 +72,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
                 NEW_M_WBTCWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of MOONWELL_mWBTC",
-            true
+            ForkID.Moonbeam
         );
     }
 

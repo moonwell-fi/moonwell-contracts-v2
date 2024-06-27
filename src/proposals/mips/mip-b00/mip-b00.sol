@@ -6,12 +6,13 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/Constants.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
@@ -19,7 +20,7 @@ import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -29,7 +30,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {Address} from "@utils/Address.sol";
 import {ForkID} from "@utils/Enums.sol";
 
-contract mipb00 is Proposal, CrossChainProposal, Configs {
+contract mipb00 is HybridProposal, Configs {
     using Address for address;
 
     string public constant override name = "MIP-B00";
@@ -393,7 +394,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
         /// Unitroller configuration
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Temporal governor accepts admin on Unitroller"
@@ -416,13 +417,13 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 /// ------------ MTOKEN MARKET ACTIVIATION ------------
 
                 /// temporal governor accepts admin of mToken
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature("_acceptAdmin()"),
                     "Temporal governor accepts admin on mToken"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
                         "_setMintPaused(address,bool)",
@@ -433,7 +434,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 );
 
                 /// Approvals
-                _pushCrossChainAction(
+                _pushAction(
                     addresses.getAddress(config.tokenAddressName),
                     abi.encodeWithSignature(
                         "approve(address,uint256)",
@@ -444,7 +445,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 );
 
                 /// Initialize markets
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
                         "mint(uint256)",
@@ -453,7 +454,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                     "Initialize token market to prevent exploit"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
                         "transfer(address,uint256)",

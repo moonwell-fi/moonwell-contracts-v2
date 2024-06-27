@@ -126,37 +126,37 @@ contract mipm29 is HybridProposal, ParameterValidation {
     function build(Addresses addresses) public override {
         /// Moonbeam actions
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mGLIMMER"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_MGLIMMER_RESERVE_FACTOR
             ),
             "Set reserve factor for mGLIMMER to updated reserve factor",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcDOT"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_MXC_DOT_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcDOT to updated reserve factor",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mETHwh"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_M_ETHWH_RESERVE_FACTOR
             ),
             "Set reserve factor for mETHwh to updated reserve factor",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -164,10 +164,10 @@ contract mipm29 is HybridProposal, ParameterValidation {
                 NEW_M_ETHWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of mETHwh",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -175,41 +175,41 @@ contract mipm29 is HybridProposal, ParameterValidation {
                 NEW_M_USDCWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of mUSDCwh",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 addresses.getAddress("JUMP_RATE_IRM_mxcUSDC")
             ),
             "Set interest rate model for mxcUSDC to updated rate model",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 addresses.getAddress("JUMP_RATE_IRM_mxcUSDT")
             ),
             "Set interest rate model for mxcUSDT to updated rate model",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mFRAX"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 addresses.getAddress("JUMP_RATE_IRM_mFRAX")
             ),
             "Set interest rate model for mFRAX to updated rate model",
-            true
+            ForkID.Moonbeam
         );
 
         // Adding transferFrom actions
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("WELL"),
             abi.encodeWithSignature(
                 "transferFrom(address,address,uint256)",
@@ -218,10 +218,10 @@ contract mipm29 is HybridProposal, ParameterValidation {
                 6778847000000000000000000
             ),
             "Transfer 6778847 WELL from 0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451 to 0x7793E08Eb4525309C46C9BA394cE33361A167ba4",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("WELL"),
             abi.encodeWithSignature(
                 "transferFrom(address,address,uint256)",
@@ -230,7 +230,7 @@ contract mipm29 is HybridProposal, ParameterValidation {
                 6923077000000000000000000
             ),
             "Transfer 6923077 WELL from 0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451 to 0x8E00D5e02E65A19337Cdba98bbA9F84d4186a180",
-            true
+            ForkID.Moonbeam
         );
     }
 

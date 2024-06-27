@@ -14,10 +14,12 @@ chain ids.
 
 This section outlines the steps to deploy the new smart contracts.
 
-### Set Environment Variables
+### Deployer Address
 
-Set `ETH_PRIVATE_KEY = "0x..."` to .env file or export it in the shell. This is
-the private key of the account that will deploy the contracts.
+Ensure cast has a keystore with an EOA that has enough funds to deploy the
+system contracts. See
+[foundry documentation](https://book.getfoundry.sh/reference/cast/cast-wallet-import)
+for instructions on importing an EOA.
 
 ### Clean addresses from Addresses.json
 

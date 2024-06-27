@@ -6,22 +6,23 @@ import "@forge-std/Test.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import "@protocol/utils/Constants.sol";
+
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {ForkID} from "@utils/Enums.sol";
+import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {ChainIdHelper} from "@protocol/utils/ChainIdHelper.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-
-import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
-import {MToken} from "@protocol/MToken.sol";
+import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the
@@ -64,61 +65,83 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         temporalGovernanceTrustedSenders[0].addr = multichainGovernorAddress;
         temporalGovernanceTrustedSenders[0].chainId = moonBeamWormholeChainId;
 
-        /// Base action
+        /// Base actions
 
         /// add the Multichain Governor as a trusted sender in the wormhole bridge adapter on base
         /// this is an action that takes place on base, not on moonbeam, so flag is flipped to false for isMoonbeam
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
+                ChainIdHelper.toBaseChainId(block.chainid)
             ),
             abi.encodeWithSignature(
                 "setTrustedSenders((uint16,address)[])",
                 temporalGovernanceTrustedSenders
             ),
             "Add Multichain Governor as a trusted sender to the Temporal Governor",
-            false
+            ForkID.Base
+        );
+
+        _pushAction(
+            addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
+            abi.encodeWithSignature(
+                "setBufferCap(address,uint256)",
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+                XWELL_BUFFER_CAP
+            ),
+            "Set the buffer cap of the wormhole bridge adapter to 100m",
+            ForkID.Base
+        );
+
+        _pushAction(
+            addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
+            abi.encodeWithSignature(
+                "setRateLimitPerSecond(address,uint128)",
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+                XWELL_RATE_LIMIT_PER_SECOND
+            ),
+            "Set the rate limit per second of the wormhole bridge adapter to 1158/WELL per second",
+            ForkID.Base
         );
 
         /// Moonbeam actions
 
         /// transfer ownership of the wormhole bridge adapter on the moonbeam chain to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
             abi.encodeWithSignature(
                 "transferOwnership(address)",
                 multichainGovernorAddress
             ),
             "Set the pending owner of the Wormhole Bridge Adapter to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// transfer ownership of proxy admin to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
             abi.encodeWithSignature(
                 "transferOwnership(address)",
                 multichainGovernorAddress
             ),
             "Set the owner of the Moonbeam Proxy Admin to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// begin transfer of ownership of the xwell token to the Multichain Governor
         /// This one has to go through Temporal Governance
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("xWELL_PROXY"),
             abi.encodeWithSignature(
                 "transferOwnership(address)",
                 multichainGovernorAddress
             ),
             "Set the pending owner of the xWELL Token to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// adjust rate limits to allow initial transfers through
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
             abi.encodeWithSignature(
                 "setBufferCap(address,uint256)",
@@ -126,19 +149,10 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 XWELL_BUFFER_CAP
             ),
             "Set the buffer cap of the wormhole bridge adapter to 100m",
-            true
+            ForkID.Moonbeam
         );
-        _pushHybridAction(
-            addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
-            abi.encodeWithSignature(
-                "setBufferCap(address,uint256)",
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-                XWELL_BUFFER_CAP
-            ),
-            "Set the buffer cap of the wormhole bridge adapter to 100m",
-            false
-        );
-        _pushHybridAction(
+
+        _pushAction(
             addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
             abi.encodeWithSignature(
                 "setRateLimitPerSecond(address,uint128)",
@@ -146,182 +160,172 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 XWELL_RATE_LIMIT_PER_SECOND
             ),
             "Set the rate limit per second of the wormhole bridge adapter to 1158/WELL per second",
-            true
-        );
-        _pushHybridAction(
-            addresses.getAddress("xWELL_PROXY"), /// address is the same on both chains
-            abi.encodeWithSignature(
-                "setRateLimitPerSecond(address,uint128)",
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-                XWELL_RATE_LIMIT_PER_SECOND
-            ),
-            "Set the rate limit per second of the wormhole bridge adapter to 1158/WELL per second",
-            false
+            ForkID.Moonbeam
         );
 
         /// transfer ownership of chainlink oracle
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("CHAINLINK_ORACLE"),
             abi.encodeWithSignature(
                 "setAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the admin of the Chainlink Oracle to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// transfer emissions manager of safety module
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("STK_GOVTOKEN"),
             abi.encodeWithSignature(
                 "setEmissionsManager(address)",
                 multichainGovernorAddress
             ),
             "Set the Emissions Config of the Safety Module to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set pending admin of unitroller
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the pending admin of the Unitroller to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set funds admin of ecosystem reserve controller
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"),
             abi.encodeWithSignature(
                 "transferOwnership(address)",
                 multichainGovernorAddress
             ),
             "Set the owner of the Ecosystem Reserve Controller to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set pending admin of DEPRECATED_MOONWELL_mWBTC to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("DEPRECATED_MOONWELL_mWBTC"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the pending admin of DEPRECATED_MOONWELL_mWBTC to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set pending admin of MOONWELL_mBUSD to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_mBUSD"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the pending admin of MOONWELL_mBUSD to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set pending admin of DEPRECATED_MOONWELL_mETH to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("DEPRECATED_MOONWELL_mETH"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the pending admin of DEPRECATED_MOONWELL_mETH to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set pending admin of MOONWELL_mUSDC to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_mUSDC"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the pending admin of MOONWELL_mUSDC to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set pending admin of MNATIVE to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MNATIVE"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the pending admin of MNATIVE to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set pending admin of mxcDOT to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcDOT"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the pending admin of mxcDOT to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set pending admin of mxcUSDT to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the pending admin of mxcUSDT to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set pending admin of mFRAX to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mFRAX"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the pending admin of mFRAX to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set pending admin of mUSDCwh to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the pending admin of mUSDCwh to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set pending admin of mxcUSDC to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the pending admin of mxcUSDC to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         /// set pending admin of MOONWELL_mETH to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_mETH"),
             abi.encodeWithSignature(
                 "_setPendingAdmin(address)",
                 multichainGovernorAddress
             ),
             "Set the pending admin of MOONWELL_mETH to the Multichain Governor",
-            true
+            ForkID.Moonbeam
         );
 
         delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
@@ -347,7 +351,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
 
-                _pushHybridAction(
+                _pushAction(
                     mrd,
                     abi.encodeWithSignature(
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
@@ -370,7 +374,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                             config.mToken
                         )
                     ),
-                    false /// base action
+                    ForkID.Base
                 );
             }
         }

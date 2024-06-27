@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 import {Script} from "@forge-std/Script.sol";
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/Constants.sol";
 
 import {ForkID} from "@utils/Enums.sol";
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
@@ -50,7 +51,7 @@ contract BreakGlass is Script, HybridProposal {
 
         vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
 
-        addresses = new Addresses();
+        Addresses addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
         /// ensure script runs on moonbeam

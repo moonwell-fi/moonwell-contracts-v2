@@ -18,18 +18,12 @@ contract DeployProxyAdminScript is Script, ChainIds {
     /// @notice addresses contract
     Addresses addresses;
 
-    /// @notice deployer private key
-    uint256 private PRIVATE_KEY;
-
     constructor() {
-        // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = uint256(vm.envBytes32("ETH_PRIVATE_KEY"));
-
         addresses = new Addresses();
     }
 
     function run() public {
-        vm.startBroadcast(PRIVATE_KEY);
+        vm.startBroadcast();
         address proxyAdmin = address(new ProxyAdmin());
         vm.stopBroadcast();
 

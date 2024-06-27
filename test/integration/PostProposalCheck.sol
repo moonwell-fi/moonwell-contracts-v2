@@ -6,7 +6,7 @@ import {Test} from "@forge-std/Test.sol";
 import {String} from "@utils/String.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 contract PostProposalCheck is Test {

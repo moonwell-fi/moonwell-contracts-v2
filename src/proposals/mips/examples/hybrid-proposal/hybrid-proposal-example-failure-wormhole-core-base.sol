@@ -3,15 +3,17 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import "@protocol/utils/Constants.sol";
+
+import {ForkID} from "@utils/Enums.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IMultichainGovernor} from "@protocol/governance/multichain/IMultichainGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// @notice DO NOT USE THIS IN PRODUCTION, this is a completely hypothetical example
 /// adds stkwell as reward streams, completely hypothetical situation that makes no sense and would not work in production
@@ -44,7 +46,7 @@ contract HybridProposalExample is
         /// action to call the Wormhole Core contract on Base from Moonbeam
         /// this is incorrect and will cause a failure in the HybridProposal contract
         /// due to no contract bytecode at this address
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("WORMHOLE_CORE_BASE", baseChainId),
             abi.encodeWithSignature(
                 "publishMessage(uint32,bytes,uint8)",
@@ -85,7 +87,7 @@ contract HybridProposalExample is
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
 
-                _pushHybridAction(
+                _pushAction(
                     mrd,
                     abi.encodeWithSignature(
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
