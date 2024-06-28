@@ -90,23 +90,19 @@ contract TestProposalCalldataGeneration is Test {
                 );
 
                 address[] memory onchainTargets = new address[](targets.length);
-
                 uint256[] memory onchainValues = new uint256[](values.length);
                 bytes[] memory onchainCalldatas = new bytes[](calldatas.length);
 
                 vm.selectFork(uint256(ForkID.Moonbeam));
 
-                try
-                    MultichainGovernor(governor).getProposalData(proposalId)
-                returns (
-                    address[] memory _targets,
-                    uint256[] memory _values,
-                    bytes[] memory _calldatas
-                ) {
-                    onchainTargets = _targets;
-                    onchainValues = _values;
-                    onchainCalldatas = _calldatas;
-                } catch {
+                (onchainTargets, onchainValues, onchainCalldatas) = governor
+                    .getProposalData(proposalId);
+
+                bytes32 onchainHash = keccak256(
+                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
+                );
+
+                if (hash != onchainHash) {
                     (
                         onchainTargets,
                         onchainValues,
@@ -115,11 +111,15 @@ contract TestProposalCalldataGeneration is Test {
                     ) = MoonwellArtemisGovernor(artemisGovernor).getActions(
                         proposalId
                     );
-                }
 
-                bytes32 onchainHash = keccak256(
-                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
-                );
+                    onchainHash = keccak256(
+                        abi.encode(
+                            onchainTargets,
+                            onchainValues,
+                            onchainCalldatas
+                        )
+                    );
+                }
 
                 assertEq(hash, onchainHash, "Hashes do not match");
             }
@@ -183,24 +183,20 @@ contract TestProposalCalldataGeneration is Test {
                     abi.encode(targets, values, calldatas)
                 );
 
-                address[] memory onchainTargets = new address[](targets.length);
+                vm.selectFork(uint256(ForkID.Moonbeam));
 
+                address[] memory onchainTargets = new address[](targets.length);
                 uint256[] memory onchainValues = new uint256[](values.length);
                 bytes[] memory onchainCalldatas = new bytes[](calldatas.length);
 
-                vm.selectFork(uint256(ForkID.Moonbeam));
+                (onchainTargets, onchainValues, onchainCalldatas) = governor
+                    .getProposalData(proposalId);
 
-                try
-                    MultichainGovernor(governor).getProposalData(proposalId)
-                returns (
-                    address[] memory _targets,
-                    uint256[] memory _values,
-                    bytes[] memory _calldatas
-                ) {
-                    onchainTargets = _targets;
-                    onchainValues = _values;
-                    onchainCalldatas = _calldatas;
-                } catch {
+                bytes32 onchainHash = keccak256(
+                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
+                );
+
+                if (hash != onchainHash) {
                     (
                         onchainTargets,
                         onchainValues,
@@ -209,11 +205,15 @@ contract TestProposalCalldataGeneration is Test {
                     ) = MoonwellArtemisGovernor(artemisGovernor).getActions(
                         proposalId
                     );
-                }
 
-                bytes32 onchainHash = keccak256(
-                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
-                );
+                    onchainHash = keccak256(
+                        abi.encode(
+                            onchainTargets,
+                            onchainValues,
+                            onchainCalldatas
+                        )
+                    );
+                }
 
                 assertEq(hash, onchainHash, "Hashes do not match");
             }
