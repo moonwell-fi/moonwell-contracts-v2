@@ -44,10 +44,6 @@ contract TestProposalCalldataGeneration is Test {
     }
 
     function testProposalToolingCalldataGeneration() public {
-        console.log(
-            "----------------- SEARCHING HYBRID PROPOSALS -----------------"
-        );
-
         // find hybrid proposals matches
         {
             string[] memory inputs = new string[](2);
@@ -125,10 +121,6 @@ contract TestProposalCalldataGeneration is Test {
                 assertEq(hash, onchainHash, "Hashes do not match");
             }
         }
-
-        console.log(
-            "----------------- SEARCHING CROSS CHAIN PROPOSALS -----------------"
-        );
 
         // find cross chain proposal matches
         {
@@ -220,10 +212,6 @@ contract TestProposalCalldataGeneration is Test {
                 assertEq(hash, onchainHash, "Hashes do not match");
             }
         }
-
-        console.log(
-            "----------------- SEARCHING GOVERNANCE PROPOSALS -----------------"
-        );
 
         {
             string[] memory inputs = new string[](2);

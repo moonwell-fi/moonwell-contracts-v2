@@ -20,7 +20,7 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         );
         _setProposalDescription(proposalDescription);
 
-        onchainProposalId = 77;
+        onchainProposalId = 16;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
