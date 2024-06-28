@@ -21,7 +21,7 @@ abstract contract CrossChainProposal is
 {
     using Bytes for bytes;
 
-    uint32 private constant nonce = 0; /// nonce for wormhole, unused by Temporal Governor
+    uint32 public nonce; /// nonce for wormhole, unused by Temporal Governor, starts at 0
 
     /// instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
     uint16 public constant consistencyLevel = 200;
@@ -263,13 +263,14 @@ abstract contract CrossChainProposal is
     /// @notice search for a on-chain proposal that matches the proposal calldata
     /// @param addresses the addresses contract
     /// @param governor the governor address
-    // /// @return proposalId the proposal id, 0 if no proposal is found
+    /// @return proposalId the proposal id, 0 if no proposal is found
     function getProposalId(
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        // CrossChainProposal is only used for proposals that the primery type
-        // is Base, this is a temporary solution until we get rid of CrossChainProposal
+        /// CrossChainProposal is only used for proposals destined for
+        /// Base and Optimism. This is a temporary solution until we get rid of
+        /// CrossChainProposal.
         vm.selectFork(uint256(ForkID.Moonbeam));
 
         address temporalGovernor = addresses.getAddress(
@@ -277,7 +278,21 @@ abstract contract CrossChainProposal is
             sendingChainIdToReceivingChainId[block.chainid]
         );
 
-        uint256 proposalCount = MultichainGovernor(governor).proposalCount();
+        uint256 proposalCount = onchainProposalId != 0
+            ? onchainProposalId
+            : MultichainGovernor(governor).proposalCount();
+
+        bytes memory proposalCalldata = getMultichainGovernorCalldata(
+            temporalGovernor,
+            addresses.getAddress(
+                block.chainid == moonBeamChainId
+                    ? "WORMHOLE_CORE_MOONBEAM"
+                    : "WORMHOLE_CORE_MOONBASE",
+                block.chainid == moonBeamChainId
+                    ? moonBeamChainId
+                    : moonBaseChainId
+            )
+        );
 
         while (proposalCount > 0) {
             (
@@ -292,18 +307,6 @@ abstract contract CrossChainProposal is
                 values,
                 calldatas,
                 PROPOSAL_DESCRIPTION
-            );
-
-            bytes memory proposalCalldata = getMultichainGovernorCalldata(
-                temporalGovernor,
-                addresses.getAddress(
-                    block.chainid == moonBeamChainId
-                        ? "WORMHOLE_CORE_MOONBEAM"
-                        : "WORMHOLE_CORE_MOONBASE",
-                    block.chainid == moonBeamChainId
-                        ? moonBeamChainId
-                        : moonBaseChainId
-                )
             );
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {

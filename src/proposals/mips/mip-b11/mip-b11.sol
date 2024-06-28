@@ -11,7 +11,7 @@ import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {ForkID} from "@utils/Enums.sol";
 
 contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
-    string public constant override name = "MIP-b11";
+    string public constant override name = "MIP-B11";
 
     uint256 public constant wstETH_NEW_CF = 0.76e18;
 
@@ -20,6 +20,8 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b11/MIP-B11.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 64;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -49,7 +51,7 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             addresses.getAddress("MOONWELL_DAI"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI")
+                0x32f3A6134590fc2d9440663d35a2F0a6265F04c4
             ),
             "Set interest rate model for Moonwell DAI to updated rate model"
         );
@@ -58,7 +60,7 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC")
+                0x32f3A6134590fc2d9440663d35a2F0a6265F04c4
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
@@ -67,7 +69,7 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             addresses.getAddress("MOONWELL_USDBC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDBC")
+                0xF22c8255eA615b3Da6CA5CF5aeCc8956bfF07Aa8
             ),
             "Set interest rate model for Moonwell USDBC to updated rate model"
         );

@@ -27,6 +27,8 @@ contract mipm27 is HybridProposal, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-m27/MIP-M27.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 13;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -194,7 +196,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_mxcUSDC")
+                0x0568a3aeb8E78262dEFf75ee68fAC20ae35ffA91
             ),
             "Set interest rate model for mxcUSDC to updated rate model",
             true
@@ -204,7 +206,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_mxcUSDT")
+                0xfC7b55cc7C5BD3aE89aC679c7250AB30754C5cC5
             ),
             "Set interest rate model for mxcUSDT to updated rate model",
             true
@@ -214,7 +216,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
             addresses.getAddress("mFRAX"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_mFRAX")
+                0x0f36Dda2b47984434051AeCAa5F9587DEA7f95B7
             ),
             "Set interest rate model for mFRAX to updated rate model",
             true

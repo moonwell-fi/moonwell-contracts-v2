@@ -67,6 +67,9 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             )
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 39;
+        nonce = 2;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -390,6 +393,8 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
     }
 
     function build(Addresses addresses) public override {
+        _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
+
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
         /// Unitroller configuration
@@ -416,6 +421,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 /// ------------ MTOKEN MARKET ACTIVIATION ------------
 
                 /// temporal governor accepts admin of mToken
+
                 _pushCrossChainAction(
                     cTokenAddress,
                     abi.encodeWithSignature("_acceptAdmin()"),

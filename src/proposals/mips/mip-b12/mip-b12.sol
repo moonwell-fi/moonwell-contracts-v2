@@ -11,7 +11,7 @@ import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {ForkID} from "@utils/Enums.sol";
 
 contract mipb12 is Proposal, CrossChainProposal, Configs, ParameterValidation {
-    string public constant override name = "MIP-b12";
+    string public constant override name = "MIP-B12";
 
     uint256 public constant wstETH_NEW_CF = 0.77e18;
     uint256 public constant rETH_NEW_CF = 0.77e18;
@@ -22,6 +22,8 @@ contract mipb12 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b12/MIP-B12.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 67;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -71,7 +73,7 @@ contract mipb12 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             addresses.getAddress("MOONWELL_cbETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_cbETH")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B12")
             ),
             "Set interest rate model for Moonwell cbETH to updated rate model"
         );
