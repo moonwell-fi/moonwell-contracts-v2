@@ -45,7 +45,7 @@ contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                0x0f36Dda2b47984434051AeCAa5F9587DEA7f95B7
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B15")
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );

@@ -42,7 +42,7 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                0x4393277B02ef3cA293990A772B7160a8c76F2443
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B01")
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );

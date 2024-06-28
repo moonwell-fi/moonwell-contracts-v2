@@ -159,7 +159,7 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                0x6bcE15B789e537f3abA3C60CB183F0E8737f05eC
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B05")
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
@@ -171,7 +171,7 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_DAI"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                0x33DeAc0861FD6a9235b86172AA939E79085c6f52
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B05")
             ),
             "Set interest rate model for Moonwell DAI to updated rate model"
         );
@@ -183,7 +183,7 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                0x33DeAc0861FD6a9235b86172AA939E79085c6f52
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B05")
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
@@ -195,7 +195,7 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_USDBC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                0x33DeAc0861FD6a9235b86172AA939E79085c6f52
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B05")
             ),
             "Set interest rate model for Moonwell USDbC to updated rate model"
         );

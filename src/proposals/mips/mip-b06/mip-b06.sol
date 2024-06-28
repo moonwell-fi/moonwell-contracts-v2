@@ -143,7 +143,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                0x142DCAEC322aAA25141B2597bf348487aDBd596d
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B06")
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
@@ -155,7 +155,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_DAI"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                0x492dcEF1fc5253413fC5576B9522840a1A774DCe
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC_MIP_B06")
             ),
             "Set interest rate model for Moonwell DAI to updated rate model"
         );
@@ -165,7 +165,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                0x492dcEF1fc5253413fC5576B9522840a1A774DCe
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC_MIP_B06")
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
@@ -175,7 +175,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_USDBC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                0x492dcEF1fc5253413fC5576B9522840a1A774DCe
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC_MIP_B06")
             ),
             "Set interest rate model for Moonwell USDbC to updated rate model"
         );
@@ -187,7 +187,7 @@ contract mipb06 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("MOONWELL_cbETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                0x78Fe5d0427E669ba9F964C3495fF381a805a0487
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B06")
             ),
             "Set interest rate model for Moonwell cbETH to updated rate model"
         );

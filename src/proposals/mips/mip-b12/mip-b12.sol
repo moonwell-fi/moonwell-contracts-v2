@@ -73,7 +73,7 @@ contract mipb12 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             addresses.getAddress("MOONWELL_cbETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                0x1Cdb984008dcEe9d06c28654ed31cf82680EeA62
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B12")
             ),
             "Set interest rate model for Moonwell cbETH to updated rate model"
         );
