@@ -245,6 +245,11 @@
         "isContract": true
     },
     {
+        "addr": "0x0c9c38cB9480B86c1f624613749B02379b0git 448CE",
+        "name": "JUMP_RATE_IRM_mWBTCwh",
+        "isContract": true
+    },
+    {
         "addr": "0x22b1a40e3178fe7C7109eFCc247C5bB2B34ABe32",
         "name": "mxcUSDC",
         "isContract": true
@@ -266,6 +271,11 @@
     },
     {
         "addr": "0x24bdAcf6bbEBAf567123Da16CDb79A266597e92B",
+        "name": "JUMP_RATE_IRM_mUSDCwh",
+        "isContract": true
+    },
+    {
+        "addr": "0x0c9c38cB9480B86c1f624613749B02379b0448CE",
         "name": "JUMP_RATE_IRM_mUSDCwh",
         "isContract": true
     },
