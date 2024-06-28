@@ -54,7 +54,7 @@ contract mipo01 is Configs, HybridProposal {
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
         if (approvedCalldata.length == 0) {
-            _buildCalldata();
+            _buildCalldata(addresses);
         }
 
         /// accept admin of MOONWELL_mWBTC to the Multichain Governor
@@ -88,7 +88,7 @@ contract mipo01 is Configs, HybridProposal {
 
     function validate(Addresses addresses, address) public override {
         if (approvedCalldata.length == 0) {
-            _buildCalldata();
+            _buildCalldata(addresses);
         }
 
         bytes memory whitelistedCalldata = approvedCalldata[0];
@@ -103,7 +103,7 @@ contract mipo01 is Configs, HybridProposal {
         );
     }
 
-    function _buildCalldata() internal {
+    function _buildCalldata(Addresses addresses) internal {
         address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
         /// get temporal governor on Optimism
         address temporalGovernor = addresses.getAddress(
