@@ -50,8 +50,9 @@ contract TestProposalCalldataGeneration is Test {
 
         // find hybrid proposals matches
         {
-            string[] memory inputs = new string[](1);
-            inputs[0] = "bin/get-hybrid-proposals.sh";
+            string[] memory inputs = new string[](2);
+            inputs[0] = "bin/get-proposals-by-type.sh";
+            inputs[1] = "HybridProposal";
 
             string memory output = string(vm.ffi(inputs));
 
@@ -131,8 +132,9 @@ contract TestProposalCalldataGeneration is Test {
 
         // find cross chain proposal matches
         {
-            string[] memory inputs = new string[](1);
-            inputs[0] = "bin/get-crosschain-proposals.sh";
+            string[] memory inputs = new string[](2);
+            inputs[0] = "bin/get-proposals-by-type.sh";
+            inputs[1] = "CrossChainProposal";
 
             string memory output = string(vm.ffi(inputs));
 
@@ -224,8 +226,9 @@ contract TestProposalCalldataGeneration is Test {
         );
 
         {
-            string[] memory inputs = new string[](1);
-            inputs[0] = "bin/get-governance-proposals.sh";
+            string[] memory inputs = new string[](2);
+            inputs[0] = "bin/get-proposals-by-type.sh";
+            inputs[1] = "GovernanceProposal";
 
             string memory output = string(vm.ffi(inputs));
 
