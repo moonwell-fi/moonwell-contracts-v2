@@ -27,7 +27,7 @@ import {ForkID} from "@utils/Enums.sol";
 contract mipb10 is Proposal, CrossChainProposal, Configs {
     /// @notice the name of the proposal
     /// Read more here: https://forum.moonwell.fi/t/mip-b10-onboard-reth-as-collateral-on-base-deployment/672
-    string public constant override name = "MIP-B10 rETH Market Creation";
+    string public constant override name = "MIP-B10";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;
@@ -124,6 +124,8 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
             emissions[block.chainid].length
         );
         console.log("\n\n");
+
+        onchainProposalId = 61;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

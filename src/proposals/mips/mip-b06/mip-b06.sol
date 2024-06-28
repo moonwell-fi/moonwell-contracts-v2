@@ -13,7 +13,7 @@ import {Comptroller} from "@protocol/Comptroller.sol";
 import {ForkID} from "@utils/Enums.sol";
 
 contract mipb06 is Proposal, CrossChainProposal, Configs {
-    string public constant override name = "MIP-b06";
+    string public constant override name = "MIP-B06";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 

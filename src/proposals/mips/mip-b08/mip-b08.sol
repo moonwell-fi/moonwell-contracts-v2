@@ -26,7 +26,7 @@ import {ForkID} from "@utils/Enums.sol";
 /// in the Addresses.sol contract for the network the MTokens are being deployed on.
 contract mipb08 is Proposal, CrossChainProposal, Configs {
     /// @notice the name of the proposal
-    string public constant override name = "MIP wstETH Market Creation";
+    string public constant override name = "MIP-B08";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;
@@ -56,6 +56,8 @@ contract mipb08 is Proposal, CrossChainProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 58;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

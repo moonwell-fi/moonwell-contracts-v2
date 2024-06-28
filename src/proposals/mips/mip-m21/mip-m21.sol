@@ -10,13 +10,15 @@ import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipm21 is GovernanceProposal {
-    string public constant override name = "MIP-M19";
+    string public constant override name = "MIP-M21";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile("./src/proposals/mips/mip-m21/MIP-M21.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 77;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

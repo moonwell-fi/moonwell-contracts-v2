@@ -28,6 +28,8 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 55;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

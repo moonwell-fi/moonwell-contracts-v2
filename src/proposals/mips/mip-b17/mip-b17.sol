@@ -30,7 +30,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
 
     /// @notice the name of the proposal
     /// Read more here: https://forum.moonwell.fi/t/add-aero-market-on-base/873
-    string public constant override name = "MIP-B17 AERO Market Creation";
+    string public constant override name = "MIP-B17";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;
