@@ -129,3 +129,11 @@ rule unpauseSucceeds(env e) {
    assert pauseGuardian == 0, "pause guardian not kicked";
    assert guardianStartingAddress != 0, "pause start time not reset";
 }
+
+rule ownerUnpauses(env e) {
+    ownerUnpause(e);
+
+    assert paused(e) == false;
+    assert pauseGuardian() == 0;
+    assert pauseStartTime() == 0;
+}
