@@ -19,6 +19,8 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b19/MIP-B19.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 16;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

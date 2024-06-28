@@ -6,19 +6,18 @@ import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import "@forge-std/Test.sol";
 
+import {ForkID} from "@utils/Enums.sol";
+import {Address} from "@utils/Address.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
-import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
-import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
+import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {Address} from "@utils/Address.sol";
-import {ForkID} from "@utils/Enums.sol";
-
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
 /// This is a bit wonky because we are trying to simulate
@@ -469,7 +468,10 @@ abstract contract HybridProposal is
     ) public override returns (uint256 proposalId) {
         vm.selectFork(uint256(ForkID.Moonbeam));
 
-        uint256 proposalCount = MultichainGovernor(governor).proposalCount();
+        uint256 proposalCount = onchainProposalId != 0
+            ? onchainProposalId
+            : MultichainGovernor(governor).proposalCount();
+        bytes memory proposalCalldata = getCalldata(addresses);
 
         // Loop through all proposals to find the one that matches
         // Start from the latest proposal as it is more likely to be the one
@@ -487,8 +489,6 @@ abstract contract HybridProposal is
                 calldatas,
                 PROPOSAL_DESCRIPTION
             );
-
-            bytes memory proposalCalldata = getCalldata(addresses);
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
                 proposalId = proposalCount;
