@@ -27,7 +27,7 @@ import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 contract mipb10 is Proposal, CrossChainProposal, Configs {
     /// @notice the name of the proposal
     /// Read more here: https://forum.moonwell.fi/t/mip-b10-onboard-reth-as-collateral-on-base-deployment/672
-    string public constant override name = "MIP-B10 rETH Market Creation";
+    string public constant override name = "MIP-B10";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;
@@ -124,6 +124,8 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
             emissions[block.chainid].length
         );
         console.log("\n\n");
+
+        onchainProposalId = 61;
     }
 
     function primaryForkId() public pure override returns (uint256) {
@@ -162,8 +164,7 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel),
-                        true
+                        address(irModel)
                     );
                 }
 
@@ -204,11 +205,7 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                     ""
                 );
 
-                addresses.addAddress(
-                    config.addressesString,
-                    address(mToken),
-                    true
-                );
+                addresses.addAddress(config.addressesString, address(mToken));
             }
         }
     }
@@ -230,14 +227,10 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                 );
 
                 _validateCaps(addresses, config); /// validate supply and borrow caps
-
-                /// defaults to true, then if you need to replicate a proposal and generate
-                /// calldata, set this to false as an env var, then run the proposal
-                if (vm.envOr("DO_AFTER_DEPLOY_MTOKEN_BROADCAST", true)) {
-                    mTokens[i]._setReserveFactor(config.reserveFactor);
-                    mTokens[i]._setProtocolSeizeShare(config.seizeShare);
-                    mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
-                }
+                /// calldata, set this to false as an env var, then run the proposa
+                mTokens[i]._setReserveFactor(config.reserveFactor);
+                mTokens[i]._setProtocolSeizeShare(config.seizeShare);
+                mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
             }
         }
     }
@@ -266,8 +259,75 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
 
     function build(Addresses addresses) public override {
+        // workaround to find calldata on TestProposalCalldataGeneration
+        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
+        delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
+
+        {
+            string
+                memory mtokensPath = "./src/proposals/mips/mip-b10/MTokens.json";
+            /// MTOKENS_PATH="./src/proposals/mips/examples/mip-market-listing/MTokens.json"
+            string memory fileContents = vm.readFile(mtokensPath);
+            bytes memory rawJson = vm.parseJson(fileContents);
+
+            CTokenConfiguration[] memory decodedJson = abi.decode(
+                rawJson,
+                (CTokenConfiguration[])
+            );
+
+            for (uint256 i = 0; i < decodedJson.length; i++) {
+                require(
+                    decodedJson[i].collateralFactor <= 0.95e18,
+                    "collateral factor absurdly high, are you sure you want to proceed?"
+                );
+
+                /// possible to set supply caps and not borrow caps,
+                /// but not set borrow caps and not set supply caps
+                if (decodedJson[i].supplyCap != 0) {
+                    require(
+                        decodedJson[i].supplyCap > decodedJson[i].borrowCap,
+                        "borrow cap gte supply cap, are you sure you want to proceed?"
+                    );
+                } else if (decodedJson[i].borrowCap != 0) {
+                    revert("borrow cap must be set with a supply cap");
+                }
+
+                cTokenConfigurations[block.chainid].push(decodedJson[i]);
+            }
+        }
+
+        {
+            string
+                memory mtokensPath = "./src/proposals/mips/mip-b10/RewardStreams.json";
+            /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
+            string memory fileContents = vm.readFile(mtokensPath);
+            bytes memory rawJson = vm.parseJson(fileContents);
+            EmissionConfig[] memory decodedEmissions = abi.decode(
+                rawJson,
+                (EmissionConfig[])
+            );
+
+            for (uint256 i = 0; i < decodedEmissions.length; i++) {
+                require(
+                    decodedEmissions[i].borrowEmissionsPerSec != 0,
+                    "borrow speed must be gte 1"
+                );
+                emissions[block.chainid].push(decodedEmissions[i]);
+            }
+        }
+
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
+        for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+            Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+            supplyCaps.push(config.supplyCap);
+            borrowCaps.push(config.borrowCap);
+
+            /// get the mToken
+            mTokens.push(MToken(addresses.getAddress(config.addressesString)));
+        }
+
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         address chainlinkOracleAddress = addresses.getAddress(
             "CHAINLINK_ORACLE"
@@ -600,8 +660,6 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                     addresses.getAddress(config.tokenAddressName)
                 ).decimals();
 
-                /// override defaults to false, dev can set to true to override these checks
-
                 if (
                     config.supplyCap != 0 &&
                     !vm.envOr("OVERRIDE_SUPPLY_CAP", false)
@@ -609,10 +667,7 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                     /// strip off all the decimals
                     uint256 adjustedSupplyCap = config.supplyCap /
                         (10 ** decimals);
-                    require(
-                        adjustedSupplyCap < 120_000_000,
-                        "supply cap suspiciously high, if this is the right supply cap, set OVERRIDE_SUPPLY_CAP environment variable to true"
-                    );
+                    require(adjustedSupplyCap < 120_000_000);
                 }
 
                 if (
@@ -621,10 +676,7 @@ contract mipb10 is Proposal, CrossChainProposal, Configs {
                 ) {
                     uint256 adjustedBorrowCap = config.borrowCap /
                         (10 ** decimals);
-                    require(
-                        adjustedBorrowCap < 120_000_000,
-                        "borrow cap suspiciously high, if this is the right borrow cap, set OVERRIDE_BORROW_CAP environment variable to true"
-                    );
+                    require(adjustedBorrowCap < 120_000_000);
                 }
             }
         }

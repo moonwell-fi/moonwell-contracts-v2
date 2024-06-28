@@ -408,5 +408,55 @@
         "addr": "0x73902f619CEB9B31FD8EFecf435CbDf89E369Ba6",
         "isContract": true,
         "name": "MOONWELL_AERO"
+    },
+    {
+        "addr": "0x4393277B02ef3cA293990A772B7160a8c76F2443",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_B01"
+    },
+    {
+        "addr": "0x4393277B02ef3cA293990A772B7160a8c76F2443",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_B05"
+    },
+    {
+        "addr": "0x33DeAc0861FD6a9235b86172AA939E79085c6f52",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USD_MIP_B05"
+    },
+    {
+        "addr": "0x142DCAEC322aAA25141B2597bf348487aDBd596d",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_B06"
+    },
+    {
+        "addr": "0x492dcEF1fc5253413fC5576B9522840a1A774DCe",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USD_MIP_B06"
+    },
+    {
+        "addr": "0x78Fe5d0427E669ba9F964C3495fF381a805a0487",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B06"
+    },
+    {
+        "addr": "0x1Cdb984008dcEe9d06c28654ed31cf82680EeA62",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B12"
+    },
+    {
+        "addr": "0xE1Dd796dBEB5A67CE37CbC52dCD164D0535c901E",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B13"
+    },
+    {
+        "addr": "0x24bdAcf6bbEBAf567123Da16CDb79A266597e92B",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USD_MIP_B13"
+    },
+    {
+        "addr": "0x0f36Dda2b47984434051AeCAa5F9587DEA7f95B7",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USD_MIP_B15"
     }
 ]

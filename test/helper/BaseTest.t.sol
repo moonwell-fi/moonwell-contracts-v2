@@ -75,7 +75,7 @@ contract BaseTest is xWELLDeploy, Test {
         addresses = new Addresses();
         if (!addresses.isAddressSet("WELL")) {
             well = new MockERC20();
-            addresses.addAddress("WELL", address(well), true);
+            addresses.addAddress("WELL", address(well));
         } else {
             well = MockERC20(addresses.getAddress("GOVTOKEN"));
         }

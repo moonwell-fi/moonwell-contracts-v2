@@ -22,6 +22,8 @@ contract mipb18 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b18/MIP-B18.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 12;
     }
 
     function primaryForkId() public pure override returns (uint256) {

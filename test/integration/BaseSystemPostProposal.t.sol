@@ -6,10 +6,10 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "@forge-std/Test.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
+import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
@@ -19,9 +19,9 @@ import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract LiveSystemBasePostProposalTest is PostProposalCheck, Configs {
+contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     MultiRewardDistributor mrd;
     Comptroller comptroller;
     WETHRouter router;
@@ -32,7 +32,7 @@ contract LiveSystemBasePostProposalTest is PostProposalCheck, Configs {
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(BASE_FORK_ID);
+        vm.selectFork(uint256(ForkID.Base));
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         well = addresses.getAddress("GOVTOKEN");

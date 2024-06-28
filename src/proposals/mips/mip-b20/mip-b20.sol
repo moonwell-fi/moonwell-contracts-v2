@@ -24,6 +24,8 @@ contract mipb20 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         );
 
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 19;
     }
 
     function primaryForkId() public pure override returns (uint256) {

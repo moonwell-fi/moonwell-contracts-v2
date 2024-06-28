@@ -14,17 +14,17 @@ import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// This MIP sets the reward speeds for different markets in the MultiRewardDistributor
 contract mipb07 is Proposal, CrossChainProposal, Configs {
-    string public constant override name = "MIPB07";
-
-    function primaryForkId() public pure override returns (uint256) {
-        return BASE_FORK_ID;
-    }
+    string public constant override name = "MIP-B07";
 
     function deploy(Addresses addresses, address) public override {}
 
     function afterDeploy(Addresses addresses, address) public override {}
 
     function preBuildMock(Addresses addresses) public override {}
+
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
+    }
 
     function build(Addresses addresses) public override {
         string memory descriptionPath = vm.envOr(
@@ -39,15 +39,23 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
 
         _setProposalDescription(proposalDescription);
 
+        onchainProposalId = 55;
+    }
+
+    function deploy(Addresses addresses, address) public override {}
+
+    function afterDeploy(Addresses addresses, address) public override {}
+
+    function preBuildMock(Addresses addresses) public override {}
+
+    function build(Addresses addresses) public override {
         delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
         {
             string memory mtokensPath = vm.envOr(
                 "EMISSION_PATH",
-                string(
-                    "./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
-                )
+                string("./src/proposals/mips/mip-b07/RewardStreams.json")
             );
             /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
             string memory fileContents = vm.readFile(mtokensPath);

@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {ForkID} from "@utils/Enums.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -11,7 +12,7 @@ import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
-    string public constant override name = "MIP-b15";
+    string public constant override name = "MIP-B15";
 
     uint256 public constant USDbC_NEW_RF = 0.20e18;
 
@@ -20,6 +21,8 @@ contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b15/MIP-B15.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 3;
     }
 
     function primaryForkId() public pure override returns (uint256) {
@@ -43,7 +46,7 @@ contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B15")
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );

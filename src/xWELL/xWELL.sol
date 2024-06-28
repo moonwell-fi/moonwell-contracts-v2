@@ -198,7 +198,9 @@ contract xWELL is
     /// @notice unpauses this contract, only callable by owner
     /// allows the owner to unpause the contract when the guardian has paused
     function ownerUnpause() external onlyOwner whenPaused {
-        _unpause();
+        /// granting guardian to address 0 removes the current guardian and
+        /// unpauses the contract by setting PauseStartTime to 0
+        _grantGuardian(address(0));
     }
 
     /// @notice update the pause duration

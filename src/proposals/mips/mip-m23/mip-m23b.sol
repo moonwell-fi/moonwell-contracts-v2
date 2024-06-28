@@ -61,18 +61,15 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
             addresses.addAddress(
                 "ECOSYSTEM_RESERVE_PROXY",
-                ecosystemReserveProxy,
-                true
+                ecosystemReserveProxy
             );
             addresses.addAddress(
                 "ECOSYSTEM_RESERVE_IMPL",
-                ecosystemReserveImplementation,
-                true
+                ecosystemReserveImplementation
             );
             addresses.addAddress(
                 "ECOSYSTEM_RESERVE_CONTROLLER",
-                ecosystemReserveController,
-                true
+                ecosystemReserveController
             );
 
             {
@@ -88,8 +85,8 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                     address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
                     proxyAdmin
                 );
-                addresses.addAddress("STK_GOVTOKEN", stkWellProxy, true);
-                addresses.addAddress("STK_GOVTOKEN_IMPL", stkWellImpl, true);
+                addresses.addAddress("STK_GOVTOKEN", stkWellProxy);
+                addresses.addAddress("STK_GOVTOKEN_IMPL", stkWellImpl);
             }
         }
 
@@ -110,12 +107,8 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                     addresses.getAddress("TEMPORAL_GOVERNOR")
                 );
 
-            addresses.addAddress(
-                "VOTE_COLLECTION_PROXY",
-                collectionProxy,
-                true
-            );
-            addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl, true);
+            addresses.addAddress("VOTE_COLLECTION_PROXY", collectionProxy);
+            addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl);
         }
     }
 

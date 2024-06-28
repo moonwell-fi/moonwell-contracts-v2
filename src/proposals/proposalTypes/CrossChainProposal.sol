@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Bytes} from "@utils/Bytes.sol";
+import {ForkID} from "@utils/Enums.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
@@ -21,7 +22,7 @@ abstract contract CrossChainProposal is
 {
     using Bytes for bytes;
 
-    uint32 private constant nonce = 0; /// nonce for wormhole, unused by Temporal Governor
+    uint32 public nonce; /// nonce for wormhole, unused by Temporal Governor, starts at 0
 
     /// instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
     uint16 public constant consistencyLevel = 200;
@@ -263,7 +264,7 @@ abstract contract CrossChainProposal is
     /// @notice search for a on-chain proposal that matches the proposal calldata
     /// @param addresses the addresses contract
     /// @param governor the governor address
-    // /// @return proposalId the proposal id, 0 if no proposal is found
+    /// @return proposalId the proposal id, 0 if no proposal is found
     function getProposalId(
         Addresses addresses,
         address governor
@@ -277,7 +278,21 @@ abstract contract CrossChainProposal is
             sendingChainIdToReceivingChainId[block.chainid]
         );
 
-        uint256 proposalCount = MultichainGovernor(governor).proposalCount();
+        uint256 proposalCount = onchainProposalId != 0
+            ? onchainProposalId
+            : MultichainGovernor(governor).proposalCount();
+
+        bytes memory proposalCalldata = getMultichainGovernorCalldata(
+            temporalGovernor,
+            addresses.getAddress(
+                block.chainid == moonBeamChainId
+                    ? "WORMHOLE_CORE_MOONBEAM"
+                    : "WORMHOLE_CORE_MOONBASE",
+                block.chainid == moonBeamChainId
+                    ? moonBeamChainId
+                    : moonBaseChainId
+            )
+        );
 
         while (proposalCount > 0) {
             (
@@ -292,18 +307,6 @@ abstract contract CrossChainProposal is
                 values,
                 calldatas,
                 PROPOSAL_DESCRIPTION
-            );
-
-            bytes memory proposalCalldata = getMultichainGovernorCalldata(
-                temporalGovernor,
-                addresses.getAddress(
-                    block.chainid == moonBeamChainId
-                        ? "WORMHOLE_CORE_MOONBEAM"
-                        : "WORMHOLE_CORE_MOONBASE",
-                    block.chainid == moonBeamChainId
-                        ? moonBeamChainId
-                        : moonBaseChainId
-                )
             );
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {

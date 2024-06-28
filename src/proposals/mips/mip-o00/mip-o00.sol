@@ -20,6 +20,7 @@ import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
 import {MWethDelegate} from "@protocol/MWethDelegate.sol";
+import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
@@ -31,8 +32,14 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
-/// DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true DO_RUN=true DO_VALIDATE=true
-// forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 -vvv --etherscan-api-key $OPSCAN_API_KEY --chain optimism-sepolia --broadcast
+/*
+
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 \
+ -vvv --etherscan-api-key $OPSCAN_API_KEY --broadcast
+
+*/
+
 contract mipo00 is Proposal, CrossChainProposal, Configs {
     using Address for address;
 
@@ -43,14 +50,6 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
     /// @notice time before anyone can unpause the contract after a guardian pause
     uint256 public constant permissionlessUnpauseTime = 30 days;
-
-    /// ------------ PROXY CONSTANTS ------------
-
-    bytes32 public constant _ADMIN_SLOT =
-        0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-
-    bytes32 public constant _IMPLEMENTATION_SLOT =
-        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     /// -------------------------------------------------------------------------------------------------- ///
     /// Chain Name	       Wormhole Chain ID   Network ID	Address                                      | ///
@@ -131,7 +130,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 permissionlessUnpauseTime,
                 trustedSenders
             );
-            addresses.addAddress("TEMPORAL_GOVERNOR", address(governor), true);
+            addresses.addAddress("TEMPORAL_GOVERNOR", address(governor));
         }
 
         deployAndMint(addresses);
@@ -142,8 +141,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             MultiRewardDistributor distributor = new MultiRewardDistributor();
             addresses.addAddress(
                 "MULTI_REWARD_DISTRIBUTOR",
-                address(distributor),
-                true
+                address(distributor)
             );
         }
         {
@@ -153,12 +151,12 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             unitroller._setPendingImplementation(address(comptroller));
             comptroller._become(unitroller);
 
-            addresses.addAddress("COMPTROLLER", address(comptroller), true);
-            addresses.addAddress("UNITROLLER", address(unitroller), true);
+            addresses.addAddress("COMPTROLLER", address(comptroller));
+            addresses.addAddress("UNITROLLER", address(unitroller));
 
             /// ------- PROXY ADMIN/ MULTI_REWARD_DISTRIBUTOR -------
             ProxyAdmin proxyAdmin = new ProxyAdmin();
-            addresses.addAddress("MRD_PROXY_ADMIN", address(proxyAdmin), true);
+            addresses.addAddress("MRD_PROXY_ADMIN", address(proxyAdmin));
 
             bytes memory initData = abi.encodeWithSignature(
                 "initialize(address,address)",
@@ -170,16 +168,12 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                     address(proxyAdmin),
                     initData
                 );
-            addresses.addAddress("MRD_PROXY", address(mrdProxy), true);
+            addresses.addAddress("MRD_PROXY", address(mrdProxy));
         }
         /// ------ MTOKENS -------
         {
             MErc20Delegate mTokenLogic = new MErc20Delegate();
-            addresses.addAddress(
-                "MTOKEN_IMPLEMENTATION",
-                address(mTokenLogic),
-                true
-            );
+            addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
         }
         WethUnwrapper unwrapper = new WethUnwrapper(
             addresses.getAddress("WETH")
@@ -187,8 +181,8 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
         MWethDelegate delegate = new MWethDelegate(address(unwrapper));
 
-        addresses.addAddress("WETH_UNWRAPPER", address(unwrapper), true);
-        addresses.addAddress("MWETH_IMPLEMENTATION", address(delegate), true);
+        addresses.addAddress("WETH_UNWRAPPER", address(unwrapper));
+        addresses.addAddress("MWETH_IMPLEMENTATION", address(delegate));
 
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
@@ -213,8 +207,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                             config.addressesString
                         )
                     ),
-                    address(irModel),
-                    true
+                    address(irModel)
                 );
             }
 
@@ -259,18 +252,18 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 ""
             );
 
-            addresses.addAddress(config.addressesString, address(mToken), true);
+            addresses.addAddress(config.addressesString, address(mToken));
         }
 
         /// deploy oracle, set price oracle
         ChainlinkOracle oracle = new ChainlinkOracle("null_asset");
-        addresses.addAddress("CHAINLINK_ORACLE", address(oracle), true);
+        addresses.addAddress("CHAINLINK_ORACLE", address(oracle));
 
         WETHRouter router = new WETHRouter(
             WETH9(addresses.getAddress("WETH")),
             MErc20(addresses.getAddress("MOONWELL_WETH"))
         );
-        addresses.addAddress("WETH_ROUTER", address(router), true);
+        addresses.addAddress("WETH_ROUTER", address(router));
     }
 
     function afterDeploy(Addresses addresses, address) public override {
@@ -440,6 +433,13 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
+        if (cTokenConfigs.length == 0) {
+            /// MToken/Emission configurations
+            _setMTokenConfiguration(
+                "./src/proposals/mips/mip-o00/optimismMTokens.json"
+            );
+        }
+
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
 
         /// set mint unpaused for all of the deployed MTokens
@@ -528,40 +528,6 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             );
         }
 
-        {
-            ChainlinkOracle oracle = ChainlinkOracle(
-                addresses.getAddress("CHAINLINK_ORACLE")
-            );
-
-            assertEq(oracle.admin(), address(governor));
-            /// validate chainlink price feeds are correctly set according to config in oracle
-
-            Configs.CTokenConfiguration[]
-                memory cTokenConfigs = getCTokenConfigurations(block.chainid);
-
-            //// set mint paused for all of the deployed MTokens
-            unchecked {
-                for (uint256 i = 0; i < cTokenConfigs.length; i++) {
-                    Configs.CTokenConfiguration memory config = cTokenConfigs[
-                        i
-                    ];
-
-                    assertEq(
-                        address(
-                            oracle.getFeed(
-                                ERC20(
-                                    addresses.getAddress(
-                                        config.tokenAddressName
-                                    )
-                                ).symbol()
-                            )
-                        ),
-                        addresses.getAddress(config.priceFeedName)
-                    );
-                }
-            }
-        }
-
         /// assert comptroller and unitroller are wired together properly
         {
             Unitroller unitroller = Unitroller(
@@ -612,7 +578,6 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             );
         }
 
-        /// TODO test mWETH delegate logic contract
         /// assert weth unwrapper is properly tied to the weth contract and
         /// that mWETH delegate is tied to the unwrapper
 
@@ -693,30 +658,12 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
         /// admin is owned by proxy admin
         {
-            bytes32 data = vm.load(
+            validateProxy(
+                vm,
                 addresses.getAddress("MRD_PROXY"),
-                _ADMIN_SLOT
-            );
-            assertEq(
-                bytes32(
-                    uint256(uint160(addresses.getAddress("MRD_PROXY_ADMIN")))
-                ),
-                data
-            );
-
-            data = vm.load(
-                addresses.getAddress("MRD_PROXY"),
-                _IMPLEMENTATION_SLOT
-            );
-            assertEq(
-                bytes32(
-                    uint256(
-                        uint160(
-                            addresses.getAddress("MULTI_REWARD_DISTRIBUTOR")
-                        )
-                    )
-                ),
-                data
+                addresses.getAddress("MULTI_REWARD_DISTRIBUTOR"),
+                addresses.getAddress("MRD_PROXY_ADMIN"),
+                "MRD_PROXY"
             );
         }
 
@@ -737,6 +684,13 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             ),
             "multichain governor not trusted"
         );
+        assertEq(
+            governor
+                .allTrustedSenders(chainIdToWormHoleId[block.chainid])
+                .length,
+            1,
+            "multichain governor incorrect trusted sender count from Moonbeam"
+        );
 
         {
             Comptroller comptroller = Comptroller(
@@ -748,6 +702,11 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 comptroller.liquidationIncentiveMantissa(),
                 liquidationIncentive
             );
+            ChainlinkOracle oracle = ChainlinkOracle(
+                addresses.getAddress("CHAINLINK_ORACLE")
+            );
+
+            assertEq(oracle.admin(), address(governor));
 
             Configs.CTokenConfiguration[]
                 memory cTokenConfigs = getCTokenConfigurations(block.chainid);
@@ -757,6 +716,20 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                     Configs.CTokenConfiguration memory config = cTokenConfigs[
                         i
                     ];
+
+                    /// oracle price feed checks
+                    assertEq(
+                        address(
+                            oracle.getFeed(
+                                ERC20(
+                                    addresses.getAddress(
+                                        config.tokenAddressName
+                                    )
+                                ).symbol()
+                            )
+                        ),
+                        addresses.getAddress(config.priceFeedName)
+                    );
 
                     /// CToken Assertions
                     assertFalse(

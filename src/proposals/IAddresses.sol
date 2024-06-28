@@ -30,12 +30,11 @@ interface IAddresses {
         uint256 _chainId
     ) external view returns (address);
 
-    /// @notice add an address for the current chainId
-    function addAddress(
-        string memory name,
-        address addr,
-        bool isContract
-    ) external;
+    /// @notice add a contract address for the current chainId
+    function addAddress(string memory name, address addr) external;
+
+    /// @notice add an EOA address for the current chainId
+    function addAddressEOA(string memory name, address addr) external;
 
     /// @notice add an address for a specific chainId
     function addAddress(

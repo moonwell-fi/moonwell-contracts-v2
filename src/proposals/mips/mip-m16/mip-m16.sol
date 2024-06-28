@@ -3,10 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ForkID} from "@utils/Enums.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipm16 is GovernanceProposal {
     string public constant override name = "MIP-M16";
@@ -16,6 +17,8 @@ contract mipm16 is GovernanceProposal {
             vm.readFile("./src/proposals/mips/mip-m16/MIP-M16.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 70;
     }
 
     function primaryForkId() public pure override returns (uint256) {
@@ -37,15 +40,15 @@ contract mipm16 is GovernanceProposal {
 
         /// @dev mUSDC.mad
         MErc20Delegator mUSDC = MErc20Delegator(payable(mUSDCAddress));
-        uint256 mUSDCReserves = mUSDC.totalReserves();
+        uint256 mUSDCReserves = 65456400996;
 
         /// @dev mETH.mad
         MErc20Delegator mETH = MErc20Delegator(payable(mETHAddress));
-        uint256 mETHReserves = mETH.totalReserves();
+        uint256 mETHReserves = 24519061554277751182;
 
         /// @dev mBTC.mad
         MErc20Delegator mwBTC = MErc20Delegator(payable(mwBTCAddress));
-        uint256 mwBTCReserves = mwBTC.totalReserves();
+        uint256 mwBTCReserves = 196336752;
 
         /// @dev set max operations on artemis governor to 1000
         _pushGovernanceAction(
