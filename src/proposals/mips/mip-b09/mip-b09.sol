@@ -11,7 +11,7 @@ import {Comptroller} from "@protocol/Comptroller.sol";
 import {ForkID} from "@utils/Enums.sol";
 
 contract mipb09 is Proposal, CrossChainProposal, Configs {
-    string public constant override name = "MIP-b09";
+    string public constant override name = "MIP-B09";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 
@@ -29,6 +29,8 @@ contract mipb09 is Proposal, CrossChainProposal, Configs {
             vm.readFile("./src/proposals/mips/mip-b09/MIP-B09.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 59;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

@@ -65,10 +65,4 @@ interface IProposal {
     /// print out proposal steps one by one
     /// print proposal description
     function printProposalActionSteps() external;
-
-    /// fork ID for base
-    function baseForkId() external view returns (uint256);
-
-    /// fork ID for moonbeam
-    function moonbeamForkId() external view returns (uint256);
 }

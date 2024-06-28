@@ -42,6 +42,8 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             vm.readFile("./src/proposals/mips/mip-m23/MIP-M23.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 79;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

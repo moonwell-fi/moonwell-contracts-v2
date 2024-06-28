@@ -2,9 +2,9 @@ name: Live Proposal Integration Tests
 on: [pull_request]
 
 env:
+  OP_RPC_URL: ${{secrets.OP_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
-  OP_RPC_URL: ${{secrets.OP_RPC_URL}}
 
 jobs:
   run-live-proposals-integration-tests:
@@ -24,7 +24,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          chmod +x ./get-latest-base-proposal.sh
-          chmod +x ./get-latest-moonbeam-proposal.sh
+          chmod +x bin/get-latest-base-proposal.sh
+          chmod +x bin/get-latest-moonbeam-proposal.sh
           time forge test --mc LiveProposalsIntegrationTest --ffi -vvv
         shell: bash

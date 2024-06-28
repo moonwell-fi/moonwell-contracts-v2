@@ -4,22 +4,19 @@ pragma solidity 0.8.19;
 import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
+import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-
-import {WETH9} from "@protocol/router/IWETH.sol";
-import {MErc20} from "@protocol/MErc20.sol";
-import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 
 /*
 How to use:
-forge script src/proposals/DeployWETHRouter.s.sol:DeployWETHRouter \
+forge script src/proposals/DeployWethUnwrapper.s.sol:DeployWethUnwrapper \
     -vvvv \
     --rpc-url base \
     --broadcast
 Remove --broadcast if you want to try locally first, without paying any gas.
 */
 
-contract DeployWETHRouter is Script {
+contract DeployWethUnwrapper is Script {
     uint256 public PRIVATE_KEY;
     Addresses addresses;
 
@@ -34,18 +31,18 @@ contract DeployWETHRouter is Script {
     }
 
     function run() public {
-        address deployerAddress = vm.addr(PRIVATE_KEY);
-
-        console.log("deployer address: ", deployerAddress);
+        console.log("deployer address: ", vm.addr(PRIVATE_KEY));
 
         vm.startBroadcast(PRIVATE_KEY);
 
-        WETHRouter router = new WETHRouter(
-            WETH9(addresses.getAddress("WETH")),
-            MErc20(addresses.getAddress("MOONWELL_WETH"))
+        WethUnwrapper unwrapper = new WethUnwrapper(
+            addresses.getAddress("WETH")
         );
 
-        console.log("router address: ", address(router));
+        console.log(
+            "successfully deployed WethUnwrapper at %s",
+            address(unwrapper)
+        );
 
         vm.stopBroadcast();
     }

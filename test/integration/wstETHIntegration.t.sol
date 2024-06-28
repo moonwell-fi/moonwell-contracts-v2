@@ -15,7 +15,7 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ForkID} from "@utils/Enums.sol";
 
-contract wstETHLiveSystemBasePostProposalTest is PostProposalCheck {
+contract wstETHPostProposalTest is PostProposalCheck {
     MultiRewardDistributor mrd;
     Comptroller comptroller;
     address well;

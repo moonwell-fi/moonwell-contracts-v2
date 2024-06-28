@@ -5,35 +5,39 @@
 CHANGED_FILES=$PR_CHANGED_FILES
 FOLDER=$PROPOSALS_FOLDER
 
+# Files to exclude
+EXCLUDED_FILES=("src/proposals/mips/mip-m23/mip-m23c.sol" "src/proposals/mips/mip-o00/mip-o00.sol" "src/proposals/mips/examples/mip01.sol")
+
 if [[ ! -z "$CHANGED_FILES" ]]; then
     IFS=' ' read -r -a files_array <<< "$CHANGED_FILES"
 
-      # Initialize an empty array to hold numbers and corresponding file names
+    # Initialize an empty array to hold numbers and corresponding file names
     max_number=-1
     selected_file=""
 
     for file in "${files_array[@]}"; do
-        if [[ $file == "$FOLDER"/*.sol && $file != *"/examples/"* ]]; then
+        if [[ $file == "$FOLDER"/*.sol && ! " ${EXCLUDED_FILES[@]} " =~ " ${file} " ]]; then
+            echo "Processing file: $file"
 
-            # Extract the number following 'm', 'b', or 't' before '.sol'
-            number=$(echo $file | sed -E 's/.*[bmt]([0-9]+)\.sol/\1/')
-
-            # Check if a number was actually found; if not, skip this file
-            if [[ -z "$number" ]]; then
+            # Extract the number following 'm', 'b', or 'o' before '.sol' and exclude files with letters after the number
+            if [[ $file =~ [bmo]([0-9]+)\.sol$ ]]; then
+                number=${BASH_REMATCH[1]}
+            else
+                echo "No valid number found in $file, skipping."
                 continue
             fi
 
-             # Check if this number is the highest found so far
+            # Check if this number is the highest found so far
             if [[ "$number" -gt "$max_number" ]]; then
                 max_number=$number
                 selected_file=$file
-            fi        
+            fi
         fi
     done
 
     # If file was found
     if [[ ! -z "$selected_file" ]]; then
-        echo "Processing $selected_file..."
+        echo "Selected file with highest number: $selected_file"
         output=$(forge script "$selected_file" 2>&1)
         # Removal of ANSI Escape Codes
         clean_output=$(echo "$output" | sed 's/\x1b\[[0-9;]*m//g')
@@ -58,9 +62,13 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
         fi
 
         echo "Writing JSON to output.json..."
-        # Create output.json 
+        # Create output.json
         touch output.json
         # Write JSON to output.json
         echo "$json_output" > output.json
+    else
+        echo "No suitable file found for processing."
     fi
+else
+    echo "No changed files detected."
 fi
