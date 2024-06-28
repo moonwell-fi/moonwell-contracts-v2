@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {ForkID} from "@utils/Enums.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipb15 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-b15";
@@ -19,6 +19,8 @@ contract mipb15 is HybridProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b15/MIP-B15.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 3;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -42,7 +44,7 @@ contract mipb15 is HybridProposal, Configs, ParameterValidation {
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B15")
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );

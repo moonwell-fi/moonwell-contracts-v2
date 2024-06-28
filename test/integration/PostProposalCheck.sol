@@ -44,12 +44,12 @@ contract PostProposalCheck is Test {
 
         // get the latest moonbeam proposal
         proposals[0] = checkAndRunLatestProposal(
-            "./get-latest-moonbeam-proposal.sh"
+            "bin/get-latest-moonbeam-proposal.sh"
         );
 
         // get the latest base proposal
         proposals[1] = checkAndRunLatestProposal(
-            "./get-latest-base-proposal.sh"
+            "bin/get-latest-base-proposal.sh"
         );
 
         /// only etch out precompile contracts if on the moonbeam chain

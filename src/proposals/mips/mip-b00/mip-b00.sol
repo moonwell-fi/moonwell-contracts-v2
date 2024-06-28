@@ -66,6 +66,9 @@ contract mipb00 is HybridProposal, Configs {
             )
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 39;
+        nonce = 2;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -389,6 +392,8 @@ contract mipb00 is HybridProposal, Configs {
     }
 
     function build(Addresses addresses) public override {
+        _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
+
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
         /// Unitroller configuration

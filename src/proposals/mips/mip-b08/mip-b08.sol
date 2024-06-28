@@ -24,7 +24,7 @@ import {ForkID} from "@utils/Enums.sol";
 /// in the Addresses.sol contract for the network the MTokens are being deployed on.
 contract mipb08 is HybridProposal, Configs {
     /// @notice the name of the proposal
-    string public constant override name = "MIP wstETH Market Creation";
+    string public constant override name = "MIP-B08";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;
@@ -55,72 +55,7 @@ contract mipb08 is HybridProposal, Configs {
 
         _setProposalDescription(proposalDescription);
 
-        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
-        delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
-
-        {
-            string
-                memory mtokensPath = "./src/proposals/mips/mip-b08/MTokens.json";
-            /// MTOKENS_PATH="./src/proposals/mips/examples/mip-market-listing/MTokens.json"
-            string memory fileContents = vm.readFile(mtokensPath);
-            bytes memory rawJson = vm.parseJson(fileContents);
-
-            CTokenConfiguration[] memory decodedJson = abi.decode(
-                rawJson,
-                (CTokenConfiguration[])
-            );
-
-            for (uint256 i = 0; i < decodedJson.length; i++) {
-                require(
-                    decodedJson[i].collateralFactor <= 0.95e18,
-                    "collateral factor absurdly high, are you sure you want to proceed?"
-                );
-
-                /// possible to set supply caps and not borrow caps,
-                /// but not set borrow caps and not set supply caps
-                if (decodedJson[i].supplyCap != 0) {
-                    require(
-                        decodedJson[i].supplyCap > decodedJson[i].borrowCap,
-                        "borrow cap gte supply cap, are you sure you want to proceed?"
-                    );
-                } else if (decodedJson[i].borrowCap != 0) {
-                    revert("borrow cap must be set with a supply cap");
-                }
-
-                cTokenConfigurations[block.chainid].push(decodedJson[i]);
-            }
-        }
-
-        {
-            string
-                memory mtokensPath = "./src/proposals/mips/mip-b08/RewardStreams.json";
-            /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
-            string memory fileContents = vm.readFile(mtokensPath);
-            bytes memory rawJson = vm.parseJson(fileContents);
-            EmissionConfig[] memory decodedEmissions = abi.decode(
-                rawJson,
-                (EmissionConfig[])
-            );
-
-            for (uint256 i = 0; i < decodedEmissions.length; i++) {
-                require(
-                    decodedEmissions[i].borrowEmissionsPerSec != 0,
-                    "borrow speed must be gte 1"
-                );
-                emissions[block.chainid].push(decodedEmissions[i]);
-            }
-        }
-
-        console.log("\n\n------------ LOAD STATS ------------");
-        console.log(
-            "Loaded %d MToken configs",
-            cTokenConfigurations[block.chainid].length
-        );
-        console.log(
-            "Loaded %d reward configs",
-            emissions[block.chainid].length
-        );
-        console.log("\n\n");
+        onchainProposalId = 58;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -213,8 +148,6 @@ contract mipb08 is HybridProposal, Configs {
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-                supplyCaps.push(config.supplyCap);
-                borrowCaps.push(config.borrowCap);
 
                 /// get the mToken
                 mTokens.push(
@@ -258,8 +191,88 @@ contract mipb08 is HybridProposal, Configs {
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
 
     function build(Addresses addresses) public override {
+        // workaround to find calldata on TestProposalCalldataGeneration
+
+        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
+        delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
+
+        {
+            string
+                memory mtokensPath = "./src/proposals/mips/mip-b08/MTokens.json";
+            /// MTOKENS_PATH="./src/proposals/mips/examples/mip-market-listing/MTokens.json"
+            string memory fileContents = vm.readFile(mtokensPath);
+            bytes memory rawJson = vm.parseJson(fileContents);
+
+            CTokenConfiguration[] memory decodedJson = abi.decode(
+                rawJson,
+                (CTokenConfiguration[])
+            );
+
+            for (uint256 i = 0; i < decodedJson.length; i++) {
+                require(
+                    decodedJson[i].collateralFactor <= 0.95e18,
+                    "collateral factor absurdly high, are you sure you want to proceed?"
+                );
+
+                /// possible to set supply caps and not borrow caps,
+                /// but not set borrow caps and not set supply caps
+                if (decodedJson[i].supplyCap != 0) {
+                    require(
+                        decodedJson[i].supplyCap > decodedJson[i].borrowCap,
+                        "borrow cap gte supply cap, are you sure you want to proceed?"
+                    );
+                } else if (decodedJson[i].borrowCap != 0) {
+                    revert("borrow cap must be set with a supply cap");
+                }
+
+                cTokenConfigurations[block.chainid].push(decodedJson[i]);
+
+                supplyCaps.push(decodedJson[i].supplyCap);
+                borrowCaps.push(decodedJson[i].borrowCap);
+            }
+        }
+
+        {
+            string
+                memory mtokensPath = "./src/proposals/mips/mip-b08/RewardStreams.json";
+            /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
+            string memory fileContents = vm.readFile(mtokensPath);
+            bytes memory rawJson = vm.parseJson(fileContents);
+            EmissionConfig[] memory decodedEmissions = abi.decode(
+                rawJson,
+                (EmissionConfig[])
+            );
+
+            for (uint256 i = 0; i < decodedEmissions.length; i++) {
+                require(
+                    decodedEmissions[i].borrowEmissionsPerSec != 0,
+                    "borrow speed must be gte 1"
+                );
+                emissions[block.chainid].push(decodedEmissions[i]);
+            }
+        }
+
+        console.log("\n\n------------ LOAD STATS ------------");
+        console.log(
+            "Loaded %d MToken configs",
+            cTokenConfigurations[block.chainid].length
+        );
+        console.log(
+            "Loaded %d reward configs",
+            emissions[block.chainid].length
+        );
+        console.log("\n\n");
+
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
+        for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+            Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+
+            /// get the mToken
+            mTokens.push(MToken(addresses.getAddress(config.addressesString)));
+        }
+
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         address chainlinkOracleAddress = addresses.getAddress(
             "CHAINLINK_ORACLE"

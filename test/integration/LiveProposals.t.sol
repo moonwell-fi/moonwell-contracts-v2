@@ -64,7 +64,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         uint256[] memory proposalIds = governorContract.liveProposals();
 
         string[] memory inputs = new string[](1);
-        inputs[0] = "./get-latest-proposals.sh";
+        inputs[0] = "bin/get-latest-proposals.sh";
 
         string memory output = string(vm.ffi(inputs));
 

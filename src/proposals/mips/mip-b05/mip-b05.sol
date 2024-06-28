@@ -12,7 +12,7 @@ import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipb05 is HybridProposal, Configs {
-    string public constant override name = "MIP-b05";
+    string public constant override name = "MIP-B05";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 
@@ -37,6 +37,8 @@ contract mipb05 is HybridProposal, Configs {
             vm.readFile("./src/proposals/mips/mip-b05/MIP-B05.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 51;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -156,7 +158,7 @@ contract mipb05 is HybridProposal, Configs {
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B05")
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
@@ -168,7 +170,7 @@ contract mipb05 is HybridProposal, Configs {
             addresses.getAddress("MOONWELL_DAI"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B05")
             ),
             "Set interest rate model for Moonwell DAI to updated rate model"
         );
@@ -180,7 +182,7 @@ contract mipb05 is HybridProposal, Configs {
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B05")
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
@@ -192,7 +194,7 @@ contract mipb05 is HybridProposal, Configs {
             addresses.getAddress("MOONWELL_USDBC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDBC")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B05")
             ),
             "Set interest rate model for Moonwell USDbC to updated rate model"
         );

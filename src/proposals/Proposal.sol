@@ -19,6 +19,10 @@ abstract contract Proposal is Script, Test {
     bool private DO_VALIDATE;
     bool private DO_PRINT;
 
+    /// @notice onchain proposal id for the proposal
+    /// returns 0 if proposal has no onchain id. must be set in the proposal
+    uint256 public onchainProposalId;
+
     constructor() {
         DEBUG = vm.envOr("DEBUG", true);
         DO_DEPLOY = vm.envOr("DO_DEPLOY", true);

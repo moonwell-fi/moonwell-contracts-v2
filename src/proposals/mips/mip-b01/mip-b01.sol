@@ -13,7 +13,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 /// This MIP sets the IRM for an MToken contract.
 /// It is intended to be used as a template for future MIPs that need to set IRM's.
 contract mipb01 is HybridProposal, Configs {
-    string public constant override name = "MIP-b01";
+    string public constant override name = "MIP-B01";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 
@@ -21,6 +21,9 @@ contract mipb01 is HybridProposal, Configs {
         _setProposalDescription(
             bytes(vm.readFile("./src/proposals/mips/mip-b01/MIP-B01.md"))
         );
+
+        onchainProposalId = 41;
+        nonce = 2;
     }
 
     function primaryForkId() public pure override returns (ForkID) {
@@ -38,7 +41,7 @@ contract mipb01 is HybridProposal, Configs {
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B01")
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );

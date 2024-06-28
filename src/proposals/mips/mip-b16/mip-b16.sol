@@ -19,7 +19,7 @@ contract mipb16 is
     MultichainGovernorDeploy,
     ParameterValidation
 {
-    string public constant override name = "MIP-B16 Resubmission";
+    string public constant override name = "MIP-B16";
 
     /// @notice this is based on Warden Finance's recommendation for reward speeds
     uint256 public constant REWARD_SPEED = 896275511648961000;
@@ -34,6 +34,8 @@ contract mipb16 is
         );
 
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 5;
     }
 
     function primaryForkId() public pure override returns (ForkID) {

@@ -39,7 +39,7 @@ abstract contract HybridProposal is
     using Address for address;
 
     /// @notice nonce for wormhole, unused by Temporal Governor
-    uint32 private constant nonce = 0;
+    uint32 public nonce = 0;
 
     /// @notice instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
     uint8 public constant consistencyLevel = 200;
@@ -237,7 +237,7 @@ abstract contract HybridProposal is
     function getTemporalGovCalldata(
         address temporalGovernor,
         ProposalAction[] memory actions
-    ) public pure returns (bytes memory timelockCalldata) {
+    ) public view returns (bytes memory timelockCalldata) {
         require(
             temporalGovernor != address(0),
             "getTemporalGovCalldata: Invalid temporal governor"
@@ -478,7 +478,10 @@ abstract contract HybridProposal is
     ) public override returns (uint256 proposalId) {
         vm.selectFork(uint256(ForkID.Moonbeam));
 
-        uint256 proposalCount = MultichainGovernor(governor).proposalCount();
+        uint256 proposalCount = onchainProposalId != 0
+            ? onchainProposalId
+            : MultichainGovernor(governor).proposalCount();
+        bytes memory proposalCalldata = getCalldata(addresses);
 
         // Loop through all proposals to find the one that matches
         // Start from the latest proposal as it is more likely to be the one
@@ -496,8 +499,6 @@ abstract contract HybridProposal is
                 calldatas,
                 PROPOSAL_DESCRIPTION
             );
-
-            bytes memory proposalCalldata = getCalldata(addresses);
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
                 proposalId = proposalCount;
@@ -830,7 +831,7 @@ abstract contract HybridProposal is
         uint16 emitterChainId,
         bytes32 emitterAddress,
         bytes memory payload
-    ) private pure returns (bytes memory encodedVM) {
+    ) private view returns (bytes memory encodedVM) {
         uint64 sequence = 200;
         uint8 version = 1;
 
