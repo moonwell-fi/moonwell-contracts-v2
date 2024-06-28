@@ -94,6 +94,8 @@ contract TestProposalCalldataGeneration is Test {
                 uint256[] memory onchainValues = new uint256[](values.length);
                 bytes[] memory onchainCalldatas = new bytes[](calldatas.length);
 
+                vm.selectFork(uint256(ForkID.Moonbeam));
+
                 try
                     MultichainGovernor(governor).getProposalData(proposalId)
                 returns (
@@ -120,8 +122,6 @@ contract TestProposalCalldataGeneration is Test {
                 );
 
                 assertEq(hash, onchainHash, "Hashes do not match");
-
-                vm.selectFork(uint256(ForkID.Moonbeam));
             }
         }
 
@@ -188,6 +188,8 @@ contract TestProposalCalldataGeneration is Test {
                 uint256[] memory onchainValues = new uint256[](values.length);
                 bytes[] memory onchainCalldatas = new bytes[](calldatas.length);
 
+                vm.selectFork(uint256(ForkID.Moonbeam));
+
                 try
                     MultichainGovernor(governor).getProposalData(proposalId)
                 returns (
@@ -214,8 +216,6 @@ contract TestProposalCalldataGeneration is Test {
                 );
 
                 assertEq(hash, onchainHash, "Hashes do not match");
-
-                vm.selectFork(uint256(ForkID.Moonbeam));
             }
         }
 
@@ -254,6 +254,8 @@ contract TestProposalCalldataGeneration is Test {
                 vm.selectFork(uint256(proposalContract.primaryForkId()));
                 proposalContract.build(addresses);
 
+                vm.selectFork(uint256(ForkID.Moonbeam));
+
                 // get proposal actions
                 (
                     address[] memory targets,
@@ -280,8 +282,6 @@ contract TestProposalCalldataGeneration is Test {
                 );
 
                 assertEq(hash, onchainHash, "Hashes do not match");
-
-                vm.selectFork(uint256(ForkID.Moonbeam));
             }
         }
     }
