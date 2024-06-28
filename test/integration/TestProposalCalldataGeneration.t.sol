@@ -19,12 +19,6 @@ contract TestProposalCalldataGeneration is Test {
     MultichainGovernor public governor;
     MoonwellArtemisGovernor public artemisGovernor;
 
-    uint256 public governorProposalCount;
-    uint256 public artemisProposalCount;
-
-    uint256 proposalFilesCount;
-    uint256 matches;
-
     mapping(uint256 proposalId => bytes32 hash) public proposalHashes;
     mapping(uint256 proposalId => bytes32 hash) public artemisProposalHashes;
 
@@ -44,58 +38,12 @@ contract TestProposalCalldataGeneration is Test {
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
 
-        governorProposalCount = governor.proposalCount();
-
         artemisGovernor = MoonwellArtemisGovernor(
             addresses.getAddress("ARTEMIS_GOVERNOR")
         );
-        artemisProposalCount = artemisGovernor.proposalCount();
     }
 
     function testProposalToolingCalldataGeneration() public {
-        {
-            uint256 proposalId = governorProposalCount;
-
-            while (proposalId > 0) {
-                (
-                    address[] memory targets,
-                    uint256[] memory values,
-                    bytes[] memory calldatas
-                ) = MultichainGovernor(governor).getProposalData(proposalId);
-
-                bytes32 hash = keccak256(
-                    abi.encode(targets, values, calldatas)
-                );
-
-                proposalHashes[proposalId] = hash;
-
-                proposalId--;
-            }
-        }
-
-        {
-            uint256 proposalId = artemisProposalCount;
-
-            while (proposalId > 0) {
-                (
-                    address[] memory targets,
-                    uint256[] memory values,
-                    ,
-                    bytes[] memory calldatas
-                ) = MoonwellArtemisGovernor(artemisGovernor).getActions(
-                        proposalId
-                    );
-
-                bytes32 hash = keccak256(
-                    abi.encode(targets, values, calldatas)
-                );
-
-                artemisProposalHashes[proposalId] = hash;
-
-                proposalId--;
-            }
-        }
-
         console.log(
             "----------------- SEARCHING HYBRID PROPOSALS -----------------"
         );
@@ -109,7 +57,6 @@ contract TestProposalCalldataGeneration is Test {
 
             // create array splitting the output string
             string[] memory proposalsPath = vm.split(output, "\n");
-            proposalFilesCount += proposalsPath.length;
 
             for (uint256 i = proposalsPath.length; i > 0; i--) {
                 address proposal = deployCode(proposalsPath[i - 1]);
@@ -134,57 +81,44 @@ contract TestProposalCalldataGeneration is Test {
                     abi.encode(targets, values, calldatas)
                 );
 
-                uint256 proposalId = governorProposalCount;
+                uint256 proposalId = proposalContract.onchainProposalId();
 
-                bool found = false;
-
-                // see if the hash of the proposal actions is the same as one of the
-                // proposals fetched from the Multichain Governor
-                while (proposalId > 0) {
-                    if (proposalHashes[proposalId] == hash) {
-                        console.log(
-                            "Proposal ID found for %s, %d",
-                            proposalContract.name(),
-                            proposalId
-                        );
-
-                        // delete from the proposalHashes mapping
-                        delete proposalHashes[proposalId];
-
-                        found = true;
-                        matches++;
-                        break;
-                    }
-                    proposalId--;
+                // is id is not set it means the proposal is not onchain yet
+                if (proposalId == 0) {
+                    continue;
                 }
 
-                proposalId = artemisProposalCount;
+                address[] memory onchainTargets = new address[](targets.length);
 
-                // see if the hash of the proposal actions is the same as one of
-                // the proposals fetched from the Artemis Governor
-                while (proposalId > 0 && found == false) {
-                    if (artemisProposalHashes[proposalId] == hash) {
-                        console.log(
-                            "Proposal ID found for %s, %d",
-                            proposalContract.name(),
-                            proposalId
-                        );
+                uint256[] memory onchainValues = new uint256[](values.length);
+                bytes[] memory onchainCalldatas = new bytes[](calldatas.length);
 
-                        // delete from the proposalHashes mapping
-                        delete artemisProposalHashes[proposalId];
-                        found = true;
-                        matches++;
-                        break;
-                    }
-                    proposalId--;
-                }
-
-                if (found == false) {
-                    console.log(
-                        "Proposal not found on MultichainGovernor or ArtemisGovernor for ",
-                        proposalContract.name()
+                try
+                    MultichainGovernor(governor).getProposalData(proposalId)
+                returns (
+                    address[] memory _targets,
+                    uint256[] memory _values,
+                    bytes[] memory _calldatas
+                ) {
+                    onchainTargets = _targets;
+                    onchainValues = _values;
+                    onchainCalldatas = _calldatas;
+                } catch {
+                    (
+                        onchainTargets,
+                        onchainValues,
+                        ,
+                        onchainCalldatas
+                    ) = MoonwellArtemisGovernor(artemisGovernor).getActions(
+                        proposalId
                     );
                 }
+
+                bytes32 onchainHash = keccak256(
+                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
+                );
+
+                assertEq(hash, onchainHash, "Hashes do not match");
 
                 vm.selectFork(uint256(ForkID.Moonbeam));
             }
@@ -203,7 +137,6 @@ contract TestProposalCalldataGeneration is Test {
 
             // create array splitting the output string
             string[] memory proposalsPath = vm.split(output, "\n");
-            proposalFilesCount += proposalsPath.length;
 
             for (uint256 i = proposalsPath.length; i > 0; i--) {
                 address proposal = deployCode(proposalsPath[i - 1]);
@@ -241,60 +174,44 @@ contract TestProposalCalldataGeneration is Test {
                     abi.encode(targets, values, calldatas)
                 );
 
-                uint256 proposalId = governorProposalCount;
+                uint256 proposalId = proposalContract.onchainProposalId();
 
-                bool found = false;
-
-                // see if the hash of the proposal actions is the same as one of the
-                // proposals fetched from the MultichainGovernor
-                while (proposalId > 0) {
-                    if (proposalHashes[proposalId] == hash) {
-                        console.log(
-                            "Proposal ID found for %s, %d",
-                            proposalContract.name(),
-                            proposalId
-                        );
-
-                        // delete from the proposalHashes mapping
-                        delete proposalHashes[proposalId];
-
-                        found = true;
-                        matches++;
-
-                        break;
-                    }
-                    proposalId--;
+                // is id is not set it means the proposal is not onchain yet
+                if (proposalId == 0) {
+                    continue;
                 }
 
-                proposalId = artemisProposalCount;
+                address[] memory onchainTargets = new address[](targets.length);
 
-                // see if the hash of the proposal actions is the same as one of
-                // the proposals fetched from the Artemis Governor
-                while (proposalId > 0 && found == false) {
-                    if (artemisProposalHashes[proposalId] == hash) {
-                        console.log(
-                            "Proposal ID found for %s, %d",
-                            proposalContract.name(),
-                            proposalId
-                        );
+                uint256[] memory onchainValues = new uint256[](values.length);
+                bytes[] memory onchainCalldatas = new bytes[](calldatas.length);
 
-                        // delete from the proposalHashes mapping
-                        delete artemisProposalHashes[proposalId];
-
-                        found = true;
-                        matches++;
-
-                        break;
-                    }
-                    proposalId--;
-                }
-
-                if (found == false) {
-                    console.log(
-                        "Proposal not found on MultichainGovernor or ArtemisGovernor for ",
-                        proposalContract.name()
+                try
+                    MultichainGovernor(governor).getProposalData(proposalId)
+                returns (
+                    address[] memory _targets,
+                    uint256[] memory _values,
+                    bytes[] memory _calldatas
+                ) {
+                    onchainTargets = _targets;
+                    onchainValues = _values;
+                    onchainCalldatas = _calldatas;
+                } catch {
+                    (
+                        onchainTargets,
+                        onchainValues,
+                        ,
+                        onchainCalldatas
+                    ) = MoonwellArtemisGovernor(artemisGovernor).getActions(
+                        proposalId
                     );
                 }
+
+                bytes32 onchainHash = keccak256(
+                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
+                );
+
+                assertEq(hash, onchainHash, "Hashes do not match");
 
                 vm.selectFork(uint256(ForkID.Moonbeam));
             }
@@ -312,7 +229,6 @@ contract TestProposalCalldataGeneration is Test {
 
             // create array splitting the output string
             string[] memory proposalsPath = vm.split(output, "\n");
-            proposalFilesCount += proposalsPath.length;
 
             for (uint256 i = proposalsPath.length; i > 0; i--) {
                 address proposal = deployCode(proposalsPath[i - 1]);
@@ -340,42 +256,30 @@ contract TestProposalCalldataGeneration is Test {
                     abi.encode(targets, values, calldatas)
                 );
 
-                uint256 proposalId = artemisProposalCount;
+                uint256 proposalId = proposalContract.onchainProposalId();
 
-                bool found = false;
-
-                // see if the hash of the proposal actions is the same as one of
-                // the proposals fetched from the Artemis Governor
-                while (proposalId > 0 && found == false) {
-                    if (artemisProposalHashes[proposalId] == hash) {
-                        console.log(
-                            "Proposal ID found for %s, %d",
-                            proposalContract.name(),
-                            proposalId
-                        );
-
-                        // delete from the proposalHashes mapping
-                        delete artemisProposalHashes[proposalId];
-
-                        found = true;
-                        matches++;
-
-                        break;
-                    }
-                    proposalId--;
+                // is id is not set it means the proposal is not onchain yet
+                if (proposalId == 0) {
+                    continue;
                 }
 
-                if (found == false) {
-                    console.log(
-                        "Proposal not found on ArtemisGovernor for ",
-                        proposalContract.name()
+                (
+                    address[] memory onchainTargets,
+                    uint256[] memory onchainValues,
+                    ,
+                    bytes[] memory onchainCalldatas
+                ) = MoonwellArtemisGovernor(artemisGovernor).getActions(
+                        proposalId
                     );
-                }
+
+                bytes32 onchainHash = keccak256(
+                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
+                );
+
+                assertEq(hash, onchainHash, "Hashes do not match");
 
                 vm.selectFork(uint256(ForkID.Moonbeam));
             }
         }
-
-        assertEq(proposalFilesCount, matches, "Not all proposals were found");
     }
 }

@@ -11,7 +11,7 @@ JSON_FILES=()
 for DIR in ${MIP_DIRS}; do
     for FILE in ${DIR}/*.sol; do
         # Check if file exists and is not the specific file to exclude
-        if [ -f "$FILE" ] && [[ "$FILE" != "src/proposals/mips/mip-o01/mip-o01.sol" ]]; then
+        if [ -f "$FILE" ]; then
 
             # Check if file contains the import lines for either HybridProposal or CrossChainProposal
             if grep -Eq 'import {HybridProposal} from "@proposals/proposalTypes/(HybridProposal|CrossChainProposal).sol";' "$FILE"; then

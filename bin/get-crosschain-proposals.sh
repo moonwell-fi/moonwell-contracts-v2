@@ -11,7 +11,7 @@ JSON_FILES=()
 for DIR in ${MIP_DIRS}; do
     for FILE in ${DIR}/*.sol; do
         # Check if file exists and is not the specific file to exclude
-        if [ -f "$FILE" ] && [[ "$FILE" != "src/proposals/mips/mip-o00/mip-o00.sol" ]]; then
+        if [ -f "$FILE" ]; then
             # First, check if file contains the HybridProposal import line
             if grep -q 'import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";' "$FILE"; then
                 # Then check if the file also contains the build function signature
