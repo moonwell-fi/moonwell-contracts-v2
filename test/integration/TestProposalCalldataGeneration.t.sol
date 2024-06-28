@@ -67,7 +67,15 @@ contract TestProposalCalldataGeneration is Test {
                 vm.makePersistent(proposal);
 
                 HybridProposal proposalContract = HybridProposal(proposal);
+                uint256 proposalId = proposalContract.onchainProposalId();
+
+                // is id is not set it means the proposal is not onchain yet
+                if (proposalId == 0) {
+                    continue;
+                }
+
                 vm.selectFork(uint256(proposalContract.primaryForkId()));
+
                 proposalContract.build(addresses);
 
                 // get proposal actions
@@ -80,13 +88,6 @@ contract TestProposalCalldataGeneration is Test {
                 bytes32 hash = keccak256(
                     abi.encode(targets, values, calldatas)
                 );
-
-                uint256 proposalId = proposalContract.onchainProposalId();
-
-                // is id is not set it means the proposal is not onchain yet
-                if (proposalId == 0) {
-                    continue;
-                }
 
                 address[] memory onchainTargets = new address[](targets.length);
 
@@ -149,6 +150,14 @@ contract TestProposalCalldataGeneration is Test {
                 CrossChainProposal proposalContract = CrossChainProposal(
                     proposal
                 );
+
+                uint256 proposalId = proposalContract.onchainProposalId();
+
+                // is id is not set it means the proposal is not onchain yet
+                if (proposalId == 0) {
+                    continue;
+                }
+
                 vm.selectFork(uint256(proposalContract.primaryForkId()));
                 proposalContract.build(addresses);
 
@@ -173,13 +182,6 @@ contract TestProposalCalldataGeneration is Test {
                 bytes32 hash = keccak256(
                     abi.encode(targets, values, calldatas)
                 );
-
-                uint256 proposalId = proposalContract.onchainProposalId();
-
-                // is id is not set it means the proposal is not onchain yet
-                if (proposalId == 0) {
-                    continue;
-                }
 
                 address[] memory onchainTargets = new address[](targets.length);
 
@@ -241,6 +243,14 @@ contract TestProposalCalldataGeneration is Test {
                 GovernanceProposal proposalContract = GovernanceProposal(
                     proposal
                 );
+
+                uint256 proposalId = proposalContract.onchainProposalId();
+
+                // is id is not set it means the proposal is not onchain yet
+                if (proposalId == 0) {
+                    continue;
+                }
+
                 vm.selectFork(uint256(proposalContract.primaryForkId()));
                 proposalContract.build(addresses);
 
@@ -255,13 +265,6 @@ contract TestProposalCalldataGeneration is Test {
                 bytes32 hash = keccak256(
                     abi.encode(targets, values, calldatas)
                 );
-
-                uint256 proposalId = proposalContract.onchainProposalId();
-
-                // is id is not set it means the proposal is not onchain yet
-                if (proposalId == 0) {
-                    continue;
-                }
 
                 (
                     address[] memory onchainTargets,
