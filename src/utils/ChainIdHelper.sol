@@ -26,44 +26,53 @@ library ChainIdHelper {
         ) {
             return OPTIMISM_FORK_ID;
         } else {
-            revert("ChainIds: invalid chain id");
+            revert("ChainIds: invalid chain id to fork id");
         }
     }
 
     function toMoonbeamChainId(
         uint256 chainId
     ) internal pure returns (uint256) {
-        if (chainId == BASE_CHAIN_ID || chainId == OPTIMISM_CHAIN_ID) {
+        if (
+            chainId == BASE_CHAIN_ID ||
+            chainId == OPTIMISM_CHAIN_ID ||
+            chainId == MOONBEAM_CHAIN_ID
+        ) {
             return MOONBEAM_CHAIN_ID;
         } else if (
+            chainId == MOONBASE_CHAIN_ID ||
             chainId == BASE_SEPOLIA_CHAIN_ID ||
             chainId == OPTIMISM_SEPOLIA_CHAIN_ID
         ) {
             return MOONBASE_CHAIN_ID;
         } else {
-            revert("ChainIds: invalid chain id");
+            revert("ChainIds: invalid chain id to moonbeam chain id");
         }
     }
 
     function toBaseChainId(uint256 chainId) internal pure returns (uint256) {
-        if (chainId == MOONBEAM_CHAIN_ID) {
+        if (chainId == MOONBEAM_CHAIN_ID || chainId == BASE_CHAIN_ID) {
             return BASE_CHAIN_ID;
-        } else if (chainId == MOONBASE_CHAIN_ID) {
+        } else if (
+            chainId == MOONBASE_CHAIN_ID || chainId == BASE_SEPOLIA_CHAIN_ID
+        ) {
             return BASE_SEPOLIA_CHAIN_ID;
         } else {
-            revert("ChainIds: invalid chain id");
+            revert("ChainIds: invalid chain id to base chain id");
         }
     }
 
     function toOptimismChainId(
         uint256 chainId
     ) internal pure returns (uint256) {
-        if (chainId == MOONBEAM_CHAIN_ID) {
+        if (chainId == MOONBEAM_CHAIN_ID || chainId == OPTIMISM_CHAIN_ID) {
             return OPTIMISM_CHAIN_ID;
-        } else if (chainId == MOONBASE_CHAIN_ID) {
+        } else if (
+            chainId == MOONBASE_CHAIN_ID || chainId == OPTIMISM_SEPOLIA_CHAIN_ID
+        ) {
             return OPTIMISM_SEPOLIA_CHAIN_ID;
         } else {
-            revert("ChainIds: invalid chain id");
+            revert("ChainIds: invalid chain id to optimism chain id");
         }
     }
 }
