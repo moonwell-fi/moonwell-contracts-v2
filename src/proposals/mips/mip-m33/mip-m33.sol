@@ -16,7 +16,7 @@ contract mipm33 is HybridProposal, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m27/MIP-M33.md")
+            vm.readFile("./src/proposals/mips/mip-m33/MIP-M33.md")
         );
         _setProposalDescription(proposalDescription);
     }
