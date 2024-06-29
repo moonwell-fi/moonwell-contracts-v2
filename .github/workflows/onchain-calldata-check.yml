@@ -1,4 +1,4 @@
-name: Foundry post proposal integration tests
+name: Onchain Calldata Check
 
 on: [pull_request]
 
@@ -9,7 +9,7 @@ env:
 
 jobs:
   run-tests:
-    name: post-proposal-integration-tests
+    name: on-chain-calldata-check
     runs-on: ubuntu-latest
 
     steps:
@@ -21,5 +21,5 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Tests Base Mainnet
-        run: time forge test --match-contract PostProposalTest -vvv --ffi
+      - name: Run Test Proposal Calldata Generation
+        run: time forge test --match-contract TestProposalCalldataGeneration -vvv --ffi

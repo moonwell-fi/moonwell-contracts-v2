@@ -47,6 +47,7 @@ contract Configs is Test {
     /// mapping of all emission configs per chainid
     mapping(uint256 => EmissionConfig[]) public emissions;
 
+    uint256 public constant _optimismSepoliaChainId = 11155420;
     uint256 public constant _baseSepoliaChainId = 84532;
     uint256 public constant _localChainId = 31337;
     uint256 public constant _baseChainId = 8453;
@@ -109,8 +110,6 @@ contract Configs is Test {
 
     function deployAndMint(Addresses addresses) public {
         if (block.chainid == _baseSepoliaChainId) {
-            // allocate tokens to temporal governor
-
             // USDBC
             address usdbc = addresses.getAddress("USDBC");
             FaucetTokenWithPermit(usdbc).allocateTo(
@@ -118,9 +117,48 @@ contract Configs is Test {
                 initialMintAmount
             );
 
-            // cbETH
             address cbeth = addresses.getAddress("cbETH");
             FaucetTokenWithPermit(cbeth).allocateTo(
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                initialMintAmount
+            );
+
+            // WETH
+            WETH9 weth = WETH9(addresses.getAddress("WETH"));
+            vm.deal(address(this), 0.00001e18);
+            weth.deposit{value: 0.00001e18}();
+            weth.transfer(
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                0.00001e18
+            );
+        }
+        if (block.chainid == _optimismSepoliaChainId) {
+            // allocate tokens to temporal governor
+            FaucetTokenWithPermit usdc = new FaucetTokenWithPermit(
+                1e18,
+                "USD Coin",
+                6, /// 6 decimals
+                "USDC"
+            );
+
+            addresses.addAddress("USDC", address(usdc));
+
+            FaucetTokenWithPermit wsteth = new FaucetTokenWithPermit(
+                1e18,
+                "wstETH",
+                18, /// 18 decimals
+                "wstETH"
+            );
+
+            addresses.addAddress("wstETH", address(wsteth));
+
+            FaucetTokenWithPermit(usdc).allocateTo(
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                initialMintAmount
+            );
+
+            // wstETH
+            FaucetTokenWithPermit(wsteth).allocateTo(
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 initialMintAmount
             );

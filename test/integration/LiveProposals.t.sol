@@ -2,20 +2,21 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
+
 import {console} from "@forge-std/console.sol";
 
-import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
-import {String} from "@utils/String.sol";
 import {Bytes} from "@utils/Bytes.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {String} from "@utils/String.sol";
 import {Address} from "@utils/Address.sol";
-import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
+import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     using String for string;
@@ -31,6 +32,9 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
     /// @notice fork ID for base
     uint256 public baseForkId = vm.createFork(vm.envString("BASE_RPC_URL"));
+
+    /// @notice fork ID for optimism
+    uint256 public optimismForkId = vm.createFork(vm.envString("OP_RPC_URL"));
 
     /// @notice Multichain Governor address
     address governor;
@@ -60,7 +64,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
         uint256[] memory proposalIds = governorContract.liveProposals();
 
         string[] memory inputs = new string[](1);
-        inputs[0] = "./get-latest-proposals.sh";
+        inputs[0] = "bin/get-latest-proposals.sh";
 
         string memory output = string(vm.ffi(inputs));
 
@@ -193,7 +197,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         "Temporal Governor address mismatch"
                     );
 
-                    checkBaseActions(baseTargets, addresses);
+                    checkBaseOptimismActions(baseTargets, addresses);
                 }
 
                 bytes memory vaa = generateVAA(

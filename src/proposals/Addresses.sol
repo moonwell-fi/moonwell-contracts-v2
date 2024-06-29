@@ -73,6 +73,7 @@ contract Addresses is IAddresses, Test {
 
             uint256 length = savedAddresses.length;
             uint256 chainId = chainids[j];
+
             for (uint256 i = 0; i < length; i++) {
                 _addAddress(
                     savedAddresses[i].name,
@@ -411,6 +412,7 @@ contract AllChainAddresses is Addresses {
         1284,
         1287,
         11155111,
+        11155420,
         31337,
         10
     ];

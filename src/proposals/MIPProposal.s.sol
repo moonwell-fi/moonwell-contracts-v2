@@ -36,6 +36,10 @@ abstract contract MIPProposal is Script {
     bool private DO_VALIDATE;
     bool private DO_PRINT;
 
+    /// @notice onchain proposal id for the proposal
+    /// returns 0 if proposal has no onchain id. must be set in the proposal
+    uint256 public onchainProposalId;
+
     constructor() {
         PRIVATE_KEY = uint256(vm.envOr("ETH_PRIVATE_KEY", uint256(123)));
 

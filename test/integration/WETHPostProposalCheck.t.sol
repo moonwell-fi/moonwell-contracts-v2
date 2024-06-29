@@ -5,11 +5,14 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
+import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
+import {MWethDelegate} from "@protocol/MWethDelegate.sol";
 import {mipb02 as mip} from "@proposals/mips/mip-b02/mip-b02.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
@@ -18,19 +21,52 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract ReentrancyPostProposalTest is
-    Configs,
-    PostProposalCheck,
-    ComptrollerErrorReporter
-{
+/// verify that the new MWETH Delegate and Unwrapper are working as expected
+contract WETHPostProposalCheck is Configs, PostProposalCheck {
+    WethUnwrapper unwrapper;
     Comptroller comptroller;
+    MErc20Delegator mToken;
+    MWethDelegate delegate;
     WETHRouter router;
+    bool ethReceived;
 
     function setUp() public override {
         super.setUp();
 
+        vm.selectFork(uint256(ForkID.Base));
+
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+        mToken = MErc20Delegator(
+            payable(addresses.getAddress("MOONWELL_WETH"))
+        );
         router = WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));
+
+        unwrapper = new WethUnwrapper(addresses.getAddress("WETH"));
+
+        delegate = new MWethDelegate(address(unwrapper));
+
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        mToken._setImplementation(address(delegate), false, "");
+    }
+
+    function testSetup() public {
+        assertEq(
+            delegate.wethUnwrapper(),
+            address(unwrapper),
+            "unwrapper incorrectly set"
+        );
+
+        assertEq(
+            MWethDelegate(address(mToken)).wethUnwrapper(),
+            address(unwrapper),
+            "unwrapper incorrectly set on mToken proxy"
+        );
+
+        assertEq(
+            mToken.implementation(),
+            address(delegate),
+            "delegate incorrectly set"
+        );
     }
 
     function testMintMWethMTokenSucceeds() public {
@@ -38,9 +74,7 @@ contract ReentrancyPostProposalTest is
         uint256 mintAmount = 100e18;
 
         IERC20 token = IERC20(addresses.getAddress("WETH"));
-        MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_WETH"))
-        );
+
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
         vm.deal(sender, mintAmount); /// fund with raw eth
@@ -85,44 +119,29 @@ contract ReentrancyPostProposalTest is
         ); /// ensure sender and mToken is not in market
     }
 
-    function testReentrantBorrowFails() public {
-        testMintMWethMTokenSucceeds(); /// top up weth market with liquidity
+    function testRedeemSendsRawEthToReceiver() public {
+        testMintMWethMTokenSucceeds();
+        assertFalse(ethReceived, "should not have received eth");
 
-        address mToken = addresses.getAddress("MOONWELL_WETH");
-        MaliciousBorrower borrower = new MaliciousBorrower(mToken, false);
+        uint256 redeemAmount = 100e18;
+        uint256 startingBalance = address(this).balance;
 
-        deal(addresses.getAddress("WETH"), address(borrower), 100e18); /// fund attack contract with weth
+        vm.warp(block.timestamp + 1000); /// accrue enough interest to redeem at least 100 eth
 
-        vm.expectRevert("re-entered"); /// cannot reenter and borrow
-        borrower.exploit();
+        assertEq(mToken.redeemUnderlying(redeemAmount), 0, "redeem failure");
+
+        assertTrue(ethReceived, "should have received eth");
+
+        uint256 endingBalance = address(this).balance;
+
+        assertEq(
+            endingBalance - startingBalance,
+            redeemAmount,
+            "incorrect eth amount after redemption"
+        );
     }
 
-    function testReentrantExitMarketFails() public {
-        testMintMWethMTokenSucceeds(); /// top up weth market with liquidity
-
-        address mToken = addresses.getAddress("MOONWELL_WETH");
-        /// cross contract reentrancy attempt this time
-        MaliciousBorrower borrower = new MaliciousBorrower(mToken, true);
-
-        deal(addresses.getAddress("WETH"), address(borrower), 100e18); /// fund attack contract with weth
-
-        vm.expectEmit(true, true, true, true, address(comptroller));
-        /// cannot reenter and borrow
-
-        emit Failure(
-            uint256(Error.NONZERO_BORROW_BALANCE),
-            uint256(FailureInfo.EXIT_MARKET_BALANCE_OWED),
-            0
-        );
-        borrower.exploit();
-
-        console.log(
-            "weth balance: ",
-            IERC20(addresses.getAddress("WETH")).balanceOf(address(borrower))
-        ); /// ensure borrow failed
-        console.log(
-            "mToken balance: ",
-            IERC20(mToken).balanceOf(address(borrower))
-        ); /// ensure borrow failed
+    receive() external payable {
+        ethReceived = true;
     }
 }

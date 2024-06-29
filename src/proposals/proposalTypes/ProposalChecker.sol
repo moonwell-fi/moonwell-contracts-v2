@@ -78,13 +78,16 @@ abstract contract ProposalChecker is ChainIds {
     /// @dev checks that the Base actions do not include the wormhole core address
     /// @param targets the list of targets for the Base actions
     /// @param addresses the addresses contract
-    function checkBaseActions(
+    function checkBaseOptimismActions(
         address[] memory targets,
         Addresses addresses
     ) public view {
         require(
-            baseChainId == block.chainid || baseSepoliaChainId == block.chainid,
-            "cannot run base checks on non-base network"
+            baseChainId == block.chainid ||
+                baseSepoliaChainId == block.chainid ||
+                optimismChainId == block.chainid ||
+                optimismSepoliaChainId == block.chainid,
+            "cannot run base/optimism checks on non-base/optimism network"
         );
 
         address wormholeCoreBase = addresses.getAddress(
@@ -94,6 +97,15 @@ abstract contract ProposalChecker is ChainIds {
         address wormholeCoreBaseSepolia = addresses.getAddress(
             "WORMHOLE_CORE_SEPOLIA_BASE",
             baseSepoliaChainId
+        );
+
+        address wormholeCoreOptimism = addresses.getAddress(
+            "WORMHOLE_CORE",
+            optimismChainId
+        );
+        address wormholeCoreOptimismSepolia = addresses.getAddress(
+            "WORMHOLE_CORE",
+            optimismSepoliaChainId
         );
 
         for (uint256 i = 0; i < targets.length; i++) {
@@ -111,6 +123,14 @@ abstract contract ProposalChecker is ChainIds {
             require(
                 targets[i] != wormholeCoreBaseSepolia,
                 "Wormhole Core BASE Sepolia address should not be in the list of targets"
+            );
+            require(
+                targets[i] != wormholeCoreOptimism,
+                "Wormhole Core Optimism address should not be in the list of targets"
+            );
+            require(
+                targets[i] != wormholeCoreOptimismSepolia,
+                "Wormhole Core Optimism Sepolia address should not be in the list of targets"
             );
         }
     }
@@ -144,6 +164,15 @@ abstract contract ProposalChecker is ChainIds {
                 moonBeamChainId
             );
 
+            address wormholeCoreOptimism = addresses.getAddress(
+                "WORMHOLE_CORE",
+                optimismChainId
+            );
+            address wormholeCoreOptimismSepolia = addresses.getAddress(
+                "WORMHOLE_CORE",
+                optimismSepoliaChainId
+            );
+
             for (uint256 i = 0; i < moonbeamActions.length; i++) {
                 require(
                     moonbeamActions[i].target != wormholeCoreBase,
@@ -152,6 +181,15 @@ abstract contract ProposalChecker is ChainIds {
                 require(
                     moonbeamActions[i].target != wormholeCoreBaseSepolia,
                     "Wormhole Core Base Sepolia address should not be in the list of targets"
+                );
+
+                require(
+                    moonbeamActions[i].target != wormholeCoreOptimism,
+                    "Wormhole Core Optimism address should not be in the list of targets"
+                );
+                require(
+                    moonbeamActions[i].target != wormholeCoreOptimismSepolia,
+                    "Wormhole Core Optimism Sepolia address should not be in the list of targets"
                 );
 
                 require(

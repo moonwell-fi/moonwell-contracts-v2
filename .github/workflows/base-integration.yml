@@ -20,6 +20,5 @@ jobs:
         uses: ./.github/actions
 
       - name: Integration Tests Base Mainnet
-        run:
-          time forge test --match-contract LiveSystemBaseTest --fork-url base
+        run: time forge test --match-contract LiveSystemBaseTest --fork-url base
           -vvv --ffi

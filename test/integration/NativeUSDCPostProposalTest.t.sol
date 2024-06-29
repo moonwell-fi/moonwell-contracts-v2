@@ -19,11 +19,7 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ForkID} from "@utils/Enums.sol";
 
-contract NativeUSDCLiveSystemBasePostProposalTest is
-    Test,
-    PostProposalCheck,
-    Configs
-{
+contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
     MultiRewardDistributor mrd;
     Comptroller comptroller;
     address well;
