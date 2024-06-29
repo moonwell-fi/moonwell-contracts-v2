@@ -538,7 +538,6 @@ abstract contract HybridProposal is
             // Delegate proposer's votes to itself
             vm.prank(caller);
             ERC20Votes(governanceToken).delegate(caller);
-            vm.roll(block.number + 1);
         }
 
         bytes memory data;
@@ -558,6 +557,8 @@ abstract contract HybridProposal is
             checkBaseOptimismActions(optimismActions, addresses);
 
             vm.selectFork(uint256(ForkID.Moonbeam));
+
+            vm.roll(block.number + 1);
 
             /// triple check the values
             for (uint256 i = 0; i < targets.length; i++) {
