@@ -13,7 +13,7 @@ import {ForkID} from "@utils/Enums.sol";
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b22/mip-b22.sol:mipb22
 contract mipb22 is Proposal, CrossChainProposal, Configs, ParameterValidation {
-    string public constant override name = "MIP-b22";
+    string public constant override name = "MIP-B22";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -33,8 +33,6 @@ contract mipb22 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-        //address unitrollerAddress = addresses.getAddress("UNITROLLER");
-
         _pushCrossChainAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
