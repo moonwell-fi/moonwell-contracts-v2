@@ -117,7 +117,20 @@ contract TestProposalCalldataGeneration is Test {
                     );
                 }
 
-                assertEq(hash, onchainHash, "Hashes do not match");
+                assertEq(
+                    hash,
+                    onchainHash,
+                    string(
+                        abi.encodePacked(
+                            "Hashes do not match for proposal: ",
+                            proposalContract.name()
+                        )
+                    )
+                );
+                console.log(
+                    "Found onchain calldata for proposal: ",
+                    proposalContract.name()
+                );
             }
         }
 
@@ -180,7 +193,20 @@ contract TestProposalCalldataGeneration is Test {
                     abi.encode(onchainTargets, onchainValues, onchainCalldatas)
                 );
 
-                assertEq(hash, onchainHash, "Hashes do not match");
+                assertEq(
+                    hash,
+                    onchainHash,
+                    string(
+                        abi.encodePacked(
+                            "Hashes do not match for proposal: ",
+                            proposalContract.name()
+                        )
+                    )
+                );
+                console.log(
+                    "Found onchain calldata for proposal: ",
+                    proposalContract.name()
+                );
             }
         }
     }
