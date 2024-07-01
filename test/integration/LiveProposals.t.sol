@@ -9,10 +9,9 @@ import {Bytes} from "@utils/Bytes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
 import {Address} from "@utils/Address.sol";
-import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {ChainIds, MOONBEAM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
-import {MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
@@ -41,7 +40,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
     );
 
     function setUp() public {
-        MOONBEAM_CHAIN_ID.createForksAndSelect();
+        MOONBEAM_FORK_ID.createForksAndSelect();
 
         addresses = new Addresses();
         vm.makePersistent(address(addresses));

@@ -97,7 +97,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     WormholeRelayerAdapter wormholeRelayerAdapterBase;
 
     function setUp() public override {
-        MOONBEAM_CHAIN_ID.createForksAndSelect();
+        MOONBEAM_FORK_ID.createForksAndSelect();
         super.setUp();
 
         vm.selectFork(MOONBEAM_FORK_ID);
