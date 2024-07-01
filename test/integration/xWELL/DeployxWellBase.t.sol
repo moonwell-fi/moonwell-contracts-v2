@@ -94,7 +94,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
+        uint16 dstChainId = block.chainid.toWormholeChainId();
         uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
         vm.deal(user, cost);
@@ -132,7 +132,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
+        uint16 dstChainId = block.chainid.toWormholeChainId();
 
         bytes memory payload = abi.encode(user, mintAmount);
         bytes32 sender = address(wormholeAdapter).toBytes();

@@ -83,7 +83,7 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
                 xwellProxy,
                 temporalGov,
                 relayer,
-                uint16(chainIdToWormHoleId[block.chainid])
+                block.chainid.toWormholeChainId()
             );
 
             addresses.addAddress(
@@ -189,7 +189,7 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
             );
             assertTrue(
                 WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
-                    uint16(chainIdToWormHoleId[block.chainid]),
+                    block.chainid.toWormholeChainId(),
                     wormholeAdapter
                 ),
                 "trusted sender not trusted"

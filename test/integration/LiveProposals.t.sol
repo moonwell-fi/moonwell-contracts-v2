@@ -9,17 +9,17 @@ import {Bytes} from "@utils/Bytes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
 import {Address} from "@utils/Address.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
-import {MOONBEAM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
+import {MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
-contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
+contract LiveProposalsIntegrationTest is Test, ProposalChecker {
     using String for string;
     using Bytes for bytes;
     using Address for address;
@@ -102,7 +102,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
             }
 
             // Check if there is any action on Base
-            address wormholeCore = block.chainid == moonBeamChainId
+            address wormholeCore = block.chainid == MOONBEAM_CHAIN_ID
                 ? addresses.getAddress("WORMHOLE_CORE_MOONBEAM")
                 : addresses.getAddress("WORMHOLE_CORE_MOONBASE");
 
@@ -195,7 +195,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
 
                 bytes memory vaa = generateVAA(
                     uint32(block.timestamp),
-                    uint16(chainIdToWormHoleId[block.chainid]),
+                    block.chainid.toWormholeChainId(),
                     governor.toBytes(),
                     payload
                 );
@@ -208,7 +208,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     // Deploy the modified Wormhole Core implementation contract which
                     // bypass the guardians signature check
                     Implementation core = new Implementation();
-                    address wormhole = block.chainid == baseChainId
+                    address wormhole = block.chainid == BASE_CHAIN_ID
                         ? addresses.getAddress("WORMHOLE_CORE_BASE")
                         : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE");
 

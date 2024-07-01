@@ -13,16 +13,13 @@ import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Well} from "@protocol/governance/Well.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
-contract MultichainBaseTest is
-    Test,
-    MultichainGovernorDeploy,
-    xWELLDeploy,
-    ChainIds
-{
+contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
+    using ChainIds for uint256;
+
     event BridgeOutSuccess(
         uint16 dstWormholeChainId,
         uint256 cost,

@@ -106,9 +106,9 @@ contract mipo01 is Configs, HybridProposal {
         /// get temporal governor on Optimism
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            block.chainid == moonBeamChainId
-                ? optimismChainId
-                : optimismSepoliaChainId
+            block.chainid == MOONBEAM_CHAIN_ID
+                ? OPTIMISM_CHAIN_ID
+                : OPTIMISM_SEPOLIA_CHAIN_ID
         );
 
         temporalGovernanceTargets.push(temporalGovernor);

@@ -653,7 +653,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
 
         assertEq(
             address(governor.wormholeBridge()),
-            block.chainid == baseChainId
+            block.chainid == BASE_CHAIN_ID
                 ? addresses.getAddress("WORMHOLE_CORE_BASE")
                 : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE")
         );

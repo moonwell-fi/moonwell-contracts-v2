@@ -29,6 +29,34 @@ uint16 constant BASE_WORMHOLE_SEPOLIA_CHAIN_ID = 10004;
 uint16 constant OPTIMISM_WORMHOLE_SEPOLIA_CHAIN_ID = 10005;
 
 library ChainIds {
+    //chainIdToWormHoleId[baseSepoliaChainId] = moonBaseWormholeChainId; /// base deployment is owned by moonbeam governance
+    //        chainIdToWormHoleId[OPTIMISM_SEPOLIA_CHAIN_ID] = moonBaseWormholeChainId; /// optimism deployment is owned by moonbeam governance
+    //
+    //        chainIdToWormHoleId[optimismChainId] = moonBeamWormholeChainId; /// optimism deployment is owned by moonbeam governance
+    //        chainIdToWormHoleId[baseChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
+    //        chainIdToWormHoleId[moonBeamChainId] = baseWormholeChainId; /// moonbeam goes to base
+    //        chainIdToWormHoleId[moonBaseChainId] = baseSepoliaWormholeChainId; /// moonbase goes to base
+    //
+    //        sendingChainIdToReceivingChainId[baseSepoliaChainId] = moonBaseChainId; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
+    //        sendingChainIdToReceivingChainId[moonBaseChainId] = baseSepoliaChainId;
+    //
+    //        sendingChainIdToReceivingChainId[baseChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking base, and sending from moonbeam
+    //        sendingChainIdToReceivingChainId[moonBeamChainId] = baseChainId;
+    //
+    //        sendingChainIdToReceivingChainId[optimismChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking optimism, and sending from moonbeam
+    //
+    //        sendingChainIdToReceivingChainId[
+    //            optimismSepoliaChainId
+    //        ] = moonBaseChainId; /// simulate a cross chain proposal by forking optimism testnet, and sending from moonbase testnet
+    //
+    //        sendingChainIdToReceivingChainId[localChainId] = localChainId; // unit tests
+    //
+    //        chainIdTemporalGovTimelock[baseSepoliaChainId] = 0; /// no wait on testnet
+    //        chainIdTemporalGovTimelock[baseChainId] = 1 days;
+    //
+    //        chainIdTemporalGovTimelock[optimismSepoliaChainId] = 0; /// no wait on testnet
+    //        chainIdTemporalGovTimelock[optimismChainId] = 1 days;
+
     address constant CHEATCODE_ADDRESS =
         0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
     Vm constant vm = Vm(CHEATCODE_ADDRESS);
@@ -222,5 +250,23 @@ library ChainIds {
         vm.selectFork(selectFork);
 
         checkForks(selectFork);
+    }
+
+    function toWormholeChainId(uint256 chainId) internal pure returns (uint16) {
+        if (chainId == MOONBEAM_CHAIN_ID) {
+            return MOONBEAM_WORMHOLE_CHAIN_ID;
+        } else if (chainId == BASE_CHAIN_ID) {
+            return BASE_WORMHOLE_CHAIN_ID;
+        } else if (chainId == OPTIMISM_CHAIN_ID) {
+            return OPTIMISM_WORMHOLE_CHAIN_ID;
+        } else if (chainId == MOONBASE_CHAIN_ID) {
+            return MOONBASE_WORMHOLE_CHAIN_ID;
+        } else if (chainId == BASE_SEPOLIA_CHAIN_ID) {
+            return BASE_WORMHOLE_SEPOLIA_CHAIN_ID;
+        } else if (chainId == OPTIMISM_SEPOLIA_CHAIN_ID) {
+            return OPTIMISM_WORMHOLE_SEPOLIA_CHAIN_ID;
+        } else {
+            revert("ChainIds: invalid chain id");
+        }
     }
 }

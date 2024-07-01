@@ -45,7 +45,7 @@ contract HybridProposalExample is
         /// this is incorrect and will cause a failure in the HybridProposal contract
         /// due to no contract bytecode at this address
         _pushHybridAction(
-            addresses.getAddress("WORMHOLE_CORE_BASE", baseChainId),
+            addresses.getAddress("WORMHOLE_CORE_BASE", BASE_CHAIN_ID),
             abi.encodeWithSignature(
                 "publishMessage(uint32,bytes,uint8)",
                 0,

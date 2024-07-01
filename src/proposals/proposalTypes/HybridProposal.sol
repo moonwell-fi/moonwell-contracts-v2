@@ -7,7 +7,7 @@ import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 import "@forge-std/Test.sol";
 
 import {Address} from "@utils/Address.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID, BASE_CHAIN_ID, BASE_SEPOLIA_CHAIN_ID, MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
@@ -18,7 +18,6 @@ import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {Address} from "@utils/Address.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -28,7 +27,6 @@ import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 /// We also need to have references to both networks in the proposal
 /// to switch between forks.
 abstract contract HybridProposal is
-    ChainIds,
     Proposal,
     ProposalChecker,
     MarketCreationHook
@@ -40,6 +38,7 @@ abstract contract HybridProposal is
     }
     using Strings for string;
     using Address for address;
+    using ChainIds for uint256;
 
     /// @notice nonce for wormhole, unused by Temporal Governor
     uint32 private constant nonce = 0;
@@ -301,19 +300,21 @@ abstract contract HybridProposal is
         } else {
             temporalGovernor = addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
+                // TODO make compatible with op
+                block.chainid.toBaseChainId()
             );
         }
         return
             getTargetsPayloadsValues(
-                block.chainid == baseChainId || block.chainid == moonBeamChainId
+                block.chainid == BASE_CHAIN_ID ||
+                    block.chainid == MOONBEAM_CHAIN_ID
                     ? addresses.getAddress(
                         "WORMHOLE_CORE_MOONBEAM",
-                        moonBeamChainId
+                        MOONBEAM_CHAIN_ID
                     )
                     : addresses.getAddress(
                         "WORMHOLE_CORE_MOONBASE",
-                        moonBaseChainId
+                        MOONBASE_CHAIN_ID
                     ),
                 temporalGovernor
             );
@@ -621,14 +622,14 @@ abstract contract HybridProposal is
         );
 
         {
-            address wormholeCoreMoonbeam = block.chainid == moonBeamChainId
+            address wormholeCoreMoonbeam = block.chainid == MOONBEAM_CHAIN_ID
                 ? addresses.getAddress(
                     "WORMHOLE_CORE_MOONBEAM",
-                    moonBeamChainId
+                    MOONBEAM_CHAIN_ID
                 )
                 : addresses.getAddress(
                     "WORMHOLE_CORE_MOONBASE",
-                    moonBaseChainId
+                    MOONBASE_CHAIN_ID
                 );
 
             address[] memory targets = new address[](baseActions.length);
@@ -643,7 +644,7 @@ abstract contract HybridProposal is
 
             address temporalGov = addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainid.toBaseChainId()
             );
 
             if (baseActions.length != 0) {
@@ -706,11 +707,11 @@ abstract contract HybridProposal is
         // Deploy the modified Wormhole Core implementation contract which
         // bypass the guardians signature check
         Implementation core = new Implementation();
-        address wormhole = block.chainid == baseChainId
-            ? addresses.getAddress("WORMHOLE_CORE_BASE", baseChainId)
+        address wormhole = block.chainid == BASE_CHAIN_ID
+            ? addresses.getAddress("WORMHOLE_CORE_BASE", BASE_CHAIN_ID)
             : addresses.getAddress(
                 "WORMHOLE_CORE_SEPOLIA_BASE",
-                baseSepoliaChainId
+                BASE_SEPOLIA_CHAIN_ID
             );
 
         /// Set the wormhole core address to have the
@@ -740,13 +741,13 @@ abstract contract HybridProposal is
         bytes32 governor = addresses
             .getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainid.toMoonbeamChainId()
             )
             .toBytes();
 
         bytes memory vaa = generateVAA(
             uint32(block.timestamp),
-            uint16(chainIdToWormHoleId[baseChainId]),
+            BASE_CHAIN_ID.toWormholeChainId(),
             governor,
             payload
         );

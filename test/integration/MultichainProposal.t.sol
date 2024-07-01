@@ -8,11 +8,11 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 
 import "@forge-std/Test.sol";
 
-import {MOONBEAM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
+import {MOONBEAM_CHAIN_ID, MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
@@ -52,7 +52,7 @@ export DO_TEARDOWN=true
 export DO_VALIDATE=true
 
 */
-contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
+contract MultichainProposalTest is Test, TestMultichainProposals {
     using ChainIds for uint256;
 
     MultichainVoteCollection public voteCollection;
@@ -112,33 +112,33 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
         runProposals(false, true, true, true, true, true, true, true);
 
         voteCollection = MultichainVoteCollection(
-            addresses.getAddress("VOTE_COLLECTION_PROXY", baseChainId)
+            addresses.getAddress("VOTE_COLLECTION_PROXY", BASE_CHAIN_ID)
         );
         wormhole = IWormhole(
-            addresses.getAddress("WORMHOLE_CORE_MOONBEAM", moonBeamChainId)
+            addresses.getAddress("WORMHOLE_CORE_MOONBEAM", MOONBEAM_CHAIN_ID)
         );
 
-        well = ERC20Votes(addresses.getAddress("GOVTOKEN", moonBeamChainId));
-        xwell = xWELL(addresses.getAddress("xWELL_PROXY", moonBeamChainId));
+        well = ERC20Votes(addresses.getAddress("GOVTOKEN", MOONBEAM_CHAIN_ID));
+        xwell = xWELL(addresses.getAddress("xWELL_PROXY", MOONBEAM_CHAIN_ID));
         // make xwell persistent so votes are valid on both chains
         vm.makePersistent(address(xwell));
 
         stakedWellMoonbeam = IStakedWell(
-            addresses.getAddress("STK_GOVTOKEN", moonBeamChainId)
+            addresses.getAddress("STK_GOVTOKEN", MOONBEAM_CHAIN_ID)
         );
 
         distributor = TokenSaleDistributorInterfaceV1(
             addresses.getAddress(
                 "TOKEN_SALE_DISTRIBUTOR_PROXY",
-                moonBeamChainId
+                MOONBEAM_CHAIN_ID
             )
         );
 
         timelock = Timelock(
-            addresses.getAddress("MOONBEAM_TIMELOCK", moonBeamChainId)
+            addresses.getAddress("MOONBEAM_TIMELOCK", MOONBEAM_CHAIN_ID)
         );
         governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", MOONBEAM_CHAIN_ID)
         );
 
         // make governor persistent so we can call receiveWormholeMessage on
@@ -255,7 +255,7 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
     function testNoBaseWormholeCoreAddressInProposal() public {
         address wormholeBase = addresses.getAddress(
             "WORMHOLE_CORE_BASE",
-            baseChainId
+            BASE_CHAIN_ID
         );
         vm.selectFork(moonbeamForkId);
         uint256[] memory proposals = governor.liveProposals();
@@ -2094,7 +2094,7 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
         {
             address temporalGovAddress = addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                baseChainId
+                BASE_CHAIN_ID
             );
             address wormholeCore = addresses.getAddress(
                 "WORMHOLE_CORE_MOONBEAM"

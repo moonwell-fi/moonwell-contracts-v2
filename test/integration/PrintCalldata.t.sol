@@ -8,7 +8,7 @@ import "@forge-std/Test.sol";
 
 import {mipb02} from "@proposals/mips/mip-b02/mip-b02.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MockWormhole} from "@test/mock/MockWormhole.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
