@@ -49,6 +49,33 @@ library ChainIds {
         }
     }
 
+    function toMoonbeamWormholeChainId(
+        uint256 chainId
+    ) internal pure returns (uint256) {
+        if (chainId == BASE_CHAIN_ID || chainId == OPTIMISM_CHAIN_ID) {
+            return MOONBEAM_WORMHOLE_CHAIN_ID;
+        } else if (
+            chainId == BASE_SEPOLIA_CHAIN_ID ||
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID
+        ) {
+            return MOONBASE_WORMHOLE_CHAIN_ID;
+        } else {
+            revert("ChainIds: invalid chain id");
+        }
+    }
+
+    function toBaseWormholeChainId(
+        uint256 chainId
+    ) internal pure returns (uint256) {
+        if (chainId == MOONBEAM_CHAIN_ID) {
+            return BASE_WORMHOLE_CHAIN_ID;
+        } else if (chainId == MOONBASE_CHAIN_ID) {
+            return BASE_WORMHOLE_SEPOLIA_CHAIN_ID;
+        } else {
+            revert("ChainIds: invalid chain id");
+        }
+    }
+
     function toBaseChainId(uint256 chainId) internal pure returns (uint256) {
         if (chainId == MOONBEAM_CHAIN_ID) {
             return BASE_CHAIN_ID;

@@ -30,9 +30,6 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
     /// @notice amount of well to mint
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
-    uint16 public constant wormholeMoonbeamChainid =
-        uint16(MOONBEAM_WORMHOLE_CHAIN_ID);
-
     function setUp() public {
         addresses = new Addresses();
 
@@ -58,13 +55,13 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
             address(1),
             address(1),
             address(1),
-            wormholeMoonbeamChainid
+            MOONBEAM_WORMHOLE_CHAIN_ID
         );
     }
 
     function testSetup() public view {
         address externalChainAddress = wormholeAdapter.targetAddress(
-            wormholeMoonbeamChainid
+            MOONBEAM_WORMHOLE_CHAIN_ID
         );
         assertEq(
             externalChainAddress,
@@ -72,7 +69,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
             "incorrect target address config"
         );
         bytes32[] memory externalAddresses = wormholeAdapter.allTrustedSenders(
-            wormholeMoonbeamChainid
+            MOONBEAM_WORMHOLE_CHAIN_ID
         );
         assertEq(externalAddresses.length, 1, "incorrect trusted senders");
         assertEq(
@@ -96,7 +93,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = block.chainid.toWormholeChainId();
+        uint16 dstChainId = block.chainid.toMoonbeamWormholeChainId();
         uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
         vm.deal(user, cost);
@@ -134,7 +131,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = block.chainid.toWormholeChainId();
+        uint16 dstChainId = block.chainid.toBaseWormholeChainId();
 
         bytes memory payload = abi.encode(user, mintAmount);
         bytes32 sender = address(wormholeAdapter).toBytes();
