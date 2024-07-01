@@ -90,8 +90,6 @@ contract TestProposalCalldataGeneration is Test {
                 uint256[] memory onchainValues = new uint256[](values.length);
                 bytes[] memory onchainCalldatas = new bytes[](calldatas.length);
 
-                vm.selectFork(BASE_FORK_ID);
-
                 (onchainTargets, onchainValues, onchainCalldatas) = governor
                     .getProposalData(proposalId);
 
