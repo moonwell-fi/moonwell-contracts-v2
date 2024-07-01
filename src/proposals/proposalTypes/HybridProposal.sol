@@ -654,7 +654,7 @@ abstract contract HybridProposal is
 
             address temporalGov = addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
+                ChainIdHelper.toBaseChainId(block.chainid)
             );
 
             if (baseActions.length != 0) {
@@ -681,6 +681,8 @@ abstract contract HybridProposal is
                     consistencyLevel /// consistency level is hardcoded at 200 in HybridProposal.sol
                 );
             }
+
+            /// TODO add optimism actions simulation here
 
             uint256 gasStart = gasleft();
 
@@ -754,7 +756,7 @@ abstract contract HybridProposal is
         bytes32 governor = addresses
             .getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
-                sendingChainIdToReceivingChainId[block.chainid]
+                ChainIdHelper.toMoonbeamChainId(block.chainid)
             )
             .toBytes();
 
