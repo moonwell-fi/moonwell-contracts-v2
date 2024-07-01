@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ForkID} from "@utils/Enums.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m25/mip-m25.sol:mipm25
@@ -127,7 +127,7 @@ contract mipm25 is HybridProposal, ParameterValidation {
     function build(Addresses addresses) public override {
         /// Moonbeam actions
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -135,10 +135,10 @@ contract mipm25 is HybridProposal, ParameterValidation {
                 NEW_MXC_USDC_COLLATERAL_FACTOR
             ),
             "Set collateral factor of mxcUSDC",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -146,77 +146,77 @@ contract mipm25 is HybridProposal, ParameterValidation {
                 NEW_MGLIMMER_COLLATERAL_FACTOR
             ),
             "Set collateral factor of MNATIVE",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_MXC_USDC_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcUSDC to updated reserve factor",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_MXC_USDT_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcUSDT to updated reserve factor",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_MXC_USDT_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcUSDT to updated reserve factor",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 0x32f3A6134590fc2d9440663d35a2F0a6265F04c4
             ),
             "Set interest rate model for mxcUSDC to updated rate model",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 0x1Cdb984008dcEe9d06c28654ed31cf82680EeA62
             ),
             "Set interest rate model for mxcUSDT to updated rate model",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mFRAX"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 0xE1Dd796dBEB5A67CE37CbC52dCD164D0535c901E
             ),
             "Set interest rate model for mFRAX to updated rate model",
-            true
+            ForkID.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 0xF22c8255eA615b3Da6CA5CF5aeCc8956bfF07Aa8
             ),
             "Set interest rate model for mUSDCwh to updated rate model",
-            true
+            ForkID.Moonbeam
         );
     }
 

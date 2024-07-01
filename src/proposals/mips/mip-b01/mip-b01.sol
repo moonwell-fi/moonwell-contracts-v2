@@ -3,17 +3,16 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {ForkID} from "@utils/Enums.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// This MIP sets the IRM for an MToken contract.
 /// It is intended to be used as a template for future MIPs that need to set IRM's.
-contract mipb01 is Proposal, CrossChainProposal, Configs {
+contract mipb01 is HybridProposal, Configs {
     string public constant override name = "MIP-B01";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
@@ -38,7 +37,7 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
     function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -47,6 +46,7 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
     }
+
     function teardown(Addresses addresses, address) public pure override {}
 
     /// @notice assert that the new interest rate model is set correctly

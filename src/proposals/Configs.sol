@@ -10,7 +10,7 @@ import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 
-contract Configs is Test {
+abstract contract Configs is Test {
     struct CTokenConfiguration {
         string addressesString; /// string used to set address in Addresses.sol
         uint256 borrowCap; /// borrow cap

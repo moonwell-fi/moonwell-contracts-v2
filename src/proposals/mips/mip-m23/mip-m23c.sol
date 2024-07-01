@@ -3,6 +3,8 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import "@protocol/utils/Constants.sol";
+
 import {ForkID} from "@utils/Enums.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";

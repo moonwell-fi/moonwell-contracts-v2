@@ -21,18 +21,12 @@ contract DeployXWellRouter is Script, Test {
     /// @notice addresses contract
     Addresses addresses;
 
-    /// @notice deployer private key
-    uint256 private PRIVATE_KEY;
-
     constructor() {
-        // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = uint256(vm.envBytes32("ETH_PRIVATE_KEY"));
-
         addresses = new Addresses();
     }
 
     function run() public returns (xWELLRouter router) {
-        vm.startBroadcast(PRIVATE_KEY);
+        vm.startBroadcast();
 
         router = new xWELLRouter(
             addresses.getAddress("xWELL_PROXY"),

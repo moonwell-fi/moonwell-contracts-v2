@@ -5,7 +5,7 @@ import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensio
 import {console} from "@forge-std/console.sol";
 
 import {ForkID} from "@utils/Enums.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {ITimelock} from "@protocol/interfaces/ITimelock.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";

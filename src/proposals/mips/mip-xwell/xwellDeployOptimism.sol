@@ -17,33 +17,33 @@ import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {ForkID} from "@utils/Enums.sol";
 
 /// how to run locally:
-///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployBase.sol:xwellDeployBase --fork-url base
+///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployOptimism.sol:xwellDeployOptimism
 /// @dev do not use MIP as a base to fork off of, it will not work
-contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
+contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
     /// @notice the name of the proposal
-    string public constant override name = "MIP xWELL Token Creation Base";
+    string public constant override name = "MIP xWELL Token Creation Optimism";
 
-    /// @notice the buffer cap for the xWELL token on both base and moonbeam
+    /// @notice the buffer cap for the xWELL token on all chains
     uint112 public constant bufferCap = 100_000_000 * 1e18;
 
-    /// @notice the rate limit per second for the xWELL token on both base and moonbeam
+    /// @notice the rate limit per second for the xWELL token on all chains
     /// heals at ~19m per day if buffer is fully replenished or depleted
     /// this limit is used for the wormhole bridge adapters
     uint128 public constant rateLimitPerSecond = 1158 * 1e18;
 
-    /// @notice the duration of the pause for the xWELL token on both base and moonbeam
+    /// @notice the duration of the pause for the xWELL token on all chains
     /// once the contract has been paused, in this period of time, it will automatically
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+        return ForkID.Optimism;
     }
 
     function deploy(Addresses addresses, address) public override {
         /// --------------------------------------------------
         /// --------------------------------------------------
-        /// ------------------ BASE NETWORK ------------------
+        /// ---------------- OPTIMISM NETWORK ----------------
         /// --------------------------------------------------
         /// --------------------------------------------------
         {

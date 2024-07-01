@@ -9,35 +9,33 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
  to simulate:
+ DEPLOYER_ADDRESS=0x...
   base:
-    forge script script/GetNonce.s.sol:GetNonce \
+    DEPLOYER_ADDRESS=0x... forge script script/GetNonce.s.sol:GetNonce \
      \ -vvvvv --rpc-url base --with-gas-price 500000
 
   moonbeam:
-     forge script script/GetNonce.s.sol:GetNonce \
+     DEPLOYER_ADDRESS=0x... forge script script/GetNonce.s.sol:GetNonce \
      \ -vvvvv --rpc-url moonbeam --with-gas-price 500000
 
   to run:
-    forge script script/GetNonce.s.sol:GetNonce \
+    DEPLOYER_ADDRESS=0x... forge script script/GetNonce.s.sol:GetNonce \
      \ -vvvvv --rpc-url base --with-gas-price 500000 --broadcast
 */
 contract GetNonce is Script, Test {
     /// @notice addresses contract
     Addresses addresses;
 
-    /// @notice deployer private key
-    uint256 private PRIVATE_KEY;
+    /// @notice deployer address
+    address public immutable deployerAddress;
 
     constructor() {
-        // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = uint256(vm.envBytes32("ETH_PRIVATE_KEY"));
+        deployerAddress = vm.envAddress("DEPLOYER_ADDRESS");
 
         addresses = new Addresses();
     }
 
     function run() public view {
-        address deployerAddress = vm.addr(PRIVATE_KEY);
-
         console.log("deployerAddress: ", deployerAddress);
         console.log("account nonce: ", vm.getNonce(deployerAddress));
     }
