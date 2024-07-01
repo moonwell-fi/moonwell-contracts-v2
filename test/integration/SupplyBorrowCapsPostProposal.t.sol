@@ -12,7 +12,6 @@ import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
