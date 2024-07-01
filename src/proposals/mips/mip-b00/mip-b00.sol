@@ -86,7 +86,9 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
         {
             TemporalGovernor.TrustedSender[]
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
-            trustedSenders[0].chainId = block.chainid.toWormholeChainId();
+            trustedSenders[0].chainId = block
+                .chainid
+                .toMoonbeamWormholeChainId();
             trustedSenders[0].addr = addresses.getAddress(
                 "MOONBEAM_TIMELOCK",
                 block.chainid.toMoonbeamChainId()
@@ -665,7 +667,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
 
         assertTrue(
             governor.isTrustedSender(
-                block.chainid.toWormholeChainId(),
+                block.chainid.toMoonbeamWormholeChainId(),
                 addresses
                     .getAddress(
                         "MOONBEAM_TIMELOCK",

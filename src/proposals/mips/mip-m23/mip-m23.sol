@@ -612,7 +612,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
 
         assertTrue(
             temporalGovernor.isTrustedSender(
-                block.chainid.toWormholeChainId(),
+                block.chainid.toMoonbeamWormholeChainId(),
                 addresses.getAddress(
                     "MOONBEAM_TIMELOCK",
                     block.chainid.toMoonbeamChainId()
@@ -623,7 +623,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
 
         assertTrue(
             temporalGovernor.isTrustedSender(
-                block.chainid.toWormholeChainId(),
+                block.chainid.toMoonbeamWormholeChainId(),
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
                     block.chainid.toMoonbeamChainId()

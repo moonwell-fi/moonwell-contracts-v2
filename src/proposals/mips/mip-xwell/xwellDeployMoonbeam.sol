@@ -126,7 +126,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
                 xwellProxy,
                 artemisTimelock,
                 relayer,
-                block.chainid.toWormholeChainId()
+                block.chainid.toBaseWormholeChainId()
             );
 
             /// add to moonbeam addresses
@@ -228,7 +228,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
             assertTrue(
                 WormholeBridgeAdapter(wormholeBridgeAdapterProxy)
                     .isTrustedSender(
-                        block.chainid.toWormholeChainId(),
+                        block.chainid.toBaseWormholeChainId(),
                         wormholeBridgeAdapterProxy
                     ),
                 "trusted sender not trusted"

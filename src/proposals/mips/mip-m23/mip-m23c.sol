@@ -175,7 +175,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
             );
 
         trustedSenders[0].addr = multichainVoteCollection;
-        trustedSenders[0].chainId = block.chainid.toWormholeChainId(); /// base wormhole chain id
+        trustedSenders[0].chainId = block.chainid.toBaseWormholeChainId(); /// base wormhole chain id
 
         MultichainGovernor.InitializeData memory initData;
 
@@ -305,7 +305,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         assertFalse(governor.pauseUsed(), "incorrect pauseUsed state");
 
         assertEq(
-            governor.targetAddress(block.chainid.toWormholeChainId()),
+            governor.targetAddress(block.chainid.toBaseWormholeChainId()),
             addresses.getAddress(
                 "VOTE_COLLECTION_PROXY",
                 block.chainid.toBaseChainId()
@@ -319,12 +319,12 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         );
         assertEq(
             governor.getAllTargetChains()[0],
-            block.chainid.toWormholeChainId(),
+            block.chainid.toBaseWormholeChainId(),
             "incorrect target chains length"
         );
         assertTrue(
             governor.isTrustedSender(
-                block.chainid.toWormholeChainId(),
+                block.chainid.toBaseWormholeChainId(),
                 addresses.getAddress(
                     "VOTE_COLLECTION_PROXY",
                     block.chainid.toBaseChainId()

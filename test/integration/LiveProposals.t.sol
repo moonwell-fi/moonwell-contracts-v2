@@ -195,7 +195,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
                 bytes memory vaa = generateVAA(
                     uint32(block.timestamp),
-                    block.chainid.toWormholeChainId(),
+                    block.chainid.toMoonbeamWormholeChainId(),
                     governor.toBytes(),
                     payload
                 );

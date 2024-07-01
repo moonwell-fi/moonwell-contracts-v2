@@ -175,7 +175,7 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = block.chainid.toWormholeChainId();
+        uint16 dstChainId = block.chainid.toBaseWormholeChainId();
         uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
         vm.deal(user, cost);
@@ -214,7 +214,7 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = block.chainid.toWormholeChainId();
+        uint16 dstChainId = block.chainid.toMoonbeamWormholeChainId();
         bytes memory payload = abi.encode(user, mintAmount);
         bytes32 sender = address(wormholeAdapter).toBytes();
         bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));

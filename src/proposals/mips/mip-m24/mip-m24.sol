@@ -369,14 +369,14 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         );
 
         bytes32[] memory trustedSenders = temporalGovernor.allTrustedSenders(
-            block.chainid.toWormholeChainId()
+            block.chainid.toMoonbeamWormholeChainId()
         );
 
         assertEq(trustedSenders.length, 1);
 
         assertTrue(
             temporalGovernor.isTrustedSender(
-                block.chainid.toWormholeChainId(),
+                block.chainid.toMoonbeamWormholeChainId(),
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
                     block.chainid.toMoonbeamChainId()

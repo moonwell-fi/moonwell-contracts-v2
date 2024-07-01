@@ -117,7 +117,9 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
             /// this should return the moonbeam/moonbase wormhole chain id
-            trustedSenders[0].chainId = block.chainid.toWormholeChainId();
+            trustedSenders[0].chainId = block
+                .chainid
+                .toMoonbeamWormholeChainId();
             trustedSenders[0].addr = addresses.getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
                 /// this should return the moonbeam/moonbase chain id
@@ -679,7 +681,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
         assertTrue(
             governor.isTrustedSender(
-                block.chainid.toWormholeChainId(),
+                block.chainid.toMoonbeamWormholeChainId(),
                 addresses
                     .getAddress(
                         "MULTICHAIN_GOVERNOR_PROXY",
@@ -691,7 +693,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
         );
         assertEq(
             governor
-                .allTrustedSenders(block.chainid.toWormholeChainId())
+                .allTrustedSenders(block.chainid.toMoonbeamWormholeChainId())
                 .length,
             1,
             "multichain governor incorrect trusted sender count from Moonbeam"

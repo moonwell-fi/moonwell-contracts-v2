@@ -747,7 +747,7 @@ abstract contract HybridProposal is
 
         bytes memory vaa = generateVAA(
             uint32(block.timestamp),
-            BASE_CHAIN_ID.toWormholeChainId(),
+            BASE_CHAIN_ID.toMoonbeamWormholeChainId(),
             governor,
             payload
         );

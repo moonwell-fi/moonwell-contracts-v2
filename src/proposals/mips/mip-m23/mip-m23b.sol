@@ -104,7 +104,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                         block.chainid.toMoonbeamChainId()
                     ), /// fetch multichain governor address on Moonbeam
                     addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                    block.chainid.toWormholeChainId(),
+                    block.chainid.toMoonbeamWormholeChainId(),
                     proxyAdmin,
                     addresses.getAddress("TEMPORAL_GOVERNOR")
                 );
@@ -342,7 +342,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             );
             assertEq(
                 voteCollection.getAllTargetChains()[0],
-                block.chainid.toWormholeChainId(),
+                block.chainid.toMoonbeamWormholeChainId(),
                 "incorrect target chain, not moonbeam"
             );
             assertEq(
@@ -352,17 +352,19 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             );
 
             assertEq(
-                voteCollection.targetAddress(block.chainid.toWormholeChainId()),
+                voteCollection.targetAddress(
+                    block.chainid.toMoonbeamWormholeChainId()
+                ),
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
-                    block.chainid.toMoonbeamChainId()
+                    block.chainid.toMoonbeamMoonbeamChainId()
                 ),
                 "target address not multichain governor on moonbeam"
             );
 
             assertTrue(
                 voteCollection.isTrustedSender(
-                    block.chainid.toWormholeChainId(),
+                    block.chainid.toMoonbeamWormholeChainId(),
                     addresses.getAddress(
                         "MULTICHAIN_GOVERNOR_PROXY",
                         block.chainid.toMoonbeamChainId()
