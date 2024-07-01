@@ -12,8 +12,10 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {xwellDeployBase} from "@protocol/proposals/mips/mip-xwell/xwellDeployBase.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {Address} from "@utils/Address.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 
 contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
+    using ChainIds for uint256;
     using Address for address;
 
     /// @notice logic contract, not initializable

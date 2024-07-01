@@ -13,10 +13,11 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {xwellDeployMoonbeam} from "@protocol/proposals/mips/mip-xwell/xwellDeployMoonbeam.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-
+import {ChainIds} from "@utils/ChainIds.sol";
 import {Address} from "@utils/Address.sol";
 
 contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
+    using ChainIds for int256;
     using Address for address;
 
     /// @notice lockbox contract

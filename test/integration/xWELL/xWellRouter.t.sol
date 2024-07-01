@@ -88,7 +88,7 @@ contract xWellRouterTest is Test {
             "Wormhole bridge address incorrect"
         );
         assertEq(
-            router.BASE_WORMHOLE_CHAIN_ID(),
+            router.baseWormholeChainId(),
             BASE_WORMHOLE_CHAIN_ID,
             "Base wormhole chain id incorrect"
         );

@@ -64,7 +64,7 @@ contract mipo01 is Configs, HybridProposal {
                 true
             ),
             "Whitelist break glass calldata to add the Artemis Timelock as a trusted sender in the Temporal Governor on Optimism",
-            MOONBEAM_FORK_ID
+            ActionType.Moonbeam
         );
     }
 

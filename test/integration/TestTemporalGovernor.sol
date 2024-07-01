@@ -9,9 +9,11 @@ import {Configs} from "@proposals/Configs.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
+    using ChainIds for uint256;
+
     string public constant override name = "TEST_TEMPORAL_GOVERNOR";
 
     uint256 public constant collateralFactor = 0.6e18;

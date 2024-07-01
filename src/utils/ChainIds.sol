@@ -28,9 +28,9 @@ uint16 constant BASE_WORMHOLE_SEPOLIA_CHAIN_ID = 10004;
 uint16 constant OPTIMISM_WORMHOLE_SEPOLIA_CHAIN_ID = 10005;
 
 library ChainIds {
-    address constant CHEATCODE_ADDRESS =
+    address internal constant CHEATCODE_ADDRESS =
         0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
-    Vm internal vmInternal = Vm(CHEATCODE_ADDRESS);
+    Vm internal constant vmInternal = Vm(CHEATCODE_ADDRESS);
 
     function toMoonbeamChainId(
         uint256 chainId

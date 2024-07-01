@@ -16,17 +16,7 @@ import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 contract mipb07 is Proposal, CrossChainProposal, Configs {
     string public constant override name = "MIP-B07";
 
-    function deploy(Addresses addresses, address) public override {}
-
-    function afterDeploy(Addresses addresses, address) public override {}
-
-    function preBuildMock(Addresses addresses) public override {}
-
-    function primaryForkId() public pure override returns (uint256) {
-        return BASE_FORK_ID;
-    }
-
-    function build(Addresses addresses) public override {
+    constructor() {
         string memory descriptionPath = vm.envOr(
             "LISTING_PATH",
             string(
@@ -47,6 +37,10 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
     function afterDeploy(Addresses addresses, address) public override {}
 
     function preBuildMock(Addresses addresses) public override {}
+
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
+    }
 
     function build(Addresses addresses) public override {
         delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol

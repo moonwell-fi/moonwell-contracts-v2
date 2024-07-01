@@ -2,7 +2,6 @@ pragma solidity 0.8.19;
 
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
@@ -29,6 +28,9 @@ contract xWELLRouter {
     /// @notice wormhole bridge adapter proxy
     WormholeBridgeAdapter public wormholeBridge;
 
+    /// @notice the chain id of the base chain
+    uint16 public constant baseWormholeChainId = 30;
+
     /// @notice event emitted when WELL is bridged to xWELL via the base chain
     event BridgeOutSuccess(address indexed to, uint256 amount);
 
@@ -51,7 +53,7 @@ contract xWELLRouter {
 
     /// @notice returns the cost to mint tokens on the base chain in GLMR
     function bridgeCost() external view returns (uint256) {
-        return wormholeBridge.bridgeCost(BASE_WORMHOLE_CHAIN_ID);
+        return wormholeBridge.bridgeCost(baseWormholeChainId);
     }
 
     /// @notice bridge WELL to xWELL on the base chain
@@ -72,9 +74,7 @@ contract xWELLRouter {
     /// @param to address to receive the xWELL
     /// @param amount amount of WELL to bridge
     function _bridgeToBase(address to, uint256 amount) private {
-        uint256 bridgeCostGlmr = wormholeBridge.bridgeCost(
-            BASE_WORMHOLE_CHAIN_ID
-        );
+        uint256 bridgeCostGlmr = wormholeBridge.bridgeCost(baseWormholeChainId);
 
         require(
             bridgeCostGlmr <= msg.value,
@@ -98,7 +98,7 @@ contract xWELLRouter {
 
         /// bridge the xWELL to the base chain
         wormholeBridge.bridge{value: bridgeCostGlmr}(
-            BASE_WORMHOLE_CHAIN_ID,
+            baseWormholeChainId,
             xwellAmount,
             to
         );
