@@ -12,7 +12,7 @@ import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {BASE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {BASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
@@ -31,6 +31,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
 contract mipb00 is Proposal, CrossChainProposal, Configs {
     using Address for address;
+    using ChainIds for uint256;
 
     string public constant override name = "MIP-B00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%

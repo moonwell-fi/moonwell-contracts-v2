@@ -7,7 +7,7 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {OPTIMISM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {ChainIds, OPTIMISM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
@@ -42,6 +42,7 @@ DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol
 
 contract mipo00 is Proposal, CrossChainProposal, Configs {
     using Address for address;
+    using ChainIds for uint256;
 
     string public constant override name = "MIP-O00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%

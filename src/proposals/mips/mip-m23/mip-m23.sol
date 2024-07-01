@@ -21,7 +21,7 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the
@@ -29,6 +29,7 @@ import {MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils
 /// DO_BUILD=true DO_VALIDATE=true DO_RUN=true DO_PRINT=true forge script
 /// src/proposals/mips/mip-m23/mip-m23.sol:mipm23
 contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
+    using ChainIds for uint256;
     string public constant override name = "MIP-M23";
 
     /// @notice new xWELL buffer cap
@@ -74,7 +75,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         _pushHybridAction(
             addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                block.chainId.toBaseChainId()
+                block.chainid.toBaseChainId()
             ),
             abi.encodeWithSignature(
                 "setTrustedSenders((uint16,address)[])",
@@ -623,7 +624,10 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         assertTrue(
             temporalGovernor.isTrustedSender(
                 block.chainid.toWormholeChainId(),
-                addresses.getAddress(block.chainid.toMoonbeamChainId())
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    block.chainid.toMoonbeamChainId()
+                )
             ),
             "MultichainGovernor not trusted sender"
         );

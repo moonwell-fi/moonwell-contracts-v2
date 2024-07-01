@@ -6,10 +6,11 @@ import "@forge-std/Test.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
-import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipm21 is GovernanceProposal {
+    using ChainIds for uint256;
     string public constant override name = "MIP-M21";
 
     constructor() {

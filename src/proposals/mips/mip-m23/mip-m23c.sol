@@ -165,6 +165,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
 
         /// executing proposal on moonbeam, but this proposal needs an address from base
         address multichainVoteCollection = addresses.getAddress(
+            "VOTE_COLECTION_PROXY",
             block.chainid.toBaseChainId()
         );
 

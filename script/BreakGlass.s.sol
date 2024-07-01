@@ -72,7 +72,7 @@ contract BreakGlass is Script, HybridProposal {
         address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            block.chainId.toBaseChainId()
+            block.chainid.toBaseChainId()
         );
 
         /// add temporal governor to list

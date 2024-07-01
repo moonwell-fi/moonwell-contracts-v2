@@ -236,7 +236,10 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         assertTrue(
             temporalGov.isTrustedSender(
                 MOONBEAM_WORMHOLE_CHAIN_ID,
-                addresses.getAddress(block.chainid.toMoonbeamChainId())
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    block.chainid.toMoonbeamChainId()
+                )
             ),
             "multichain governor should be trusted sender"
         );

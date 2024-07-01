@@ -12,7 +12,7 @@ import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to accept governance powers, finalizing
 /// the transfer of admin and owner from the current Artemis Timelock to the
@@ -20,6 +20,7 @@ import {MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m24/mip-m24.sol:mipm24
 contract mipm24 is HybridProposal, MultichainGovernorDeploy {
+    using ChainIds for uint256;
     string public constant override name = "MIP-M24";
 
     constructor() {
@@ -53,7 +54,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         _pushHybridAction(
             addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                block.chainId.toBaseChainId()
+                block.chainid.toBaseChainId()
             ),
             abi.encodeWithSignature(
                 "unSetTrustedSenders((uint16,address)[])",
@@ -376,7 +377,10 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         assertTrue(
             temporalGovernor.isTrustedSender(
                 block.chainid.toWormholeChainId(),
-                addresses.getAddress(block.chainid.toMoonbeamChainId())
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    block.chainid.toMoonbeamChainId()
+                )
             ),
             "MultichainGovernor not trusted sender"
         );

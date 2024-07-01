@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Bytes} from "@utils/Bytes.sol";
-import {BASE_FORK_ID, MOONBEAM_FORK_ID, BASE_CHAIN_ID, MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {BASE_FORK_ID, MOONBEAM_FORK_ID, BASE_CHAIN_ID, MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
@@ -18,6 +18,7 @@ abstract contract CrossChainProposal is
     MarketCreationHook
 {
     using Bytes for bytes;
+    using ChainIds for uint256;
 
     uint32 public nonce; /// nonce for wormhole, unused by Temporal Governor, starts at 0
 
@@ -272,7 +273,7 @@ abstract contract CrossChainProposal is
 
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            block.chainId.toBaseChainId()
+            block.chainid.toBaseChainId()
         );
 
         uint256 proposalCount = onchainProposalId != 0

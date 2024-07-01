@@ -11,7 +11,7 @@ import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {BASE_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Base to create the Multichain Vote Collection Contract
 /// As well as the Ecosystem Reserve and Ecosystem Reserve Controller.
@@ -28,6 +28,8 @@ import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 /// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, STK_GOVTOKEN, STK_GOVTOKEN_IMPL
 /// and xWELL_PROXY must be added to the addresses.json file.
 contract mipm23b is HybridProposal, MultichainGovernorDeploy {
+    using ChainIds for uint256;
+
     /// @notice deployment of the Multichain Vote Collection Contract to Base
     string public constant override name = "MIP-M23B";
 
@@ -97,7 +99,10 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             ) = deployVoteCollection(
                     addresses.getAddress("xWELL_PROXY"),
                     addresses.getAddress("STK_GOVTOKEN"),
-                    addresses.getAddress(block.chainid.toMoonbeamChainId()), /// fetch multichain governor address on Moonbeam
+                    addresses.getAddress(
+                        "MULTICHAIN_GOVERNOR_PROXY",
+                        block.chainid.toMoonbeamChainId()
+                    ), /// fetch multichain governor address on Moonbeam
                     addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
                     block.chainid.toWormholeChainId(),
                     proxyAdmin,
@@ -348,7 +353,10 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
             assertEq(
                 voteCollection.targetAddress(block.chainid.toWormholeChainId()),
-                addresses.getAddress(block.chainid.toMoonbeamChainId()),
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    block.chainid.toMoonbeamChainId()
+                ),
                 "target address not multichain governor on moonbeam"
             );
 
