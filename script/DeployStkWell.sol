@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
 // forge script script/DeployStkWell.sol --rpc-url moonbase -vvvv --broadcast -g 200 --slow
-contract DeployStkWell is Script, ChainIds, MultichainGovernorDeploy {
+contract DeployStkWell is Script, MultichainGovernorDeploy {
     /// @notice addresses contract
     Addresses addresses;
 

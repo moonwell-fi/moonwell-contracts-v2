@@ -9,7 +9,7 @@ import {Bytes} from "@utils/Bytes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
 import {Address} from "@utils/Address.sol";
-import {ChainIds} from "@utils/ChainIds.sol";
+import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
@@ -50,7 +50,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
     }
 
     function testActiveProposals() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         MultichainGovernor governorContract = MultichainGovernor(governor);
 
@@ -65,9 +65,9 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         string[] memory proposalsPath = output.split(",");
 
         for (uint256 i = proposalIds.length; i > 0; i--) {
-            /// always need to select moonbeamForkId before executing a
+            /// always need to select MOONBEAM_FORK_ID before executing a
             /// proposal as end of loop could switch to base for execution
-            vm.selectFork(moonbeamForkId);
+            vm.selectFork(MOONBEAM_FORK_ID);
 
             uint256 proposalId = proposalIds[i - 1];
             (
@@ -156,7 +156,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                         proposal.getProposalId(addresses, governor) ==
                         proposalId
                     ) {
-                        vm.selectFork(moonbeamForkId);
+                        vm.selectFork(MOONBEAM_FORK_ID);
                         governorContract.execute(proposalId);
 
                         vm.selectFork(uint256(proposal.primaryForkId()));
@@ -167,7 +167,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
             }
 
             if (targets[lastIndex] == wormholeCore) {
-                vm.selectFork(baseForkId);
+                vm.selectFork(BASE_FORK_ID);
 
                 address expectedTemporalGov = addresses.getAddress(
                     "TEMPORAL_GOVERNOR"

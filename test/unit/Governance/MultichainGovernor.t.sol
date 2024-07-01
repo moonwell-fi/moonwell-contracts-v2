@@ -6,7 +6,7 @@ import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/mult
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
-import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, MOONBASE_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
@@ -113,7 +113,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             "getAllTargetChains chainid incorrect"
         );
         assertEq(
-            governor.bridgeCost(moonBaseWormholeChainId),
+            governor.bridgeCost(MOONBASE_WORMHOLE_CHAIN_ID),
             0.01 ether,
             "bridgecost incorrect"
         );

@@ -8,11 +8,9 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 
 import "@forge-std/Test.sol";
 
-import {MOONBEAM_CHAIN_ID, MOONBEAM_FORK_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {ChainIds} from "@utils/ChainIds.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
@@ -31,6 +29,7 @@ import {MultichainVoteCollection} from "@protocol/governance/multichain/Multicha
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
+import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID, BASE_CHAIN_ID, MOONBEAM_CHAIN_ID, MOONBEAM_FORK_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 
@@ -145,7 +144,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         // governor from base
         vm.makePersistent(address(governor));
         {
-            vm.selectFork(moonbeamForkId);
+            vm.selectFork(MOONBEAM_FORK_ID);
 
             wormholeRelayerAdapterMoonbeam = new WormholeRelayerAdapter();
 
@@ -161,7 +160,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         }
 
         {
-            vm.selectFork(baseForkId);
+            vm.selectFork(BASE_FORK_ID);
 
             assertEq(
                 address(voteCollection.wormholeRelayer()),
@@ -199,7 +198,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testSetup() public {
-        vm.selectFork(baseForkId);
+        vm.selectFork(BASE_FORK_ID);
         voteCollection = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY")
         );
@@ -254,7 +253,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
             "WORMHOLE_CORE_BASE",
             BASE_CHAIN_ID
         );
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
         uint256[] memory proposals = governor.liveProposals();
         for (uint256 i = 0; i < proposals.length; i++) {
             if (proposals[i] == 4) {
@@ -345,7 +344,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testInitializeVoteCollectionFails() public {
-        vm.selectFork(baseForkId);
+        vm.selectFork(BASE_FORK_ID);
         voteCollection = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY")
         );
@@ -375,7 +374,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testInitializeMultichainGovernorFails() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
         /// test impl and logic contract initialization
         MultichainGovernor.InitializeData memory initializeData;
         WormholeTrustedSender.TrustedSender[]
@@ -403,7 +402,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testInitializeEcosystemReserveFails() public {
-        vm.selectFork(baseForkId);
+        vm.selectFork(BASE_FORK_ID);
 
         IEcosystemReserveControllerUplift ecosystemReserveController = IEcosystemReserveControllerUplift(
                 addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
@@ -429,7 +428,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testRetrieveGasPriceMoonbeamSucceeds() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         uint256 gasCost = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
@@ -445,7 +444,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testRetrieveGasPriceBaseSucceeds() public {
-        vm.selectFork(baseForkId);
+        vm.selectFork(BASE_FORK_ID);
 
         uint256 gasCost = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY")
@@ -461,7 +460,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testProposeOnMoonbeamWellSucceeds() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -605,7 +604,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testVotingOnMoonbeamAllTokens() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         // mint 1/4 of the amount for each token
         uint256 mintAmount = governor.quorum() / 4;
@@ -826,7 +825,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testProposeOnMoonbeamDefeat() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -967,7 +966,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testProposeMoonbeamCancel() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -1023,7 +1022,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testVotingOnBasestkWellSucceeds() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -1080,7 +1079,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
                 endTimestamp + governor.crossChainVoteCollectionPeriod()
             );
 
-            vm.selectFork(baseForkId);
+            vm.selectFork(BASE_FORK_ID);
 
             vm.warp(startTimestamp - 5);
             xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
@@ -1144,7 +1143,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         public
         returns (uint256 proposalId)
     {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -1201,7 +1200,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
                 endTimestamp + governor.crossChainVoteCollectionPeriod()
             );
 
-            vm.selectFork(baseForkId);
+            vm.selectFork(BASE_FORK_ID);
 
             vm.warp(startTimestamp - 5);
             xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
@@ -1262,7 +1261,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testVotingOnBasexWellPostVotingPeriodFails() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -1319,7 +1318,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
                 endTimestamp + governor.crossChainVoteCollectionPeriod()
             );
 
-            vm.selectFork(baseForkId);
+            vm.selectFork(BASE_FORK_ID);
 
             vm.warp(startTimestamp);
             xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
@@ -1385,7 +1384,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         public
     {
         /// propose, then rebroadcast
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -1494,7 +1493,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     {
         uint256 proposalId = testVotingOnBasexWellSucceeds();
 
-        vm.selectFork(baseForkId);
+        vm.selectFork(BASE_FORK_ID);
 
         (
             ,
@@ -1526,7 +1525,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testReceiveProposalFromRelayersSucceeds() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -1584,7 +1583,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
                 crossChainPeriod
             );
 
-            vm.selectFork(baseForkId);
+            vm.selectFork(BASE_FORK_ID);
 
             uint256 gasCost = wormholeRelayerAdapterBase.nativePriceQuote();
 
@@ -1643,7 +1642,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testReceiveSameProposalFromRelayersTwiceFails() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -1701,7 +1700,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
                 crossChainPeriod
             );
 
-            vm.selectFork(baseForkId);
+            vm.selectFork(BASE_FORK_ID);
 
             uint256 gasCost = wormholeRelayerAdapterBase.nativePriceQuote();
 
@@ -1776,7 +1775,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     function testEmittingVotesPostVoteCollectionPeriodFails() public {
         uint256 proposalId = testVotingOnBasexWellSucceeds();
 
-        vm.selectFork(baseForkId);
+        vm.selectFork(BASE_FORK_ID);
 
         (
             ,
@@ -1799,7 +1798,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     /// upgrading contract logic
 
     function testUpgradeMultichainGovernorThroughGovProposal() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         MockMultichainGovernor newGovernor = new MockMultichainGovernor();
 
@@ -1955,7 +1954,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
 
     /// this requires a new mock relayer contract
     function testUpgradeMultichainVoteCollection() public {
-        vm.selectFork(baseForkId);
+        vm.selectFork(BASE_FORK_ID);
 
         MockVoteCollection newVoteCollection = new MockVoteCollection();
 
@@ -1980,7 +1979,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         public
     {
         {
-            vm.selectFork(baseForkId);
+            vm.selectFork(BASE_FORK_ID);
             temporalGov = TemporalGovernor(
                 payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
             );
@@ -1997,7 +1996,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
             );
         }
 
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
         address artemisTimelockAddress = addresses.getAddress(
             "MOONBEAM_TIMELOCK"
         );
@@ -2333,7 +2332,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
 
         /// Base simulation, LFG!
 
-        vm.selectFork(baseForkId);
+        vm.selectFork(BASE_FORK_ID);
         temporalGov = TemporalGovernor(
             payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
@@ -2362,7 +2361,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     /// - assert assets in ecosystem reserve deplete when rewards are claimed
 
     function testStakestkWellBaseSucceedsAndReceiveRewards() public {
-        vm.selectFork(baseForkId);
+        vm.selectFork(BASE_FORK_ID);
 
         /// prank as the wormhole bridge adapter contract
         ///
@@ -2477,7 +2476,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testStakestkWellBaseSucceedsAndReceiveRewardsThreeUsers() public {
-        vm.selectFork(baseForkId);
+        vm.selectFork(BASE_FORK_ID);
 
         address userOne = address(1);
         address userTwo = address(2);
@@ -2720,7 +2719,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
     }
 
     function testGrantGuardianRoleAfterPause() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         address pauseGuardian = addresses.getAddress(
             "MOONBEAM_PAUSE_GUARDIAN_MULTISIG"

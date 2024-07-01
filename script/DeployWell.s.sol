@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
@@ -17,7 +16,7 @@ import {Well} from "@protocol/governance/Well.sol";
     forge script script/DeployWell.s.sol:DeployWell -vvvv \ 
     --rpc-url moonbase/baseGoerli --broadcast --etherscan-api-key moonbase --verify
 */
-contract DeployWell is Script, ChainIds {
+contract DeployWell is Script {
     /// @notice addresses contract
     Addresses addresses;
 

@@ -8,7 +8,7 @@ import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {MOONBEAM_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
@@ -17,6 +17,8 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 /// to execute: DO_BUILD=true DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
 /// src/proposals/mips/mip-m23/mip-m23c.sol:mipm23c --broadcast --slow --fork-url moonbeam
 contract mipm23c is HybridProposal, MultichainGovernorDeploy {
+    using ChainIds for uint256;
+
     string public constant override name = "MIP-M23C";
 
     /// @notice whitelisted calldata for the break glass guardian
@@ -74,7 +76,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            block.chainId.toBaseChainId()
+            block.chainid.toBaseChainId()
         );
 
         /// add temporal governor to list

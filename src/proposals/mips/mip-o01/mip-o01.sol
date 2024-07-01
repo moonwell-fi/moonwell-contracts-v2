@@ -8,7 +8,7 @@ import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, MOONBEAM_CHAIN_ID, OPTIMISM_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /*
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
