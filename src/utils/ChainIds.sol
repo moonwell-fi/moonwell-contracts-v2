@@ -12,6 +12,8 @@ uint256 constant MOONBEAM_CHAIN_ID = 1284;
 uint256 constant BASE_CHAIN_ID = 8453;
 uint256 constant OPTIMISM_CHAIN_ID = 10;
 
+uint256 constant LOCAL_CHAIN_ID = 31337;
+
 // Testnet Chain Ids
 uint256 constant MOONBASE_CHAIN_ID = 1287;
 uint256 constant BASE_SEPOLIA_CHAIN_ID = 84532;

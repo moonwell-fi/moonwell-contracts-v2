@@ -9,6 +9,7 @@ import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {BASE_CHAIN_ID, BASE_SEPOLIA_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID, LOCAL_CHAIN_ID} from "@utils/ChainIds.sol";
 
 contract Configs is Test {
     struct CTokenConfiguration {
@@ -49,10 +50,6 @@ contract Configs is Test {
 
     uint256 public constant TEMPORAL_GOV_DELAY_MAINNET = 1 days;
     uint256 public constant TEMPORAL_GOV_DELAY_TESTNET = 0; // no delay
-    uint256 public constant _optimismSepoliaChainId = 11155420;
-    uint256 public constant _baseSepoliaChainId = 84532;
-    uint256 public constant _localChainId = 31337;
-    uint256 public constant _baseChainId = 8453;
 
     /// @notice initial mToken mint amount
     uint256 public constant initialMintAmount = 1 ether;
@@ -101,7 +98,7 @@ contract Configs is Test {
     }
 
     function localInit(Addresses addresses) public {
-        if (block.chainid == _localChainId) {
+        if (block.chainid == LOCAL_CHAIN_ID) {
             /// create mock wormhole core for local testing
             MockWormholeCore wormholeCore = new MockWormholeCore();
 
@@ -111,7 +108,7 @@ contract Configs is Test {
     }
 
     function deployAndMint(Addresses addresses) public {
-        if (block.chainid == _baseSepoliaChainId) {
+        if (block.chainid == BASE_SEPOLIA_CHAIN_ID) {
             // USDBC
             address usdbc = addresses.getAddress("USDBC");
             FaucetTokenWithPermit(usdbc).allocateTo(
@@ -134,7 +131,7 @@ contract Configs is Test {
                 0.00001e18
             );
         }
-        if (block.chainid == _optimismSepoliaChainId) {
+        if (block.chainid == OPTIMISM_SEPOLIA_CHAIN_ID) {
             // allocate tokens to temporal governor
             FaucetTokenWithPermit usdc = new FaucetTokenWithPermit(
                 1e18,
@@ -177,7 +174,7 @@ contract Configs is Test {
     }
 
     function init(Addresses addresses) public {
-        if (block.chainid == _localChainId) {
+        if (block.chainid == LOCAL_CHAIN_ID) {
             console.log("\n----- deploying locally -----\n");
 
             /// cToken config for WETH, WBTC and USDBC on local
@@ -230,7 +227,7 @@ contract Configs is Test {
                     jrm: jrmConfig
                 });
 
-                cTokenConfigurations[_localChainId].push(config);
+                cTokenConfigurations[LOCAL_CHAIN_ID].push(config);
             }
 
             {
@@ -264,13 +261,13 @@ contract Configs is Test {
                     jrm: jrmConfig
                 });
 
-                cTokenConfigurations[_localChainId].push(config);
+                cTokenConfigurations[LOCAL_CHAIN_ID].push(config);
             }
 
             return;
         }
 
-        if (block.chainid == _baseChainId) {
+        if (block.chainid == BASE_CHAIN_ID) {
             if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
                 ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
                         addresses.getAddress("ETH_ORACLE"),
@@ -290,7 +287,7 @@ contract Configs is Test {
             memory mTokenConfigs = getCTokenConfigurations(block.chainid);
 
         if (
-            (block.chainid == _localChainId) &&
+            (block.chainid == LOCAL_CHAIN_ID) &&
             addresses.getAddress("GOVTOKEN") == address(0)
         ) {
             FaucetTokenWithPermit token = new FaucetTokenWithPermit(
@@ -308,7 +305,7 @@ contract Configs is Test {
         //// create reward configuration for all mTokens
         unchecked {
             for (uint256 i = 0; i < mTokenConfigs.length; i++) {
-                if (block.chainid == _localChainId) {
+                if (block.chainid == LOCAL_CHAIN_ID) {
                     /// set supply speed to be 0 and borrow reward speeds to 1
 
                     /// pay USDBC Emissions for depositing ETH locally
@@ -321,12 +318,12 @@ contract Configs is Test {
                         endTime: block.timestamp + 4 weeks
                     });
 
-                    emissions[_localChainId].push(emissionConfig);
+                    emissions[LOCAL_CHAIN_ID].push(emissionConfig);
                 }
 
                 if (
-                    block.chainid == _baseSepoliaChainId ||
-                    block.chainid == _baseChainId
+                    block.chainid == BASE_SEPOLIA_CHAIN_ID ||
+                    block.chainid == BASE_CHAIN_ID
                 ) {
                     /// pay USDBC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({

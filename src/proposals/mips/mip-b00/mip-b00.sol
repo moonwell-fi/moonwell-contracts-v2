@@ -19,7 +19,7 @@ import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {BASE_FORK_ID, BASE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {BASE_FORK_ID, BASE_CHAIN_ID, BASE_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
@@ -122,7 +122,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             addresses.addAddress("COMPTROLLER", address(comptroller));
             addresses.addAddress("UNITROLLER", address(unitroller));
             ProxyAdmin proxyAdmin;
-            if (block.chainid != Configs._baseSepoliaChainId) {
+            if (block.chainid != BASE_SEPOLIA_CHAIN_ID) {
                 proxyAdmin = new ProxyAdmin();
                 addresses.addAddress("MRD_PROXY_ADMIN", address(proxyAdmin));
             } else {
@@ -283,7 +283,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                     );
 
                     /// set mint unpaused for all MTokens if is on sepolia
-                    if (block.chainid == Configs._baseSepoliaChainId) {
+                    if (block.chainid == BASE_SEPOLIA_CHAIN_ID) {
                         Comptroller(address(unitroller))._setMintPaused(
                             MToken(
                                 addresses.getAddress(config.addressesString)
