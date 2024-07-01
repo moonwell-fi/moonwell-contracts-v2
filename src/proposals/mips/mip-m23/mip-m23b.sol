@@ -357,7 +357,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                 ),
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
-                    block.chainid.toMoonbeamMoonbeamChainId()
+                    block.chainid.toMoonbeamChainId()
                 ),
                 "target address not multichain governor on moonbeam"
             );

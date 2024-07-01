@@ -245,7 +245,7 @@ library ChainIds {
 
     function toMoonbeamWormholeChainId(
         uint256 chainId
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint16) {
         if (chainId == BASE_CHAIN_ID || chainId == OPTIMISM_CHAIN_ID) {
             return MOONBEAM_WORMHOLE_CHAIN_ID;
         } else if (
@@ -260,7 +260,7 @@ library ChainIds {
 
     function toBaseWormholeChainId(
         uint256 chainId
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint16) {
         if (chainId == MOONBEAM_CHAIN_ID) {
             return BASE_WORMHOLE_CHAIN_ID;
         } else if (chainId == MOONBASE_CHAIN_ID) {

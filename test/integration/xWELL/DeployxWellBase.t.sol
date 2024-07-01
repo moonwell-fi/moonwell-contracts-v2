@@ -79,7 +79,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         );
         assertTrue(
             wormholeAdapter.isTrustedSender(
-                uint16(wormholeMoonbeamChainid),
+                uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
                 address(wormholeAdapter)
             ),
             "self on moonbeam not trusted sender"
