@@ -233,7 +233,7 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21 {
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
         uint256 startingLockboxBuffer = xwell.buffer(address(xerc20Lockbox));
 
-        uint16 dstChainId = block.chainid.toMoonbeamWormholeChainId();
+        uint16 dstChainId = block.chainid.toBaseWormholeChainId();
         bytes memory payload = abi.encode(user, mintAmount);
         bytes32 sender = address(wormholeAdapter).toBytes();
         bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
