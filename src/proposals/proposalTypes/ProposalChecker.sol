@@ -24,7 +24,7 @@ abstract contract ProposalChecker {
         );
 
         address wormholeCoreBase = addresses.getAddress(
-            "WORHOLE_CORE_BASE",
+            "WORMHOLE_CORE_BASE",
             BASE_CHAIN_ID
         );
         address wormholeCoreBaseSepolia = addresses.getAddress(
