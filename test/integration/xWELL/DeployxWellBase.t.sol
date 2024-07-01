@@ -86,14 +86,14 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         );
     }
 
-    function testBridgeInSuccess() public {
-        uint256 mintAmount = testBridgeOutSuccess(startingWellAmount);
+    function testBridgeOutSuccess() public {
+        uint256 mintAmount = testBridgeInSuccess(startingWellAmount);
 
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = block.chainid.toBaseWormholeChainId();
+        uint16 dstChainId = block.chainid.toMoonbeamWormholeChainId();
         uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
         vm.deal(user, cost);
@@ -120,7 +120,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         );
     }
 
-    function testBridgeOutSuccess(uint256 mintAmount) public returns (uint256) {
+    function testBridgeInSuccess(uint256 mintAmount) public returns (uint256) {
         mintAmount = _bound(
             mintAmount,
             1,
