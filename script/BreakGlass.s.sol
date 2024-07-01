@@ -4,7 +4,7 @@ import {Script} from "@forge-std/Script.sol";
 
 import "@forge-std/Test.sol";
 
-import {MOONBEAM_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
+import {MOONBEAM_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
@@ -72,7 +72,7 @@ contract BreakGlass is Script, HybridProposal {
         address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            sendingChainIdToReceivingChainId[block.chainid]
+            block.chainId.toBaseChainId()
         );
 
         /// add temporal governor to list
@@ -80,7 +80,7 @@ contract BreakGlass is Script, HybridProposal {
 
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
-                chainId: moonBeamWormholeChainId, /// this chainId is 16 (moonBeamWormholeChainId) regardless of testnet or mainnet
+                chainId: MOONBEAM_WORMHOLE_CHAIN_ID, /// this chainId is 16 (MOONBEAM_WORMHOLE_CHAIN_ID) regardless of testnet or mainnet
                 addr: artemisTimelock /// this timelock on this chain
             })
         );

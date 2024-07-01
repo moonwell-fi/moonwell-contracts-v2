@@ -10,6 +10,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {mipm21} from "@proposals/mips/mip-m21/mip-m21.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
@@ -38,7 +39,7 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21 {
     /// @notice amount of well to mint
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
-    uint16 public constant wormholeBaseChainid = uint16(baseWormholeChainId);
+    uint16 public constant wormholeBaseChainid = uint16(BASE_WORMHOLE_CHAIN_ID);
 
     function setUp() public {
         addresses = new Addresses();

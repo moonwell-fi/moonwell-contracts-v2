@@ -30,15 +30,12 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
         _pushHybridAction(
-            addresses.getAddress(
-                "UNITROLLER",
-                sendingChainIdToReceivingChainId[block.chainid]
-            ),
+            addresses.getAddress("UNITROLLER", block.chainid.toBaseChainId()),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
                 addresses.getAddress(
                     "MOONWELL_WETH",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    block.chainid.toBaseChainId()
                 ),
                 collateralFactor
             ),

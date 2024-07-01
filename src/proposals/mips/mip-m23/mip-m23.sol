@@ -21,7 +21,7 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the
@@ -64,7 +64,8 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             );
 
         temporalGovernanceTrustedSenders[0].addr = multichainGovernorAddress;
-        temporalGovernanceTrustedSenders[0].chainId = moonBeamWormholeChainId;
+        temporalGovernanceTrustedSenders[0]
+            .chainId = MOONBEAM_WORMHOLE_CHAIN_ID;
 
         /// Base action
 
@@ -73,7 +74,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         _pushHybridAction(
             addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainId.toBaseChainId()
             ),
             abi.encodeWithSignature(
                 "setTrustedSenders((uint16,address)[])",
@@ -326,6 +327,8 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             true
         );
 
+        vm.selectFork(BASE_FORK_ID);
+
         delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
@@ -340,10 +343,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
             block.chainid
         );
-        address mrd = addresses.getAddress(
-            "MRD_PROXY",
-            sendingChainIdToReceivingChainId[block.chainid]
-        );
+        address mrd = addresses.getAddress("MRD_PROXY");
 
         unchecked {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
@@ -353,14 +353,8 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                     mrd,
                     abi.encodeWithSignature(
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
-                        addresses.getAddress(
-                            config.mToken,
-                            sendingChainIdToReceivingChainId[block.chainid]
-                        ),
-                        addresses.getAddress(
-                            config.owner,
-                            sendingChainIdToReceivingChainId[block.chainid]
-                        ),
+                        addresses.getAddress(config.mToken),
+                        addresses.getAddress(config.owner),
                         config.emissionToken,
                         config.supplyEmissionPerSec,
                         config.borrowEmissionsPerSec,
@@ -376,6 +370,8 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 );
             }
         }
+
+        vm.selectFork(primaryForkId());
     }
 
     function run(Addresses addresses, address) public override {
@@ -615,10 +611,10 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
 
         assertTrue(
             temporalGovernor.isTrustedSender(
-                chainIdToWormHoleId[block.chainid],
+                block.chainid.toWormholeChainId(),
                 addresses.getAddress(
                     "MOONBEAM_TIMELOCK",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    block.chainid.toMoonbeamChainId()
                 )
             ),
             "timelock not trusted sender"
@@ -626,11 +622,8 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
 
         assertTrue(
             temporalGovernor.isTrustedSender(
-                chainIdToWormHoleId[block.chainid],
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
-                )
+                block.chainid.toWormholeChainId(),
+                addresses.getAddress(block.chainid.toMoonbeamChainId())
             ),
             "MultichainGovernor not trusted sender"
         );
@@ -643,9 +636,8 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             "moonbeam proxies for multichain governor"
         );
 
-        /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            sendingChainIdToReceivingChainId[block.chainid]
+            block.chainid
         );
         MultiRewardDistributor distributor = MultiRewardDistributor(
             addresses.getAddress("MRD_PROXY")

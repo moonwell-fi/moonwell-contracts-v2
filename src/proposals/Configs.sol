@@ -47,6 +47,8 @@ contract Configs is Test {
     /// mapping of all emission configs per chainid
     mapping(uint256 => EmissionConfig[]) public emissions;
 
+    uint256 public constant TEMPORAL_GOV_DELAY_MAINNET = 1 days;
+    uint256 public constant TEMPORAL_GOV_DELAY_TESTNET = 0; // no delay
     uint256 public constant _optimismSepoliaChainId = 11155420;
     uint256 public constant _baseSepoliaChainId = 84532;
     uint256 public constant _localChainId = 31337;

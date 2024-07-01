@@ -97,12 +97,9 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             ) = deployVoteCollection(
                     addresses.getAddress("xWELL_PROXY"),
                     addresses.getAddress("STK_GOVTOKEN"),
-                    addresses.getAddress( /// fetch multichain governor address on Moonbeam
-                            "MULTICHAIN_GOVERNOR_PROXY",
-                            sendingChainIdToReceivingChainId[block.chainid]
-                        ),
+                    addresses.getAddress(block.chainid.toMoonbeamChainId()), /// fetch multichain governor address on Moonbeam
                     addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                    chainIdToWormHoleId[block.chainid],
+                    block.chainid.toWormholeChainId(),
                     proxyAdmin,
                     addresses.getAddress("TEMPORAL_GOVERNOR")
                 );
@@ -340,7 +337,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             );
             assertEq(
                 voteCollection.getAllTargetChains()[0],
-                chainIdToWormHoleId[block.chainid],
+                block.chainid.toWormholeChainId(),
                 "incorrect target chain, not moonbeam"
             );
             assertEq(
@@ -350,22 +347,17 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             );
 
             assertEq(
-                voteCollection.targetAddress(
-                    chainIdToWormHoleId[block.chainid]
-                ),
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
-                ),
+                voteCollection.targetAddress(block.chainid.toWormholeChainId()),
+                addresses.getAddress(block.chainid.toMoonbeamChainId()),
                 "target address not multichain governor on moonbeam"
             );
 
             assertTrue(
                 voteCollection.isTrustedSender(
-                    chainIdToWormHoleId[block.chainid],
+                    block.chainid.toWormholeChainId(),
                     addresses.getAddress(
                         "MULTICHAIN_GOVERNOR_PROXY",
-                        sendingChainIdToReceivingChainId[block.chainid]
+                        block.chainid.toMoonbeamChainId()
                     )
                 ),
                 "multichain governor not trusted sender"

@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
-
+import {MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
@@ -29,7 +29,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
     uint16 public constant wormholeMoonbeamChainid =
-        uint16(moonBeamWormholeChainId);
+        uint16(MOONBEAM_WORMHOLE_CHAIN_ID);
 
     function setUp() public {
         addresses = new Addresses();

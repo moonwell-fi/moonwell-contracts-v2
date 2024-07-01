@@ -17,8 +17,9 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
 /// then switch back to moonbeam to run the test with the generated calldata
-contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
+contract CrossChainPublishMessageTest is Test, PostProposalCheck {
     using String for string;
+    using ChainIds for uint256;
 
     IWormhole public wormhole;
     ERC20Votes public well;
@@ -85,7 +86,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
             /// this returns the moonbeam address as block.chainid is base/base sepolia
             address wormholeCore = addresses.getAddress(
                 "WORMHOLE_CORE_MOONBEAM",
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainid.toMoonbeamChainId()
             );
 
             bytes memory artemisQueuePayload = proposal

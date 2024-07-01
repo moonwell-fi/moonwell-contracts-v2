@@ -8,7 +8,7 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 
 import "@forge-std/Test.sol";
 
-import {MOONBEAM_CHAIN_ID, MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
+import {MOONBEAM_CHAIN_ID, MOONBEAM_FORK_ID, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MToken} from "@protocol/MToken.sol";
@@ -226,27 +226,24 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         /// artemis timelock does not start off as trusted sender
         assertFalse(
             temporalGov.isTrustedSender(
-                moonBeamWormholeChainId,
+                MOONBEAM_WORMHOLE_CHAIN_ID,
                 addresses.getAddress(
                     "MOONBEAM_TIMELOCK",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    block.chainid.toMoonbeamChainId()
                 )
             ),
             "artemis timelock should not be trusted sender"
         );
         assertTrue(
             temporalGov.isTrustedSender(
-                moonBeamWormholeChainId,
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
-                )
+                MOONBEAM_WORMHOLE_CHAIN_ID,
+                addresses.getAddress(block.chainid.toMoonbeamChainId())
             ),
             "multichain governor should be trusted sender"
         );
 
         assertEq(
-            temporalGov.allTrustedSenders(moonBeamWormholeChainId).length,
+            temporalGov.allTrustedSenders(MOONBEAM_WORMHOLE_CHAIN_ID).length,
             1,
             "incorrect amount of trusted senders post proposal"
         );
@@ -436,7 +433,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
 
         uint256 gasCost = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        ).bridgeCost(baseWormholeChainId);
+        ).bridgeCost(BASE_WORMHOLE_CHAIN_ID);
 
         assertTrue(gasCost != 0, "gas cost is 0 bridgeCost");
 
@@ -452,7 +449,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
 
         uint256 gasCost = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY")
-        ).bridgeCost(baseWormholeChainId);
+        ).bridgeCost(BASE_WORMHOLE_CHAIN_ID);
 
         assertTrue(gasCost != 0, "gas cost is 0 bridgeCost");
 
@@ -1990,10 +1987,10 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
             /// artemis timelock does not start off as trusted sender
             assertFalse(
                 temporalGov.isTrustedSender(
-                    uint16(moonBeamWormholeChainId),
+                    uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
                     addresses.getAddress(
                         "MOONBEAM_TIMELOCK",
-                        sendingChainIdToReceivingChainId[block.chainid]
+                        block.chainid.toMoonbeamChainId()
                     )
                 ),
                 "artemis timelock should not be trusted sender"
@@ -2353,7 +2350,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
 
         assertTrue(
             temporalGov.isTrustedSender(
-                uint16(moonBeamWormholeChainId),
+                uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
                 artemisTimelockAddress
             ),
             "artemis timelock not added as a trusted sender"

@@ -7,16 +7,19 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
+import {Address} from "@utils/Address.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
+import {BASE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {BASE_FORK_ID, BASE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
@@ -25,9 +28,6 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-
-import {Address} from "@utils/Address.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract mipb00 is Proposal, CrossChainProposal, Configs {
     using Address for address;
@@ -85,16 +85,18 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
         {
             TemporalGovernor.TrustedSender[]
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
-            trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid];
+            trustedSenders[0].chainId = block.chainid.toWormholeChainId();
             trustedSenders[0].addr = addresses.getAddress(
                 "MOONBEAM_TIMELOCK",
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainid.toMoonbeamChainId()
             );
 
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
                 addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
-                chainIdTemporalGovTimelock[block.chainid], /// get timelock period for deployment chain is on
+                block.chainid == BASE_CHAIN_ID
+                    ? TEMPORAL_GOV_DELAY_MAINNET
+                    : TEMPORAL_GOV_DELAY_TESTNET, /// get timelock period for deployment chain is on
                 permissionlessUnpauseTime,
                 trustedSenders
             );
@@ -484,7 +486,9 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN")
         );
         assertEq(
-            chainIdTemporalGovTimelock[block.chainid],
+            block.chainid == BASE_CHAIN_ID
+                ? TEMPORAL_GOV_DELAY_MAINNET
+                : TEMPORAL_GOV_DELAY_TESTNET,
             governor.proposalDelay()
         );
 
@@ -660,11 +664,11 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
 
         assertTrue(
             governor.isTrustedSender(
-                chainIdToWormHoleId[block.chainid],
+                block.chainid.toWormholeChainId(),
                 addresses
                     .getAddress(
                         "MOONBEAM_TIMELOCK",
-                        sendingChainIdToReceivingChainId[block.chainid]
+                        block.chainid.toMoonbeamChainId()
                     )
                     .toBytes()
             )

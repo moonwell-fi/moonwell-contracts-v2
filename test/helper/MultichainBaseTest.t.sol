@@ -5,6 +5,7 @@ import "@forge-std/Test.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
@@ -100,7 +101,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     constructor() {
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
-                chainId: moonBeamWormholeChainId,
+                chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
                 addr: address(this) /// TODO this is incorrect and should be the artemis timelock contract
             })
         );
@@ -228,8 +229,8 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
                 initData,
                 approvedCalldata,
                 proxyAdmin, // proxyAdmin
-                moonBeamWormholeChainId, // wormhole moonbeam chain id
-                baseWormholeChainId, // wormhole base chain id
+                MOONBEAM_WORMHOLE_CHAIN_ID, // wormhole moonbeam chain id
+                BASE_WORMHOLE_CHAIN_ID, // wormhole base chain id
                 address(this), // voteCollectionOwner
                 address(stkWellBase)
             );

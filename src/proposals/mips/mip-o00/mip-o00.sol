@@ -13,6 +13,7 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Address} from "@utils/Address.sol";
 import {Configs} from "@proposals/Configs.sol";
+import {OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
@@ -115,17 +116,19 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
             /// this should return the moonbeam/moonbase wormhole chain id
-            trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid];
+            trustedSenders[0].chainId = block.chainid.toWormholeChainId();
             trustedSenders[0].addr = addresses.getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
                 /// this should return the moonbeam/moonbase chain id
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainid.toMoonbeamChainId()
             );
 
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
                 addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
-                chainIdTemporalGovTimelock[block.chainid], /// get timelock period for deployment chain is on
+                block.chainid == OPTIMISM_CHAIN_ID
+                    ? TEMPORAL_GOV_DELAY_MAINNET
+                    : TEMPORAL_GOV_DELAY_TESTNET, /// get timelock period for deployment chain is on
                 permissionlessUnpauseTime,
                 trustedSenders
             );
@@ -515,7 +518,9 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
         );
         assertEq(
-            chainIdTemporalGovTimelock[block.chainid],
+            block.chainid == OPTIMISM_CHAIN_ID
+                ? TEMPORAL_GOV_DELAY_MAINNET
+                : TEMPORAL_GOV_DELAY_TESTNET,
             governor.proposalDelay()
         );
 
@@ -673,11 +678,11 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
         assertTrue(
             governor.isTrustedSender(
-                chainIdToWormHoleId[block.chainid],
+                block.chainid.toWormholeChainId(),
                 addresses
                     .getAddress(
                         "MULTICHAIN_GOVERNOR_PROXY",
-                        sendingChainIdToReceivingChainId[block.chainid]
+                        block.chainid.toMoonbeamChainId()
                     )
                     .toBytes()
             ),
@@ -685,7 +690,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
         );
         assertEq(
             governor
-                .allTrustedSenders(chainIdToWormHoleId[block.chainid])
+                .allTrustedSenders(block.chainid.toWormholeChainId())
                 .length,
             1,
             "multichain governor incorrect trusted sender count from Moonbeam"

@@ -6,6 +6,7 @@ import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/mult
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
@@ -96,7 +97,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
 
         assertEq(
-            address(governor.targetAddress(baseWormholeChainId)),
+            address(governor.targetAddress(BASE_WORMHOLE_CHAIN_ID)),
             address(voteCollection),
             "target address on moonbeam incorrect"
         );
@@ -108,7 +109,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
         assertEq(
             governor.getAllTargetChains()[0],
-            baseWormholeChainId,
+            BASE_WORMHOLE_CHAIN_ID,
             "getAllTargetChains chainid incorrect"
         );
         assertEq(
@@ -131,7 +132,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
         assertTrue(
             voteCollection.isTrustedSender(
-                moonBeamWormholeChainId,
+                MOONBEAM_WORMHOLE_CHAIN_ID,
                 address(governor)
             ),
             "governor address not trusted sender"

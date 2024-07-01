@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import {Vm} from "@forge-std/Vm.sol";
-
 // Fork Ids
 uint256 constant MOONBEAM_FORK_ID = 0;
 uint256 constant BASE_FORK_ID = 1;
@@ -29,37 +28,9 @@ uint16 constant BASE_WORMHOLE_SEPOLIA_CHAIN_ID = 10004;
 uint16 constant OPTIMISM_WORMHOLE_SEPOLIA_CHAIN_ID = 10005;
 
 library ChainIds {
-    //chainIdToWormHoleId[baseSepoliaChainId] = moonBaseWormholeChainId; /// base deployment is owned by moonbeam governance
-    //        chainIdToWormHoleId[OPTIMISM_SEPOLIA_CHAIN_ID] = moonBaseWormholeChainId; /// optimism deployment is owned by moonbeam governance
-    //
-    //        chainIdToWormHoleId[optimismChainId] = moonBeamWormholeChainId; /// optimism deployment is owned by moonbeam governance
-    //        chainIdToWormHoleId[baseChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
-    //        chainIdToWormHoleId[moonBeamChainId] = baseWormholeChainId; /// moonbeam goes to base
-    //        chainIdToWormHoleId[moonBaseChainId] = baseSepoliaWormholeChainId; /// moonbase goes to base
-    //
-    //        sendingChainIdToReceivingChainId[baseSepoliaChainId] = moonBaseChainId; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
-    //        sendingChainIdToReceivingChainId[moonBaseChainId] = baseSepoliaChainId;
-    //
-    //        sendingChainIdToReceivingChainId[baseChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking base, and sending from moonbeam
-    //        sendingChainIdToReceivingChainId[moonBeamChainId] = baseChainId;
-    //
-    //        sendingChainIdToReceivingChainId[optimismChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking optimism, and sending from moonbeam
-    //
-    //        sendingChainIdToReceivingChainId[
-    //            optimismSepoliaChainId
-    //        ] = moonBaseChainId; /// simulate a cross chain proposal by forking optimism testnet, and sending from moonbase testnet
-    //
-    //        sendingChainIdToReceivingChainId[localChainId] = localChainId; // unit tests
-    //
-    //        chainIdTemporalGovTimelock[baseSepoliaChainId] = 0; /// no wait on testnet
-    //        chainIdTemporalGovTimelock[baseChainId] = 1 days;
-    //
-    //        chainIdTemporalGovTimelock[optimismSepoliaChainId] = 0; /// no wait on testnet
-    //        chainIdTemporalGovTimelock[optimismChainId] = 1 days;
-
     address constant CHEATCODE_ADDRESS =
         0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
-    Vm constant vm = Vm(CHEATCODE_ADDRESS);
+    Vm internal vmInternal = Vm(CHEATCODE_ADDRESS);
 
     function toMoonbeamChainId(
         uint256 chainId
@@ -124,34 +95,34 @@ library ChainIds {
 
         if (forkId == MOONBEAM_FORK_ID) {
             require(
-                vm.activeFork() == MOONBEAM_FORK_ID,
+                vmInternal.activeFork() == MOONBEAM_FORK_ID,
                 "ChainIds: invalid active fork"
             );
 
             // all other forks must also be mainnet
             if (block.chainid == MOONBEAM_CHAIN_ID) {
-                vm.selectFork(BASE_FORK_ID);
+                vmInternal.selectFork(BASE_FORK_ID);
 
                 require(
                     block.chainid == BASE_CHAIN_ID,
                     "ChainIds: invalid chain id"
                 );
 
-                vm.selectFork(OPTIMISM_FORK_ID);
+                vmInternal.selectFork(OPTIMISM_FORK_ID);
 
                 require(
                     block.chainid == OPTIMISM_CHAIN_ID,
                     "ChainIds: invalid chain id"
                 );
             } else if (block.chainid == MOONBASE_CHAIN_ID) {
-                vm.selectFork(BASE_FORK_ID);
+                vmInternal.selectFork(BASE_FORK_ID);
 
                 require(
                     block.chainid == BASE_SEPOLIA_CHAIN_ID,
                     "ChainIds: invalid chain id"
                 );
 
-                vm.selectFork(OPTIMISM_FORK_ID);
+                vmInternal.selectFork(OPTIMISM_FORK_ID);
 
                 require(
                     block.chainid == OPTIMISM_SEPOLIA_CHAIN_ID,
@@ -162,34 +133,34 @@ library ChainIds {
             }
         } else if (forkId == BASE_FORK_ID) {
             require(
-                vm.activeFork() == BASE_FORK_ID,
+                vmInternal.activeFork() == BASE_FORK_ID,
                 "ChainIds: invalid active fork"
             );
 
             // all other forks must also be mainnet
             if (block.chainid == BASE_CHAIN_ID) {
-                vm.selectFork(MOONBEAM_FORK_ID);
+                vmInternal.selectFork(MOONBEAM_FORK_ID);
 
                 require(
                     block.chainid == MOONBEAM_CHAIN_ID,
                     "ChainIds: invalid chain id"
                 );
 
-                vm.selectFork(OPTIMISM_FORK_ID);
+                vmInternal.selectFork(OPTIMISM_FORK_ID);
 
                 require(
                     block.chainid == OPTIMISM_CHAIN_ID,
                     "ChainIds: invalid chain id"
                 );
             } else if (block.chainid == BASE_SEPOLIA_CHAIN_ID) {
-                vm.selectFork(MOONBASE_CHAIN_ID);
+                vmInternal.selectFork(MOONBASE_CHAIN_ID);
 
                 require(
                     block.chainid == MOONBASE_CHAIN_ID,
                     "ChainIds: invalid chain id"
                 );
 
-                vm.selectFork(OPTIMISM_FORK_ID);
+                vmInternal.selectFork(OPTIMISM_FORK_ID);
 
                 require(
                     block.chainid == OPTIMISM_SEPOLIA_CHAIN_ID,
@@ -200,34 +171,34 @@ library ChainIds {
             }
         } else if (forkId == OPTIMISM_FORK_ID) {
             require(
-                vm.activeFork() == OPTIMISM_FORK_ID,
+                vmInternal.activeFork() == OPTIMISM_FORK_ID,
                 "ChainIds: invalid active fork"
             );
 
             // all other forks must also be mainnet
             if (block.chainid == OPTIMISM_CHAIN_ID) {
-                vm.selectFork(MOONBEAM_FORK_ID);
+                vmInternal.selectFork(MOONBEAM_FORK_ID);
 
                 require(
                     block.chainid == MOONBEAM_CHAIN_ID,
                     "ChainIds: invalid chain id"
                 );
 
-                vm.selectFork(BASE_FORK_ID);
+                vmInternal.selectFork(BASE_FORK_ID);
 
                 require(
                     block.chainid == BASE_CHAIN_ID,
                     "ChainIds: invalid chain id"
                 );
             } else if (block.chainid == OPTIMISM_SEPOLIA_CHAIN_ID) {
-                vm.selectFork(MOONBASE_CHAIN_ID);
+                vmInternal.selectFork(MOONBASE_CHAIN_ID);
 
                 require(
                     block.chainid == MOONBASE_CHAIN_ID,
                     "ChainIds: invalid chain id"
                 );
 
-                vm.selectFork(BASE_FORK_ID);
+                vmInternal.selectFork(BASE_FORK_ID);
 
                 require(
                     block.chainid == BASE_SEPOLIA_CHAIN_ID,
@@ -239,15 +210,15 @@ library ChainIds {
         }
 
         // switch back to the original fork
-        vm.selectFork(forkId);
+        vmInternal.selectFork(forkId);
     }
 
     function createForksAndSelect(uint256 selectFork) internal {
-        vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
-        vm.createFork(vm.envString("BASE_RPC_URL"));
-        vm.createFork(vm.envString("OP_RPC_URL"));
+        vmInternal.createFork(vmInternal.envString("MOONBEAM_RPC_URL"));
+        vmInternal.createFork(vmInternal.envString("BASE_RPC_URL"));
+        vmInternal.createFork(vmInternal.envString("OP_RPC_URL"));
 
-        vm.selectFork(selectFork);
+        vmInternal.selectFork(selectFork);
 
         checkForks(selectFork);
     }

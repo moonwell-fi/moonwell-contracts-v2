@@ -6,15 +6,16 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 
 import "@forge-std/Test.sol";
 
-import {mipb02} from "@proposals/mips/mip-b02/mip-b02.sol";
-import {Configs} from "@proposals/Configs.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {mipb02} from "@proposals/mips/mip-b02/mip-b02.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MockWormhole} from "@test/mock/MockWormhole.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 
-contract PrintCalldataTest is Test, ChainIds {
+contract PrintCalldataTest is Test {
+    using ChainIds for uint256;
     TestProposals proposals;
     Addresses addresses;
 
@@ -46,7 +47,7 @@ contract PrintCalldataTest is Test, ChainIds {
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             addresses.getAddress(
                 "WORMHOLE_CORE_MOONBASE",
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainid.toMoonbeamChainId()
             ) /// get moonbase wormhole address so proposal will work
         );
 

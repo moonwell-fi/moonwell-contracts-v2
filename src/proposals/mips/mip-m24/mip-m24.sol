@@ -12,7 +12,7 @@ import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to accept governance powers, finalizing
 /// the transfer of admin and owner from the current Artemis Timelock to the
@@ -45,7 +45,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         trustedSendersToRemove[0].addr = addresses.getAddress(
             "MOONBEAM_TIMELOCK"
         );
-        trustedSendersToRemove[0].chainId = moonBeamWormholeChainId;
+        trustedSendersToRemove[0].chainId = MOONBEAM_WORMHOLE_CHAIN_ID;
 
         /// Base action
 
@@ -53,7 +53,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         _pushHybridAction(
             addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainId.toBaseChainId()
             ),
             abi.encodeWithSignature(
                 "unSetTrustedSenders((uint16,address)[])",
@@ -368,18 +368,15 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         );
 
         bytes32[] memory trustedSenders = temporalGovernor.allTrustedSenders(
-            chainIdToWormHoleId[block.chainid]
+            block.chainid.toWormholeChainId()
         );
 
         assertEq(trustedSenders.length, 1);
 
         assertTrue(
             temporalGovernor.isTrustedSender(
-                chainIdToWormHoleId[block.chainid],
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
-                )
+                block.chainid.toWormholeChainId(),
+                addresses.getAddress(block.chainid.toMoonbeamChainId())
             ),
             "MultichainGovernor not trusted sender"
         );
