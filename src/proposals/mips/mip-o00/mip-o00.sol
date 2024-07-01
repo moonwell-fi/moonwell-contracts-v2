@@ -7,7 +7,7 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {ChainIds, OPTIMISM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {ChainIds, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";

@@ -7,7 +7,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to create the Multichain Governor contract
 /// to simulate: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
