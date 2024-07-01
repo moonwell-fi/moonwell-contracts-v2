@@ -87,7 +87,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
     }
 
     function testBridgeInSuccess() public {
-        uint256 mintAmount = testBridgeInSuccess(startingWellAmount);
+        uint256 mintAmount = testBridgeOutSuccess(startingWellAmount);
 
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
