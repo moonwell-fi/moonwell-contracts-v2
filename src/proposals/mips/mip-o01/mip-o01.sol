@@ -11,8 +11,6 @@ import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ChainIdHelper} from "@protocol/utils/ChainIdHelper.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
-import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
-import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
