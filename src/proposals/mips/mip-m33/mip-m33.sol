@@ -137,6 +137,11 @@ contract mipm33 is HybridProposal, ParameterValidation {
             "MIP-M33: should have no base actions"
         );
 
+        require(
+            moonbeamActions.length == 1,
+            "MIP-M33: should have moonbeam actions"
+        );
+
         /// only run actions on moonbeam
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
     }
