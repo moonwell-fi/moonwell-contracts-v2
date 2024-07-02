@@ -35,5 +35,5 @@
       "*.js": "prettier --ignore-path .prettierignore --write .",
       "*.json": "prettier --ignore-path .prettierignore --write .",
       "*.yml": "prettier --ignore-path .prettierignore --write ."
-  },
+    }
 }
