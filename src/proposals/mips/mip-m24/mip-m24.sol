@@ -12,7 +12,7 @@ import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to accept governance powers, finalizing
 /// the transfer of admin and owner from the current Artemis Timelock to the
@@ -20,6 +20,7 @@ import {ForkID} from "@utils/Enums.sol";
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m24/mip-m24.sol:mipm24
 contract mipm24 is HybridProposal, MultichainGovernorDeploy {
+    using ChainIds for uint256;
     string public constant override name = "MIP-M24";
 
     constructor() {
@@ -31,8 +32,8 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         onchainProposalId = 1;
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     /// run this action through the Multichain Governor
@@ -45,7 +46,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         trustedSendersToRemove[0].addr = addresses.getAddress(
             "MOONBEAM_TIMELOCK"
         );
-        trustedSendersToRemove[0].chainId = moonBeamWormholeChainId;
+        trustedSendersToRemove[0].chainId = MOONBEAM_WORMHOLE_CHAIN_ID;
 
         /// Base action
 
@@ -53,7 +54,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         _pushHybridAction(
             addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainid.toBaseChainId()
             ),
             abi.encodeWithSignature(
                 "unSetTrustedSenders((uint16,address)[])",
@@ -182,17 +183,17 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(BASE_FORK_ID);
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
         // switch back to the moonbeam fork so we can run the validations
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public override {
@@ -360,7 +361,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             "UNITROLLER admin incorrect"
         );
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(BASE_FORK_ID);
 
         // check that the multichain governor now is the only trusted sender on the temporal governor
         TemporalGovernor temporalGovernor = TemporalGovernor(
@@ -368,22 +369,22 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         );
 
         bytes32[] memory trustedSenders = temporalGovernor.allTrustedSenders(
-            chainIdToWormHoleId[block.chainid]
+            block.chainid.toMoonbeamWormholeChainId()
         );
 
         assertEq(trustedSenders.length, 1);
 
         assertTrue(
             temporalGovernor.isTrustedSender(
-                chainIdToWormHoleId[block.chainid],
+                block.chainid.toMoonbeamWormholeChainId(),
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    block.chainid.toMoonbeamChainId()
                 )
             ),
             "MultichainGovernor not trusted sender"
         );
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 }

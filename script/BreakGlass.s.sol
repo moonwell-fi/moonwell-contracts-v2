@@ -4,7 +4,7 @@ import {Script} from "@forge-std/Script.sol";
 
 import "@forge-std/Test.sol";
 
-import {ForkID} from "@utils/Enums.sol";
+import {MOONBEAM_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
@@ -22,6 +22,8 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 ///      e. sets the owner of the moonbeam proxy admin
 ///      f. sets the owner of the xwell token
 contract BreakGlass is Script, HybridProposal {
+    using ChainIds for uint256;
+
     string public constant override name = "BREAK_GLASS";
 
     struct Calls {
@@ -41,20 +43,15 @@ contract BreakGlass is Script, HybridProposal {
     /// @notice trusted senders for the temporal governor
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function run() public override {
-        vm.createFork(vm.envOr("MOONBEAM_RPC_URL", string("moonbeam")));
-
-        vm.createFork(vm.envOr("BASE_RPC_URL", string("base")));
+        primaryForkId().createForksAndSelect();
 
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
-
-        /// ensure script runs on moonbeam
-        vm.selectFork(uint256(primaryForkId()));
 
         buildCalldata(addresses);
         bytes memory data = getCalldata(addresses);
@@ -75,7 +72,7 @@ contract BreakGlass is Script, HybridProposal {
         address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            sendingChainIdToReceivingChainId[block.chainid]
+            block.chainid.toBaseChainId()
         );
 
         /// add temporal governor to list
@@ -83,7 +80,7 @@ contract BreakGlass is Script, HybridProposal {
 
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
-                chainId: moonBeamWormholeChainId, /// this chainId is 16 (moonBeamWormholeChainId) regardless of testnet or mainnet
+                chainId: MOONBEAM_WORMHOLE_CHAIN_ID, /// this chainId is 16 (MOONBEAM_WORMHOLE_CHAIN_ID) regardless of testnet or mainnet
                 addr: artemisTimelock /// this timelock on this chain
             })
         );

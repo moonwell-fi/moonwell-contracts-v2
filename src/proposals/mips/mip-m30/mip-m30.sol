@@ -8,7 +8,7 @@ import {Configs} from "@proposals/Configs.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
     string public constant override name = "MIP-M30";
@@ -22,8 +22,8 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
         onchainProposalId = 80;
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function deploy(Addresses, address) public override {}

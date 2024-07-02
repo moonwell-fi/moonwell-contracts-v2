@@ -3,12 +3,12 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ForkID} from "@utils/Enums.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MOONBEAM_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
@@ -17,6 +17,8 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 /// to execute: DO_BUILD=true DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
 /// src/proposals/mips/mip-m23/mip-m23c.sol:mipm23c --broadcast --slow --fork-url moonbeam
 contract mipm23c is HybridProposal, MultichainGovernorDeploy {
+    using ChainIds for uint256;
+
     string public constant override name = "MIP-M23C";
 
     /// @notice whitelisted calldata for the break glass guardian
@@ -49,8 +51,8 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
     /// @notice duration of the cross chain vote collection period
     uint256 public constant crossChainVoteCollectionPeriod = 1 days;
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function buildCalldata(Addresses addresses) public {
@@ -74,7 +76,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            sendingChainIdToReceivingChainId[block.chainid]
+            block.chainid.toBaseChainId()
         );
 
         /// add temporal governor to list
@@ -82,7 +84,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
 
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
-                chainId: moonBeamWormholeChainId, /// this chainId is 16 (moonBeamWormholeChainId) regardless of testnet or mainnet
+                chainId: MOONBEAM_WORMHOLE_CHAIN_ID, /// this chainId is 16 (MOONBEAM_WORMHOLE_CHAIN_ID) regardless of testnet or mainnet
                 addr: artemisTimelock /// this timelock on this chain
             })
         );
@@ -163,8 +165,8 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
 
         /// executing proposal on moonbeam, but this proposal needs an address from base
         address multichainVoteCollection = addresses.getAddress(
-            "VOTE_COLLECTION_PROXY",
-            sendingChainIdToReceivingChainId[block.chainid]
+            "VOTE_COLECTION_PROXY",
+            block.chainid.toBaseChainId()
         );
 
         WormholeTrustedSender.TrustedSender[]
@@ -173,7 +175,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
             );
 
         trustedSenders[0].addr = multichainVoteCollection;
-        trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid]; /// base wormhole chain id
+        trustedSenders[0].chainId = block.chainid.toBaseWormholeChainId(); /// base wormhole chain id
 
         MultichainGovernor.InitializeData memory initData;
 
@@ -303,10 +305,10 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         assertFalse(governor.pauseUsed(), "incorrect pauseUsed state");
 
         assertEq(
-            governor.targetAddress(chainIdToWormHoleId[block.chainid]),
+            governor.targetAddress(block.chainid.toBaseWormholeChainId()),
             addresses.getAddress(
                 "VOTE_COLLECTION_PROXY",
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainid.toBaseChainId()
             ),
             "vote collection proxy not in target address"
         );
@@ -317,15 +319,15 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         );
         assertEq(
             governor.getAllTargetChains()[0],
-            chainIdToWormHoleId[block.chainid],
+            block.chainid.toBaseWormholeChainId(),
             "incorrect target chains length"
         );
         assertTrue(
             governor.isTrustedSender(
-                chainIdToWormHoleId[block.chainid],
+                block.chainid.toBaseWormholeChainId(),
                 addresses.getAddress(
                     "VOTE_COLLECTION_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    block.chainid.toBaseChainId()
                 )
             ),
             "vote collection proxy not trusted sender"

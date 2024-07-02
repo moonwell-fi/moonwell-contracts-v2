@@ -3,13 +3,14 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {ChainIds} from "@utils/ChainIds.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {mip0x as mip} from "@proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 
-contract PrintNewMarketAddCalldataTest is Test, ChainIds {
+contract PrintNewMarketAddCalldataTest is Test {
+    using ChainIds for uint256;
     TestProposals proposals;
     Addresses addresses;
 
@@ -31,7 +32,7 @@ contract PrintNewMarketAddCalldataTest is Test, ChainIds {
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             addresses.getAddress(
                 "WORMHOLE_CORE_MOONBASE",
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainid.toMoonbeamChainId()
             ) /// get moonbase wormhole address so proposal will work
         );
 
@@ -56,7 +57,7 @@ contract PrintNewMarketAddCalldataTest is Test, ChainIds {
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             addresses.getAddress(
                 "WORMHOLE_CORE_MOONBASE",
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainid.toMoonbeamChainId()
             ) /// get moonbase wormhole address so proposal will work
         );
     }
