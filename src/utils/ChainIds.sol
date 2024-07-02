@@ -88,129 +88,55 @@ library ChainIds {
     }
 
     function checkForks(uint256 forkId) internal {
-        require(
-            forkId == MOONBEAM_FORK_ID ||
-                forkId == BASE_FORK_ID ||
-                forkId == OPTIMISM_FORK_ID,
-            "ChainIds: invalid fork id"
-        );
+        require(forkId <= OPTIMISM_FORK_ID, "ChainIds: invalid fork id");
 
-        if (forkId == MOONBEAM_FORK_ID) {
+        bool isMainnet = block.chainid == MOONBEAM_CHAIN_ID ||
+            block.chainid == BASE_CHAIN_ID ||
+            block.chainid == OPTIMISM_CHAIN_ID;
+
+        if (isMainnet) {
+            vmInternal.selectFork(MOONBEAM_FORK_ID);
+
             require(
-                vmInternal.activeFork() == MOONBEAM_FORK_ID,
-                "ChainIds: invalid active fork"
+                block.chainid == MOONBEAM_CHAIN_ID,
+                "ChainIds: invalid chain id"
             );
 
-            // all other forks must also be mainnet
-            if (block.chainid == MOONBEAM_CHAIN_ID) {
-                vmInternal.selectFork(BASE_FORK_ID);
+            vmInternal.selectFork(BASE_FORK_ID);
 
-                require(
-                    block.chainid == BASE_CHAIN_ID,
-                    "ChainIds: invalid chain id"
-                );
-
-                vmInternal.selectFork(OPTIMISM_FORK_ID);
-
-                require(
-                    block.chainid == OPTIMISM_CHAIN_ID,
-                    "ChainIds: invalid chain id"
-                );
-            } else if (block.chainid == MOONBASE_CHAIN_ID) {
-                vmInternal.selectFork(BASE_FORK_ID);
-
-                require(
-                    block.chainid == BASE_SEPOLIA_CHAIN_ID,
-                    "ChainIds: invalid chain id"
-                );
-
-                vmInternal.selectFork(OPTIMISM_FORK_ID);
-
-                require(
-                    block.chainid == OPTIMISM_SEPOLIA_CHAIN_ID,
-                    "ChainIds: invalid chain id"
-                );
-            } else {
-                revert("ChainIds: invalid RPC URL");
-            }
-        } else if (forkId == BASE_FORK_ID) {
             require(
-                vmInternal.activeFork() == BASE_FORK_ID,
-                "ChainIds: invalid active fork"
+                block.chainid == BASE_CHAIN_ID,
+                "ChainIds: invalid chain id"
             );
 
-            // all other forks must also be mainnet
-            if (block.chainid == BASE_CHAIN_ID) {
-                vmInternal.selectFork(MOONBEAM_FORK_ID);
+            vmInternal.selectFork(OPTIMISM_FORK_ID);
 
-                require(
-                    block.chainid == MOONBEAM_CHAIN_ID,
-                    "ChainIds: invalid chain id"
-                );
-
-                vmInternal.selectFork(OPTIMISM_FORK_ID);
-
-                require(
-                    block.chainid == OPTIMISM_CHAIN_ID,
-                    "ChainIds: invalid chain id"
-                );
-            } else if (block.chainid == BASE_SEPOLIA_CHAIN_ID) {
-                vmInternal.selectFork(MOONBASE_CHAIN_ID);
-
-                require(
-                    block.chainid == MOONBASE_CHAIN_ID,
-                    "ChainIds: invalid chain id"
-                );
-
-                vmInternal.selectFork(OPTIMISM_FORK_ID);
-
-                require(
-                    block.chainid == OPTIMISM_SEPOLIA_CHAIN_ID,
-                    "ChainIds: invalid chain id"
-                );
-            } else {
-                revert("ChainIds: invalid RPC URL");
-            }
-        } else if (forkId == OPTIMISM_FORK_ID) {
             require(
-                vmInternal.activeFork() == OPTIMISM_FORK_ID,
-                "ChainIds: invalid active fork"
+                block.chainid == OPTIMISM_CHAIN_ID,
+                "ChainIds: invalid chain id"
+            );
+        } else {
+            vmInternal.selectFork(MOONBEAM_FORK_ID);
+
+            require(
+                block.chainid == MOONBASE_CHAIN_ID,
+                "ChainIds: invalid chain id"
             );
 
-            // all other forks must also be mainnet
-            if (block.chainid == OPTIMISM_CHAIN_ID) {
-                vmInternal.selectFork(MOONBEAM_FORK_ID);
+            vmInternal.selectFork(BASE_FORK_ID);
 
-                require(
-                    block.chainid == MOONBEAM_CHAIN_ID,
-                    "ChainIds: invalid chain id"
-                );
+            require(
+                block.chainid == BASE_SEPOLIA_CHAIN_ID,
+                "ChainIds: invalid chain id"
+            );
 
-                vmInternal.selectFork(BASE_FORK_ID);
+            vmInternal.selectFork(OPTIMISM_FORK_ID);
 
-                require(
-                    block.chainid == BASE_CHAIN_ID,
-                    "ChainIds: invalid chain id"
-                );
-            } else if (block.chainid == OPTIMISM_SEPOLIA_CHAIN_ID) {
-                vmInternal.selectFork(MOONBASE_CHAIN_ID);
-
-                require(
-                    block.chainid == MOONBASE_CHAIN_ID,
-                    "ChainIds: invalid chain id"
-                );
-
-                vmInternal.selectFork(BASE_FORK_ID);
-
-                require(
-                    block.chainid == BASE_SEPOLIA_CHAIN_ID,
-                    "ChainIds: invalid chain id"
-                );
-            } else {
-                revert("ChainIds: invalid RPC URL");
-            }
+            require(
+                block.chainid == OPTIMISM_SEPOLIA_CHAIN_ID,
+                "ChainIds: invalid chain id"
+            );
         }
-
         // switch back to the original fork
         vmInternal.selectFork(forkId);
     }

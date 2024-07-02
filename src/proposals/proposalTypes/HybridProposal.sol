@@ -17,7 +17,6 @@ import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {Address} from "@utils/Address.sol";
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
