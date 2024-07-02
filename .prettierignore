@@ -5,7 +5,6 @@ coverage
 lib
 out
 artifacts
-.github
 .husky
 other
 .certora_internal/
@@ -18,7 +17,6 @@ lcov.info
 *.txt
 *.toml
 LICENSE
-.solhintrc
 .prettierrc
 .prettierignore
 *.svg

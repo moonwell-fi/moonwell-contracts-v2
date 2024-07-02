@@ -9,8 +9,12 @@
     },
     "scripts": {
         "prepare": "husky",
-        "lint": "npx solhint --config ./.solhintrc --ignore-path .solhintignore 'src/**/*.sol'",
-        "fmt": "npx prettier --ignore-path .prettierignore --write . && foundry fmt"
+        "lint": "yarn lint:solidity && yarn lint:javascript",
+        "lint:fix": "yarn lint:solidity:fix && yarn lint:javascript:fix",
+        "lint:solidity": "forge fmt --check"
+        "lint:solidity:fix": "forge fmt",
+        "lint:javascript": "prettier --ignore-path .prettierignore --list-different .",
+        "lint:javascript:fix": "prettier --ignore-path .prettierignore --write .",
     },
     "repository": {
         "type": "git",
@@ -25,5 +29,11 @@
         "husky": "^9.0.10",
         "prettier": "^3.2.4",
         "solhint": "^4.5.2"
-    }
+    },
+    "lint-staged": {
+      "*.sol": "forge fmt",
+      "*.js": "prettier --ignore-path .prettierignore --write .",
+      "*.json": "prettier --ignore-path .prettierignore --write .",
+      "*.yml": "prettier --ignore-path .prettierignore --write ."
+  },
 }
