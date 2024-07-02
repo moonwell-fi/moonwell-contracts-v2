@@ -8,7 +8,7 @@ env:
 jobs:
   run-base-tests:
     name: base-sepolia-integration-tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code

@@ -10,7 +10,7 @@ env:
 jobs:
   run-tests:
     name: post-proposal-integration-tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
