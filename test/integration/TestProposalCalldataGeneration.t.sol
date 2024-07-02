@@ -245,8 +245,6 @@ contract TestProposalCalldataGeneration is Test {
                 vm.selectFork(uint256(proposalContract.primaryForkId()));
                 proposalContract.build(addresses);
 
-                vm.selectFork(BASE_FORK_ID);
-
                 // get proposal actions
                 (
                     address[] memory targets,
@@ -258,6 +256,8 @@ contract TestProposalCalldataGeneration is Test {
                 bytes32 hash = keccak256(
                     abi.encode(targets, values, calldatas)
                 );
+
+                vm.selectFork(MOONBEAM_FORK_ID);
 
                 (
                     address[] memory onchainTargets,

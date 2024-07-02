@@ -210,8 +210,13 @@
         "isContract": true
     },
     {
+        "addr": "0xF5C73A4198941b49831cc95C5E407571851fbA4b",
+        "name": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_B19",
+        "isContract": true
+    },
+    {
         "addr": "0x822d0b61d7d79d0AC2170D0A5bd634d7E11df06e",
-        "name": "JUMP_RATE_IRM_MOONWELL_WETH",
+        "name": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_B22",
         "isContract": true
     },
     {
@@ -220,8 +225,13 @@
         "isContract": true
     },
     {
+        "addr": "0xff374aD1be52fF54Cf576586253a113d3F48D4B7",
+        "name": "JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B18",
+        "isContract": true
+    },
+    {
         "addr": "0x9c3431faf6aF953815893ca4661B8F437ce0Ee22",
-        "name": "JUMP_RATE_IRM_MOONWELL_cbETH",
+        "name": "JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B22",
         "isContract": true
     },
     {
@@ -280,8 +290,13 @@
         "isContract": true
     },
     {
+        "addr": "0xb96887502797c07Fc5b0F0938C61cC3D46e16e18",
+        "name": "JUMP_RATE_IRM_MOONWELL_WSTETH_MIP_B18",
+        "isContract": true
+    },
+    {
         "addr": "0x1dA5101eD155750FAF18beB51B17d1ffcEFc8D52",
-        "name": "JUMP_RATE_IRM_MOONWELL_wstETH",
+        "name": "JUMP_RATE_IRM_MOONWELL_WSTETH_MIP_B22",
         "isContract": true
     },
     {
@@ -325,8 +340,13 @@
         "isContract": true
     },
     {
+        "addr": "0x9260fa4D0284549ffEDc7B7003489a2837B3121d",
+        "name": "JUMP_RATE_IRM_MOONWELL_RETH_MIP_B18",
+        "isContract": true
+    },
+    {
         "addr": "0x6147Be7E92242B9119Da9aE81a6a14e64caCe094",
-        "name": "JUMP_RATE_IRM_MOONWELL_rETH",
+        "name": "JUMP_RATE_IRM_MOONWELL_RETH_MIP_B22",
         "isContract": true
     },
     {
@@ -400,9 +420,14 @@
         "name": "CHAINLINK_AERO_ORACLE"
     },
     {
+        "addr": "0x0A72A4c3c9FC1345C1Cdaf52E0195367F8b688d0",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_AERO_MIP_B19"
+    },
+    {
         "addr": "0x78aCeC1B92dF516DA14B3dbed91219772180330A",
         "isContract": true,
-        "name": "JUMP_RATE_IRM_MOONWELL_AERO"
+        "name": "JUMP_RATE_IRM_MOONWELL_AERO_MIP_B22"
     },
     {
         "addr": "0x73902f619CEB9B31FD8EFecf435CbDf89E369Ba6",

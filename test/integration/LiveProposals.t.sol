@@ -94,8 +94,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                 vm.warp(voteSnapshotTimestamp - 1);
                 deal(well, address(this), governorContract.quorum());
 
-                address delegatee = xWELL(well).delegates(address(this));
-                xWELL(well).delegate(delegatee);
+                xWELL(well).delegate(address(this));
 
                 vm.warp(votingStartTime);
 

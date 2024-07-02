@@ -3,12 +3,12 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import "@utils/ChainIds.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, MOONBEAM_CHAIN_ID, OPTIMISM_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /*
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
@@ -16,6 +16,8 @@ DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o01/mip-o01.sol
  -vvv
 */
 contract mipo01 is Configs, HybridProposal {
+    using ChainIds for uint256;
+
     string public constant override name = "MIP-O01";
 
     /// @notice whitelisted calldata for the break glass guardian
@@ -106,9 +108,7 @@ contract mipo01 is Configs, HybridProposal {
         /// get temporal governor on Optimism
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            block.chainid == MOONBEAM_CHAIN_ID
-                ? OPTIMISM_CHAIN_ID
-                : OPTIMISM_SEPOLIA_CHAIN_ID
+            block.chainid.toOptimismChainId()
         );
 
         temporalGovernanceTargets.push(temporalGovernor);
