@@ -6,9 +6,9 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -62,8 +62,8 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
         onchainProposalId = 11;
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     /// @notice Aero market mToken and corresponding IRM is deployed in this proposal

@@ -9,7 +9,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {_IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract SystemUpgradeLiveSystemBasePostProposalTest is
     PostProposalCheck,
@@ -18,7 +18,7 @@ contract SystemUpgradeLiveSystemBasePostProposalTest is
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(BASE_FORK_ID);
     }
     function testSystemUpgradeAsTemporalGovernorSucceeds() public {
         address newProxyImplementation = address(this);

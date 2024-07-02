@@ -13,12 +13,14 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {ChainIds, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// how to run locally:
 ///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployBase.sol:xwellDeployBase --fork-url base
 /// @dev do not use MIP as a base to fork off of, it will not work
 contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
+    using ChainIds for uint256;
+
     /// @notice the name of the proposal
     string public constant override name = "MIP xWELL Token Creation Base";
 
@@ -35,8 +37,8 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {
@@ -83,7 +85,7 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
                 xwellProxy,
                 temporalGov,
                 relayer,
-                uint16(chainIdToWormHoleId[block.chainid])
+                block.chainid.toMoonbeamWormholeChainId()
             );
 
             addresses.addAddress(
@@ -189,7 +191,7 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
             );
             assertTrue(
                 WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
-                    uint16(chainIdToWormHoleId[block.chainid]),
+                    block.chainid.toMoonbeamWormholeChainId(),
                     wormholeAdapter
                 ),
                 "trusted sender not trusted"

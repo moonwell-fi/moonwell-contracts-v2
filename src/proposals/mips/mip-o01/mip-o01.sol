@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ForkID} from "@utils/Enums.sol";
+import "@utils/ChainIds.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
@@ -11,13 +11,13 @@ import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGove
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
-
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
 DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o01/mip-o01.sol:mipo01 \
  -vvv
-
 */
 contract mipo01 is Configs, HybridProposal {
+    using ChainIds for uint256;
+
     string public constant override name = "MIP-O01";
 
     /// @notice whitelisted calldata for the break glass guardian
@@ -39,8 +39,8 @@ contract mipo01 is Configs, HybridProposal {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function deploy(Addresses, address) public override {}
@@ -66,7 +66,7 @@ contract mipo01 is Configs, HybridProposal {
                 true
             ),
             "Whitelist break glass calldata to add the Artemis Timelock as a trusted sender in the Temporal Governor on Optimism",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
     }
 
@@ -108,16 +108,14 @@ contract mipo01 is Configs, HybridProposal {
         /// get temporal governor on Optimism
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            block.chainid == moonBeamChainId
-                ? optimismChainId
-                : optimismSepoliaChainId
+            block.chainid.toOptimismChainId()
         );
 
         temporalGovernanceTargets.push(temporalGovernor);
 
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
-                chainId: moonBeamWormholeChainId, /// this chainId is 16 (moonBeamWormholeChainId) regardless of testnet or mainnet
+                chainId: MOONBEAM_WORMHOLE_CHAIN_ID, /// this chainId is 16 (MOONBEAM_WORMHOLE_CHAIN_ID) regardless of testnet or mainnet
                 addr: artemisTimelock /// the timelock on moonbeam
             })
         );
