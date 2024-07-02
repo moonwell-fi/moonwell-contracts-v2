@@ -99,6 +99,8 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
                 vm.warp(votingStartTime);
 
+                console.log("getVotes", xWELL(well).getVotes(address(this)));
+
                 governorContract.castVote(proposalId, 0);
                 vm.warp(crossChainVoteCollectionEndTimestamp + 1);
             }

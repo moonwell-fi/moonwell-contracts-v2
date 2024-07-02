@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, MOONBASE_CHAIN_ID, BASE_SEPOLIA_CHAIN_ID, OPTIMISM_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
+import "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {AddressToString} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";

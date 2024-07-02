@@ -6,8 +6,8 @@ import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import "@forge-std/Test.sol";
 
+import "@utils/ChainIds.sol";
 import {Address} from "@utils/Address.sol";
-import {MOONBEAM_FORK_ID, BASE_CHAIN_ID, BASE_SEPOLIA_CHAIN_ID, MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
