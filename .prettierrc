@@ -9,6 +9,9 @@
         "parser": "json",
         "useTabs": false,
         "singleQuote": false,
+        "bracketSpacing": false,
+        "useTabs": false,
+        "singleQuote": true,
         "bracketSpacing": false
       }
     },
