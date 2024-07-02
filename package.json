@@ -28,12 +28,12 @@
     "devDependencies": {
         "husky": "^9.0.10",
         "prettier": "^3.2.4",
-        "solhint": "^4.5.2"
+        "lint-staged": "^14.0.1"
     },
     "lint-staged": {
-      "*.sol": "forge fmt",
-      "*.js": "prettier --ignore-path .prettierignore --write .",
-      "*.json": "prettier --ignore-path .prettierignore --write .",
-      "*.yml": "prettier --ignore-path .prettierignore --write ."
+        "*.sol": "forge fmt",
+        "*.js": "prettier --ignore-path .prettierignore --write .",
+        "*.json": "prettier --ignore-path .prettierignore --write .",
+        "*.yml": "prettier --ignore-path .prettierignore --write ."
     }
 }
