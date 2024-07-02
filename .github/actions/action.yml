@@ -6,22 +6,18 @@ runs:
   steps:
     - name: Checkout the repository
       uses: actions/checkout@v2
-      runs-on: self-hosted
       with:
         submodules: recursive
 
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
-      runs-on: self-hosted
       with:
         version: nightly
 
     - name: Clean Contracts
-      runs-on: self-hosted
       run: forge clean
       shell: bash
 
     - name: Compile Contracts
-      runs-on: self-hosted
       run: forge build
       shell: bash
