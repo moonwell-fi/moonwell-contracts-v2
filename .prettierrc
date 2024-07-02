@@ -9,16 +9,16 @@
         "parser": "json",
         "useTabs": false,
         "singleQuote": false,
-        "bracketSpacing": false,
-        "useTabs": false,
-        "singleQuote": true,
         "bracketSpacing": false
       }
     },
     {
       "files": "*.js",
       "options": {
-        "parser": "babel"
+        "parser": "babel",
+        "bracketSpacing": false,
+        "useTabs": false,
+        "singleQuote": true
       }
     }
 
