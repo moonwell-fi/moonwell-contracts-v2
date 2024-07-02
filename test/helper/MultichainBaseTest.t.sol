@@ -5,6 +5,7 @@ import "@forge-std/Test.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
@@ -13,16 +14,13 @@ import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Well} from "@protocol/governance/Well.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
-contract MultichainBaseTest is
-    Test,
-    MultichainGovernorDeploy,
-    xWELLDeploy,
-    ChainIds
-{
+contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
+    using ChainIds for uint256;
+
     event BridgeOutSuccess(
         uint16 dstWormholeChainId,
         uint256 cost,
@@ -103,7 +101,7 @@ contract MultichainBaseTest is
     constructor() {
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
-                chainId: moonBeamWormholeChainId,
+                chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
                 addr: address(this) /// TODO this is incorrect and should be the artemis timelock contract
             })
         );
@@ -231,8 +229,8 @@ contract MultichainBaseTest is
                 initData,
                 approvedCalldata,
                 proxyAdmin, // proxyAdmin
-                moonBeamWormholeChainId, // wormhole moonbeam chain id
-                baseWormholeChainId, // wormhole base chain id
+                MOONBEAM_WORMHOLE_CHAIN_ID, // wormhole moonbeam chain id
+                BASE_WORMHOLE_CHAIN_ID, // wormhole base chain id
                 address(this), // voteCollectionOwner
                 address(stkWellBase)
             );

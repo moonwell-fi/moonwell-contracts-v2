@@ -11,7 +11,7 @@ import {IMultichainGovernor} from "@protocol/governance/multichain/IMultichainGo
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// @notice DO NOT USE THIS IN PRODUCTION, this is a completely hypothetical example
 /// adds stkwell as reward streams, completely hypothetical situation that makes no sense and would not work in production
@@ -34,13 +34,13 @@ contract HybridProposalExample is
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     /// @notice create proposal actions
     function build(Addresses addresses) public override {
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         _pushHybridAction(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
@@ -49,10 +49,10 @@ contract HybridProposalExample is
                 NEW_VOTING_PERIOD
             ),
             "Set voting period on Multichain Governor to 6 days",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
 
         /// ensure no existing reward configs have already been loaded from Configs.sol
         require(
@@ -98,28 +98,28 @@ contract HybridProposalExample is
                             config.mToken
                         )
                     ),
-                    ForkID.Base
+                    ActionType.Base
                 );
             }
         }
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
 
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
         // switch back to the base fork so we can run the validations
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         IMultichainGovernor governor = IMultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
@@ -131,11 +131,10 @@ contract HybridProposalExample is
             "voting period not set correctly"
         );
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
 
-        /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            sendingChainIdToReceivingChainId[block.chainid]
+            block.chainid
         );
         MultiRewardDistributor distributor = MultiRewardDistributor(
             addresses.getAddress("MRD_PROXY")
@@ -188,6 +187,6 @@ contract HybridProposalExample is
             }
         }
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 }

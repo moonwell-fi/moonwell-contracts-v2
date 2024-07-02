@@ -7,12 +7,13 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
+import {ChainIds, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
-import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Address} from "@utils/Address.sol";
 import {Configs} from "@proposals/Configs.sol";
+import {OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
@@ -41,6 +42,7 @@ DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol
 
 contract mipo00 is Proposal, CrossChainProposal, Configs {
     using Address for address;
+    using ChainIds for uint256;
 
     string public constant override name = "MIP-O00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
@@ -82,8 +84,8 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
     /// @dev change this if wanting to deploy to a different chain
     /// double check addresses and change the WORMHOLE_CORE to the correct chain
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Optimism;
+    function primaryForkId() public pure override returns (uint256) {
+        return OPTIMISM_FORK_ID;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
@@ -115,17 +117,19 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
             /// this should return the moonbeam/moonbase wormhole chain id
-            trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid];
+            trustedSenders[0].chainId = block
+                .chainid
+                .toMoonbeamWormholeChainId();
             trustedSenders[0].addr = addresses.getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
                 /// this should return the moonbeam/moonbase chain id
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainid.toMoonbeamChainId()
             );
 
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
                 addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
-                chainIdTemporalGovTimelock[block.chainid], /// get timelock period for deployment chain is on
+                temporalGovDelay[block.chainid], /// get timelock period for deployment chain is on
                 permissionlessUnpauseTime,
                 trustedSenders
             );
@@ -514,12 +518,9 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             governor.owner(),
             addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
         );
-        assertEq(
-            chainIdTemporalGovTimelock[block.chainid],
-            governor.proposalDelay()
-        );
+        assertEq(temporalGovDelay[block.chainid], governor.proposalDelay());
 
-        if (block.chainid == optimismChainId) {
+        if (block.chainid == OPTIMISM_CHAIN_ID) {
             assertEq(
                 governor.proposalDelay(),
                 1 days,
@@ -673,11 +674,11 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
         assertTrue(
             governor.isTrustedSender(
-                chainIdToWormHoleId[block.chainid],
+                block.chainid.toMoonbeamWormholeChainId(),
                 addresses
                     .getAddress(
                         "MULTICHAIN_GOVERNOR_PROXY",
-                        sendingChainIdToReceivingChainId[block.chainid]
+                        block.chainid.toMoonbeamChainId()
                     )
                     .toBytes()
             ),
@@ -685,7 +686,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
         );
         assertEq(
             governor
-                .allTrustedSenders(chainIdToWormHoleId[block.chainid])
+                .allTrustedSenders(block.chainid.toMoonbeamWormholeChainId())
                 .length,
             1,
             "multichain governor incorrect trusted sender count from Moonbeam"

@@ -9,9 +9,11 @@ import {Configs} from "@proposals/Configs.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
+    using ChainIds for uint256;
+
     string public constant override name = "TEST_TEMPORAL_GOVERNOR";
 
     uint256 public constant collateralFactor = 0.6e18;
@@ -23,22 +25,19 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
         _pushHybridAction(
-            addresses.getAddress(
-                "UNITROLLER",
-                sendingChainIdToReceivingChainId[block.chainid]
-            ),
+            addresses.getAddress("UNITROLLER", block.chainid.toBaseChainId()),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
                 addresses.getAddress(
                     "MOONWELL_WETH",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    block.chainid.toBaseChainId()
                 ),
                 collateralFactor
             ),
@@ -48,15 +47,15 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(BASE_FORK_ID);
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(BASE_FORK_ID);
 
         Comptroller unitroller = Comptroller(
             addresses.getAddress("UNITROLLER")
@@ -67,6 +66,6 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         );
         assertEq(collateralFactorMantissa, collateralFactor);
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 }

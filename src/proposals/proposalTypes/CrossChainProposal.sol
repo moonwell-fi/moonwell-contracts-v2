@@ -3,23 +3,22 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Bytes} from "@utils/Bytes.sol";
-import {ForkID} from "@utils/Enums.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MOONBEAM_FORK_ID, BASE_CHAIN_ID, MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
 abstract contract CrossChainProposal is
-    ChainIds,
     ProposalChecker,
     MultisigProposal,
     MarketCreationHook
 {
     using Bytes for bytes;
+    using ChainIds for uint256;
 
     uint32 public nonce; /// nonce for wormhole, unused by Temporal Governor, starts at 0
 
@@ -79,14 +78,14 @@ abstract contract CrossChainProposal is
             bytes memory proposalCalldata = getMultichainGovernorCalldata(
                 temporalGovAddress,
                 addresses.getAddress(
-                    block.chainid == baseChainId ||
-                        block.chainid == moonBeamChainId
+                    block.chainid == BASE_CHAIN_ID ||
+                        block.chainid == MOONBEAM_CHAIN_ID
                         ? "WORMHOLE_CORE_MOONBEAM"
                         : "WORMHOLE_CORE_MOONBASE",
-                    block.chainid == baseChainId ||
-                        block.chainid == moonBeamChainId
-                        ? moonBeamChainId
-                        : moonBaseChainId
+                    block.chainid == BASE_CHAIN_ID ||
+                        block.chainid == MOONBEAM_CHAIN_ID
+                        ? MOONBEAM_CHAIN_ID
+                        : MOONBASE_CHAIN_ID
                 )
             );
 
@@ -95,15 +94,15 @@ abstract contract CrossChainProposal is
                 (address[], uint256[], bytes[], string)
             );
 
-            address expectedAddress = block.chainid == baseChainId ||
-                block.chainid == moonBeamChainId
+            address expectedAddress = block.chainid == BASE_CHAIN_ID ||
+                block.chainid == MOONBEAM_CHAIN_ID
                 ? addresses.getAddress(
                     "WORMHOLE_CORE_MOONBEAM",
-                    moonBeamChainId
+                    MOONBEAM_CHAIN_ID
                 )
                 : addresses.getAddress(
                     "WORMHOLE_CORE_MOONBASE",
-                    moonBaseChainId
+                    MOONBASE_CHAIN_ID
                 );
             require(baseTargets.length == 1);
             require(
@@ -268,14 +267,13 @@ abstract contract CrossChainProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        /// CrossChainProposal is only used for proposals destined for
-        /// Base and Optimism. This is a temporary solution until we get rid of
-        /// CrossChainProposal.
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        // CrossChainProposal is only used for proposals that the primery type
+        // is Base, this is a temporary solution until we get rid of CrossChainProposal
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            sendingChainIdToReceivingChainId[block.chainid]
+            block.chainid.toBaseChainId()
         );
 
         uint256 proposalCount = onchainProposalId != 0
@@ -285,12 +283,12 @@ abstract contract CrossChainProposal is
         bytes memory proposalCalldata = getMultichainGovernorCalldata(
             temporalGovernor,
             addresses.getAddress(
-                block.chainid == moonBeamChainId
+                block.chainid == MOONBEAM_CHAIN_ID
                     ? "WORMHOLE_CORE_MOONBEAM"
                     : "WORMHOLE_CORE_MOONBASE",
-                block.chainid == moonBeamChainId
-                    ? moonBeamChainId
-                    : moonBaseChainId
+                block.chainid == MOONBEAM_CHAIN_ID
+                    ? MOONBEAM_CHAIN_ID
+                    : MOONBASE_CHAIN_ID
             )
         );
 
@@ -317,7 +315,7 @@ abstract contract CrossChainProposal is
             proposalCount--;
         }
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 
     /// @notice print the actions that will be executed by the proposal
@@ -365,14 +363,14 @@ abstract contract CrossChainProposal is
         printActions(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             /// if moonbeam or base use wormhole core on moonbeam, else use moonbase
-            block.chainid == moonBeamChainId || block.chainid == baseChainId
+            block.chainid == MOONBEAM_CHAIN_ID || block.chainid == BASE_CHAIN_ID
                 ? addresses.getAddress(
                     "WORMHOLE_CORE_MOONBEAM",
-                    moonBeamChainId
+                    MOONBEAM_CHAIN_ID
                 )
                 : addresses.getAddress(
                     "WORMHOLE_CORE_MOONBASE",
-                    moonBaseChainId
+                    MOONBASE_CHAIN_ID
                 )
         );
     }

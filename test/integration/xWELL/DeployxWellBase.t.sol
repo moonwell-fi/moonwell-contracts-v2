@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
-
+import {MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
@@ -12,8 +12,10 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {xwellDeployBase} from "@protocol/proposals/mips/mip-xwell/xwellDeployBase.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {Address} from "@utils/Address.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 
 contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
+    using ChainIds for uint256;
     using Address for address;
 
     /// @notice logic contract, not initializable
@@ -27,9 +29,6 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
 
     /// @notice amount of well to mint
     uint256 public constant startingWellAmount = 100_000 * 1e18;
-
-    uint16 public constant wormholeMoonbeamChainid =
-        uint16(moonBeamWormholeChainId);
 
     function setUp() public {
         addresses = new Addresses();
@@ -56,13 +55,13 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
             address(1),
             address(1),
             address(1),
-            wormholeMoonbeamChainid
+            MOONBEAM_WORMHOLE_CHAIN_ID
         );
     }
 
     function testSetup() public view {
         address externalChainAddress = wormholeAdapter.targetAddress(
-            wormholeMoonbeamChainid
+            MOONBEAM_WORMHOLE_CHAIN_ID
         );
         assertEq(
             externalChainAddress,
@@ -70,7 +69,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
             "incorrect target address config"
         );
         bytes32[] memory externalAddresses = wormholeAdapter.allTrustedSenders(
-            wormholeMoonbeamChainid
+            MOONBEAM_WORMHOLE_CHAIN_ID
         );
         assertEq(externalAddresses.length, 1, "incorrect trusted senders");
         assertEq(
@@ -80,7 +79,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         );
         assertTrue(
             wormholeAdapter.isTrustedSender(
-                uint16(wormholeMoonbeamChainid),
+                uint16(MOONBEAM_WORMHOLE_CHAIN_ID),
                 address(wormholeAdapter)
             ),
             "self on moonbeam not trusted sender"
@@ -94,7 +93,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
+        uint16 dstChainId = block.chainid.toMoonbeamWormholeChainId();
         uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
         vm.deal(user, cost);
@@ -132,7 +131,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
+        uint16 dstChainId = block.chainid.toMoonbeamWormholeChainId();
 
         bytes memory payload = abi.encode(user, mintAmount);
         bytes32 sender = address(wormholeAdapter).toBytes();

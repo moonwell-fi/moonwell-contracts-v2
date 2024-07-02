@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {Test} from "@forge-std/Test.sol";
 
 import {String} from "@utils/String.sol";
+import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
@@ -11,19 +12,10 @@ import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGove
 
 contract PostProposalCheck is Test {
     using String for string;
+    using ChainIds for uint256;
 
     /// @notice addresses contract
     Addresses public addresses;
-
-    /// @notice fork ID for moonbeam
-    uint256 public moonbeamForkId =
-        vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
-
-    /// @notice fork ID for base
-    uint256 public baseForkId = vm.createFork(vm.envString("BASE_RPC_URL"));
-
-    /// @notice fork ID for optimism
-    uint256 public optimismForkId = vm.createFork(vm.envString("OP_RPC_URL"));
 
     /// @notice  proposals array
     Proposal[] public proposals;
@@ -32,12 +24,13 @@ contract PostProposalCheck is Test {
     MultichainGovernor governor;
 
     function setUp() public virtual {
+        MOONBEAM_FORK_ID.createForksAndSelect();
+
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
         proposals = new Proposal[](2);
 
-        vm.selectFork(moonbeamForkId);
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
@@ -143,7 +136,7 @@ contract PostProposalCheck is Test {
         Proposal proposal = Proposal(deployCode(output));
         vm.makePersistent(address(proposal));
 
-        vm.selectFork(uint256(proposal.primaryForkId()));
+        vm.selectFork(proposal.primaryForkId());
 
         address deployer = address(this);
 

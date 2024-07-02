@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
-import {ChainIds} from "@test/utils/ChainIds.sol";
+import {OPTIMISM_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 
@@ -21,11 +21,11 @@ Remove --broadcast if you want to try locally first, without paying any gas.
 Substitute in the COMPOSITE_ORACLE address you want to use.
 */
 
-contract DeployConfigurableEthCompositeOracle is Script, ChainIds {
+contract DeployConfigurableEthCompositeOracle is Script {
     Addresses addresses;
 
     /// only allow deployment on optimism and optimism sepolia
-    uint256[] public chainIds = [optimismChainId, optimismSepoliaChainId];
+    uint256[] public chainIds = [OPTIMISM_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID];
 
     function setUp() public {
         addresses = new Addresses(chainIds);

@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {console} from "@forge-std/console.sol";
-import {ForkID} from "@utils/Enums.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
@@ -12,6 +11,7 @@ import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.so
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract TestProposalCalldataGeneration is Test {
     Addresses public addresses;
@@ -32,7 +32,7 @@ contract TestProposalCalldataGeneration is Test {
         vm.makePersistent(address(this));
         vm.makePersistent(address(addresses));
 
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
@@ -90,7 +90,7 @@ contract TestProposalCalldataGeneration is Test {
                 uint256[] memory onchainValues = new uint256[](values.length);
                 bytes[] memory onchainCalldatas = new bytes[](calldatas.length);
 
-                vm.selectFork(uint256(ForkID.Moonbeam));
+                vm.selectFork(MOONBEAM_FORK_ID);
 
                 (onchainTargets, onchainValues, onchainCalldatas) = governor
                     .getProposalData(proposalId);
@@ -177,7 +177,7 @@ contract TestProposalCalldataGeneration is Test {
                     abi.encode(targets, values, calldatas)
                 );
 
-                vm.selectFork(uint256(ForkID.Moonbeam));
+                vm.selectFork(MOONBEAM_FORK_ID);
 
                 address[] memory onchainTargets = new address[](targets.length);
                 uint256[] memory onchainValues = new uint256[](values.length);
@@ -245,8 +245,6 @@ contract TestProposalCalldataGeneration is Test {
                 vm.selectFork(uint256(proposalContract.primaryForkId()));
                 proposalContract.build(addresses);
 
-                vm.selectFork(uint256(ForkID.Moonbeam));
-
                 // get proposal actions
                 (
                     address[] memory targets,
@@ -258,6 +256,8 @@ contract TestProposalCalldataGeneration is Test {
                 bytes32 hash = keccak256(
                     abi.encode(targets, values, calldatas)
                 );
+
+                vm.selectFork(MOONBEAM_FORK_ID);
 
                 (
                     address[] memory onchainTargets,

@@ -7,11 +7,11 @@ import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID, BASE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {IMultichainGovernor} from "@protocol/governance/multichain/IMultichainGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {ForkID} from "@utils/Enums.sol";
 
 /// @notice DO NOT USE THIS IN PRODUCTION, this is a completely hypothetical example
 /// adds stkwell as reward streams, completely hypothetical situation that makes no sense and would not work in production
@@ -34,18 +34,18 @@ contract HybridProposalExample is
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function build(Addresses addresses) public override {
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
 
         /// action to call the Wormhole Core contract on Base from Moonbeam
         /// this is incorrect and will cause a failure in the HybridProposal contract
         /// due to no contract bytecode at this address
         _pushHybridAction(
-            addresses.getAddress("WORMHOLE_CORE_BASE", baseChainId),
+            addresses.getAddress("WORMHOLE_CORE_BASE", BASE_CHAIN_ID),
             abi.encodeWithSignature(
                 "publishMessage(uint32,bytes,uint8)",
                 0,
@@ -53,10 +53,10 @@ contract HybridProposalExample is
                 0
             ),
             "Call publish message on Base Wormhole Core with no data on Moonbeam",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(BASE_FORK_ID);
 
         /// ensure no existing reward configs have already been loaded from Configs.sol
         require(
@@ -102,26 +102,26 @@ contract HybridProposalExample is
                             config.mToken
                         )
                     ),
-                    ForkID.Base
+                    ActionType.Base
                 );
             }
         }
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(BASE_FORK_ID);
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         _runBase(addresses, temporalGovernor);
 
         // switch back to the base fork so we can run the validations
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
 
         IMultichainGovernor governor = IMultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
@@ -133,11 +133,10 @@ contract HybridProposalExample is
             "voting period not set correctly"
         );
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(BASE_FORK_ID);
 
-        /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            sendingChainIdToReceivingChainId[block.chainid]
+            block.chainid
         );
         MultiRewardDistributor distributor = MultiRewardDistributor(
             addresses.getAddress("MRD_PROXY")
@@ -190,6 +189,6 @@ contract HybridProposalExample is
             }
         }
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 }

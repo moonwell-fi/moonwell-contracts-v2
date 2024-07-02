@@ -4,12 +4,12 @@ import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensio
 
 import {console} from "@forge-std/console.sol";
 
-import {ForkID} from "@utils/Enums.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {ITimelock} from "@protocol/interfaces/ITimelock.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 abstract contract GovernanceProposal is Proposal {
     bool private DEBUG;
@@ -97,7 +97,7 @@ abstract contract GovernanceProposal is Proposal {
         Addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         MoonwellArtemisGovernor governorContract = MoonwellArtemisGovernor(
             governor

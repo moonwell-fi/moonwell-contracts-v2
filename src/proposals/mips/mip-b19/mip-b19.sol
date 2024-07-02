@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {MIPProposal} from "@proposals/MIPProposal.s.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {ForkID} from "@utils/Enums.sol";
 
 contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B19";
@@ -23,8 +23,8 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         onchainProposalId = 16;
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {}
@@ -47,7 +47,7 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B19")
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
@@ -56,7 +56,7 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             addresses.getAddress("MOONWELL_AERO"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_AERO")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_AERO_MIP_B19")
             ),
             "Set interest rate model for Moonwell AERO to updated rate model"
         );
@@ -90,7 +90,7 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         );
 
         _validateJRM(
-            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH"),
+            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B19"),
             addresses.getAddress("MOONWELL_WETH"),
             IRParams({
                 baseRatePerTimestamp: 0,
@@ -101,7 +101,7 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         );
 
         _validateJRM(
-            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_AERO"),
+            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_AERO_MIP_B19"),
             addresses.getAddress("MOONWELL_AERO"),
             IRParams({
                 baseRatePerTimestamp: 0,
