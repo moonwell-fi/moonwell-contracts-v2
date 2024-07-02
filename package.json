@@ -26,9 +26,9 @@
     },
     "homepage": "https://github.com/moonwell-fi/moonwell-contracts-v2#readme",
     "devDependencies": {
-        "husky": "^9.0.10",
-        "prettier": "^3.2.4",
-        "lint-staged": "^14.0.1"
+        "husky": "9.0.10",
+        "prettier": "3.2.4",
+        "lint-staged": "14.0.1"
     },
     "lint-staged": {
         "*.sol": "forge fmt",
