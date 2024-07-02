@@ -29,6 +29,5 @@ Makefile
 *.sh
 *.pdf
 *.lock
+*.sol
 
-# temporarily
-test/unit/SystemUpgrade.t.sol
