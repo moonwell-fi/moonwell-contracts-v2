@@ -3,6 +3,7 @@ description: "Set up the pre-compiled environment"
 
 runs:
   using: "composite"
+  runs-on: self-hosted
   steps:
     - name: Checkout the repository
       uses: actions/checkout@v2
