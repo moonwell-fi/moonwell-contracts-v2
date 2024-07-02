@@ -39,7 +39,9 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         uint8 consistencyLevel
     );
 
-    function setUp() public {
+    function setUp() public {}
+
+    function test_setUp() public {
         MOONBEAM_FORK_ID.createForksAndSelect();
 
         addresses = new Addresses();
@@ -93,9 +95,14 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                 address well = addresses.getAddress("xWELL_PROXY");
                 vm.warp(voteSnapshotTimestamp - 1);
                 deal(well, address(this), governorContract.quorum());
-                xWELL(well).delegate(address(this));
+
+                address delegatee = xWELL(well).delegates(address(this));
+                if (delegatee != address(0)) {
+                    xWELL(well).delegate(delegatee);
+                }
 
                 vm.warp(votingStartTime);
+
                 governorContract.castVote(proposalId, 0);
                 vm.warp(crossChainVoteCollectionEndTimestamp + 1);
             }
