@@ -129,9 +129,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
                 addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
-                block.chainid == OPTIMISM_CHAIN_ID
-                    ? TEMPORAL_GOV_DELAY_MAINNET
-                    : TEMPORAL_GOV_DELAY_TESTNET, /// get timelock period for deployment chain is on
+                temporalGovDelay[block.chainid], /// get timelock period for deployment chain is on
                 permissionlessUnpauseTime,
                 trustedSenders
             );
@@ -520,12 +518,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             governor.owner(),
             addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
         );
-        assertEq(
-            block.chainid == OPTIMISM_CHAIN_ID
-                ? TEMPORAL_GOV_DELAY_MAINNET
-                : TEMPORAL_GOV_DELAY_TESTNET,
-            governor.proposalDelay()
-        );
+        assertEq(temporalGovDelay[block.chainid], governor.proposalDelay());
 
         if (block.chainid == OPTIMISM_CHAIN_ID) {
             assertEq(

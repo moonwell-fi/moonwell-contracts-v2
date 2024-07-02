@@ -9,7 +9,7 @@ import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
-import {BASE_CHAIN_ID, BASE_SEPOLIA_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID, LOCAL_CHAIN_ID} from "@utils/ChainIds.sol";
+import "@utils/ChainIds.sol";
 
 contract Configs is Test {
     struct CTokenConfiguration {
@@ -48,11 +48,18 @@ contract Configs is Test {
     /// mapping of all emission configs per chainid
     mapping(uint256 => EmissionConfig[]) public emissions;
 
-    uint256 public constant TEMPORAL_GOV_DELAY_MAINNET = 1 days;
-    uint256 public constant TEMPORAL_GOV_DELAY_TESTNET = 0; // no delay
+    mapping(uint256 chainId => uint256 delay) public temporalGovDelay;
 
     /// @notice initial mToken mint amount
     uint256 public constant initialMintAmount = 1 ether;
+
+    constructor() {
+        temporalGovDelay[BASE_CHAIN_ID] = 1 days;
+        temporalGovDelay[OPTIMISM_CHAIN_ID] = 1 days;
+        temporalGovDelay[OPTIMISM_SEPOLIA_CHAIN_ID] = 0 days;
+        temporalGovDelay[LOCAL_CHAIN_ID] = 0 days;
+        temporalGovDelay[BASE_SEPOLIA_CHAIN_ID] = 0 days;
+    }
 
     function _setEmissionConfiguration(string memory emissionPath) internal {
         string memory fileContents = vm.readFile(emissionPath);
