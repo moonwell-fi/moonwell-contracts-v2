@@ -39,9 +39,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         uint8 consistencyLevel
     );
 
-    function setUp() public {}
-
-    function test_setUp() public {
+    function setUp() public {
         MOONBEAM_FORK_ID.createForksAndSelect();
 
         addresses = new Addresses();
