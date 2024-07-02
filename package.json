@@ -14,7 +14,7 @@
         "lint:solidity": "forge fmt --check"
         "lint:solidity:fix": "forge fmt",
         "lint:javascript": "prettier --ignore-path .prettierignore --list-different .",
-        "lint:javascript:fix": "prettier --ignore-path .prettierignore --write .",
+        "lint:javascript:fix": "prettier --ignore-path .prettierignore --write ."
     },
     "repository": {
         "type": "git",
