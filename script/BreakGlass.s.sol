@@ -266,5 +266,5 @@ contract BreakGlass is Script, HybridProposal {
             );
     }
 
-    function validate(Addresses, address) public pure override {}
+    function validate(Addresses, address) public view override {}
 }
