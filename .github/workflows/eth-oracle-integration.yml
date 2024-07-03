@@ -8,7 +8,7 @@ env:
 jobs:
   run-eth-mainnet-tests:
     name: eth-oracle-integration-tests
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
