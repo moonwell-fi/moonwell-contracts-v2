@@ -9,7 +9,6 @@ import "@forge-std/Test.sol";
 import "@protocol/utils/Constants.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
-import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Address} from "@utils/Address.sol";
@@ -22,7 +21,7 @@ import {MWethDelegate} from "@protocol/MWethDelegate.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ChainIdHelper} from "@protocol/utils/ChainIdHelper.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
@@ -33,6 +32,7 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
+import {ChainIds as ChainIdLib, OPTIMISM_CHAIN_ID, OPTIMISM_FORK_ID, BASE_FORK_ID, BASE_CHAIN_ID, BASE_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /*
 
@@ -44,6 +44,7 @@ DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol
 
 contract mipo00 is HybridProposal, Configs {
     using Address for address;
+    using ChainIdLib for uint256;
 
     string public constant override name = "MIP-O00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
@@ -99,8 +100,8 @@ contract mipo00 is HybridProposal, Configs {
 
     /// @dev change this if wanting to deploy to a different chain
     /// double check addresses and change the WORMHOLE_CORE to the correct chain
-    function primaryForkId() public pure override returns (ForkID) {
-        return ActionType.Optimism;
+    function primaryForkId() public pure override returns (uint256) {
+        return OPTIMISM_FORK_ID;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
@@ -134,10 +135,13 @@ contract mipo00 is HybridProposal, Configs {
 
             addresses.addRestriction(moonBeamChainId);
             /// this should return the moonbeam/moonbase wormhole chain id
-            trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid];
+            trustedSenders[0].chainId = block
+                .chainid
+                .toMoonbeamWormholeChainId();
             trustedSenders[0].addr = addresses.getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
-                ChainIdHelper.toMoonbeamChainId(block.chainid)
+                /// this should return the moonbeam/moonbase chain id
+                block.chainid.toMoonbeamChainId()
             );
 
             /// disallow getting any addreses from moonbeam from this point forward
@@ -146,7 +150,7 @@ contract mipo00 is HybridProposal, Configs {
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
                 addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
-                chainIdTemporalGovTimelock[block.chainid], /// get timelock period for deployment chain is on
+                temporalGovDelay[block.chainid], /// get timelock period for deployment chain is on
                 permissionlessUnpauseTime,
                 trustedSenders
             );
@@ -585,12 +589,9 @@ contract mipo00 is HybridProposal, Configs {
             governor.owner(),
             addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
         );
-        assertEq(
-            chainIdTemporalGovTimelock[block.chainid],
-            governor.proposalDelay()
-        );
+        assertEq(temporalGovDelay[block.chainid], governor.proposalDelay());
 
-        if (block.chainid == optimismChainId) {
+        if (block.chainid == OPTIMISM_CHAIN_ID) {
             assertEq(
                 governor.proposalDelay(),
                 1 days,
@@ -747,11 +748,11 @@ contract mipo00 is HybridProposal, Configs {
         addresses.addRestriction(moonBeamChainId);
         assertTrue(
             governor.isTrustedSender(
-                chainIdToWormHoleId[block.chainid],
+                block.chainid.toMoonbeamWormholeChainId(),
                 addresses
                     .getAddress(
                         "MULTICHAIN_GOVERNOR_PROXY",
-                        ChainIdHelper.toMoonbeamChainId(block.chainid)
+                        block.chainid.toMoonbeamChainId()
                     )
                     .toBytes()
             ),
@@ -761,7 +762,7 @@ contract mipo00 is HybridProposal, Configs {
 
         assertEq(
             governor
-                .allTrustedSenders(chainIdToWormHoleId[block.chainid])
+                .allTrustedSenders(block.chainid.toMoonbeamWormholeChainId())
                 .length,
             1,
             "multichain governor incorrect trusted sender count from Moonbeam"

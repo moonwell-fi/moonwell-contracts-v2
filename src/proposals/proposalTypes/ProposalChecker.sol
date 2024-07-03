@@ -7,6 +7,7 @@ import {ChainIds} from "@test/utils/ChainIds.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {AddressToString} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 abstract contract ProposalChecker is ChainIds {
     using AddressToString for address;
@@ -16,8 +17,8 @@ abstract contract ProposalChecker is ChainIds {
     /// @param targets the list of targets for the Moonbeam actions
     function checkMoonbeamActions(address[] memory targets) public view {
         require(
-            moonBeamChainId == block.chainid ||
-                moonBaseChainId == block.chainid,
+            MOONBEAM_CHAIN_ID == block.chainid ||
+                MOONBASE_CHAIN_ID == block.chainid,
             "cannot run Moonbeam checks on non-Moonbeam network"
         );
 
@@ -92,11 +93,11 @@ abstract contract ProposalChecker is ChainIds {
     ) public view {
         address wormholeCoreMoonbase = addresses.getAddress(
             "WORMHOLE_CORE",
-            moonBaseChainId
+            MOONBASE_CHAIN_ID
         );
         address wormholeCoreMoonbeam = addresses.getAddress(
             "WORMHOLE_CORE",
-            moonBeamChainId
+            MOONBEAM_CHAIN_ID
         );
 
         for (uint256 i = 0; i < moonbeamActions.length; i++) {

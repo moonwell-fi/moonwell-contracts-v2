@@ -5,14 +5,14 @@ import "@forge-std/Test.sol";
 
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
-import {ForkID} from "@utils/Enums.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {Configs} from "@proposals/Configs.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
@@ -31,8 +31,8 @@ contract mip02 is HybridProposal, Configs {
         address unitroller;
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ActionType.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as

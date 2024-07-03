@@ -4,11 +4,11 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b20/mip-b20.sol:mipb20
@@ -27,8 +27,8 @@ contract mipb20 is HybridProposal, Configs, ParameterValidation {
         onchainProposalId = 19;
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ActionType.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {}

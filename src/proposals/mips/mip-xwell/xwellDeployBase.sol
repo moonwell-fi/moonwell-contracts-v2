@@ -9,17 +9,19 @@ import "@protocol/utils/Constants.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {ChainIds, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// how to run locally:
 ///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployBase.sol:xwellDeployBase --fork-url base
 /// @dev do not use MIP as a base to fork off of, it will not work
 contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
+    using ChainIds for uint256;
+
     /// @notice the name of the proposal
     string public constant override name = "MIP xWELL Token Creation Base";
 
@@ -36,8 +38,8 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ActionType.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {
@@ -84,7 +86,7 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
                 xwellProxy,
                 temporalGov,
                 relayer,
-                uint16(chainIdToWormHoleId[block.chainid])
+                block.chainid.toMoonbeamWormholeChainId()
             );
 
             addresses.addAddress(
@@ -98,7 +100,7 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
             addresses.addAddress("xWELL_LOGIC", xwellLogic);
             addresses.addAddress("xWELL_PROXY", xwellProxy);
 
-            printAddresses(addresses);
+            _printAddresses(addresses);
             addresses.resetRecordingAddresses();
         }
     }
@@ -190,7 +192,7 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
             );
             assertTrue(
                 WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
-                    uint16(chainIdToWormHoleId[block.chainid]),
+                    block.chainid.toMoonbeamWormholeChainId(),
                     wormholeAdapter
                 ),
                 "trusted sender not trusted"
@@ -228,7 +230,7 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
         }
     }
 
-    function printAddresses(Addresses addresses) private view {
+    function _printAddresses(Addresses addresses) private view {
         (
             string[] memory recordedNames,
             ,

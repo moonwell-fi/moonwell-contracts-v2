@@ -3,10 +3,10 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ForkID} from "@utils/Enums.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -31,8 +31,8 @@ contract mipb07 is HybridProposal, Configs {
         onchainProposalId = 55;
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ActionType.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {}

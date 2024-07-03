@@ -5,11 +5,13 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 import {Test} from "@forge-std/Test.sol";
 
-import {ForkID} from "@utils/Enums.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 import {ChainIdHelper} from "@protocol/utils/ChainIdHelper.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 abstract contract Proposal is Script, Test {
+    using ChainIds for uint256;
+
     bool private DEBUG;
     bool private DO_DEPLOY;
     bool private DO_AFTER_DEPLOY;
@@ -37,14 +39,12 @@ abstract contract Proposal is Script, Test {
     }
 
     function run() public virtual {
-        vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
-        vm.createFork(vm.envString("BASE_RPC_URL"));
-        vm.createFork(vm.envString("OP_RPC_URL"));
+        primaryForkId().createForksAndSelect();
 
         Addresses addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
 
         vm.startBroadcast();
 
@@ -85,7 +85,7 @@ abstract contract Proposal is Script, Test {
         }
     }
 
-    function primaryForkId() public pure virtual returns (ForkID);
+    function primaryForkId() public pure virtual returns (uint256);
 
     function name() external view virtual returns (string memory);
 

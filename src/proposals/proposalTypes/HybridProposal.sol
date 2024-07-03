@@ -7,10 +7,9 @@ import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 import "@forge-std/Test.sol";
 
 import "@protocol/utils/Constants.sol";
+import "@utils/ChainIds.sol";
 
-import {ForkID} from "@utils/Enums.sol";
 import {Address} from "@utils/Address.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {ChainIdHelper} from "@protocol/utils/ChainIdHelper.sol";
@@ -22,6 +21,12 @@ import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
+enum ActionType {
+    Moonbeam,
+    Base,
+    Optimism
+}
+
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
 /// This is a bit wonky because we are trying to simulate
@@ -30,13 +35,13 @@ import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/mult
 /// We also need to have references to both networks in the proposal
 /// to switch between forks.
 abstract contract HybridProposal is
-    ChainIds,
     Proposal,
     ProposalChecker,
     MarketCreationHook
 {
     using Strings for string;
     using Address for address;
+    using ChainIds for uint256;
 
     /// @notice nonce for wormhole, unused by Temporal Governor
     uint32 public nonce = 0;
@@ -84,7 +89,7 @@ abstract contract HybridProposal is
     ) internal {
         uint256 fork = vm.activeFork();
         require(fork <= 2, "Invalid active fork");
-        _pushAction(target, 0, data, description, ForkID(fork));
+        _pushAction(target, 0, data, description, ActionType(fork));
     }
 
     /// @notice push an action to the Hybrid proposal
@@ -96,7 +101,7 @@ abstract contract HybridProposal is
         address target,
         bytes memory data,
         string memory description,
-        ForkID proposalType
+        ActionType proposalType
     ) internal {
         _pushAction(target, 0, data, description, proposalType);
     }
@@ -112,7 +117,7 @@ abstract contract HybridProposal is
         uint256 value,
         bytes memory data,
         string memory description,
-        ForkID proposalType
+        ActionType proposalType
     ) internal {
         if (proposalType == ActionType.Moonbeam) {
             moonbeamActions.push(
@@ -160,7 +165,7 @@ abstract contract HybridProposal is
     function _pushAction(
         address target,
         bytes memory data,
-        ForkID proposalType
+        ActionType proposalType
     ) internal {
         _pushAction(target, 0, data, "", proposalType);
     }
@@ -178,7 +183,7 @@ abstract contract HybridProposal is
             address[] memory,
             uint256[] memory,
             bytes[] memory,
-            ForkID[] memory,
+            ActionType[] memory,
             string[] memory
         )
     {
@@ -194,7 +199,7 @@ abstract contract HybridProposal is
             moonbeamActions.length + baseActions.length + optimismActions.length
         );
 
-        ForkID[] memory network = new ForkID[](
+        ActionType[] memory network = new ActionType[](
             moonbeamActions.length + baseActions.length + optimismActions.length
         );
 
@@ -412,7 +417,7 @@ abstract contract HybridProposal is
             address[] memory targets,
             uint256[] memory values,
             bytes[] memory calldatas,
-            ForkID[] memory network,
+            ActionType[] memory network,
             string[] memory descriptions
         ) = getProposalActionSteps();
 
@@ -510,7 +515,7 @@ abstract contract HybridProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        vm.selectFork(uint256(ActionType.Moonbeam));
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         uint256 proposalCount = onchainProposalId != 0
             ? onchainProposalId
@@ -542,7 +547,7 @@ abstract contract HybridProposal is
             proposalCount--;
         }
 
-        vm.selectFork(uint256(primaryForkId()));
+        vm.selectFork(primaryForkId());
     }
 
     /// @notice Runs the proposal on moonbeam, verifying the actions through the hook
@@ -868,7 +873,7 @@ abstract contract HybridProposal is
         bytes32 governor = addresses
             .getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
-                ChainIdHelper.toMoonbeamChainId(block.chainid)
+                block.chainid.toMoonbeamChainId()
             )
             .toBytes();
 

@@ -5,7 +5,6 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
@@ -20,6 +19,7 @@ import {MaliciousBorrower} from "@test/mock/MaliciousBorrower.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// verify that the new MWETH Delegate and Unwrapper are working as expected
 contract WETHPostProposalCheck is Configs, PostProposalCheck {
@@ -33,7 +33,7 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(uint256(ActionType.Base));
+        vm.selectFork(BASE_FORK_ID);
 
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mToken = MErc20Delegator(

@@ -5,16 +5,17 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
+
+import "@utils/ChainIds.sol";
 import "@protocol/utils/Constants.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// how to run locally:
 ///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployOptimism.sol:xwellDeployOptimism
@@ -36,8 +37,8 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ActionType.Optimism;
+    function primaryForkId() public pure override returns (uint256) {
+        return OPTIMISM_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {

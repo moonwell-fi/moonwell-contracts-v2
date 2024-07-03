@@ -6,12 +6,12 @@ import "@forge-std/Test.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@protocol/proposals/utils/ProxyUtils.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {BASE_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Base to create the Multichain Vote Collection Contract
 /// As well as the Ecosystem Reserve and Ecosystem Reserve Controller.
@@ -28,6 +28,8 @@ import {ForkID} from "@utils/Enums.sol";
 /// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, STK_GOVTOKEN, STK_GOVTOKEN_IMPL
 /// and xWELL_PROXY must be added to the addresses.json file.
 contract mipm23b is HybridProposal, MultichainGovernorDeploy {
+    using ChainIds for uint256;
+
     /// @notice deployment of the Multichain Vote Collection Contract to Base
     string public constant override name = "MIP-M23B";
 
@@ -44,8 +46,8 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
     /// @notice approval amount for ecosystem reserve to give stkWELL in xWELL xD
     uint256 public constant approvalAmount = 5_000_000_000 * 1e18;
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ActionType.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {
@@ -97,12 +99,12 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             ) = deployVoteCollection(
                     addresses.getAddress("xWELL_PROXY"),
                     addresses.getAddress("STK_GOVTOKEN"),
-                    addresses.getAddress( /// fetch multichain governor address on Moonbeam
-                            "MULTICHAIN_GOVERNOR_PROXY",
-                            sendingChainIdToReceivingChainId[block.chainid]
-                        ),
+                    addresses.getAddress(
+                        "MULTICHAIN_GOVERNOR_PROXY",
+                        block.chainid.toMoonbeamChainId()
+                    ), /// fetch multichain governor address on Moonbeam
                     addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                    chainIdToWormHoleId[block.chainid],
+                    block.chainid.toMoonbeamWormholeChainId(),
                     proxyAdmin,
                     addresses.getAddress("TEMPORAL_GOVERNOR")
                 );
@@ -340,7 +342,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             );
             assertEq(
                 voteCollection.getAllTargetChains()[0],
-                chainIdToWormHoleId[block.chainid],
+                block.chainid.toMoonbeamWormholeChainId(),
                 "incorrect target chain, not moonbeam"
             );
             assertEq(
@@ -351,21 +353,21 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
             assertEq(
                 voteCollection.targetAddress(
-                    chainIdToWormHoleId[block.chainid]
+                    block.chainid.toMoonbeamWormholeChainId()
                 ),
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
-                    sendingChainIdToReceivingChainId[block.chainid]
+                    block.chainid.toMoonbeamChainId()
                 ),
                 "target address not multichain governor on moonbeam"
             );
 
             assertTrue(
                 voteCollection.isTrustedSender(
-                    chainIdToWormHoleId[block.chainid],
+                    block.chainid.toMoonbeamWormholeChainId(),
                     addresses.getAddress(
                         "MULTICHAIN_GOVERNOR_PROXY",
-                        sendingChainIdToReceivingChainId[block.chainid]
+                        block.chainid.toMoonbeamChainId()
                     )
                 ),
                 "multichain governor not trusted sender"

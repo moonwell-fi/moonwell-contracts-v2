@@ -7,13 +7,13 @@ import "@forge-std/Test.sol";
 import "@protocol/utils/Constants.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
-contract xWellRouterTest is Test, ChainIds {
+contract xWellRouterTest is Test {
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
 
@@ -42,7 +42,7 @@ contract xWellRouterTest is Test, ChainIds {
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
     uint16 public constant wormholeMoonbeamChainid =
-        uint16(moonBeamWormholeChainId);
+        uint16(MOONBEAM_WORMHOLE_CHAIN_ID);
 
     /// @notice event emitted when WELL is bridged to xWELL via the base chain
     event BridgeOutSuccess(address indexed to, uint256 amount);
@@ -90,7 +90,7 @@ contract xWellRouterTest is Test, ChainIds {
         );
         assertEq(
             router.baseWormholeChainId(),
-            baseWormholeChainId,
+            BASE_WORMHOLE_CHAIN_ID,
             "Base wormhole chain id incorrect"
         );
     }

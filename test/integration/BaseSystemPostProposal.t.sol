@@ -6,7 +6,6 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "@forge-std/Test.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
-import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
@@ -20,6 +19,7 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     MultiRewardDistributor mrd;
@@ -32,7 +32,7 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(uint256(ActionType.Base));
+        vm.selectFork(BASE_FORK_ID);
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         well = addresses.getAddress("GOVTOKEN");

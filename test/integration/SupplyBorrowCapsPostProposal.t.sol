@@ -5,7 +5,6 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {ForkID} from "@utils/Enums.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
@@ -13,6 +12,7 @@ import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     Comptroller comptroller;
@@ -32,7 +32,7 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(uint256(ActionType.Base));
+        vm.selectFork(BASE_FORK_ID);
 
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mUSDbC = MErc20(addresses.getAddress("MOONWELL_USDBC"));

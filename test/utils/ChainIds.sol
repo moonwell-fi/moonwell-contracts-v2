@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "@protocol/utils/Constants.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 
 abstract contract ChainIds {
     /// @notice map a sending chain id to a wormhole chain id

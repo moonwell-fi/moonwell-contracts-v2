@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {MWethDelegate} from "@protocol/MWethDelegate.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// how to generate calldata:
 /// first set up environment variables:
@@ -41,8 +41,8 @@ contract mipb02 is HybridProposal, Configs {
         nonce = 2;
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ActionType.Base;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers

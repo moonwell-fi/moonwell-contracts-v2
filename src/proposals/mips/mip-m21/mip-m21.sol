@@ -3,13 +3,14 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ForkID} from "@utils/Enums.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
+import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipm21 is GovernanceProposal {
+    using ChainIds for uint256;
     string public constant override name = "MIP-M21";
 
     constructor() {
@@ -21,8 +22,8 @@ contract mipm21 is GovernanceProposal {
         onchainProposalId = 77;
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ActionType.Moonbeam;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {

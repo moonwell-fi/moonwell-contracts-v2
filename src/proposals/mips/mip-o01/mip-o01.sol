@@ -4,25 +4,24 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 import "@protocol/utils/Constants.sol";
 
+import "@utils/ChainIds.sol";
+
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {ForkID} from "@utils/Enums.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ChainIdHelper} from "@protocol/utils/ChainIdHelper.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 
 /*
-
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
 DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o01/mip-o01.sol:mipo01 \
  -vvv
-
 */
 
 /// NONCE ORDER:
@@ -42,6 +41,8 @@ DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o01/mip-o01.sol
 /// - stkWELL contracts have no reward speeds set
 /// - xERC20 contract works as expected and only has a single trusted bridge on each chain
 contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
+    using ChainIds for uint256;
+
     string public constant override name = "MIP-O01";
 
     /// @notice cooldown window to withdraw staked WELL to xWELL
@@ -65,8 +66,8 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
         _setProposalDescription(proposalDescription);
     }
 
-    function primaryForkId() public pure override returns (ForkID) {
-        return ActionType.Optimism;
+    function primaryForkId() public pure override returns (uint256) {
+        return OPTIMISM_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {
