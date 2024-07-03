@@ -38,7 +38,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
 
         vm.selectFork(moonbeamForkId);
 
-        wormhole = IWormhole(addresses.getAddress("WORMHOLE_CORE_MOONBEAM"));
+        wormhole = IWormhole(addresses.getAddress("WORMHOLE_CORE"));
         vm.makePersistent(address(wormhole));
 
         well = ERC20Votes(addresses.getAddress("GOVTOKEN"));
@@ -82,7 +82,7 @@ contract CrossChainPublishMessageTest is Test, ChainIds, PostProposalCheck {
 
             /// this returns the moonbeam address as block.chainid is base/base sepolia
             address wormholeCore = addresses.getAddress(
-                "WORMHOLE_CORE_MOONBEAM",
+                "WORMHOLE_CORE",
                 sendingChainIdToReceivingChainId[block.chainid]
             );
 
