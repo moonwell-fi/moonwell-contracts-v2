@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import "@protocol/utils/Constants.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {Bytes} from "@utils/Bytes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
@@ -75,7 +75,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                 bytes[] memory calldatas
             ) = governorContract.getProposalData(proposalId);
 
-            addresses.addRestriction(moonBeamChainId);
+            addresses.addRestriction(MOONBEAM_CHAIN_ID);
 
             checkMoonbeamActions(targets);
             {

@@ -1,7 +1,8 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import "@protocol/utils/Constants.sol";
+import {LOCAL_CHAIN_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, OPTIMISM_CHAIN_ID, MOONBASE_CHAIN_ID, BASE_SEPOLIA_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_CHAIN_ID, OPTIMISM_WORMHOLE_CHAIN_ID, MOONBASE_WORMHOLE_CHAIN_ID, BASE_WORMHOLE_SEPOLIA_CHAIN_ID, OPTIMISM_WORMHOLE_SEPOLIA_CHAIN_ID, MOONBASE_WORMHOLE_CHAIN_ID} from "@protocol/utils/ChainIds.sol";
+
 import {ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 
 abstract contract ChainIds {
@@ -15,48 +16,55 @@ abstract contract ChainIds {
     /// @notice map a chain id to a temporal gov timelock period
     mapping(uint256 => uint256) public chainIdTemporalGovTimelock;
 
+    /// @notice allow logging of proposal type in HybridProposal
     mapping(uint256 => string) public chainForkToName;
 
     /// @notice a mapping of chain ids that are not moonbeam/moonbase chain ids
     mapping(uint256 => bool) public nonMoonbeamChainIds;
 
     constructor() {
-        chainIdToWormHoleId[baseSepoliaChainId] = moonBaseWormholeChainId; /// base deployment is owned by moonbeam governance
-        chainIdToWormHoleId[optimismSepoliaChainId] = moonBaseWormholeChainId; /// optimism deployment is owned by moonbeam governance
+        chainIdToWormHoleId[BASE_SEPOLIA_CHAIN_ID] = MOONBASE_WORMHOLE_CHAIN_ID; /// base deployment is owned by moonbeam governance
+        chainIdToWormHoleId[
+            OPTIMISM_SEPOLIA_CHAIN_ID
+        ] = MOONBASE_WORMHOLE_CHAIN_ID; /// optimism deployment is owned by moonbeam governance
 
-        chainIdToWormHoleId[optimismChainId] = moonBeamWormholeChainId; /// optimism deployment is owned by moonbeam governance
-        chainIdToWormHoleId[baseChainId] = moonBeamWormholeChainId; /// base deployment is owned by moonbeam governance
-        chainIdToWormHoleId[moonBeamChainId] = baseWormholeChainId; /// moonbeam goes to base
-        chainIdToWormHoleId[moonBaseChainId] = baseSepoliaWormholeChainId; /// moonbase goes to base
-
-        sendingChainIdToReceivingChainId[baseSepoliaChainId] = moonBaseChainId; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
-        sendingChainIdToReceivingChainId[moonBaseChainId] = baseSepoliaChainId;
-
-        sendingChainIdToReceivingChainId[baseChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking base, and sending from moonbeam
-        sendingChainIdToReceivingChainId[moonBeamChainId] = baseChainId;
-
-        sendingChainIdToReceivingChainId[optimismChainId] = moonBeamChainId; /// simulate a cross chain proposal by forking optimism, and sending from moonbeam
+        chainIdToWormHoleId[OPTIMISM_CHAIN_ID] = MOONBEAM_WORMHOLE_CHAIN_ID; /// optimism deployment is owned by moonbeam governance
+        chainIdToWormHoleId[BASE_CHAIN_ID] = MOONBEAM_WORMHOLE_CHAIN_ID; /// base deployment is owned by moonbeam governance
+        chainIdToWormHoleId[MOONBEAM_CHAIN_ID] = BASE_WORMHOLE_CHAIN_ID; /// moonbeam goes to base
+        chainIdToWormHoleId[MOONBASE_CHAIN_ID] = BASE_WORMHOLE_SEPOLIA_CHAIN_ID; /// moonbase goes to base
 
         sendingChainIdToReceivingChainId[
-            optimismSepoliaChainId
-        ] = moonBaseChainId; /// simulate a cross chain proposal by forking optimism testnet, and sending from moonbase testnet
+            BASE_SEPOLIA_CHAIN_ID
+        ] = MOONBASE_CHAIN_ID; /// simulate a cross chain proposal by forking base testnet, and sending from moonbase testnet
+        sendingChainIdToReceivingChainId[
+            MOONBASE_CHAIN_ID
+        ] = BASE_SEPOLIA_CHAIN_ID;
 
-        sendingChainIdToReceivingChainId[localChainId] = localChainId; // unit tests
+        sendingChainIdToReceivingChainId[BASE_CHAIN_ID] = MOONBEAM_CHAIN_ID; /// simulate a cross chain proposal by forking base, and sending from moonbeam
+        sendingChainIdToReceivingChainId[MOONBEAM_CHAIN_ID] = BASE_CHAIN_ID;
 
-        chainIdTemporalGovTimelock[baseSepoliaChainId] = 0; /// no wait on testnet
-        chainIdTemporalGovTimelock[baseChainId] = 1 days;
+        sendingChainIdToReceivingChainId[OPTIMISM_CHAIN_ID] = MOONBEAM_CHAIN_ID; /// simulate a cross chain proposal by forking optimism, and sending from moonbeam
 
-        chainIdTemporalGovTimelock[optimismSepoliaChainId] = 0; /// no wait on testnet
-        chainIdTemporalGovTimelock[optimismChainId] = 1 days;
+        sendingChainIdToReceivingChainId[
+            OPTIMISM_SEPOLIA_CHAIN_ID
+        ] = MOONBASE_CHAIN_ID; /// simulate a cross chain proposal by forking optimism testnet, and sending from moonbase testnet
+
+        sendingChainIdToReceivingChainId[LOCAL_CHAIN_ID] = LOCAL_CHAIN_ID; // unit tests
+
+        chainIdTemporalGovTimelock[BASE_SEPOLIA_CHAIN_ID] = 0; /// no wait on testnet
+        chainIdTemporalGovTimelock[BASE_CHAIN_ID] = 1 days;
+
+        chainIdTemporalGovTimelock[OPTIMISM_SEPOLIA_CHAIN_ID] = 0; /// no wait on testnet
+        chainIdTemporalGovTimelock[OPTIMISM_CHAIN_ID] = 1 days;
 
         chainForkToName[uint256(ActionType.Moonbeam)] = "Moonbeam";
         chainForkToName[uint256(ActionType.Base)] = "Base";
         chainForkToName[uint256(ActionType.Optimism)] = "Optimism";
 
-        nonMoonbeamChainIds[baseSepoliaChainId] = true;
-        nonMoonbeamChainIds[baseChainId] = true;
+        nonMoonbeamChainIds[BASE_SEPOLIA_CHAIN_ID] = true;
+        nonMoonbeamChainIds[BASE_CHAIN_ID] = true;
 
-        nonMoonbeamChainIds[optimismSepoliaChainId] = true;
-        nonMoonbeamChainIds[optimismChainId] = true;
+        nonMoonbeamChainIds[OPTIMISM_SEPOLIA_CHAIN_ID] = true;
+        nonMoonbeamChainIds[OPTIMISM_CHAIN_ID] = true;
     }
 }

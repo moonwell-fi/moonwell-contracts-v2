@@ -5,15 +5,15 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
-import "@protocol/utils/Constants.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {ChainIds, BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// how to run locally:

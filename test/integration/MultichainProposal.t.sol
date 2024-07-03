@@ -9,7 +9,7 @@ import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import "@forge-std/Test.sol";
 
-import "@protocol/utils/Constants.sol";
+import "@protocol/utils/ChainIds.sol";
 import "@utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
@@ -113,7 +113,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         voteCollection = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY", BASE_CHAIN_ID)
         );
-        addresses.addRestriction(moonBeamChainId);
+        addresses.addRestriction(MOONBEAM_CHAIN_ID);
         wormhole = IWormhole(
             addresses.getAddress("WORMHOLE_CORE_MOONBEAM", MOONBEAM_CHAIN_ID)
         );

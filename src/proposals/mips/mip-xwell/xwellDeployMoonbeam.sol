@@ -2,11 +2,10 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
-import "@protocol/utils/Constants.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";

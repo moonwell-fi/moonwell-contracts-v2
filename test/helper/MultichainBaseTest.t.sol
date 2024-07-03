@@ -4,8 +4,6 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 
 import "@forge-std/Test.sol";
 
-import "@protocol/utils/Constants.sol";
-
 import {Well} from "@protocol/governance/Well.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {ChainIds} from "@test/utils/ChainIds.sol";

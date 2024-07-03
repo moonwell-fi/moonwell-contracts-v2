@@ -3,13 +3,13 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// This MIP sets the reward speeds for different markets in the MultiRewardDistributor
 /// contract. It is intended to be used as a template for future MIPs that need to set reward speeds.

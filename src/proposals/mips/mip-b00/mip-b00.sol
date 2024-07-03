@@ -6,7 +6,7 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
-import "@protocol/utils/Constants.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
@@ -17,7 +17,7 @@ import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
@@ -26,7 +26,7 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {ChainIds as ChainIdLib, OPTIMISM_CHAIN_ID, BASE_FORK_ID, BASE_CHAIN_ID, BASE_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
+import {ChainIds as ChainIdLib, BASE_FORK_ID, BASE_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
 
 contract mipb00 is HybridProposal, Configs {
     using Address for address;

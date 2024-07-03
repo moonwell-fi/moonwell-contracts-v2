@@ -3,8 +3,6 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import "@protocol/utils/Constants.sol";
-
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
@@ -47,7 +45,7 @@ contract HybridProposalExample is
         /// this is incorrect and will cause a failure in the HybridProposal contract
         /// due to no contract bytecode at this address
         _pushAction(
-            addresses.getAddress("WORMHOLE_CORE", baseChainId),
+            addresses.getAddress("WORMHOLE_CORE", BASE_CHAIN_ID),
             abi.encodeWithSignature(
                 "publishMessage(uint32,bytes,uint8)",
                 0,

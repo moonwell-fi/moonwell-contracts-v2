@@ -4,9 +4,8 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/Proposal.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 

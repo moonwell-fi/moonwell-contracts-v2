@@ -2,7 +2,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import "@protocol/utils/Constants.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {stdError} from "@forge-std/StdError.sol";
 

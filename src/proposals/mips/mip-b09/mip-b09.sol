@@ -6,7 +6,7 @@ import "@forge-std/Test.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipb09 is HybridProposal, Configs {

@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 import {Script} from "@forge-std/Script.sol";
 
 import "@forge-std/Test.sol";
-import "@protocol/utils/Constants.sol";
 
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";

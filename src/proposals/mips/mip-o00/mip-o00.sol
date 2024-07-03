@@ -6,7 +6,7 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
-import "@protocol/utils/Constants.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
@@ -32,7 +32,7 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {ChainIds as ChainIdLib, OPTIMISM_CHAIN_ID, OPTIMISM_FORK_ID, BASE_FORK_ID, BASE_CHAIN_ID, BASE_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
+import {ChainIds as ChainIdLib, OPTIMISM_CHAIN_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 
 /*
 
@@ -126,14 +126,14 @@ contract mipo00 is HybridProposal, Configs {
                 emissions[block.chainid].length,
             "emissions length not equal to cTokenConfigurations length"
         );
-        addresses.addRestriction(optimismChainId);
+        addresses.addRestriction(OPTIMISM_CHAIN_ID);
 
         /// ------- TemporalGovernor -------
         {
             TemporalGovernor.TrustedSender[]
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-            addresses.addRestriction(moonBeamChainId);
+            addresses.addRestriction(MOONBEAM_CHAIN_ID);
             /// this should return the moonbeam/moonbase wormhole chain id
             trustedSenders[0].chainId = block
                 .chainid
@@ -449,7 +449,7 @@ contract mipo00 is HybridProposal, Configs {
             _buildCalldata(addresses);
         }
 
-        addresses.addRestriction(moonBeamChainId);
+        addresses.addRestriction(MOONBEAM_CHAIN_ID);
 
         /// update approved break glass guardian calldata in Multichain Governor
         _pushAction(
@@ -741,11 +741,11 @@ contract mipo00 is HybridProposal, Configs {
 
         assertEq(
             address(governor.wormholeBridge()),
-            addresses.getAddress("WORMHOLE_CORE", optimismChainId),
+            addresses.getAddress("WORMHOLE_CORE", OPTIMISM_CHAIN_ID),
             "temporal governor wormhole core set incorrectly"
         );
 
-        addresses.addRestriction(moonBeamChainId);
+        addresses.addRestriction(MOONBEAM_CHAIN_ID);
         assertTrue(
             governor.isTrustedSender(
                 block.chainid.toMoonbeamWormholeChainId(),
@@ -1041,7 +1041,7 @@ contract mipo00 is HybridProposal, Configs {
 
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
-                chainId: moonBeamWormholeChainId, /// this chainId is 16 (moonBeamWormholeChainId) regardless of testnet or mainnet
+                chainId: MOONBEAM_WORMHOLE_CHAIN_ID, /// this chainId is 16 (MOONBEAM_WORMHOLE_CHAIN_ID) regardless of testnet or mainnet
                 addr: artemisTimelock /// the timelock on moonbeam
             })
         );

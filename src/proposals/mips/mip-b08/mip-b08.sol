@@ -8,15 +8,15 @@ import "@forge-std/Test.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// @notice This lists all new markets provided in `mainnetMTokens.json`
 /// This is a template of a MIP proposal that can be used to add new mTokens

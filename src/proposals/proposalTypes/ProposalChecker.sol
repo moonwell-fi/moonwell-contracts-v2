@@ -1,13 +1,11 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import "@protocol/utils/Constants.sol";
-
 import {ChainIds} from "@test/utils/ChainIds.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {AddressToString} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID} from "@protocol/utils/ChainIds.sol";
 
 abstract contract ProposalChecker is ChainIds {
     using AddressToString for address;

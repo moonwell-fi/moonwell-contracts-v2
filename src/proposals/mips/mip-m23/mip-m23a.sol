@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";

@@ -3,9 +3,9 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import "@protocol/utils/Constants.sol";
+import "@protocol/utils/ChainIds.sol";
 
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";

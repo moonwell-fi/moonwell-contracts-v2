@@ -6,7 +6,7 @@ import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import "@forge-std/Test.sol";
 
-import "@protocol/utils/Constants.sol";
+import "@protocol/utils/ChainIds.sol";
 import "@utils/ChainIds.sol";
 
 import {Address} from "@utils/Address.sol";
@@ -884,7 +884,7 @@ abstract contract HybridProposal is
             uint32(block.timestamp),
             /// we can hardcode this wormhole chainID because all proposals
             /// should come from Moonbeam
-            moonBeamWormholeChainId,
+            MOONBEAM_WORMHOLE_CHAIN_ID,
             governor,
             payload
         );

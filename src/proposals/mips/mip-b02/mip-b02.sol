@@ -7,7 +7,7 @@ import {Configs} from "@proposals/Configs.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {MWethDelegate} from "@protocol/MWethDelegate.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 

@@ -7,13 +7,13 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import "@forge-std/Test.sol";
 
 import "@utils/ChainIds.sol";
-import "@protocol/utils/Constants.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 

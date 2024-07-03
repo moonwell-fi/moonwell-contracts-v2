@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
-import "@protocol/utils/Constants.sol";
 
 import "@utils/ChainIds.sol";
 
@@ -198,7 +197,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                 );
             voteCollectionTrustedSender[0] = WormholeTrustedSender
                 .TrustedSender(
-                    optimismWormholeChainId,
+                    OPTIMISM_WORMHOLE_CHAIN_ID,
                     addresses.getAddress("VOTE_COLLECTION_PROXY")
                 );
 
@@ -246,7 +245,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                 );
             moonbeamWormholeBridgeAdapter[0] = WormholeTrustedSender
                 .TrustedSender(
-                    optimismWormholeChainId,
+                    OPTIMISM_WORMHOLE_CHAIN_ID,
                     addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
                 );
 
@@ -287,7 +286,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
 
             optimismWormholeBridgeAdapter[0] = WormholeTrustedSender
                 .TrustedSender(
-                    baseWormholeChainId,
+                    BASE_WORMHOLE_CHAIN_ID,
                     addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
                 );
             _pushAction(
