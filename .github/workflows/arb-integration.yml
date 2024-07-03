@@ -1,5 +1,4 @@
 name: Foundry arb integration tests
-
 on: [pull_request]
 
 env:
