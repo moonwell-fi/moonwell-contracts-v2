@@ -83,7 +83,9 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                 bytes[] memory calldatas
             ) = governorContract.getProposalData(proposalId);
 
-            checkMoonbeamActions(targets, addresses);
+            addresses.addRestriction(moonBeamChainId);
+
+            checkMoonbeamActions(targets);
             {
                 // Simulate proposals execution
                 (
@@ -108,10 +110,9 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                 vm.warp(crossChainVoteCollectionEndTimestamp + 1);
             }
 
-            // Check if there is any action on Base
-            address wormholeCore = block.chainid == moonBeamChainId
-                ? addresses.getAddress("WORMHOLE_CORE_MOONBEAM")
-                : addresses.getAddress("WORMHOLE_CORE_MOONBASE");
+            /// Check if there is any action on Base
+            address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
+            addresses.removeRestriction();
 
             uint256 lastIndex = targets.length - 1;
             bytes memory payload;
@@ -197,7 +198,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         "Temporal Governor address mismatch"
                     );
 
-                    checkBaseOptimismActions(baseTargets, addresses);
+                    checkBaseOptimismActions(baseTargets);
                 }
 
                 bytes memory vaa = generateVAA(
@@ -215,9 +216,10 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     // Deploy the modified Wormhole Core implementation contract which
                     // bypass the guardians signature check
                     Implementation core = new Implementation();
-                    address wormhole = block.chainid == baseChainId
-                        ? addresses.getAddress("WORMHOLE_CORE_BASE")
-                        : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE");
+                    address wormhole = addresses.getAddress(
+                        "WORMHOLE_CORE",
+                        block.chainid
+                    );
 
                     /// Set the wormhole core address to have the
                     /// runtime bytecode of the mock core
