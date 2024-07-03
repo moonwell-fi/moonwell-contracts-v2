@@ -564,13 +564,12 @@ contract mipo00 is HybridProposal, Configs {
             "MIP-O00: should have 1 moonbeam actions"
         );
 
-        /// only run actions on moonbeam
+        /// run actions on moonbeam
         vm.selectFork(uint256(ForkID.Moonbeam));
 
-        /// TODO ensure this function simulates actions on Optimism
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        /// TODO fill this in
+        /// run actions on optimism
         vm.selectFork(uint256(ForkID.Optimism));
         _runExtChain(addresses, optimismActions);
     }
