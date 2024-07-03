@@ -88,7 +88,7 @@ abstract contract MIPProposal is Script {
         }
     }
 
-    function primaryForkId() public pure virtual returns (uint256);
+    function primaryForkId() public virtual returns (uint256);
 
     function name() external view virtual returns (string memory);
 
