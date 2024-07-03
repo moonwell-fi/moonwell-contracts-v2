@@ -385,8 +385,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
     function run(Addresses addresses, address) public override {
         vm.selectFork(uint256(ForkID.Base));
 
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        _runBase(addresses, temporalGovernor);
+        _runExtChain(addresses, baseActions);
 
         // switch back to the moonbeam fork so we can run the validations
         vm.selectFork(uint256(primaryForkId()));

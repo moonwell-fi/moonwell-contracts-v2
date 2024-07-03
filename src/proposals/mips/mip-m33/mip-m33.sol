@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ForkID} from "@utils/Enums.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {ForkID} from "@utils/Enums.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m33/mip-m33.sol:mipm33
@@ -118,15 +118,14 @@ contract mipm33 is HybridProposal, ParameterValidation {
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
         /// Moonbeam actions
-
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_mWBTC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 addresses.getAddress("JUMP_RATE_IRM_mWBTCwh")
             ),
             "Set interest rate model for mWBTCwh to updated rate model",
-            true
+            ForkID.Moonbeam
         );
     }
 
