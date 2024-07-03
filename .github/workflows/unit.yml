@@ -5,7 +5,7 @@ on: [pull_request]
 jobs:
   unit-tests:
     name: unit-tests
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
