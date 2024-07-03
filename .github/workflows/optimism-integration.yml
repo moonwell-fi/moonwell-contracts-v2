@@ -14,7 +14,7 @@ env:
 jobs:
   run-base-tests:
     name: optimism-integration-tests
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
