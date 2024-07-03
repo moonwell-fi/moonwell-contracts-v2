@@ -33,12 +33,12 @@ contract LiveSystemDeploy is Test {
         // proposal execution in case
         mip00 proposal = new mip00();
         vm.selectFork(proposal.primaryForkId());
-        proposal.deploy(addresses);
-        proposal.afterDeploy(addresses);
+        proposal.deploy(addresses, address(this));
+        proposal.afterDeploy(addresses, address(this));
         proposal.preBuildMock(addresses);
         proposal.build(addresses);
-        proposal.run(addresses, address(0));
-        proposal.validate(addresses);
+        proposal.run(addresses, address(this));
+        proposal.validate(addresses, address(this));
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         well = addresses.getAddress("GOVTOKEN");
