@@ -81,7 +81,7 @@
     },
     {
         "addr": "0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3",
-        "name": "WORMHOLE_CORE_MOONBEAM",
+        "name": "WORMHOLE_CORE",
         "isContract": true
     },
     {

@@ -36,7 +36,7 @@
     },
     {
         "addr": "0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6",
-        "name": "WORMHOLE_CORE_BASE",
+        "name": "WORMHOLE_CORE",
         "isContract": true
     },
     {
