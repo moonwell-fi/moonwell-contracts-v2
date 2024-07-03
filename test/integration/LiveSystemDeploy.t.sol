@@ -10,6 +10,7 @@ import "@forge-std/Test.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {mip00} from "@proposals/mips/mip00.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
@@ -19,6 +20,8 @@ import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.s
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
 contract LiveSystemDeploy is Test {
+    using ChainIds for uint256;
+
     MultiRewardDistributor mrd;
     Comptroller comptroller;
     Addresses addresses;
@@ -32,7 +35,7 @@ contract LiveSystemDeploy is Test {
         // initialized on chain and skip
         // proposal execution in case
         mip00 proposal = new mip00();
-        vm.selectFork(proposal.primaryForkId());
+        proposal.primaryForkId().createForksAndSelect();
         proposal.deploy(addresses, address(this));
         proposal.afterDeploy(addresses, address(this));
         proposal.preBuildMock(addresses);
