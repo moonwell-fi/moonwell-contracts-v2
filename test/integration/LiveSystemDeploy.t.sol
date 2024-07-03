@@ -25,7 +25,7 @@ contract LiveSystemDeploy is Test {
     MultiRewardDistributor mrd;
     Comptroller comptroller;
     Addresses addresses;
-    address public well;
+    address public op;
 
     function setUp() public {
         // TODO restrict chain ids passing the json here
@@ -46,7 +46,8 @@ contract LiveSystemDeploy is Test {
         proposal.validate(addresses, address(proposal));
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
-        well = addresses.getAddress("xWELL_PROXY");
+        // TODO remove this and use rewards emissionToken instead
+        op = addresses.getAddress("OP");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
     }
 
@@ -55,7 +56,7 @@ contract LiveSystemDeploy is Test {
             payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN"));
+        vm.prank(addresses.getAddress("SECURITY_COUNCIL"));
         gov.togglePause();
 
         assertTrue(gov.paused());
@@ -63,15 +64,17 @@ contract LiveSystemDeploy is Test {
         assertEq(gov.lastPauseTime(), block.timestamp);
     }
 
+    // TODO loop over CTokenConfiguraiton and runs the mtoken tests to each one
+
     function testEmissionsAdminCanChangeRewardStream() public {
         address emissionsAdmin = addresses.getAddress("TEMPORAL_GOVERNOR");
         MToken mUSDbC = MToken(addresses.getAddress("MOONWELL_USDC"));
 
         vm.prank(emissionsAdmin);
-        mrd._updateOwner(mUSDbC, address(well), emissionsAdmin);
+        mrd._updateOwner(mUSDbC, address(op), emissionsAdmin);
 
         vm.prank(emissionsAdmin);
-        mrd._updateBorrowSpeed(mUSDbC, address(well), 1e18);
+        mrd._updateBorrowSpeed(mUSDbC, address(op), 1e18);
     }
 
     function testUpdateEmissionConfigEndTimeSuccess() public {
@@ -79,7 +82,7 @@ contract LiveSystemDeploy is Test {
 
         mrd._updateEndTime(
             MToken(addresses.getAddress("MOONWELL_USDC")), /// reward mUSDbC
-            well, /// rewards paid in WELL
+            op, /// rewards paid in WELL
             block.timestamp + 4 weeks /// end time
         );
         vm.stopPrank();
@@ -87,7 +90,7 @@ contract LiveSystemDeploy is Test {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(addresses.getAddress("MOONWELL_USDC")),
-                addresses.getAddress("GOVTOKEN")
+                addresses.getAddress("OP")
             );
 
         assertEq(
@@ -95,7 +98,7 @@ contract LiveSystemDeploy is Test {
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             "Owner incorrect"
         );
-        assertEq(config.emissionToken, well, "Emission token incorrect");
+        assertEq(config.emissionToken, op, "Emission token incorrect");
         // comment out since the system was deployed before block.timestamp
         assertEq(
             config.endTime,
@@ -112,7 +115,7 @@ contract LiveSystemDeploy is Test {
             // must calculate borrow index before updating end time
             // otherwise the global timestamp will be equal to the current block timestamp
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
+                .getConfigForMarket(mToken, addresses.getAddress("OP"));
 
             uint256 denominator = (mToken.totalBorrows() * 1e18) / // exp scale
                 mToken.borrowIndex();
@@ -134,16 +137,16 @@ contract LiveSystemDeploy is Test {
             vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
             mrd._updateSupplySpeed(
                 mToken, /// reward mUSDbC
-                well, /// rewards paid in WELL
-                1e18 /// pay 1 well per second in rewards
+                op, /// rewards paid in OP
+                1e18 /// pay 1 op per second in rewards
             );
             vm.stopPrank();
 
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
+                .getConfigForMarket(mToken, addresses.getAddress("OP"));
 
             deal(
-                well,
+                op,
                 address(mrd),
                 4 weeks * 1e18 /// fund for entire period
             );
@@ -153,7 +156,7 @@ contract LiveSystemDeploy is Test {
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 "Owner incorrect"
             );
-            assertEq(config.emissionToken, well, "Emission token incorrect");
+            assertEq(config.emissionToken, op, "Emission token incorrect");
             assertEq(
                 config.supplyEmissionsPerSec,
                 1e18,
@@ -185,7 +188,7 @@ contract LiveSystemDeploy is Test {
             // must calculate supply index before updating end time
             // otherwise the global timestamp will be equal to the current block timestamp
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
+                .getConfigForMarket(mToken, addresses.getAddress("OP"));
 
             uint256 denominator = mToken.totalSupply();
             uint256 deltaTimestamp = block.timestamp -
@@ -204,27 +207,27 @@ contract LiveSystemDeploy is Test {
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         mrd._updateBorrowSpeed(
             mToken, /// reward mUSDbC
-            well, /// rewards paid in WELL
-            1e18 /// pay 1 well per second in rewards to borrowers
+            op, /// rewards paid in OP
+            1e18 /// pay 1 op per second in rewards to borrowers
         );
         vm.stopPrank();
 
         deal(
-            well,
+            op,
             address(mrd),
             4 weeks * 1e18 /// fund for entire period
         );
 
         {
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
+                .getConfigForMarket(mToken, addresses.getAddress("OP"));
 
             assertEq(
                 config.owner,
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 "Owner incorrect"
             );
-            assertEq(config.emissionToken, well, "Emission token incorrect");
+            assertEq(config.emissionToken, op, "Emission token incorrect");
             assertEq(
                 config.borrowEmissionsPerSec,
                 1e18,
@@ -356,13 +359,13 @@ contract LiveSystemDeploy is Test {
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(mToken, address(this));
 
-        assertEq(rewards[0].emissionToken, well);
+        assertEq(rewards[0].emissionToken, op);
 
         uint256 balance = mToken.balanceOf(address(this));
         uint256 totalSupply = mToken.totalSupply();
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
+            .getConfigForMarket(mToken, addresses.getAddress("OP"));
 
         uint256 expectedReward = ((toWarp * config.supplyEmissionsPerSec) *
             balance) / totalSupply;
@@ -399,13 +402,13 @@ contract LiveSystemDeploy is Test {
         uint256 totalBorrow = mToken.totalBorrows();
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
+            .getConfigForMarket(mToken, addresses.getAddress("OP"));
 
         // calculate expected borrow reward
         uint256 expectedBorrowReward = ((toWarp *
             config.borrowEmissionsPerSec) * userCurrentBorrow) / totalBorrow;
 
-        assertEq(rewards[0].emissionToken, well);
+        assertEq(rewards[0].emissionToken, op);
         assertApproxEqRel(
             rewards[0].totalAmount,
             expectedBorrowReward,
@@ -442,7 +445,7 @@ contract LiveSystemDeploy is Test {
         uint256 totalSupply = mToken.totalSupply();
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
+            .getConfigForMarket(mToken, addresses.getAddress("OP"));
 
         uint256 expectedSupplyReward = ((toWarp *
             config.supplyEmissionsPerSec) * balance) / totalSupply;
@@ -454,7 +457,7 @@ contract LiveSystemDeploy is Test {
         uint256 expectedBorrowReward = ((toWarp *
             config.borrowEmissionsPerSec) * userCurrentBorrow) / totalBorrow;
 
-        assertEq(rewards[0].emissionToken, well);
+        assertEq(rewards[0].emissionToken, op);
         assertApproxEqRel(
             rewards[0].totalAmount,
             expectedBorrowReward + expectedSupplyReward,
@@ -492,7 +495,7 @@ contract LiveSystemDeploy is Test {
             .getOutstandingRewardsForUser(mToken, address(this));
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("GOVTOKEN"));
+            .getConfigForMarket(mToken, addresses.getAddress("OP"));
 
         uint256 expectedSupplyReward;
         {
@@ -558,11 +561,7 @@ contract LiveSystemDeploy is Test {
         MultiRewardDistributorCommon.RewardInfo[] memory rewardsAfter = mrd
             .getOutstandingRewardsForUser(mToken, address(this));
 
-        assertEq(
-            rewardsAfter[0].emissionToken,
-            well,
-            "Emission token incorrect"
-        );
+        assertEq(rewardsAfter[0].emissionToken, op, "Emission token incorrect");
         assertApproxEqRel(
             rewardsAfter[0].totalAmount,
             rewardsBefore[0].totalAmount +
