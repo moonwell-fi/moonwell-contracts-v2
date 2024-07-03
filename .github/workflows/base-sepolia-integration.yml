@@ -20,5 +20,4 @@ jobs:
         uses: ./.github/actions
       
       - name: Integration Tests Base Sepolia
-        run: time forge test --match-contract LiveSystemTest --fork-url
-        base -vvv --ffi
+        run: time forge test --match-contract LiveSystemTest --fork-url base -vvv --ffi
