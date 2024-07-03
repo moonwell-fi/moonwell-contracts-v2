@@ -51,15 +51,6 @@ contract mip00 is Proposal, CrossChainProposal, Configs {
     /// @notice time before anyone can unpause the contract after a guardian pause
     uint256 public constant permissionlessUnpauseTime = 30 days;
 
-    /// -------------------------------------------------------------------------------------------------- ///
-    /// Chain Name	       Wormhole Chain ID   Network ID	Address                                      | ///
-    ///  Ethereum (Goerli)   	  2	                5	    0x706abc4E45D419950511e474C7B9Ed348A4a716c   | ///
-    ///  Ethereum (Sepolia)	  10002          11155111	    0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78   | ///
-    ///  Base	                 30    	        84531	    0xA31aa3FDb7aF7Db93d18DDA4e19F811342EDF780   | ///
-    ///  Moonbeam	             16	             1284 	    0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3   | ///
-    ///  Moonbase alpha          16	             1287	    0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901   | ///
-    /// -------------------------------------------------------------------------------------------------- ///
-
     struct CTokenAddresses {
         address mTokenImpl;
         address irModel;
@@ -288,6 +279,7 @@ contract mip00 is Proposal, CrossChainProposal, Configs {
 
             Configs.CTokenConfiguration[]
                 memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
             MToken[] memory mTokens = new MToken[](cTokenConfigs.length);
             uint256[] memory supplyCaps = new uint256[](cTokenConfigs.length);
             uint256[] memory borrowCaps = new uint256[](cTokenConfigs.length);
@@ -429,7 +421,7 @@ contract mip00 is Proposal, CrossChainProposal, Configs {
         if (cTokenConfigs.length == 0) {
             /// MToken/Emission configurations
             _setMTokenConfiguration(
-                "./src/proposals/mips/mip-o00/optimismMTokens.json"
+                "./src/proposals/mips/mip-o00/mTokens.json"
             );
         }
 
@@ -762,6 +754,7 @@ contract mip00 is Proposal, CrossChainProposal, Configs {
                         mToken.protocolSeizeShareMantissa(),
                         config.seizeShare
                     );
+
                     assertEq(
                         mToken.reserveFactorMantissa(),
                         config.reserveFactor
