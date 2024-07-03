@@ -124,8 +124,9 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
         voteCollection = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY", baseChainId)
         );
+        addresses.addRestriction(moonBeamChainId);
         wormhole = IWormhole(
-            addresses.getAddress("WORMHOLE_CORE_MOONBEAM", moonBeamChainId)
+            addresses.getAddress("WORMHOLE_CORE", moonBeamChainId)
         );
 
         well = ERC20Votes(addresses.getAddress("GOVTOKEN", moonBeamChainId));
@@ -150,6 +151,8 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", moonBeamChainId)
         );
+
+        addresses.removeRestriction();
 
         // make governor persistent so we can call receiveWormholeMessage on
         // governor from base
@@ -264,7 +267,7 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
 
     function testNoBaseWormholeCoreAddressInProposal() public {
         address wormholeBase = addresses.getAddress(
-            "WORMHOLE_CORE_BASE",
+            "WORMHOLE_CORE",
             baseChainId
         );
         vm.selectFork(moonbeamForkId);
@@ -2039,7 +2042,7 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
         address[] memory targets = new address[](20);
         bytes[] memory calldatas = new bytes[](20);
 
-        targets[0] = addresses.getAddress("WORMHOLE_CORE_MOONBEAM");
+        targets[0] = addresses.getAddress("WORMHOLE_CORE");
         calldatas[0] = proposalC.approvedCalldata(0);
 
         targets[1] = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
@@ -2106,9 +2109,7 @@ contract MultichainProposalTest is Test, ChainIds, TestMultichainProposals {
                 "TEMPORAL_GOVERNOR",
                 baseChainId
             );
-            address wormholeCore = addresses.getAddress(
-                "WORMHOLE_CORE_MOONBEAM"
-            );
+            address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
             uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
                 address(governor)
             );
