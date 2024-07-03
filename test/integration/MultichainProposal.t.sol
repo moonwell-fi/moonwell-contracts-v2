@@ -115,7 +115,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         );
         addresses.addRestriction(MOONBEAM_CHAIN_ID);
         wormhole = IWormhole(
-            addresses.getAddress("WORMHOLE_CORE_MOONBEAM", MOONBEAM_CHAIN_ID)
+            addresses.getAddress("WORMHOLE_CORE", MOONBEAM_CHAIN_ID)
         );
 
         well = ERC20Votes(addresses.getAddress("GOVTOKEN", MOONBEAM_CHAIN_ID));
@@ -256,7 +256,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
 
     function testNoBaseWormholeCoreAddressInProposal() public {
         address wormholeBase = addresses.getAddress(
-            "WORMHOLE_CORE_BASE",
+            "WORMHOLE_CORE",
             BASE_CHAIN_ID
         );
         vm.selectFork(MOONBEAM_FORK_ID);
