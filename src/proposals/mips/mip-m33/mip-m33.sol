@@ -22,7 +22,7 @@ contract mipm33 is HybridProposal, ParameterValidation {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+        return ActionType.Moonbeam;
     }
 
     function deploy(Addresses addresses, address) public override {
@@ -125,7 +125,7 @@ contract mipm33 is HybridProposal, ParameterValidation {
                 addresses.getAddress("JUMP_RATE_IRM_mWBTCwh")
             ),
             "Set interest rate model for mWBTCwh to updated rate model",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
     }
 

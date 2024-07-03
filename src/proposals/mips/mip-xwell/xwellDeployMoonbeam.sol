@@ -42,7 +42,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
     uint128 public constant pauseDuration = 10 days;
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+        return ActionType.Moonbeam;
     }
 
     // @notice search for a on-chain proposal that matches the proposal calldata

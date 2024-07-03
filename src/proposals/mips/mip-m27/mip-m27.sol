@@ -32,7 +32,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+        return ActionType.Moonbeam;
     }
 
     function deploy(Addresses addresses, address) public override {
@@ -136,7 +136,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 NEW_MXC_USDT_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcUSDT to updated reserve factor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -146,7 +146,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 NEW_MXC_USDC_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcUSDC to updated reserve factor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -156,7 +156,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 NEW_USDCWH_RESERVE_FACTOR
             ),
             "Set reserve factor for USDCwh to updated reserve factor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -167,7 +167,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 NEW_M_USDCWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of mUSDCwh",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -178,7 +178,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 NEW_M_WBTCWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of MOONWELL_mWBTC",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -189,7 +189,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 NEW_M_ETHWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of MOONWELL_mETH",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -199,7 +199,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 0x0568a3aeb8E78262dEFf75ee68fAC20ae35ffA91
             ),
             "Set interest rate model for mxcUSDC to updated rate model",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -209,7 +209,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 0xfC7b55cc7C5BD3aE89aC679c7250AB30754C5cC5
             ),
             "Set interest rate model for mxcUSDT to updated rate model",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -219,7 +219,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 0x0f36Dda2b47984434051AeCAa5F9587DEA7f95B7
             ),
             "Set interest rate model for mFRAX to updated rate model",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -229,7 +229,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 addresses.getAddress("JUMP_RATE_IRM_mUSDCwh")
             ),
             "Set interest rate model for mUSDCwh to updated rate model",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
     }
 

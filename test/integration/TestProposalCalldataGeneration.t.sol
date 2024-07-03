@@ -31,7 +31,7 @@ contract TestProposalCalldataGeneration is Test {
         vm.makePersistent(address(this));
         vm.makePersistent(address(addresses));
 
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(uint256(ActionType.Moonbeam));
 
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
@@ -89,7 +89,7 @@ contract TestProposalCalldataGeneration is Test {
                 uint256[] memory onchainValues = new uint256[](values.length);
                 bytes[] memory onchainCalldatas = new bytes[](calldatas.length);
 
-                vm.selectFork(uint256(ForkID.Moonbeam));
+                vm.selectFork(uint256(ActionType.Moonbeam));
 
                 (onchainTargets, onchainValues, onchainCalldatas) = governor
                     .getProposalData(proposalId);
@@ -166,7 +166,7 @@ contract TestProposalCalldataGeneration is Test {
                 vm.selectFork(uint256(proposalContract.primaryForkId()));
                 proposalContract.build(addresses);
 
-                vm.selectFork(uint256(ForkID.Moonbeam));
+                vm.selectFork(uint256(ActionType.Moonbeam));
 
                 // get proposal actions
                 (

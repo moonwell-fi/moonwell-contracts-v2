@@ -97,7 +97,7 @@ abstract contract GovernanceProposal is Proposal {
         Addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(uint256(ActionType.Moonbeam));
 
         MoonwellArtemisGovernor governorContract = MoonwellArtemisGovernor(
             governor

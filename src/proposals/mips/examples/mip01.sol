@@ -19,7 +19,7 @@ contract mipb01 is HybridProposal, Configs {
     string public constant override name = "MIP01";
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+        return ActionType.Base;
     }
 
     function deploy(Addresses addresses, address) public override {}

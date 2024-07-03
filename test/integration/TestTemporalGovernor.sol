@@ -24,7 +24,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+        return ActionType.Moonbeam;
     }
 
     /// run this action through the Artemis Governor
@@ -43,12 +43,12 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
                 collateralFactor
             ),
             "Set collateral factor",
-            ForkID.Base
+            ActionType.Base
         );
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
         _runExtChain(addresses, baseActions);
 
         require(baseActions.length == 1, "invalid base proposal length");
@@ -61,7 +61,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
 
         Comptroller unitroller = Comptroller(
             addresses.getAddress("UNITROLLER")

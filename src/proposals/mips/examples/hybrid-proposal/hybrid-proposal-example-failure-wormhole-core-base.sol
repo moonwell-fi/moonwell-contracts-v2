@@ -37,7 +37,7 @@ contract HybridProposalExample is
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+        return ActionType.Moonbeam;
     }
 
     function build(Addresses addresses) public override {
@@ -55,10 +55,10 @@ contract HybridProposalExample is
                 0
             ),
             "Call publish message on Base Wormhole Core with no data on Moonbeam",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
 
         /// ensure no existing reward configs have already been loaded from Configs.sol
         require(
@@ -104,7 +104,7 @@ contract HybridProposalExample is
                             config.mToken
                         )
                     ),
-                    ForkID.Base
+                    ActionType.Base
                 );
             }
         }
@@ -114,7 +114,7 @@ contract HybridProposalExample is
         vm.selectFork(uint256(primaryForkId()));
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
         _runExtChain(addresses, baseActions);
 
         // switch back to the base fork so we can run the validations
@@ -134,7 +134,7 @@ contract HybridProposalExample is
             "voting period not set correctly"
         );
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
 
         /// get moonbeam chainid for the emissions as this is where the data was stored
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(

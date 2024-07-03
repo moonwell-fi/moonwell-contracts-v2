@@ -49,9 +49,9 @@ abstract contract ChainIds {
         chainIdTemporalGovTimelock[optimismSepoliaChainId] = 0; /// no wait on testnet
         chainIdTemporalGovTimelock[optimismChainId] = 1 days;
 
-        chainForkToName[uint256(ForkID.Moonbeam)] = "Moonbeam";
-        chainForkToName[uint256(ForkID.Base)] = "Base";
-        chainForkToName[uint256(ForkID.Optimism)] = "Optimism";
+        chainForkToName[uint256(ActionType.Moonbeam)] = "Moonbeam";
+        chainForkToName[uint256(ActionType.Base)] = "Base";
+        chainForkToName[uint256(ActionType.Optimism)] = "Optimism";
 
         nonMoonbeamChainIds[baseSepoliaChainId] = true;
         nonMoonbeamChainIds[baseChainId] = true;

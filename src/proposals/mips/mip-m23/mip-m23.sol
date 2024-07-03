@@ -48,7 +48,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+        return ActionType.Moonbeam;
     }
 
     /// run this action through the Artemis Governor
@@ -81,7 +81,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 temporalGovernanceTrustedSenders
             ),
             "Add Multichain Governor as a trusted sender to the Temporal Governor",
-            ForkID.Base
+            ActionType.Base
         );
 
         _pushAction(
@@ -92,7 +92,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 XWELL_BUFFER_CAP
             ),
             "Set the buffer cap of the wormhole bridge adapter to 100m",
-            ForkID.Base
+            ActionType.Base
         );
 
         _pushAction(
@@ -103,7 +103,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 XWELL_RATE_LIMIT_PER_SECOND
             ),
             "Set the rate limit per second of the wormhole bridge adapter to 1158/WELL per second",
-            ForkID.Base
+            ActionType.Base
         );
 
         /// Moonbeam actions
@@ -116,7 +116,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending owner of the Wormhole Bridge Adapter to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// transfer ownership of proxy admin to the Multichain Governor
@@ -127,7 +127,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the owner of the Moonbeam Proxy Admin to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// begin transfer of ownership of the xwell token to the Multichain Governor
@@ -139,7 +139,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending owner of the xWELL Token to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// adjust rate limits to allow initial transfers through
@@ -151,7 +151,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 XWELL_BUFFER_CAP
             ),
             "Set the buffer cap of the wormhole bridge adapter to 100m",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -162,7 +162,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 XWELL_RATE_LIMIT_PER_SECOND
             ),
             "Set the rate limit per second of the wormhole bridge adapter to 1158/WELL per second",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// transfer ownership of chainlink oracle
@@ -173,7 +173,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the admin of the Chainlink Oracle to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// transfer emissions manager of safety module
@@ -184,7 +184,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the Emissions Config of the Safety Module to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set pending admin of unitroller
@@ -195,7 +195,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending admin of the Unitroller to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set funds admin of ecosystem reserve controller
@@ -206,7 +206,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the owner of the Ecosystem Reserve Controller to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set pending admin of DEPRECATED_MOONWELL_mWBTC to the Multichain Governor
@@ -217,7 +217,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending admin of DEPRECATED_MOONWELL_mWBTC to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set pending admin of MOONWELL_mBUSD to the Multichain Governor
@@ -228,7 +228,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending admin of MOONWELL_mBUSD to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set pending admin of DEPRECATED_MOONWELL_mETH to the Multichain Governor
@@ -239,7 +239,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending admin of DEPRECATED_MOONWELL_mETH to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set pending admin of MOONWELL_mUSDC to the Multichain Governor
@@ -250,7 +250,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending admin of MOONWELL_mUSDC to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set pending admin of MNATIVE to the Multichain Governor
@@ -261,7 +261,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending admin of MNATIVE to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set pending admin of mxcDOT to the Multichain Governor
@@ -272,7 +272,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending admin of mxcDOT to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set pending admin of mxcUSDT to the Multichain Governor
@@ -283,7 +283,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending admin of mxcUSDT to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set pending admin of mFRAX to the Multichain Governor
@@ -294,7 +294,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending admin of mFRAX to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set pending admin of mUSDCwh to the Multichain Governor
@@ -305,7 +305,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending admin of mUSDCwh to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set pending admin of mxcUSDC to the Multichain Governor
@@ -316,7 +316,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending admin of mxcUSDC to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// set pending admin of MOONWELL_mETH to the Multichain Governor
@@ -327,7 +327,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                 multichainGovernorAddress
             ),
             "Set the pending admin of MOONWELL_mETH to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
@@ -376,14 +376,14 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                             config.mToken
                         )
                     ),
-                    ForkID.Base
+                    ActionType.Base
                 );
             }
         }
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
 
         _runExtChain(addresses, baseActions);
 
@@ -595,7 +595,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             "xWELL rate limit per second incorrect"
         );
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
 
         assertEq(
             xWELL(addresses.getAddress("xWELL_PROXY")).bufferCap(

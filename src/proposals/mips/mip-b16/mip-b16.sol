@@ -39,7 +39,7 @@ contract mipb16 is
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+        return ActionType.Base;
     }
 
     function teardown(Addresses addresses, address) public override {
@@ -95,7 +95,7 @@ contract mipb16 is
             moonbeamActions.length == 0,
             "MIP-B16: should have no moonbeam actions"
         );
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(uint256(ActionType.Moonbeam));
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 

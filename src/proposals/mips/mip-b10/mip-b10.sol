@@ -127,7 +127,7 @@ contract mipb10 is HybridProposal, Configs {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+        return ActionType.Base;
     }
 
     /// @notice no contracts are deployed in this proposal

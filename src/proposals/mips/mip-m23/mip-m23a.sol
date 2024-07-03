@@ -23,7 +23,7 @@ contract mipm23a is HybridProposal, MultichainGovernorDeploy {
     string public constant override name = "MIP-M23A";
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+        return ActionType.Moonbeam;
     }
 
     function deploy(Addresses addresses, address) public override {

@@ -28,7 +28,7 @@ contract mipb20 is HybridProposal, Configs, ParameterValidation {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+        return ActionType.Base;
     }
 
     function deploy(Addresses addresses, address) public override {}

@@ -18,7 +18,7 @@ contract SystemUpgradeLiveSystemBasePostProposalTest is
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
     }
     function testSystemUpgradeAsTemporalGovernorSucceeds() public {
         address newProxyImplementation = address(this);

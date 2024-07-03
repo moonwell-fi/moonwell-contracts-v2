@@ -23,7 +23,7 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+        return ActionType.Moonbeam;
     }
 
     function deploy(Addresses, address) public override {}

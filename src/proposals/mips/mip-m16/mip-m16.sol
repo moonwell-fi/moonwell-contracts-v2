@@ -21,7 +21,7 @@ contract mipm16 is GovernanceProposal {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+        return ActionType.Moonbeam;
     }
 
     function deploy(Addresses addresses, address) public override {}

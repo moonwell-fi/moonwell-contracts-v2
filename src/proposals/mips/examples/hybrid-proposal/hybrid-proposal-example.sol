@@ -35,12 +35,12 @@ contract HybridProposalExample is
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+        return ActionType.Base;
     }
 
     /// @notice create proposal actions
     function build(Addresses addresses) public override {
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(uint256(ActionType.Moonbeam));
 
         _pushAction(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
@@ -49,7 +49,7 @@ contract HybridProposalExample is
                 NEW_VOTING_PERIOD
             ),
             "Set voting period on Multichain Governor to 6 days",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         vm.selectFork(uint256(primaryForkId()));
@@ -98,14 +98,14 @@ contract HybridProposalExample is
                             config.mToken
                         )
                     ),
-                    ForkID.Base
+                    ActionType.Base
                 );
             }
         }
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(uint256(ActionType.Moonbeam));
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
@@ -117,7 +117,7 @@ contract HybridProposalExample is
     }
 
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(uint256(ActionType.Moonbeam));
 
         IMultichainGovernor governor = IMultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")

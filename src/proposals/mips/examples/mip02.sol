@@ -32,7 +32,7 @@ contract mip02 is HybridProposal, Configs {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+        return ActionType.Base;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as

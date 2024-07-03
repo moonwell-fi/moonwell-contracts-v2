@@ -37,7 +37,7 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
     uint128 public constant pauseDuration = 10 days;
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+        return ActionType.Base;
     }
 
     function deploy(Addresses addresses, address) public override {

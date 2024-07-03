@@ -28,7 +28,7 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
 
         well = addresses.getAddress("GOVTOKEN");
         mUSDC = MErc20(addresses.getAddress("MOONWELL_USDC"));

@@ -66,7 +66,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Optimism;
+        return ActionType.Optimism;
     }
 
     function deploy(Addresses addresses, address) public override {
@@ -209,7 +209,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                     voteCollectionTrustedSender
                 ),
                 "Add Vote Collection on Optimism to Target Addresses",
-                ForkID.Moonbeam
+                ActionType.Moonbeam
             );
         }
 
@@ -222,7 +222,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                 addresses.getAddress("NEW_XWELL_IMPL")
             ),
             "Upgrade the xWELL implementation on Moonbeam",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -233,7 +233,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                 addresses.getAddress("NEW_XWELL_IMPL")
             ),
             "Upgrade the xWELL implementation on Base",
-            ForkID.Base
+            ActionType.Base
         );
 
         /// open up rate limits to move tokens across all chains
@@ -260,7 +260,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                     moonbeamWormholeBridgeAdapter
                 ),
                 "Add xWELL route from Moonbeam to Optimism",
-                ForkID.Moonbeam
+                ActionType.Moonbeam
             );
 
             _pushAction(
@@ -273,7 +273,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                     moonbeamWormholeBridgeAdapter
                 ),
                 "Add xWELL route from Base to Optimism",
-                ForkID.Base
+                ActionType.Base
             );
         }
 
@@ -296,7 +296,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                     optimismWormholeBridgeAdapter
                 ),
                 "Add xWELL route from Optimism to Base",
-                ForkID.Base
+                ActionType.Base
             );
         }
     }

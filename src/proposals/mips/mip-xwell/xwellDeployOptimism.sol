@@ -37,7 +37,7 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
     uint128 public constant pauseDuration = 10 days;
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Optimism;
+        return ActionType.Optimism;
     }
 
     function deploy(Addresses addresses, address) public override {

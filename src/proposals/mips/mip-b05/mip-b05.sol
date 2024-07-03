@@ -42,7 +42,7 @@ contract mipb05 is HybridProposal, Configs {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+        return ActionType.Base;
     }
 
     function _validateJRM(

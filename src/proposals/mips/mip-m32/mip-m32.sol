@@ -30,7 +30,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+        return ActionType.Moonbeam;
     }
 
     function deploy(Addresses, address) public override {}
@@ -53,7 +53,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
             addresses.getAddress("MOONWELL_mWBTC"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept the admin transfer of the new wBTC market to the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -63,7 +63,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
                 NEW_M_WBTCWH_RESERVE_FACTOR
             ),
             "Set reserve factor for MOONWELL_mWBTC to updated reserve factor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         _pushAction(
@@ -74,7 +74,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
                 NEW_M_WBTCWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of MOONWELL_mWBTC",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
     }
 

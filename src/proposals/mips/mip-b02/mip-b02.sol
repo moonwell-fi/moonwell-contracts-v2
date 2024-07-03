@@ -42,7 +42,7 @@ contract mipb02 is HybridProposal, Configs {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+        return ActionType.Base;
     }
 
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers

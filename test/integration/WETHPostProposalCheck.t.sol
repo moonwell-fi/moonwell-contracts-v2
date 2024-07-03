@@ -33,7 +33,7 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
 
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         mToken = MErc20Delegator(

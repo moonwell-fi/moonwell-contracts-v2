@@ -34,7 +34,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Moonbeam;
+        return ActionType.Moonbeam;
     }
 
     /// run this action through the Multichain Governor
@@ -62,7 +62,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
                 trustedSendersToRemove
             ),
             "Remove Artemis Timelock as a trusted sender in the Temporal Governor on Base",
-            ForkID.Base
+            ActionType.Base
         );
 
         /// Moonbeam actions
@@ -72,7 +72,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
             abi.encodeWithSignature("acceptOwnership()"),
             "Accept admin of the Wormhole Bridge Adapter as Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept transfer of ownership of the xwell token to the Multichain Governor
@@ -81,7 +81,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("xWELL_PROXY"),
             abi.encodeWithSignature("acceptOwnership()"),
             "Accept owner of the xWELL Token as the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept admin of comptroller
@@ -89,7 +89,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of the comptroller as Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept admin of .mad mTokens
@@ -99,7 +99,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("DEPRECATED_MOONWELL_mWBTC"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of DEPRECATED_MOONWELL_mWBTC as the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept admin of MOONWELL_mBUSD
@@ -107,7 +107,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("MOONWELL_mBUSD"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of MOONWELL_mBUSD as the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept admin of DEPRECATED_MOONWELL_mETH
@@ -115,7 +115,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("DEPRECATED_MOONWELL_mETH"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of DEPRECATED_MOONWELL_mETH as the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept admin of MOONWELL_mUSDC
@@ -123,7 +123,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("MOONWELL_mUSDC"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of MOONWELL_mUSDC as the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept admin of MNATIVE
@@ -131,7 +131,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("MNATIVE"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of MNATIVE as the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept admin of mxcDOT
@@ -139,7 +139,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("mxcDOT"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of mxcDOT as Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept admin of mxcUSDT
@@ -147,7 +147,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of mxcUSDT as Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept admin of mFRAX
@@ -155,7 +155,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("mFRAX"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of mFRAX as Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept admin of mUSDCwh
@@ -163,7 +163,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of mUSDCwh as Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept admin of mxcUSDC
@@ -171,7 +171,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of mxcUSDC as the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// accept admin of MOONWELL_mETH
@@ -179,7 +179,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("MOONWELL_mETH"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of MOONWELL_mETH as the Multichain Governor",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
     }
 
@@ -187,7 +187,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         vm.selectFork(uint256(primaryForkId()));
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
         _runExtChain(addresses, baseActions);
 
         // switch back to the moonbeam fork so we can run the validations
@@ -359,7 +359,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             "UNITROLLER admin incorrect"
         );
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
 
         // check that the multichain governor now is the only trusted sender on the temporal governor
         TemporalGovernor temporalGovernor = TemporalGovernor(

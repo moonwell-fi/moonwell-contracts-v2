@@ -61,7 +61,7 @@ contract mipb17 is HybridProposal, Configs {
     }
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+        return ActionType.Base;
     }
 
     /// @notice Aero market mToken and corresponding IRM is deployed in this proposal

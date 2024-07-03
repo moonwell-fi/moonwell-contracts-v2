@@ -45,7 +45,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
     uint256 public constant approvalAmount = 5_000_000_000 * 1e18;
 
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Base;
+        return ActionType.Base;
     }
 
     function deploy(Addresses addresses, address) public override {

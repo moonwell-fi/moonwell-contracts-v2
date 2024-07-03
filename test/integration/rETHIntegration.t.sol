@@ -27,7 +27,7 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
 
         well = addresses.getAddress("GOVTOKEN");
         mwstETH = MErc20(addresses.getAddress("MOONWELL_rETH"));
