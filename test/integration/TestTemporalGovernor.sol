@@ -49,8 +49,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
 
     function run(Addresses addresses, address) public override {
         vm.selectFork(uint256(ForkID.Base));
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        _runBase(addresses, temporalGovernor);
+        _runExtChain(addresses, baseActions);
 
         require(baseActions.length == 1, "invalid base proposal length");
         require(
