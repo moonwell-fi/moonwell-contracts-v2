@@ -125,19 +125,23 @@ contract mipo00 is HybridProposal, Configs {
                 emissions[block.chainid].length,
             "emissions length not equal to cTokenConfigurations length"
         );
+        addresses.addRestriction(optimismChainId);
 
         /// ------- TemporalGovernor -------
         {
             TemporalGovernor.TrustedSender[]
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
+            addresses.addRestriction(moonBeamChainId);
             /// this should return the moonbeam/moonbase wormhole chain id
             trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid];
             trustedSenders[0].addr = addresses.getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
-                /// this should return the moonbeam/moonbase chain id
-                sendingChainIdToReceivingChainId[block.chainid]
+                ChainIdHelper.toMoonbeamChainId(block.chainid)
             );
+
+            /// disallow getting any addreses from moonbeam from this point forward
+            addresses.removeRestriction();
 
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
@@ -441,6 +445,8 @@ contract mipo00 is HybridProposal, Configs {
             _buildCalldata(addresses);
         }
 
+        addresses.addRestriction(moonBeamChainId);
+
         /// update approved break glass guardian calldata in Multichain Governor
         _pushAction(
             addresses.getAddress(
@@ -449,12 +455,15 @@ contract mipo00 is HybridProposal, Configs {
             ),
             abi.encodeWithSignature(
                 "updateApprovedCalldata(bytes,bool)",
-                approvedCalldata,
+                approvedCalldata[0],
                 true
             ),
             "Whitelist break glass calldata to add the Artemis Timelock as a trusted sender in the Temporal Governor on Optimism",
             ForkID.Moonbeam
         );
+
+        /// remove all restrictions
+        addresses.removeRestriction();
 
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
@@ -546,8 +555,8 @@ contract mipo00 is HybridProposal, Configs {
             "MIP-O00: should have no base actions"
         );
         require(
-            optimismActions.length == 0,
-            "MIP-O00: should have no base actions"
+            optimismActions.length != 0,
+            "MIP-O00: should have optimism actions"
         );
 
         require(
@@ -557,11 +566,13 @@ contract mipo00 is HybridProposal, Configs {
 
         /// only run actions on moonbeam
         vm.selectFork(uint256(ForkID.Moonbeam));
+
+        /// TODO ensure this function simulates actions on Optimism
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         /// TODO fill this in
-        vm.selectFork(uint256(ForkID.Base));
-        _runBase(addresses, addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.selectFork(uint256(ForkID.Optimism));
+        _runExtChain(addresses, optimismActions);
     }
 
     function teardown(Addresses addresses, address) public pure override {}
@@ -730,21 +741,25 @@ contract mipo00 is HybridProposal, Configs {
 
         assertEq(
             address(governor.wormholeBridge()),
-            addresses.getAddress("WORMHOLE_CORE")
+            addresses.getAddress("WORMHOLE_CORE", optimismChainId),
+            "temporal governor wormhole core set incorrectly"
         );
 
+        addresses.addRestriction(moonBeamChainId);
         assertTrue(
             governor.isTrustedSender(
                 chainIdToWormHoleId[block.chainid],
                 addresses
                     .getAddress(
                         "MULTICHAIN_GOVERNOR_PROXY",
-                        sendingChainIdToReceivingChainId[block.chainid]
+                        ChainIdHelper.toMoonbeamChainId(block.chainid)
                     )
                     .toBytes()
             ),
             "multichain governor not trusted"
         );
+        addresses.removeRestriction();
+
         assertEq(
             governor
                 .allTrustedSenders(chainIdToWormHoleId[block.chainid])
@@ -984,22 +999,37 @@ contract mipo00 is HybridProposal, Configs {
 
         bytes memory whitelistedCalldata = approvedCalldata[0];
 
-        MultichainGovernor multiChainGovernor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+        vm.selectFork(uint256(ForkID.Moonbeam));
+        addresses.addRestriction(
+            ChainIdHelper.toMoonbeamChainId(block.chainid)
         );
+        MultichainGovernor multiChainGovernor = MultichainGovernor(
+            addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_PROXY",
+                ChainIdHelper.toMoonbeamChainId(block.chainid)
+            )
+        );
+        /// remove the moonbeam restriction from addresses
+        addresses.removeRestriction();
 
         assertTrue(
             multiChainGovernor.whitelistedCalldatas(whitelistedCalldata),
             "multichain governor should have whitelisted break glass guardian calldata"
         );
+
+        vm.selectFork(uint256(ForkID.Optimism));
     }
 
     function _buildCalldata(Addresses addresses) internal {
+        addresses.addRestriction(
+            ChainIdHelper.toMoonbeamChainId(block.chainid)
+        );
         /// get timelock from Moonbeam
         address artemisTimelock = addresses.getAddress(
             "MOONBEAM_TIMELOCK",
             ChainIdHelper.toMoonbeamChainId(block.chainid)
         );
+        addresses.removeRestriction();
 
         /// get temporal governor on Optimism
         address temporalGovernor = addresses.getAddress(
