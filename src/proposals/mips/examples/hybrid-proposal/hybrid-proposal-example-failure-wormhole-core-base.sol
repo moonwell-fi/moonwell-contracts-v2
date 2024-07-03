@@ -47,7 +47,7 @@ contract HybridProposalExample is
         /// this is incorrect and will cause a failure in the HybridProposal contract
         /// due to no contract bytecode at this address
         _pushAction(
-            addresses.getAddress("WORMHOLE_CORE_BASE", baseChainId),
+            addresses.getAddress("WORMHOLE_CORE", baseChainId),
             abi.encodeWithSignature(
                 "publishMessage(uint32,bytes,uint8)",
                 0,
@@ -115,8 +115,7 @@ contract HybridProposalExample is
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         vm.selectFork(uint256(ForkID.Base));
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        _runBase(addresses, temporalGovernor);
+        _runExtChain(addresses, baseActions);
 
         // switch back to the base fork so we can run the validations
         vm.selectFork(uint256(primaryForkId()));

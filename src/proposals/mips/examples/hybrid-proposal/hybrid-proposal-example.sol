@@ -110,9 +110,7 @@ contract HybridProposalExample is
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         vm.selectFork(uint256(primaryForkId()));
-
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        _runBase(addresses, temporalGovernor);
+        _runExtChain(addresses, baseActions);
 
         // switch back to the base fork so we can run the validations
         vm.selectFork(uint256(primaryForkId()));
