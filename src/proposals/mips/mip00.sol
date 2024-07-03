@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {TransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ITransparentUpgradeableProxy, TransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
@@ -11,8 +11,12 @@ import {ChainIds, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {Address} from "@utils/Address.sol";
+import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {Configs} from "@proposals/Configs.sol";
+import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
@@ -39,14 +43,28 @@ DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol
 
 */
 
-contract mip00 is Proposal, CrossChainProposal, Configs {
+contract mip00 is Proposal, CrossChainProposal, Configs, xWELLDeploy {
     using Address for address;
     using ChainIds for uint256;
 
-    string public constant override name = "MIP-O00";
+    string public constant override name = "MIP-00";
+
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
     uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
+
+    /// @notice the buffer cap for the xWELL token on both base and moonbeam
+    uint112 public constant bufferCap = 100_000_000 * 1e18;
+
+    /// @notice the rate limit per second for the xWELL token on both base and moonbeam
+    /// heals at ~19m per day if buffer is fully replenished or depleted
+    /// this limit is used for the wormhole bridge adapters
+    uint128 public constant rateLimitPerSecond = 1158 * 1e18;
+
+    /// @notice the duration of the pause for the xWELL token on both base and moonbeam
+    /// once the contract has been paused, in this period of time, it will automatically
+    /// unpause if no action is taken.
+    uint128 public constant pauseDuration = 10 days;
 
     /// @notice time before anyone can unpause the contract after a guardian pause
     uint256 public constant permissionlessUnpauseTime = 30 days;
@@ -154,6 +172,7 @@ contract mip00 is Proposal, CrossChainProposal, Configs {
                 );
             addresses.addAddress("MRD_PROXY", address(mrdProxy));
         }
+
         /// ------ MTOKENS -------
         {
             MErc20Delegate mTokenLogic = new MErc20Delegate();
@@ -248,6 +267,61 @@ contract mip00 is Proposal, CrossChainProposal, Configs {
             MErc20(addresses.getAddress("MOONWELL_WETH"))
         );
         addresses.addAddress("WETH_ROUTER", address(router));
+
+        /// ------------ xWELL -------------
+        {
+            address existingProxyAdmin = addresses.getAddress(
+                "MRD_PROXY_ADMIN"
+            );
+            // TODO get correct guardian
+            address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+            address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
+            address relayer = addresses.getAddress("WORMHOLE_BRIDGE_RELAYER");
+
+            (
+                address xwellLogic,
+                address xwellProxy,
+                ,
+                address wormholeAdapterLogic,
+                address wormholeAdapter
+            ) = deploySystem(existingProxyAdmin);
+
+            MintLimits.RateLimitMidPointInfo[]
+                memory limits = new MintLimits.RateLimitMidPointInfo[](1);
+
+            limits[0].bridge = wormholeAdapter;
+            limits[0].rateLimitPerSecond = rateLimitPerSecond;
+            limits[0].bufferCap = bufferCap;
+
+            initializeXWell(
+                xwellProxy,
+                "WELL",
+                "WELL",
+                temporalGov,
+                limits,
+                pauseDuration,
+                pauseGuardian
+            );
+
+            initializeWormholeAdapter(
+                wormholeAdapter,
+                xwellProxy,
+                temporalGov,
+                relayer,
+                block.chainid.toMoonbeamWormholeChainId()
+            );
+
+            addresses.addAddress(
+                "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                wormholeAdapter
+            );
+            addresses.addAddress(
+                "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
+                wormholeAdapterLogic
+            );
+            addresses.addAddress("xWELL_LOGIC", xwellLogic);
+            addresses.addAddress("xWELL_PROXY", xwellProxy);
+        }
     }
 
     function afterDeploy(Addresses addresses, address) public override {
@@ -887,6 +961,107 @@ contract mip00 is Proposal, CrossChainProposal, Configs {
                     assertEq(marketConfig.borrowGlobalIndex, 1e36);
                 }
             }
+        }
+
+        /// ------------------ xWELL VALIDATION
+        {
+            address basexWellProxy = addresses.getAddress("xWELL_PROXY");
+            address wormholeAdapter = addresses.getAddress(
+                "WORMHOLE_BRIDGE_ADAPTER_PROXY"
+            );
+            address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
+            address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
+            address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
+
+            assertEq(
+                xWELL(wormholeAdapter).owner(),
+                temporalGov,
+                "wormhole bridge adapter owner is incorrect"
+            );
+            assertEq(
+                address(
+                    WormholeBridgeAdapter(wormholeAdapter).wormholeRelayer()
+                ),
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+                "wormhole bridge adapter relayer is incorrect"
+            );
+            assertEq(
+                WormholeBridgeAdapter(wormholeAdapter).gasLimit(),
+                300_000,
+                "wormhole bridge adapter gas limit is incorrect"
+            );
+            assertEq(
+                xWELL(basexWellProxy).owner(),
+                temporalGov,
+                "temporal gov address is incorrect"
+            );
+            assertEq(
+                xWELL(basexWellProxy).pendingOwner(),
+                address(0),
+                "pending owner address is incorrect"
+            );
+
+            /// ensure correct pause guardian
+            assertEq(
+                xWELL(basexWellProxy).pauseGuardian(),
+                pauseGuardian,
+                "pause guardian address is incorrect"
+            );
+            /// ensure correct pause duration
+            assertEq(
+                xWELL(basexWellProxy).pauseDuration(),
+                pauseDuration,
+                "pause duration is incorrect"
+            );
+            /// ensure correct rate limits
+            assertEq(
+                xWELL(basexWellProxy).rateLimitPerSecond(wormholeAdapter),
+                rateLimitPerSecond,
+                "rateLimitPerSecond is incorrect"
+            );
+            /// ensure correct buffer cap
+            assertEq(
+                xWELL(basexWellProxy).bufferCap(wormholeAdapter),
+                bufferCap,
+                "bufferCap is incorrect"
+            );
+            assertTrue(
+                WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
+                    block.chainid.toMoonbeamWormholeChainId(),
+                    wormholeAdapter
+                ),
+                "trusted sender not trusted"
+            );
+            /// ensure correct wormhole adapter logic
+            /// ensure correct wormhole adapter owner
+            assertEq(
+                WormholeBridgeAdapter(wormholeAdapter).owner(),
+                temporalGov,
+                "wormhole adapter owner is incorrect"
+            );
+            /// ensure correct wormhole adapter relayer
+            /// ensure correct wormhole adapter wormhole id
+            /// ensure proxy admin has correct owner
+            /// ensure proxy contract owners are proxy admin
+            assertEq(
+                ProxyAdmin(proxyAdmin).owner(),
+                temporalGov,
+                "ProxyAdmin owner is incorrect"
+            );
+            assertEq(
+                ProxyAdmin(proxyAdmin).getProxyAdmin(
+                    ITransparentUpgradeableProxy(basexWellProxy)
+                ),
+                proxyAdmin,
+                "Admin is incorrect basexWellProxy"
+            );
+            assertEq(
+                ProxyAdmin(proxyAdmin).getProxyAdmin(
+                    ITransparentUpgradeableProxy(wormholeAdapter)
+                ),
+                proxyAdmin,
+                "Admin is incorrect wormholeAdapter"
+            );
         }
     }
 }

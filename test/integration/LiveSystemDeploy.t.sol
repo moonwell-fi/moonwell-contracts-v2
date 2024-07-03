@@ -64,8 +64,8 @@ contract LiveSystemDeploy is Test {
     }
 
     function testEmissionsAdminCanChangeRewardStream() public {
-        address emissionsAdmin = addresses.getAddress("EMISSIONS_ADMIN");
-        MToken mUSDbC = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        address emissionsAdmin = addresses.getAddress("TEMPORAL_GOVERNOR");
+        MToken mUSDbC = MToken(addresses.getAddress("MOONWELL_USDC"));
 
         vm.prank(emissionsAdmin);
         mrd._updateOwner(mUSDbC, address(well), emissionsAdmin);
@@ -75,10 +75,10 @@ contract LiveSystemDeploy is Test {
     }
 
     function testUpdateEmissionConfigEndTimeSuccess() public {
-        vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
+        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
         mrd._updateEndTime(
-            MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
+            MToken(addresses.getAddress("MOONWELL_USDC")), /// reward mUSDbC
             well, /// rewards paid in WELL
             block.timestamp + 4 weeks /// end time
         );
@@ -86,13 +86,13 @@ contract LiveSystemDeploy is Test {
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
-                MToken(addresses.getAddress("MOONWELL_USDBC")),
+                MToken(addresses.getAddress("MOONWELL_USDC")),
                 addresses.getAddress("GOVTOKEN")
             );
 
         assertEq(
             config.owner,
-            addresses.getAddress("EMISSIONS_ADMIN"),
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
             "Owner incorrect"
         );
         assertEq(config.emissionToken, well, "Emission token incorrect");
@@ -107,7 +107,7 @@ contract LiveSystemDeploy is Test {
     function testUpdateEmissionConfigSupplyUsdcSuccess() public {
         uint256 borrowIndex;
 
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
         {
             // must calculate borrow index before updating end time
             // otherwise the global timestamp will be equal to the current block timestamp
@@ -131,7 +131,7 @@ contract LiveSystemDeploy is Test {
         testUpdateEmissionConfigEndTimeSuccess();
 
         {
-            vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
+            vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
             mrd._updateSupplySpeed(
                 mToken, /// reward mUSDbC
                 well, /// rewards paid in WELL
@@ -150,7 +150,7 @@ contract LiveSystemDeploy is Test {
 
             assertEq(
                 config.owner,
-                addresses.getAddress("EMISSIONS_ADMIN"),
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
                 "Owner incorrect"
             );
             assertEq(config.emissionToken, well, "Emission token incorrect");
@@ -180,7 +180,7 @@ contract LiveSystemDeploy is Test {
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
         uint256 supplyIndex;
 
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
         {
             // must calculate supply index before updating end time
             // otherwise the global timestamp will be equal to the current block timestamp
@@ -201,7 +201,7 @@ contract LiveSystemDeploy is Test {
 
         testUpdateEmissionConfigEndTimeSuccess();
 
-        vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
+        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         mrd._updateBorrowSpeed(
             mToken, /// reward mUSDbC
             well, /// rewards paid in WELL
@@ -221,7 +221,7 @@ contract LiveSystemDeploy is Test {
 
             assertEq(
                 config.owner,
-                addresses.getAddress("EMISSIONS_ADMIN"),
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
                 "Owner incorrect"
             );
             assertEq(config.emissionToken, well, "Emission token incorrect");
@@ -252,9 +252,9 @@ contract LiveSystemDeploy is Test {
         address sender = address(this);
         uint256 mintAmount = 100e6;
 
-        IERC20 token = IERC20(addresses.getAddress("USDBC"));
+        IERC20 token = IERC20(addresses.getAddress("USDC"));
         MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_USDBC"))
+            payable(addresses.getAddress("MOONWELL_USDC"))
         );
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
@@ -279,9 +279,9 @@ contract LiveSystemDeploy is Test {
         address sender = address(this);
         uint256 borrowAmount = 50e6;
 
-        IERC20 token = IERC20(addresses.getAddress("USDBC"));
+        IERC20 token = IERC20(addresses.getAddress("USDC"));
         MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_USDBC"))
+            payable(addresses.getAddress("MOONWELL_USDC"))
         );
 
         address[] memory mTokens = new address[](1);
@@ -317,13 +317,13 @@ contract LiveSystemDeploy is Test {
         );
 
         address[] memory mTokens = new address[](1);
-        mTokens[0] = addresses.getAddress("MOONWELL_USDBC");
+        mTokens[0] = addresses.getAddress("MOONWELL_USDC");
 
         comptroller.enterMarkets(mTokens);
         assertTrue(
             comptroller.checkMembership(
                 sender,
-                MToken(addresses.getAddress("MOONWELL_USDBC"))
+                MToken(addresses.getAddress("MOONWELL_USDC"))
             )
         ); /// ensure sender and mToken is in market
 
@@ -351,7 +351,7 @@ contract LiveSystemDeploy is Test {
 
         vm.warp(block.timestamp + toWarp);
 
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(mToken, address(this));
@@ -390,7 +390,7 @@ contract LiveSystemDeploy is Test {
 
         vm.warp(block.timestamp + toWarp);
 
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(mToken, address(this));
@@ -433,7 +433,7 @@ contract LiveSystemDeploy is Test {
 
         vm.warp(block.timestamp + toWarp);
 
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(mToken, address(this));
@@ -486,7 +486,7 @@ contract LiveSystemDeploy is Test {
 
         testBorrowMTokenSucceeds();
 
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewardsBefore = mrd
             .getOutstandingRewardsForUser(mToken, address(this));
@@ -542,7 +542,7 @@ contract LiveSystemDeploy is Test {
 
         uint256 repayAmt = 50e6;
         address liquidator = address(100_000_000);
-        IERC20 usdc = IERC20(addresses.getAddress("USDBC"));
+        IERC20 usdc = IERC20(addresses.getAddress("USDC"));
 
         deal(address(usdc), liquidator, repayAmt);
         vm.prank(liquidator);

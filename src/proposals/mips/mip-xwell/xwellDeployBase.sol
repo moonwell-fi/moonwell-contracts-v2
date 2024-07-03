@@ -61,7 +61,7 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
                 ,
                 address wormholeAdapterLogic,
                 address wormholeAdapter
-            ) = deployBaseSystem(existingProxyAdmin);
+            ) = deploySystem(existingProxyAdmin);
 
             MintLimits.RateLimitMidPointInfo[]
                 memory limits = new MintLimits.RateLimitMidPointInfo[](1);

@@ -125,8 +125,18 @@
         "isContract": true
     },
     {
+        "addr": "0x355F7b5edbfbfb5cCc7a3C67Dab2f99A72FDDa09",
+        "name": "PAUSE_GUARDIAN",
+        "isContract": true
+    },
+    {
         "addr": "0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722",
         "name": "WORMHOLE_CORE",
+        "isContract": true
+    },
+    {
+        "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
+        "name": "WORMHOLE_BRIDGE_RELAYER",
         "isContract": true
     }
 ]
