@@ -651,9 +651,7 @@ contract mipb00 is HybridProposal, Configs {
 
         assertEq(
             address(governor.wormholeBridge()),
-            block.chainid == baseChainId
-                ? addresses.getAddress("WORMHOLE_CORE_BASE")
-                : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE")
+            addresses.getAddress("WORMHOLE_CORE", block.chainid)
         );
 
         assertTrue(

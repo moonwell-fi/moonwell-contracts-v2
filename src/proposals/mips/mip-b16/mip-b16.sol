@@ -100,8 +100,7 @@ contract mipb16 is
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         vm.selectFork(uint256(primaryForkId()));
-
-        _runBase(addresses, addresses.getAddress("TEMPORAL_GOVERNOR"));
+        _runExtChain(addresses, baseActions);
     }
 
     /// @notice validations on Base
