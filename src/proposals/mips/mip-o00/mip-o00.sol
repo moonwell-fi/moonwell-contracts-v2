@@ -100,7 +100,7 @@ contract mipo00 is HybridProposal, Configs {
     /// @dev change this if wanting to deploy to a different chain
     /// double check addresses and change the WORMHOLE_CORE to the correct chain
     function primaryForkId() public pure override returns (ForkID) {
-        return ForkID.Optimism;
+        return ActionType.Optimism;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
@@ -459,7 +459,7 @@ contract mipo00 is HybridProposal, Configs {
                 true
             ),
             "Whitelist break glass calldata to add the Artemis Timelock as a trusted sender in the Temporal Governor on Optimism",
-            ForkID.Moonbeam
+            ActionType.Moonbeam
         );
 
         /// remove all restrictions
@@ -565,12 +565,12 @@ contract mipo00 is HybridProposal, Configs {
         );
 
         /// run actions on moonbeam
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(uint256(ActionType.Moonbeam));
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         /// run actions on optimism
-        vm.selectFork(uint256(ForkID.Optimism));
+        vm.selectFork(uint256(ActionType.Optimism));
         _runExtChain(addresses, optimismActions);
     }
 
@@ -998,7 +998,7 @@ contract mipo00 is HybridProposal, Configs {
 
         bytes memory whitelistedCalldata = approvedCalldata[0];
 
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(uint256(ActionType.Moonbeam));
         addresses.addRestriction(
             ChainIdHelper.toMoonbeamChainId(block.chainid)
         );
@@ -1016,7 +1016,7 @@ contract mipo00 is HybridProposal, Configs {
             "multichain governor should have whitelisted break glass guardian calldata"
         );
 
-        vm.selectFork(uint256(ForkID.Optimism));
+        vm.selectFork(uint256(ActionType.Optimism));
     }
 
     function _buildCalldata(Addresses addresses) internal {

@@ -114,7 +114,7 @@ abstract contract HybridProposal is
         string memory description,
         ForkID proposalType
     ) internal {
-        if (proposalType == ForkID.Moonbeam) {
+        if (proposalType == ActionType.Moonbeam) {
             moonbeamActions.push(
                 ProposalAction({
                     target: target,
@@ -123,7 +123,7 @@ abstract contract HybridProposal is
                     description: description
                 })
             );
-        } else if (proposalType == ForkID.Base) {
+        } else if (proposalType == ActionType.Base) {
             baseActions.push(
                 ProposalAction({
                     target: target,
@@ -132,7 +132,7 @@ abstract contract HybridProposal is
                     description: description
                 })
             );
-        } else if (proposalType == ForkID.Optimism) {
+        } else if (proposalType == ActionType.Optimism) {
             optimismActions.push(
                 ProposalAction({
                     target: target,
@@ -208,7 +208,7 @@ abstract contract HybridProposal is
             values[i] = moonbeamActions[i].value;
             calldatas[i] = moonbeamActions[i].data;
             descriptions[i] = moonbeamActions[i].description;
-            network[i] = ForkID.Moonbeam;
+            network[i] = ActionType.Moonbeam;
         }
 
         /// base actions
@@ -218,7 +218,7 @@ abstract contract HybridProposal is
             values[i + indexStart] = baseActions[i].value;
             calldatas[i + indexStart] = baseActions[i].data;
             descriptions[i + indexStart] = baseActions[i].description;
-            network[i + indexStart] = ForkID.Base;
+            network[i + indexStart] = ActionType.Base;
         }
 
         /// optimism actions, start where base actions left off
@@ -228,7 +228,7 @@ abstract contract HybridProposal is
             values[i + indexStart] = optimismActions[i].value;
             calldatas[i + indexStart] = optimismActions[i].data;
             descriptions[i + indexStart] = optimismActions[i].description;
-            network[i + indexStart] = ForkID.Optimism;
+            network[i + indexStart] = ActionType.Optimism;
         }
 
         return (targets, values, calldatas, network, descriptions);
@@ -483,19 +483,19 @@ abstract contract HybridProposal is
     function teardown(Addresses, address) public virtual override {}
 
     function run(Addresses addresses, address) public virtual override {
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(uint256(ActionType.Moonbeam));
         _runMoonbeamMultichainGovernor(
             addresses,
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
 
         if (baseActions.length != 0) {
-            vm.selectFork(uint256(ForkID.Base));
+            vm.selectFork(uint256(ActionType.Base));
             _runExtChain(addresses, baseActions);
         }
 
         if (optimismActions.length != 0) {
-            vm.selectFork(uint256(ForkID.Optimism));
+            vm.selectFork(uint256(ActionType.Optimism));
             _runExtChain(addresses, optimismActions);
         }
 
@@ -510,7 +510,7 @@ abstract contract HybridProposal is
         Addresses addresses,
         address governor
     ) public override returns (uint256 proposalId) {
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(uint256(ActionType.Moonbeam));
 
         uint256 proposalCount = onchainProposalId != 0
             ? onchainProposalId
@@ -601,13 +601,13 @@ abstract contract HybridProposal is
             /// remove the Moonbeam, Base and Optimism restriction
             addresses.removeRestriction();
 
-            vm.selectFork(uint256(ForkID.Base));
+            vm.selectFork(uint256(ActionType.Base));
             checkBaseOptimismActions(baseActions);
 
-            vm.selectFork(uint256(ForkID.Optimism));
+            vm.selectFork(uint256(ActionType.Optimism));
             checkBaseOptimismActions(optimismActions);
 
-            vm.selectFork(uint256(ForkID.Moonbeam));
+            vm.selectFork(uint256(ActionType.Moonbeam));
 
             vm.roll(block.number + 1);
 
@@ -912,10 +912,10 @@ abstract contract HybridProposal is
     ) internal {
         (address[] memory targets, , ) = getTargetsPayloadsValues(addresses);
 
-        vm.selectFork(uint256(ForkID.Moonbeam));
+        vm.selectFork(uint256(ActionType.Moonbeam));
         checkMoonbeamActions(targets);
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
         checkBaseOptimismActions(baseActions);
 
         require(targets.length == 1);

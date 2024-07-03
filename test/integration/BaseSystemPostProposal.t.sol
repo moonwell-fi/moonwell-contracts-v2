@@ -32,7 +32,7 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(uint256(ForkID.Base));
+        vm.selectFork(uint256(ActionType.Base));
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         well = addresses.getAddress("GOVTOKEN");
