@@ -9,7 +9,7 @@ import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {MultisigProposal} from "@proposals/proposalTypes/MultisigProposal.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {MOONBEAM_FORK_ID, BASE_CHAIN_ID, MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
+import "@utils/ChainIds.sol";
 
 /// Reuse Multisig Proposal contract for readability and to avoid code duplication
 abstract contract CrossChainProposal is
@@ -78,11 +78,11 @@ abstract contract CrossChainProposal is
             bytes memory proposalCalldata = getMultichainGovernorCalldata(
                 temporalGovAddress,
                 addresses.getAddress(
-                    block.chainid == BASE_CHAIN_ID ||
+                    block.chainid == OPTIMISM_CHAIN_ID ||
                         block.chainid == MOONBEAM_CHAIN_ID
                         ? "WORMHOLE_CORE_MOONBEAM"
                         : "WORMHOLE_CORE_MOONBASE",
-                    block.chainid == BASE_CHAIN_ID ||
+                    block.chainid == OPTIMISM_CHAIN_ID ||
                         block.chainid == MOONBEAM_CHAIN_ID
                         ? MOONBEAM_CHAIN_ID
                         : MOONBASE_CHAIN_ID
@@ -94,7 +94,7 @@ abstract contract CrossChainProposal is
                 (address[], uint256[], bytes[], string)
             );
 
-            address expectedAddress = block.chainid == BASE_CHAIN_ID ||
+            address expectedAddress = block.chainid == OPTIMISM_CHAIN_ID ||
                 block.chainid == MOONBEAM_CHAIN_ID
                 ? addresses.getAddress(
                     "WORMHOLE_CORE_MOONBEAM",
@@ -273,7 +273,7 @@ abstract contract CrossChainProposal is
 
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            block.chainid.toBaseChainId()
+            block.chainid.toOptimismChainId()
         );
 
         uint256 proposalCount = onchainProposalId != 0
@@ -363,7 +363,8 @@ abstract contract CrossChainProposal is
         printActions(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             /// if moonbeam or base use wormhole core on moonbeam, else use moonbase
-            block.chainid == MOONBEAM_CHAIN_ID || block.chainid == BASE_CHAIN_ID
+            block.chainid == MOONBEAM_CHAIN_ID ||
+                block.chainid == OPTIMISM_CHAIN_ID
                 ? addresses.getAddress(
                     "WORMHOLE_CORE_MOONBEAM",
                     MOONBEAM_CHAIN_ID
