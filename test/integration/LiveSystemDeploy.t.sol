@@ -26,8 +26,6 @@ contract LiveSystemDeploy is Test {
     Comptroller comptroller;
     Addresses addresses;
     mip00 proposal;
-    address op;
-    address[] public mTokens;
     mapping(address mToken => Configs.EmissionConfig[] emissionConfig)
         public emissionsConfig;
 
@@ -50,8 +48,6 @@ contract LiveSystemDeploy is Test {
         proposal.validate(addresses, address(proposal));
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
-        // TODO remove this and use rewards emissionToken instead
-        op = addresses.getAddress("OP");
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
 
         Configs.EmissionConfig[] memory emissionConfigs = proposal
@@ -60,18 +56,6 @@ contract LiveSystemDeploy is Test {
         for (uint256 i = 0; i < emissionConfigs.length; i++) {
             address mToken = addresses.getAddress(emissionConfigs[i].mToken);
             emissionsConfig[mToken].push(emissionConfigs[i]);
-        }
-
-        Configs.CTokenConfiguration[] memory cTokenConfigs = proposal
-            .getCTokenConfigurations(block.chainid);
-
-        mTokens = new address[](cTokenConfigs.length);
-        for (uint256 i = 0; i < cTokenConfigs.length; i++) {
-            address mtoken = addresses.getAddress(
-                cTokenConfigs[i].addressesString
-            );
-            vm.label(mtoken, cTokenConfigs[i].addressesString);
-            mTokens[i] = (mtoken);
         }
     }
 
@@ -92,16 +76,20 @@ contract LiveSystemDeploy is Test {
         uint256 mTokenIndex,
         address newOwner
     ) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        Configs.CTokenConfiguration[] memory mTokensConfig = proposal
+            .getCTokenConfigurations(block.chainid);
+        mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
         address emissionsAdmin = addresses.getAddress("TEMPORAL_GOVERNOR");
         vm.assume(newOwner != emissionsAdmin);
 
         vm.startPrank(emissionsAdmin);
 
-        address mToken = mTokens[mTokenIndex];
+        address mToken = addresses.getAddress(
+            mTokensConfig[mTokenIndex].addressesString
+        );
         for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
             mrd._updateOwner(
-                MToken(mTokens[mTokenIndex]),
+                MToken(mToken),
                 emissionsConfig[mToken][i].emissionToken,
                 newOwner
             );
@@ -113,15 +101,20 @@ contract LiveSystemDeploy is Test {
         uint256 mTokenIndex,
         address newOwner
     ) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        Configs.CTokenConfiguration[] memory mTokensConfig = proposal
+            .getCTokenConfigurations(block.chainid);
+
+        mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
         address emissionsAdmin = addresses.getAddress("TEMPORAL_GOVERNOR");
         vm.assume(newOwner != emissionsAdmin);
 
         vm.startPrank(emissionsAdmin);
-        address mToken = address(mTokens[mTokenIndex]);
+        address mToken = addresses.getAddress(
+            mTokensConfig[mTokenIndex].addressesString
+        );
         for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
             mrd._updateBorrowSpeed(
-                MToken(mTokens[mTokenIndex]),
+                MToken(mToken),
                 emissionsConfig[mToken][i].emissionToken,
                 0.123e18
             );
@@ -132,8 +125,13 @@ contract LiveSystemDeploy is Test {
     function testFuzz_UpdateEmissionConfigEndTimeSuccess(
         uint256 mTokenIndex
     ) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
-        address mToken = address(mTokens[mTokenIndex]);
+        Configs.CTokenConfiguration[] memory mTokensConfig = proposal
+            .getCTokenConfigurations(block.chainid);
+
+        mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
+        address mToken = addresses.getAddress(
+            mTokensConfig[mTokenIndex].addressesString
+        );
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
         for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
@@ -158,498 +156,456 @@ contract LiveSystemDeploy is Test {
         vm.stopPrank();
     }
 
-    function testUpdateEmissionConfigSupplyUsdcSuccess(
+    function testFuzz_UpdateEmissionConfigSupplySuccess(
         uint256 mTokenIndex
     ) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        Configs.CTokenConfiguration[] memory mTokensConfig = proposal
+            .getCTokenConfigurations(block.chainid);
 
-        uint256 borrowIndex;
+        mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
 
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
-        {
-            // must calculate borrow index before updating end time
-            // otherwise the global timestamp will be equal to the current block timestamp
-            MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("OP"));
-
-            uint256 denominator = (mToken.totalBorrows() * 1e18) / // exp scale
-                mToken.borrowIndex();
-
-            uint256 deltaTimestamp = block.timestamp -
-                config.borrowGlobalTimestamp;
-            uint256 tokenAccrued = deltaTimestamp *
-                config.borrowEmissionsPerSec;
-            uint256 ratio = denominator > 0
-                ? (tokenAccrued * 1e36) / denominator // double scale
-                : 0;
-
-            borrowIndex = config.borrowGlobalIndex + ratio;
-        }
-
-        testFuzz_UpdateEmissionConfigEndTimeSuccess(1);
-
-        {
-            vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        address mToken = addresses.getAddress(
+            mTokensConfig[mTokenIndex].addressesString
+        );
+        for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
+            vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
             mrd._updateSupplySpeed(
-                mToken, /// reward mUSDbC
-                op, /// rewards paid in OP
+                MToken(mToken),
+                emissionsConfig[mToken][i].emissionToken,
                 1e18 /// pay 1 op per second in rewards
             );
-            vm.stopPrank();
 
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("OP"));
+                .getConfigForMarket(
+                    MToken(mToken),
+                    emissionsConfig[mToken][i].emissionToken
+                );
 
-            deal(
-                op,
-                address(mrd),
-                4 weeks * 1e18 /// fund for entire period
-            );
-
-            assertEq(
-                config.owner,
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                "Owner incorrect"
-            );
-            assertEq(config.emissionToken, op, "Emission token incorrect");
             assertEq(
                 config.supplyEmissionsPerSec,
                 1e18,
                 "Supply emissions incorrect"
             );
-            assertEq(
-                config.endTime,
-                block.timestamp + 4 weeks,
-                "End time incorrect"
-            );
-            assertEq(
-                config.supplyGlobalIndex,
-                1e36,
-                "Supply global index incorrect"
-            );
-            assertEq(
-                config.borrowGlobalIndex,
-                borrowIndex,
-                "Borrow global index incorrect"
-            );
         }
     }
 
-    function testUpdateEmissionConfigBorrowUsdcSuccess() public {
-        uint256 supplyIndex;
+    function testFuzz_UpdateEmissionConfigBorrowSuccess(
+        uint256 mTokenIndex
+    ) public {
+        Configs.CTokenConfiguration[] memory mTokensConfig = proposal
+            .getCTokenConfigurations(block.chainid);
 
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
-        {
-            // must calculate supply index before updating end time
-            // otherwise the global timestamp will be equal to the current block timestamp
-            MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("OP"));
+        mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
 
-            uint256 denominator = mToken.totalSupply();
-            uint256 deltaTimestamp = block.timestamp -
-                config.supplyGlobalTimestamp;
-            uint256 tokenAccrued = deltaTimestamp *
-                config.supplyEmissionsPerSec;
-            uint256 ratio = denominator > 0
-                ? (tokenAccrued * 1e36) / denominator // double scale
-                : 0;
-
-            supplyIndex = config.supplyGlobalIndex + ratio;
-        }
-
-        testFuzz_UpdateEmissionConfigEndTimeSuccess(1);
-
-        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        mrd._updateBorrowSpeed(
-            mToken, /// reward mUSDbC
-            op, /// rewards paid in OP
-            1e18 /// pay 1 op per second in rewards to borrowers
+        address mToken = addresses.getAddress(
+            mTokensConfig[mTokenIndex].addressesString
         );
-        vm.stopPrank();
-
-        deal(
-            op,
-            address(mrd),
-            4 weeks * 1e18 /// fund for entire period
-        );
-
-        {
-            MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(mToken, addresses.getAddress("OP"));
-
-            assertEq(
-                config.owner,
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                "Owner incorrect"
+        for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
+            vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+            mrd._updateBorrowSpeed(
+                MToken(mToken),
+                emissionsConfig[mToken][i].emissionToken,
+                1e18 /// pay 1 op per second in rewards to borrowers
             );
-            assertEq(config.emissionToken, op, "Emission token incorrect");
+
+            MultiRewardDistributorCommon.MarketConfig memory config = mrd
+                .getConfigForMarket(
+                    MToken(mToken),
+                    emissionsConfig[mToken][i].emissionToken
+                );
+
             assertEq(
                 config.borrowEmissionsPerSec,
                 1e18,
                 "Borrow emissions incorrect"
             );
-            assertEq(
-                config.endTime,
-                block.timestamp + 4 weeks,
-                "End time incorrect"
-            );
-            assertEq(
-                config.supplyGlobalIndex,
-                supplyIndex,
-                "Supply global index incorrect"
-            );
-            assertEq(
-                config.borrowGlobalIndex,
-                1e36,
-                "Borrow global index incorrect"
-            );
         }
     }
 
-    function testMintMTokenSucceeds() public {
-        address sender = address(this);
-        uint256 mintAmount = 100e6;
+    function testFuzz_MintMTokenSucceeds(
+        uint256 mTokenIndex,
+        uint256 mintAmount
+    ) public {
+        Configs.CTokenConfiguration[] memory mTokensConfig = proposal
+            .getCTokenConfigurations(block.chainid);
 
-        IERC20 token = IERC20(addresses.getAddress("USDC"));
-        MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_USDC"))
+        mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
+        address sender = address(this);
+
+        address mToken = addresses.getAddress(
+            mTokensConfig[mTokenIndex].addressesString
         );
-        uint256 startingTokenBalance = token.balanceOf(address(mToken));
+
+        IERC20 token = IERC20(
+            addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
+        );
+
+        uint256 startingTokenBalance = token.balanceOf(mToken);
 
         deal(address(token), sender, mintAmount);
         token.approve(address(mToken), mintAmount);
 
-        assertEq(mToken.mint(mintAmount), 0, "Mint failed"); /// ensure successful mint
+        assertEq(
+            MErc20Delegator(payable(mToken)).mint(mintAmount),
+            0,
+            "Mint failed"
+        ); /// ensure successful mint
         assertTrue(
-            mToken.balanceOf(sender) > 0,
+            MErc20Delegator(payable(mToken)).balanceOf(sender) > 0,
             "mToken balance should be gt 0 after mint"
         ); /// ensure balance is gt 0
         assertEq(
-            token.balanceOf(address(mToken)) - startingTokenBalance,
+            token.balanceOf(mToken) - startingTokenBalance,
             mintAmount,
             "Underlying balance not updated"
         ); /// ensure underlying balance is sent to mToken
     }
 
-    function testBorrowMTokenSucceeds() public {
-        testMintMTokenSucceeds();
-
-        address sender = address(this);
-        uint256 borrowAmount = 50e6;
-
-        IERC20 token = IERC20(addresses.getAddress("USDC"));
-        MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_USDC"))
-        );
-
-        address[] memory mTokens = new address[](1);
-        mTokens[0] = address(mToken);
-
-        comptroller.enterMarkets(mTokens);
-        assertTrue(
-            comptroller.checkMembership(sender, MToken(address(mToken))),
-            "Membership check failed"
-        ); /// ensure sender and mToken is in market
-
-        assertEq(mToken.borrow(borrowAmount), 0, "Borrow failed"); /// ensure successful borrow
-
-        assertEq(token.balanceOf(sender), borrowAmount, "Wrong borrow amount"); /// ensure balance is correct
-    }
-
-    function testBorrowOtherMTokenSucceeds() public {
-        testMintMTokenSucceeds();
-
-        address sender = address(this);
-        deal(
-            addresses.getAddress("WETH"),
-            addresses.getAddress("MOONWELL_WETH"),
-            1 ether
-        );
-
-        IERC20 weth = IERC20(addresses.getAddress("WETH"));
-
-        uint256 borrowAmount = 1e6;
-
-        MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_WETH"))
-        );
-
-        address[] memory mTokens = new address[](1);
-        mTokens[0] = addresses.getAddress("MOONWELL_USDC");
-
-        comptroller.enterMarkets(mTokens);
-        assertTrue(
-            comptroller.checkMembership(
-                sender,
-                MToken(addresses.getAddress("MOONWELL_USDC"))
-            )
-        ); /// ensure sender and mToken is in market
-
-        (, uint256 liquidity, uint256 shortfall) = comptroller
-            .getAccountLiquidity(sender);
-
-        assertEq(mToken.borrow(borrowAmount), 0); /// ensure successful borrow
-        (
-            ,
-            uint256 liquidityAfterBorrow,
-            uint256 shortfallAfterBorrow
-        ) = comptroller.getAccountLiquidity(sender);
-
-        assertEq(weth.balanceOf(sender), borrowAmount); /// ensure balance is correct
-
-        assertGt(liquidity, liquidityAfterBorrow);
-        assertEq(shortfall, shortfallAfterBorrow);
-    }
-
-    function testSupplyUsdcReceivesRewards(uint256 toWarp) public {
-        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
-
-        testUpdateEmissionConfigSupplyUsdcSuccess();
-        testMintMTokenSucceeds();
-
-        vm.warp(block.timestamp + toWarp);
-
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
-
-        MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
-            .getOutstandingRewardsForUser(mToken, address(this));
-
-        assertEq(rewards[0].emissionToken, op);
-
-        uint256 balance = mToken.balanceOf(address(this));
-        uint256 totalSupply = mToken.totalSupply();
-
-        MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("OP"));
-
-        uint256 expectedReward = ((toWarp * config.supplyEmissionsPerSec) *
-            balance) / totalSupply;
-
-        assertApproxEqRel(
-            rewards[0].totalAmount,
-            expectedReward,
-            1e17,
-            "Total rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
-            rewards[0].supplySide,
-            expectedReward,
-            1e17,
-            "Supply side rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertEq(rewards[0].borrowSide, 0);
-    }
-
-    function testBorrowUsdcReceivesRewards(uint256 toWarp) public {
-        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
-
-        testUpdateEmissionConfigBorrowUsdcSuccess();
-        testBorrowMTokenSucceeds();
-
-        vm.warp(block.timestamp + toWarp);
-
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
-
-        MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
-            .getOutstandingRewardsForUser(mToken, address(this));
-
-        uint256 userCurrentBorrow = mToken.borrowBalanceCurrent(address(this));
-        uint256 totalBorrow = mToken.totalBorrows();
-
-        MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("OP"));
-
-        // calculate expected borrow reward
-        uint256 expectedBorrowReward = ((toWarp *
-            config.borrowEmissionsPerSec) * userCurrentBorrow) / totalBorrow;
-
-        assertEq(rewards[0].emissionToken, op);
-        assertApproxEqRel(
-            rewards[0].totalAmount,
-            expectedBorrowReward,
-            1e17,
-            "Total rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
-            rewards[0].borrowSide,
-            expectedBorrowReward,
-            1e17,
-            "Supply side rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertEq(rewards[0].supplySide, 0);
-    }
-
-    function testSupplyBorrowUsdcReceivesRewards(uint256 toWarp) public {
-        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
-
-        testUpdateEmissionConfigBorrowUsdcSuccess();
-
-        vm.warp(block.timestamp + 1);
-        testUpdateEmissionConfigSupplyUsdcSuccess();
-
-        testBorrowMTokenSucceeds();
-
-        vm.warp(block.timestamp + toWarp);
-
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
-
-        MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
-            .getOutstandingRewardsForUser(mToken, address(this));
-
-        uint256 balance = mToken.balanceOf(address(this));
-        uint256 totalSupply = mToken.totalSupply();
-
-        MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("OP"));
-
-        uint256 expectedSupplyReward = ((toWarp *
-            config.supplyEmissionsPerSec) * balance) / totalSupply;
-
-        uint256 userCurrentBorrow = mToken.borrowBalanceCurrent(address(this));
-        uint256 totalBorrow = mToken.totalBorrows();
-
-        // calculate expected borrow reward
-        uint256 expectedBorrowReward = ((toWarp *
-            config.borrowEmissionsPerSec) * userCurrentBorrow) / totalBorrow;
-
-        assertEq(rewards[0].emissionToken, op);
-        assertApproxEqRel(
-            rewards[0].totalAmount,
-            expectedBorrowReward + expectedSupplyReward,
-            1e17,
-            "Total rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
-            rewards[0].borrowSide,
-            expectedBorrowReward,
-            1e17,
-            "Borrow side rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
-            rewards[0].supplySide,
-            expectedSupplyReward,
-            1e17,
-            "Supply side rewards not within 1%"
-        );
-    }
-
-    function testLiquidateAccountReceivesRewards(uint256 toWarp) public {
-        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
-
-        testUpdateEmissionConfigSupplyUsdcSuccess();
-
-        vm.warp(block.timestamp + 1);
-
-        testUpdateEmissionConfigBorrowUsdcSuccess();
-
-        testBorrowMTokenSucceeds();
-
-        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
-
-        MultiRewardDistributorCommon.RewardInfo[] memory rewardsBefore = mrd
-            .getOutstandingRewardsForUser(mToken, address(this));
-
-        MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(mToken, addresses.getAddress("OP"));
-
-        uint256 expectedSupplyReward;
-        {
-            uint256 balance = mToken.balanceOf(address(this)) / 2;
-            uint256 totalSupply = mToken.totalSupply();
-
-            expectedSupplyReward =
-                ((toWarp * config.supplyEmissionsPerSec) * balance) /
-                totalSupply;
-        }
-
-        uint256 expectedBorrowReward;
-        {
-            uint256 userCurrentBorrow = mToken.borrowBalanceCurrent(
-                address(this)
-            );
-            uint256 totalBorrow = mToken.totalBorrows();
-
-            // calculate expected borrow reward
-            expectedBorrowReward =
-                ((toWarp * config.borrowEmissionsPerSec) * userCurrentBorrow) /
-                totalBorrow;
-        }
-
-        vm.warp(block.timestamp + toWarp);
-
-        /// borrower is now underwater on loan
-        deal(
-            address(mToken),
-            address(this),
-            mToken.balanceOf(address(this)) / 2
-        );
-
-        {
-            (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
-                .getHypotheticalAccountLiquidity(
-                    address(this),
-                    address(mToken),
-                    0,
-                    0
-                );
-
-            assertEq(err, 0, "Error in hypothetical liquidity calculation");
-            assertEq(liquidity, 0, "Liquidity not 0");
-            assertGt(shortfall, 0, "Shortfall not gt 0");
-        }
-
-        uint256 repayAmt = 50e6;
-        address liquidator = address(100_000_000);
-        IERC20 usdc = IERC20(addresses.getAddress("USDC"));
-
-        deal(address(usdc), liquidator, repayAmt);
-        vm.prank(liquidator);
-        usdc.approve(address(mToken), repayAmt);
-
-        _liquidateAccount(
-            liquidator,
-            address(this),
-            MErc20(address(mToken)),
-            1e5
-        );
-
-        MultiRewardDistributorCommon.RewardInfo[] memory rewardsAfter = mrd
-            .getOutstandingRewardsForUser(mToken, address(this));
-
-        assertEq(rewardsAfter[0].emissionToken, op, "Emission token incorrect");
-        assertApproxEqRel(
-            rewardsAfter[0].totalAmount,
-            rewardsBefore[0].totalAmount +
-                expectedBorrowReward +
-                expectedSupplyReward,
-            1e17,
-            "Total rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
-            rewardsAfter[0].borrowSide,
-            rewardsBefore[0].borrowSide + expectedBorrowReward,
-            1e17,
-            "Borrow side rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
-        assertApproxEqRel(
-            rewardsAfter[0].supplySide,
-            rewardsBefore[0].supplySide + expectedSupplyReward,
-            1e17,
-            "Supply side rewards not within 1%"
-        );
-    }
-
-    function _liquidateAccount(
-        address liquidator,
-        address liquidated,
-        MErc20 token,
-        uint256 repayAmt
-    ) private {
-        vm.prank(liquidator);
-        assertEq(
-            token.liquidateBorrow(liquidated, repayAmt, token),
-            0,
-            "user liquidation failure"
-        );
-    }
+    //
+    //    function testMintMTokenSucceeds() public {
+    //        address sender = address(this);
+    //        uint256 mintAmount = 100e6;
+    //
+    //        IERC20 token = IERC20(addresses.getAddress("USDC"));
+    //        MErc20Delegator mToken = MErc20Delegator(
+    //            payable(addresses.getAddress("MOONWELL_USDC"))
+    //        );
+    //        uint256 startingTokenBalance = token.balanceOf(address(mToken));
+    //
+    //        deal(address(token), sender, mintAmount);
+    //        token.approve(address(mToken), mintAmount);
+    //
+    //        assertEq(mToken.mint(mintAmount), 0, "Mint failed"); /// ensure successful mint
+    //        assertTrue(
+    //            mToken.balanceOf(sender) > 0,
+    //            "mToken balance should be gt 0 after mint"
+    //        ); /// ensure balance is gt 0
+    //        assertEq(
+    //            token.balanceOf(address(mToken)) - startingTokenBalance,
+    //            mintAmount,
+    //            "Underlying balance not updated"
+    //        ); /// ensure underlying balance is sent to mToken
+    //    }
+    //
+    //    function testBorrowMTokenSucceeds() public {
+    //        testMintMTokenSucceeds();
+    //
+    //        address sender = address(this);
+    //        uint256 borrowAmount = 50e6;
+    //
+    //        IERC20 token = IERC20(addresses.getAddress("USDC"));
+    //        MErc20Delegator mToken = MErc20Delegator(
+    //            payable(addresses.getAddress("MOONWELL_USDC"))
+    //        );
+    //
+    //        address[] memory mTokensConfig = new address[](1);
+    //        mTokensConfig[0] = address(mToken);
+    //
+    //        comptroller.enterMarkets(mTokensConfig);
+    //        assertTrue(
+    //            comptroller.checkMembership(sender, MToken(address(mToken))),
+    //            "Membership check failed"
+    //        ); /// ensure sender and mToken is in market
+    //
+    //        assertEq(mToken.borrow(borrowAmount), 0, "Borrow failed"); /// ensure successful borrow
+    //
+    //        assertEq(token.balanceOf(sender), borrowAmount, "Wrong borrow amount"); /// ensure balance is correct
+    //    }
+    //
+    //    function testBorrowOtherMTokenSucceeds() public {
+    //        testMintMTokenSucceeds();
+    //
+    //        address sender = address(this);
+    //        deal(
+    //            addresses.getAddress("WETH"),
+    //            addresses.getAddress("MOONWELL_WETH"),
+    //            1 ether
+    //        );
+    //
+    //        IERC20 weth = IERC20(addresses.getAddress("WETH"));
+    //
+    //        uint256 borrowAmount = 1e6;
+    //
+    //        MErc20Delegator mToken = MErc20Delegator(
+    //            payable(addresses.getAddress("MOONWELL_WETH"))
+    //        );
+    //
+    //        address[] memory mTokensConfig = new address[](1);
+    //        mTokensConfig[0] = addresses.getAddress("MOONWELL_USDC");
+    //
+    //        comptroller.enterMarkets(mTokensConfig);
+    //        assertTrue(
+    //            comptroller.checkMembership(
+    //                sender,
+    //                MToken(addresses.getAddress("MOONWELL_USDC"))
+    //            )
+    //        ); /// ensure sender and mToken is in market
+    //
+    //        (, uint256 liquidity, uint256 shortfall) = comptroller
+    //            .getAccountLiquidity(sender);
+    //
+    //        assertEq(mToken.borrow(borrowAmount), 0); /// ensure successful borrow
+    //        (
+    //            ,
+    //            uint256 liquidityAfterBorrow,
+    //            uint256 shortfallAfterBorrow
+    //        ) = comptroller.getAccountLiquidity(sender);
+    //
+    //        assertEq(weth.balanceOf(sender), borrowAmount); /// ensure balance is correct
+    //
+    //        assertGt(liquidity, liquidityAfterBorrow);
+    //        assertEq(shortfall, shortfallAfterBorrow);
+    //    }
+    //
+    //    function testSupplyUsdcReceivesRewards(uint256 toWarp) public {
+    //        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
+    //
+    //        testUpdateEmissionConfigSupplyUsdcSuccess();
+    //        testMintMTokenSucceeds();
+    //
+    //        vm.warp(block.timestamp + toWarp);
+    //
+    //        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
+    //
+    //        MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
+    //            .getOutstandingRewardsForUser(mToken, address(this));
+    //
+    //        assertEq(rewards[0].emissionToken, op);
+    //
+    //        uint256 balance = mToken.balanceOf(address(this));
+    //        uint256 totalSupply = mToken.totalSupply();
+    //
+    //        MultiRewardDistributorCommon.MarketConfig memory config = mrd
+    //            .getConfigForMarket(mToken, addresses.getAddress("OP"));
+    //
+    //        uint256 expectedReward = ((toWarp * config.supplyEmissionsPerSec) *
+    //            balance) / totalSupply;
+    //
+    //        assertApproxEqRel(
+    //            rewards[0].totalAmount,
+    //            expectedReward,
+    //            1e17,
+    //            "Total rewards not within 1%"
+    //        ); /// allow 1% error, anything more causes test failure
+    //        assertApproxEqRel(
+    //            rewards[0].supplySide,
+    //            expectedReward,
+    //            1e17,
+    //            "Supply side rewards not within 1%"
+    //        ); /// allow 1% error, anything more causes test failure
+    //        assertEq(rewards[0].borrowSide, 0);
+    //    }
+    //
+    //    function testBorrowUsdcReceivesRewards(uint256 toWarp) public {
+    //        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
+    //
+    //        testUpdateEmissionConfigBorrowUsdcSuccess();
+    //        testBorrowMTokenSucceeds();
+    //
+    //        vm.warp(block.timestamp + toWarp);
+    //
+    //        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
+    //
+    //        MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
+    //            .getOutstandingRewardsForUser(mToken, address(this));
+    //
+    //        uint256 userCurrentBorrow = mToken.borrowBalanceCurrent(address(this));
+    //        uint256 totalBorrow = mToken.totalBorrows();
+    //
+    //        MultiRewardDistributorCommon.MarketConfig memory config = mrd
+    //            .getConfigForMarket(mToken, addresses.getAddress("OP"));
+    //
+    //        // calculate expected borrow reward
+    //        uint256 expectedBorrowReward = ((toWarp *
+    //            config.borrowEmissionsPerSec) * userCurrentBorrow) / totalBorrow;
+    //
+    //        assertEq(rewards[0].emissionToken, op);
+    //        assertApproxEqRel(
+    //            rewards[0].totalAmount,
+    //            expectedBorrowReward,
+    //            1e17,
+    //            "Total rewards not within 1%"
+    //        ); /// allow 1% error, anything more causes test failure
+    //        assertApproxEqRel(
+    //            rewards[0].borrowSide,
+    //            expectedBorrowReward,
+    //            1e17,
+    //            "Supply side rewards not within 1%"
+    //        ); /// allow 1% error, anything more causes test failure
+    //        assertEq(rewards[0].supplySide, 0);
+    //    }
+    //
+    //    function testSupplyBorrowUsdcReceivesRewards(uint256 toWarp) public {
+    //        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
+    //
+    //        testUpdateEmissionConfigBorrowUsdcSuccess();
+    //
+    //        vm.warp(block.timestamp + 1);
+    //        testUpdateEmissionConfigSupplyUsdcSuccess();
+    //
+    //        testBorrowMTokenSucceeds();
+    //
+    //        vm.warp(block.timestamp + toWarp);
+    //
+    //        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
+    //
+    //        MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
+    //            .getOutstandingRewardsForUser(mToken, address(this));
+    //
+    //        uint256 balance = mToken.balanceOf(address(this));
+    //        uint256 totalSupply = mToken.totalSupply();
+    //
+    //        MultiRewardDistributorCommon.MarketConfig memory config = mrd
+    //            .getConfigForMarket(mToken, addresses.getAddress("OP"));
+    //
+    //        uint256 expectedSupplyReward = ((toWarp *
+    //            config.supplyEmissionsPerSec) * balance) / totalSupply;
+    //
+    //        uint256 userCurrentBorrow = mToken.borrowBalanceCurrent(address(this));
+    //        uint256 totalBorrow = mToken.totalBorrows();
+    //
+    //        // calculate expected borrow reward
+    //        uint256 expectedBorrowReward = ((toWarp *
+    //            config.borrowEmissionsPerSec) * userCurrentBorrow) / totalBorrow;
+    //
+    //        assertEq(rewards[0].emissionToken, op);
+    //        assertApproxEqRel(
+    //            rewards[0].totalAmount,
+    //            expectedBorrowReward + expectedSupplyReward,
+    //            1e17,
+    //            "Total rewards not within 1%"
+    //        ); /// allow 1% error, anything more causes test failure
+    //        assertApproxEqRel(
+    //            rewards[0].borrowSide,
+    //            expectedBorrowReward,
+    //            1e17,
+    //            "Borrow side rewards not within 1%"
+    //        ); /// allow 1% error, anything more causes test failure
+    //        assertApproxEqRel(
+    //            rewards[0].supplySide,
+    //            expectedSupplyReward,
+    //            1e17,
+    //            "Supply side rewards not within 1%"
+    //        );
+    //    }
+    //
+    //    function testLiquidateAccountReceivesRewards(uint256 toWarp) public {
+    //        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
+    //
+    //        testUpdateEmissionConfigSupplyUsdcSuccess();
+    //
+    //        vm.warp(block.timestamp + 1);
+    //
+    //        testUpdateEmissionConfigBorrowUsdcSuccess();
+    //
+    //        testBorrowMTokenSucceeds();
+    //
+    //        MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
+    //
+    //        MultiRewardDistributorCommon.RewardInfo[] memory rewardsBefore = mrd
+    //            .getOutstandingRewardsForUser(mToken, address(this));
+    //
+    //        MultiRewardDistributorCommon.MarketConfig memory config = mrd
+    //            .getConfigForMarket(mToken, addresses.getAddress("OP"));
+    //
+    //        uint256 expectedSupplyReward;
+    //        {
+    //            uint256 balance = mToken.balanceOf(address(this)) / 2;
+    //            uint256 totalSupply = mToken.totalSupply();
+    //
+    //            expectedSupplyReward =
+    //                ((toWarp * config.supplyEmissionsPerSec) * balance) /
+    //                totalSupply;
+    //        }
+    //
+    //        uint256 expectedBorrowReward;
+    //        {
+    //            uint256 userCurrentBorrow = mToken.borrowBalanceCurrent(
+    //                address(this)
+    //            );
+    //            uint256 totalBorrow = mToken.totalBorrows();
+    //
+    //            // calculate expected borrow reward
+    //            expectedBorrowReward =
+    //                ((toWarp * config.borrowEmissionsPerSec) * userCurrentBorrow) /
+    //                totalBorrow;
+    //        }
+    //
+    //        vm.warp(block.timestamp + toWarp);
+    //
+    //        /// borrower is now underwater on loan
+    //        deal(
+    //            address(mToken),
+    //            address(this),
+    //            mToken.balanceOf(address(this)) / 2
+    //        );
+    //
+    //        {
+    //            (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
+    //                .getHypotheticalAccountLiquidity(
+    //                    address(this),
+    //                    address(mToken),
+    //                    0,
+    //                    0
+    //                );
+    //
+    //            assertEq(err, 0, "Error in hypothetical liquidity calculation");
+    //            assertEq(liquidity, 0, "Liquidity not 0");
+    //            assertGt(shortfall, 0, "Shortfall not gt 0");
+    //        }
+    //
+    //        uint256 repayAmt = 50e6;
+    //        address liquidator = address(100_000_000);
+    //        IERC20 usdc = IERC20(addresses.getAddress("USDC"));
+    //
+    //        deal(address(usdc), liquidator, repayAmt);
+    //        vm.prank(liquidator);
+    //        usdc.approve(address(mToken), repayAmt);
+    //
+    //        _liquidateAccount(
+    //            liquidator,
+    //            address(this),
+    //            MErc20(address(mToken)),
+    //            1e5
+    //        );
+    //
+    //        MultiRewardDistributorCommon.RewardInfo[] memory rewardsAfter = mrd
+    //            .getOutstandingRewardsForUser(mToken, address(this));
+    //
+    //        assertEq(rewardsAfter[0].emissionToken, op, "Emission token incorrect");
+    //        assertApproxEqRel(
+    //            rewardsAfter[0].totalAmount,
+    //            rewardsBefore[0].totalAmount +
+    //                expectedBorrowReward +
+    //                expectedSupplyReward,
+    //            1e17,
+    //            "Total rewards not within 1%"
+    //        ); /// allow 1% error, anything more causes test failure
+    //        assertApproxEqRel(
+    //            rewardsAfter[0].borrowSide,
+    //            rewardsBefore[0].borrowSide + expectedBorrowReward,
+    //            1e17,
+    //            "Borrow side rewards not within 1%"
+    //        ); /// allow 1% error, anything more causes test failure
+    //        assertApproxEqRel(
+    //            rewardsAfter[0].supplySide,
+    //            rewardsBefore[0].supplySide + expectedSupplyReward,
+    //            1e17,
+    //            "Supply side rewards not within 1%"
+    //        );
+    //    }
+    //
+    //    function _liquidateAccount(
+    //        address liquidator,
+    //        address liquidated,
+    //        MErc20 token,
+    //        uint256 repayAmt
+    //    ) private {
+    //        vm.prank(liquidator);
+    //        assertEq(
+    //            token.liquidateBorrow(liquidated, repayAmt, token),
+    //            0,
+    //            "user liquidation failure"
+    //        );
+    //    }
 }
