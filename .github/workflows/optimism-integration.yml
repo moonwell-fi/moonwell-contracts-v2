@@ -27,3 +27,4 @@ jobs:
 
       - name: Integration Tests Base Mainnet
         run: time forge test --match-contract LiveSystemDeploy -vvv --ffi
+[[id:070B8395-0A05-4251-8FE1-F64A1A687940][Moonwell Rewards Automation Spec]]
