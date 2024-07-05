@@ -1,5 +1,10 @@
 [
     {
+        "addr": "0x0000000000000000000000000000000000000001",
+        "name": "TEMPORAL_GOVERNOR",
+        "isContract": false
+    },
+    {
         "addr": "0x4200000000000000000000000000000000000006",
         "name": "WETH",
         "isContract": true
