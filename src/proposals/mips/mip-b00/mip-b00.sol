@@ -26,11 +26,11 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {ChainIds as ChainIdLib, BASE_FORK_ID, BASE_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
+import {ChainIds, BASE_FORK_ID, BASE_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
 
 contract mipb00 is HybridProposal, Configs {
     using Address for address;
-    using ChainIdLib for uint256;
+    using ChainIds for uint256;
 
     string public constant override name = "MIP-B00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%

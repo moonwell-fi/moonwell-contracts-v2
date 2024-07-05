@@ -11,13 +11,13 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {ChainIds as ChainIdLib, BASE_CHAIN_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {ChainIds, BASE_CHAIN_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 /// to run locally:
 ///     DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployMoonbeam.sol:xwellDeployMoonbeam --fork-url moonbeam
 /// @dev do not use MIP as a base to fork off of, it will not work
 contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
-    using ChainIdLib for uint256;
+    using ChainIds for uint256;
 
     /// @notice the name of the proposal
     string public constant override name = "MIP xWELL Token Creation Moonbeam";
