@@ -6,7 +6,6 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@forge-std/Test.sol";
 
 import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
