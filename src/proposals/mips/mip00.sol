@@ -163,7 +163,7 @@ contract mip00 is Proposal, CrossChainProposal, Configs, xWELLDeploy {
             bytes memory initData = abi.encodeWithSignature(
                 "initialize(address,address)",
                 address(unitroller),
-                addresses.getAddress("SECURITY_COUNCIL")
+                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
             );
             TransparentUpgradeableProxy mrdProxy = new TransparentUpgradeableProxy(
                     addresses.getAddress("MULTI_REWARD_DISTRIBUTOR"),
@@ -343,7 +343,7 @@ contract mip00 is Proposal, CrossChainProposal, Configs, xWELLDeploy {
             proxyAdmin.transferOwnership(governor);
 
             TemporalGovernor(payable(governor)).transferOwnership(
-                addresses.getAddress("SECURITY_COUNCIL")
+                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
             );
 
             /// set chainlink oracle on the comptroller implementation contract
@@ -419,13 +419,13 @@ contract mip00 is Proposal, CrossChainProposal, Configs, xWELLDeploy {
             /// ------------ SET GUARDIANS ------------
 
             Comptroller(address(unitroller))._setBorrowCapGuardian(
-                addresses.getAddress("CAP_GUARDIAN")
+                addresses.getAddress("OPTIMISM_CAP_GUARDIAN")
             );
             Comptroller(address(unitroller))._setSupplyCapGuardian(
-                addresses.getAddress("CAP_GUARDIAN")
+                addresses.getAddress("OPTIMISM_CAP_GUARDIAN")
             );
             Comptroller(address(unitroller))._setPauseGuardian(
-                addresses.getAddress("SECURITY_COUNCIL")
+                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
             );
 
             /// set temporal governor as the pending admin
@@ -570,7 +570,10 @@ contract mip00 is Proposal, CrossChainProposal, Configs, xWELLDeploy {
             payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
-        assertEq(governor.owner(), addresses.getAddress("SECURITY_COUNCIL"));
+        assertEq(
+            governor.owner(),
+            addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
+        );
         assertEq(temporalGovDelay[block.chainid], governor.proposalDelay());
 
         /// assert comptroller and unitroller are wired together properly
@@ -598,15 +601,15 @@ contract mip00 is Proposal, CrossChainProposal, Configs, xWELLDeploy {
             );
             assertEq(
                 Comptroller(address(unitroller)).pauseGuardian(),
-                addresses.getAddress("SECURITY_COUNCIL")
+                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
             );
             assertEq(
                 Comptroller(address(unitroller)).supplyCapGuardian(),
-                addresses.getAddress("CAP_GUARDIAN")
+                addresses.getAddress("OPTIMISM_CAP_GUARDIAN")
             );
             assertEq(
                 Comptroller(address(unitroller)).borrowCapGuardian(),
-                addresses.getAddress("CAP_GUARDIAN")
+                addresses.getAddress("OPTIMISM_CAP_GUARDIAN")
             );
             assertEq(
                 address(Comptroller(address(unitroller)).rewardDistributor()),
@@ -678,7 +681,7 @@ contract mip00 is Proposal, CrossChainProposal, Configs, xWELLDeploy {
             );
             assertEq(
                 address(distributor.pauseGuardian()),
-                addresses.getAddress("SECURITY_COUNCIL")
+                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
             );
             assertEq(distributor.emissionCap(), 100e18);
             assertEq(distributor.initialIndexConstant(), 1e36);

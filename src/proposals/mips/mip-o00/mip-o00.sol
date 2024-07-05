@@ -93,15 +93,13 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
     /// markets with a balance to avoid exploits
     function deploy(Addresses addresses, address deployer) public override {
         /// MToken/Emission configurations
-        _setMTokenConfiguration(
-            "./src/proposals/mips/mip-o00/optimismMTokens.json"
-        );
+        _setMTokenConfiguration("./src/proposals/mips/mip-o00/mTokens.json");
 
         /// If deploying to mainnet again these values must be adjusted
         /// - endTimestamp must be in the future
         /// - removed mock values that were set in initEmissions function for test execution
         _setEmissionConfiguration(
-            "./src/proposals/mips/mip-o00/RewardStreams.json"
+            "./src/proposals/mips/mip-o00/emissionConfig.json"
         );
 
         /// emission config sanity check
