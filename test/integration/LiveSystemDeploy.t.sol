@@ -28,7 +28,8 @@ contract LiveSystemDeploy is Test {
     mip00 proposal;
     address op;
     address[] public mTokens;
-    mapping(address mToken => address[] emissionTokens) public rewardTokens;
+    mapping(address mToken => Configs.EmissionConfig[] emissionConfig)
+        public emissionsConfig;
 
     function setUp() public {
         // TODO restrict chain ids passing the json here
@@ -58,7 +59,7 @@ contract LiveSystemDeploy is Test {
 
         for (uint256 i = 0; i < emissionConfigs.length; i++) {
             address mToken = addresses.getAddress(emissionConfigs[i].mToken);
-            rewardTokens[mToken].push(emissionConfigs[i].emissionToken);
+            emissionsConfig[mToken].push(emissionConfigs[i]);
         }
 
         Configs.CTokenConfiguration[] memory cTokenConfigs = proposal
@@ -98,10 +99,10 @@ contract LiveSystemDeploy is Test {
         vm.startPrank(emissionsAdmin);
 
         address mToken = mTokens[mTokenIndex];
-        for (uint256 i = 0; i < rewardTokens[mToken].length; i++) {
+        for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
             mrd._updateOwner(
                 MToken(mTokens[mTokenIndex]),
-                rewardTokens[mToken][i],
+                emissionsConfig[mToken][i].emissionToken,
                 newOwner
             );
         }
@@ -118,10 +119,10 @@ contract LiveSystemDeploy is Test {
 
         vm.startPrank(emissionsAdmin);
         address mToken = address(mTokens[mTokenIndex]);
-        for (uint256 i = 0; i < rewardTokens[mToken].length; i++) {
+        for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
             mrd._updateBorrowSpeed(
                 MToken(mTokens[mTokenIndex]),
-                rewardTokens[mToken][i],
+                emissionsConfig[mToken][i].emissionToken,
                 0.123e18
             );
         }
@@ -135,26 +136,33 @@ contract LiveSystemDeploy is Test {
         address mToken = address(mTokens[mTokenIndex]);
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
-        for (uint256 i = 0; i < rewardTokens[mToken].length; i++) {
+        for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
             mrd._updateEndTime(
                 MToken(mToken),
-                rewardTokens[mToken][i],
-                block.timestamp + 4 weeks
+                emissionsConfig[mToken][i].emissionToken,
+                emissionsConfig[mToken][i].endTime + 4 weeks
             );
 
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(MToken(mToken), rewardTokens[mToken][i]);
+                .getConfigForMarket(
+                    MToken(mToken),
+                    emissionsConfig[mToken][i].emissionToken
+                );
 
             assertEq(
                 config.endTime,
-                block.timestamp + 4 weeks,
+                emissionsConfig[mToken][i].endTime + 4 weeks,
                 "End time incorrect"
             );
         }
         vm.stopPrank();
     }
 
-    function testUpdateEmissionConfigSupplyUsdcSuccess() public {
+    function testUpdateEmissionConfigSupplyUsdcSuccess(
+        uint256 mTokenIndex
+    ) public {
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+
         uint256 borrowIndex;
 
         MToken mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
@@ -178,7 +186,7 @@ contract LiveSystemDeploy is Test {
             borrowIndex = config.borrowGlobalIndex + ratio;
         }
 
-        testUpdateEmissionConfigEndTimeSuccess(1);
+        testFuzz_UpdateEmissionConfigEndTimeSuccess(1);
 
         {
             vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
@@ -249,7 +257,7 @@ contract LiveSystemDeploy is Test {
             supplyIndex = config.supplyGlobalIndex + ratio;
         }
 
-        testUpdateEmissionConfigEndTimeSuccess(1);
+        testFuzz_UpdateEmissionConfigEndTimeSuccess(1);
 
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         mrd._updateBorrowSpeed(
