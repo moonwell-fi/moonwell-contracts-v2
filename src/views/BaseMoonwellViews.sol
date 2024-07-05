@@ -10,6 +10,8 @@ import {Well} from "@protocol/governance/Well.sol";
 import {IERC20} from "@protocol/governance/IERC20.sol";
 import {MErc20Interface} from "@protocol/MTokenInterfaces.sol";
 import {UniswapV2PairInterface} from "@protocol/views/UniswapV2PairInterface.sol";
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 
 /**
  * @title Moonwell Views Contract
@@ -210,27 +212,6 @@ contract BaseMoonwellViews is Initializable {
         return _result;
     }
 
-    /// @notice A view to get all info from the staking module
-    function getStakingInfo()
-        external
-        view
-        returns (StakingInfo memory _result)
-    {
-        if (address(safetyModule) != address(0)) {
-            _result.cooldown = safetyModule.COOLDOWN_SECONDS();
-            _result.unstakeWindow = safetyModule.UNSTAKE_WINDOW();
-            _result.distributionEnd = safetyModule.DISTRIBUTION_END();
-            _result.totalSupply = safetyModule.totalSupply();
-
-            SafetyModuleInterfaceV1.AssetData memory asset = safetyModule
-                .assets(address(safetyModule));
-            _result.emissionPerSecond = asset.emissionPerSecond;
-            _result.lastUpdateTimestamp = asset.lastUpdateTimestamp;
-            _result.index = asset.index;
-        }
-        return _result;
-    }
-
     /// @notice Virtual function to get market incentives, must be overrided overriden on the version of the deployment
     function getMarketIncentives(
         MToken market
@@ -416,9 +397,7 @@ contract BaseMoonwellViews is Initializable {
         address _user
     ) public view returns (UserStakingInfo memory _result) {
         if (address(safetyModule) != address(0)) {
-            _result.pendingRewards = safetyModule.getTotalRewardsBalance(
-                _user
-            );
+            _result.pendingRewards = safetyModule.getTotalRewardsBalance(_user);
             _result.cooldown = safetyModule.stakersCooldowns(_user);
             _result.totalStaked = safetyModule.balanceOf(_user);
         }
