@@ -246,10 +246,6 @@ library ChainIds {
     }
 
     function nonMoonbeamChainIds(uint256 chainId) internal pure returns (bool) {
-        return
-            chainId != MOONBEAM_CHAIN_ID &&
-            chainId != MOONBASE_CHAIN_ID &&
-            chainId != OPTIMISM_SEPOLIA_CHAIN_ID &&
-            chainId != OPTIMISM_CHAIN_ID;
+        return chainId != MOONBEAM_CHAIN_ID && chainId != MOONBASE_CHAIN_ID;
     }
 }
