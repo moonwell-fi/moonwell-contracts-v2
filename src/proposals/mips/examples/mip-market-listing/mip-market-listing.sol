@@ -402,7 +402,7 @@ contract mip0x is HybridProposal, Configs {
 
     function run(Addresses addresses, address) public override {
         printCalldata(addresses);
-        _simulateCrossChainActions(
+        _simulateBaseActions(
             addresses,
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );

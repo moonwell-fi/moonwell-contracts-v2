@@ -7,6 +7,7 @@ import "@forge-std/Test.sol";
 
 import "@protocol/utils/ChainIds.sol";
 
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
@@ -22,6 +23,8 @@ import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} fr
 /// src/proposals/mips/mip-m24/mip-m24.sol:mipm24
 contract mipm24 is HybridProposal, MultichainGovernorDeploy {
     using ChainIds for uint256;
+    using ProposalActions for *;
+
     string public constant override name = "MIP-M24";
 
     constructor() {
@@ -188,7 +191,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         vm.selectFork(BASE_FORK_ID);
-        _runExtChain(addresses, baseActions);
+        _runExtChain(addresses, actions.filter(ActionType.Base));
 
         /// switch back to moonbeam so we can run validations
         vm.selectFork(primaryForkId());

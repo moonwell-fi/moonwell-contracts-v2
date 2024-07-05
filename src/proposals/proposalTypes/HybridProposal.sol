@@ -12,20 +12,14 @@ import "@utils/ChainIds.sol";
 import {Address} from "@utils/Address.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {ChainIdHelper} from "@protocol/utils/ChainIdHelper.sol";
-import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
+import {ProposalAction, ActionType} from "@proposals/proposalTypes/IProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-
-enum ActionType {
-    Moonbeam,
-    Base,
-    Optimism
-}
 
 /// @notice this is a proposal type to be used for proposals that
 /// require actions to be taken on both moonbeam and base.
@@ -42,6 +36,7 @@ abstract contract HybridProposal is
     using Strings for string;
     using Address for address;
     using ChainIds for uint256;
+    using ProposalActions for *;
 
     /// @notice nonce for wormhole, unused by Temporal Governor
     uint32 public nonce = 0;
@@ -49,14 +44,8 @@ abstract contract HybridProposal is
     /// @notice instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
     uint8 public constant consistencyLevel = 200;
 
-    /// @notice actions to run against contracts live on moonbeam
-    ProposalAction[] public moonbeamActions;
-
-    /// @notice actions to run against contracts live on base
-    ProposalAction[] public baseActions;
-
-    /// @notice actions to run against contracts live on optimism
-    ProposalAction[] public optimismActions;
+    /// @notice actions to run against contracts
+    ProposalAction[] public actions;
 
     /// @notice hex encoded description of the proposal
     bytes public PROPOSAL_DESCRIPTION;
@@ -111,51 +100,23 @@ abstract contract HybridProposal is
     /// @param value msg.value to send to target
     /// @param data calldata to pass to the target
     /// @param description description of the action
-    /// @param proposalType which chain this proposal action belongs to
+    /// @param actionType which chain this proposal action belongs to
     function _pushAction(
         address target,
         uint256 value,
         bytes memory data,
         string memory description,
-        ActionType proposalType
+        ActionType actionType
     ) internal {
-        if (proposalType == ActionType.Moonbeam) {
-            moonbeamActions.push(
-                ProposalAction({
-                    target: target,
-                    value: value,
-                    data: data,
-                    description: description
-                })
-            );
-        } else if (proposalType == ActionType.Base) {
-            baseActions.push(
-                ProposalAction({
-                    target: target,
-                    value: value,
-                    data: data,
-                    description: description
-                })
-            );
-        } else if (proposalType == ActionType.Optimism) {
-            optimismActions.push(
-                ProposalAction({
-                    target: target,
-                    value: value,
-                    data: data,
-                    description: description
-                })
-            );
-        } else {
-            revert(
-                string(
-                    abi.encodePacked(
-                        "Proposal type not found for ",
-                        description
-                    )
-                )
-            );
-        }
+        actions.push(
+            ProposalAction({
+                target: target,
+                value: value,
+                data: data,
+                description: description,
+                actionType: actionType
+            })
+        );
     }
 
     /// @notice push an action to the Hybrid proposal with 0 value and no description
@@ -187,53 +148,19 @@ abstract contract HybridProposal is
             string[] memory
         )
     {
-        address[] memory targets = new address[](
-            moonbeamActions.length + baseActions.length + optimismActions.length
-        );
+        address[] memory targets = new address[](actions.length);
+        uint256[] memory values = new uint256[](actions.length);
+        bytes[] memory calldatas = new bytes[](actions.length);
+        ActionType[] memory network = new ActionType[](actions.length);
+        string[] memory descriptions = new string[](actions.length);
 
-        uint256[] memory values = new uint256[](
-            moonbeamActions.length + baseActions.length + optimismActions.length
-        );
-
-        bytes[] memory calldatas = new bytes[](
-            moonbeamActions.length + baseActions.length + optimismActions.length
-        );
-
-        ActionType[] memory network = new ActionType[](
-            moonbeamActions.length + baseActions.length + optimismActions.length
-        );
-
-        string[] memory descriptions = new string[](
-            moonbeamActions.length + baseActions.length + optimismActions.length
-        );
-
-        /// moonbeam actions
-        for (uint256 i = 0; i < moonbeamActions.length; i++) {
-            targets[i] = moonbeamActions[i].target;
-            values[i] = moonbeamActions[i].value;
-            calldatas[i] = moonbeamActions[i].data;
-            descriptions[i] = moonbeamActions[i].description;
-            network[i] = ActionType.Moonbeam;
-        }
-
-        /// base actions
-        uint256 indexStart = moonbeamActions.length;
-        for (uint256 i = 0; i < baseActions.length; i++) {
-            targets[i + indexStart] = baseActions[i].target;
-            values[i + indexStart] = baseActions[i].value;
-            calldatas[i + indexStart] = baseActions[i].data;
-            descriptions[i + indexStart] = baseActions[i].description;
-            network[i + indexStart] = ActionType.Base;
-        }
-
-        /// optimism actions, start where base actions left off
-        indexStart += baseActions.length;
-        for (uint256 i = 0; i < optimismActions.length; i++) {
-            targets[i + indexStart] = optimismActions[i].target;
-            values[i + indexStart] = optimismActions[i].value;
-            calldatas[i + indexStart] = optimismActions[i].data;
-            descriptions[i + indexStart] = optimismActions[i].description;
-            network[i + indexStart] = ActionType.Optimism;
+        /// all actions
+        for (uint256 i = 0; i < actions.length; i++) {
+            targets[i] = actions[i].target;
+            values[i] = actions[i].value;
+            calldatas[i] = actions[i].data;
+            descriptions[i] = actions[i].description;
+            network[i] = actions[i].actionType;
         }
 
         return (targets, values, calldatas, network, descriptions);
@@ -241,21 +168,21 @@ abstract contract HybridProposal is
 
     function getTemporalGovCalldata(
         address temporalGovernor,
-        ProposalAction[] memory actions
+        ProposalAction[] memory proposalActions
     ) public view returns (bytes memory timelockCalldata) {
         require(
             temporalGovernor != address(0),
             "getTemporalGovCalldata: Invalid temporal governor"
         );
 
-        address[] memory targets = new address[](actions.length);
-        uint256[] memory values = new uint256[](actions.length);
-        bytes[] memory payloads = new bytes[](actions.length);
+        address[] memory targets = new address[](proposalActions.length);
+        uint256[] memory values = new uint256[](proposalActions.length);
+        bytes[] memory payloads = new bytes[](proposalActions.length);
 
-        for (uint256 i = 0; i < actions.length; i++) {
-            targets[i] = actions[i].target;
-            values[i] = actions[i].value;
-            payloads[i] = actions[i].data;
+        for (uint256 i = 0; i < proposalActions.length; i++) {
+            targets[i] = proposalActions[i].target;
+            values[i] = proposalActions[i].value;
+            payloads[i] = proposalActions[i].data;
         }
 
         timelockCalldata = abi.encodeWithSignature(
@@ -285,22 +212,41 @@ abstract contract HybridProposal is
     {
         address temporalGovernorBase = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            ChainIdHelper.toBaseChainId(block.chainid)
+            block.chainid.toBaseChainId()
         );
         address temporalGovernorOptimism = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            ChainIdHelper.toOptimismChainId(block.chainid)
+            block.chainid.toOptimismChainId()
         );
 
         return
             getTargetsPayloadsValues(
                 addresses.getAddress(
                     "WORMHOLE_CORE",
-                    ChainIdHelper.toMoonbeamChainId(block.chainid)
+                    block.chainid.toMoonbeamChainId()
                 ),
                 temporalGovernorBase,
                 temporalGovernorOptimism
             );
+    }
+
+    /// @notice returns the total number of actions in the proposal
+    /// including base and optimism actions which are each bundled into a
+    /// single action to wormhole core on Moonbeam.
+    function allActionTypesCount() public view returns (uint256 count) {
+        uint256 baseActions = actions.proposalActionTypeCount(ActionType.Base);
+        baseActions = baseActions > 0 ? 1 : 0;
+
+        uint256 optimismActions = actions.proposalActionTypeCount(
+            ActionType.Optimism
+        );
+        optimismActions = optimismActions > 0 ? 1 : 0;
+
+        uint256 moonbeamActions = actions.proposalActionTypeCount(
+            ActionType.Moonbeam
+        );
+
+        return baseActions + optimismActions + moonbeamActions;
     }
 
     ///
@@ -330,25 +276,17 @@ abstract contract HybridProposal is
         address temporalGovernorBase,
         address temporalGovernorOptimism
     ) public view returns (address[] memory, uint256[] memory, bytes[] memory) {
-        uint256 proposalLength = moonbeamActions.length;
-
-        if (baseActions.length != 0) {
-            proposalLength += 1;
-        }
-
-        if (optimismActions.length != 0) {
-            proposalLength += 1;
-        }
+        uint256 proposalLength = allActionTypesCount();
 
         address[] memory targets = new address[](proposalLength);
         uint256[] memory values = new uint256[](proposalLength);
         bytes[] memory payloads = new bytes[](proposalLength);
 
         uint256 currIndex = 0;
-        for (uint256 i = 0; i < moonbeamActions.length; i++) {
+        for (uint256 i = 0; i < actions.length; i++) {
             /// target cannot be address 0 as that call will fail
             require(
-                moonbeamActions[i].target != address(0),
+                actions[i].target != address(0),
                 "Invalid target for governance"
             );
 
@@ -356,41 +294,42 @@ abstract contract HybridProposal is
             /// arguments can be 0 as long as eth is sent
             /// if there are no args and no eth, the action is not valid
             require(
-                (moonbeamActions[i].data.length == 0 &&
-                    moonbeamActions[i].value > 0) ||
-                    moonbeamActions[i].data.length > 0,
+                (actions[i].data.length == 0 && actions[i].value > 0) ||
+                    actions[i].data.length > 0,
                 "Invalid arguments for governance"
             );
 
-            targets[i] = moonbeamActions[i].target;
-            values[i] = moonbeamActions[i].value;
-            payloads[i] = moonbeamActions[i].data;
+            if (actions[i].actionType == ActionType.Moonbeam) {
+                targets[currIndex] = actions[i].target;
+                values[currIndex] = actions[i].value;
+                payloads[currIndex] = actions[i].data;
 
-            currIndex++;
+                currIndex++;
+            }
         }
 
         /// only get temporal governor calldata if there are actions to execute on base
-        if (baseActions.length != 0) {
+        if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
             /// fill out final piece of proposal which is the call
             /// to publishMessage on the temporal governor
             targets[currIndex] = wormholeCore;
             values[currIndex] = 0;
             payloads[currIndex] = getTemporalGovCalldata(
                 temporalGovernorBase,
-                baseActions
+                actions.filter(ActionType.Base)
             );
             currIndex++;
         }
 
         /// only get temporal governor calldata if there are actions to execute on optimism
-        if (optimismActions.length != 0) {
+        if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
             /// fill out final piece of proposal which is the call
             /// to publishMessage on the temporal governor
             targets[currIndex] = wormholeCore;
             values[currIndex] = 0;
             payloads[currIndex] = getTemporalGovCalldata(
                 temporalGovernorOptimism,
-                optimismActions
+                actions.filter(ActionType.Optimism)
             );
         }
 
@@ -431,7 +370,7 @@ abstract contract HybridProposal is
             emit log_bytes(calldatas[i]);
             console.log(
                 "Proposal type: %s\n",
-                chainForkToName[uint256(network[i])]
+                uint256(network[i]).chainForkToName()
             );
 
             console.log("\n");
@@ -488,20 +427,20 @@ abstract contract HybridProposal is
     function teardown(Addresses, address) public virtual override {}
 
     function run(Addresses addresses, address) public virtual override {
-        vm.selectFork(uint256(ActionType.Moonbeam));
+        vm.selectFork(MOONBEAM_FORK_ID);
         _runMoonbeamMultichainGovernor(
             addresses,
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
 
-        if (baseActions.length != 0) {
-            vm.selectFork(uint256(ActionType.Base));
-            _runExtChain(addresses, baseActions);
+        if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
+            vm.selectFork(BASE_FORK_ID);
+            _runExtChain(addresses, actions.filter(ActionType.Base));
         }
 
-        if (optimismActions.length != 0) {
-            vm.selectFork(uint256(ActionType.Optimism));
-            _runExtChain(addresses, optimismActions);
+        if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
+            vm.selectFork(OPTIMISM_FORK_ID);
+            _runExtChain(addresses, actions.filter(ActionType.Optimism));
         }
 
         vm.selectFork(uint256(primaryForkId()));
@@ -557,14 +496,9 @@ abstract contract HybridProposal is
         Addresses addresses,
         address caller
     ) internal {
-        _verifyActionsPreRun(moonbeamActions);
+        _verifyActionsPreRun(actions.filter(ActionType.Moonbeam));
 
-        bool disallowMoonbeam;
-
-        if (!addresses.chainIdAllowed(block.chainid)) {
-            addresses.addRestriction(block.chainid);
-            disallowMoonbeam = true;
-        }
+        addresses.addRestriction(block.chainid);
 
         address governanceToken = addresses.getAddress("GOVTOKEN");
         address governorAddress = addresses.getAddress(
@@ -589,9 +523,9 @@ abstract contract HybridProposal is
         bytes memory data;
         {
             uint256[] memory allowedChainIds = new uint256[](3);
-            allowedChainIds[0] = ChainIdHelper.toBaseChainId(block.chainid);
-            allowedChainIds[1] = ChainIdHelper.toOptimismChainId(block.chainid);
-            allowedChainIds[2] = ChainIdHelper.toMoonbeamChainId(block.chainid);
+            allowedChainIds[0] = block.chainid.toBaseChainId();
+            allowedChainIds[1] = block.chainid.toOptimismChainId();
+            allowedChainIds[2] = block.chainid.toMoonbeamChainId();
 
             addresses.addRestrictions(allowedChainIds);
 
@@ -606,13 +540,13 @@ abstract contract HybridProposal is
             /// remove the Moonbeam, Base and Optimism restriction
             addresses.removeRestriction();
 
-            vm.selectFork(uint256(ActionType.Base));
-            checkBaseOptimismActions(baseActions);
+            vm.selectFork(BASE_FORK_ID);
+            checkBaseOptimismActions(actions.filter(ActionType.Base));
 
-            vm.selectFork(uint256(ActionType.Optimism));
-            checkBaseOptimismActions(optimismActions);
+            vm.selectFork(OPTIMISM_FORK_ID);
+            checkBaseOptimismActions(actions.filter(ActionType.Optimism));
 
-            vm.selectFork(uint256(ActionType.Moonbeam));
+            vm.selectFork(MOONBEAM_FORK_ID);
 
             vm.roll(block.number + 1);
 
@@ -692,11 +626,14 @@ abstract contract HybridProposal is
         {
             address wormholeCoreMoonbeam = addresses.getAddress(
                 "WORMHOLE_CORE",
-                ChainIdHelper.toMoonbeamChainId(block.chainid)
+                block.chainid.toMoonbeamChainId()
             );
 
             {
-                if (baseActions.length != 0) {
+                if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
+                    ProposalAction[] memory baseActions = actions.filter(
+                        ActionType.Base
+                    );
                     address[] memory targets = new address[](
                         baseActions.length
                     );
@@ -709,12 +646,10 @@ abstract contract HybridProposal is
                         calldatas[i] = baseActions[i].data;
                     }
 
-                    addresses.addRestriction(
-                        ChainIdHelper.toBaseChainId(block.chainid)
-                    );
+                    addresses.addRestriction(block.chainid.toBaseChainId());
                     address temporalGov = addresses.getAddress(
                         "TEMPORAL_GOVERNOR",
-                        ChainIdHelper.toBaseChainId(block.chainid)
+                        block.chainid.toBaseChainId()
                     );
                     addresses.removeRestriction();
 
@@ -744,7 +679,10 @@ abstract contract HybridProposal is
             }
 
             {
-                if (optimismActions.length != 0) {
+                if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
+                    ProposalAction[] memory optimismActions = actions.filter(
+                        ActionType.Optimism
+                    );
                     address[] memory targets = new address[](
                         optimismActions.length
                     );
@@ -761,12 +699,10 @@ abstract contract HybridProposal is
                         calldatas[i] = optimismActions[i].data;
                     }
 
-                    addresses.addRestriction(
-                        ChainIdHelper.toOptimismChainId(block.chainid)
-                    );
+                    addresses.addRestriction(block.chainid.toOptimismChainId());
                     address temporalGov = addresses.getAddress(
                         "TEMPORAL_GOVERNOR",
-                        ChainIdHelper.toOptimismChainId(block.chainid)
+                        block.chainid.toOptimismChainId()
                     );
                     addresses.removeRestriction();
 
@@ -781,7 +717,7 @@ abstract contract HybridProposal is
                     uint64 nextSequence = IWormhole(wormholeCoreMoonbeam)
                         .nextSequence(address(governor));
 
-                    if (baseActions.length > 0) {
+                    if (actions.proposalActionTypeCount(ActionType.Base) > 0) {
                         nextSequence++;
                     }
 
@@ -827,12 +763,12 @@ abstract contract HybridProposal is
 
     /// @notice Runs the proposal actions on base, verifying the actions through the hook
     /// @param addresses the addresses contract
-    /// @param actions the actions to verify
+    /// @param proposalActions the actions to run
     function _runExtChain(
         Addresses addresses,
-        ProposalAction[] memory actions
+        ProposalAction[] memory proposalActions
     ) internal {
-        _verifyActionsPreRun(actions);
+        _verifyActionsPreRun(proposalActions);
 
         /// add restriction on external chain
         addresses.addRestriction(block.chainid);
@@ -846,17 +782,17 @@ abstract contract HybridProposal is
         /// runtime bytecode of the mock core
         vm.etch(wormhole, address(core).code);
 
-        address[] memory targets = new address[](actions.length);
-        uint256[] memory values = new uint256[](actions.length);
-        bytes[] memory payloads = new bytes[](actions.length);
+        address[] memory targets = new address[](proposalActions.length);
+        uint256[] memory values = new uint256[](proposalActions.length);
+        bytes[] memory payloads = new bytes[](proposalActions.length);
 
-        for (uint256 i = 0; i < actions.length; i++) {
-            targets[i] = actions[i].target;
-            values[i] = actions[i].value;
-            payloads[i] = actions[i].data;
+        for (uint256 i = 0; i < proposalActions.length; i++) {
+            targets[i] = proposalActions[i].target;
+            values[i] = proposalActions[i].value;
+            payloads[i] = proposalActions[i].data;
         }
 
-        checkBaseOptimismActions(actions);
+        checkBaseOptimismActions(proposalActions);
 
         bytes memory payload = abi.encode(
             addresses.getAddress("TEMPORAL_GOVERNOR"),
@@ -866,9 +802,7 @@ abstract contract HybridProposal is
         );
 
         /// allow querying of Moonbeam
-        addresses.addRestriction(
-            ChainIdHelper.toMoonbeamChainId(block.chainid)
-        );
+        addresses.addRestriction(block.chainid.toMoonbeamChainId());
 
         bytes32 governor = addresses
             .getAddress(
@@ -911,16 +845,18 @@ abstract contract HybridProposal is
     /// @param temporalGovAddress address of the cross chain governor executing the calls
     /// run pre and post proposal hooks to ensure that mToken markets created by the
     /// proposal are valid and mint at least 1 wei worth of mTokens to address 0
-    function _simulateCrossChainActions(
+    function _simulateBaseActions(
         Addresses addresses,
         address temporalGovAddress
     ) internal {
         (address[] memory targets, , ) = getTargetsPayloadsValues(addresses);
 
-        vm.selectFork(uint256(ActionType.Moonbeam));
+        vm.selectFork(MOONBEAM_FORK_ID);
         checkMoonbeamActions(targets);
 
-        vm.selectFork(uint256(ActionType.Base));
+        vm.selectFork(BASE_FORK_ID);
+
+        ProposalAction[] memory baseActions = actions.filter(ActionType.Base);
         checkBaseOptimismActions(baseActions);
 
         require(targets.length == 1);
@@ -935,14 +871,14 @@ abstract contract HybridProposal is
     /// @param multisigAddress address of the multisig doing the calls
     function _simulateMultisigActions(
         address multisigAddress,
-        ProposalAction[] memory actions
+        ProposalAction[] memory proposalActions
     ) internal {
         vm.startPrank(multisigAddress);
 
-        for (uint256 i = 0; i < actions.length; i++) {
-            (bool success, bytes memory result) = actions[i].target.call{
-                value: actions[i].value
-            }(actions[i].data);
+        for (uint256 i = 0; i < proposalActions.length; i++) {
+            (bool success, bytes memory result) = proposalActions[i]
+                .target
+                .call{value: proposalActions[i].value}(proposalActions[i].data);
 
             require(success, string(result));
         }

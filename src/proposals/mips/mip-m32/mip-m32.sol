@@ -3,18 +3,19 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {mipm30} from "@proposals/mips/mip-m30/mip-m30.sol";
 import {Configs} from "@proposals/Configs.sol";
-
+import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {mipm30} from "@proposals/mips/mip-m30/mip-m30.sol";
-import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
-
-import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipm32 is Configs, HybridProposal, ParameterValidation {
+    using ProposalActions for *;
+
     string public constant override name = "MIP-M32";
 
     uint256 public constant NEW_M_WBTCWH_RESERVE_FACTOR = 0.35e18;
@@ -81,12 +82,12 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
     function run(Addresses addresses, address) public override {
         /// safety check to ensure no base actions are run
         require(
-            baseActions.length == 0,
+            actions.proposalActionTypeCount(ActionType.Base) == 0,
             "MIP-M31: should have no base actions"
         );
 
         require(
-            moonbeamActions.length == 3,
+            actions.proposalActionTypeCount(ActionType.Moonbeam) == 3,
             "MIP-M31: should have 3 moonbeam actions"
         );
 

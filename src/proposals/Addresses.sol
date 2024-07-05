@@ -147,8 +147,7 @@ contract Addresses is IAddresses, Test {
     /// @param chainId the chain id to check
     function _restrictionCheck(uint256 chainId) private view {
         require(
-            _allowedChainIds.length == 0 ||
-                _allowedChainIds[_allowedChainIds.length - 1].contains(chainId),
+            chainIdAllowed(chainId),
             string(
                 abi.encodePacked(
                     "ChainIds are restricted from using chainId: ",
@@ -363,7 +362,7 @@ contract Addresses is IAddresses, Test {
     /// @param name the name of the address
     function isAddressSet(string memory name) public view returns (bool) {
         _restrictionCheck(block.chainid);
-        return _addresses[name][block.chainid].addr != address(0);
+        return isAddressSet(name, block.chainid);
     }
 
     /// @notice check if an address is set for a specific chain id

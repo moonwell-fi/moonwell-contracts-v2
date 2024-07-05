@@ -19,20 +19,20 @@ import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
 import {MWethDelegate} from "@protocol/MWethDelegate.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
-import {ChainIdHelper} from "@protocol/utils/ChainIdHelper.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {ChainIds as ChainIdLib, OPTIMISM_CHAIN_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
+import {ChainIds, OPTIMISM_CHAIN_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 
 /*
 
@@ -44,7 +44,8 @@ DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol
 
 contract mipo00 is HybridProposal, Configs {
     using Address for address;
-    using ChainIdLib for uint256;
+    using ChainIds for uint256;
+    using ProposalActions for *;
 
     string public constant override name = "MIP-O00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
@@ -455,7 +456,7 @@ contract mipo00 is HybridProposal, Configs {
         _pushAction(
             addresses.getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
-                ChainIdHelper.toMoonbeamChainId(block.chainid)
+                block.chainid.toMoonbeamChainId()
             ),
             abi.encodeWithSignature(
                 "updateApprovedCalldata(bytes,bool)",
@@ -555,27 +556,27 @@ contract mipo00 is HybridProposal, Configs {
     function run(Addresses addresses, address) public override {
         /// safety check to ensure no base actions are run
         require(
-            baseActions.length == 0,
+            actions.proposalActionTypeCount(ActionType.Base) == 0,
             "MIP-O00: should have no base actions"
         );
         require(
-            optimismActions.length != 0,
+            actions.proposalActionTypeCount(ActionType.Optimism) != 0,
             "MIP-O00: should have optimism actions"
         );
 
         require(
-            moonbeamActions.length == 1,
+            actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
             "MIP-O00: should have 1 moonbeam actions"
         );
 
         /// run actions on moonbeam
-        vm.selectFork(uint256(ActionType.Moonbeam));
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         /// run actions on optimism
-        vm.selectFork(uint256(ActionType.Optimism));
-        _runExtChain(addresses, optimismActions);
+        vm.selectFork(OPTIMISM_FORK_ID);
+        _runExtChain(addresses, actions.filter(ActionType.Optimism));
     }
 
     function teardown(Addresses addresses, address) public pure override {}
@@ -999,14 +1000,12 @@ contract mipo00 is HybridProposal, Configs {
 
         bytes memory whitelistedCalldata = approvedCalldata[0];
 
-        vm.selectFork(uint256(ActionType.Moonbeam));
-        addresses.addRestriction(
-            ChainIdHelper.toMoonbeamChainId(block.chainid)
-        );
+        vm.selectFork(MOONBEAM_FORK_ID);
+        addresses.addRestriction(block.chainid.toMoonbeamChainId());
         MultichainGovernor multiChainGovernor = MultichainGovernor(
             addresses.getAddress(
                 "MULTICHAIN_GOVERNOR_PROXY",
-                ChainIdHelper.toMoonbeamChainId(block.chainid)
+                block.chainid.toMoonbeamChainId()
             )
         );
         /// remove the moonbeam restriction from addresses
@@ -1017,24 +1016,22 @@ contract mipo00 is HybridProposal, Configs {
             "multichain governor should have whitelisted break glass guardian calldata"
         );
 
-        vm.selectFork(uint256(ActionType.Optimism));
+        vm.selectFork(OPTIMISM_FORK_ID);
     }
 
     function _buildCalldata(Addresses addresses) internal {
-        addresses.addRestriction(
-            ChainIdHelper.toMoonbeamChainId(block.chainid)
-        );
+        addresses.addRestriction(block.chainid.toMoonbeamChainId());
         /// get timelock from Moonbeam
         address artemisTimelock = addresses.getAddress(
             "MOONBEAM_TIMELOCK",
-            ChainIdHelper.toMoonbeamChainId(block.chainid)
+            block.chainid.toMoonbeamChainId()
         );
         addresses.removeRestriction();
 
         /// get temporal governor on Optimism
         address temporalGovernor = addresses.getAddress(
             "TEMPORAL_GOVERNOR",
-            ChainIdHelper.toOptimismChainId(block.chainid)
+            block.chainid.toOptimismChainId()
         );
 
         temporalGovernanceTargets.push(temporalGovernor);

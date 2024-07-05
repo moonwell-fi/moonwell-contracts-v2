@@ -5,10 +5,11 @@ import "@forge-std/Test.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {IMultichainGovernor} from "@protocol/governance/multichain/IMultichainGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MOONBEAM_FORK_ID, BASE_FORK_ID, BASE_CHAIN_ID} from "@utils/ChainIds.sol";
@@ -21,6 +22,8 @@ contract HybridProposalExample is
     HybridProposal,
     MultichainGovernorDeploy
 {
+    using ProposalActions for *;
+
     string public constant override name = "Example Proposal";
 
     uint256 public constant NEW_VOTING_PERIOD = 6 days;
@@ -113,7 +116,7 @@ contract HybridProposalExample is
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         vm.selectFork(BASE_FORK_ID);
-        _runExtChain(addresses, baseActions);
+        _runExtChain(addresses, actions.filter(ActionType.Base));
 
         // switch back to the base fork so we can run the validations
         vm.selectFork(primaryForkId());

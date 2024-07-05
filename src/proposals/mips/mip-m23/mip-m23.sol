@@ -12,6 +12,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
@@ -30,6 +31,7 @@ import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} fr
 /// src/proposals/mips/mip-m23/mip-m23.sol:mipm23
 contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
     using ChainIds for uint256;
+    using ProposalActions for *;
 
     string public constant override name = "MIP-M23";
 
@@ -381,7 +383,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
 
     function run(Addresses addresses, address) public override {
         vm.selectFork(BASE_FORK_ID);
-        _runExtChain(addresses, baseActions);
+        _runExtChain(addresses, actions.filter(ActionType.Base));
 
         /// switch back to moonbeam fork so we can run the validations
         vm.selectFork(primaryForkId());

@@ -21,6 +21,8 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 ///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployOptimism.sol:xwellDeployOptimism
 /// @dev do not use MIP as a base to fork off of, it will not work
 contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
+    using ChainIds for uint256;
+
     /// @notice the name of the proposal
     string public constant override name = "MIP xWELL Token Creation Optimism";
 
@@ -85,7 +87,7 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
                 xwellProxy,
                 temporalGov,
                 relayer,
-                uint16(chainIdToWormHoleId[block.chainid])
+                block.chainid.toMoonbeamWormholeChainId()
             );
 
             addresses.addAddress(
@@ -191,7 +193,7 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
             );
             assertTrue(
                 WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
-                    uint16(chainIdToWormHoleId[block.chainid]),
+                    block.chainid.toMoonbeamWormholeChainId(),
                     wormholeAdapter
                 ),
                 "trusted sender not trusted"

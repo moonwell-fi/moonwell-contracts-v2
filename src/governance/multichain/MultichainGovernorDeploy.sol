@@ -99,7 +99,7 @@ contract MultichainGovernorDeploy is Test {
         bytes[] memory whitelistedCalldata,
         address proxyAdmin,
         uint16 moonbeamChainId,
-        uint16 BASE_CHAIN_ID,
+        uint16 baseChainId,
         address voteCollectionOwner,
         address baseStkWell
     ) public returns (MultichainAddresses memory addresses) {
@@ -131,7 +131,7 @@ contract MultichainGovernorDeploy is Test {
             );
 
         trustedSenders[0] = WormholeTrustedSender.TrustedSender({
-            chainId: BASE_CHAIN_ID,
+            chainId: baseChainId,
             addr: vProxy
         });
 

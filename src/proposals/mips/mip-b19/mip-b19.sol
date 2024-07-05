@@ -62,7 +62,7 @@ contract mipb19 is HybridProposal, Configs, ParameterValidation {
 
     function run(Addresses addresses, address) public override {
         printCalldata(addresses);
-        _simulateCrossChainActions(
+        _simulateBaseActions(
             addresses,
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );

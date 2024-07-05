@@ -5,13 +5,14 @@ import "@forge-std/Test.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {IMultichainGovernor} from "@protocol/governance/multichain/IMultichainGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// @notice DO NOT USE THIS IN PRODUCTION, this is a completely hypothetical example
 /// adds stkwell as reward streams, completely hypothetical situation that makes no sense and would not work in production
@@ -21,6 +22,8 @@ contract HybridProposalExample is
     HybridProposal,
     MultichainGovernorDeploy
 {
+    using ProposalActions for *;
+
     string public constant override name = "Example Proposal";
 
     uint256 public constant NEW_VOTING_PERIOD = 6 days;
@@ -107,11 +110,11 @@ contract HybridProposalExample is
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ActionType.Moonbeam));
+        vm.selectFork(MOONBEAM_FORK_ID);
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         vm.selectFork(uint256(primaryForkId()));
-        _runExtChain(addresses, baseActions);
+        _runExtChain(addresses, actions.filter(ActionType.Base));
 
         // switch back to the base fork so we can run the validations
         vm.selectFork(primaryForkId());

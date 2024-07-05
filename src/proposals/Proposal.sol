@@ -6,7 +6,6 @@ import {Script} from "@forge-std/Script.sol";
 import {Test} from "@forge-std/Test.sol";
 
 import {ChainIds} from "@utils/ChainIds.sol";
-import {ChainIdHelper} from "@protocol/utils/ChainIdHelper.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 abstract contract Proposal is Script, Test {
@@ -68,13 +67,9 @@ abstract contract Proposal is Script, Test {
 
             {
                 uint256[] memory allowedChainIds = new uint256[](3);
-                allowedChainIds[0] = ChainIdHelper.toBaseChainId(block.chainid);
-                allowedChainIds[1] = ChainIdHelper.toOptimismChainId(
-                    block.chainid
-                );
-                allowedChainIds[2] = ChainIdHelper.toMoonbeamChainId(
-                    block.chainid
-                );
+                allowedChainIds[0] = block.chainid.toBaseChainId();
+                allowedChainIds[1] = block.chainid.toOptimismChainId();
+                allowedChainIds[2] = block.chainid.toMoonbeamChainId();
 
                 addresses.addRestrictions(allowedChainIds);
                 printCalldata(addresses);

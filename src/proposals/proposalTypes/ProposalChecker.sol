@@ -1,13 +1,14 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ChainIds} from "@test/utils/ChainIds.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {AddressToString} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID} from "@protocol/utils/ChainIds.sol";
 
-abstract contract ProposalChecker is ChainIds {
+abstract contract ProposalChecker {
+    using ChainIds for uint256;
     using AddressToString for address;
 
     /// @notice should only be run while on the Moonbeam fork
@@ -44,7 +45,7 @@ abstract contract ProposalChecker is ChainIds {
     ) public view {
         /// check that we are on the proper chain id here
         require(
-            nonMoonbeamChainIds[block.chainid],
+            block.chainid.nonMoonbeamChainIds(),
             "cannot run base/optimism checks on non-base/optimism network"
         );
 
@@ -66,7 +67,7 @@ abstract contract ProposalChecker is ChainIds {
     function checkBaseOptimismActions(address[] memory targets) public view {
         /// check that we are on the proper chain id
         require(
-            nonMoonbeamChainIds[block.chainid],
+            block.chainid.nonMoonbeamChainIds(),
             "cannot run base/optimism checks on non-base/optimism network"
         );
 

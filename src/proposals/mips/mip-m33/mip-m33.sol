@@ -3,15 +3,18 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m33/mip-m33.sol:mipm33
 contract mipm33 is HybridProposal, ParameterValidation {
+    using ProposalActions for *;
+
     string public constant override name = "MIP-M33";
 
     constructor() {
@@ -132,12 +135,12 @@ contract mipm33 is HybridProposal, ParameterValidation {
     function run(Addresses addresses, address) public override {
         /// safety check to ensure no base actions are run
         require(
-            baseActions.length == 0,
+            actions.proposalActionTypeCount(ActionType.Base) == 0,
             "MIP-M33: should have no base actions"
         );
 
         require(
-            moonbeamActions.length == 1,
+            actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
             "MIP-M33: should have moonbeam actions"
         );
 

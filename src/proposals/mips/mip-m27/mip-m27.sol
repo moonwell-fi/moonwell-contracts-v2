@@ -3,15 +3,19 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m27/mip-m27.sol:mipm27
 contract mipm27 is HybridProposal, ParameterValidation {
+    using ChainIds for uint256;
+    using ProposalActions for *;
+
     string public constant override name = "MIP-M27";
 
     uint256 public constant NEW_MXC_USDC_RESERVE_FACTOR = 0.30e18;
@@ -236,7 +240,7 @@ contract mipm27 is HybridProposal, ParameterValidation {
     function run(Addresses addresses, address) public override {
         /// safety check to ensure no base actions are run
         require(
-            baseActions.length == 0,
+            actions.proposalActionTypeCount(ActionType.Base) == 0,
             "MIP-M27: should have no base actions"
         );
 

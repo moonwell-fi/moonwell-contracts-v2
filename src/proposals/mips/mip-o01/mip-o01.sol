@@ -8,7 +8,7 @@ import "@utils/ChainIds.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
-import {ChainIdHelper} from "@protocol/utils/ChainIdHelper.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
@@ -41,6 +41,7 @@ DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o01/mip-o01.sol
 /// - xERC20 contract works as expected and only has a single trusted bridge on each chain
 contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
     using ChainIds for uint256;
+    using ProposalActions for *;
 
     string public constant override name = "MIP-O01";
 
@@ -120,10 +121,10 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                     addresses.getAddress("STK_GOVTOKEN"),
                     addresses.getAddress(
                         "MULTICHAIN_GOVERNOR_PROXY",
-                        ChainIdHelper.toMoonbeamChainId(block.chainid)
+                        block.chainid.toMoonbeamChainId()
                     ),
                     addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                    chainIdToWormHoleId[block.chainid],
+                    block.chainid.toMoonbeamWormholeChainId(),
                     addresses.getAddress("MRD_PROXY_ADMIN"),
                     addresses.getAddress("TEMPORAL_GOVERNOR")
                 );
@@ -253,7 +254,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
             _pushAction(
                 addresses.getAddress(
                     "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                    ChainIdHelper.toMoonbeamChainId(block.chainid)
+                    block.chainid.toMoonbeamChainId()
                 ),
                 abi.encodeWithSignature(
                     "addExternalChainConfigs((uint16,address)[])",
@@ -266,7 +267,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
             _pushAction(
                 addresses.getAddress(
                     "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                    ChainIdHelper.toBaseChainId(block.chainid)
+                    block.chainid.toBaseChainId()
                 ),
                 abi.encodeWithSignature(
                     "addExternalChainConfigs((uint16,address)[])",
@@ -304,17 +305,20 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
     function run(Addresses addresses, address) public override {
         /// safety check to ensure no base actions are run
         require(
-            baseActions.length == 0,
+            actions.proposalActionTypeCount(ActionType.Base) == 0,
             "MIP-O01: should have no base actions"
         );
 
         require(
-            moonbeamActions.length == 1,
+            actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
             "MIP-O01: should have 1 moonbeam actions"
         );
 
         /// only run actions on moonbeam
+        vm.selectFork(MOONBEAM_FORK_ID);
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
+
+        vm.selectFork(primaryForkId());
     }
 
     function validate(Addresses addresses, address) public view override {
@@ -499,7 +503,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
             );
             assertEq(
                 voteCollection.getAllTargetChains()[0],
-                chainIdToWormHoleId[block.chainid],
+                block.chainid.toMoonbeamWormholeChainId(),
                 "incorrect target chain, not moonbeam"
             );
             assertEq(
@@ -510,21 +514,21 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
 
             assertEq(
                 voteCollection.targetAddress(
-                    chainIdToWormHoleId[block.chainid]
+                    block.chainid.toMoonbeamWormholeChainId()
                 ),
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
-                    ChainIdHelper.toMoonbeamChainId(block.chainid)
+                    block.chainid.toMoonbeamChainId()
                 ),
                 "target address not multichain governor on moonbeam"
             );
 
             assertTrue(
                 voteCollection.isTrustedSender(
-                    chainIdToWormHoleId[block.chainid],
+                    block.chainid.toMoonbeamWormholeChainId(),
                     addresses.getAddress(
                         "MULTICHAIN_GOVERNOR_PROXY",
-                        ChainIdHelper.toMoonbeamChainId(block.chainid)
+                        block.chainid.toMoonbeamChainId()
                     )
                 ),
                 "multichain governor not trusted sender in vote collection"
