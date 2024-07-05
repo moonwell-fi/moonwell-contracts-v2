@@ -6,13 +6,15 @@ import "@forge-std/Test.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     using ChainIds for uint256;
+    using ProposalActions for *;
 
     string public constant override name = "TEST_TEMPORAL_GOVERNOR";
 
@@ -32,10 +34,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
         _pushAction(
-            addresses.getAddress(
-                "UNITROLLER",
-                sendingChainIdToReceivingChainId[block.chainid]
-            ),
+            addresses.getAddress("UNITROLLER", block.chainid.toBaseChainId()),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
                 addresses.getAddress(
@@ -50,12 +49,15 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     }
 
     function run(Addresses addresses, address) public override {
-        vm.selectFork(uint256(ActionType.Base));
-        _runExtChain(addresses, baseActions);
+        vm.selectFork(BASE_FORK_ID);
+        _runExtChain(addresses, actions.filter(ActionType.Base));
 
-        require(baseActions.length == 1, "invalid base proposal length");
         require(
-            moonbeamActions.length == 1,
+            actions.proposalActionTypeCount(ActionType.Base) == 1,
+            "invalid base proposal length"
+        );
+        require(
+            actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
             "invalid moonbeam proposal length"
         );
 

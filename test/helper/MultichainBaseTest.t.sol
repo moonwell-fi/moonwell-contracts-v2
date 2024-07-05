@@ -6,7 +6,6 @@ import "@forge-std/Test.sol";
 
 import {Well} from "@protocol/governance/Well.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
@@ -17,10 +16,10 @@ import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {ChainIds as ChainIdLib, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {ChainIds, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
-    using ChainIdLib for uint256;
+    using ChainIds for uint256;
 
     event BridgeOutSuccess(
         uint16 dstWormholeChainId,
