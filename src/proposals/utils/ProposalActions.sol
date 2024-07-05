@@ -44,7 +44,7 @@ library ProposalActions {
     function proposalActionTypeCount(
         ProposalAction[] storage actions,
         ActionType actionType
-    ) public view returns (uint256 actionTypeCount) {
+    ) internal view returns (uint256 actionTypeCount) {
         for (uint256 i = 0; i < actions.length; i++) {
             if (actions[i].actionType == actionType) {
                 actionTypeCount++;
