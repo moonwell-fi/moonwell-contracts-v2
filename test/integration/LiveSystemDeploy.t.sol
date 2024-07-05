@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
-import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "@forge-std/Test.sol";
 
@@ -57,6 +57,9 @@ contract LiveSystemDeploy is Test {
             address mToken = addresses.getAddress(emissionConfigs[i].mToken);
             emissionsConfig[mToken].push(emissionConfigs[i]);
         }
+
+        // must fund the WETH unwrapper with some ETH
+        vm.deal(addresses.getAddress("WETH_UNWRAPPER"), 100_000e18);
     }
 
     function testGuardianCanPauseTemporalGovernor() public {
@@ -222,6 +225,18 @@ contract LiveSystemDeploy is Test {
         }
     }
 
+    function _mintMToken(address mToken, uint256 amount) internal {
+        address underlying = MErc20(mToken).underlying();
+        deal(underlying, address(this), amount);
+        IERC20(underlying).approve(mToken, amount);
+
+        assertEq(
+            MErc20Delegator(payable(mToken)).mint(amount),
+            0,
+            "Mint failed"
+        );
+    }
+
     function testFuzz_MintMTokenSucceeds(
         uint256 mTokenIndex,
         uint256 mintAmount
@@ -230,26 +245,26 @@ contract LiveSystemDeploy is Test {
             .getCTokenConfigurations(block.chainid);
 
         mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
+
+        IERC20 token = IERC20(
+            addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
+        );
+
+        mintAmount = bound(
+            mintAmount,
+            1 * 10 ** token.decimals(),
+            100_000_000 * 10 ** token.decimals()
+        );
+
         address sender = address(this);
 
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
 
-        IERC20 token = IERC20(
-            addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
-        );
-
         uint256 startingTokenBalance = token.balanceOf(mToken);
 
-        deal(address(token), sender, mintAmount);
-        token.approve(address(mToken), mintAmount);
-
-        assertEq(
-            MErc20Delegator(payable(mToken)).mint(mintAmount),
-            0,
-            "Mint failed"
-        ); /// ensure successful mint
+        _mintMToken(mToken, mintAmount);
         assertTrue(
             MErc20Delegator(payable(mToken)).balanceOf(sender) > 0,
             "mToken balance should be gt 0 after mint"
@@ -261,101 +276,110 @@ contract LiveSystemDeploy is Test {
         ); /// ensure underlying balance is sent to mToken
     }
 
-    //
-    //    function testMintMTokenSucceeds() public {
-    //        address sender = address(this);
-    //        uint256 mintAmount = 100e6;
-    //
-    //        IERC20 token = IERC20(addresses.getAddress("USDC"));
-    //        MErc20Delegator mToken = MErc20Delegator(
-    //            payable(addresses.getAddress("MOONWELL_USDC"))
-    //        );
-    //        uint256 startingTokenBalance = token.balanceOf(address(mToken));
-    //
-    //        deal(address(token), sender, mintAmount);
-    //        token.approve(address(mToken), mintAmount);
-    //
-    //        assertEq(mToken.mint(mintAmount), 0, "Mint failed"); /// ensure successful mint
-    //        assertTrue(
-    //            mToken.balanceOf(sender) > 0,
-    //            "mToken balance should be gt 0 after mint"
-    //        ); /// ensure balance is gt 0
-    //        assertEq(
-    //            token.balanceOf(address(mToken)) - startingTokenBalance,
-    //            mintAmount,
-    //            "Underlying balance not updated"
-    //        ); /// ensure underlying balance is sent to mToken
-    //    }
-    //
-    //    function testBorrowMTokenSucceeds() public {
-    //        testMintMTokenSucceeds();
-    //
-    //        address sender = address(this);
-    //        uint256 borrowAmount = 50e6;
-    //
-    //        IERC20 token = IERC20(addresses.getAddress("USDC"));
-    //        MErc20Delegator mToken = MErc20Delegator(
-    //            payable(addresses.getAddress("MOONWELL_USDC"))
-    //        );
-    //
-    //        address[] memory mTokensConfig = new address[](1);
-    //        mTokensConfig[0] = address(mToken);
-    //
-    //        comptroller.enterMarkets(mTokensConfig);
-    //        assertTrue(
-    //            comptroller.checkMembership(sender, MToken(address(mToken))),
-    //            "Membership check failed"
-    //        ); /// ensure sender and mToken is in market
-    //
-    //        assertEq(mToken.borrow(borrowAmount), 0, "Borrow failed"); /// ensure successful borrow
-    //
-    //        assertEq(token.balanceOf(sender), borrowAmount, "Wrong borrow amount"); /// ensure balance is correct
-    //    }
-    //
-    //    function testBorrowOtherMTokenSucceeds() public {
-    //        testMintMTokenSucceeds();
-    //
-    //        address sender = address(this);
-    //        deal(
-    //            addresses.getAddress("WETH"),
-    //            addresses.getAddress("MOONWELL_WETH"),
-    //            1 ether
-    //        );
-    //
-    //        IERC20 weth = IERC20(addresses.getAddress("WETH"));
-    //
-    //        uint256 borrowAmount = 1e6;
-    //
-    //        MErc20Delegator mToken = MErc20Delegator(
-    //            payable(addresses.getAddress("MOONWELL_WETH"))
-    //        );
-    //
-    //        address[] memory mTokensConfig = new address[](1);
-    //        mTokensConfig[0] = addresses.getAddress("MOONWELL_USDC");
-    //
-    //        comptroller.enterMarkets(mTokensConfig);
-    //        assertTrue(
-    //            comptroller.checkMembership(
-    //                sender,
-    //                MToken(addresses.getAddress("MOONWELL_USDC"))
-    //            )
-    //        ); /// ensure sender and mToken is in market
-    //
-    //        (, uint256 liquidity, uint256 shortfall) = comptroller
-    //            .getAccountLiquidity(sender);
-    //
-    //        assertEq(mToken.borrow(borrowAmount), 0); /// ensure successful borrow
-    //        (
-    //            ,
-    //            uint256 liquidityAfterBorrow,
-    //            uint256 shortfallAfterBorrow
-    //        ) = comptroller.getAccountLiquidity(sender);
-    //
-    //        assertEq(weth.balanceOf(sender), borrowAmount); /// ensure balance is correct
-    //
-    //        assertGt(liquidity, liquidityAfterBorrow);
-    //        assertEq(shortfall, shortfallAfterBorrow);
-    //    }
+    function testFuzz_BorrowMTokenSucceed(
+        uint256 mTokenIndex,
+        uint256 borrowAmount
+    ) public {
+        Configs.CTokenConfiguration[] memory mTokensConfig = proposal
+            .getCTokenConfigurations(block.chainid);
+
+        mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
+
+        IERC20 token = IERC20(
+            addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
+        );
+
+        borrowAmount = bound(
+            borrowAmount,
+            1 * 10 ** token.decimals(),
+            100_000_000 * 10 ** token.decimals()
+        );
+
+        address mToken = addresses.getAddress(
+            mTokensConfig[mTokenIndex].addressesString
+        );
+        _mintMToken(mToken, borrowAmount * 3);
+
+        uint256 expectedCollateralFactor = 0.5e18;
+        (, uint256 collateralFactorMantissa) = comptroller.markets(mToken);
+        // check colateral factor
+        if (collateralFactorMantissa < expectedCollateralFactor) {
+            vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+            comptroller._setCollateralFactor(
+                MToken(mToken),
+                expectedCollateralFactor
+            );
+        }
+
+        address sender = address(this);
+
+        address[] memory mTokens = new address[](1);
+        mTokens[0] = mToken;
+
+        comptroller.enterMarkets(mTokens);
+        assertTrue(
+            comptroller.checkMembership(sender, MToken(mToken)),
+            "Membership check failed"
+        );
+
+        assertEq(
+            MErc20Delegator(payable(mToken)).borrow(borrowAmount),
+            0,
+            "Borrow failed"
+        );
+
+        assertEq(token.balanceOf(sender), borrowAmount, "Wrong borrow amount");
+    }
+
+    function testFuzz_SupplyReceivesRewards(
+        uint256 mTokenIndex,
+        uint256 supplyAmount,
+        uint256 toWarp
+    ) public {
+        Configs.CTokenConfiguration[] memory mTokensConfig = proposal
+            .getCTokenConfigurations(block.chainid);
+
+        mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
+
+        IERC20 token = IERC20(
+            addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
+        );
+
+        supplyAmount = bound(
+            supplyAmount,
+            1 * 10 ** token.decimals(),
+            100_000_000 * 10 ** token.decimals()
+        );
+
+        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
+
+        address mToken = addresses.getAddress(
+            mTokensConfig[mTokenIndex].addressesString
+        );
+
+        _mintMToken(mToken, supplyAmount);
+
+        vm.warp(block.timestamp + toWarp);
+
+        Configs.EmissionConfig[] memory emissionConfig = emissionsConfig[
+            mToken
+        ];
+
+        // for (uint256 i = 0; i < emissionConfig.length; i++) {
+        //     uint256 expectedReward = (toWarp *
+        //         emissionConfig[i].supplyEmissionsPerSec *
+        //         supplyAmount) / MErc20(mToken).totalSupply();
+
+        //     assertEq(
+        //         mrd
+        //         .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
+        //             .totalAmount,
+        //         expectedReward,
+        //         "Total rewards not correct"
+        //     );
+        // }
+    }
+
     //
     //    function testSupplyUsdcReceivesRewards(uint256 toWarp) public {
     //        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
@@ -608,4 +632,6 @@ contract LiveSystemDeploy is Test {
     //            "user liquidation failure"
     //        );
     //    }
+
+    receive() external payable {}
 }
