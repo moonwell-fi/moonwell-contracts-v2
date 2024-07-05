@@ -22,19 +22,15 @@ library ProposalActions {
         ProposalAction[] storage actions,
         ActionType proposalType
     ) internal view returns (ProposalAction[] memory filteredActions) {
-        uint256 count = 0;
-        for (uint256 i = 0; i < actions.length; i++) {
-            if (actions[i].actionType == proposalType) {
-                filteredActions[count] = actions[i];
-                count++;
-            }
-        }
-
-        filteredActions = new ProposalAction[](count);
+        filteredActions = new ProposalAction[](
+            proposalActionTypeCount(actions, proposalType)
+        );
+        uint256 index = 0;
 
         for (uint256 i = 0; i < actions.length; i++) {
             if (actions[i].actionType == proposalType) {
-                filteredActions[i] = actions[i];
+                filteredActions[index] = actions[i];
+                index++;
             }
         }
     }
