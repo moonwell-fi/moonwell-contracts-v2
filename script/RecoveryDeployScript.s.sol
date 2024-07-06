@@ -32,8 +32,7 @@ contract RecoveryDeployScript is Script, Test, RecoveryDeploy {
 
         vm.startBroadcast();
 
-        /// TODO ensure deployer is the sender
-        address deployerAddress = msg.sender;
+        (, address deployerAddress, ) = vm.readCallers();
 
         /// send all 1901 tx's, then deploy
         recovery = mainnetDeployAndVerifyScript(deployerAddress);

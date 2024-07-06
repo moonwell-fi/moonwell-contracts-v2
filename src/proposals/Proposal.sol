@@ -47,8 +47,7 @@ abstract contract Proposal is Script, Test {
 
         vm.startBroadcast();
 
-        /// TODO triple check this one to make sure it works
-        address deployerAddress = msg.sender;
+        (, address deployerAddress, ) = vm.readCallers();
 
         if (DO_DEPLOY) deploy(addresses, deployerAddress);
         if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);

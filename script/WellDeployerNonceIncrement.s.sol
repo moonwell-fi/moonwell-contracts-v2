@@ -30,14 +30,14 @@ contract WellDeployerNonceIncrement is Script, Test {
     }
 
     function run() public {
-        /// TODO change this later and remove the private key env var
-        address deployerAddress = vm.addr(PRIVATE_KEY);
-
         uint256 expectedNonce = 387;
-        uint256 currentNonce = vm.getNonce(deployerAddress);
 
+        vm.startBroadcast();
+
+        (, address deployerAddress, ) = vm.readCallers();
+
+        uint256 currentNonce = vm.getNonce(deployerAddress);
         uint256 increment = expectedNonce - currentNonce;
-        vm.startBroadcast(PRIVATE_KEY);
 
         for (uint256 i = 0; i < increment; i++) {
             (bool success, ) = address(deployerAddress).call{value: 1}("");
