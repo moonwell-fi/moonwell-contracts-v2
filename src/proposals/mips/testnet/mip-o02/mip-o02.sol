@@ -76,8 +76,9 @@ contract mipo02 is Proposal, CrossChainProposal, Configs, ParameterValidation {
         _pushCrossChainAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_supportMarket(address)",
-                addresses.getAddress("MOONWELL_USDC")
+                "_setCollateralFactor(address,uint256)",
+                addresses.getAddress("MOONWELL_USDC"),
+                COLLATERAL_FACTOR
             ),
             "Support MToken market in comptroller"
         );
