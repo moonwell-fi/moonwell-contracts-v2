@@ -757,10 +757,6 @@ abstract contract HybridProposal is
         addresses.removeRestriction();
     }
 
-    /// TODO find a way to either make this function generic, or find a way to
-    /// make a second function to do the same thing for optimism.
-    /// for cleanliness prefer generic implementation and think through this.
-
     /// @notice Runs the proposal actions on base, verifying the actions through the hook
     /// @param addresses the addresses contract
     /// @param proposalActions the actions to run
@@ -768,6 +764,8 @@ abstract contract HybridProposal is
         Addresses addresses,
         ProposalAction[] memory proposalActions
     ) internal {
+        require(proposalActions.length > 0, "Cannot run empty proposal");
+
         _verifyActionsPreRun(proposalActions);
 
         /// add restriction on external chain
@@ -837,53 +835,6 @@ abstract contract HybridProposal is
 
         /// remove all restrictions placed in this function
         addresses.removeRestriction();
-    }
-
-    /// TODO replace this throughout the repo with a better simulation method
-
-    /// @notice simulate cross chain proposal
-    /// @param temporalGovAddress address of the cross chain governor executing the calls
-    /// run pre and post proposal hooks to ensure that mToken markets created by the
-    /// proposal are valid and mint at least 1 wei worth of mTokens to address 0
-    function _simulateBaseActions(
-        Addresses addresses,
-        address temporalGovAddress
-    ) internal {
-        (address[] memory targets, , ) = getTargetsPayloadsValues(addresses);
-
-        vm.selectFork(MOONBEAM_FORK_ID);
-        checkMoonbeamActions(targets);
-
-        vm.selectFork(BASE_FORK_ID);
-
-        ProposalAction[] memory baseActions = actions.filter(ActionType.Base);
-        checkBaseOptimismActions(baseActions);
-
-        require(targets.length == 1);
-
-        _verifyActionsPreRun(baseActions);
-        _simulateMultisigActions(temporalGovAddress, baseActions);
-        _verifyMTokensPostRun();
-    }
-
-    /// TODO get rid of this
-    /// @notice simulate multisig proposal
-    /// @param multisigAddress address of the multisig doing the calls
-    function _simulateMultisigActions(
-        address multisigAddress,
-        ProposalAction[] memory proposalActions
-    ) internal {
-        vm.startPrank(multisigAddress);
-
-        for (uint256 i = 0; i < proposalActions.length; i++) {
-            (bool success, bytes memory result) = proposalActions[i]
-                .target
-                .call{value: proposalActions[i].value}(proposalActions[i].data);
-
-            require(success, string(result));
-        }
-
-        vm.stopPrank();
     }
 
     /// @dev utility function to generate a Wormhole VAA payload excluding the guardians signature
