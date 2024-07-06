@@ -214,10 +214,17 @@ abstract contract HybridProposal is
             "TEMPORAL_GOVERNOR",
             block.chainid.toBaseChainId()
         );
-        address temporalGovernorOptimism = addresses.getAddress(
+
+        /// only fetch temporal governor from optimism if it is set
+        address temporalGovernorOptimism = addresses.isAddressSet(
             "TEMPORAL_GOVERNOR",
             block.chainid.toOptimismChainId()
-        );
+        )
+            ? addresses.getAddress(
+                "TEMPORAL_GOVERNOR",
+                block.chainid.toOptimismChainId()
+            )
+            : address(0);
 
         return
             getTargetsPayloadsValues(
@@ -322,7 +329,10 @@ abstract contract HybridProposal is
         }
 
         /// only get temporal governor calldata if there are actions to execute on optimism
-        if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
+        if (
+            temporalGovernorOptimism != address(0) &&
+            actions.proposalActionTypeCount(ActionType.Optimism) != 0
+        ) {
             /// fill out final piece of proposal which is the call
             /// to publishMessage on the temporal governor
             targets[currIndex] = wormholeCore;
