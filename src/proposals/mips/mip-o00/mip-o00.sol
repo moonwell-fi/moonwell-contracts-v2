@@ -35,10 +35,17 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {ChainIds, OPTIMISM_CHAIN_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 
 /*
+to deploy:
 
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
 DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 \
- -vvv --etherscan-api-key $OPSCAN_API_KEY --broadcast
+ -vvv --etherscan-api-key $OPSCAN_API_KEY --broadcast --keystore ~/.foundry/keystores/<your-key-store>
+
+to dry-run:
+
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 \
+ -vvv --keystore ~/.foundry/keystores/<your-key-store>
 
 */
 
@@ -130,7 +137,8 @@ contract mipo00 is HybridProposal, Configs {
         addresses.addRestriction(OPTIMISM_CHAIN_ID);
 
         /// ------- TemporalGovernor -------
-        {
+
+        if (!addresses.isAddressSet("TEMPORAL_GOVERNOR")) {
             TemporalGovernor.TrustedSender[]
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
@@ -162,15 +170,21 @@ contract mipo00 is HybridProposal, Configs {
         init(addresses);
 
         /// ------- Reward Distributor -------
-        {
+
+        if (!addresses.isAddressSet("MULTI_REWARD_DISTRIBUTOR")) {
             MultiRewardDistributor distributor = new MultiRewardDistributor();
             addresses.addAddress(
                 "MULTI_REWARD_DISTRIBUTOR",
                 address(distributor)
             );
         }
-        {
-            /// ------- Unitroller/Comptroller -------
+
+        /// ------- Unitroller/Comptroller -------
+
+        if (
+            !addresses.isAddressSet("UNITROLLER") &&
+            !addresses.isAddressSet("COMPTROLLER")
+        ) {
             Unitroller unitroller = new Unitroller();
             Comptroller comptroller = new Comptroller();
             unitroller._setPendingImplementation(address(comptroller));
@@ -178,14 +192,20 @@ contract mipo00 is HybridProposal, Configs {
 
             addresses.addAddress("COMPTROLLER", address(comptroller));
             addresses.addAddress("UNITROLLER", address(unitroller));
+        }
 
-            /// ------- PROXY ADMIN/ MULTI_REWARD_DISTRIBUTOR -------
+        /// ------- PROXY ADMIN / MULTI_REWARD_DISTRIBUTOR -------
+
+        if (
+            !addresses.isAddressSet("MRD_PROXY_ADMIN") &&
+            !addresses.isAddressSet("MRD_PROXY")
+        ) {
             ProxyAdmin proxyAdmin = new ProxyAdmin();
             addresses.addAddress("MRD_PROXY_ADMIN", address(proxyAdmin));
 
             bytes memory initData = abi.encodeWithSignature(
                 "initialize(address,address)",
-                address(unitroller),
+                addresses.getAddress("UNITROLLER"),
                 addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
             );
             TransparentUpgradeableProxy mrdProxy = new TransparentUpgradeableProxy(
@@ -195,19 +215,28 @@ contract mipo00 is HybridProposal, Configs {
                 );
             addresses.addAddress("MRD_PROXY", address(mrdProxy));
         }
+
         /// ------ MTOKENS -------
-        {
+
+        if (!addresses.isAddressSet("MTOKEN_IMPLEMENTATION")) {
             MErc20Delegate mTokenLogic = new MErc20Delegate();
             addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
         }
-        WethUnwrapper unwrapper = new WethUnwrapper(
-            addresses.getAddress("WETH")
-        );
 
-        MWethDelegate delegate = new MWethDelegate(address(unwrapper));
+        if (!addresses.isAddressSet("WETH_UNWRAPPER")) {
+            WethUnwrapper unwrapper = new WethUnwrapper(
+                addresses.getAddress("WETH")
+            );
+            addresses.addAddress("WETH_UNWRAPPER", address(unwrapper));
+        }
 
-        addresses.addAddress("WETH_UNWRAPPER", address(unwrapper));
-        addresses.addAddress("MWETH_IMPLEMENTATION", address(delegate));
+        if (!addresses.isAddressSet("MWETH_IMPLEMENTATION")) {
+            MWethDelegate delegate = new MWethDelegate(
+                addresses.getAddress("WETH_UNWRAPPER")
+            );
+
+            addresses.addAddress("MWETH_IMPLEMENTATION", address(delegate));
+        }
 
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
@@ -215,8 +244,14 @@ contract mipo00 is HybridProposal, Configs {
         //// create all of the CTokens according to the configuration in Config.sol
         for (uint256 i = 0; i < cTokenConfigs.length; i++) {
             Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+
             /// ----- Jump Rate IRM -------
-            {
+
+            string memory addressString = string(
+                abi.encodePacked("JUMP_RATE_IRM_", config.addressesString)
+            );
+
+            if (!addresses.isAddressSet(addressString)) {
                 address irModel = address(
                     new JumpRateModel(
                         config.jrm.baseRatePerYear,
@@ -225,70 +260,68 @@ contract mipo00 is HybridProposal, Configs {
                         config.jrm.kink
                     )
                 );
-                addresses.addAddress(
-                    string(
-                        abi.encodePacked(
-                            "JUMP_RATE_IRM_",
-                            config.addressesString
-                        )
-                    ),
-                    address(irModel)
-                );
+
+                addresses.addAddress(addressString, address(irModel));
             }
 
-            /// stack isn't too deep
-            CTokenAddresses memory addr = CTokenAddresses({
-                mTokenImpl: keccak256(
-                    abi.encodePacked(config.addressesString)
-                ) == keccak256(abi.encodePacked("MOONWELL_WETH"))
-                    ? addresses.getAddress("MWETH_IMPLEMENTATION")
-                    : addresses.getAddress("MTOKEN_IMPLEMENTATION"),
-                irModel: addresses.getAddress(
-                    string(
-                        abi.encodePacked(
-                            "JUMP_RATE_IRM_",
-                            config.addressesString
+            if (!addresses.isAddressSet(config.addressesString)) {
+                /// stack isn't too deep
+                CTokenAddresses memory addr = CTokenAddresses({
+                    mTokenImpl: keccak256(
+                        abi.encodePacked(config.addressesString)
+                    ) == keccak256(abi.encodePacked("MOONWELL_WETH"))
+                        ? addresses.getAddress("MWETH_IMPLEMENTATION")
+                        : addresses.getAddress("MTOKEN_IMPLEMENTATION"),
+                    irModel: addresses.getAddress(
+                        string(
+                            abi.encodePacked(
+                                "JUMP_RATE_IRM_",
+                                config.addressesString
+                            )
                         )
-                    )
-                ),
-                unitroller: addresses.getAddress("UNITROLLER")
-            });
+                    ),
+                    unitroller: addresses.getAddress("UNITROLLER")
+                });
 
-            /// calculate initial exchange rate
-            /// BigNumber.from("10").pow(token.decimals + 8).mul("2");
-            /// (10 ** (18 + 8)) * 2 // 18 decimals example
-            ///    = 2e26
-            /// (10 ** (6 + 8)) * 2 // 6 decimals example
-            ///    = 2e14
-            uint256 initialExchangeRate = (10 **
-                (ERC20(addresses.getAddress(config.tokenAddressName))
-                    .decimals() + 8)) * 2;
+                /// calculate initial exchange rate
+                /// BigNumber.from("10").pow(token.decimals + 8).mul("2");
+                /// (10 ** (18 + 8)) * 2 // 18 decimals example
+                ///    = 2e26
+                /// (10 ** (6 + 8)) * 2 // 6 decimals example
+                ///    = 2e14
+                uint256 initialExchangeRate = (10 **
+                    (ERC20(addresses.getAddress(config.tokenAddressName))
+                        .decimals() + 8)) * 2;
 
-            MErc20Delegator mToken = new MErc20Delegator(
-                addresses.getAddress(config.tokenAddressName),
-                ComptrollerInterface(addr.unitroller),
-                InterestRateModel(addr.irModel),
-                initialExchangeRate,
-                config.name,
-                config.symbol,
-                mTokenDecimals,
-                payable(deployer),
-                addr.mTokenImpl,
-                ""
-            );
+                MErc20Delegator mToken = new MErc20Delegator(
+                    addresses.getAddress(config.tokenAddressName),
+                    ComptrollerInterface(addr.unitroller),
+                    InterestRateModel(addr.irModel),
+                    initialExchangeRate,
+                    config.name,
+                    config.symbol,
+                    mTokenDecimals,
+                    payable(deployer),
+                    addr.mTokenImpl,
+                    ""
+                );
 
-            addresses.addAddress(config.addressesString, address(mToken));
+                addresses.addAddress(config.addressesString, address(mToken));
+            }
+        }
+        if (!addresses.isAddressSet("CHAINLINK_ORACLE")) {
+            /// deploy oracle, set price oracle
+            ChainlinkOracle oracle = new ChainlinkOracle("null_asset");
+            addresses.addAddress("CHAINLINK_ORACLE", address(oracle));
         }
 
-        /// deploy oracle, set price oracle
-        ChainlinkOracle oracle = new ChainlinkOracle("null_asset");
-        addresses.addAddress("CHAINLINK_ORACLE", address(oracle));
-
-        WETHRouter router = new WETHRouter(
-            WETH9(addresses.getAddress("WETH")),
-            MErc20(addresses.getAddress("MOONWELL_WETH"))
-        );
-        addresses.addAddress("WETH_ROUTER", address(router));
+        if (!addresses.isAddressSet("WETH_ROUTER")) {
+            WETHRouter router = new WETHRouter(
+                WETH9(addresses.getAddress("WETH")),
+                MErc20(addresses.getAddress("MOONWELL_WETH"))
+            );
+            addresses.addAddress("WETH_ROUTER", address(router));
+        }
     }
 
     function afterDeploy(Addresses addresses, address) public override {
