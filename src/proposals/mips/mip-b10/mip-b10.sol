@@ -459,14 +459,6 @@ contract mipb10 is HybridProposal, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public override {
-        printCalldata(addresses);
-        _simulateBaseActions(
-            addresses,
-            addresses.getAddress("TEMPORAL_GOVERNOR")
-        );
-    }
-
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
@@ -481,7 +473,6 @@ contract mipb10 is HybridProposal, Configs {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
-                /// TODO validate borrow cap is always lte 90% of supply cap
                 uint256 borrowCap = comptroller.borrowCaps(
                     addresses.getAddress(config.addressesString)
                 );

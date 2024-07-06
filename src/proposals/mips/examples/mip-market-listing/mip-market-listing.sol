@@ -400,14 +400,6 @@ contract mip0x is HybridProposal, Configs {
         }
     }
 
-    function run(Addresses addresses, address) public override {
-        printCalldata(addresses);
-        _simulateBaseActions(
-            addresses,
-            addresses.getAddress("TEMPORAL_GOVERNOR")
-        );
-    }
-
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {

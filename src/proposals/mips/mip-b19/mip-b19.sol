@@ -60,14 +60,6 @@ contract mipb19 is HybridProposal, Configs, ParameterValidation {
         );
     }
 
-    function run(Addresses addresses, address) public override {
-        printCalldata(addresses);
-        _simulateBaseActions(
-            addresses,
-            addresses.getAddress("TEMPORAL_GOVERNOR")
-        );
-    }
-
     function teardown(Addresses addresses, address) public pure override {}
 
     /// @notice assert that the new interest rate model is set correctly
