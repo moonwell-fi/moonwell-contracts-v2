@@ -6,7 +6,6 @@ import {Test} from "@forge-std/Test.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {String} from "@utils/String.sol";
 import {Proposal} from "@proposals/Proposal.sol";
-import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";

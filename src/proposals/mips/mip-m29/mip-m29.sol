@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
-import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
