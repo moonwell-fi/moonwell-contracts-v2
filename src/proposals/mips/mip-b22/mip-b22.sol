@@ -20,7 +20,7 @@ contract mipb22 is HybridProposal, Configs, ParameterValidation {
         );
         _setProposalDescription(proposalDescription);
 
-        // onchainProposalId = 22;
+        onchainProposalId = 22;
     }
 
     function primaryForkId() public pure override returns (uint256) {
