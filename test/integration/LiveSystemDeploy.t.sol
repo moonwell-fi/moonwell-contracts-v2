@@ -19,6 +19,11 @@ import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
+// Example:
+// export DESCRIPTION_PATH=src/proposals/mips/mip-o00/MIP-O00.md && export
+// export PRIMARY_FORK_ID=2 && export
+// EMISSIONS_PATH=src/proposals/mips/mip-o00/emissionConfig.json && export
+// MTOKENS_PATH="src/proposals/mips/mip-o00/mTokens.json"
 contract LiveSystemDeploy is Test {
     using ChainIds for uint256;
 
@@ -57,9 +62,6 @@ contract LiveSystemDeploy is Test {
             address mToken = addresses.getAddress(emissionConfigs[i].mToken);
             emissionsConfig[mToken].push(emissionConfigs[i]);
         }
-
-        // must fund the WETH unwrapper with some ETH
-        vm.deal(addresses.getAddress("WETH_UNWRAPPER"), 100_000e18);
     }
 
     function testGuardianCanPauseTemporalGovernor() public {
@@ -227,6 +229,10 @@ contract LiveSystemDeploy is Test {
 
     function _mintMToken(address mToken, uint256 amount) internal {
         address underlying = MErc20(mToken).underlying();
+
+        if (underlying == addresses.getAddress("WETH")) {
+            vm.deal(addresses.getAddress("WETH"), amount);
+        }
         deal(underlying, address(this), amount);
         IERC20(underlying).approve(mToken, amount);
 
@@ -313,6 +319,8 @@ contract LiveSystemDeploy is Test {
 
         address sender = address(this);
 
+        uint256 balanceBefore = sender.balance;
+
         address[] memory mTokens = new address[](1);
         mTokens[0] = mToken;
 
@@ -328,7 +336,15 @@ contract LiveSystemDeploy is Test {
             "Borrow failed"
         );
 
-        assertEq(token.balanceOf(sender), borrowAmount, "Wrong borrow amount");
+        if (address(token) == addresses.getAddress("WETH")) {
+            assertEq(sender.balance - balanceBefore, borrowAmount);
+        } else {
+            assertEq(
+                token.balanceOf(sender),
+                borrowAmount,
+                "Wrong borrow amount"
+            );
+        }
     }
 
     function testFuzz_SupplyReceivesRewards(
@@ -365,19 +381,19 @@ contract LiveSystemDeploy is Test {
             mToken
         ];
 
-        // for (uint256 i = 0; i < emissionConfig.length; i++) {
-        //     uint256 expectedReward = (toWarp *
-        //         emissionConfig[i].supplyEmissionsPerSec *
-        //         supplyAmount) / MErc20(mToken).totalSupply();
+        for (uint256 i = 0; i < emissionConfig.length; i++) {
+            uint256 expectedReward = (toWarp *
+                emissionConfig[i].supplyEmissionPerSec *
+                supplyAmount) / MErc20(mToken).totalSupply();
 
-        //     assertEq(
-        //         mrd
-        //         .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
-        //             .totalAmount,
-        //         expectedReward,
-        //         "Total rewards not correct"
-        //     );
-        // }
+            assertEq(
+                mrd
+                .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
+                    .totalAmount,
+                expectedReward,
+                "Total rewards not correct"
+            );
+        }
     }
 
     //
