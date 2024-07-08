@@ -593,7 +593,7 @@ contract mipo00 is HybridProposal, Configs {
             "MIP-O00: should have no base actions"
         );
         require(
-            actions.proposalActionTypeCount(ActionType.Optimism) != 0,
+            actions.proposalActionTypeCount(ActionType.Optimism) > 0,
             "MIP-O00: should have optimism actions"
         );
 
@@ -602,14 +602,7 @@ contract mipo00 is HybridProposal, Configs {
             "MIP-O00: should have 1 moonbeam actions"
         );
 
-        /// run actions on moonbeam
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        _runMoonbeamMultichainGovernor(addresses, address(1000000000));
-
-        /// run actions on optimism
-        vm.selectFork(OPTIMISM_FORK_ID);
-        _runExtChain(addresses, actions.filter(ActionType.Optimism));
+        super.run();
     }
 
     function teardown(Addresses addresses, address) public pure override {}
