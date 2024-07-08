@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -19,6 +20,8 @@ import {Address} from "@utils/Address.sol";
 contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
     using ChainIds for uint256;
     using Address for address;
+    /// @notice all addresses
+    Addresses public addresses;
 
     /// @notice lockbox contract
     XERC20Lockbox public xerc20Lockbox;

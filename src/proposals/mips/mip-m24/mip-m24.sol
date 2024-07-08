@@ -1,17 +1,19 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
-
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import "@forge-std/Test.sol";
 
+import "@protocol/utils/ChainIds.sol";
+
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to accept governance powers, finalizing
@@ -21,6 +23,8 @@ import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} fr
 /// src/proposals/mips/mip-m24/mip-m24.sol:mipm24
 contract mipm24 is HybridProposal, MultichainGovernorDeploy {
     using ChainIds for uint256;
+    using ProposalActions for *;
+
     string public constant override name = "MIP-M24";
 
     constructor() {
@@ -51,7 +55,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         /// Base action
 
         /// remove the artemis timelock as a trusted sender in the wormhole bridge adapter on base
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress(
                 "TEMPORAL_GOVERNOR",
                 block.chainid.toBaseChainId()
@@ -61,138 +65,135 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
                 trustedSendersToRemove
             ),
             "Remove Artemis Timelock as a trusted sender in the Temporal Governor on Base",
-            false
+            ActionType.Base
         );
 
         /// Moonbeam actions
 
         /// transfer ownership of the wormhole bridge adapter on the moonbeam chain to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
             abi.encodeWithSignature("acceptOwnership()"),
             "Accept admin of the Wormhole Bridge Adapter as Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept transfer of ownership of the xwell token to the Multichain Governor
         /// This one has to go through Temporal Governance
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("xWELL_PROXY"),
             abi.encodeWithSignature("acceptOwnership()"),
             "Accept owner of the xWELL Token as the Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept admin of comptroller
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of the comptroller as Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept admin of .mad mTokens
 
         /// accept admin of DEPRECATED_MOONWELL_mWBTC
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("DEPRECATED_MOONWELL_mWBTC"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of DEPRECATED_MOONWELL_mWBTC as the Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept admin of MOONWELL_mBUSD
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_mBUSD"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of MOONWELL_mBUSD as the Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept admin of DEPRECATED_MOONWELL_mETH
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("DEPRECATED_MOONWELL_mETH"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of DEPRECATED_MOONWELL_mETH as the Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept admin of MOONWELL_mUSDC
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_mUSDC"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of MOONWELL_mUSDC as the Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept admin of MNATIVE
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MNATIVE"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of MNATIVE as the Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept admin of mxcDOT
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcDOT"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of mxcDOT as Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept admin of mxcUSDT
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of mxcUSDT as Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept admin of mFRAX
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mFRAX"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of mFRAX as Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept admin of mUSDCwh
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of mUSDCwh as Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept admin of mxcUSDC
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of mxcUSDC as the Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
         /// accept admin of MOONWELL_mETH
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_mETH"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept admin of MOONWELL_mETH as the Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
     }
 
     function run(Addresses addresses, address) public override {
         vm.selectFork(primaryForkId());
-
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
         vm.selectFork(BASE_FORK_ID);
+        _runExtChain(addresses, actions.filter(ActionType.Base));
 
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        _runBase(addresses, temporalGovernor);
-
-        // switch back to the moonbeam fork so we can run the validations
+        /// switch back to moonbeam so we can run validations
         vm.selectFork(primaryForkId());
     }
 

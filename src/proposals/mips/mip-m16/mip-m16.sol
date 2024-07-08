@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 

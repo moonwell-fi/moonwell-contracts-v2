@@ -1,40 +1,39 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
-import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import "@forge-std/Test.sol";
 
+import "@protocol/utils/ChainIds.sol";
 import "@utils/ChainIds.sol";
+
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MToken} from "@protocol/MToken.sol";
+import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {MockVoteCollection} from "@test/mock/MockVoteCollection.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
-import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
-
+import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
-import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
-
-import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
-
-import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -114,8 +113,9 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         voteCollection = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY", BASE_CHAIN_ID)
         );
+        addresses.addRestriction(MOONBEAM_CHAIN_ID);
         wormhole = IWormhole(
-            addresses.getAddress("WORMHOLE_CORE_MOONBEAM", MOONBEAM_CHAIN_ID)
+            addresses.getAddress("WORMHOLE_CORE", MOONBEAM_CHAIN_ID)
         );
 
         well = ERC20Votes(addresses.getAddress("GOVTOKEN", MOONBEAM_CHAIN_ID));
@@ -140,6 +140,8 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         governor = MultichainGovernor(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", MOONBEAM_CHAIN_ID)
         );
+
+        addresses.removeRestriction();
 
         // make governor persistent so we can call receiveWormholeMessage on
         // governor from base
@@ -254,7 +256,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
 
     function testNoBaseWormholeCoreAddressInProposal() public {
         address wormholeBase = addresses.getAddress(
-            "WORMHOLE_CORE_BASE",
+            "WORMHOLE_CORE",
             BASE_CHAIN_ID
         );
         vm.selectFork(MOONBEAM_FORK_ID);
@@ -2029,7 +2031,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         address[] memory targets = new address[](20);
         bytes[] memory calldatas = new bytes[](20);
 
-        targets[0] = addresses.getAddress("WORMHOLE_CORE_MOONBEAM");
+        targets[0] = addresses.getAddress("WORMHOLE_CORE");
         calldatas[0] = proposalC.approvedCalldata(0);
 
         targets[1] = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
@@ -2096,9 +2098,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
                 "TEMPORAL_GOVERNOR",
                 BASE_CHAIN_ID
             );
-            address wormholeCore = addresses.getAddress(
-                "WORMHOLE_CORE_MOONBEAM"
-            );
+            address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
             uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
                 address(governor)
             );

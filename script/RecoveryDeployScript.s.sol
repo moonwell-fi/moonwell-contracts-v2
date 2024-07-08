@@ -6,8 +6,8 @@ import {Script} from "@forge-std/Script.sol";
 import "@forge-std/Test.sol";
 
 import {Recovery} from "@protocol/Recovery.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {RecoveryDeploy} from "@test/utils/RecoveryDeploy.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
  to simulate:
@@ -21,16 +21,7 @@ contract RecoveryDeployScript is Script, Test, RecoveryDeploy {
     /// @notice addresses contract
     Addresses addresses;
 
-    /// @notice deployer private key
-    uint256 private PRIVATE_KEY;
-
     constructor() {
-        // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = vm.envOr(
-            "ETH_PRIVATE_KEY",
-            77814517325470205911140941194401928579557062014761831930645393041380819009408
-        );
-
         addresses = new Addresses();
     }
 
@@ -39,9 +30,9 @@ contract RecoveryDeployScript is Script, Test, RecoveryDeploy {
             "FOUNDATION_MULTISIG"
         );
 
-        address deployerAddress = vm.addr(PRIVATE_KEY);
+        vm.startBroadcast();
 
-        vm.startBroadcast(PRIVATE_KEY);
+        (, address deployerAddress, ) = vm.readCallers();
 
         /// send all 1901 tx's, then deploy
         recovery = mainnetDeployAndVerifyScript(deployerAddress);

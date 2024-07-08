@@ -4,9 +4,9 @@ pragma solidity 0.8.19;
 import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
-import {OPTIMISM_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
 import {Addresses} from "@proposals/Addresses.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {OPTIMISM_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /// NOTE: this script is only deployable on optimism and optimism sepolia
 /// to expand functionality, add the allowed chainIds to the chainIds array

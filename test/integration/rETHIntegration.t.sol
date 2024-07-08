@@ -7,16 +7,15 @@ import "@forge-std/Test.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
     MultiRewardDistributor mrd;

@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -88,7 +89,7 @@ contract xWellRouterTest is Test {
             "Wormhole bridge address incorrect"
         );
         assertEq(
-            router.baseWormholeChainId(),
+            router.BASE_WORMHOLE_CHAIN_ID(),
             BASE_WORMHOLE_CHAIN_ID,
             "Base wormhole chain id incorrect"
         );

@@ -4,14 +4,14 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@protocol/proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
+import {BASE_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
-import {BASE_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Base to create the Multichain Vote Collection Contract
 /// As well as the Ecosystem Reserve and Ecosystem Reserve Controller.

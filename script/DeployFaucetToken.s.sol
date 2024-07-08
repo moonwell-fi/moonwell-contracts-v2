@@ -18,18 +18,12 @@ Remove --broadcast if you want to try locally first, without paying any gas.
 */
 
 contract DeployFaucetToken is Script {
-    uint256 public PRIVATE_KEY;
     string public symbol;
     string public name;
     uint256 public initialMintAmount;
     uint8 public decimals;
 
     function setUp() public {
-        // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = vm.envOr(
-            "MOONWELL_DEPLOY_PK",
-            77814517325470205911140941194401928579557062014761831930645393041380819009408
-        );
         symbol = string(vm.envOr("SYMBOL", bytes("DAI")));
         name = string(vm.envOr("NAME", bytes("DAI Faucet Token")));
         initialMintAmount = vm.envOr(
@@ -40,11 +34,7 @@ contract DeployFaucetToken is Script {
     }
 
     function run() public {
-        address deployerAddress = vm.addr(PRIVATE_KEY);
-
-        console.log("deploying from address: %s", deployerAddress);
-
-        vm.startBroadcast(PRIVATE_KEY);
+        vm.startBroadcast();
         FaucetTokenWithPermit token = new FaucetTokenWithPermit(
             initialMintAmount,
             name,
@@ -52,13 +42,13 @@ contract DeployFaucetToken is Script {
             symbol
         );
 
+        vm.stopBroadcast();
+
         console.log("successfully deployed FaucetToken: %s", address(token));
 
         console.log("name: %s", name);
         console.log("symbol: %s", symbol);
         console.log("decimals: %d", decimals);
         console.log("initialMintAmount: %d", initialMintAmount);
-
-        vm.stopBroadcast();
     }
 }

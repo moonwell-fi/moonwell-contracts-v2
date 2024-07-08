@@ -11,7 +11,7 @@ import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {String} from "@utils/String.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
@@ -40,7 +40,7 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
 
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        wormhole = IWormhole(addresses.getAddress("WORMHOLE_CORE_MOONBEAM"));
+        wormhole = IWormhole(addresses.getAddress("WORMHOLE_CORE"));
         vm.makePersistent(address(wormhole));
 
         well = ERC20Votes(addresses.getAddress("GOVTOKEN"));
@@ -68,9 +68,7 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
         }
 
         for (uint256 i = 0; i < proposals.length; i++) {
-            CrossChainProposal proposal = CrossChainProposal(
-                address(proposals[i])
-            );
+            HybridProposal proposal = HybridProposal(address(proposals[i]));
 
             //  only run tests against a base proposal
             if (uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID) {
@@ -84,24 +82,26 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
             // returns the correct address as block.chainid is base/base sepolia
             address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
 
-            /// this returns the moonbeam address as block.chainid is base/base sepolia
+            /// this returns the moonbeam wormhole core address as
+            /// block.chainid is base/base sepolia optimism/optimism sepolia
             address wormholeCore = addresses.getAddress(
-                "WORMHOLE_CORE_MOONBEAM",
+                "WORMHOLE_CORE",
                 block.chainid.toMoonbeamChainId()
             );
 
-            bytes memory artemisQueuePayload = proposal
-                .getMultichainGovernorCalldata(temporalGov, wormholeCore);
+            bytes memory multichainGovernorQueuePayload = proposal.getCalldata(
+                addresses
+            );
 
             console.log("artemis governor queue governance calldata");
-            emit log_bytes(artemisQueuePayload);
+            emit log_bytes(multichainGovernorQueuePayload);
 
             /// iterate over and execute all proposals consecutively
             (
                 address[] memory targets,
                 uint256[] memory values,
                 bytes[] memory payloads
-            ) = proposal.getTargetsPayloadsValues();
+            ) = proposal.getTargetsPayloadsValues(addresses);
 
             vm.selectFork(MOONBEAM_FORK_ID);
 
@@ -111,7 +111,7 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                 vm.deal(voter, cost);
                 vm.prank(voter);
                 (bool success, ) = address(governor).call{value: cost}(
-                    artemisQueuePayload
+                    multichainGovernorQueuePayload
                 );
 
                 require(success, "proposing gov proposal on moonbeam failed");
@@ -161,9 +161,9 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
             emit LogMessagePublished(
                 address(governor),
                 nextSequence,
-                0, /// nonce is hardcoded at 0 in CrossChainProposal.sol
+                0, /// nonce is hardcoded at 0 in HybridProposal.sol
                 temporalGovExecData,
-                200 /// consistency level is hardcoded at 200 in CrossChainProposal.sol
+                200 /// consistency level is hardcoded at 200 in HybridProposal.sol
             );
             governor.execute(proposalId);
         }
@@ -173,9 +173,7 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
         testQueueAndPublishMessageRawBytes();
 
         for (uint256 j = 0; j < proposals.length; j++) {
-            CrossChainProposal proposal = CrossChainProposal(
-                address(proposals[j])
-            );
+            HybridProposal proposal = HybridProposal(address(proposals[j]));
 
             //  only run tests against a base proposal
             if (uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID) {
@@ -188,7 +186,7 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                 address[] memory targets, /// contracts to call /// native token amount to send is ignored as temporal gov cannot accept eth
                 ,
                 bytes[] memory calldatas
-            ) = proposal.getTargetsPayloadsValues();
+            ) = proposal.getTargetsPayloadsValues(addresses);
 
             vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
