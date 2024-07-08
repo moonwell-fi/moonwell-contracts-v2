@@ -4,13 +4,13 @@ import {Script} from "@forge-std/Script.sol";
 
 import "@forge-std/Test.sol";
 
-import {MOONBEAM_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MOONBEAM_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 
 /// Performs the following actions which hand off direct or pending ownership
 /// of the contracts from the Multichain Governor to the Artemis Timelock contract:
@@ -50,7 +50,7 @@ contract BreakGlass is Script, HybridProposal {
     function run() public override {
         primaryForkId().createForksAndSelect();
 
-        addresses = new Addresses();
+        Addresses addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
         buildCalldata(addresses);

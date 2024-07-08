@@ -4,13 +4,12 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {MWethDelegate} from "@protocol/MWethDelegate.sol";
-import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {MWethDelegate} from "@protocol/MWethDelegate.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// how to generate calldata:
 /// first set up environment variables:
@@ -26,7 +25,7 @@ export DO_VALIDATE=true
 
 /// forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv
 
-contract mipb02 is Proposal, CrossChainProposal, Configs {
+contract mipb02 is HybridProposal, Configs {
     string public constant override name = "MIP-B02";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
@@ -63,7 +62,7 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
 
     function build(Addresses addresses) public override {
         /// point weth mToken to new logic contract
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setImplementation(address,bool,bytes)",

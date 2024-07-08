@@ -5,14 +5,13 @@ import "@forge-std/Test.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract mipb05 is Proposal, CrossChainProposal, Configs {
+contract mipb05 is HybridProposal, Configs {
     string public constant override name = "MIP-B05";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
@@ -116,7 +115,7 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
         // =========== ETH CF Update ============
 
         // Add update action
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -129,7 +128,7 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
         // =========== cbETH CF Update ============
 
         // Add update action
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -142,7 +141,7 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
         // =========== DAI CF Update ============
 
         // Add update action
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -155,7 +154,7 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
         // =========== WETH IR Update ============
 
         // Add update action
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -167,7 +166,7 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
         // =========== DAI IR Update ============
 
         // Add update action
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_DAI"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -179,7 +178,7 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
         // =========== USDC IR Update ============
 
         // Add update action
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -191,7 +190,7 @@ contract mipb05 is Proposal, CrossChainProposal, Configs {
         // =========== USDbC IR Update ============
 
         // Add update action
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_USDBC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",

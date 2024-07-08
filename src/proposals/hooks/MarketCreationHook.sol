@@ -9,7 +9,6 @@ import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 
 contract MarketCreationHook {
     /// private so that contracts that inherit cannot write to functionDetectors
-    mapping(bytes4 => bool) private functionDetectors;
     bytes4 private constant detector = Comptroller._supportMarket.selector;
 
     /// ordered actions to verify
@@ -25,14 +24,10 @@ contract MarketCreationHook {
     ];
 
     /// @notice array of created mTokens in proposal
-    address[] public createdMTokens;
+    address[] private createdMTokens;
 
     /// @notice comptroller address as specified by an mToken being created
-    address public comptroller;
-
-    constructor() {
-        functionDetectors[detector] = true;
-    }
+    address private comptroller;
 
     function _verifyActionsPreRun(ProposalAction[] memory proposal) internal {
         address[] memory targets = new address[](proposal.length);
@@ -56,9 +51,11 @@ contract MarketCreationHook {
         uint256[] memory,
         bytes[] memory datas
     ) internal {
+        require(comptroller == address(0), "proposal not cleaned up");
+
         uint256 proposalLength = targets.length;
         for (uint256 i = 0; i < proposalLength; i++) {
-            if (functionDetectors[bytesToBytes4(datas[i])]) {
+            if (detector == bytesToBytes4(datas[i])) {
                 comptroller = targets[i];
 
                 /// --------------- FUNCTION SIGNATURE VERIFICATION ---------------
@@ -109,13 +106,17 @@ contract MarketCreationHook {
         }
     }
 
-    function _verifyMTokensPostRun() internal view {
+    function _verifyMTokensPostRun() internal {
+        /// if comptroller is not set, it means there are no mTokens to verify
+        if (comptroller == address(0)) {
+            return;
+        }
+
         /// --------------- VERIFICATION ---------------
 
         /// verify that all created mTokens have the same admin
         /// and that they have been minted and sent to the burn address
-        uint256 createdMTokensLength = createdMTokens.length;
-        for (uint256 i = 0; i < createdMTokensLength; i++) {
+        for (uint256 i = 0; i < createdMTokens.length; i++) {
             require(
                 MToken(createdMTokens[i]).admin() ==
                     Comptroller(comptroller).admin(),
@@ -127,17 +128,15 @@ contract MarketCreationHook {
             );
         }
 
-        if (address(comptroller) != address(0)) {
-            MToken[] memory markets = Comptroller(comptroller).getAllMarkets();
+        MToken[] memory markets = Comptroller(comptroller).getAllMarkets();
 
-            for (uint256 i = 0; i < markets.length; i++) {
-                require(markets[i].totalSupply() >= 1e8, "empty market");
-                require(
-                    markets[i].balanceOf(address(0)) > 0,
-                    "no burnt tokens"
-                );
-            }
+        for (uint256 i = 0; i < markets.length; i++) {
+            require(markets[i].totalSupply() >= 1e8, "empty market");
+            require(markets[i].balanceOf(address(0)) > 0, "no burnt tokens");
         }
+
+        delete createdMTokens;
+        comptroller = address(0);
     }
 
     function getTokenAmount(

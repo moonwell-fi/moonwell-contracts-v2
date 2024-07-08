@@ -8,16 +8,14 @@ import "@forge-std/Test.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MIPProposal} from "@proposals/MIPProposal.s.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
@@ -25,7 +23,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 /// This is a template of a MIP proposal that can be used to add new mTokens
 /// @dev be sure to include all necessary underlying and price feed addresses
 /// in the Addresses.sol contract for the network the MTokens are being deployed on.
-contract mipb17 is Proposal, CrossChainProposal, Configs {
+contract mipb17 is HybridProposal, Configs {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @notice the name of the proposal
@@ -249,7 +247,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
             "CHAINLINK_ORACLE"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setMarketSupplyCaps(address[],uint256[])",
@@ -259,7 +257,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
             "Set supply caps MToken market"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setMarketBorrowCaps(address[],uint256[])",
@@ -277,7 +275,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
                     config.addressesString
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     chainlinkOracleAddress,
                     abi.encodeWithSignature(
                         "setFeed(string,address)",
@@ -288,7 +286,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
                     "Set price feed for underlying address in MToken market"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
                         "_supportMarket(address)",
@@ -298,14 +296,14 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
                 );
 
                 /// temporal governor accepts admin of mToken
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature("_acceptAdmin()"),
                     "Temporal governor accepts admin on mToken"
                 );
 
                 /// Approvals
-                _pushCrossChainAction(
+                _pushAction(
                     addresses.getAddress(config.tokenAddressName),
                     abi.encodeWithSignature(
                         "approve(address,uint256)",
@@ -316,7 +314,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
                 );
 
                 /// Initialize markets
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
                         "mint(uint256)",
@@ -325,7 +323,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
                     "Initialize token market to prevent exploit"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
                         "transfer(address,uint256)",
@@ -335,7 +333,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
                     "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
                         "_setCollateralFactor(address,uint256)",
@@ -360,7 +358,7 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
 
-                _pushCrossChainAction(
+                _pushAction(
                     address(mrd),
                     abi.encodeWithSignature(
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
@@ -375,17 +373,6 @@ contract mipb17 is Proposal, CrossChainProposal, Configs {
                 );
             }
         }
-    }
-
-    function run(
-        Addresses addresses,
-        address
-    ) public override(CrossChainProposal, MIPProposal) {
-        printCalldata(addresses);
-        _simulateCrossChainActions(
-            addresses,
-            addresses.getAddress("TEMPORAL_GOVERNOR")
-        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}

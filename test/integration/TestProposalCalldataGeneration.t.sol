@@ -3,15 +3,12 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {console} from "@forge-std/console.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
+import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract TestProposalCalldataGeneration is Test {
     Addresses public addresses;
@@ -122,97 +119,6 @@ contract TestProposalCalldataGeneration is Test {
             }
         }
 
-        // find cross chain proposal matches
-        {
-            string[] memory inputs = new string[](2);
-            inputs[0] = "bin/get-proposals-by-type.sh";
-            inputs[1] = "CrossChainProposal";
-
-            string memory output = string(vm.ffi(inputs));
-
-            // create array splitting the output string
-            string[] memory proposalsPath = vm.split(output, "\n");
-
-            for (uint256 i = proposalsPath.length; i > 0; i--) {
-                address proposal = deployCode(proposalsPath[i - 1]);
-                if (proposal == address(0)) {
-                    continue;
-                }
-
-                vm.makePersistent(proposal);
-
-                CrossChainProposal proposalContract = CrossChainProposal(
-                    proposal
-                );
-
-                uint256 proposalId = proposalContract.onchainProposalId();
-
-                // is id is not set it means the proposal is not onchain yet
-                if (proposalId == 0) {
-                    continue;
-                }
-
-                vm.selectFork(uint256(proposalContract.primaryForkId()));
-                proposalContract.build(addresses);
-
-                address target = addresses.getAddress(
-                    "WORMHOLE_CORE_MOONBEAM",
-                    1284
-                );
-
-                bytes memory payload = proposalContract.getTemporalGovCalldata(
-                    addresses.getAddress("TEMPORAL_GOVERNOR")
-                );
-
-                address[] memory targets = new address[](1);
-                targets[0] = target;
-
-                uint256[] memory values = new uint256[](1);
-                values[0] = 0;
-
-                bytes[] memory calldatas = new bytes[](1);
-                calldatas[0] = payload;
-
-                bytes32 hash = keccak256(
-                    abi.encode(targets, values, calldatas)
-                );
-
-                vm.selectFork(MOONBEAM_FORK_ID);
-
-                address[] memory onchainTargets = new address[](targets.length);
-                uint256[] memory onchainValues = new uint256[](values.length);
-                bytes[] memory onchainCalldatas = new bytes[](calldatas.length);
-
-                (onchainTargets, onchainValues, onchainCalldatas) = governor
-                    .getProposalData(proposalId);
-
-                bytes32 onchainHash = keccak256(
-                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
-                );
-
-                if (hash != onchainHash) {
-                    (
-                        onchainTargets,
-                        onchainValues,
-                        ,
-                        onchainCalldatas
-                    ) = MoonwellArtemisGovernor(artemisGovernor).getActions(
-                        proposalId
-                    );
-
-                    onchainHash = keccak256(
-                        abi.encode(
-                            onchainTargets,
-                            onchainValues,
-                            onchainCalldatas
-                        )
-                    );
-                }
-
-                assertEq(hash, onchainHash, "Hashes do not match");
-            }
-        }
-
         {
             string[] memory inputs = new string[](2);
             inputs[0] = "bin/get-proposals-by-type.sh";
@@ -245,6 +151,8 @@ contract TestProposalCalldataGeneration is Test {
                 vm.selectFork(uint256(proposalContract.primaryForkId()));
                 proposalContract.build(addresses);
 
+                vm.selectFork(MOONBEAM_FORK_ID);
+
                 // get proposal actions
                 (
                     address[] memory targets,
@@ -272,7 +180,20 @@ contract TestProposalCalldataGeneration is Test {
                     abi.encode(onchainTargets, onchainValues, onchainCalldatas)
                 );
 
-                assertEq(hash, onchainHash, "Hashes do not match");
+                assertEq(
+                    hash,
+                    onchainHash,
+                    string(
+                        abi.encodePacked(
+                            "Hashes do not match for proposal: ",
+                            proposalContract.name()
+                        )
+                    )
+                );
+                console.log(
+                    "Found onchain calldata for proposal: ",
+                    proposalContract.name()
+                );
             }
         }
     }
