@@ -204,7 +204,10 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
 
             /// Add OP vote collection to the MultichainGovernor
             _pushAction(
-                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    block.chainid.toMoonbeamChainId()
+                ),
                 abi.encodeWithSignature(
                     "addExternalChainConfigs((uint16,address)[])",
                     voteCollectionTrustedSender
@@ -216,7 +219,10 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
 
         /// update xWELL implementation across both Moonbeam and Base
         _pushAction(
-            addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
+            addresses.getAddress(
+                "MOONBEAM_PROXY_ADMIN",
+                block.chainid.toMoonbeamChainId()
+            ),
             abi.encodeWithSignature(
                 "upgrade(address,address)",
                 addresses.getAddress("xWELL_PROXY"),
@@ -227,7 +233,10 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
         );
 
         _pushAction(
-            addresses.getAddress("MRD_PROXY_ADMIN"),
+            addresses.getAddress(
+                "MRD_PROXY_ADMIN",
+                block.chainid.toBaseChainId()
+            ),
             abi.encodeWithSignature(
                 "upgrade(address,address)",
                 addresses.getAddress("xWELL_PROXY"),
@@ -278,7 +287,9 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
             );
         }
 
-        /// TODO deployment script should open Optimism -> Moonbeam route in the constructor
+        /// TODO deployment script should open
+        /// Optimism -> Moonbeam + Optimism -> Base
+        /// route in the constructor
         {
             WormholeTrustedSender.TrustedSender[]
                 memory optimismWormholeBridgeAdapter = new WormholeTrustedSender.TrustedSender[](
@@ -297,28 +308,27 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                     optimismWormholeBridgeAdapter
                 ),
                 "Add xWELL route from Optimism to Base",
-                ActionType.Base
+                ActionType.Optimism
             );
         }
     }
 
     function run(Addresses addresses, address) public override {
-        /// safety check to ensure no base actions are run
+        /// TODO update numbers once proposal changes
         require(
             actions.proposalActionTypeCount(ActionType.Base) == 0,
-            "MIP-O01: should have no base actions"
+            "MIP-O01: should have X base actions"
         );
-
         require(
-            actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
-            "MIP-O01: should have 1 moonbeam actions"
+            actions.proposalActionTypeCount(ActionType.Moonbeam) == 0,
+            "MIP-O01: should have X moonbeam actions"
+        );
+        require(
+            actions.proposalActionTypeCount(ActionType.Optimism) == 0,
+            "MIP-O01: should have X optimism actions"
         );
 
-        /// only run actions on moonbeam
-        vm.selectFork(MOONBEAM_FORK_ID);
-        _runMoonbeamMultichainGovernor(addresses, address(1000000000));
-
-        vm.selectFork(primaryForkId());
+        super.run(addresses, address(0));
     }
 
     function validate(Addresses addresses, address) public view override {
