@@ -64,16 +64,8 @@ abstract contract Proposal is Script, Test {
         if (DO_PRINT) {
             printProposalActionSteps();
 
-            {
-                uint256[] memory allowedChainIds = new uint256[](3);
-                allowedChainIds[0] = block.chainid.toBaseChainId();
-                allowedChainIds[1] = block.chainid.toOptimismChainId();
-                allowedChainIds[2] = block.chainid.toMoonbeamChainId();
-
-                addresses.addRestrictions(allowedChainIds);
-                printCalldata(addresses);
-                addresses.removeRestriction();
-            }
+            addresses.removeAllRestrictions();
+            printCalldata(addresses);
 
             _printAddressesChanges(addresses);
         }
