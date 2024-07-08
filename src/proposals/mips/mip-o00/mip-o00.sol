@@ -602,7 +602,7 @@ contract mipo00 is HybridProposal, Configs {
             "MIP-O00: should have 1 moonbeam actions"
         );
 
-        super.run();
+        super.run(addresses, address(0));
     }
 
     function teardown(Addresses addresses, address) public pure override {}
