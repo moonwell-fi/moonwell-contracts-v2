@@ -128,7 +128,7 @@ contract xWELLDeploy {
     /// but does not include the xWELL lockbox as there is no native WELL token
     /// on secondary chain
     /// @param existingProxyAdmin The proxy admin to use, if any
-    function deploySystem(
+    function deployWellSystem(
         address existingProxyAdmin
     )
         public
@@ -186,7 +186,7 @@ contract xWELLDeploy {
             proxyAdmin,
             wormholeAdapterLogic,
             wormholeAdapter
-        ) = deploySystem(existingProxyAdmin);
+        ) = deployWellSystem(existingProxyAdmin);
         /// lockbox is deployed at the end so that xWELL and wormhole adapter can have the same addresses on all chains.
         lockbox = deployLockBox(
             xwellProxy, /// proxy is actually the xWELL token contract

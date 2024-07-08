@@ -62,7 +62,7 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
                 ,
                 address wormholeAdapterLogic,
                 address wormholeAdapter
-            ) = deploySystem(existingProxyAdmin);
+            ) = deployWellSystem(existingProxyAdmin);
 
             MintLimits.RateLimitMidPointInfo[]
                 memory limits = new MintLimits.RateLimitMidPointInfo[](1);
