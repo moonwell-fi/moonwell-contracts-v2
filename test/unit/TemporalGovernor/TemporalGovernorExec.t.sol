@@ -77,7 +77,7 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         );
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertTrue(governor.isTrustedSender(trustedChainid, admin));
         assertEq(address(governor.wormholeBridge()), wormholeCore);
     }
@@ -181,6 +181,48 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
         }
 
         assertEq(governor.owner(), newAdmin);
+    }
+
+    function testFastTrackExecuteWithValueSucceeds() public {
+        uint256 value = 10 ether;
+        address[] memory targets = new address[](1);
+        targets[0] = address(100_000);
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = value;
+
+        bytes[] memory payloads = new bytes[](1);
+
+        /// to be unbundled by the temporal governor
+        bytes memory payload = abi.encode(
+            address(governor),
+            targets,
+            values,
+            payloads
+        );
+
+        governor.togglePause();
+        assertTrue(governor.paused());
+        assertFalse(governor.guardianPauseAllowed());
+
+        mockCore.setStorage(
+            true,
+            trustedChainid,
+            admin.toBytes(),
+            "reeeeeee",
+            payload
+        );
+
+        vm.deal(address(this), value);
+        vm.warp(block.timestamp + 100);
+        governor.fastTrackProposalExecution{value: value}("");
+
+        bytes32 hash = keccak256(abi.encodePacked(""));
+        (bool executed, uint248 queueTime) = governor.queuedTransactions(hash);
+
+        assertEq(targets[0].balance, value, "Value not transferred");
+        assertEq(queueTime, block.timestamp, "Queue time incorrect");
+        assertTrue(executed, "Proposal not executed");
     }
 
     function testProposeGrantGuardianPauseSucceedsUnpauseFails() public {
@@ -611,6 +653,60 @@ contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
 
         bytes32 hash = keccak256(abi.encodePacked(""));
         (bool executed, uint248 queueTime) = governor.queuedTransactions(hash);
+
+        assertEq(queueTime, block.timestamp - proposalDelay);
+        assertTrue(executed);
+    }
+
+    function testExecuteSucceedsWithValue() public {
+        uint256 value = 10 ether;
+
+        address[] memory targets = new address[](1);
+        targets[0] = address(100_000);
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = value;
+
+        bytes[] memory payloads = new bytes[](1);
+
+        /// to be unbundled by the temporal governor
+        bytes memory payload = abi.encode(
+            address(governor),
+            targets,
+            values,
+            payloads
+        );
+
+        mockCore.setStorage(
+            true,
+            trustedChainid,
+            admin.toBytes(),
+            "reeeeeee",
+            payload
+        );
+        governor.queueProposal("");
+
+        bytes32 hash = keccak256(abi.encodePacked(""));
+        (bool executed, uint248 queueTime) = governor.queuedTransactions(hash);
+
+        assertEq(queueTime, block.timestamp);
+        assertFalse(executed);
+
+        vm.deal(address(this), value);
+        vm.warp(block.timestamp + proposalDelay);
+        governor.executeProposal{value: value}("");
+
+        assertEq(targets[0].balance, value, "Value not transferred");
+        assertTrue(governor.isTrustedSender(trustedChainid, admin)); /// existing admin stays as a trusted sender
+
+        assertEq(governor.allTrustedSenders(trustedChainid).length, 1);
+        bytes32[] memory trustedSenders = governor.allTrustedSenders(
+            trustedChainid
+        );
+
+        assertEq(trustedSenders[0], admin.toBytes());
+
+        (executed, queueTime) = governor.queuedTransactions(hash);
 
         assertEq(queueTime, block.timestamp - proposalDelay);
         assertTrue(executed);

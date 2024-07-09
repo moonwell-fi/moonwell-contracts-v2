@@ -61,7 +61,7 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         );
     }
 
-    function testSetupCorrectly() public {
+    function testSetup() public view {
         assertTrue(
             governor.isTrustedSender(block.chainid.toUint16(), admin.toBytes())
         );
@@ -114,6 +114,21 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(admin);
         governor.togglePause();
+    }
+
+    function testSendEthToTemporalGovernorSucceeds() public {
+        uint256 value = 1000 ether;
+
+        vm.deal(address(this), value);
+
+        (bool success, ) = address(governor).call{value: value}("");
+
+        assertEq(
+            address(governor).balance,
+            value,
+            "governor did not receive value"
+        );
+        assertTrue(success, "send eth failed");
     }
 
     function testsetTrustedSendersAsTemporalGovernorSucceeds() public {
@@ -286,7 +301,7 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
         governor.togglePause();
     }
 
-    function _postRevokeAssertions() private {
+    function _postRevokeAssertions() private view {
         assertFalse(governor.paused());
         assertEq(governor.lastPauseTime(), 0);
         assertEq(governor.owner(), address(0));

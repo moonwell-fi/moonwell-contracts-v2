@@ -3,7 +3,9 @@ name: Foundry cross chain publish governance message integration tests
 on: [pull_request]
 
 env:
+  OP_RPC_URL: ${{secrets.OP_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+  MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
 
 jobs:
   run-base-tests:
@@ -20,4 +22,4 @@ jobs:
         uses: ./.github/actions
 
       - name: Integration Test Cross Chain Publish Message
-        run: time forge test --match-contract CrossChainPublishMessageTest -vvv
+        run: time forge test --match-contract CrossChainPublishMessageTest -vvv --ffi

@@ -84,7 +84,7 @@ contract xWELLInvariant is BaseTest {
         );
     }
 
-    function invariant_totalSupplySumOfBalances() public {
+    function invariant_totalSupplySumOfBalances() public view {
         uint256 sumOfBalances;
         uint256 totalSupply = xwellProxy.totalSupply();
 
@@ -96,7 +96,7 @@ contract xWELLInvariant is BaseTest {
         assertEq(totalSupply, sumOfBalances, "total supply != sum of balances");
     }
 
-    function invariant_handlerBalancesCorrect() public {
+    function invariant_handlerBalancesCorrect() public view {
         address[] memory users = handler.getUsers();
 
         for (uint256 i = 0; i < users.length; i++) {
@@ -108,7 +108,7 @@ contract xWELLInvariant is BaseTest {
         }
     }
 
-    function invariant_sumOfDelegatesBalancesEqualsVotes() public {
+    function invariant_sumOfDelegatesBalancesEqualsVotes() public view {
         address[] memory users = handler.getUsers();
         for (uint256 i = 0; i < users.length; i++) {
             address[] memory delegators = handler.getUserDelegators(users[i]);
@@ -125,14 +125,14 @@ contract xWELLInvariant is BaseTest {
         }
     }
 
-    function invariant_totalSupplyLteMaxSupply() public {
+    function invariant_totalSupplyLteMaxSupply() public view {
         assertTrue(
             xwellProxy.totalSupply() <= xwellProxy.maxSupply(),
             "total supply gt max supply"
         );
     }
 
-    function invariant_bufferStoredLteBufferCap() public {
+    function invariant_bufferStoredLteBufferCap() public view {
         {
             (, uint112 bufferCap, , uint112 bufferStored, ) = xwellProxy
                 .rateLimits(address(handler));
@@ -153,7 +153,7 @@ contract xWELLInvariant is BaseTest {
         }
     }
 
-    function invariant_bufferLteBufferCap() public {
+    function invariant_bufferLteBufferCap() public view {
         {
             (, uint112 bufferCap, , , ) = xwellProxy.rateLimits(
                 address(handler)
@@ -176,7 +176,7 @@ contract xWELLInvariant is BaseTest {
         }
     }
 
-    function invariant_rateLimitPerSecondLteRLPSMax() public {
+    function invariant_rateLimitPerSecondLteRLPSMax() public view {
         {
             (uint128 rateLimitPerSecond, , , , ) = xwellProxy.rateLimits(
                 address(handler)
@@ -199,7 +199,7 @@ contract xWELLInvariant is BaseTest {
         }
     }
 
-    function invariant_totalSupplyMirrorCorrect() public {
+    function invariant_totalSupplyMirrorCorrect() public view {
         assertEq(
             handler.totalSupply(),
             xwellProxy.totalSupply(),

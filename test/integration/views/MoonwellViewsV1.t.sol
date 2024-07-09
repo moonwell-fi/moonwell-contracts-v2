@@ -5,7 +5,7 @@ import "@forge-std/Test.sol";
 import {MoonwellViewsV1} from "@protocol/views/MoonwellViewsV1.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
 contract MoonwellViewsV1Test is Test, PostProposalCheck {
@@ -29,10 +29,10 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
 
         comptroller = addresses.getAddress("UNITROLLER");
         tokenSaleDistributor = addresses.getAddress("TOKENSALE");
-        safetyModule = addresses.getAddress("STWELL");
-        governanceToken = addresses.getAddress("WELL");
-        nativeMarket = addresses.getAddress("mGLIMMER");
-        governanceTokenLP = addresses.getAddress("WELL_LP");
+        safetyModule = addresses.getAddress("STKGOVTOKEN");
+        governanceToken = addresses.getAddress("GOVTOKEN");
+        nativeMarket = addresses.getAddress("MNATIVE");
+        governanceTokenLP = addresses.getAddress("GOVTOKEN_LP");
 
         viewsContract = new MoonwellViewsV1();
 
@@ -57,12 +57,12 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
         vm.rollFork(4717310);
     }
 
-    function testComptrollerIsSet() public {
+    function testComptrollerIsSet() public view {
         address _addy = address(viewsContract.comptroller());
         assertEq(_addy, comptroller);
     }
 
-    function testMarketsSize() public {
+    function testMarketsSize() public view {
         MoonwellViewsV1.Market memory _market = viewsContract.getMarketInfo(
             MToken(0x091608f4e4a15335145be0A279483C0f8E4c7955)
         );
@@ -70,7 +70,7 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
         assertEq(_market.isListed, true);
     }
 
-    function testUserVotingPower() public {
+    function testUserVotingPower() public view {
         MoonwellViewsV1.UserVotes memory _votes = viewsContract
             .getUserVotingPower(user);
 
@@ -82,7 +82,7 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
         );
     }
 
-    function testUserStakingInfo() public {
+    function testUserStakingInfo() public view {
         MoonwellViewsV1.UserStakingInfo memory _stakingInfo = viewsContract
             .getUserStakingInfo(user);
 

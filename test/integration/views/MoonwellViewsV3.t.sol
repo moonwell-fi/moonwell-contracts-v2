@@ -4,7 +4,7 @@ import "@forge-std/Test.sol";
 
 import {MoonwellViewsV3} from "@protocol/views/MoonwellViewsV3.sol";
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
 contract MoonwellViewsV3Test is Test, PostProposalCheck {
@@ -53,31 +53,24 @@ contract MoonwellViewsV3Test is Test, PostProposalCheck {
         vm.rollFork(6900000);
     }
 
-    function testComptrollerIsSet() public {
+    function testComptrollerIsSet() public view {
         address _addy = address(viewsContract.comptroller());
         assertEq(_addy, comptroller);
     }
 
-    function testMarketsSize() public {
+    function testMarketsSize() public view {
         MoonwellViewsV3.Market[] memory _markets = viewsContract
             .getAllMarketsInfo();
         assertEq(_markets.length, 3);
     }
 
-    // function testUserBalances() public {
-    //     MoonwellViewsV3.Balances[] memory _balances = viewsContract
-    //         .getUserBalances(user);
-    //     console.log(_balances.length);
-    //     assertEq(_balances.length, 5);
-    // }
-
-    function testUserRewards() public {
+    function testUserRewards() public view {
         MoonwellViewsV3.Rewards[] memory _rewards = viewsContract
             .getUserRewards(user);
         assertEq(_rewards.length, 0);
     }
 
-    function testProtocolInfo() public {
+    function testProtocolInfo() public view {
         MoonwellViewsV3.ProtocolInfo memory _protocolInfo = viewsContract
             .getProtocolInfo();
         assertEq(_protocolInfo.transferPaused, false);

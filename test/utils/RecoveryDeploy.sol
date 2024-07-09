@@ -6,7 +6,7 @@ import {Script} from "@forge-std/Script.sol";
 import "@forge-std/Test.sol";
 
 import {Recovery} from "@protocol/Recovery.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract RecoveryDeploy is Test {
     /// @notice base mainnet address to deploy to

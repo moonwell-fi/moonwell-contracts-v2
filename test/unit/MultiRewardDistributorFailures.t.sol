@@ -75,7 +75,7 @@ contract MultiRewardDistributorFailures is Test {
         );
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(compAdmin, comptroller.admin());
         assertEq(distributor.emissionCap(), 100 ether);
         assertEq(distributor.initialIndexConstant(), 1e36);

@@ -1,11 +1,14 @@
 pragma solidity 0.8.19;
 
+import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
+
 import {console} from "@forge-std/console.sol";
 
-import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {ITimelock} from "@protocol/interfaces/ITimelock.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 
 abstract contract GovernanceProposal is Proposal {
@@ -37,7 +40,7 @@ abstract contract GovernanceProposal is Proposal {
 
     /// @notice get actions
     function _getActions()
-        internal
+        public
         view
         returns (
             address[] memory,
@@ -86,6 +89,65 @@ abstract contract GovernanceProposal is Proposal {
     /// @notice print calldata
     function printCalldata(Addresses) public override {
         printActions();
+    }
+
+    /// @notice search for a on-chain proposal that matches the proposal calldata
+    /// @return proposalId 0 if no proposal is found
+    function getProposalId(
+        Addresses,
+        address governor
+    ) public override returns (uint256 proposalId) {
+        vm.selectFork(MOONBEAM_FORK_ID);
+
+        MoonwellArtemisGovernor governorContract = MoonwellArtemisGovernor(
+            governor
+        );
+        uint256 proposalCount = onchainProposalId != 0
+            ? onchainProposalId
+            : MultichainGovernor(governor).proposalCount();
+
+        (
+            address[] memory proposalTargets,
+            uint256[] memory proposalValues,
+            string[] memory proposalSignatures,
+            bytes[] memory proposalCalldatas
+        ) = _getActions();
+
+        bytes memory governorCalldata = abi.encodeWithSignature(
+            "propose(address[],uint256[],string[],bytes[],string)",
+            proposalTargets,
+            proposalValues,
+            proposalSignatures,
+            proposalCalldatas,
+            PROPOSAL_DESCRIPTION
+        );
+
+        while (proposalCount > 0) {
+            (
+                address[] memory onchainTargets,
+                uint256[] memory onchainValues,
+                string[] memory onchainSignatures,
+                bytes[] memory onchainCalldatas
+            ) = governorContract.getActions(proposalCount);
+
+            bytes memory onchainCalldata = abi.encodeWithSignature(
+                "propose(address[],uint256[],string[],bytes[],string)",
+                onchainTargets,
+                onchainValues,
+                onchainSignatures,
+                onchainCalldatas,
+                PROPOSAL_DESCRIPTION
+            );
+
+            if (keccak256(governorCalldata) == keccak256(onchainCalldata)) {
+                proposalId = proposalCount;
+                break;
+            }
+
+            proposalCount--;
+        }
+
+        vm.selectFork(uint256(primaryForkId()));
     }
 
     /// @notice print the proposal action steps
@@ -174,7 +236,7 @@ abstract contract GovernanceProposal is Proposal {
 
         /// @dev deal and delegate, so the proposal can be simulated end-to-end
         Addresses addresses = new Addresses();
-        address well = payable(addresses.getAddress("WELL"));
+        address well = payable(addresses.getAddress("GOVTOKEN"));
         _deal(well, proposerAddress, 100_000_000e18);
         _delegate(proposerAddress, ERC20Votes(well));
 

@@ -8,12 +8,12 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
@@ -21,7 +21,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 /// It reads in the configuration from Config.sol, which reads in the mainnetMTokens.json file and deploys the MTokens specified in that file.
 /// @dev be sure to include all necessary underlying and price feed addresses in the Addresses.sol contract for the network
 /// the MTokens are being deployed to.
-contract mip02 is Proposal, CrossChainProposal, Configs {
+contract mip02 is HybridProposal, Configs {
     string public constant override name = "MIP02";
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
 
@@ -31,9 +31,8 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
         address unitroller;
     }
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
@@ -44,11 +43,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
 
         {
             MErc20Delegate mTokenLogic = new MErc20Delegate();
-            addresses.addAddress(
-                "MTOKEN_IMPLEMENTATION",
-                address(mTokenLogic),
-                true
-            );
+            addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
         }
 
         Configs.CTokenConfiguration[]
@@ -78,8 +73,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel),
-                        true
+                        address(irModel)
                     );
                 }
 
@@ -120,11 +114,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                     ""
                 );
 
-                addresses.addAddress(
-                    config.addressesString,
-                    address(mToken),
-                    true
-                );
+                addresses.addAddress(config.addressesString, address(mToken));
             }
         }
     }
@@ -157,7 +147,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
         }
     }
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         ChainlinkOracle oracle = ChainlinkOracle(
@@ -185,7 +175,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                 );
                 mTokens[i] = MToken(cTokenAddress);
 
-                _pushCrossChainAction(
+                _pushAction(
                     address(oracle),
                     abi.encodeWithSignature(
                         "setFeed(string,uint256)",
@@ -196,7 +186,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                     "Temporal governor accepts admin on mToken"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
                         "_supportMarket(address)",
@@ -208,13 +198,13 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                 /// ------------ MTOKEN MARKET ACTIVIATION ------------
 
                 /// temporal governor accepts admin of mToken
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature("_acceptAdmin()"),
                     "Temporal governor accepts admin on mToken"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
                         "_setMintPaused(address,bool)",
@@ -225,7 +215,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                 );
 
                 /// Approvals
-                _pushCrossChainAction(
+                _pushAction(
                     addresses.getAddress(config.tokenAddressName),
                     abi.encodeWithSignature(
                         "approve(address,uint256)",
@@ -236,7 +226,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                 );
 
                 /// Initialize markets
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
                         "mint(uint256)",
@@ -245,7 +235,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                     "Initialize token market to prevent exploit"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
                         "transfer(address,uint256)",
@@ -255,7 +245,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
                     "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
                         "_setCollateralFactor(address,uint256)",
@@ -267,7 +257,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
             }
         }
 
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setMarketSupplyCaps(address[],uint256[])",
@@ -277,7 +267,7 @@ contract mip02 is Proposal, CrossChainProposal, Configs {
             "Set market supply caps for each mToken"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setMarketBorrowCaps(address[],uint256[])",

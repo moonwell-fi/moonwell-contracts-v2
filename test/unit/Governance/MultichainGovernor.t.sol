@@ -2,6 +2,8 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import "@utils/ChainIds.sol";
+
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
@@ -38,7 +40,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         vm.warp(block.timestamp + 1);
     }
 
-    function testGovernorSetup() public {
+    function testGovernorSetup() public view {
         assertFalse(
             governor.useTimestamps(),
             "useTimestamps should start off false after initialization"
@@ -96,7 +98,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
 
         assertEq(
-            address(governor.targetAddress(baseWormholeChainId)),
+            address(governor.targetAddress(BASE_WORMHOLE_CHAIN_ID)),
             address(voteCollection),
             "target address on moonbeam incorrect"
         );
@@ -108,11 +110,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
         assertEq(
             governor.getAllTargetChains()[0],
-            baseWormholeChainId,
+            BASE_WORMHOLE_CHAIN_ID,
             "getAllTargetChains chainid incorrect"
         );
         assertEq(
-            governor.bridgeCost(moonBaseWormholeChainId),
+            governor.bridgeCost(MOONBASE_WORMHOLE_CHAIN_ID),
             0.01 ether,
             "bridgecost incorrect"
         );
@@ -123,7 +125,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
-    function testVoteCollectionSetup() public {
+    function testVoteCollectionSetup() public view {
         assertEq(
             address(voteCollection.xWell()),
             address(xwell),
@@ -131,7 +133,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
         assertTrue(
             voteCollection.isTrustedSender(
-                moonBeamWormholeChainId,
+                MOONBEAM_WORMHOLE_CHAIN_ID,
                 address(governor)
             ),
             "governor address not trusted sender"

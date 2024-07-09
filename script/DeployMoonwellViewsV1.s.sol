@@ -7,7 +7,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MoonwellViewsV1} from "@protocol/views/MoonwellViewsV1.sol";
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -18,29 +18,21 @@ forge script script/DeployMoonwellViewsV1.s.sol:DeployMoonwellViewsV1 -vvvv --rp
 */
 
 contract DeployMoonwellViewsV1 is Script, Test {
-    uint256 public PRIVATE_KEY;
-
     Addresses public addresses;
 
     function setUp() public {
         addresses = new Addresses();
-
-        // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = vm.envOr(
-            "MOONWELL_DEPLOY_PK",
-            77814517325470205911140941194401928579557062014761831930645393041380819009408
-        );
     }
 
     function run() public {
-        vm.startBroadcast(PRIVATE_KEY);
+        vm.startBroadcast();
 
         address unitroller = addresses.getAddress("UNITROLLER");
         address tokenSaleDistributor = addresses.getAddress("TOKENSALE");
-        address safetyModule = addresses.getAddress("STWELL");
-        address governanceToken = addresses.getAddress("WELL");
-        address nativeMarket = addresses.getAddress("mGLIMMER");
-        address governanceTokenLP = addresses.getAddress("WELL_LP");
+        address safetyModule = addresses.getAddress("STKGOVTOKEN");
+        address governanceToken = addresses.getAddress("GOVTOKEN");
+        address nativeMarket = addresses.getAddress("MNATIVE");
+        address governanceTokenLP = addresses.getAddress("GOVTOKEN_LP");
 
         MoonwellViewsV1 viewsContract = new MoonwellViewsV1();
 

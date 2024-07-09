@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
+contract mipb11 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-b11";
 
     uint256 public constant wstETH_NEW_CF = 0.76e18;
@@ -19,23 +19,24 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b11/MIP-B11.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 64;
     }
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {}
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
 
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -45,29 +46,29 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set collateral factor for Moonwell wstETH to updated collateral factor"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_DAI"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI")
+                0x32f3A6134590fc2d9440663d35a2F0a6265F04c4
             ),
             "Set interest rate model for Moonwell DAI to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC")
+                0x32f3A6134590fc2d9440663d35a2F0a6265F04c4
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_USDBC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDBC")
+                0xF22c8255eA615b3Da6CA5CF5aeCc8956bfF07Aa8
             ),
             "Set interest rate model for Moonwell USDBC to updated rate model"
         );
@@ -77,7 +78,7 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
 
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         _validateCF(
             addresses,
             addresses.getAddress("MOONWELL_wstETH"),

@@ -9,22 +9,22 @@ auto_detect_solc = true
 evm_version = 'paris' # lock to paris to prevent use of push0 opcode which is not live on base
 optimizer_runs = 1
 rpc_storage_caching = { chains = "all", endpoints = "all" }
+ignored_warnings_from = ["src/MErc20Delegator.sol", "src/tokensale/TokenSaleDistributorProxy.sol"]
 
 [fuzz]
 runs = 1
 
 [rpc_endpoints]
 localhost = "http://127.0.0.1:8545"
-moonriver = "https://rpc.api.moonriver.moonbeam.network"
-moonbeam = "https://rpc.api.moonbeam.network"
-moonbase = "https://moonbase-alpha.public.blastapi.io"
-ethereum = "https://rpc.ankr.com/eth"
-optimism = "https://endpoints.omniatech.io/v1/op/mainnet/public"
-avalanche = "https://rpc.ankr.com/avalanche"
-base = "https://mainnet.base.org"
-baseSepolia = "https://sepolia.base.org"
-local = "http://127.0.0.1:8545"
-arbitrum = "https://arb1.arbitrum.io/rpc"
+moonriver = "${MOONRIVER_RPC_URL}"
+moonbeam = "${MOONBEAM_RPC_URL}"
+moonbase = "${MOONBASE_RPC_URL}"
+ethereum = "${ETH_RPC_URL}"
+base = "${BASE_RPC_URL}"
+baseSepolia = "${BASE_SEPOLIA_RPC_URL}"
+arbitrum = "${ARB_RPC_URL}"
+optimism = "${OP_RPC_URL}"
+opSepolia = "${OP_SEPOLIA_RPC_URL}"
 
 # comment out the following lines so that CI passes fast and doesn't throw errors related to connecting to CI
 #[etherscan]
@@ -35,4 +35,4 @@ arbitrum = "https://arb1.arbitrum.io/rpc"
 #sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
 #base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
 #baseSepolia = { key = "${BASESCAN_API_KEY}", url= "https://sepolia.basescan.org/api" }
-
+#opSepolia = { key = "${OPSCAN_API_KEY}", url= "https://api.optimistic.etherscan.io/api" }

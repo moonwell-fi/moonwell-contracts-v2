@@ -20,7 +20,7 @@ contract Malicious4626Minter {
 
     /// 2. received eth gets sent to fallback
     /// 3. attempt reentrant callback to target
-    fallback() external payable {
+    receive() external payable {
         if (action == 1) {
             MoonwellERC4626Eth(payable(msg.sender)).deposit(0, address(this));
         } else if (action == 2) {

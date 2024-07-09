@@ -5,15 +5,19 @@ STAGED_SOL_FILES=$(mktemp)
 # Temporary file to hold list of all staged files for prettier
 STAGED_FILES=$(mktemp)
 
+
 # List staged .sol files ignoring deleted and renamed files
-git diff --cached --name-status -- '*.sol' | grep -v '^(D|R[0-9]+)' | cut -f2- > "$STAGED_SOL_FILES"
+git diff --cached --name-status -- '*.sol' | grep -v '^D\|^R' | cut -f2- > "$STAGED_SOL_FILES"
+
+
 # List all staged files ignoring deleted and renamed files
-git diff --cached --name-status | grep -v '^(D|R[0-9]+)' | cut -f2- > "$STAGED_FILES"
+git diff --cached --name-status | grep -v '^D\|^R' | cut -f2- > "$STAGED_FILES"
+
 
 # Run Solhint on staged .sol files, if any
 if [ -s "$STAGED_SOL_FILES" ]; then
     # If there are staged .sol files, run Solhint on them
-    SOLHINT_OUTPUT=$(cat "$STAGED_SOL_FILES" | xargs npm run lint)
+    SOLHINT_OUTPUT=$(cat "$STAGED_SOL_FILES" | xargs -r npm run lint)
     SOLHINT_EXIT_CODE=$?
 
     if [ $SOLHINT_EXIT_CODE -ne 0 ]; then
@@ -23,14 +27,15 @@ if [ -s "$STAGED_SOL_FILES" ]; then
         exit $SOLHINT_EXIT_CODE
     else
         # Re-add the .sol files to include any automatic fixes by Solhint
-        cat "$STAGED_SOL_FILES" | xargs git add
+        cat "$STAGED_SOL_FILES" | xargs -r git add
     fi
 fi
+
 
 # Run Prettier and check for errors on staged files
 if [ -s "$STAGED_FILES" ]; then
     # Note: Using `--write` with Prettier to automatically fix formatting
-    PRETTIER_OUTPUT=$(cat "$STAGED_FILES" | xargs npm run prettier)
+    PRETTIER_OUTPUT=$(cat "$STAGED_FILES" | xargs -r npm run prettier)
     PRETTIER_EXIT_CODE=$?
 
     if [ $PRETTIER_EXIT_CODE -ne 0 ]; then
@@ -40,7 +45,7 @@ if [ -s "$STAGED_FILES" ]; then
         exit $PRETTIER_EXIT_CODE
     else
         # Re-add the files to include any formatting changes by Prettier
-        cat "$STAGED_FILES" | xargs git add
+        cat "$STAGED_FILES" | xargs -r git add
     fi
 fi
 

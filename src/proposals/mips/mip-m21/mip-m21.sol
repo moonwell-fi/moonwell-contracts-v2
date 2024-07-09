@@ -3,24 +3,27 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
+import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipm21 is GovernanceProposal {
-    string public constant override name = "MIP-M19";
+    using ChainIds for uint256;
+    string public constant override name = "MIP-M21";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile("./src/proposals/mips/mip-m21/MIP-M21.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 77;
     }
 
-    /// @notice proposal's actions all happen on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {
@@ -29,15 +32,14 @@ contract mipm21 is GovernanceProposal {
 
             addresses.addAddress(
                 "WORMHOLE_UNWRAPPER_ADAPTER",
-                address(wormholeUnwrapperAdapter),
-                true
+                address(wormholeUnwrapperAdapter)
             );
         }
     }
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         /// @dev Upgrade wormhole bridge adapter to wormhole unwrapper adapter
@@ -74,7 +76,7 @@ contract mipm21 is GovernanceProposal {
 
     function teardown(Addresses addresses, address) public pure override {}
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         validateProxy(
             vm,
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),

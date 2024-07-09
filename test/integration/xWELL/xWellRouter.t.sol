@@ -4,15 +4,16 @@ pragma solidity 0.8.19;
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
-contract xWellRouterTest is Test, ChainIds {
+contract xWellRouterTest is Test {
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
 
@@ -41,7 +42,7 @@ contract xWellRouterTest is Test, ChainIds {
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
     uint16 public constant wormholeMoonbeamChainid =
-        uint16(moonBeamWormholeChainId);
+        uint16(MOONBEAM_WORMHOLE_CHAIN_ID);
 
     /// @notice event emitted when WELL is bridged to xWELL via the base chain
     event BridgeOutSuccess(address indexed to, uint256 amount);
@@ -49,7 +50,7 @@ contract xWellRouterTest is Test, ChainIds {
     function setUp() public {
         addresses = new Addresses();
 
-        well = IERC20(addresses.getAddress("WELL"));
+        well = IERC20(addresses.getAddress("GOVTOKEN"));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
         wormholeAdapter = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
@@ -58,7 +59,7 @@ contract xWellRouterTest is Test, ChainIds {
 
         router = new xWELLRouter(
             address(xwell),
-            addresses.getAddress("WELL"),
+            addresses.getAddress("GOVTOKEN"),
             addresses.getAddress("xWELL_LOCKBOX"),
             address(wormholeAdapter)
         );
@@ -66,7 +67,7 @@ contract xWellRouterTest is Test, ChainIds {
         fallbackReverts = false; /// default to not revert
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(
             address(router.xwell()),
             address(xwell),
@@ -74,7 +75,7 @@ contract xWellRouterTest is Test, ChainIds {
         );
         assertEq(
             address(router.well()),
-            addresses.getAddress("WELL"),
+            addresses.getAddress("GOVTOKEN"),
             "Well address incorrect"
         );
         assertEq(
@@ -88,8 +89,8 @@ contract xWellRouterTest is Test, ChainIds {
             "Wormhole bridge address incorrect"
         );
         assertEq(
-            router.baseWormholeChainId(),
-            baseWormholeChainId,
+            router.BASE_WORMHOLE_CHAIN_ID(),
+            BASE_WORMHOLE_CHAIN_ID,
             "Base wormhole chain id incorrect"
         );
     }

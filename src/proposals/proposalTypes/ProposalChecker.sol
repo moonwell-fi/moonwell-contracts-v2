@@ -1,44 +1,24 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {AddressToString} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID} from "@protocol/utils/ChainIds.sol";
 
-abstract contract ProposalChecker is ChainIds {
+abstract contract ProposalChecker {
+    using ChainIds for uint256;
     using AddressToString for address;
 
     /// @notice should only be run while on the Moonbeam fork
     /// @dev checks that the Moonbeam actions do not include the Base wormhole core address and temporal governor address
     /// @param targets the list of targets for the Moonbeam actions
-    /// @param addresses the addresses contract
-    function checkMoonbeamActions(
-        address[] memory targets,
-        Addresses addresses
-    ) public view {
+    function checkMoonbeamActions(address[] memory targets) public view {
         require(
-            moonBeamChainId == block.chainid ||
-                moonBaseChainId == block.chainid,
+            MOONBEAM_CHAIN_ID == block.chainid ||
+                MOONBASE_CHAIN_ID == block.chainid,
             "cannot run Moonbeam checks on non-Moonbeam network"
-        );
-
-        address wormholeCoreBase = addresses.getAddress(
-            "WORMHOLE_CORE_BASE",
-            baseChainId
-        );
-        address wormholeCoreBaseSepolia = addresses.getAddress(
-            "WORMHOLE_CORE_SEPOLIA_BASE",
-            baseSepoliaChainId
-        );
-
-        address temporalGovBase = addresses.getAddress(
-            "TEMPORAL_GOVERNOR",
-            baseChainId
-        );
-        address temporalGovBaseSepolia = addresses.getAddress(
-            "TEMPORAL_GOVERNOR",
-            baseSepoliaChainId
         );
 
         for (uint256 i = 0; i < targets.length; i++) {
@@ -53,64 +33,51 @@ abstract contract ProposalChecker is ChainIds {
                     )
                 )
             );
-            require(
-                targets[i] != temporalGovBase,
-                "Temporal Governor should not be in the list of targets for Moonbeam"
-            );
-            require(
-                targets[i] != temporalGovBaseSepolia,
-                "Temporal Governor Base Sepolia should not be in the list of targets for Moonbeam"
-            );
-
-            /// assert wormhole core BASE or BASE Sepolia address is not in the list of targets on Moonbeam
-            require(
-                targets[i] != wormholeCoreBase,
-                "Wormhole Core Base should not be in the list of targets"
-            );
-            require(
-                targets[i] != wormholeCoreBaseSepolia,
-                "Wormhole Core Base Sepolia should not be in the list of targets"
-            );
         }
     }
 
-    /// @notice should only be run while on the Base fork
-    /// @dev checks that the Base actions do not include the wormhole core address
-    /// @param targets the list of targets for the Base actions
-    /// @param addresses the addresses contract
-    function checkBaseActions(
-        address[] memory targets,
-        Addresses addresses
+    /// @notice should only be run while on Base or Optimism mainnet or testnet fork
+    /// @dev checks that the actions do not include the wormhole core address
+    /// checks that all action targets are pointing to contracts
+    /// @param actions the list of actions for Base or Optimism
+    function checkBaseOptimismActions(
+        ProposalAction[] memory actions
     ) public view {
+        /// check that we are on the proper chain id here
         require(
-            baseChainId == block.chainid || baseSepoliaChainId == block.chainid,
-            "cannot run base checks on non-base network"
+            block.chainid.nonMoonbeamChainIds(),
+            "cannot run base/optimism checks on non-base/optimism network"
         );
 
-        address wormholeCoreBase = addresses.getAddress(
-            "WORMHOLE_CORE_BASE",
-            baseChainId
-        );
-        address wormholeCoreBaseSepolia = addresses.getAddress(
-            "WORMHOLE_CORE_SEPOLIA_BASE",
-            baseSepoliaChainId
+        address[] memory targets = new address[](actions.length);
+        for (uint256 i = 0; i < actions.length; i++) {
+            require(
+                actions[i].data.length > 0 || actions[i].value > 0,
+                "action has no value or data"
+            );
+            targets[i] = actions[i].target;
+        }
+
+        checkBaseOptimismActions(targets);
+    }
+
+    /// @notice should only be run while on Base or Optimism mainnet or testnet fork
+    /// @dev checks that the actions all have bytecode
+    /// @param targets the list of targets for Base or Optimism
+    function checkBaseOptimismActions(address[] memory targets) public view {
+        /// check that we are on the proper chain id
+        require(
+            block.chainid.nonMoonbeamChainIds(),
+            "cannot run base/optimism checks on non-base/optimism network"
         );
 
         for (uint256 i = 0; i < targets.length; i++) {
+            address target = targets[i];
+
             /// there's 0 reason for any proposal actions to call addresses with 0 bytecode
             require(
-                targets[i].code.length > 0,
-                "target for base action not a contract"
-            );
-
-            /// assert wormhole core BASE or BASE Sepolia address is not in the list of targets on Base
-            require(
-                targets[i] != wormholeCoreBase,
-                "Wormhole Core BASE address should not be in the list of targets"
-            );
-            require(
-                targets[i] != wormholeCoreBaseSepolia,
-                "Wormhole Core BASE Sepolia address should not be in the list of targets"
+                target.code.length > 0,
+                "target for base/optimism action not a contract"
             );
         }
     }
@@ -118,101 +85,37 @@ abstract contract ProposalChecker is ChainIds {
     /// @notice checks actions on both moonbeam and base
     /// ensures neither targets wormhole core on either chain
     /// @param addresses the addresses contract
-    /// @param baseActions the list of actions for the base chain
     /// @param moonbeamActions the list of actions for the moonbeam chain
-    function checkMoonbeamBaseActions(
+    function checkMoonbeamActions(
         Addresses addresses,
-        ProposalAction[] memory baseActions,
         ProposalAction[] memory moonbeamActions
     ) public view {
-        {
-            address wormholeCoreBase = addresses.getAddress(
-                "WORMHOLE_CORE_BASE",
-                baseChainId
-            );
-            address wormholeCoreBaseSepolia = addresses.getAddress(
-                "WORMHOLE_CORE_SEPOLIA_BASE",
-                baseSepoliaChainId
-            );
+        address wormholeCoreMoonbase = addresses.getAddress(
+            "WORMHOLE_CORE",
+            MOONBASE_CHAIN_ID
+        );
+        address wormholeCoreMoonbeam = addresses.getAddress(
+            "WORMHOLE_CORE",
+            MOONBEAM_CHAIN_ID
+        );
 
-            address wormholeCoreMoonbase = addresses.getAddress(
-                "WORMHOLE_CORE_MOONBASE",
-                moonBaseChainId
-            );
-            address wormholeCoreMoonbeam = addresses.getAddress(
-                "WORMHOLE_CORE_MOONBEAM",
-                moonBeamChainId
+        for (uint256 i = 0; i < moonbeamActions.length; i++) {
+            /// require all moonbeam actions targets are contracts
+            require(
+                moonbeamActions[i].target.code.length > 0,
+                "target for Moonbeam action not a contract"
             );
 
-            for (uint256 i = 0; i < moonbeamActions.length; i++) {
-                require(
-                    moonbeamActions[i].target != wormholeCoreBase,
-                    "Wormhole Core Base address should not be in the list of targets"
-                );
-                require(
-                    moonbeamActions[i].target != wormholeCoreBaseSepolia,
-                    "Wormhole Core Base Sepolia address should not be in the list of targets"
-                );
-
-                require(
-                    moonbeamActions[i].target != wormholeCoreMoonbeam,
-                    "Wormhole Core Moonbeam address should not be in the list of targets"
-                );
-                require(
-                    moonbeamActions[i].target != wormholeCoreMoonbase,
-                    "Wormhole Core Moonbase should not be in the list of targets"
-                );
-            }
-
-            for (uint256 i = 0; i < baseActions.length; i++) {
-                require(
-                    baseActions[i].target != wormholeCoreBase,
-                    "Wormhole Core Base address should not be in the list of targets"
-                );
-                require(
-                    baseActions[i].target != wormholeCoreBaseSepolia,
-                    "Wormhole Core Base Sepolia address should not be in the list of targets"
-                );
-
-                require(
-                    baseActions[i].target != wormholeCoreMoonbeam,
-                    "Wormhole Core Moonbeam address should not be in the list of targets"
-                );
-                require(
-                    baseActions[i].target != wormholeCoreMoonbase,
-                    "Wormhole Core Moonbase should not be in the list of targets"
-                );
-            }
-        }
-
-        {
-            (address[] memory targets, , ) = getTargetsPayloadsValues(
-                addresses
+            /// require all targets are not wormhole core as this is generated
+            /// by the HybridProposal contract
+            require(
+                moonbeamActions[i].target != wormholeCoreMoonbase,
+                "Wormhole Core Moonbase address should not be in the list of targets"
             );
-
-            if (baseActions.length > 0 && moonbeamActions.length > 1) {
-                require(
-                    targets[targets.length - 1] ==
-                        (
-                            block.chainid == moonBeamChainId ||
-                                block.chainid == baseChainId
-                                ? addresses.getAddress(
-                                    "WORMHOLE_CORE_MOONBEAM",
-                                    moonBeamChainId
-                                )
-                                : addresses.getAddress(
-                                    "WORMHOLE_CORE_MOONBASE",
-                                    moonBaseChainId
-                                )
-                        ),
-                    string(
-                        abi.encodePacked(
-                            "final target should be wormhole core instead got: ",
-                            targets[targets.length - 1].toString()
-                        )
-                    )
-                );
-            }
+            require(
+                moonbeamActions[i].target != wormholeCoreMoonbeam,
+                "Wormhole Core Moonbeam address should not be in the list of targets"
+            );
         }
     }
 

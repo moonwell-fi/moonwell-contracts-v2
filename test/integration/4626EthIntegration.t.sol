@@ -8,7 +8,7 @@ import "@forge-std/Test.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {LibCompound} from "@protocol/4626/LibCompound.sol";
 import {Factory4626Eth} from "@protocol/4626/Factory4626Eth.sol";
 import {deployFactoryEth} from "@protocol/4626/4626FactoryDeploy.sol";
@@ -30,7 +30,7 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
     function setUp() public {
         addresses = new Addresses();
 
-        addresses.addAddress("REWARDS_RECEIVER", rewardRecipient, false);
+        addresses.addAddressEOA("REWARDS_RECEIVER", rewardRecipient);
         Factory4626Eth factory = deployFactoryEth(addresses);
         underlying = ERC20(addresses.getAddress("WETH"));
 
@@ -50,10 +50,10 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
 
         comptroller = IComptroller(addresses.getAddress("UNITROLLER"));
         weth = ERC20(addresses.getAddress("WETH"));
-        well = ERC20(addresses.getAddress("WELL"));
+        well = ERC20(addresses.getAddress("GOVTOKEN"));
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(address(vault.asset()), address(underlying));
         assertEq(
             address(vault.mToken()),
@@ -206,7 +206,7 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
         assertEq(vault.maxMint(address(0)), type(uint256).max);
     }
 
-    function testMaxMint() public {
+    function testMaxMint() public view {
         uint256 maxMint = vault.maxMint(address(this));
         uint256 supplyCap = comptroller.supplyCaps(
             addresses.getAddress("MOONWELL_WETH")
@@ -379,7 +379,9 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
         vm.stopPrank();
     }
 
-    function testConvertToShareThenAssetsRoundsDown(uint256 assets) public {
+    function testConvertToShareThenAssetsRoundsDown(
+        uint256 assets
+    ) public view {
         assets = _bound(assets, 1, 100_000_000 * 1e18);
 
         uint256 shares = vault.convertToShares(assets);
@@ -388,7 +390,9 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
         assertGt(assets, assets2, "initial assets should be gt assets2");
     }
 
-    function testConvertFromSharesToAssetsRoundsDown(uint256 shares) public {
+    function testConvertFromSharesToAssetsRoundsDown(
+        uint256 shares
+    ) public view {
         shares = _bound(shares, 1, 1_000_000 * 1e18);
 
         uint256 assets = vault.convertToAssets(shares);

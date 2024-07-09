@@ -8,42 +8,27 @@ import "@forge-std/Test.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Addresses} from "@proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {mipb02 as mip} from "@proposals/mips/mip-b02/mip-b02.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MaliciousBorrower} from "@test/mock/MaliciousBorrower.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract ReentrancyLiveSystemBaseTest is
-    Test,
+contract ReentrancyPostProposalTest is
     Configs,
+    PostProposalCheck,
     ComptrollerErrorReporter
 {
     Comptroller comptroller;
-    TestProposals proposals;
-    Addresses addresses;
     WETHRouter router;
 
-    function setUp() public {
-        address[] memory mips = new address[](1);
-        mips[0] = address(new mip());
+    function setUp() public override {
+        super.setUp();
 
-        proposals = new TestProposals(mips);
-        proposals.setUp();
-        addresses = proposals.addresses();
-        proposals.testProposals(
-            false,
-            false,
-            false,
-            false,
-            true,
-            true,
-            false,
-            true
-        ); /// only setup after deploy, build, and run, do not validate
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         router = WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));
     }
@@ -86,7 +71,18 @@ contract ReentrancyLiveSystemBaseTest is
         assertGt(liquidity, mintAmount * 1_000, "liquidity not correct");
         assertEq(shortfall, 0, "Incorrect shortfall");
 
-        comptroller.exitMarket(address(mToken));
+        assertEq(
+            comptroller.exitMarket(address(mToken)),
+            0,
+            "exit market failed"
+        );
+
+        assertFalse(
+            comptroller.checkMembership(
+                sender,
+                MToken(addresses.getAddress("MOONWELL_WETH"))
+            )
+        ); /// ensure sender and mToken is not in market
     }
 
     function testReentrantBorrowFails() public {

@@ -11,7 +11,7 @@ import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
@@ -53,7 +53,7 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         weth = WETH9(addresses.getAddress("WETH"));
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(
             address(router.weth()),
             addresses.getAddress("WETH"),
@@ -237,11 +237,14 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
     }
 
     function testMintcbEth4626Shares(uint256 amount) public {
-        amount = _bound(
-            amount,
-            1_00e18,
-            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_cbETH"))
+        uint256 maxSupplyAmount = _getMaxSupplyAmount(
+            addresses.getAddress("MOONWELL_cbETH")
         );
+        maxSupplyAmount = maxSupplyAmount > 1.0000001e18
+            ? maxSupplyAmount - 1e18
+            : maxSupplyAmount;
+
+        amount = _bound(amount, 1, maxSupplyAmount);
 
         deal(addresses.getAddress("cbETH"), address(this), amount);
         ERC20(addresses.getAddress("cbETH")).approve(address(vault), amount);

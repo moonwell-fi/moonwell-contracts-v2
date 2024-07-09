@@ -6,7 +6,7 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import "@forge-std/Test.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
@@ -75,9 +75,9 @@ contract BaseTest is xWELLDeploy, Test {
         addresses = new Addresses();
         if (!addresses.isAddressSet("WELL")) {
             well = new MockERC20();
-            addresses.addAddress("WELL", address(well), true);
+            addresses.addAddress("WELL", address(well));
         } else {
-            well = MockERC20(addresses.getAddress("WELL"));
+            well = MockERC20(addresses.getAddress("GOVTOKEN"));
         }
 
         {

@@ -11,7 +11,7 @@ contract xWELLUnitTest is BaseTest {
         xwellProxy.acceptOwnership();
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertTrue(
             xwellProxy.DOMAIN_SEPARATOR() != bytes32(0),
             "domain separator not set"
@@ -641,15 +641,52 @@ contract xWELLUnitTest is BaseTest {
     }
 
     function testRemoveBridgesOwnerSucceeds() public {
-        /// todo add more bridges here
-        address[] memory bridges = new address[](1);
+        address[] memory bridges = new address[](2);
         bridges[0] = address(10000);
+        bridges[1] = address(10001);
 
-        testAddNewBridgeOwnerSucceeds(
-            bridges[0],
-            10_000e18,
-            xwellProxy.minBufferCap() + 1
-        );
+        {
+            MintLimits.RateLimitMidPointInfo memory newBridge = MintLimits
+                .RateLimitMidPointInfo({
+                    bridge: bridges[0],
+                    bufferCap: 10_000e18,
+                    rateLimitPerSecond: xwellProxy.minBufferCap() + 1
+                });
+
+            xwellProxy.addBridge(newBridge);
+
+            assertEq(
+                xwellProxy.bufferCap(bridges[0]),
+                10_000e18,
+                "incorrect buffer cap"
+            );
+            assertEq(
+                xwellProxy.rateLimitPerSecond(bridges[0]),
+                xwellProxy.minBufferCap() + 1,
+                "incorrect rate limit per second"
+            );
+        }
+        {
+            MintLimits.RateLimitMidPointInfo memory newBridge = MintLimits
+                .RateLimitMidPointInfo({
+                    bridge: bridges[1],
+                    bufferCap: 10_000e18,
+                    rateLimitPerSecond: xwellProxy.minBufferCap() + 1
+                });
+
+            xwellProxy.addBridge(newBridge);
+
+            assertEq(
+                xwellProxy.bufferCap(bridges[1]),
+                10_000e18,
+                "incorrect buffer cap"
+            );
+            assertEq(
+                xwellProxy.rateLimitPerSecond(bridges[1]),
+                xwellProxy.minBufferCap() + 1,
+                "incorrect rate limit per second"
+            );
+        }
 
         xwellProxy.removeBridges(bridges);
 
@@ -808,7 +845,13 @@ contract xWELLUnitTest is BaseTest {
         assertTrue(xwellProxy.paused());
 
         xwellProxy.ownerUnpause();
-        assertTrue(xwellProxy.paused(), "contract not unpaused");
+        assertFalse(xwellProxy.paused(), "contract not unpaused");
+        assertEq(xwellProxy.pauseStartTime(), 0, "contract not unpaused");
+        assertEq(
+            xwellProxy.pauseGuardian(),
+            address(0),
+            "guardian not kicked after owner unpause"
+        );
     }
 
     function testOwnerUnpauseFailsNotPaused() public {

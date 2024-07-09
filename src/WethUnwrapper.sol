@@ -4,16 +4,12 @@ pragma solidity 0.8.19;
 import {WETH9} from "@protocol/router/IWETH.sol";
 
 contract WethUnwrapper {
-    /// @notice the mToken address
-    address public immutable mToken;
-
     /// @notice reference to the WETH contract
     address public immutable weth;
 
     /// @notice construct a new WethUnwrapper
     /// @param _weth the WETH contract address
-    constructor(address _mToken, address _weth) {
-        mToken = _mToken;
+    constructor(address _weth) {
         weth = _weth;
     }
 
@@ -22,8 +18,6 @@ contract WethUnwrapper {
     /// @param to the recipient address
     /// @param amount the amount of ETH to transfer
     function send(address payable to, uint256 amount) external {
-        require(msg.sender == mToken, "only mToken can call send");
-
         WETH9(weth).withdraw(amount);
         (bool success, bytes memory returndata) = to.call{value: amount}("");
 

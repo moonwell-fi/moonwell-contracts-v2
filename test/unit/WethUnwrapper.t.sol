@@ -9,22 +9,15 @@ contract WethUnwrapperUnitTest is Test {
     WethUnwrapper unwrapper;
     bool acceptEth;
     MockWeth weth;
-    address public constant mToken = 0x628ff693426583D9a7FB391E54366292F509D457;
 
     function setUp() public {
         weth = new MockWeth();
-        unwrapper = new WethUnwrapper(mToken, address(weth));
+        unwrapper = new WethUnwrapper(address(weth));
         acceptEth = true;
     }
 
-    function testSetup() public {
-        assertEq(unwrapper.mToken(), mToken);
+    function testSetup() public view {
         assertEq(unwrapper.weth(), address(weth));
-    }
-
-    function testWethUnwrapFailsNotMToken() public {
-        vm.expectRevert("only mToken can call send");
-        unwrapper.send(payable(address(0)), 0);
     }
 
     function testWethUnwrapSucceedsMToken() public {
@@ -32,7 +25,6 @@ contract WethUnwrapperUnitTest is Test {
         weth.deposit{value: mintAmount}();
         weth.transfer(address(unwrapper), mintAmount);
 
-        vm.prank(unwrapper.mToken());
         unwrapper.send(payable(address(this)), mintAmount);
     }
 
@@ -42,7 +34,6 @@ contract WethUnwrapperUnitTest is Test {
         weth.transfer(address(unwrapper), mintAmount);
 
         acceptEth = false;
-        vm.prank(unwrapper.mToken());
         vm.expectRevert("not accepting eth");
         unwrapper.send(payable(address(this)), mintAmount);
     }

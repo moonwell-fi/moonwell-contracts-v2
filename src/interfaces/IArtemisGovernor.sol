@@ -14,6 +14,18 @@ interface IArtemisGovernor {
         Executed
     }
 
+    function getActions(
+        uint proposalId
+    )
+        external
+        view
+        returns (
+            address[] memory targets,
+            uint[] memory values,
+            string[] memory signatures,
+            bytes[] memory calldatas
+        );
+
     function votingPeriod() external view returns (uint256);
 
     function currentQuorum() external view returns (uint256);
@@ -35,4 +47,26 @@ interface IArtemisGovernor {
     function state(uint256 proposalId) external view returns (ProposalState);
 
     function timelock() external view returns (address);
+
+    function proposals(
+        uint256
+    )
+        external
+        view
+        returns (
+            uint256,
+            address proposer,
+            uint256 eta,
+            uint256 startTimestamp,
+            uint256 endTimestamp,
+            uint256 startBlock,
+            uint256 forVotes,
+            uint256 againstVotes,
+            uint256 abstainVotes,
+            uint256 totalVotes,
+            bool canceled,
+            bool executed,
+            uint256 quorum,
+            bool quorumAdjusted
+        );
 }

@@ -4,7 +4,7 @@ import "@forge-std/Test.sol";
 
 import {MoonwellViewsV2} from "@protocol/views/MoonwellViewsV2.sol";
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
 contract MoonwellViewsV2Test is Test, PostProposalCheck {
@@ -25,10 +25,10 @@ contract MoonwellViewsV2Test is Test, PostProposalCheck {
 
         comptroller = addresses.getAddress("UNITROLLER");
         tokenSaleDistributor = addresses.getAddress("TOKENSALE");
-        safetyModule = addresses.getAddress("STWELL");
-        governanceToken = addresses.getAddress("WELL");
-        nativeMarket = addresses.getAddress("mGLIMMER");
-        governanceTokenLP = addresses.getAddress("WELL_LP");
+        safetyModule = addresses.getAddress("STKGOVTOKEN");
+        governanceToken = addresses.getAddress("GOVTOKEN");
+        nativeMarket = addresses.getAddress("MNATIVE");
+        governanceTokenLP = addresses.getAddress("GOVTOKEN_LP");
 
         viewsContract = new MoonwellViewsV2();
 
@@ -53,24 +53,24 @@ contract MoonwellViewsV2Test is Test, PostProposalCheck {
         vm.rollFork(5349000);
     }
 
-    function testComptrollerIsSet() public {
+    function testComptrollerIsSet() public view {
         address _addy = address(viewsContract.comptroller());
         assertEq(_addy, comptroller);
     }
 
-    function testMarketsSize() public {
+    function testMarketsSize() public view {
         MoonwellViewsV2.Market[] memory _markets = viewsContract
             .getAllMarketsInfo();
         assertEq(_markets.length, 5);
     }
 
-    function testUserBalances() public {
+    function testUserBalances() public view {
         MoonwellViewsV2.Balances[] memory _balances = viewsContract
             .getUserBalances(user);
         assertEq(_balances.length, 11);
     }
 
-    function testUserRewards() public {
+    function testUserRewards() public view {
         MoonwellViewsV2.Rewards[] memory _rewards = viewsContract
             .getUserRewards(user);
 

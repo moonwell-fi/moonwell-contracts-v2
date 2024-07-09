@@ -1,70 +1,87 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-or-late
 pragma solidity 0.8.19;
 
 import {Test} from "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
-import {CreateCode} from "@proposals/utils/CreateCode.sol";
+import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {String} from "@utils/String.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
+import {Proposal} from "@proposals/Proposal.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract PostProposalCheck is CreateCode {
+contract PostProposalCheck is Test {
     using String for string;
+    using ChainIds for uint256;
 
-    Addresses addresses;
-    TestProposals proposals;
+    /// @notice addresses contract
+    Addresses public addresses;
+
+    /// @notice  proposals array
+    Proposal[] public proposals;
+
+    /// @notice governor address
+    MultichainGovernor governor;
 
     function setUp() public virtual {
-        string memory path = getPath();
-        // Run all pending proposals before doing e2e tests
-        address[] memory mips = new address[](1);
+        MOONBEAM_FORK_ID.createForksAndSelect();
 
-        if (
-            keccak256(bytes(path)) == keccak256('""') || bytes(path).length == 0
-        ) {
-            /// empty string on both mac and unix, no proposals to run
-            mips = new address[](0);
+        addresses = new Addresses();
+        vm.makePersistent(address(addresses));
 
-            proposals = new TestProposals(mips);
-        } else if (path.hasChar(",")) {
-            string[] memory mipPaths = path.split(",");
-            if (mipPaths.length < 2) {
-                revert(
-                    "Invalid path(s) provided. If you want to deploy a single mip, do not use a comma."
-                );
-            }
-            mips = new address[](mipPaths.length); /// expand mips size if multiple mips
+        proposals = new Proposal[](2);
 
-            /// guzzle all of the memory, quadratic cost, but we don't care
-            for (uint256 i = 0; i < mipPaths.length; i++) {
-                /// deploy each mip and add it to the array
-                bytes memory code = getCode(mipPaths[i]);
-
-                mips[i] = deployCode(code);
-                vm.makePersistent(mips[i]);
-            }
-            proposals = new TestProposals(mips);
-        } else {
-            bytes memory code = getCode(path);
-            mips[0] = deployCode(code);
-            vm.makePersistent(mips[0]);
-            proposals = new TestProposals(mips);
-        }
-
-        vm.makePersistent(address(proposals));
-
-        proposals.setUp();
-        proposals.testProposals(
-            false, /// do not log debug output
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            true
+        governor = MultichainGovernor(
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
 
-        addresses = proposals.addresses();
+        // get the latest moonbeam proposal
+        proposals[0] = checkAndRunLatestProposal(
+            "bin/get-latest-moonbeam-proposal.sh"
+        );
+
+        // get the latest base proposal
+        proposals[1] = checkAndRunLatestProposal(
+            "bin/get-latest-base-proposal.sh"
+        );
+
+        /// only etch out precompile contracts if on the moonbeam chain
+        if (
+            addresses.isAddressSet("xcUSDT") &&
+            addresses.isAddressSet("xcUSDC") &&
+            addresses.isAddressSet("xcDOT")
+        ) {
+            etch(vm, addresses);
+        }
+    }
+
+    function checkAndRunLatestProposal(
+        string memory scriptPath
+    ) private returns (Proposal) {
+        string[] memory inputs = new string[](1);
+        inputs[0] = scriptPath;
+
+        string memory output = string(vm.ffi(inputs));
+
+        Proposal proposal = Proposal(deployCode(output));
+        vm.makePersistent(address(proposal));
+
+        vm.selectFork(proposal.primaryForkId());
+
+        address deployer = address(this);
+
+        proposal.deploy(addresses, deployer);
+        proposal.afterDeploy(addresses, deployer);
+        proposal.preBuildMock(addresses);
+        proposal.build(addresses);
+
+        // only runs the proposal if the proposal has not been executed yet
+        if (proposal.getProposalId(addresses, address(governor)) == 0) {
+            proposal.teardown(addresses, deployer);
+            proposal.run(addresses, deployer);
+            proposal.validate(addresses, deployer);
+        }
+
+        return proposal;
     }
 }

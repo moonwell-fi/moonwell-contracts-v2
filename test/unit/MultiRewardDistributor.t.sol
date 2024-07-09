@@ -62,7 +62,7 @@ contract Common is Test, MultiRewardDistributorCommon {
     function assertInitialMarketState(
         MultiRewardDistributor distributor,
         uint256 endTime
-    ) internal {
+    ) internal view {
         MarketConfig memory config = distributor.marketConfigs(
             address(mToken),
             0

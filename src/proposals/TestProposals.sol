@@ -3,10 +3,9 @@ pragma solidity 0.8.19;
 import {console} from "@forge-std/console.sol";
 import {Test} from "@forge-std/Test.sol";
 
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {Proposal} from "@proposals/Proposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 
 /*
 How to use:
@@ -26,7 +25,7 @@ contract TestProposals is Test {
     bool public DEBUG;
     bool public DO_DEPLOY;
     bool public DO_AFTER_DEPLOY;
-    bool public DO_AFTER_DEPLOY_SETUP;
+    bool public DO_PRE_BUILD_MOCK;
     bool public DO_BUILD;
     bool public DO_RUN;
     bool public DO_TEARDOWN;
@@ -44,7 +43,7 @@ contract TestProposals is Test {
         DEBUG = vm.envOr("DEBUG", true);
         DO_DEPLOY = vm.envOr("DO_DEPLOY", true);
         DO_AFTER_DEPLOY = vm.envOr("DO_AFTER_DEPLOY", true);
-        DO_AFTER_DEPLOY_SETUP = vm.envOr("DO_AFTER_DEPLOY_SETUP", true);
+        DO_PRE_BUILD_MOCK = vm.envOr("DO_PRE_BUILD_MOCK", true);
         DO_BUILD = vm.envOr("DO_BUILD", true);
         DO_RUN = vm.envOr("DO_RUN", true);
         DO_TEARDOWN = vm.envOr("DO_TEARDOWN", true);
@@ -57,17 +56,6 @@ contract TestProposals is Test {
         nProposals = proposals.length;
     }
 
-    function printCalldata(
-        uint256 index,
-        address temporalGovernor,
-        address wormholeCore
-    ) public {
-        CrossChainProposal(address(proposals[index])).printActions(
-            temporalGovernor,
-            wormholeCore
-        );
-    }
-
     function printProposalActionSteps() public {
         for (uint256 i = 0; i < proposals.length; i++) {
             proposals[i].printProposalActionSteps();
@@ -78,7 +66,7 @@ contract TestProposals is Test {
         bool debug,
         bool deploy,
         bool afterDeploy,
-        bool afterDeploySetup,
+        bool preBuildMock,
         bool build,
         bool run,
         bool teardown,
@@ -132,15 +120,9 @@ contract TestProposals is Test {
             }
 
             // After-deploy-setup step
-            if (afterDeploySetup) {
-                if (debug) console.log("Proposal", name, "afterDeploySetup()");
-                proposals[i].afterDeploySetup(addresses);
-            }
-
-            // Teardown step
-            if (teardown) {
-                if (debug) console.log("Proposal", name, "teardown()");
-                proposals[i].teardown(addresses, address(proposals[i]));
+            if (preBuildMock) {
+                if (debug) console.log("Proposal", name, "preBuildMock()");
+                proposals[i].preBuildMock(addresses);
             }
 
             // Build step
@@ -153,6 +135,12 @@ contract TestProposals is Test {
             if (run) {
                 if (debug) console.log("Proposal", name, "run()");
                 proposals[i].run(addresses, address(proposals[i]));
+            }
+
+            // Teardown step
+            if (teardown) {
+                if (debug) console.log("Proposal", name, "teardown()");
+                proposals[i].teardown(addresses, address(proposals[i]));
             }
 
             // Validate step
@@ -178,7 +166,7 @@ contract TestProposals is Test {
                 DEBUG,
                 DO_DEPLOY,
                 DO_AFTER_DEPLOY,
-                DO_AFTER_DEPLOY_SETUP,
+                DO_PRE_BUILD_MOCK,
                 DO_BUILD,
                 DO_RUN,
                 DO_TEARDOWN,

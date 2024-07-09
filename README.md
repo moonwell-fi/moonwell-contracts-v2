@@ -122,16 +122,16 @@ Certora API key.
 
 Use certora gambit to generate mutations for `MultichainVoteCollection` and
 `MultichainGovernor` and then run each mutation against unit, integration tests
-and formal specification using `runVoteCollectionMutation` and
-`runGovernorMutation` script respectively. Each scripts generates a
+and formal specification using `run-vote-collection-mutation.sh` and
+`run-governor-mutation.sh` script respectively. Each scripts generates a
 `MutationTestOuput/Result_<Contract>.md` file which stores following details for
 each mutations:
 
 - mutant diff with original contract
 - unit/integration test results with number and list of failing tests if any
-- result of certora formal verification against mutant with details such as
-  number of failed rules, their list and certora prover cli job url (Certora
-  formal verification runs only in MultichainVoteCollection script)
+- [ ] result of certora formal verification against mutant with details such as
+      number of failed rules, their list and certora prover cli job url (Certora
+      formal verification runs only in MultichainVoteCollection script)
 
 Finally at the end it logs total number of failed mutations.
 
@@ -157,13 +157,13 @@ gambit mutate --json certora/mutation/MultichainGovernorConfig.json
 - MultichainVoteCollection
 
 ```
-sh runVoteCollectionMutation.sh
+sh bin/run-vote-collection-mutation.sh
 ```
 
 - MultichainVoteCollection
 
 ```
-sh runGovernorMutation.sh
+sh bin/run-governor-mutation.sh
 ```
 
 Note: Remember the script replaces original contract code with mutated code and
@@ -175,7 +175,4 @@ as they might affect the mutation output.
 
 ## Running All Tests
 
-1. Set `PROPOSAL_ARTIFACT_PATH` environment variables
-   > Run `./.github/helper/get-env-var.sh` to find the last proposal artifact
-   > path
-2. Run [run.sh](./run.sh) to execute all the different tests
+Run [run.sh](./run.sh) to execute all the different tests

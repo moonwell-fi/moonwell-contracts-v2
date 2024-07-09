@@ -8,6 +8,7 @@ artifacts
 .github
 .husky
 other
+.certora_internal/
 
 # files
 *.env

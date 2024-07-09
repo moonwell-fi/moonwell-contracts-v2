@@ -47,14 +47,14 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         vm.rollFork(202629125);
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(oracle.base(), usdEthOracle);
         assertEq(oracle.multiplier(), stethEthOracle);
         assertEq(oracle.secondMultiplier(), wstethstEthOracle);
         assertEq(oracle.decimals(), 18);
     }
 
-    function test_stETH_USD_CompositeOracle() public {
+    function test_stETH_USD_CompositeOracle() public view {
         uint256 price = oracle.getDerivedPrice(
             usdEthOracle,
             stethEthOracle,
@@ -65,7 +65,7 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         assertEq(expectedStethUsdPrice, price);
     }
 
-    function testTestLatestRoundData() public {
+    function testTestLatestRoundData() public view {
         (
             uint80 roundId, /// always 0, value unused in ChainlinkOracle.sol
             int256 answer, /// the composite price
@@ -133,7 +133,7 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         int256 price,
         uint8 priceDecimals,
         uint8 expectedDecimals
-    ) public {
+    ) public view {
         price = int256(_bound(uint256(price), 100, 10_000e18)); /// bound price between 100 and 10_000e18
         priceDecimals = uint8(_bound(priceDecimals, 0, 18)); /// bound priceDecimals between 0 and 18
         expectedDecimals = uint8(_bound(expectedDecimals, 0, 18)); /// bound expectedDecimals between 0 and 18
@@ -168,7 +168,7 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         int256 basePrice,
         int256 priceMultiplier,
         uint8 decimals
-    ) public {
+    ) public view {
         basePrice = int256(_bound(uint256(basePrice), 100, 10_000e18)); /// bound price between 100 and 10_000e18
         priceMultiplier = int256(
             _bound(uint256(priceMultiplier), 1e18, 10_000e18)

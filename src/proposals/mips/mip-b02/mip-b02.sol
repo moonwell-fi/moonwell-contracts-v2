@@ -4,19 +4,19 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {MWethDelegate} from "@protocol/MWethDelegate.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// how to generate calldata:
 /// first set up environment variables:
 /*
 export DO_DEPLOY=false
 export DO_AFTER_DEPLOY=false
-export DO_AFTER_DEPLOY_SETUP=false
+export DO_PRE_BUILD_MOCK=false
 export DO_BUILD=true
 export DO_RUN=true
 export DO_TEARDOWN=false
@@ -25,8 +25,8 @@ export DO_VALIDATE=true
 
 /// forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv
 
-contract mipb02 is Proposal, CrossChainProposal, Configs {
-    string public constant override name = "MIP-b02";
+contract mipb02 is HybridProposal, Configs {
+    string public constant override name = "MIP-B02";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
 
@@ -36,26 +36,33 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 42;
+        nonce = 2;
     }
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers
     function deploy(Addresses addresses, address) public override {
-        MWethDelegate mWethLogic = new MWethDelegate();
-        addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic), true);
+        if (!addresses.isAddressSet("WETH_UNWRAPPER")) {
+            MWethDelegate mWethLogic = new MWethDelegate(
+                addresses.getAddress("WETH_UNWRAPPER")
+            );
+
+            addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic));
+        }
     }
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         /// point weth mToken to new logic contract
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setImplementation(address,bool,bytes)",
@@ -71,7 +78,7 @@ contract mipb02 is Proposal, CrossChainProposal, Configs {
 
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         assertTrue(
             addresses.getAddress("MOONWELL_WETH") != address(0),
             "MOONWELL_WETH not set"

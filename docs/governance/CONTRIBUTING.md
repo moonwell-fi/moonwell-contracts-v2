@@ -6,29 +6,55 @@ is still operating normally.
 
 ## How to add a new proposal
 
-View the `IProposal` file, it defines the interface for a Moonwell Improvement
-Proposal.
+[IProposal.sol](../../src/proposals/proposalTypes/IProposal.sol) defines the
+interface for a Moonwell Improvement Proposal.
 
-Make a new folder under the `proposals/mips/` directory named `mip-bXX`, create
-file `mip-bxx.sol` in the same folder that was just created. Fill in everything
-the proposal should do in each step. Be sure to use the CrossChainProposal and
-not any other proposal type for proposals happening on Base.
+When creating new proposals, please follow the naming conventions and guidelines
+outlined below
 
-Import the TestProposals file into a new file, and create tests to ensure the
-system operates normally after the governance proposal. These tests should
-follow the same pattern as found in `LiveSystemTest` and `SystemUpgradeUnitTest`
+### Naming Convention
 
-Now set the environment variable to your new proposal, and run the integration
-tests. They will now validate the state change after your proposal passes.
+1. **Base Proposals:**
 
-`export PROPOSAL_ARTIFACT_PATH=artifacts/foundry/mip-b05.sol/mipb05.json`
+   - **Folder Name:** Use the format `mip-bXX`, where `XX` is the proposal
+     number, incremented by 1 from the last base proposal.
+   - **File Name:** Inside the folder, create a file named `mip-bXX.sol`.
+   - **Contract Name:** Inside the file, the proposal should be named
+     `contract mipbXX`
 
-Run the tests with the fork test.
+2. **Moonbeam Proposals:**
+
+   - **Folder Name:** Use the format `mip-mXX`, where `XX` is the proposal
+     number, incremented by 1 from the last moonbeam proposal.
+   - **File Name:** Inside the folder, create a file named `mip-mXX.sol`.
+   - **Contract Name:** Inside the file, the proposal should be named
+     `contract mipmXX`
+
+3. **Case Sensitivity:**
+   - **Folders and Solidity Files:** Use lowercase letters.
+   - **Markdown Files:** Use uppercase letters, e.g., `MIP-BXX.md`.
+
+### Guidelines for Pull Requests and Branches
+
+All pull requests must adhere to the style guidelines detailed in
+[GUIDELINES.md](../GUIDELINES.md).
+
+### Proposal Structure
+
+- Ensure that each step of the proposal is thoroughly documented within the
+  Solidity file.
+- Inherit from
+  [HybridProposal](../../src/proposals/proposalTypes/HybridProposal.sol) and
+  include all necessary details.
+
+## How to test a proposal
 
 `forge test --match-contract LiveSystemBaseTest --fork-url base -vvv`
 
-Example proposal MIPB-01, can be found, which creates reward streams for the
-system on base.
+Integration tests inherit from `PostProposalCheck`, which will run the latest
+proposals from both base and moonbeam if they have not already been proposed on
+mainnet. Combining the proposal execution with the integration tests provides a
+clear idea of how the system will behave after proposal execution.
 
 ## Nonce
 
@@ -38,9 +64,9 @@ completely extraneous as this field is not used in the Temporal Governor when it
 processes cross chain messages. There is no need to set this field in any cross
 chain proposal.
 
-### Generating Calldata for an Existing Proposal
+## Generating Calldata for an Existing Proposal
 
-#### Environment Variables
+### Environment Variables
 
 First, set the environment variables for which actions you want to be run during
 this proposal. The following environment variables are available:
@@ -48,8 +74,8 @@ this proposal. The following environment variables are available:
 - **DO_DEPLOY** - Whether or not to deploy the system. Defaults to true.
 - **DO_AFTER_DEPLOY** - Whether or not to run the after deploy script. Defaults
   to true.
-- **DO_AFTER_DEPLOY_SETUP** - Whether or not to run the after deploy setup
-  script. Defaults to true.
+- **DO_PRE_BUILD_MOCK** - Whether or not to run the after deploy setup script.
+  Defaults to true.
 - **DO_BUILD** - Whether or not to build the calldata for the proposal. Defaults
   to true.
 - **DO_RUN** - Whether or not to simulate the execution of the proposal.
@@ -64,12 +90,12 @@ this proposal. The following environment variables are available:
   [`mip-market-listing.sol`](./src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol)
   proposal.
 
-#### Sample Environment Variables For Deploying and Building Calldata for a Market Listing Proposal
+### Sample Environment Variables For Deploying and Building Calldata for a Market Listing Proposal
 
 ```
 export DO_DEPLOY=true
 export DO_AFTER_DEPLOY=true
-export DO_AFTER_DEPLOY_SETUP=true
+export DO_PRE_BUILD_MOCK=true
 export DO_BUILD=true
 export DO_RUN=false
 export DO_TEARDOWN=false
@@ -89,7 +115,7 @@ For a market listing proposal where the contracts have already been deployed:
 ```
 export DO_DEPLOY=false
 export DO_AFTER_DEPLOY=true
-export DO_AFTER_DEPLOY_SETUP=true
+export DO_PRE_BUILD_MOCK=true
 export DO_BUILD=true
 export DO_RUN=true
 export DO_TEARDOWN=true
@@ -123,7 +149,7 @@ env setup to build and run without any other steps:
 ```bash
 export DO_DEPLOY=false
 export DO_AFTER_DEPLOY=false
-export DO_AFTER_DEPLOY_SETUP=false
+export DO_PRE_BUILD_MOCK=false
 export DO_BUILD=true
 export DO_RUN=true
 export DO_TEARDOWN=true
@@ -137,7 +163,7 @@ add the following flags to deploy and verify against the base network:
 
 `forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify --slow`
 
-##### Debugging
+### Debugging
 
 If running the script is failing, the first thing you should do is double check
 that your environment variables are set correctly. If they aren't, the script

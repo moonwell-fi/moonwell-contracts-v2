@@ -7,7 +7,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MoonwellViewsV3} from "@protocol/views/MoonwellViewsV3.sol";
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -21,22 +21,14 @@ forge script script/DeployMoonwellViewsV3.s.sol:DeployMoonwellViewsV3 -vvvv --rp
 */
 
 contract DeployMoonwellViewsV3 is Script, Test {
-    uint256 public PRIVATE_KEY;
-
     Addresses public addresses;
 
     function setUp() public {
         addresses = new Addresses();
-
-        // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = vm.envOr(
-            "MOONWELL_DEPLOY_PK",
-            77814517325470205911140941194401928579557062014761831930645393041380819009408
-        );
     }
 
     function run() public {
-        vm.startBroadcast(PRIVATE_KEY);
+        vm.startBroadcast();
 
         address unitroller = addresses.getAddress("UNITROLLER");
         address tokenSaleDistributor = address(0);
