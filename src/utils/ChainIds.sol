@@ -24,6 +24,7 @@ uint256 constant OPTIMISM_SEPOLIA_CHAIN_ID = 11155420;
 uint16 constant MOONBEAM_WORMHOLE_CHAIN_ID = 16;
 uint16 constant BASE_WORMHOLE_CHAIN_ID = 30;
 uint16 constant OPTIMISM_WORMHOLE_CHAIN_ID = 24;
+uint16 constant ETHEREUM_WORMHOLE_CHAIN_ID = 2;
 
 // Wormhole Testnet Chain Ids
 uint16 constant MOONBASE_WORMHOLE_CHAIN_ID = 16;
