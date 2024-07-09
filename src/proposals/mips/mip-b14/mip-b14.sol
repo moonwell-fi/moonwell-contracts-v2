@@ -5,21 +5,13 @@ import "@forge-std/Test.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel} from "@protocol/IRModels/JumpRateModel.sol";
-import {TimelockProposal} from "@proposals/proposalTypes/TimelockProposal.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract mipb14 is
-    Proposal,
-    CrossChainProposal,
-    Configs,
-    ParameterValidation
-{
-    string public constant name = "mip-b14";
+contract mipb14 is HybridProposal, Configs, ParameterValidation {
+    string public constant override name = "MIP-B14";
 
     uint256 public constant wstETH_NEW_RF = 0.3e18;
     uint256 public constant rETH_NEW_RF = 0.3e18;
@@ -31,17 +23,23 @@ contract mipb14 is
             vm.readFile("./src/proposals/mips/mip-b14/mip-b14.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 74;
     }
 
-    function deploy(Addresses addresses, address) public override {}
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
+    }
 
-    function afterDeploy(Addresses addresses, address) public override {}
+    function deploy(Addresses, address) public override {}
 
-    function afterDeploySetup(Addresses addresses) public override {}
+    function afterDeploy(Addresses, address) public override {}
+
+    function preBuildMock(Addresses) public override {}
 
     function build(Addresses addresses) public override {
-        _pushCrossChainAction(
-            addresses.getAddress("MOONWELL_DAI"),
+        _pushAction(
+            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI_MIP_B14"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI")
@@ -49,16 +47,16 @@ contract mipb14 is
             "Set interest rate model for Moonwell DAI to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B14")
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_wstETH"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
@@ -67,35 +65,26 @@ contract mipb14 is
             "Set reserve factor for Moonwell wstETH to updated reserve factor"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_rETH"),
-            abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                rETH_NEW_RF
-            ),
+            abi.encodeWithSignature("_setReserveFactor(uint256)", rETH_NEW_RF),
             "Set reserve factor for Moonwell rETH to updated reserve factor"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_cbETH"),
-            abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                cbETH_NEW_RF
-            ),
+            abi.encodeWithSignature("_setReserveFactor(uint256)", cbETH_NEW_RF),
             "Set reserve factor for Moonwell cbETH to updated reserve factor"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_DAI"),
-            abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                DAI_NEW_RF
-            ),
+            abi.encodeWithSignature("_setReserveFactor(uint256)", DAI_NEW_RF),
             "Set reserve factor for Moonwell DAI to updated reserve factor"
         );
     }
 
-    function teardown(Addresses addresses, address) public pure override {}
+    function teardown(Addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
         _validateJRM(
@@ -120,24 +109,12 @@ contract mipb14 is
             })
         );
 
-        _validateRF(
-            addresses.getAddress("MOONWELL_wstETH"),
-            wstETH_NEW_RF
-        );
+        _validateRF(addresses.getAddress("MOONWELL_wstETH"), wstETH_NEW_RF);
 
-        _validateRF(
-            addresses.getAddress("MOONWELL_rETH"),
-            rETH_NEW_RF
-        );
+        _validateRF(addresses.getAddress("MOONWELL_rETH"), rETH_NEW_RF);
 
-        _validateRF(
-            addresses.getAddress("MOONWELL_DAI"),
-            DAI_NEW_RF
-        );
+        _validateRF(addresses.getAddress("MOONWELL_DAI"), DAI_NEW_RF);
 
-        _validateRF(
-            addresses.getAddress("MOONWELL_cbETH"),
-            cbETH_NEW_RF
-        );
+        _validateRF(addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_RF);
     }
 }
