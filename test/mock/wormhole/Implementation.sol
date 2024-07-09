@@ -29,11 +29,7 @@ contract Implementation is Governance {
         sequence = useSequence(msg.sender);
         // emit log
         emit LogMessagePublished(
-            msg.sender,
-            sequence,
-            nonce,
-            payload,
-            consistencyLevel
+            msg.sender, sequence, nonce, payload, consistencyLevel
         );
     }
 

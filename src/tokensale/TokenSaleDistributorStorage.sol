@@ -8,7 +8,7 @@ contract TokenSaleDistributorStorage is TokenSaleDistributorProxyStorage {
     address public tokenAddress;
 
     // 60 * 60 * 24 * 365 / 12 seconds
-    uint public constant monthlyVestingInterval = 2628000;
+    uint256 public constant monthlyVestingInterval = 2628000;
 
     mapping(address => Allocation[]) public allocations;
 
@@ -16,17 +16,17 @@ contract TokenSaleDistributorStorage is TokenSaleDistributorProxyStorage {
         // True for linear vesting, false for monthly
         bool isLinear;
         // Vesting start timestamp
-        uint epoch;
+        uint256 epoch;
         // Linear: The amount of seconds after the cliff before all tokens are vested
         // Monthly: The number of monthly claims before all tokens are vested
-        uint vestingDuration;
+        uint256 vestingDuration;
         // Seconds after epoch when tokens start vesting
-        uint cliff;
+        uint256 cliff;
         // Percentage of tokens that become vested immediately after the cliff. 100 % = 1e18.
-        uint cliffPercentage;
+        uint256 cliffPercentage;
         // Total amount of allocated tokens
-        uint amount;
+        uint256 amount;
         // Amount of claimed tokens from this allocation
-        uint claimed;
+        uint256 claimed;
     }
 }

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 import {Test} from "@forge-std/Test.sol";
+import {console} from "@forge-std/console.sol";
 
-import {ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 
 abstract contract Proposal is Script, Test {
     using ChainIds for uint256;
@@ -47,7 +47,7 @@ abstract contract Proposal is Script, Test {
 
         vm.startBroadcast();
 
-        (, address deployerAddress, ) = vm.readCallers();
+        (, address deployerAddress,) = vm.readCallers();
 
         if (DO_DEPLOY) deploy(addresses, deployerAddress);
         if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
@@ -95,28 +95,22 @@ abstract contract Proposal is Script, Test {
 
     // @notice search for a on-chain proposal that matches the proposal calldata
     // @returns the proposal id, 0 if no proposal is found
-    function getProposalId(
-        Addresses,
-        address
-    ) public virtual returns (uint256 proposalId);
+    function getProposalId(Addresses, address)
+        public
+        virtual
+        returns (uint256 proposalId);
 
     /// @dev Print recorded addresses
     function _printAddressesChanges(Addresses addresses) private view {
-        (
-            string[] memory recordedNames,
-            ,
-            address[] memory recordedAddresses
-        ) = addresses.getRecordedAddresses();
+        (string[] memory recordedNames,, address[] memory recordedAddresses) =
+            addresses.getRecordedAddresses();
 
         if (recordedNames.length > 0) {
             console.log(
                 "\n-------- Addresses added after running proposal --------"
             );
             for (uint256 j = 0; j < recordedNames.length; j++) {
-                console.log(
-                    "{\n          'addr': '%s', ",
-                    recordedAddresses[j]
-                );
+                console.log("{\n          'addr': '%s', ", recordedAddresses[j]);
                 console.log("        'chainId': %d,", block.chainid);
                 console.log("        'isContract': %s", true, ",");
                 console.log(
@@ -127,12 +121,8 @@ abstract contract Proposal is Script, Test {
             }
         }
 
-        (
-            string[] memory changedNames,
-            ,
-            ,
-            address[] memory changedAddresses
-        ) = addresses.getChangedAddresses();
+        (string[] memory changedNames,,, address[] memory changedAddresses) =
+            addresses.getChangedAddresses();
 
         if (changedNames.length > 0) {
             console.log(

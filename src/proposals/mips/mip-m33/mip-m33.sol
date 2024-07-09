@@ -3,12 +3,15 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {
+    ActionType,
+    HybridProposal
+} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
-import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m33/mip-m33.sol:mipm33

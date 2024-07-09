@@ -1,8 +1,11 @@
 pragma solidity 0.8.19;
 
-import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
-import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Ownable2StepUpgradeable} from
+    "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from
+    "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 
@@ -50,11 +53,11 @@ abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
     /// @param dstChainId Destination chain id
     /// @param amount Amount of xERC20 to bridge out
     /// @param to Address to receive funds on destination chain
-    function bridge(
-        uint256 dstChainId,
-        uint256 amount,
-        address to
-    ) external payable virtual {
+    function bridge(uint256 dstChainId, uint256 amount, address to)
+        external
+        payable
+        virtual
+    {
         _bridgeOut(msg.sender, dstChainId, amount, to);
 
         emit BridgedOut(dstChainId, msg.sender, to, amount);
@@ -80,11 +83,10 @@ abstract contract xERC20BridgeAdapter is Ownable2StepUpgradeable {
     /// @param chainId chain id funds are bridged from
     /// @param user to bridge in funds to
     /// @param amount of xERC20 tokens to bridge in
-    function _bridgeIn(
-        uint256 chainId,
-        address user,
-        uint256 amount
-    ) internal virtual {
+    function _bridgeIn(uint256 chainId, address user, uint256 amount)
+        internal
+        virtual
+    {
         xERC20.mint(user, amount);
 
         emit BridgedIn(chainId, user, amount);

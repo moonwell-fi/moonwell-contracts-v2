@@ -1,31 +1,43 @@
 pragma solidity 0.8.19;
 
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
 
-import {Well} from "@protocol/governance/Well.sol";
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
+
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {Well} from "@protocol/governance/Well.sol";
+import {WormholeTrustedSender} from
+    "@protocol/governance/WormholeTrustedSender.sol";
+
+import {
+    IMultichainGovernor,
+    MultichainGovernor
+} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MultichainGovernorDeploy} from
+    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainVoteCollection} from
+    "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+
+import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
-import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {ChainIds, BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+
+import {
+    BASE_WORMHOLE_CHAIN_ID,
+    ChainIds,
+    MOONBEAM_WORMHOLE_CHAIN_ID
+} from "@utils/ChainIds.sol";
 
 contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     using ChainIds for uint256;
 
     event BridgeOutSuccess(
-        uint16 dstWormholeChainId,
-        uint256 cost,
-        address dst,
-        bytes payload
+        uint16 dstWormholeChainId, uint256 cost, address dst, bytes payload
     );
 
     event BridgeOutFailed(uint16 chainId, bytes payload, uint256 refundAmount);
@@ -102,9 +114,10 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
                 chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
-                addr: address(this) /// TODO this is incorrect and should be the artemis timelock contract
+                addr: address(this)
             })
         );
+        /// TODO this is incorrect and should be the artemis timelock contract
 
         temporalGovernanceCalldata.push(
             abi.encodeWithSignature(
@@ -115,8 +128,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         approvedCalldata.push(
             abi.encodeWithSignature(
-                "transferOwnership(address)",
-                rollbackAddress
+                "transferOwnership(address)", rollbackAddress
             )
         );
 
@@ -126,8 +138,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         approvedCalldata.push(
             abi.encodeWithSignature(
-                "setEmissionsManager(address)",
-                rollbackAddress
+                "setEmissionsManager(address)", rollbackAddress
             )
         );
 
@@ -147,8 +158,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         approvedCalldata.push(
             abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                rollbackAddress
+                "_setPendingAdmin(address)", rollbackAddress
             )
         );
     }
@@ -159,11 +169,11 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         well = new Well(address(this));
         distributor = new Well(address(this));
 
-        MintLimits.RateLimitMidPointInfo[]
-            memory newRateLimits = new MintLimits.RateLimitMidPointInfo[](0);
+        MintLimits.RateLimitMidPointInfo[] memory newRateLimits =
+            new MintLimits.RateLimitMidPointInfo[](0);
 
         /// deploy xWELL
-        (, address xwellProxy, ) = deployXWell(
+        (, address xwellProxy,) = deployXWell(
             "XWell",
             "XWELL",
             address(this), //owner
@@ -176,7 +186,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         {
             /// deploy staked well with Block numbers instead of timestamps
             /// to mock the system on moonbeam
-            (address stkWellProxy, ) = deployStakedWellMock(
+            (address stkWellProxy,) = deployStakedWellMock(
                 address(xwellProxy),
                 address(xwellProxy),
                 1 days,
@@ -193,7 +203,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         {
             /// deploy staked well with Block timestamps
             /// to mock the system on moonbeam
-            (address stkWellProxy, ) = deployStakedWell(
+            (address stkWellProxy,) = deployStakedWell(
                 address(xwellProxy),
                 address(xwellProxy),
                 1 days,
@@ -212,8 +222,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         initData.proposalThreshold = proposalThreshold;
         initData.votingPeriodSeconds = votingPeriodSeconds;
-        initData
-            .crossChainVoteCollectionPeriod = crossChainVoteCollectionPeriod;
+        initData.crossChainVoteCollectionPeriod = crossChainVoteCollectionPeriod;
         initData.quorum = quorum;
         initData.maxUserLiveProposals = maxUserLiveProposals;
         initData.pauseDuration = pauseDuration;
@@ -224,28 +233,23 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         initData.stkWell = address(stkWellMoonbeam);
         initData.distributor = address(distributor);
 
-        MultichainGovernorDeploy.MultichainAddresses
-            memory addresses = deployGovernorRelayerAndVoteCollection(
-                initData,
-                approvedCalldata,
-                proxyAdmin, // proxyAdmin
-                MOONBEAM_WORMHOLE_CHAIN_ID, // wormhole moonbeam chain id
-                BASE_WORMHOLE_CHAIN_ID, // wormhole base chain id
-                address(this), // voteCollectionOwner
-                address(stkWellBase)
-            );
+        MultichainGovernorDeploy.MultichainAddresses memory addresses =
+        deployGovernorRelayerAndVoteCollection(
+            initData,
+            approvedCalldata,
+            proxyAdmin, // proxyAdmin
+            MOONBEAM_WORMHOLE_CHAIN_ID, // wormhole moonbeam chain id
+            BASE_WORMHOLE_CHAIN_ID, // wormhole base chain id
+            address(this), // voteCollectionOwner
+            address(stkWellBase)
+        );
 
         governor = MockMultichainGovernor(addresses.governorProxy);
-        governorLogic = MockMultichainGovernor(
-            addresses.governorImplementation
-        );
+        governorLogic = MockMultichainGovernor(addresses.governorImplementation);
         xwell = xWELL(xwellProxy);
-        wormholeRelayerAdapter = WormholeRelayerAdapter(
-            addresses.wormholeRelayerAdapter
-        );
-        voteCollection = MultichainVoteCollection(
-            addresses.voteCollectionProxy
-        );
+        wormholeRelayerAdapter =
+            WormholeRelayerAdapter(addresses.wormholeRelayerAdapter);
+        voteCollection = MultichainVoteCollection(addresses.voteCollectionProxy);
 
         xwell.addBridge(
             MintLimits.RateLimitMidPointInfo({
@@ -273,20 +277,20 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         vm.warp(block.timestamp + 1);
     }
 
-    function _createProposalUpdateThreshold(
-        address creator
-    ) internal returns (uint256) {
+    function _createProposalUpdateThreshold(address creator)
+        internal
+        returns (uint256)
+    {
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
         bytes[] memory calldatas = new bytes[](1);
-        string
-            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+        string memory description =
+            "Proposal MIP-M00 - Update Proposal Threshold";
 
         targets[0] = address(governor);
         values[0] = 0;
         calldatas[0] = abi.encodeWithSignature(
-            "updateProposalThreshold(uint256)",
-            40_000_000 * 1e18
+            "updateProposalThreshold(uint256)", 40_000_000 * 1e18
         );
 
         uint256 startProposalCount = governor.proposalCount();
@@ -294,18 +298,13 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
 
         vm.deal(creator, bridgeCost);
         uint256 proposalId = governor.propose{value: bridgeCost}(
-            targets,
-            values,
-            calldatas,
-            description
+            targets, values, calldatas, description
         );
 
         uint256 endProposalCount = governor.proposalCount();
 
         assertEq(
-            startProposalCount + 1,
-            endProposalCount,
-            "proposal count incorrect"
+            startProposalCount + 1, endProposalCount, "proposal count incorrect"
         );
         assertEq(proposalId, endProposalCount, "proposal id incorrect");
         assertTrue(governor.proposalActive(proposalId), "proposal not active");
@@ -314,9 +313,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
     }
 
     // helper functions
-    function _getVoteCollectionProposalInformation(
-        uint256 proposalId
-    )
+    function _getVoteCollectionProposalInformation(uint256 proposalId)
         internal
         view
         returns (
@@ -341,9 +338,8 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         address user,
         uint256 voteAmount
     ) internal {
-        if (
-            token != address(stkWellMoonbeam) && token != address(stkWellBase)
-        ) {
+        if (token != address(stkWellMoonbeam) && token != address(stkWellBase))
+        {
             deal(token, user, voteAmount);
 
             // users xWell interface but this can also be well
@@ -363,9 +359,7 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
         // governor and vote collection should never have ether at the end of a test
         assertEq(address(governor).balance, 0, "governor has ether");
         assertEq(
-            address(voteCollection).balance,
-            0,
-            "vote collection has ether"
+            address(voteCollection).balance, 0, "vote collection has ether"
         );
     }
 }

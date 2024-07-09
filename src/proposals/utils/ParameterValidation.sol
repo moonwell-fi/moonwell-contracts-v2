@@ -4,9 +4,10 @@ pragma solidity ^0.8.19;
 import "@forge-std/Test.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
-import {MToken} from "@protocol/MToken.sol";
+
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 
 contract ParameterValidation is Test {
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
@@ -49,9 +50,8 @@ contract ParameterValidation is Test {
         );
         assertEq(
             jrm.jumpMultiplierPerTimestamp(),
-            (params.jumpMultiplierPerTimestamp * SCALE) /
-                timestampsPerYear /
-                SCALE,
+            (params.jumpMultiplierPerTimestamp * SCALE) / timestampsPerYear
+                / SCALE,
             "jump multiplier per timestamp validation failed"
         );
     }
@@ -64,9 +64,8 @@ contract ParameterValidation is Test {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         Comptroller unitroller = Comptroller(unitrollerAddress);
 
-        (bool listed, uint256 collateralFactorMantissa) = unitroller.markets(
-            tokenAddress
-        );
+        (bool listed, uint256 collateralFactorMantissa) =
+            unitroller.markets(tokenAddress);
 
         assertTrue(listed);
 
@@ -77,10 +76,10 @@ contract ParameterValidation is Test {
         );
     }
 
-    function _validateRF(
-        address tokenAddress,
-        uint256 reserveFactor
-    ) internal view {
+    function _validateRF(address tokenAddress, uint256 reserveFactor)
+        internal
+        view
+    {
         MToken token = MToken(tokenAddress);
 
         uint256 reserveFactorMantissa = token.reserveFactorMantissa();

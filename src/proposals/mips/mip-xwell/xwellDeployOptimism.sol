@@ -1,21 +1,23 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ITransparentUpgradeableProxy} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import "@forge-std/Test.sol";
 
-import "@utils/ChainIds.sol";
 import "@protocol/utils/ChainIds.sol";
+import "@utils/ChainIds.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
-import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
+import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 
 /// how to run locally:
 ///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployOptimism.sol:xwellDeployOptimism
@@ -50,9 +52,7 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
         /// --------------------------------------------------
         /// --------------------------------------------------
         {
-            address existingProxyAdmin = addresses.getAddress(
-                "MRD_PROXY_ADMIN"
-            );
+            address existingProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
             address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
             address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
             address relayer = addresses.getAddress("WORMHOLE_BRIDGE_RELAYER");
@@ -65,8 +65,8 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
                 address wormholeAdapter
             ) = deployBaseSystem(existingProxyAdmin);
 
-            MintLimits.RateLimitMidPointInfo[]
-                memory limits = new MintLimits.RateLimitMidPointInfo[](1);
+            MintLimits.RateLimitMidPointInfo[] memory limits =
+                new MintLimits.RateLimitMidPointInfo[](1);
 
             limits[0].bridge = wormholeAdapter;
             limits[0].rateLimitPerSecond = rateLimitPerSecond;
@@ -91,12 +91,10 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
             );
 
             addresses.addAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                wormholeAdapter
+                "WORMHOLE_BRIDGE_ADAPTER_PROXY", wormholeAdapter
             );
             addresses.addAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
-                wormholeAdapterLogic
+                "WORMHOLE_BRIDGE_ADAPTER_LOGIC", wormholeAdapterLogic
             );
             addresses.addAddress("xWELL_LOGIC", xwellLogic);
             addresses.addAddress("xWELL_PROXY", xwellProxy);
@@ -132,9 +130,8 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
         /// --------------------------------------------------
         {
             address basexWellProxy = addresses.getAddress("xWELL_PROXY");
-            address wormholeAdapter = addresses.getAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_PROXY"
-            );
+            address wormholeAdapter =
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
             address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
             address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
             address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
@@ -193,8 +190,7 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
             );
             assertTrue(
                 WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
-                    block.chainid.toMoonbeamWormholeChainId(),
-                    wormholeAdapter
+                    block.chainid.toMoonbeamWormholeChainId(), wormholeAdapter
                 ),
                 "trusted sender not trusted"
             );
@@ -232,11 +228,8 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
     }
 
     function printAddresses(Addresses addresses) private view {
-        (
-            string[] memory recordedNames,
-            ,
-            address[] memory recordedAddresses
-        ) = addresses.getRecordedAddresses();
+        (string[] memory recordedNames,, address[] memory recordedAddresses) =
+            addresses.getRecordedAddresses();
         for (uint256 j = 0; j < recordedNames.length; j++) {
             console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
             console.log("        'chainId': %d,", block.chainid);

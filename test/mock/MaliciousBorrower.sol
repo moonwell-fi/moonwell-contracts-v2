@@ -2,9 +2,9 @@ pragma solidity 0.8.19;
 
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
+import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
 
 contract MaliciousBorrower {
     /// @notice mWETH contract
@@ -29,7 +29,9 @@ contract MaliciousBorrower {
         address[] memory tokens = new address[](1);
         tokens[0] = mToken;
 
-        MErc20(mToken).comptroller().enterMarkets(tokens); /// put up mweth as collateral
+        MErc20(mToken).comptroller().enterMarkets(tokens);
+
+        /// put up mweth as collateral
 
         ERC20(underlying).approve(address(mToken), amount);
         MErc20(mToken).mint(amount);
@@ -41,7 +43,8 @@ contract MaliciousBorrower {
             /// exit markets
             MErc20(mToken).comptroller().exitMarket(mToken);
         } else {
-            MErc20(mToken).borrow(borrowAmount); /// tnis call should revert
+            MErc20(mToken).borrow(borrowAmount);
+            /// tnis call should revert
         }
     }
 }

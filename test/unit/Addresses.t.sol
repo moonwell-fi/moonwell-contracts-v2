@@ -25,9 +25,8 @@ contract UnitTestAddresses is Test {
 
         addresses = new Addresses(addressesPath);
 
-        string memory addressesData = string(
-            abi.encodePacked(vm.readFile("./utils/31337.json"))
-        );
+        string memory addressesData =
+            string(abi.encodePacked(vm.readFile("./utils/31337.json")));
         parsedJson = vm.parseJson(addressesData);
     }
 
@@ -186,10 +185,8 @@ contract UnitTestAddresses is Test {
         assertEq(oldAddresses.length, 1);
         assertEq(newAddresses.length, 1);
 
-        SavedAddresses[] memory savedAddresses = abi.decode(
-            parsedJson,
-            (SavedAddresses[])
-        );
+        SavedAddresses[] memory savedAddresses =
+            abi.decode(parsedJson, (SavedAddresses[]));
 
         assertEq(names[0], savedAddresses[0].name);
         assertEq(chainIds[0], block.chainid);
@@ -340,9 +337,7 @@ contract UnitTestAddresses is Test {
 
         addresses.addRestrictions(allowedChainIds);
         assertEq(
-            addresses.restrictionLength(),
-            1,
-            "restriction length should be one"
+            addresses.restrictionLength(), 1, "restriction length should be one"
         );
 
         addresses.removeAllRestrictions();

@@ -2,9 +2,9 @@ pragma solidity 0.8.19;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
-import {MErc20} from "@protocol/MErc20.sol";
 import {MoonwellERC4626Eth} from "@protocol/4626/MoonwellERC4626Eth.sol";
 import {Comptroller as IMoontroller} from "@protocol/Comptroller.sol";
+import {MErc20} from "@protocol/MErc20.sol";
 
 contract Factory4626Eth {
     /// ------------------------------------------------
@@ -45,10 +45,10 @@ contract Factory4626Eth {
     /// @param mToken The corresponding Moonwell mToken,
     /// should be MOONWELL_WETH
     /// @param rewardRecipient The address to receive rewards
-    function deployMoonwellERC4626Eth(
-        address mToken,
-        address rewardRecipient
-    ) external returns (address vault) {
+    function deployMoonwellERC4626Eth(address mToken, address rewardRecipient)
+        external
+        returns (address vault)
+    {
         /// parameter checks
         require(rewardRecipient != address(0), "INVALID_RECIPIENT");
         require(MErc20(mToken).underlying() == weth, "INVALID_ASSET");
@@ -56,10 +56,7 @@ contract Factory4626Eth {
         /// create the vault contract
         vault = address(
             new MoonwellERC4626Eth(
-                ERC20(weth),
-                MErc20(mToken),
-                rewardRecipient,
-                moontroller
+                ERC20(weth), MErc20(mToken), rewardRecipient, moontroller
             )
         );
 
@@ -68,22 +65,18 @@ contract Factory4626Eth {
 
         require(
             ERC20(weth).transferFrom(
-                msg.sender,
-                address(this),
-                INITIAL_MINT_AMOUNT
+                msg.sender, address(this), INITIAL_MINT_AMOUNT
             ),
             "transferFrom failed"
         );
 
         require(
-            ERC20(weth).approve(vault, INITIAL_MINT_AMOUNT),
-            "approve failed"
+            ERC20(weth).approve(vault, INITIAL_MINT_AMOUNT), "approve failed"
         );
 
         require(
             MoonwellERC4626Eth(payable(vault)).deposit(
-                INITIAL_MINT_AMOUNT,
-                address(0)
+                INITIAL_MINT_AMOUNT, address(0)
             ) > 0,
             "deposit failed"
         );

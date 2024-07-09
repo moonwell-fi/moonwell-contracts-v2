@@ -1,19 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import {ERC20Votes} from
+    "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
 import "@forge-std/Test.sol";
 
-import {ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+
+import {TestProposals} from "@proposals/TestProposals.sol";
+import {
+    ActionType,
+    HybridProposal
+} from "@proposals/proposalTypes/HybridProposal.sol";
+import {IArtemisGovernor as MoonwellArtemisGovernor} from
+    "@protocol/interfaces/IArtemisGovernor.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {String} from "@utils/String.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,
@@ -48,14 +54,14 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
     }
 
     function testMintSelf() public {
-        uint256 transferAmount = well.balanceOf(
-            0x933fCDf708481c57E9FD82f6BAA084f42e98B60e
-        );
+        uint256 transferAmount =
+            well.balanceOf(0x933fCDf708481c57E9FD82f6BAA084f42e98B60e);
         vm.prank(0x933fCDf708481c57E9FD82f6BAA084f42e98B60e);
         well.transfer(voter, transferAmount);
 
         vm.prank(voter);
-        well.delegate(voter); /// delegate to self
+        well.delegate(voter);
+        /// delegate to self
 
         vm.roll(block.number + 1000);
         vm.warp(block.timestamp + 1000);
@@ -85,13 +91,11 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
             /// this returns the moonbeam wormhole core address as
             /// block.chainid is base/base sepolia optimism/optimism sepolia
             address wormholeCore = addresses.getAddress(
-                "WORMHOLE_CORE",
-                block.chainid.toMoonbeamChainId()
+                "WORMHOLE_CORE", block.chainid.toMoonbeamChainId()
             );
 
-            bytes memory multichainGovernorQueuePayload = proposal.getCalldata(
-                addresses
-            );
+            bytes memory multichainGovernorQueuePayload =
+                proposal.getCalldata(addresses);
 
             console.log("artemis governor queue governance calldata");
             emit log_bytes(multichainGovernorQueuePayload);
@@ -110,7 +114,7 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                 uint256 cost = governor.bridgeCostAll();
                 vm.deal(voter, cost);
                 vm.prank(voter);
-                (bool success, ) = address(governor).call{value: cost}(
+                (bool success,) = address(governor).call{value: cost}(
                     multichainGovernorQueuePayload
                 );
 
@@ -124,36 +128,29 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
             /// -----------------------------------------------------------
 
             require(
-                wormholeCore != address(0),
-                "invalid temporal governor address"
+                wormholeCore != address(0), "invalid temporal governor address"
             );
             require(
-                temporalGov != address(0),
-                "invalid temporal governor address"
+                temporalGov != address(0), "invalid temporal governor address"
             );
 
             uint256 proposalId = governor.proposalCount();
 
-            uint64 nextSequence = IWormhole(wormhole).nextSequence(
-                address(governor)
-            );
+            uint64 nextSequence =
+                IWormhole(wormhole).nextSequence(address(governor));
 
             vm.prank(voter);
-            governor.castVote(proposalId, 0); /// VOTE YES
+            governor.castVote(proposalId, 0);
+            /// VOTE YES
 
             vm.warp(
-                governor.votingPeriod() +
-                    governor.crossChainVoteCollectionPeriod() +
-                    block.timestamp +
-                    1
+                governor.votingPeriod()
+                    + governor.crossChainVoteCollectionPeriod() + block.timestamp
+                    + 1
             );
 
-            bytes memory temporalGovExecData = abi.encode(
-                temporalGov,
-                targets,
-                values,
-                payloads
-            );
+            bytes memory temporalGovExecData =
+                abi.encode(temporalGov, targets, values, payloads);
 
             vm.expectEmit(true, true, true, true, wormholeCore);
 
@@ -161,10 +158,13 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
             emit LogMessagePublished(
                 address(governor),
                 nextSequence,
-                0, /// nonce is hardcoded at 0 in HybridProposal.sol
+                0,
+                /// nonce is hardcoded at 0 in HybridProposal.sol
                 temporalGovExecData,
-                200 /// consistency level is hardcoded at 200 in HybridProposal.sol
+                200
             );
+            /// consistency level is hardcoded at 200 in HybridProposal.sol
+
             governor.execute(proposalId);
         }
     }
@@ -183,7 +183,8 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
             // At this point the primaryForkId should not be moonbeam
             vm.selectFork(uint256(proposal.primaryForkId()));
             (
-                address[] memory targets, /// contracts to call /// native token amount to send is ignored as temporal gov cannot accept eth
+                address[] memory targets,
+                /// contracts to call /// native token amount to send is ignored as temporal gov cannot accept eth
                 ,
                 bytes[] memory calldatas
             ) = proposal.getTargetsPayloadsValues(addresses);
@@ -191,9 +192,8 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
             vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
             for (uint256 i = 0; i < targets.length; i++) {
-                (bool success, bytes memory errorString) = targets[i].call(
-                    abi.encodePacked(calldatas[i])
-                );
+                (bool success, bytes memory errorString) =
+                    targets[i].call(abi.encodePacked(calldatas[i]));
                 require(success, string(errorString));
             }
 

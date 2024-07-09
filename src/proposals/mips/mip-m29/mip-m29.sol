@@ -3,12 +3,15 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {
+    ActionType,
+    HybridProposal
+} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
-import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m27/mip-m27.sol:mipm27
@@ -48,8 +51,7 @@ contract mipm29 is HybridProposal, ParameterValidation {
         _pushAction(
             addresses.getAddress("mGLIMMER"),
             abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                NEW_MGLIMMER_RESERVE_FACTOR
+                "_setReserveFactor(uint256)", NEW_MGLIMMER_RESERVE_FACTOR
             ),
             "Set reserve factor for mGLIMMER to updated reserve factor",
             ActionType.Moonbeam
@@ -58,8 +60,7 @@ contract mipm29 is HybridProposal, ParameterValidation {
         _pushAction(
             addresses.getAddress("mxcDOT"),
             abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                NEW_MXC_DOT_RESERVE_FACTOR
+                "_setReserveFactor(uint256)", NEW_MXC_DOT_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcDOT to updated reserve factor",
             ActionType.Moonbeam
@@ -68,8 +69,7 @@ contract mipm29 is HybridProposal, ParameterValidation {
         _pushAction(
             addresses.getAddress("mETHwh"),
             abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                NEW_M_ETHWH_RESERVE_FACTOR
+                "_setReserveFactor(uint256)", NEW_M_ETHWH_RESERVE_FACTOR
             ),
             "Set reserve factor for mETHwh to updated reserve factor",
             ActionType.Moonbeam
@@ -166,8 +166,7 @@ contract mipm29 is HybridProposal, ParameterValidation {
 
     function validate(Addresses addresses, address) public view override {
         _validateRF(
-            addresses.getAddress("mGLIMMER"),
-            NEW_MGLIMMER_RESERVE_FACTOR
+            addresses.getAddress("mGLIMMER"), NEW_MGLIMMER_RESERVE_FACTOR
         );
 
         _validateRF(addresses.getAddress("mxcDOT"), NEW_MXC_DOT_RESERVE_FACTOR);

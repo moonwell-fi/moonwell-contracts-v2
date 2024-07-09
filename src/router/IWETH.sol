@@ -1,5 +1,5 @@
 /**
- *Submitted for verification at Etherscan.io on 2017-12-12
+ * Submitted for verification at Etherscan.io on 2017-12-12
  */
 
 // Copyright (C) 2015, 2016, 2017 Dapphub
@@ -20,22 +20,20 @@
 pragma solidity 0.8.19;
 
 interface WETH9 {
-    function balanceOf(address guy) external view returns (uint);
-    function allowance(address, address) external view returns (uint);
+    function balanceOf(address guy) external view returns (uint256);
+    function allowance(address, address) external view returns (uint256);
 
     function deposit() external payable;
 
-    function withdraw(uint wad) external;
+    function withdraw(uint256 wad) external;
 
-    function totalSupply() external view returns (uint);
+    function totalSupply() external view returns (uint256);
 
-    function approve(address guy, uint wad) external returns (bool);
+    function approve(address guy, uint256 wad) external returns (bool);
 
-    function transfer(address dst, uint wad) external returns (bool);
+    function transfer(address dst, uint256 wad) external returns (bool);
 
-    function transferFrom(
-        address src,
-        address dst,
-        uint wad
-    ) external returns (bool);
+    function transferFrom(address src, address dst, uint256 wad)
+        external
+        returns (bool);
 }

@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.19;
 
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {ERC4626} from "solmate/mixins/ERC4626.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
-import {MErc20} from "@protocol/MErc20.sol";
-import {MToken} from "@protocol/MToken.sol";
 import {LibCompound} from "@protocol/4626/LibCompound.sol";
 import {Comptroller as IMoontroller} from "@protocol/Comptroller.sol";
-import {MultiRewardDistributor, MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {
+    MultiRewardDistributor,
+    MultiRewardDistributorCommon
+} from "@protocol/rewards/MultiRewardDistributor.sol";
 
 /// @title MoonwellERC4626
 /// @author zefram.eth
@@ -87,20 +90,18 @@ contract MoonwellERC4626 is ERC4626 {
         MultiRewardDistributor mrd = comptroller.rewardDistributor();
 
         if (address(mrd) != address(0)) {
-            MultiRewardDistributorCommon.MarketConfig[] memory configs = mrd
-                .getAllMarketConfigs(MToken(address(mToken)));
+            MultiRewardDistributorCommon.MarketConfig[] memory configs =
+                mrd.getAllMarketConfigs(MToken(address(mToken)));
 
             unchecked {
                 for (uint256 i = 0; i < configs.length; i++) {
-                    uint256 amount = ERC20(configs[i].emissionToken).balanceOf(
-                        address(this)
-                    );
+                    uint256 amount =
+                        ERC20(configs[i].emissionToken).balanceOf(address(this));
 
                     if (amount != 0) {
                         /// gas opti, skip transfer and event emission if no rewards
                         ERC20(configs[i].emissionToken).safeTransfer(
-                            rewardRecipient,
-                            amount
+                            rewardRecipient, amount
                         );
 
                         emit ClaimRewards(amount, configs[i].emissionToken);
@@ -138,10 +139,11 @@ contract MoonwellERC4626 is ERC4626 {
         return mToken.viewUnderlyingBalanceOf(address(this));
     }
 
-    function beforeWithdraw(
-        uint256 assets,
-        uint256 /*shares*/
-    ) internal virtual override {
+    function beforeWithdraw(uint256 assets, uint256 /*shares*/ )
+        internal
+        virtual
+        override
+    {
         /// -----------------------------------------------------------------------
         /// Withdraw assets from Compound
         /// -----------------------------------------------------------------------
@@ -152,10 +154,11 @@ contract MoonwellERC4626 is ERC4626 {
         }
     }
 
-    function afterDeposit(
-        uint256 assets,
-        uint256 /*shares*/
-    ) internal virtual override {
+    function afterDeposit(uint256 assets, uint256 /*shares*/ )
+        internal
+        virtual
+        override
+    {
         /// -----------------------------------------------------------------------
         /// Deposit assets into Compound
         /// -----------------------------------------------------------------------
@@ -180,7 +183,8 @@ contract MoonwellERC4626 is ERC4626 {
         if (supplyCap != 0) {
             uint256 currentExchangeRate = mToken.viewExchangeRate();
             uint256 _totalSupply = MToken(address(mToken)).totalSupply();
-            uint256 totalSupplies = (_totalSupply * currentExchangeRate) / 1e18; /// exchange rate is scaled up by 1e18, so needs to be divided off to get accurate total supply
+            uint256 totalSupplies = (_totalSupply * currentExchangeRate) / 1e18;
+            /// exchange rate is scaled up by 1e18, so needs to be divided off to get accurate total supply
 
             // uint256 totalCash = MToken(address(mToken)).getCash();
             // uint256 totalBorrows = MToken(address(mToken)).totalBorrows();
@@ -221,15 +225,19 @@ contract MoonwellERC4626 is ERC4626 {
     function maxMint(address) public view override returns (uint256) {
         uint256 mintAmount = maxDeposit(address(0));
 
-        return
-            mintAmount == type(uint256).max
-                ? mintAmount
-                : convertToShares(mintAmount);
+        return mintAmount == type(uint256).max
+            ? mintAmount
+            : convertToShares(mintAmount);
     }
 
     /// @notice maximum amount of underlying tokens that can be withdrawn
     /// @param owner The address that owns the shares
-    function maxWithdraw(address owner) public view override returns (uint256) {
+    function maxWithdraw(address owner)
+        public
+        view
+        override
+        returns (uint256)
+    {
         uint256 cash = mToken.getCash();
         uint256 assetsBalance = convertToAssets(balanceOf[owner]);
         return cash < assetsBalance ? cash : assetsBalance;
@@ -248,15 +256,21 @@ contract MoonwellERC4626 is ERC4626 {
     /// ERC20 metadata generation
     /// -----------------------------------------------------------------------
 
-    function _vaultName(
-        ERC20 asset_
-    ) internal view virtual returns (string memory vaultName) {
+    function _vaultName(ERC20 asset_)
+        internal
+        view
+        virtual
+        returns (string memory vaultName)
+    {
         vaultName = string.concat("ERC4626-Wrapped Moonwell ", asset_.symbol());
     }
 
-    function _vaultSymbol(
-        ERC20 asset_
-    ) internal view virtual returns (string memory vaultSymbol) {
+    function _vaultSymbol(ERC20 asset_)
+        internal
+        view
+        virtual
+        returns (string memory vaultSymbol)
+    {
         vaultSymbol = string.concat("wm", asset_.symbol());
     }
 }

@@ -9,42 +9,40 @@ interface ComptrollerInterfaceV1 {
         uint32 timestamp;
     }
 
-    function supplyRewardSpeeds(
-        uint8 reward,
-        address market
-    ) external view returns (uint);
+    function supplyRewardSpeeds(uint8 reward, address market)
+        external
+        view
+        returns (uint256);
 
-    function borrowRewardSpeeds(
-        uint8 reward,
-        address market
-    ) external view returns (uint);
+    function borrowRewardSpeeds(uint8 reward, address market)
+        external
+        view
+        returns (uint256);
 
-    function rewardSupplyState(
-        uint8 reward,
-        address market
-    ) external view returns (RewardMarketState memory);
+    function rewardSupplyState(uint8 reward, address market)
+        external
+        view
+        returns (RewardMarketState memory);
 
-    function rewardBorrowState(
-        uint8 reward,
-        address market
-    ) external view returns (RewardMarketState memory);
+    function rewardBorrowState(uint8 reward, address market)
+        external
+        view
+        returns (RewardMarketState memory);
 
-    function rewardSupplierIndex(
-        uint8 reward,
-        address market,
-        address user
-    ) external view returns (uint);
+    function rewardSupplierIndex(uint8 reward, address market, address user)
+        external
+        view
+        returns (uint256);
 
-    function rewardBorrowerIndex(
-        uint8 reward,
-        address market,
-        address user
-    ) external view returns (uint);
+    function rewardBorrowerIndex(uint8 reward, address market, address user)
+        external
+        view
+        returns (uint256);
 
-    function rewardAccrued(
-        uint8 reward,
-        address user
-    ) external view returns (uint);
+    function rewardAccrued(uint8 reward, address user)
+        external
+        view
+        returns (uint256);
 
     function wellAddress() external view returns (address);
 
@@ -56,7 +54,7 @@ interface ComptrollerInterfaceV1 {
          *  For instance, 0.9 to allow borrowing 90% of collateral value.
          *  Must be between 0 and 1, and stored as a mantissa.
          */
-        uint collateralFactorMantissa;
+        uint256 collateralFactorMantissa;
     }
 
     function markets(address market) external view returns (Market memory);

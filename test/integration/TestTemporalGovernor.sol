@@ -3,14 +3,19 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Configs} from "@proposals/Configs.sol";
-import {Unitroller} from "@protocol/Unitroller.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
-import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {
+    ActionType,
+    HybridProposal
+} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {Unitroller} from "@protocol/Unitroller.sol";
+
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+
+import {BASE_FORK_ID, ChainIds, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     using ChainIds for uint256;
@@ -38,8 +43,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
                 addresses.getAddress(
-                    "MOONWELL_WETH",
-                    block.chainid.toBaseChainId()
+                    "MOONWELL_WETH", block.chainid.toBaseChainId()
                 ),
                 collateralFactor
             ),
@@ -67,13 +71,10 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     function validate(Addresses addresses, address) public override {
         vm.selectFork(BASE_FORK_ID);
 
-        Comptroller unitroller = Comptroller(
-            addresses.getAddress("UNITROLLER")
-        );
+        Comptroller unitroller = Comptroller(addresses.getAddress("UNITROLLER"));
 
-        (, uint256 collateralFactorMantissa) = unitroller.markets(
-            addresses.getAddress("MOONWELL_WETH")
-        );
+        (, uint256 collateralFactorMantissa) =
+            unitroller.markets(addresses.getAddress("MOONWELL_WETH"));
         assertEq(collateralFactorMantissa, collateralFactor);
 
         vm.selectFork(primaryForkId());

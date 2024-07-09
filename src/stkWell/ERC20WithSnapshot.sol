@@ -8,7 +8,8 @@ import {ITransferHook} from "./ITransferHook.sol";
  * @title ERC20WithSnapshot
  * @notice ERC20 including snapshots of balances on transfer-related actions
  * @author Moonwell
- **/
+ *
+ */
 contract ERC20WithSnapshot is ERC20 {
     /// @dev snapshot of a value on a specific block, used for balances
     struct Snapshot {
@@ -47,10 +48,11 @@ contract ERC20WithSnapshot is ERC20 {
      * @param blockTimestamp The block timestamp to get the vote balance at
      * @return The timestamp of votes the account had as of the given block
      */
-    function getPriorVotes(
-        address account,
-        uint256 blockTimestamp
-    ) external view returns (uint256) {
+    function getPriorVotes(address account, uint256 blockTimestamp)
+        external
+        view
+        returns (uint256)
+    {
         require(blockTimestamp < block.timestamp, "not yet determined");
 
         uint256 nCheckpoints = _countsSnapshots[account];
@@ -60,8 +62,8 @@ contract ERC20WithSnapshot is ERC20 {
 
         // First check most recent balance
         if (
-            _snapshots[account][nCheckpoints - 1].blockTimestamp <=
-            blockTimestamp
+            _snapshots[account][nCheckpoints - 1].blockTimestamp
+                <= blockTimestamp
         ) {
             return _snapshots[account][nCheckpoints - 1].value;
         }
@@ -93,11 +95,10 @@ contract ERC20WithSnapshot is ERC20 {
      * @param oldValue The value before the operation that is gonna be executed after the snapshot
      * @param newValue The value after the operation
      */
-    function _writeSnapshot(
-        address owner,
-        uint128 oldValue,
-        uint128 newValue
-    ) internal virtual {
+    function _writeSnapshot(address owner, uint128 oldValue, uint128 newValue)
+        internal
+        virtual
+    {
         uint128 currentBlock = uint128(block.timestamp);
 
         uint256 ownerCountOfSnapshots = _countsSnapshots[owner];
@@ -105,16 +106,14 @@ contract ERC20WithSnapshot is ERC20 {
 
         // Doing multiple operations in the same block
         if (
-            ownerCountOfSnapshots != 0 &&
-            snapshotsOwner[ownerCountOfSnapshots.sub(1)].blockTimestamp ==
-            currentBlock
+            ownerCountOfSnapshots != 0
+                && snapshotsOwner[ownerCountOfSnapshots.sub(1)].blockTimestamp
+                    == currentBlock
         ) {
             snapshotsOwner[ownerCountOfSnapshots.sub(1)].value = newValue;
         } else {
-            snapshotsOwner[ownerCountOfSnapshots] = Snapshot(
-                currentBlock,
-                newValue
-            );
+            snapshotsOwner[ownerCountOfSnapshots] =
+                Snapshot(currentBlock, newValue);
             _countsSnapshots[owner] = ownerCountOfSnapshots.add(1);
         }
 
@@ -130,11 +129,10 @@ contract ERC20WithSnapshot is ERC20 {
      * @param to the to address
      * @param amount the amount to transfer
      */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override {
+    function _beforeTokenTransfer(address from, address to, uint256 amount)
+        internal
+        override
+    {
         if (from == to) {
             return;
         }
@@ -142,17 +140,13 @@ contract ERC20WithSnapshot is ERC20 {
         if (from != address(0)) {
             uint256 fromBalance = balanceOf(from);
             _writeSnapshot(
-                from,
-                uint128(fromBalance),
-                uint128(fromBalance.sub(amount))
+                from, uint128(fromBalance), uint128(fromBalance.sub(amount))
             );
         }
         if (to != address(0)) {
             uint256 toBalance = balanceOf(to);
             _writeSnapshot(
-                to,
-                uint128(toBalance),
-                uint128(toBalance.add(amount))
+                to, uint128(toBalance), uint128(toBalance.add(amount))
             );
         }
 

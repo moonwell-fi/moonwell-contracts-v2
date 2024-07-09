@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "./PriceOracle.sol";
-import "../MErc20.sol";
 import "../EIP20Interface.sol";
+import "../MErc20.sol";
 import "../SafeMath.sol";
 import "./AggregatorV3Interface.sol";
+import "./PriceOracle.sol";
 
 /// @notice contract that stores all chainlink oracle addresses for each respective underlying asset
 contract ChainlinkOracle is PriceOracle {
@@ -55,9 +55,12 @@ contract ChainlinkOracle is PriceOracle {
     /// @notice Get the underlying price of a listed mToken asset
     /// @param mToken The mToken to get the underlying price of
     /// @return The underlying asset price mantissa scaled by 1e18
-    function getUnderlyingPrice(
-        MToken mToken
-    ) public view override returns (uint256) {
+    function getUnderlyingPrice(MToken mToken)
+        public
+        view
+        override
+        returns (uint256)
+    {
         string memory symbol = mToken.symbol();
         if (keccak256(abi.encodePacked(symbol)) == nativeToken) {
             /// @dev this branch should never get called as native tokens are not supported on this deployment
@@ -73,9 +76,8 @@ contract ChainlinkOracle is PriceOracle {
     /// @dev if the admin sets the price override, this function will
     /// return that instead of the chainlink price
     function getPrice(MToken mToken) internal view returns (uint256 price) {
-        EIP20Interface token = EIP20Interface(
-            MErc20(address(mToken)).underlying()
-        );
+        EIP20Interface token =
+            EIP20Interface(MErc20(address(mToken)).underlying());
 
         if (prices[address(token)] != 0) {
             price = prices[address(token)];
@@ -95,11 +97,13 @@ contract ChainlinkOracle is PriceOracle {
     /// @notice Get the price of a token from Chainlink
     /// @param feed The Chainlink feed to get the price of
     /// @return The price of the asset from Chainlink scaled by 1e18
-    function getChainlinkPrice(
-        AggregatorV3Interface feed
-    ) internal view returns (uint256) {
-        (, int256 answer, , uint256 updatedAt, ) = AggregatorV3Interface(feed)
-            .latestRoundData();
+    function getChainlinkPrice(AggregatorV3Interface feed)
+        internal
+        view
+        returns (uint256)
+    {
+        (, int256 answer,, uint256 updatedAt,) =
+            AggregatorV3Interface(feed).latestRoundData();
         require(answer > 0, "Chainlink price cannot be lower than 0");
         require(updatedAt != 0, "Round is in incompleted state");
 
@@ -116,10 +120,10 @@ contract ChainlinkOracle is PriceOracle {
     /// @notice Set the price of an asset overriding the value returned from Chainlink
     /// @param mToken The mToken to set the price of
     /// @param underlyingPriceMantissa The price scaled by mantissa of the asset
-    function setUnderlyingPrice(
-        MToken mToken,
-        uint256 underlyingPriceMantissa
-    ) external onlyAdmin {
+    function setUnderlyingPrice(MToken mToken, uint256 underlyingPriceMantissa)
+        external
+        onlyAdmin
+    {
         address asset = address(MErc20(address(mToken)).underlying());
         emit PricePosted(
             asset,
@@ -144,21 +148,20 @@ contract ChainlinkOracle is PriceOracle {
     /// @param feed The address of the chainlink feed
     function setFeed(string calldata symbol, address feed) external onlyAdmin {
         require(
-            feed != address(0) && feed != address(this),
-            "invalid feed address"
+            feed != address(0) && feed != address(this), "invalid feed address"
         );
         emit FeedSet(feed, symbol);
-        feeds[keccak256(abi.encodePacked(symbol))] = AggregatorV3Interface(
-            feed
-        );
+        feeds[keccak256(abi.encodePacked(symbol))] = AggregatorV3Interface(feed);
     }
 
     /// @notice Get the chainlink feed for a given token symbol
     /// @param symbol The symbol of the mToken's underlying token to get the feed for
     /// @return The address of the chainlink feed
-    function getFeed(
-        string memory symbol
-    ) public view returns (AggregatorV3Interface) {
+    function getFeed(string memory symbol)
+        public
+        view
+        returns (AggregatorV3Interface)
+    {
         return feeds[keccak256(abi.encodePacked(symbol))];
     }
 

@@ -11,7 +11,10 @@ interface ITemporalGovernor {
     function wormholeBridge() external view returns (IWormhole);
 
     /// @notice Map of chain id => trusted sender
-    function allTrustedSenders(uint16) external view returns (bytes32[] memory);
+    function allTrustedSenders(uint16)
+        external
+        view
+        returns (bytes32[] memory);
 
     /// @notice returns whether or not the guardian can pause.
     /// starts true and then is turned false when the guardian pauses
@@ -19,7 +22,10 @@ interface ITemporalGovernor {
     function guardianPauseAllowed() external view returns (bool);
 
     /// @notice list of transactions queued and awaiting execution
-    function queuedTransactions(bytes32) external view returns (bool, uint248);
+    function queuedTransactions(bytes32)
+        external
+        view
+        returns (bool, uint248);
 
     /// @notice returns the amount of time a proposal must wait before being processed.
     function proposalDelay() external view returns (uint256);
@@ -103,17 +109,15 @@ interface ITemporalGovernor {
     /// @dev Updates the list of trusted senders
     /// @param _trustedSenders The list of trusted senders, allowing multiple
     /// trusted sender per chain id
-    function setTrustedSenders(
-        TrustedSender[] calldata _trustedSenders
-    ) external;
+    function setTrustedSenders(TrustedSender[] calldata _trustedSenders)
+        external;
 
     /// @notice only callable through a governance proposal
     /// @dev Removes trusted senders from the list
     /// @param _trustedSenders The list of trusted senders, allowing multiple
     /// trusted sender per chain id
-    function unSetTrustedSenders(
-        TrustedSender[] calldata _trustedSenders
-    ) external;
+    function unSetTrustedSenders(TrustedSender[] calldata _trustedSenders)
+        external;
 
     /// ------------- GUARDIAN / GOVERNOR ONLY APIs -------------
 

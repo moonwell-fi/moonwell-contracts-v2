@@ -2,14 +2,14 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {SigUtils} from "@test/helper/SigUtils.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
+import {SigUtils} from "@test/helper/SigUtils.sol";
 
 contract FaucetWithPermitUnitTest is Test {
     FaucetTokenWithPermit token;
     SigUtils sigUtils;
-    uint ownerPrivateKey;
-    uint spenderPrivateKey;
+    uint256 ownerPrivateKey;
+    uint256 spenderPrivateKey;
     address owner;
     address spender;
 
@@ -42,13 +42,7 @@ contract FaucetWithPermitUnitTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
 
         token.permit(
-            permit.owner,
-            permit.spender,
-            permit.value,
-            permit.deadline,
-            v,
-            r,
-            s
+            permit.owner, permit.spender, permit.value, permit.deadline, v, r, s
         );
 
         assertEq(token.allowance(owner, spender), 1e18);

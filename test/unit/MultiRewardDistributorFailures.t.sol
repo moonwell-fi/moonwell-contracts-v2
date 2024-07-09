@@ -4,18 +4,25 @@ import "@forge-std/Test.sol";
 
 import "@protocol/rewards/MultiRewardDistributor.sol";
 
-import {MToken} from "@protocol/MToken.sol";
-import {SigUtils} from "@test/helper/SigUtils.sol";
-import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
-import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
-import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
-import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
+import {MToken} from "@protocol/MToken.sol";
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
+import {WhitePaperInterestRateModel} from
+    "@protocol/irm/WhitePaperInterestRateModel.sol";
+import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
+import {SigUtils} from "@test/helper/SigUtils.sol";
+
+import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
+import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
+
+import {
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 contract MultiRewardDistributorFailures is Test {
@@ -38,14 +45,10 @@ contract MultiRewardDistributorFailures is Test {
         irModel = new WhitePaperInterestRateModel(0.1e18, 0.45e18);
         distributor = new MultiRewardDistributor();
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(comptroller),
-            pauseGuardian
+            "initialize(address,address)", address(comptroller), pauseGuardian
         );
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor),
-            proxyAdmin,
-            initdata
+            address(distributor), proxyAdmin, initdata
         );
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
@@ -67,12 +70,8 @@ contract MultiRewardDistributorFailures is Test {
 
         comptroller._setCollateralFactor(mToken, 0.5e18); // 50% CF
 
-        emissionToken = new FaucetTokenWithPermit(
-            0,
-            "Emission Token",
-            18,
-            "EMIT"
-        );
+        emissionToken =
+            new FaucetTokenWithPermit(0, "Emission Token", 18, "EMIT");
     }
 
     function testSetup() public view {
@@ -94,16 +93,12 @@ contract MultiRewardDistributorFailures is Test {
         new MultiRewardDistributor();
         distributor = new MultiRewardDistributor();
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(0),
-            address(pauseGuardian)
+            "initialize(address,address)", address(0), address(pauseGuardian)
         );
 
         vm.expectRevert("Comptroller can't be the 0 address!");
         new TransparentUpgradeableProxy(
-            address(distributor),
-            proxyAdmin,
-            initdata
+            address(distributor), proxyAdmin, initdata
         );
     }
 
@@ -111,32 +106,24 @@ contract MultiRewardDistributorFailures is Test {
         new MultiRewardDistributor();
         distributor = new MultiRewardDistributor();
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(this),
-            address(0)
+            "initialize(address,address)", address(this), address(0)
         );
 
         vm.expectRevert("Pause Guardian can't be the 0 address!");
         new TransparentUpgradeableProxy(
-            address(distributor),
-            proxyAdmin,
-            initdata
+            address(distributor), proxyAdmin, initdata
         );
     }
 
     function testNonComptrollerBindFails() public {
         distributor = new MultiRewardDistributor();
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(this),
-            address(pauseGuardian)
+            "initialize(address,address)", address(this), address(pauseGuardian)
         );
 
         vm.expectRevert("Can't bind to something that's not a comptroller!");
         new TransparentUpgradeableProxy(
-            address(distributor),
-            proxyAdmin,
-            initdata
+            address(distributor), proxyAdmin, initdata
         );
     }
 
@@ -216,29 +203,23 @@ contract MultiRewardDistributorFailures is Test {
         distributor.disburseBorrowerRewards(mToken, address(1), true);
     }
 
-    function testUpdateMarketBorrowIndexAndDisburseBorrowerRewardsNonComptrollerAdminFails()
-        public
-    {
+    function testUpdateMarketBorrowIndexAndDisburseBorrowerRewardsNonComptrollerAdminFails(
+    ) public {
         vm.expectRevert(
             "Only the comptroller or comptroller admin can call this function"
         );
         distributor.updateMarketBorrowIndexAndDisburseBorrowerRewards(
-            mToken,
-            address(1),
-            true
+            mToken, address(1), true
         );
     }
 
-    function testUpdateMarketSupplyIndexAndDisburseSupplierRewardsNonComptrollerAdminFails()
-        public
-    {
+    function testUpdateMarketSupplyIndexAndDisburseSupplierRewardsNonComptrollerAdminFails(
+    ) public {
         vm.expectRevert(
             "Only the comptroller or comptroller admin can call this function"
         );
         distributor.updateMarketSupplyIndexAndDisburseSupplierRewards(
-            mToken,
-            address(1),
-            true
+            mToken, address(1), true
         );
     }
 }

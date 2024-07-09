@@ -5,13 +5,18 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {
+    ActionType,
+    HybridProposal
+} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {IStakedWell} from "@protocol/IStakedWell.sol";
+
+import {MultichainGovernorDeploy} from
+    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b16/mip-b16.sol:mipb16
@@ -53,8 +58,7 @@ contract mipb16 is
             vm.startPrank(addresses.getAddress("FOUNDATION_MULTISIG"));
 
             ERC20(addresses.getAddress("xWELL_PROXY")).approve(
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                100_000_000 * 1e18
+                addresses.getAddress("TEMPORAL_GOVERNOR"), 100_000_000 * 1e18
             );
 
             vm.stopPrank();
@@ -111,11 +115,8 @@ contract mipb16 is
         vm.selectFork(primaryForkId());
 
         address stkWellProxy = addresses.getAddress("STK_GOVTOKEN");
-        (
-            uint128 emissionsPerSecond,
-            uint128 lastUpdateTimestamp,
-
-        ) = IStakedWell(stkWellProxy).assets(stkWellProxy);
+        (uint128 emissionsPerSecond, uint128 lastUpdateTimestamp,) =
+            IStakedWell(stkWellProxy).assets(stkWellProxy);
 
         assertEq(
             emissionsPerSecond,
@@ -123,10 +124,6 @@ contract mipb16 is
             "MIP-B16: emissionsPerSecond incorrect"
         );
 
-        assertGt(
-            lastUpdateTimestamp,
-            0,
-            "MIP-B16: lastUpdateTimestamp not set"
-        );
+        assertGt(lastUpdateTimestamp, 0, "MIP-B16: lastUpdateTimestamp not set");
     }
 }

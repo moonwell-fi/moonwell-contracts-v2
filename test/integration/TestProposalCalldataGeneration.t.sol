@@ -3,12 +3,22 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {console} from "@forge-std/console.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
+import {GovernanceProposal} from
+    "@proposals/proposalTypes/GovernanceProposal.sol";
+import {
+    ActionType,
+    HybridProposal
+} from "@proposals/proposalTypes/HybridProposal.sol";
+
+import {
+    IMultichainGovernor,
+    MultichainGovernor
+} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {IArtemisGovernor as MoonwellArtemisGovernor} from
+    "@protocol/interfaces/IArtemisGovernor.sol";
+import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 contract TestProposalCalldataGeneration is Test {
     Addresses public addresses;
@@ -35,9 +45,8 @@ contract TestProposalCalldataGeneration is Test {
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
 
-        artemisGovernor = MoonwellArtemisGovernor(
-            addresses.getAddress("ARTEMIS_GOVERNOR")
-        );
+        artemisGovernor =
+            MoonwellArtemisGovernor(addresses.getAddress("ARTEMIS_GOVERNOR"));
     }
 
     function testProposalToolingCalldataGeneration() public {
@@ -79,9 +88,7 @@ contract TestProposalCalldataGeneration is Test {
                     bytes[] memory calldatas
                 ) = proposalContract.getTargetsPayloadsValues(addresses);
 
-                bytes32 hash = keccak256(
-                    abi.encode(targets, values, calldatas)
-                );
+                bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
 
                 address[] memory onchainTargets = new address[](targets.length);
                 uint256[] memory onchainValues = new uint256[](values.length);
@@ -89,28 +96,22 @@ contract TestProposalCalldataGeneration is Test {
 
                 vm.selectFork(MOONBEAM_FORK_ID);
 
-                (onchainTargets, onchainValues, onchainCalldatas) = governor
-                    .getProposalData(proposalId);
+                (onchainTargets, onchainValues, onchainCalldatas) =
+                    governor.getProposalData(proposalId);
 
                 bytes32 onchainHash = keccak256(
                     abi.encode(onchainTargets, onchainValues, onchainCalldatas)
                 );
 
                 if (hash != onchainHash) {
-                    (
-                        onchainTargets,
-                        onchainValues,
-                        ,
-                        onchainCalldatas
-                    ) = MoonwellArtemisGovernor(artemisGovernor).getActions(
+                    (onchainTargets, onchainValues,, onchainCalldatas) =
+                    MoonwellArtemisGovernor(artemisGovernor).getActions(
                         proposalId
                     );
 
                     onchainHash = keccak256(
                         abi.encode(
-                            onchainTargets,
-                            onchainValues,
-                            onchainCalldatas
+                            onchainTargets, onchainValues, onchainCalldatas
                         )
                     );
                 }
@@ -137,9 +138,8 @@ contract TestProposalCalldataGeneration is Test {
 
                 vm.makePersistent(proposal);
 
-                GovernanceProposal proposalContract = GovernanceProposal(
-                    proposal
-                );
+                GovernanceProposal proposalContract =
+                    GovernanceProposal(proposal);
 
                 uint256 proposalId = proposalContract.onchainProposalId();
 
@@ -161,9 +161,7 @@ contract TestProposalCalldataGeneration is Test {
                     bytes[] memory calldatas
                 ) = proposalContract._getActions();
 
-                bytes32 hash = keccak256(
-                    abi.encode(targets, values, calldatas)
-                );
+                bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
 
                 vm.selectFork(MOONBEAM_FORK_ID);
 
@@ -173,8 +171,8 @@ contract TestProposalCalldataGeneration is Test {
                     ,
                     bytes[] memory onchainCalldatas
                 ) = MoonwellArtemisGovernor(artemisGovernor).getActions(
-                        proposalId
-                    );
+                    proposalId
+                );
 
                 bytes32 onchainHash = keccak256(
                     abi.encode(onchainTargets, onchainValues, onchainCalldatas)

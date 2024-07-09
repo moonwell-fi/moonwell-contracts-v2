@@ -1,9 +1,11 @@
 pragma solidity 0.8.19;
 
-import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
+import {EnumerableSet} from
+    "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {WormholeTrustedSender} from
+    "@protocol/governance/WormholeTrustedSender.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 
 /// @notice Wormhole Bridge Base Contract
 /// Useful or when you want to send to and receive from the same addresses
@@ -62,8 +64,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @param dstChainId destination chain id to send tokens to
     /// @param target address to send tokens to
     event TargetAddressUpdated(
-        uint16 indexed dstChainId,
-        address indexed target
+        uint16 indexed dstChainId, address indexed target
     );
 
     /// @notice emitted when the gas limit changes on external chains
@@ -76,9 +77,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @param payload payload that failed to send
     /// @param refundAmount amount to refund
     event BridgeOutFailed(
-        uint16 dstChainId,
-        bytes payload,
-        uint256 refundAmount
+        uint16 dstChainId, bytes payload, uint256 refundAmount
     );
 
     /// @notice event emitted when a bridge out succeeds
@@ -87,10 +86,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @param dst destination address to send tokens to
     /// @param payload payload that was sent
     event BridgeOutSuccess(
-        uint16 dstWormholeChainId,
-        uint256 cost,
-        address dst,
-        bytes payload
+        uint16 dstWormholeChainId, uint256 cost, address dst, bytes payload
     );
 
     /// ---------------------------------------------------------
@@ -116,7 +112,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     function _addTargetAddresses(
         WormholeTrustedSender.TrustedSender[] memory _chainConfig
     ) internal {
-        for (uint256 i = 0; i < _chainConfig.length; ) {
+        for (uint256 i = 0; i < _chainConfig.length;) {
             _addTargetAddress(_chainConfig[i].chainId, _chainConfig[i].addr);
 
             unchecked {
@@ -153,12 +149,11 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     function _removeTargetAddresses(
         WormholeTrustedSender.TrustedSender[] memory _chainConfig
     ) internal {
-        for (uint256 i = 0; i < _chainConfig.length; ) {
+        for (uint256 i = 0; i < _chainConfig.length;) {
             uint16 chainId = _chainConfig[i].chainId;
             targetAddress[chainId] = address(0);
             require(
-                _targetChains.remove(chainId),
-                "WormholeBridge: chain not added"
+                _targetChains.remove(chainId), "WormholeBridge: chain not added"
             );
 
             emit TargetAddressUpdated(chainId, address(0));
@@ -191,7 +186,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         uint256 chainsLength = _targetChains.length();
         uint16[] memory chains = new uint16[](chainsLength);
 
-        for (uint256 i = 0; i < chainsLength; ) {
+        for (uint256 i = 0; i < chainsLength;) {
             chains[i] = uint16(_targetChains.at(i));
             unchecked {
                 i++;
@@ -210,16 +205,14 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @dev this function returns 0 if the quote fails.
     /// in all other cases, the value returned should be non zero.
     /// @param dstWormholeChainId Destination chain id
-    function bridgeCost(
-        uint16 dstWormholeChainId
-    ) public view returns (uint256 gasCost) {
-        try
-            wormholeRelayer.quoteEVMDeliveryPrice(
-                dstWormholeChainId,
-                0,
-                gasLimit
-            )
-        returns (uint256 cost, uint256) {
+    function bridgeCost(uint16 dstWormholeChainId)
+        public
+        view
+        returns (uint256 gasCost)
+    {
+        try wormholeRelayer.quoteEVMDeliveryPrice(
+            dstWormholeChainId, 0, gasLimit
+        ) returns (uint256 cost, uint256) {
             gasCost = cost;
         } catch {
             /// this is a bad situation, but we still want to allow the bridge out
@@ -237,7 +230,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         uint256 totalCost = 0;
 
         uint256 chainsLength = _targetChains.length();
-        for (uint256 i = 0; i < chainsLength; ) {
+        for (uint256 i = 0; i < chainsLength;) {
             totalCost += bridgeCost(uint16(_targetChains.at(i)));
             unchecked {
                 i++;
@@ -250,20 +243,22 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @notice returns whether or not the address is in the trusted senders list for a given chain
     /// @param chainId The wormhole chain id to check
     /// @param addr The address to check
-    function isTrustedSender(
-        uint16 chainId,
-        bytes32 addr
-    ) public view returns (bool) {
+    function isTrustedSender(uint16 chainId, bytes32 addr)
+        public
+        view
+        returns (bool)
+    {
         return isTrustedSender(chainId, fromWormholeFormat(addr));
     }
 
     /// @notice returns whether or not the address is in the trusted senders list for a given chain
     /// @param chainId The wormhole chain id to check
     /// @param addr The address to check
-    function isTrustedSender(
-        uint16 chainId,
-        address addr
-    ) public view returns (bool) {
+    function isTrustedSender(uint16 chainId, address addr)
+        public
+        view
+        returns (bool)
+    {
         return targetAddress[chainId] == addr;
     }
 
@@ -285,25 +280,20 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
 
         uint256 totalRefundAmount = 0;
 
-        for (uint256 i = 0; i < chainsLength; ) {
+        for (uint256 i = 0; i < chainsLength;) {
             uint16 targetChain = uint16(_targetChains.at(i));
             uint256 cost = bridgeCost(targetChain);
 
-            try
-                wormholeRelayer.sendPayloadToEvm{value: cost}(
-                    targetChain,
-                    targetAddress[targetChain],
-                    payload,
-                    /// no receiver value allowed, only message passing
-                    0,
-                    gasLimit
-                )
-            {
+            try wormholeRelayer.sendPayloadToEvm{value: cost}(
+                targetChain,
+                targetAddress[targetChain],
+                payload,
+                /// no receiver value allowed, only message passing
+                0,
+                gasLimit
+            ) {
                 emit BridgeOutSuccess(
-                    targetChain,
-                    cost,
-                    targetAddress[targetChain],
-                    payload
+                    targetChain, cost, targetAddress[targetChain], payload
                 );
             } catch {
                 totalRefundAmount += cost;
@@ -317,7 +307,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
 
         if (totalRefundAmount > 0) {
             // send bridge funds back to sender using call
-            (bool success, ) = msg.sender.call{value: totalRefundAmount}("");
+            (bool success,) = msg.sender.call{value: totalRefundAmount}("");
             require(success, "WormholeBridge: refund failed");
         }
     }
@@ -345,8 +335,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             "WormholeBridge: sender not trusted"
         );
         require(
-            !processedNonces[nonce],
-            "WormholeBridge: message already processed"
+            !processedNonces[nonce], "WormholeBridge: message already processed"
         );
 
         processedNonces[nonce] = true;
@@ -360,9 +349,11 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// a non zero value, we know we have the wrong address
     /// @param whFormatAddress the bytes32 address to convert
     /// @return the address
-    function fromWormholeFormat(
-        bytes32 whFormatAddress
-    ) public pure returns (address) {
+    function fromWormholeFormat(bytes32 whFormatAddress)
+        public
+        pure
+        returns (address)
+    {
         require(
             uint256(whFormatAddress) >> 160 == 0,
             "WormholeBridge: invalid address"
@@ -375,8 +366,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     // @dev must be overridden by implementation contract
     // @param sourceChain the chain id of the source chain
     // @param payload the payload of the message
-    function _bridgeIn(
-        uint16 sourceChain,
-        bytes memory payload
-    ) internal virtual;
+    function _bridgeIn(uint16 sourceChain, bytes memory payload)
+        internal
+        virtual;
 }

@@ -1,11 +1,13 @@
 pragma solidity 0.8.19;
 
+import {SafeCast} from
+    "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {xERC20BridgeAdapter} from "@protocol/xWELL/xERC20BridgeAdapter.sol";
-import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
-import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
+import {WormholeTrustedSender} from
+    "@protocol/governance/WormholeTrustedSender.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 
 /// @notice Wormhole xERC20 Token Bridge adapter
 contract WormholeBridgeAdapter is
@@ -55,17 +57,14 @@ contract WormholeBridgeAdapter is
     /// @param tokenReceiver address to receive tokens on destination chain
     /// @param amount of tokens bridged in
     event TokensSent(
-        uint16 indexed dstChainId,
-        address indexed tokenReceiver,
-        uint256 amount
+        uint16 indexed dstChainId, address indexed tokenReceiver, uint256 amount
     );
 
     /// @notice chain id of the target chain to address for bridging
     /// @param dstChainId destination chain id to send tokens to
     /// @param target address to send tokens to
     event TargetAddressUpdated(
-        uint16 indexed dstChainId,
-        address indexed target
+        uint16 indexed dstChainId, address indexed target
     );
 
     /// @notice emitted when the gas limit changes on external chains
@@ -101,7 +100,9 @@ contract WormholeBridgeAdapter is
         targetAddress[targetChain] = address(this);
         _addTrustedSender(address(this), targetChain);
 
-        gasLimit = 300_000; /// @dev default starting gas limit for relayer
+        gasLimit = 300_000;
+
+        /// @dev default starting gas limit for relayer
     }
 
     /// --------------------------------------------------------
@@ -147,8 +148,7 @@ contract WormholeBridgeAdapter is
             targetAddress[_chainConfig[i].chainId] = _chainConfig[i].addr;
 
             emit TargetAddressUpdated(
-                _chainConfig[i].chainId,
-                _chainConfig[i].addr
+                _chainConfig[i].chainId, _chainConfig[i].addr
             );
         }
     }
@@ -161,14 +161,13 @@ contract WormholeBridgeAdapter is
 
     /// @notice Estimate bridge cost to bridge out to a destination chain
     /// @param dstChainId Destination chain id
-    function bridgeCost(
-        uint16 dstChainId
-    ) public view returns (uint256 gasCost) {
-        (gasCost, ) = wormholeRelayer.quoteEVMDeliveryPrice(
-            dstChainId,
-            0,
-            gasLimit
-        );
+    function bridgeCost(uint16 dstChainId)
+        public
+        view
+        returns (uint256 gasCost)
+    {
+        (gasCost,) =
+            wormholeRelayer.quoteEVMDeliveryPrice(dstChainId, 0, gasLimit);
     }
 
     /// --------------------------------------------------------
@@ -206,7 +205,8 @@ contract WormholeBridgeAdapter is
             targetChainId,
             targetAddress[targetChainId],
             abi.encode(to, amount), // payload
-            0, /// no receiver value allowed, only message passing
+            0,
+            /// no receiver value allowed, only message passing
             gasLimit
         );
 
@@ -236,8 +236,7 @@ contract WormholeBridgeAdapter is
             "WormholeBridge: sender not trusted"
         );
         require(
-            !processedNonces[nonce],
-            "WormholeBridge: message already processed"
+            !processedNonces[nonce], "WormholeBridge: message already processed"
         );
 
         processedNonces[nonce] = true;

@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {Initializable} from
+    "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-import {console} from "@forge-std/console.sol";
 import {Test} from "@forge-std/Test.sol";
+import {console} from "@forge-std/console.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
 How to use:
@@ -76,9 +77,7 @@ contract TestMultichainProposals is Test, Initializable {
     ) public {
         if (debug) {
             console.log(
-                "TestProposals: running",
-                proposals.length,
-                "proposals."
+                "TestProposals: running", proposals.length, "proposals."
             );
         }
 
@@ -94,9 +93,13 @@ contract TestMultichainProposals is Test, Initializable {
                     console.log("Proposal", name, "deploy()");
                 }
 
-                addresses.resetRecordingAddresses(); /// reset the recorded addresses for the next proposal
+                addresses.resetRecordingAddresses();
 
-                proposals[i].deploy(addresses, address(proposals[i])); /// mip itself is the deployer
+                /// reset the recorded addresses for the next proposal
+
+                proposals[i].deploy(addresses, address(proposals[i]));
+
+                /// mip itself is the deployer
                 if (debug) {
                     (
                         string[] memory recordedNames,
@@ -105,8 +108,7 @@ contract TestMultichainProposals is Test, Initializable {
                     ) = addresses.getRecordedAddresses();
                     for (uint256 j = 0; j < recordedNames.length; j++) {
                         console.log(
-                            "{\n        'addr': '%s', ",
-                            recordedAddresses[j]
+                            "{\n        'addr': '%s', ", recordedAddresses[j]
                         );
                         console.log("        'chainId': %d,", chainIds[j]);
                         console.log(

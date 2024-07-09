@@ -5,18 +5,23 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {MErc20} from "@protocol/MErc20.sol";
-import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
-import {mip0x as mip} from "@proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
-import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
-import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {TestProposals} from "@proposals/TestProposals.sol";
+import {mip0x as mip} from
+    "@proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {MToken} from "@protocol/MToken.sol";
+
+import {MultiRewardDistributor} from
+    "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from
+    "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
     MultiRewardDistributor mrd;
@@ -40,11 +45,11 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
         assertEq(mUSDC.name(), "Moonwell USDC");
         assertEq(mUSDC.symbol(), "mUSDC");
         assertEq(mUSDC.decimals(), 8);
-        assertGt(mUSDC.exchangeRateCurrent(), 0.0002e18); /// exchange starting price is 0.0002e18
+        assertGt(mUSDC.exchangeRateCurrent(), 0.0002e18);
+        /// exchange starting price is 0.0002e18
         assertEq(mUSDC.reserveFactorMantissa(), 0.15e18);
         assertEq(
-            address(mUSDC.comptroller()),
-            addresses.getAddress("UNITROLLER")
+            address(mUSDC.comptroller()), addresses.getAddress("UNITROLLER")
         );
     }
 
@@ -70,9 +75,8 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
     function testBorrowingOverBorrowCapFailsUsdc() public {
         /// TODO figure out why this test intermittently fails when it subtracts 1000e6 from mintAmount
         /// fails with mintAllowed error, "market supply cap reached"
-        uint256 usdcMintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_USDC")
-        ) / 10;
+        uint256 usdcMintAmount =
+            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_USDC")) / 10;
 
         uint256 borrowAmount = comptroller.borrowCaps(address(mUSDC)) + 1;
         address underlying = address(mUSDC.underlying());
@@ -100,20 +104,22 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
         uint256 mintAmount = 100e6;
 
         IERC20 token = IERC20(addresses.getAddress("USDC"));
-        MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_USDC"))
-        );
+        MErc20Delegator mToken =
+            MErc20Delegator(payable(addresses.getAddress("MOONWELL_USDC")));
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
         deal(address(token), sender, mintAmount);
         token.approve(address(mToken), mintAmount);
 
-        assertEq(mToken.mint(mintAmount), 0); /// ensure successful mint
-        assertTrue(mToken.balanceOf(sender) > 0); /// ensure balance is gt 0
+        assertEq(mToken.mint(mintAmount), 0);
+
+        /// ensure successful mint
+        assertTrue(mToken.balanceOf(sender) > 0);
+        /// ensure balance is gt 0
         assertEq(
-            token.balanceOf(address(mToken)) - startingTokenBalance,
-            mintAmount
-        ); /// ensure underlying balance is sent to mToken
+            token.balanceOf(address(mToken)) - startingTokenBalance, mintAmount
+        );
+        /// ensure underlying balance is sent to mToken
 
         address[] memory mTokens = new address[](1);
         mTokens[0] = address(mToken);
@@ -121,15 +127,17 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
         comptroller.enterMarkets(mTokens);
         assertTrue(
             comptroller.checkMembership(
-                sender,
-                MToken(addresses.getAddress("MOONWELL_USDC"))
+                sender, MToken(addresses.getAddress("MOONWELL_USDC"))
             )
-        ); /// ensure sender and mToken is in market
+        );
+        /// ensure sender and mToken is in market
 
-        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
-            .getAccountLiquidity(address(this));
+        (uint256 err, uint256 liquidity, uint256 shortfall) =
+            comptroller.getAccountLiquidity(address(this));
 
-        (, uint256 collateralFactor) = comptroller.markets(address(mToken)); /// fetch collateral factor
+        (, uint256 collateralFactor) = comptroller.markets(address(mToken));
+
+        /// fetch collateral factor
 
         assertEq(err, 0, "Error getting account liquidity");
         assertApproxEqRel(
@@ -146,23 +154,24 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
         vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
         mrd._updateBorrowSpeed(
-            MToken(addresses.getAddress("MOONWELL_USDC")), /// reward mUSDC
-            well, /// rewards paid in WELL
-            1e18 /// pay 1 well per second in rewards to borrowers
+            MToken(addresses.getAddress("MOONWELL_USDC")),
+            /// reward mUSDC
+            well,
+            /// rewards paid in WELL
+            1e18
         );
+        /// pay 1 well per second in rewards to borrowers
+
         vm.stopPrank();
 
-        deal(
-            well,
-            address(mrd),
-            4 weeks * 1e18 /// fund for entire period
-        );
+        deal(well, address(mrd), 4 weeks * 1e18);
+        /// fund for entire period
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
-                MToken(addresses.getAddress("MOONWELL_USDC")),
-                addresses.getAddress("GOVTOKEN")
-            );
+            MToken(addresses.getAddress("MOONWELL_USDC")),
+            addresses.getAddress("GOVTOKEN")
+        );
 
         assertEq(
             config.owner,
@@ -173,9 +182,11 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
         assertEq(config.borrowEmissionsPerSec, 1e18, "incorrect reward rate");
     }
 
-    function _getMaxSupplyAmount(
-        address mToken
-    ) internal view returns (uint256) {
+    function _getMaxSupplyAmount(address mToken)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         uint256 totalCash = MToken(mToken).getCash();
@@ -188,9 +199,11 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
         return supplyCap - totalSupplies - 1;
     }
 
-    function _getMaxBorrowAmount(
-        address mToken
-    ) internal view returns (uint256) {
+    function _getMaxBorrowAmount(address mToken)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = MToken(mToken).totalBorrows();
 

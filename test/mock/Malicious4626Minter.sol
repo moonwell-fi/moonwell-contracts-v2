@@ -4,6 +4,7 @@ import {MoonwellERC4626Eth} from "@protocol/4626/MoonwellERC4626Eth.sol";
 
 contract Malicious4626Minter {
     uint8 public immutable action;
+
     constructor(uint8 _action) {
         action = _action;
     }
@@ -12,9 +13,7 @@ contract Malicious4626Minter {
     function startAttack(address target) public {
         MoonwellERC4626Eth vault = MoonwellERC4626Eth(payable(target));
         vault.redeem(
-            vault.balanceOf(address(this)),
-            address(this),
-            address(this)
+            vault.balanceOf(address(this)), address(this), address(this)
         );
     }
 
@@ -27,15 +26,11 @@ contract Malicious4626Minter {
             MoonwellERC4626Eth(payable(msg.sender)).mint(0, address(this));
         } else if (action == 3) {
             MoonwellERC4626Eth(payable(msg.sender)).withdraw(
-                1,
-                address(this),
-                address(this)
+                1, address(this), address(this)
             );
         } else {
             MoonwellERC4626Eth(payable(msg.sender)).redeem(
-                1,
-                address(this),
-                address(this)
+                1, address(this), address(this)
             );
         }
     }

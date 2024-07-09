@@ -11,7 +11,8 @@ import {MockStakedToken} from "@test/mock/MockStakedToken.sol";
  * @title MockStakedWell with block numbers instead of timestamps
  * @notice StakedToken with WELL token as staked token
  * @author Moonwell
- **/
+ *
+ */
 contract MockStakedWell is MockStakedToken {
     string internal constant NAME = "Staked WELL";
     string internal constant SYMBOL = "stkWELL";
@@ -21,7 +22,8 @@ contract MockStakedWell is MockStakedToken {
 
     /**
      * @dev Called by the proxy contract
-     **/
+     *
+     */
     function initialize(
         IERC20 stakedToken,
         IERC20 rewardToken,

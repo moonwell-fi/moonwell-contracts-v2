@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 
 /// @notice Wormhole Unwrapper xERC20 Token Bridge adapter
 /// Allows users coming from an external chain back to Moonbeam
@@ -34,11 +34,10 @@ contract WormholeUnwrapperAdapter is WormholeBridgeAdapter {
     /// @param chainId chain id funds are bridged from
     /// @param user to bridge in funds to
     /// @param amount of xERC20 tokens to bridge in
-    function _bridgeIn(
-        uint256 chainId,
-        address user,
-        uint256 amount
-    ) internal override {
+    function _bridgeIn(uint256 chainId, address user, uint256 amount)
+        internal
+        override
+    {
         /// mint tokens to this address
         super._bridgeIn(chainId, address(this), amount);
 

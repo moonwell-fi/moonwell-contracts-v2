@@ -3,16 +3,18 @@ pragma solidity 0.6.12;
 
 import "./IERC20.sol";
 import "./IEcosystemReserve.sol";
-import {SafeERC20} from "./SafeERC20.sol";
+
 import {Initializable} from "./Initializable.sol";
 import {ReentrancyGuardUpgradeable} from "./ReentrancyGuardUpgradeable.sol";
+import {SafeERC20} from "./SafeERC20.sol";
 
 /**
  * @title EcosystemReserve
  * @notice Stores all the mTokens kept for incentives, just adding different systems to whitelist
  * that will pull MFAM funds for their specific use case
  * @author Moonwell
- **/
+ *
+ */
 contract EcosystemReserve is
     IEcosystemReserve,
     Initializable,
@@ -39,19 +41,20 @@ contract EcosystemReserve is
         _setFundsAdmin(reserveController);
     }
 
-    function approve(
-        IERC20 token,
-        address recipient,
-        uint256 amount
-    ) external override onlyFundsAdmin {
+    function approve(IERC20 token, address recipient, uint256 amount)
+        external
+        override
+        onlyFundsAdmin
+    {
         token.approve(recipient, amount);
     }
 
-    function transfer(
-        IERC20 token,
-        address recipient,
-        uint256 amount
-    ) external override onlyFundsAdmin nonReentrant {
+    function transfer(IERC20 token, address recipient, uint256 amount)
+        external
+        override
+        onlyFundsAdmin
+        nonReentrant
+    {
         token.transfer(recipient, amount);
     }
 

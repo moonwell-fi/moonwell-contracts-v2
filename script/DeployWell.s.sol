@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
+import {ProxyAdmin} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
@@ -26,7 +27,7 @@ contract DeployWell is Script {
     function run() public {
         vm.startBroadcast();
 
-        (, address owner, ) = vm.readCallers();
+        (, address owner,) = vm.readCallers();
 
         Well well = new Well(owner);
 
@@ -38,11 +39,8 @@ contract DeployWell is Script {
     }
 
     function printAddresses() private view {
-        (
-            string[] memory recordedNames,
-            ,
-            address[] memory recordedAddresses
-        ) = addresses.getRecordedAddresses();
+        (string[] memory recordedNames,, address[] memory recordedAddresses) =
+            addresses.getRecordedAddresses();
         for (uint256 j = 0; j < recordedNames.length; j++) {
             console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
             console.log("        'chainId': %d,", block.chainid);

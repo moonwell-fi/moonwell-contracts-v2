@@ -3,13 +3,15 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {MultiRewardDistributor} from
+    "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from
+    "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// This MIP sets the reward speeds for different markets in the MultiRewardDistributor
 contract mipb07 is HybridProposal, Configs {
@@ -22,9 +24,8 @@ contract mipb07 is HybridProposal, Configs {
                 "./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
             )
         );
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile(descriptionPath)
-        );
+        bytes memory proposalDescription =
+            abi.encodePacked(vm.readFile(descriptionPath));
 
         _setProposalDescription(proposalDescription);
 
@@ -42,8 +43,10 @@ contract mipb07 is HybridProposal, Configs {
     function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
-        delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
+        delete cTokenConfigurations[block.chainid];
+        /// wipe existing mToken Configs.sol
+        delete emissions[block.chainid];
+        /// wipe existing reward loaded in Configs.sol
 
         {
             string memory mtokensPath = vm.envOr(
@@ -53,10 +56,8 @@ contract mipb07 is HybridProposal, Configs {
             /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
-            EmissionConfig[] memory decodedEmissions = abi.decode(
-                rawJson,
-                (EmissionConfig[])
-            );
+            EmissionConfig[] memory decodedEmissions =
+                abi.decode(rawJson, (EmissionConfig[]));
 
             for (uint256 i = 0; i < decodedEmissions.length; i++) {
                 emissions[block.chainid].push(decodedEmissions[i]);
@@ -65,9 +66,8 @@ contract mipb07 is HybridProposal, Configs {
 
         /// -------------- EMISSION CONFIGURATION --------------
 
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
+        EmissionConfig[] memory emissionConfig =
+            getEmissionConfigurations(block.chainid);
         address mrd = addresses.getAddress("MRD_PROXY");
 
         unchecked {
@@ -97,26 +97,21 @@ contract mipb07 is HybridProposal, Configs {
     /// @dev this function is called after the proposal is executed to
     /// validate that all state transitions worked correctly
     function validate(Addresses addresses, address) public view override {
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
-        MultiRewardDistributor distributor = MultiRewardDistributor(
-            addresses.getAddress("MRD_PROXY")
-        );
+        EmissionConfig[] memory emissionConfig =
+            getEmissionConfigurations(block.chainid);
+        MultiRewardDistributor distributor =
+            MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
 
         unchecked {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
-                MultiRewardDistributorCommon.MarketConfig
-                    memory marketConfig = distributor.getConfigForMarket(
-                        MToken(addresses.getAddress(config.mToken)),
-                        config.emissionToken
-                    );
-
-                assertEq(
-                    marketConfig.owner,
-                    addresses.getAddress(config.owner)
+                MultiRewardDistributorCommon.MarketConfig memory marketConfig =
+                distributor.getConfigForMarket(
+                    MToken(addresses.getAddress(config.mToken)),
+                    config.emissionToken
                 );
+
+                assertEq(marketConfig.owner, addresses.getAddress(config.owner));
                 assertEq(marketConfig.emissionToken, config.emissionToken);
                 assertEq(marketConfig.endTime, config.endTime);
                 assertEq(

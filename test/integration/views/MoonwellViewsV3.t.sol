@@ -2,9 +2,13 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MoonwellViewsV3} from "@protocol/views/MoonwellViewsV3.sol";
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MoonwellViewsV3} from "@protocol/views/MoonwellViewsV3.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
 contract MoonwellViewsV3Test is Test, PostProposalCheck {
@@ -43,9 +47,7 @@ contract MoonwellViewsV3Test is Test, PostProposalCheck {
         );
 
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(viewsContract),
-            proxyAdmin,
-            initdata
+            address(viewsContract), proxyAdmin, initdata
         );
 
         /// wire proxy up
@@ -59,20 +61,20 @@ contract MoonwellViewsV3Test is Test, PostProposalCheck {
     }
 
     function testMarketsSize() public view {
-        MoonwellViewsV3.Market[] memory _markets = viewsContract
-            .getAllMarketsInfo();
+        MoonwellViewsV3.Market[] memory _markets =
+            viewsContract.getAllMarketsInfo();
         assertEq(_markets.length, 3);
     }
 
     function testUserRewards() public view {
-        MoonwellViewsV3.Rewards[] memory _rewards = viewsContract
-            .getUserRewards(user);
+        MoonwellViewsV3.Rewards[] memory _rewards =
+            viewsContract.getUserRewards(user);
         assertEq(_rewards.length, 0);
     }
 
     function testProtocolInfo() public view {
-        MoonwellViewsV3.ProtocolInfo memory _protocolInfo = viewsContract
-            .getProtocolInfo();
+        MoonwellViewsV3.ProtocolInfo memory _protocolInfo =
+            viewsContract.getProtocolInfo();
         assertEq(_protocolInfo.transferPaused, false);
     }
 }

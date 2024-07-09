@@ -5,13 +5,20 @@ import "@forge-std/Test.sol";
 
 import "@protocol/utils/ChainIds.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
-import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
+import {WormholeTrustedSender} from
+    "@protocol/governance/WormholeTrustedSender.sol";
+import {MultichainGovernor} from
+    "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MultichainGovernorDeploy} from
+    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {
+    ChainIds,
+    MOONBEAM_FORK_ID,
+    MOONBEAM_WORMHOLE_CHAIN_ID
+} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// to simulate: DO_BUILD=true DO_AFTER_DEPLOY=true DO_VALIDATE=true DO_PRINT=true
@@ -77,8 +84,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
 
         address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
         address temporalGovernor = addresses.getAddress(
-            "TEMPORAL_GOVERNOR",
-            block.chainid.toBaseChainId()
+            "TEMPORAL_GOVERNOR", block.chainid.toBaseChainId()
         );
 
         /// add temporal governor to list
@@ -86,10 +92,12 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
 
         temporalGovernanceTrustedSenders.push(
             ITemporalGovernor.TrustedSender({
-                chainId: MOONBEAM_WORMHOLE_CHAIN_ID, /// this chainId is 16 (MOONBEAM_WORMHOLE_CHAIN_ID) regardless of testnet or mainnet
-                addr: artemisTimelock /// this timelock on this chain
+                chainId: MOONBEAM_WORMHOLE_CHAIN_ID,
+                /// this chainId is 16 (MOONBEAM_WORMHOLE_CHAIN_ID) regardless of testnet or mainnet
+                addr: artemisTimelock
             })
         );
+        /// this timelock on this chain
 
         /// new break glass guardian call for adding artemis as an owner of the Temporal Governor
 
@@ -127,8 +135,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
 
         approvedCalldata.push(
             abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                artemisTimelock
+                "_setPendingAdmin(address)", artemisTimelock
             )
         );
 
@@ -140,8 +147,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         /// for stkWELL
         approvedCalldata.push(
             abi.encodeWithSignature(
-                "setEmissionsManager(address)",
-                artemisTimelock
+                "setEmissionsManager(address)", artemisTimelock
             )
         );
 
@@ -152,8 +158,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
 
         approvedCalldata.push(
             abi.encodeWithSignature(
-                "transferOwnership(address)",
-                artemisTimelock
+                "transferOwnership(address)", artemisTimelock
             )
         );
     }
@@ -167,43 +172,36 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
 
         /// executing proposal on moonbeam, but this proposal needs an address from base
         address multichainVoteCollection = addresses.getAddress(
-            "VOTE_COLECTION_PROXY",
-            block.chainid.toBaseChainId()
+            "VOTE_COLECTION_PROXY", block.chainid.toBaseChainId()
         );
 
-        WormholeTrustedSender.TrustedSender[]
-            memory trustedSenders = new WormholeTrustedSender.TrustedSender[](
-                1
-            );
+        WormholeTrustedSender.TrustedSender[] memory trustedSenders =
+            new WormholeTrustedSender.TrustedSender[](1);
 
         trustedSenders[0].addr = multichainVoteCollection;
-        trustedSenders[0].chainId = block.chainid.toBaseWormholeChainId(); /// base wormhole chain id
+        trustedSenders[0].chainId = block.chainid.toBaseWormholeChainId();
+        /// base wormhole chain id
 
         MultichainGovernor.InitializeData memory initData;
 
         initData.well = addresses.getAddress("GOVTOKEN");
         initData.xWell = addresses.getAddress("xWELL_PROXY");
         initData.stkWell = addresses.getAddress("STK_GOVTOKEN");
-        initData.distributor = addresses.getAddress(
-            "TOKEN_SALE_DISTRIBUTOR_PROXY"
-        );
+        initData.distributor =
+            addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY");
         initData.proposalThreshold = proposalThreshold;
         initData.votingPeriodSeconds = votingPeriodSeconds;
-        initData
-            .crossChainVoteCollectionPeriod = crossChainVoteCollectionPeriod;
+        initData.crossChainVoteCollectionPeriod = crossChainVoteCollectionPeriod;
         initData.quorum = quorum;
         initData.maxUserLiveProposals = maxUserLiveProposals;
         initData.pauseDuration = pauseDuration;
 
-        initData.pauseGuardian = addresses.getAddress(
-            "MOONBEAM_PAUSE_GUARDIAN_MULTISIG"
-        );
-        initData.breakGlassGuardian = addresses.getAddress(
-            "BREAK_GLASS_GUARDIAN"
-        );
-        initData.wormholeRelayer = addresses.getAddress(
-            "WORMHOLE_BRIDGE_RELAYER"
-        );
+        initData.pauseGuardian =
+            addresses.getAddress("MOONBEAM_PAUSE_GUARDIAN_MULTISIG");
+        initData.breakGlassGuardian =
+            addresses.getAddress("BREAK_GLASS_GUARDIAN");
+        initData.wormholeRelayer =
+            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER");
 
         require(approvedCalldata.length == 6, "calldata not set");
 
@@ -248,9 +246,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
             "incorrect voting period"
         );
         assertEq(
-            governor.proposalCount(),
-            0,
-            "incorrect starting proposalCount"
+            governor.proposalCount(), 0, "incorrect starting proposalCount"
         );
         assertEq(
             address(governor.xWell()),
@@ -278,9 +274,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
             "incorrect number of live proposals"
         );
         assertEq(
-            governor.liveProposals().length,
-            0,
-            "incorrect live proposals count"
+            governor.liveProposals().length, 0, "incorrect live proposals count"
         );
         assertEq(
             address(governor.wormholeRelayer()),
@@ -299,9 +293,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         );
         assertEq(governor.pauseStartTime(), 0, "incorrect pauseStartTime");
         assertEq(
-            governor.pauseDuration(),
-            pauseDuration,
-            "incorrect pauseDuration"
+            governor.pauseDuration(), pauseDuration, "incorrect pauseDuration"
         );
         assertFalse(governor.paused(), "incorrect paused state");
         assertFalse(governor.pauseUsed(), "incorrect pauseUsed state");
@@ -309,8 +301,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         assertEq(
             governor.targetAddress(block.chainid.toBaseWormholeChainId()),
             addresses.getAddress(
-                "VOTE_COLLECTION_PROXY",
-                block.chainid.toBaseChainId()
+                "VOTE_COLLECTION_PROXY", block.chainid.toBaseChainId()
             ),
             "vote collection proxy not in target address"
         );
@@ -328,8 +319,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
             governor.isTrustedSender(
                 block.chainid.toBaseWormholeChainId(),
                 addresses.getAddress(
-                    "VOTE_COLLECTION_PROXY",
-                    block.chainid.toBaseChainId()
+                    "VOTE_COLLECTION_PROXY", block.chainid.toBaseChainId()
                 )
             ),
             "vote collection proxy not trusted sender"

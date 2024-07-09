@@ -3,13 +3,13 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {MWethDelegate} from "@protocol/MWethDelegate.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MWethDelegate} from "@protocol/MWethDelegate.sol";
+import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// how to generate calldata:
 /// first set up environment variables:
@@ -48,9 +48,8 @@ contract mipb02 is HybridProposal, Configs {
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers
     function deploy(Addresses addresses, address) public override {
         if (!addresses.isAddressSet("WETH_UNWRAPPER")) {
-            MWethDelegate mWethLogic = new MWethDelegate(
-                addresses.getAddress("WETH_UNWRAPPER")
-            );
+            MWethDelegate mWethLogic =
+                new MWethDelegate(addresses.getAddress("WETH_UNWRAPPER"));
 
             addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic));
         }
@@ -92,9 +91,8 @@ contract mipb02 is HybridProposal, Configs {
             "WETH_ROUTER not set"
         );
 
-        WETHRouter router = WETHRouter(
-            payable(addresses.getAddress("WETH_ROUTER"))
-        );
+        WETHRouter router =
+            WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));
         assertEq(
             address(router.weth()),
             addresses.getAddress("WETH"),
@@ -107,14 +105,14 @@ contract mipb02 is HybridProposal, Configs {
         );
 
         /// ensure that the mWeth implementation is set correctly
-        MErc20Delegator mWeth = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_WETH"))
-        );
+        MErc20Delegator mWeth =
+            MErc20Delegator(payable(addresses.getAddress("MOONWELL_WETH")));
         assertEq(
             mWeth.implementation(),
             addresses.getAddress("MWETH_IMPLEMENTATION"),
             "MOONWELL_WETH implementation not correctly set"
         );
-        assertEq(mWeth.admin(), addresses.getAddress("TEMPORAL_GOVERNOR")); /// ensure temporal gov is still admin
+        assertEq(mWeth.admin(), addresses.getAddress("TEMPORAL_GOVERNOR"));
+        /// ensure temporal gov is still admin
     }
 }

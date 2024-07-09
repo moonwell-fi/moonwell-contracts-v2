@@ -3,17 +3,28 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
 
-import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
-import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
-import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
-import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {WormholeTrustedSender} from
+    "@protocol/governance/WormholeTrustedSender.sol";
+
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
-import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {
+    IMultichainGovernor,
+    MultichainGovernor
+} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MultichainGovernorDeploy} from
+    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainVoteCollection} from
+    "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {MultichainVoteCollection} from
+    "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
+import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {
+    BASE_WORMHOLE_CHAIN_ID,
+    MOONBEAM_WORMHOLE_CHAIN_ID
+} from "@utils/ChainIds.sol";
 
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
 
@@ -29,9 +40,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
     function testSetup() public view {
         assertEq(
             governor.getVotes(
-                address(this),
-                block.timestamp - 1,
-                block.number - 1
+                address(this), block.timestamp - 1, block.number - 1
             ),
             14_000_000_000 * 1e18,
             "incorrect vote amount"
@@ -53,9 +62,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         );
 
         assertEq(
-            address(voteCollection.xWell()),
-            address(xwell),
-            "xwell incorrect"
+            address(voteCollection.xWell()), address(xwell), "xwell incorrect"
         );
         assertEq(
             address(voteCollection.stkWell()),
@@ -70,15 +77,13 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         );
         assertTrue(
             voteCollection.isTrustedSender(
-                MOONBEAM_WORMHOLE_CHAIN_ID,
-                address(governor)
+                MOONBEAM_WORMHOLE_CHAIN_ID, address(governor)
             ),
             "governor not whitelisted to send messages in"
         );
         assertTrue(
             governor.isTrustedSender(
-                BASE_WORMHOLE_CHAIN_ID,
-                address(voteCollection)
+                BASE_WORMHOLE_CHAIN_ID, address(voteCollection)
             ),
             "voteCollection not whitelisted to send messages in"
         );
@@ -98,7 +103,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         public
         returns (address proxyVoteCollection2)
     {
-        (proxyVoteCollection2, ) = deployVoteCollection(
+        (proxyVoteCollection2,) = deployVoteCollection(
             address(xwell),
             address(stkWellBase),
             address(governor),
@@ -107,10 +112,8 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             proxyAdmin,
             address(this)
         );
-        WormholeTrustedSender.TrustedSender[]
-            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
-                1
-            );
+        WormholeTrustedSender.TrustedSender[] memory _trustedSenders =
+            new WormholeTrustedSender.TrustedSender[](1);
 
         uint16 chainId = 2;
         _trustedSenders[0].chainId = chainId;
@@ -122,14 +125,13 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
         bytes[] memory calldatas = new bytes[](1);
-        string
-            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+        string memory description =
+            "Proposal MIP-M00 - Update Proposal Threshold";
 
         targets[0] = address(governor);
         values[0] = 0;
         calldatas[0] = abi.encodeWithSignature(
-            "updateProposalThreshold(uint256)",
-            100_000_000 * 1e18
+            "updateProposalThreshold(uint256)", 100_000_000 * 1e18
         );
 
         uint256 startTimestamp = block.timestamp;
@@ -155,32 +157,25 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
 
         vm.expectEmit(true, true, true, true, address(governor));
         emit BridgeOutSuccess(
-            chainId,
-            bridgeCost / 2,
-            proxyVoteCollection2,
-            payload
+            chainId, bridgeCost / 2, proxyVoteCollection2, payload
         );
 
         governor.propose{value: bridgeCost}(
-            targets,
-            values,
-            calldatas,
-            description
+            targets, values, calldatas, description
         );
 
         {
             // vote collections should have the proposal
-            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection
-                .proposalInformation(1);
+            (uint256 voteSnapshotTimestamp,,,,,,,) =
+                voteCollection.proposalInformation(1);
             assertGt(voteSnapshotTimestamp, 0, "proposal id incorrect");
         }
 
         {
-            MultichainVoteCollection voteCollection2 = MultichainVoteCollection(
-                proxyVoteCollection2
-            );
-            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection2
-                .proposalInformation(1);
+            MultichainVoteCollection voteCollection2 =
+                MultichainVoteCollection(proxyVoteCollection2);
+            (uint256 voteSnapshotTimestamp,,,,,,,) =
+                voteCollection2.proposalInformation(1);
 
             assertGt(voteSnapshotTimestamp, 1, "proposal id incorrect");
         }
@@ -190,7 +185,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
     }
 
     function testEmitToMultipleVoteCollectionsSomeFails() public {
-        (address proxyVoteCollection2, ) = deployVoteCollection(
+        (address proxyVoteCollection2,) = deployVoteCollection(
             address(xwell),
             address(stkWellBase),
             address(governor),
@@ -200,7 +195,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             address(this)
         );
 
-        (address proxyVoteCollection3, ) = deployVoteCollection(
+        (address proxyVoteCollection3,) = deployVoteCollection(
             address(xwell),
             address(stkWellBase),
             address(governor),
@@ -210,7 +205,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             address(this)
         );
 
-        (address proxyVoteCollection4, ) = deployVoteCollection(
+        (address proxyVoteCollection4,) = deployVoteCollection(
             address(xwell),
             address(stkWellBase),
             address(governor),
@@ -220,10 +215,8 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             address(this)
         );
 
-        WormholeTrustedSender.TrustedSender[]
-            memory _trustedSenders = new WormholeTrustedSender.TrustedSender[](
-                3
-            );
+        WormholeTrustedSender.TrustedSender[] memory _trustedSenders =
+            new WormholeTrustedSender.TrustedSender[](3);
 
         _trustedSenders[0].chainId = 2;
         _trustedSenders[0].addr = address(proxyVoteCollection2);
@@ -246,9 +239,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         address proposer = address(1);
 
         _delegateVoteAmountForUser(
-            address(well),
-            proposer,
-            governor.proposalThreshold()
+            address(well), proposer, governor.proposalThreshold()
         );
 
         vm.roll(block.number + 1);
@@ -260,14 +251,13 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
         bytes[] memory calldatas = new bytes[](1);
-        string
-            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+        string memory description =
+            "Proposal MIP-M00 - Update Proposal Threshold";
 
         targets[0] = address(governor);
         values[0] = 0;
         calldatas[0] = abi.encodeWithSignature(
-            "updateProposalThreshold(uint256)",
-            100_000_000 * 1e18
+            "updateProposalThreshold(uint256)", 100_000_000 * 1e18
         );
 
         uint256 startTimestamp = block.timestamp;
@@ -299,44 +289,38 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
 
         vm.prank(proposer);
         governor.propose{value: bridgeCost}(
-            targets,
-            values,
-            calldatas,
-            description
+            targets, values, calldatas, description
         );
 
         {
-            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection
-                .proposalInformation(1);
+            (uint256 voteSnapshotTimestamp,,,,,,,) =
+                voteCollection.proposalInformation(1);
             assertGt(voteSnapshotTimestamp, 0, "proposal doesn't exist");
         }
 
         {
-            MultichainVoteCollection voteCollection2 = MultichainVoteCollection(
-                proxyVoteCollection2
-            );
-            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection2
-                .proposalInformation(1);
+            MultichainVoteCollection voteCollection2 =
+                MultichainVoteCollection(proxyVoteCollection2);
+            (uint256 voteSnapshotTimestamp,,,,,,,) =
+                voteCollection2.proposalInformation(1);
 
             assertEq(voteSnapshotTimestamp, 0, "proposal exist");
         }
 
         {
-            MultichainVoteCollection voteCollection3 = MultichainVoteCollection(
-                proxyVoteCollection3
-            );
-            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection3
-                .proposalInformation(1);
+            MultichainVoteCollection voteCollection3 =
+                MultichainVoteCollection(proxyVoteCollection3);
+            (uint256 voteSnapshotTimestamp,,,,,,,) =
+                voteCollection3.proposalInformation(1);
 
             assertGt(voteSnapshotTimestamp, 0, "proposal doesn't exist");
         }
 
         {
-            MultichainVoteCollection voteCollection4 = MultichainVoteCollection(
-                proxyVoteCollection4
-            );
-            (uint256 voteSnapshotTimestamp, , , , , , , ) = voteCollection4
-                .proposalInformation(1);
+            MultichainVoteCollection voteCollection4 =
+                MultichainVoteCollection(proxyVoteCollection4);
+            (uint256 voteSnapshotTimestamp,,,,,,,) =
+                voteCollection4.proposalInformation(1);
 
             assertEq(voteSnapshotTimestamp, 0, "proposal exist");
         }
@@ -351,9 +335,8 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         address proxyVoteCollection2 = testEmitToMultipleVoteCollections();
         uint256 proposalId = 1;
 
-        MultichainVoteCollection voteCollection2 = MultichainVoteCollection(
-            proxyVoteCollection2
-        );
+        MultichainVoteCollection voteCollection2 =
+            MultichainVoteCollection(proxyVoteCollection2);
         uint256 voteAmount = 4_000_000_000 * 1e18;
 
         {
@@ -385,9 +368,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             );
             assertEq(votesFor, votesForBefore, "votes for incorrect");
             assertEq(
-                votesAbstain,
-                votesAbstainBefore,
-                "abstain votes incorrect"
+                votesAbstain, votesAbstainBefore, "abstain votes incorrect"
             );
             assertEq(
                 totalVotes,
@@ -415,19 +396,13 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
 
             assertEq(votesFor2, voteAmount, "votes for incorrect");
             assertEq(
-                votesFor2 - votesForBefore2,
-                voteAmount,
-                "votes for incorrect"
+                votesFor2 - votesForBefore2, voteAmount, "votes for incorrect"
             );
             assertEq(
-                votesAgainst2,
-                votesAgainstBefore2,
-                "votes against incorrect"
+                votesAgainst2, votesAgainstBefore2, "votes against incorrect"
             );
             assertEq(
-                votesAbstain2,
-                votesAbstainBefore2,
-                "abstain votes incorrect"
+                votesAbstain2, votesAbstainBefore2, "abstain votes incorrect"
             );
             assertEq(
                 totalVotes2,
@@ -454,19 +429,14 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             assertEq(votesAbstainBefore, 0, "abstain votes incorrect");
 
             {
-                uint256 bridgeCost = voteCollection.bridgeCost(
-                    MOONBEAM_WORMHOLE_CHAIN_ID
-                );
+                uint256 bridgeCost =
+                    voteCollection.bridgeCost(MOONBEAM_WORMHOLE_CHAIN_ID);
 
                 vm.deal(address(this), bridgeCost);
 
                 vm.expectEmit(true, true, true, true, address(governor));
                 emit CrossChainVoteCollected(
-                    proposalId,
-                    BASE_WORMHOLE_CHAIN_ID,
-                    0,
-                    voteAmount,
-                    0
+                    proposalId, BASE_WORMHOLE_CHAIN_ID, 0, voteAmount, 0
                 );
 
                 voteCollection.emitVotes{value: bridgeCost}(proposalId);
@@ -478,9 +448,8 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
                         uint256 againstVotes,
                         uint256 abstainVotes
                     ) = governor.chainVoteCollectorVotes(
-                            BASE_WORMHOLE_CHAIN_ID,
-                            proposalId
-                        );
+                        BASE_WORMHOLE_CHAIN_ID, proposalId
+                    );
 
                     assertEq(againstVotes, voteAmount, "chain votes incorrect");
                     assertEq(forVotes, 0, "chain votes incorrect");
@@ -496,14 +465,10 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
                 ) = governor.proposalVotes(proposalId);
 
                 assertEq(
-                    votesAgainst,
-                    voteAmount,
-                    "governor votes against incorrect"
+                    votesAgainst, voteAmount, "governor votes against incorrect"
                 );
                 assertEq(
-                    votesFor,
-                    votesForBefore,
-                    "governor votes for incorrect"
+                    votesFor, votesForBefore, "governor votes for incorrect"
                 );
                 assertEq(
                     votesAbstain,
@@ -518,9 +483,8 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
             }
 
             {
-                uint256 bridgeCost = voteCollection2.bridgeCost(
-                    MOONBEAM_WORMHOLE_CHAIN_ID
-                );
+                uint256 bridgeCost =
+                    voteCollection2.bridgeCost(MOONBEAM_WORMHOLE_CHAIN_ID);
 
                 vm.deal(address(this), bridgeCost);
 
@@ -552,9 +516,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
                 ) = governor.proposalVotes(1);
 
                 assertEq(
-                    votesFor,
-                    votesForBefore + voteAmount,
-                    "votes for incorrect"
+                    votesFor, votesForBefore + voteAmount, "votes for incorrect"
                 );
                 assertEq(
                     votesAgainst,
@@ -562,9 +524,7 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
                     "votes against incorrect"
                 );
                 assertEq(
-                    votesAbstain,
-                    votesAbstainBefore,
-                    "abstain votes incorrect"
+                    votesAbstain, votesAbstainBefore, "abstain votes incorrect"
                 );
                 assertEq(
                     totalVotes,

@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 
 function etchPrecompile(
     Vm vm,

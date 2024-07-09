@@ -2,10 +2,15 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MoonwellViewsV1} from "@protocol/views/MoonwellViewsV1.sol";
-import {MToken} from "@protocol/MToken.sol";
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {MoonwellViewsV1} from "@protocol/views/MoonwellViewsV1.sol";
+
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
 contract MoonwellViewsV1Test is Test, PostProposalCheck {
@@ -21,7 +26,7 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
     address public nativeMarket;
     address public governanceTokenLP;
 
-    mapping(address => uint) public userTotalRewards;
+    mapping(address => uint256) public userTotalRewards;
     address[] public userRewardTokens;
 
     function setUp() public override {
@@ -47,9 +52,7 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
         );
 
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(viewsContract),
-            proxyAdmin,
-            initdata
+            address(viewsContract), proxyAdmin, initdata
         );
 
         /// wire proxy up
@@ -71,35 +74,36 @@ contract MoonwellViewsV1Test is Test, PostProposalCheck {
     }
 
     function testUserVotingPower() public view {
-        MoonwellViewsV1.UserVotes memory _votes = viewsContract
-            .getUserVotingPower(user);
+        MoonwellViewsV1.UserVotes memory _votes =
+            viewsContract.getUserVotingPower(user);
 
         assertEq(
-            _votes.stakingVotes.votingPower +
-                _votes.tokenVotes.votingPower +
-                _votes.claimsVotes.votingPower,
+            _votes.stakingVotes.votingPower + _votes.tokenVotes.votingPower
+                + _votes.claimsVotes.votingPower,
             5000001 * 1e18
         );
     }
 
     function testUserStakingInfo() public view {
-        MoonwellViewsV1.UserStakingInfo memory _stakingInfo = viewsContract
-            .getUserStakingInfo(user);
+        MoonwellViewsV1.UserStakingInfo memory _stakingInfo =
+            viewsContract.getUserStakingInfo(user);
 
         assertEq(_stakingInfo.pendingRewards, 29708560610101962);
         assertEq(_stakingInfo.totalStaked, 1000000000000000000);
     }
 
     function testUserRewards() public {
-        MoonwellViewsV1.Rewards[] memory _rewards = viewsContract
-            .getUserRewards(user);
+        MoonwellViewsV1.Rewards[] memory _rewards =
+            viewsContract.getUserRewards(user);
 
-        for (uint index = 0; index < _rewards.length; index++) {
+        for (uint256 index = 0; index < _rewards.length; index++) {
             bool exists = userTotalRewards[_rewards[index].rewardToken] > 0;
-            userTotalRewards[_rewards[index].rewardToken] =
-                userTotalRewards[_rewards[index].rewardToken] +
-                (_rewards[index].supplyRewardsAmount +
-                    _rewards[index].borrowRewardsAmount);
+            userTotalRewards[_rewards[index].rewardToken] = userTotalRewards[_rewards[index]
+                .rewardToken]
+                + (
+                    _rewards[index].supplyRewardsAmount
+                        + _rewards[index].borrowRewardsAmount
+                );
 
             if (!exists) {
                 userRewardTokens.push(_rewards[index].rewardToken);

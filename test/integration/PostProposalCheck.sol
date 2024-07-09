@@ -3,12 +3,13 @@ pragma solidity 0.8.19;
 
 import {Test} from "@forge-std/Test.sol";
 
-import {etch} from "@proposals/utils/PrecompileEtching.sol";
-import {String} from "@utils/String.sol";
-import {Proposal} from "@proposals/Proposal.sol";
-import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Proposal} from "@proposals/Proposal.sol";
+import {etch} from "@proposals/utils/PrecompileEtching.sol";
+import {MultichainGovernor} from
+    "@protocol/governance/multichain/MultichainGovernor.sol";
+import {ChainIds, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {String} from "@utils/String.sol";
 
 contract PostProposalCheck is Test {
     using String for string;
@@ -36,28 +37,26 @@ contract PostProposalCheck is Test {
         );
 
         // get the latest moonbeam proposal
-        proposals[0] = checkAndRunLatestProposal(
-            "bin/get-latest-moonbeam-proposal.sh"
-        );
+        proposals[0] =
+            checkAndRunLatestProposal("bin/get-latest-moonbeam-proposal.sh");
 
         // get the latest base proposal
-        proposals[1] = checkAndRunLatestProposal(
-            "bin/get-latest-base-proposal.sh"
-        );
+        proposals[1] =
+            checkAndRunLatestProposal("bin/get-latest-base-proposal.sh");
 
         /// only etch out precompile contracts if on the moonbeam chain
         if (
-            addresses.isAddressSet("xcUSDT") &&
-            addresses.isAddressSet("xcUSDC") &&
-            addresses.isAddressSet("xcDOT")
+            addresses.isAddressSet("xcUSDT") && addresses.isAddressSet("xcUSDC")
+                && addresses.isAddressSet("xcDOT")
         ) {
             etch(vm, addresses);
         }
     }
 
-    function checkAndRunLatestProposal(
-        string memory scriptPath
-    ) private returns (Proposal) {
+    function checkAndRunLatestProposal(string memory scriptPath)
+        private
+        returns (Proposal)
+    {
         string[] memory inputs = new string[](1);
         inputs[0] = scriptPath;
 

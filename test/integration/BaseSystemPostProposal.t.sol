@@ -5,21 +5,27 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {WETH9} from "@protocol/router/IWETH.sol";
-import {MErc20} from "@protocol/MErc20.sol";
-import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
-import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
-import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {TestProposals} from "@proposals/TestProposals.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {MToken} from "@protocol/MToken.sol";
+
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
+
+import {MultiRewardDistributor} from
+    "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from
+    "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {WETH9} from "@protocol/router/IWETH.sol";
+import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+
+import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     MultiRewardDistributor mrd;
@@ -43,8 +49,8 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     }
 
     function testOraclesReturnCorrectValues() public view {
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory cTokenConfigs =
+            getCTokenConfigurations(block.chainid);
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 assertGt(
@@ -63,9 +69,8 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     }
 
     function testGuardianCanPauseTemporalGovernor() public {
-        TemporalGovernor gov = TemporalGovernor(
-            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
-        );
+        TemporalGovernor gov =
+            TemporalGovernor(payable(addresses.getAddress("TEMPORAL_GOVERNOR")));
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN"));
         gov.togglePause();
@@ -89,23 +94,24 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     function testUpdateEmissionConfigSupplyUsdcSuccess() public {
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         mrd._updateSupplySpeed(
-            MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
-            well, /// rewards paid in WELL
-            1e18 /// pay 1 well per second in rewards
+            MToken(addresses.getAddress("MOONWELL_USDBC")),
+            /// reward mUSDbC
+            well,
+            /// rewards paid in WELL
+            1e18
         );
+        /// pay 1 well per second in rewards
+
         vm.stopPrank();
 
-        deal(
-            well,
-            address(mrd),
-            4 weeks * 1e18 /// fund for entire period
-        );
+        deal(well, address(mrd), 4 weeks * 1e18);
+        /// fund for entire period
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
-                MToken(addresses.getAddress("MOONWELL_USDBC")),
-                addresses.getAddress("GOVTOKEN")
-            );
+            MToken(addresses.getAddress("MOONWELL_USDBC")),
+            addresses.getAddress("GOVTOKEN")
+        );
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well);
@@ -119,30 +125,29 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     function testUpdateEmissionConfigBorrowUsdcSuccess() public {
         vm.startPrank(addresses.getAddress("EMISSIONS_ADMIN"));
         mrd._updateBorrowSpeed(
-            MToken(addresses.getAddress("MOONWELL_USDBC")), /// reward mUSDbC
-            well, /// rewards paid in WELL
-            1e18 /// pay 1 well per second in rewards to borrowers
+            MToken(addresses.getAddress("MOONWELL_USDBC")),
+            /// reward mUSDbC
+            well,
+            /// rewards paid in WELL
+            1e18
         );
+        /// pay 1 well per second in rewards to borrowers
+
         vm.stopPrank();
 
-        deal(
-            well,
-            address(mrd),
-            4 weeks * 1e18 /// fund for entire period
-        );
+        deal(well, address(mrd), 4 weeks * 1e18);
+        /// fund for entire period
 
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
-                MToken(addresses.getAddress("MOONWELL_USDBC")),
-                addresses.getAddress("GOVTOKEN")
-            );
+            MToken(addresses.getAddress("MOONWELL_USDBC")),
+            addresses.getAddress("GOVTOKEN")
+        );
 
         assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"));
         assertEq(config.emissionToken, well, "emission token not well");
         assertEq(
-            config.borrowEmissionsPerSec,
-            1e18,
-            "well per second incorrect"
+            config.borrowEmissionsPerSec, 1e18, "well per second incorrect"
         );
     }
 
@@ -151,20 +156,24 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         uint256 mintAmount = 100e18;
 
         IERC20 token = IERC20(addresses.getAddress("WETH"));
-        MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_WETH"))
-        );
+        MErc20Delegator mToken =
+            MErc20Delegator(payable(addresses.getAddress("MOONWELL_WETH")));
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
-        vm.deal(sender, mintAmount); /// fund with raw eth
+        vm.deal(sender, mintAmount);
+
+        /// fund with raw eth
         token.approve(address(mToken), mintAmount);
 
-        router.mint{value: mintAmount}(address(this)); /// ensure successful mint
-        assertTrue(mToken.balanceOf(sender) > 0); /// ensure balance is gt 0
+        router.mint{value: mintAmount}(address(this));
+
+        /// ensure successful mint
+        assertTrue(mToken.balanceOf(sender) > 0);
+        /// ensure balance is gt 0
         assertEq(
-            token.balanceOf(address(mToken)) - startingTokenBalance,
-            mintAmount
-        ); /// ensure underlying balance is sent to mToken
+            token.balanceOf(address(mToken)) - startingTokenBalance, mintAmount
+        );
+        /// ensure underlying balance is sent to mToken
 
         address[] memory mTokens = new address[](1);
         mTokens[0] = address(mToken);
@@ -172,13 +181,13 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         comptroller.enterMarkets(mTokens);
         assertTrue(
             comptroller.checkMembership(
-                sender,
-                MToken(addresses.getAddress("MOONWELL_WETH"))
+                sender, MToken(addresses.getAddress("MOONWELL_WETH"))
             )
-        ); /// ensure sender and mToken is in market
+        );
+        /// ensure sender and mToken is in market
 
-        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
-            .getAccountLiquidity(address(this));
+        (uint256 err, uint256 liquidity, uint256 shortfall) =
+            comptroller.getAccountLiquidity(address(this));
 
         assertEq(err, 0, "Error getting account liquidity");
         assertGt(liquidity, mintAmount * 1_000, "liquidity not correct");
@@ -192,20 +201,22 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         uint256 mintAmount = 100e6;
 
         IERC20 token = IERC20(addresses.getAddress("USDBC"));
-        MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_USDBC"))
-        );
+        MErc20Delegator mToken =
+            MErc20Delegator(payable(addresses.getAddress("MOONWELL_USDBC")));
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
         deal(address(token), sender, mintAmount);
         token.approve(address(mToken), mintAmount);
 
-        assertEq(mToken.mint(mintAmount), 0); /// ensure successful mint
-        assertTrue(mToken.balanceOf(sender) > 0); /// ensure balance is gt 0
+        assertEq(mToken.mint(mintAmount), 0);
+
+        /// ensure successful mint
+        assertTrue(mToken.balanceOf(sender) > 0);
+        /// ensure balance is gt 0
         assertEq(
-            token.balanceOf(address(mToken)) - startingTokenBalance,
-            mintAmount
-        ); /// ensure underlying balance is sent to mToken
+            token.balanceOf(address(mToken)) - startingTokenBalance, mintAmount
+        );
+        /// ensure underlying balance is sent to mToken
 
         address[] memory mTokens = new address[](1);
         mTokens[0] = address(mToken);
@@ -213,20 +224,17 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         comptroller.enterMarkets(mTokens);
         assertTrue(
             comptroller.checkMembership(
-                sender,
-                MToken(addresses.getAddress("MOONWELL_USDBC"))
+                sender, MToken(addresses.getAddress("MOONWELL_USDBC"))
             )
-        ); /// ensure sender and mToken is in market
+        );
+        /// ensure sender and mToken is in market
 
-        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
-            .getAccountLiquidity(address(this));
+        (uint256 err, uint256 liquidity, uint256 shortfall) =
+            comptroller.getAccountLiquidity(address(this));
 
         assertEq(err, 0, "Error getting account liquidity");
         assertApproxEqRel(
-            liquidity,
-            80e18,
-            1e15,
-            "liquidity not within .1% of $80"
+            liquidity, 80e18, 1e15, "liquidity not within .1% of $80"
         );
         assertEq(shortfall, 0, "Incorrect shortfall");
 
@@ -238,20 +246,22 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         uint256 mintAmount = 100e18;
 
         IERC20 token = IERC20(addresses.getAddress("cbETH"));
-        MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_cbETH"))
-        );
+        MErc20Delegator mToken =
+            MErc20Delegator(payable(addresses.getAddress("MOONWELL_cbETH")));
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
         deal(address(token), sender, mintAmount);
         token.approve(address(mToken), mintAmount);
 
-        assertEq(mToken.mint(mintAmount), 0); /// ensure successful mint
-        assertTrue(mToken.balanceOf(sender) > 0); /// ensure balance is gt 0
+        assertEq(mToken.mint(mintAmount), 0);
+
+        /// ensure successful mint
+        assertTrue(mToken.balanceOf(sender) > 0);
+        /// ensure balance is gt 0
         assertEq(
-            token.balanceOf(address(mToken)) - startingTokenBalance,
-            mintAmount
-        ); /// ensure underlying balance is sent to mToken
+            token.balanceOf(address(mToken)) - startingTokenBalance, mintAmount
+        );
+        /// ensure underlying balance is sent to mToken
 
         address[] memory mTokens = new address[](1);
         mTokens[0] = address(mToken);
@@ -259,13 +269,13 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         comptroller.enterMarkets(mTokens);
         assertTrue(
             comptroller.checkMembership(
-                sender,
-                MToken(addresses.getAddress("MOONWELL_cbETH"))
+                sender, MToken(addresses.getAddress("MOONWELL_cbETH"))
             )
-        ); /// ensure sender and mToken is in market
+        );
+        /// ensure sender and mToken is in market
 
-        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
-            .getAccountLiquidity(address(this));
+        (uint256 err, uint256 liquidity, uint256 shortfall) =
+            comptroller.getAccountLiquidity(address(this));
 
         assertEq(err, 0, "Error getting account liquidity");
         assertGt(liquidity, mintAmount * 1200, "liquidity incorrect");
@@ -281,21 +291,23 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         uint256 borrowAmount = 50e6;
 
         IERC20 token = IERC20(addresses.getAddress("USDBC"));
-        MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_USDBC"))
-        );
+        MErc20Delegator mToken =
+            MErc20Delegator(payable(addresses.getAddress("MOONWELL_USDBC")));
 
         address[] memory mTokens = new address[](1);
         mTokens[0] = address(mToken);
 
         comptroller.enterMarkets(mTokens);
-        assertTrue(
-            comptroller.checkMembership(sender, MToken(address(mToken)))
-        ); /// ensure sender and mToken is in market
+        assertTrue(comptroller.checkMembership(sender, MToken(address(mToken))));
+        /// ensure sender and mToken is in market
 
-        assertEq(mToken.borrow(borrowAmount), 0); /// ensure successful borrow
+        assertEq(mToken.borrow(borrowAmount), 0);
 
-        assertEq(token.balanceOf(sender), borrowAmount); /// ensure balance is correct
+        /// ensure successful borrow
+
+        assertEq(token.balanceOf(sender), borrowAmount);
+
+        /// ensure balance is correct
     }
 
     function testBorrowOtherMTokenSucceeds() public {
@@ -307,13 +319,13 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
             addresses.getAddress("MOONWELL_WETH"),
             1 ether
         );
-        vm.deal(sender, 0); /// set sender's WETH balance to 0 ether
+        vm.deal(sender, 0);
+        /// set sender's WETH balance to 0 ether
 
         uint256 borrowAmount = 1e6;
 
-        MErc20Delegator mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_WETH"))
-        );
+        MErc20Delegator mToken =
+            MErc20Delegator(payable(addresses.getAddress("MOONWELL_WETH")));
 
         address[] memory mTokens = new address[](1);
         mTokens[0] = addresses.getAddress("MOONWELL_USDBC");
@@ -321,26 +333,24 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         comptroller.enterMarkets(mTokens);
         assertTrue(
             comptroller.checkMembership(
-                sender,
-                MToken(addresses.getAddress("MOONWELL_USDBC"))
+                sender, MToken(addresses.getAddress("MOONWELL_USDBC"))
             )
-        ); /// ensure sender and mToken is in market
+        );
+        /// ensure sender and mToken is in market
 
-        (, uint256 liquidity, uint256 shortfall) = comptroller
-            .getAccountLiquidity(sender);
+        (, uint256 liquidity, uint256 shortfall) =
+            comptroller.getAccountLiquidity(sender);
 
-        assertEq(mToken.borrow(borrowAmount), 0, "unsuccessful borrow"); /// ensure successful borrow
-        (
-            ,
-            uint256 liquidityAfterBorrow,
-            uint256 shortfallAfterBorrow
-        ) = comptroller.getAccountLiquidity(sender);
+        assertEq(mToken.borrow(borrowAmount), 0, "unsuccessful borrow");
+
+        /// ensure successful borrow
+        (, uint256 liquidityAfterBorrow, uint256 shortfallAfterBorrow) =
+            comptroller.getAccountLiquidity(sender);
 
         assertEq(
-            sender.balance,
-            borrowAmount,
-            "incorrect ether amount borrowed"
-        ); /// ensure eth balance is correct
+            sender.balance, borrowAmount, "incorrect ether amount borrowed"
+        );
+        /// ensure eth balance is correct
 
         assertGt(liquidity, liquidityAfterBorrow);
         assertEq(shortfall, shortfallAfterBorrow);
@@ -356,9 +366,8 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDBC")),
-                address(this)
-            );
+            MToken(addresses.getAddress("MOONWELL_USDBC")), address(this)
+        );
 
         assertEq(rewards[0].emissionToken, well);
         assertLe(
@@ -384,9 +393,8 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDBC")),
-                address(this)
-            );
+            MToken(addresses.getAddress("MOONWELL_USDBC")), address(this)
+        );
 
         assertEq(rewards[0].emissionToken, well, "incorrect emission token");
         /// ensure rewards are less than warp time * 1e18 as rounding
@@ -414,9 +422,8 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDBC")),
-                address(this)
-            );
+            MToken(addresses.getAddress("MOONWELL_USDBC")), address(this)
+        );
 
         assertEq(rewards[0].emissionToken, well);
         assertLe(
@@ -449,18 +456,11 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
 
         /// borrower is now underwater on loan
         deal(
-            address(mToken),
-            address(this),
-            mToken.balanceOf(address(this)) / 2
+            address(mToken), address(this), mToken.balanceOf(address(this)) / 2
         );
 
         (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
-            .getHypotheticalAccountLiquidity(
-                address(this),
-                address(mToken),
-                0,
-                0
-            );
+            .getHypotheticalAccountLiquidity(address(this), address(mToken), 0, 0);
 
         assertEq(err, 0);
         assertEq(liquidity, 0);
@@ -475,17 +475,13 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         usdc.approve(address(mToken), repayAmt);
 
         _liquidateAccount(
-            liquidator,
-            address(this),
-            MErc20(address(mToken)),
-            1e6
+            liquidator, address(this), MErc20(address(mToken)), 1e6
         );
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
             .getOutstandingRewardsForUser(
-                MToken(addresses.getAddress("MOONWELL_USDBC")),
-                address(this)
-            );
+            MToken(addresses.getAddress("MOONWELL_USDBC")), address(this)
+        );
 
         assertEq(rewards[0].emissionToken, well);
 
@@ -545,29 +541,23 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     function testAddCloseToMaxLiquidity() public {
         testAddLiquidityMultipleAssets();
 
-        uint256 usdcMintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_USDBC")
-        );
-        uint256 wethMintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_WETH")
-        ) - 100e18;
-        uint256 cbEthMintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_cbETH")
-        ) - 100e18;
+        uint256 usdcMintAmount =
+            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_USDBC"));
+        uint256 wethMintAmount =
+            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_WETH")) - 100e18;
+        uint256 cbEthMintAmount =
+            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_cbETH")) - 100e18;
 
         _addLiquidity(addresses.getAddress("MOONWELL_USDBC"), usdcMintAmount);
         _addLiquidity(addresses.getAddress("MOONWELL_WETH"), wethMintAmount);
         _addLiquidity(addresses.getAddress("MOONWELL_cbETH"), cbEthMintAmount);
 
-        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
-            .getAccountLiquidity(address(this));
+        (uint256 err, uint256 liquidity, uint256 shortfall) =
+            comptroller.getAccountLiquidity(address(this));
 
         /// normalize up usdc decimals from 6 to 18 by adding 12
-        uint256 expectedMinLiquidity = (((usdcMintAmount * 1e12) * 8) / 10) +
-            wethMintAmount *
-            1_000 +
-            cbEthMintAmount *
-            1_200;
+        uint256 expectedMinLiquidity = (((usdcMintAmount * 1e12) * 8) / 10)
+            + wethMintAmount * 1_000 + cbEthMintAmount * 1_200;
 
         assertEq(err, 0, "Error getting account liquidity");
         assertGt(liquidity, expectedMinLiquidity, "liquidity not correct");
@@ -577,14 +567,13 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     function testMaxBorrowWeth() public returns (uint256) {
         testAddCloseToMaxLiquidity();
 
-        uint256 borrowAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_WETH")
-        );
+        uint256 borrowAmount =
+            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_WETH"));
         address mweth = addresses.getAddress("MOONWELL_WETH");
 
         {
-            (uint256 err, , uint256 shortfall) = comptroller
-                .getAccountLiquidity(address(this));
+            (uint256 err,, uint256 shortfall) =
+                comptroller.getAccountLiquidity(address(this));
 
             assertEq(0, err);
             assertEq(0, shortfall);
@@ -594,8 +583,8 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         assertEq(address(this).balance, borrowAmount);
 
         {
-            (uint256 err, , uint256 shortfall) = comptroller
-                .getAccountLiquidity(address(this));
+            (uint256 err,, uint256 shortfall) =
+                comptroller.getAccountLiquidity(address(this));
 
             assertEq(0, err);
             assertEq(0, shortfall);
@@ -607,9 +596,8 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     function testMaxBorrowcbEth() public {
         testAddCloseToMaxLiquidity();
 
-        uint256 borrowAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_cbETH")
-        );
+        uint256 borrowAmount =
+            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_cbETH"));
         address mcbeth = addresses.getAddress("MOONWELL_cbETH");
 
         assertEq(MErc20(mcbeth).borrow(borrowAmount), 0);
@@ -622,9 +610,8 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
     function testMaxBorrowUsdc() public {
         testAddCloseToMaxLiquidity();
 
-        uint256 borrowAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_USDBC")
-        );
+        uint256 borrowAmount =
+            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_USDBC"));
         address mUSDbC = addresses.getAddress("MOONWELL_USDBC");
 
         assertEq(MErc20(mUSDbC).borrow(borrowAmount), 0);
@@ -647,7 +634,9 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
 
         router.repayBorrowBehalf{value: borrowAmount}(address(this));
 
-        assertEq(MErc20(mweth).borrowBalanceStored(address(this)), 0); /// fully repaid
+        assertEq(MErc20(mweth).borrowBalanceStored(address(this)), 0);
+
+        /// fully repaid
     }
 
     function testRepayMoreThanBorrowBalanceWethRouter() public {
@@ -664,8 +653,11 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
 
         router.repayBorrowBehalf{value: borrowRepayAmount}(address(this));
 
-        assertEq(MErc20(mweth).borrowBalanceStored(address(this)), 0); /// fully repaid
-        assertEq(address(this).balance, borrowRepayAmount / 2); /// excess eth returned
+        assertEq(MErc20(mweth).borrowBalanceStored(address(this)), 0);
+
+        /// fully repaid
+        assertEq(address(this).balance, borrowRepayAmount / 2);
+        /// excess eth returned
     }
 
     function testMintWithRouter() public {
@@ -689,13 +681,15 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         assertApproxEqRel(
             address(this).balance,
             mintAmount,
-            1e15, /// tiny loss due to rounding down
+            1e15,
+            /// tiny loss due to rounding down
             "incorrect test contract eth value after redeem"
         );
         assertApproxEqRel(
             startingMTokenWethBalance,
             weth.balanceOf(address(mToken)),
-            1e15, /// tiny gain due to rounding down in protocol's favor
+            1e15,
+            /// tiny gain due to rounding down in protocol's favor
             "incorrect mToken weth value after redeem"
         );
     }
@@ -707,18 +701,22 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         assertEq(MErc20(market).mint(amount), 0);
     }
 
-    function _getMaxBorrowAmount(
-        address mToken
-    ) internal view returns (uint256) {
+    function _getMaxBorrowAmount(address mToken)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = MToken(mToken).totalBorrows();
 
         return borrowCap - totalBorrows - 1;
     }
 
-    function _getMaxSupplyAmount(
-        address mToken
-    ) internal view returns (uint256) {
+    function _getMaxSupplyAmount(address mToken)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         uint256 totalCash = MToken(mToken).getCash();

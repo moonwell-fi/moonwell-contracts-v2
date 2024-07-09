@@ -10,7 +10,8 @@ import {SafeMath} from "./SafeMath.sol";
  * @title ERC20
  * @notice Basic ERC20 implementation
  * @author Moonwell
- **/
+ *
+ */
 contract ERC20 is Context, IERC20, IERC20Detailed {
     using SafeMath for uint256;
 
@@ -33,36 +34,46 @@ contract ERC20 is Context, IERC20, IERC20Detailed {
 
     /**
      * @return the name of the token
-     **/
+     *
+     */
     function name() public view override returns (string memory) {
         return _name;
     }
 
     /**
      * @return the symbol of the token
-     **/
+     *
+     */
     function symbol() public view override returns (string memory) {
         return _symbol;
     }
 
     /**
      * @return the decimals of the token
-     **/
+     *
+     */
     function decimals() public view override returns (uint8) {
         return _decimals;
     }
 
     /**
      * @return the total supply of the token
-     **/
+     *
+     */
     function totalSupply() public view override returns (uint256) {
         return _totalSupply;
     }
 
     /**
      * @return the balance of the token
-     **/
-    function balanceOf(address account) public view override returns (uint256) {
+     *
+     */
+    function balanceOf(address account)
+        public
+        view
+        override
+        returns (uint256)
+    {
         return _balances[account];
     }
 
@@ -71,11 +82,14 @@ contract ERC20 is Context, IERC20, IERC20Detailed {
      * @param recipient the recipient of the tokens
      * @param amount the amount of tokens being transferred
      * @return true if the transfer succeeds, false otherwise
-     **/
-    function transfer(
-        address recipient,
-        uint256 amount
-    ) public virtual override returns (bool) {
+     *
+     */
+    function transfer(address recipient, uint256 amount)
+        public
+        virtual
+        override
+        returns (bool)
+    {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
@@ -85,11 +99,15 @@ contract ERC20 is Context, IERC20, IERC20Detailed {
      * @param owner the owner of the tokens
      * @param spender the user allowed to spend the owner"s tokens
      * @return the amount of owner"s tokens spender is allowed to spend
-     **/
-    function allowance(
-        address owner,
-        address spender
-    ) public view virtual override returns (uint256) {
+     *
+     */
+    function allowance(address owner, address spender)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         return _allowances[owner][spender];
     }
 
@@ -97,11 +115,14 @@ contract ERC20 is Context, IERC20, IERC20Detailed {
      * @dev allows spender to spend the tokens owned by msg.sender
      * @param spender the user allowed to spend msg.sender tokens
      * @return true
-     **/
-    function approve(
-        address spender,
-        uint256 amount
-    ) public virtual override returns (bool) {
+     *
+     */
+    function approve(address spender, uint256 amount)
+        public
+        virtual
+        override
+        returns (bool)
+    {
         _approve(_msgSender(), spender, amount);
         return true;
     }
@@ -112,19 +133,20 @@ contract ERC20 is Context, IERC20, IERC20Detailed {
      * @param recipient the recipient of the tokens
      * @param amount the amount of tokens being transferred
      * @return true if the transfer succeeds, false otherwise
-     **/
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) public virtual override returns (bool) {
+     *
+     */
+    function transferFrom(address sender, address recipient, uint256 amount)
+        public
+        virtual
+        override
+        returns (bool)
+    {
         _transfer(sender, recipient, amount);
         _approve(
             sender,
             _msgSender(),
             _allowances[sender][_msgSender()].sub(
-                amount,
-                "ERC20: transfer amount exceeds allowance"
+                amount, "ERC20: transfer amount exceeds allowance"
             )
         );
         return true;
@@ -135,11 +157,13 @@ contract ERC20 is Context, IERC20, IERC20Detailed {
      * @param spender the user allowed to spend on behalf of msg.sender
      * @param addedValue the amount being added to the allowance
      * @return true
-     **/
-    function increaseAllowance(
-        address spender,
-        uint256 addedValue
-    ) public virtual returns (bool) {
+     *
+     */
+    function increaseAllowance(address spender, uint256 addedValue)
+        public
+        virtual
+        returns (bool)
+    {
         _approve(
             _msgSender(),
             spender,
@@ -153,35 +177,34 @@ contract ERC20 is Context, IERC20, IERC20Detailed {
      * @param spender the user allowed to spend on behalf of msg.sender
      * @param subtractedValue the amount being subtracted to the allowance
      * @return true
-     **/
-    function decreaseAllowance(
-        address spender,
-        uint256 subtractedValue
-    ) public virtual returns (bool) {
+     *
+     */
+    function decreaseAllowance(address spender, uint256 subtractedValue)
+        public
+        virtual
+        returns (bool)
+    {
         _approve(
             _msgSender(),
             spender,
             _allowances[_msgSender()][spender].sub(
-                subtractedValue,
-                "ERC20: decreased allowance below zero"
+                subtractedValue, "ERC20: decreased allowance below zero"
             )
         );
         return true;
     }
 
-    function _transfer(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) internal virtual {
+    function _transfer(address sender, address recipient, uint256 amount)
+        internal
+        virtual
+    {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
         _beforeTokenTransfer(sender, recipient, amount);
 
         _balances[sender] = _balances[sender].sub(
-            amount,
-            "ERC20: transfer amount exceeds balance"
+            amount, "ERC20: transfer amount exceeds balance"
         );
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
@@ -202,19 +225,16 @@ contract ERC20 is Context, IERC20, IERC20Detailed {
 
         _beforeTokenTransfer(account, address(0), amount);
 
-        _balances[account] = _balances[account].sub(
-            amount,
-            "ERC20: burn amount exceeds balance"
-        );
+        _balances[account] =
+            _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
         _totalSupply = _totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }
 
-    function _approve(
-        address owner,
-        address spender,
-        uint256 amount
-    ) internal virtual {
+    function _approve(address owner, address spender, uint256 amount)
+        internal
+        virtual
+    {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
 
@@ -234,9 +254,8 @@ contract ERC20 is Context, IERC20, IERC20Detailed {
         _decimals = newDecimals;
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual {}
+    function _beforeTokenTransfer(address from, address to, uint256 amount)
+        internal
+        virtual
+    {}
 }

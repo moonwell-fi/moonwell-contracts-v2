@@ -3,19 +3,19 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Configs} from "@proposals/Configs.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
-import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b20/mip-b20.sol:mipb20
 contract mipb20 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B20";
 
-    uint128 public constant NEW_REWARD_SPEED = 2.475835385901440000 * 1e18;
+    uint128 public constant NEW_REWARD_SPEED = 2.47583538590144 * 1e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -54,12 +54,10 @@ contract mipb20 is HybridProposal, Configs, ParameterValidation {
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
-        IStakedWellUplift stkWell = IStakedWellUplift(
-            addresses.getAddress("STK_GOVTOKEN")
-        );
-        (uint128 emissionsPerSecond, , ) = stkWell.assets(
-            addresses.getAddress("STK_GOVTOKEN")
-        );
+        IStakedWellUplift stkWell =
+            IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"));
+        (uint128 emissionsPerSecond,,) =
+            stkWell.assets(addresses.getAddress("STK_GOVTOKEN"));
 
         assertEq(emissionsPerSecond, NEW_REWARD_SPEED, "emissionsPerSecond");
     }

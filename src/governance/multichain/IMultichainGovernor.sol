@@ -1,6 +1,7 @@
 pragma solidity 0.8.19;
 
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {WormholeTrustedSender} from
+    "@protocol/governance/WormholeTrustedSender.sol";
 
 /// @notice pauseable by the guardian
 /// @notice upgradeable, constructor disables implementation
@@ -16,10 +17,7 @@ interface IMultichainGovernor {
 
     /// @notice An event emitted when a vote has been cast on a proposal
     event VoteCast(
-        address voter,
-        uint256 proposalId,
-        uint8 voteValue,
-        uint256 votes
+        address voter, uint256 proposalId, uint8 voteValue, uint256 votes
     );
 
     /// @notice An event emitted when a new proposal is created
@@ -45,9 +43,7 @@ interface IMultichainGovernor {
 
     /// @notice An event emitted when the guardian breaks glass
     event BreakGlassExecuted(
-        address breakGlassGuardian,
-        address[] targets,
-        bytes[] calldatas
+        address breakGlassGuardian, address[] targets, bytes[] calldatas
     );
 
     /// @notice An event emitted when thee quorum votes is changed.
@@ -67,8 +63,7 @@ interface IMultichainGovernor {
 
     /// @notice An event emitted when the cross chain vote collection period has changed.
     event CrossChainVoteCollectionPeriodChanged(
-        uint256 oldValue,
-        uint256 newValue
+        uint256 oldValue, uint256 newValue
     );
 
     /// @notice An event emitted when the max user live proposals has changed.
@@ -206,13 +201,13 @@ interface IMultichainGovernor {
     /// - setPendingAdmin to rollback address
     /// - setAdmin to rollback address
     /// - publishMessage that adds rollback address as trusted sender in TemporalGovernor, with calldata for each chain
-    function whitelistedCalldatas(bytes calldata) external view returns (bool);
+    function whitelistedCalldatas(bytes calldata)
+        external
+        view
+        returns (bool);
 
     /// @notice return votes for a proposal id on a given chain
-    function chainAddressVotes(
-        uint256 proposalId,
-        uint16 chainId
-    )
+    function chainAddressVotes(uint256 proposalId, uint16 chainId)
         external
         view
         returns (uint256 forVotes, uint256 againstVotes, uint256 abstainVotes);
@@ -246,19 +241,19 @@ interface IMultichainGovernor {
     function maxUserLiveProposals() external view returns (uint256);
 
     /// @dev Returns the number of live proposals for a given user
-    function currentUserLiveProposals(
-        address user
-    ) external view returns (uint256);
+    function currentUserLiveProposals(address user)
+        external
+        view
+        returns (uint256);
 
     /// returns the total voting power for an address at a given block number and timestamp
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
     /// @param blockNumber The block number to check the balance at
-    function getVotes(
-        address account,
-        uint256 timestamp,
-        uint256 blockNumber
-    ) external view returns (uint256);
+    function getVotes(address account, uint256 timestamp, uint256 blockNumber)
+        external
+        view
+        returns (uint256);
 
     /// ---------------------------------------------- ////
     /// ---------------------------------------------- ////
@@ -333,10 +328,8 @@ interface IMultichainGovernor {
     /// @notice updates the approval for calldata to be used by break glass guardian
     /// @param data the calldata to update approval for
     /// @param approved whether or not the calldata is approved
-    function updateApprovedCalldata(
-        bytes calldata data,
-        bool approved
-    ) external;
+    function updateApprovedCalldata(bytes calldata data, bool approved)
+        external;
 
     //// @notice array lengths must add up
     /// calldata must be whitelisted

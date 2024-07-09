@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.19;
 
-import {IERC20Permit} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {IERC4626} from "@forge-std/interfaces/IERC4626.sol";
+import {IERC20Permit} from
+    "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 struct MarketParams {
     address loanToken;
@@ -96,10 +97,8 @@ interface IMetaMorphoBase {
     /// @dev Warning: Reverts if a cap is already pending. Revoke the pending cap to overwrite it.
     /// @dev Warning: Reverts if a market removal is pending.
     /// @dev In case the new cap is lower than the current one, the cap is set immediately.
-    function submitCap(
-        MarketParams memory marketParams,
-        uint256 newSupplyCap
-    ) external;
+    function submitCap(MarketParams memory marketParams, uint256 newSupplyCap)
+        external;
 
     /// @notice Accepts the pending cap of the market defined by `marketParams`.
     function acceptCap(MarketParams memory marketParams) external;
@@ -140,7 +139,8 @@ interface IMetaMorphoBase {
     function skim(address) external;
 
     /// @notice Sets `newAllocator` as an allocator or not (`newIsAllocator`).
-    function setIsAllocator(address newAllocator, bool newIsAllocator) external;
+    function setIsAllocator(address newAllocator, bool newIsAllocator)
+        external;
 
     /// @notice Sets `curator` to `newCurator`.
     function setCurator(address newCurator) external;
@@ -189,9 +189,10 @@ interface IMetaMorphoBase {
 /// @dev Consider using the IMetaMorpho interface instead of this one.
 interface IMetaMorphoStaticTyping is IMetaMorphoBase {
     /// @notice Returns the current configuration of each market.
-    function config(
-        bytes32
-    ) external view returns (uint184 cap, bool enabled, uint64 removableAt);
+    function config(bytes32)
+        external
+        view
+        returns (uint184 cap, bool enabled, uint64 removableAt);
 
     /// @notice Returns the pending guardian.
     function pendingGuardian()
@@ -200,9 +201,10 @@ interface IMetaMorphoStaticTyping is IMetaMorphoBase {
         returns (address guardian, uint64 validAt);
 
     /// @notice Returns the pending cap for each market.
-    function pendingCap(
-        bytes32
-    ) external view returns (uint192 value, uint64 validAt);
+    function pendingCap(bytes32)
+        external
+        view
+        returns (uint192 value, uint64 validAt);
 
     /// @notice Returns the pending timelock.
     function pendingTimelock()

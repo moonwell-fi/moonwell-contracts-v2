@@ -1,9 +1,9 @@
 pragma solidity 0.8.19;
 
-import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
-import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {console} from "@forge-std/console.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
+import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
+import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 
 /// @notice Wormhole Token Relayer Adapter
 contract WormholeRelayerAdapter {
@@ -17,8 +17,7 @@ contract WormholeRelayerAdapter {
 
     mapping(uint256 chainId => bool shouldRevert) public shouldRevertAtChain;
 
-    mapping(uint16 chainId => bool shouldRevert)
-        public shouldRevertQuoteAtChain;
+    mapping(uint16 chainId => bool shouldRevert) public shouldRevertQuoteAtChain;
 
     function setShouldRevertQuoteAtChain(
         uint16[] memory chainIds,
@@ -53,9 +52,15 @@ contract WormholeRelayerAdapter {
         uint16 chainId,
         address targetAddress,
         bytes memory payload,
-        uint256, /// shhh
-        uint256 /// shhh
-    ) external payable returns (uint64) {
+        uint256,
+        /// shhh
+        uint256
+    )
+        /// shhh
+        external
+        payable
+        returns (uint64)
+    {
         if (shouldRevertAtChain[chainId]) {
             revert("WormholeBridgeAdapter: sendPayloadToEvm revert");
         }
@@ -88,11 +93,7 @@ contract WormholeRelayerAdapter {
 
     /// @notice Retrieve the price for relaying messages to another chain
     /// currently hardcoded to 0.01 ether
-    function quoteEVMDeliveryPrice(
-        uint16 targetChain,
-        uint256,
-        uint256
-    )
+    function quoteEVMDeliveryPrice(uint16 targetChain, uint256, uint256)
         public
         view
         returns (uint256 nativePrice, uint256 targetChainRefundPerGasUnused)

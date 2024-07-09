@@ -16,11 +16,11 @@ abstract contract InterestRateModel {
      * @param reserves The total amount of reserves the market has
      * @return The borrow rate per timestamp (as a percentage, and scaled by 1e18)
      */
-    function getBorrowRate(
-        uint cash,
-        uint borrows,
-        uint reserves
-    ) external view virtual returns (uint);
+    function getBorrowRate(uint256 cash, uint256 borrows, uint256 reserves)
+        external
+        view
+        virtual
+        returns (uint256);
 
     /**
      * @notice Calculates the current supply interest rate per timestamp
@@ -31,9 +31,9 @@ abstract contract InterestRateModel {
      * @return The supply rate per timestamp (as a percentage, and scaled by 1e18)
      */
     function getSupplyRate(
-        uint cash,
-        uint borrows,
-        uint reserves,
-        uint reserveFactorMantissa
-    ) external view virtual returns (uint);
+        uint256 cash,
+        uint256 borrows,
+        uint256 reserves,
+        uint256 reserveFactorMantissa
+    ) external view virtual returns (uint256);
 }

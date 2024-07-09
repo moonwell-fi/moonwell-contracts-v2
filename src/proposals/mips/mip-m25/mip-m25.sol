@@ -3,12 +3,15 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {
+    ActionType,
+    HybridProposal
+} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
-import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m25/mip-m25.sol:mipm25
@@ -69,8 +72,7 @@ contract mipm25 is HybridProposal, ParameterValidation {
         _pushAction(
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                NEW_MXC_USDC_RESERVE_FACTOR
+                "_setReserveFactor(uint256)", NEW_MXC_USDC_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcUSDC to updated reserve factor",
             ActionType.Moonbeam
@@ -79,8 +81,7 @@ contract mipm25 is HybridProposal, ParameterValidation {
         _pushAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                NEW_MXC_USDT_RESERVE_FACTOR
+                "_setReserveFactor(uint256)", NEW_MXC_USDT_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcUSDT to updated reserve factor",
             ActionType.Moonbeam
@@ -89,8 +90,7 @@ contract mipm25 is HybridProposal, ParameterValidation {
         _pushAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                NEW_MXC_USDT_RESERVE_FACTOR
+                "_setReserveFactor(uint256)", NEW_MXC_USDT_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcUSDT to updated reserve factor",
             ActionType.Moonbeam
@@ -162,13 +162,11 @@ contract mipm25 is HybridProposal, ParameterValidation {
         );
 
         _validateRF(
-            addresses.getAddress("mxcUSDC"),
-            NEW_MXC_USDC_RESERVE_FACTOR
+            addresses.getAddress("mxcUSDC"), NEW_MXC_USDC_RESERVE_FACTOR
         );
 
         _validateRF(
-            addresses.getAddress("mxcUSDT"),
-            NEW_MXC_USDT_RESERVE_FACTOR
+            addresses.getAddress("mxcUSDT"), NEW_MXC_USDT_RESERVE_FACTOR
         );
 
         _validateJRM(

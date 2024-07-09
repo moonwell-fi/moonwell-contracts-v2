@@ -1,12 +1,12 @@
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
+import {console} from "@forge-std/console.sol";
 
 import "@forge-std/Test.sol";
 
-import {Recovery} from "@protocol/Recovery.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Recovery} from "@protocol/Recovery.sol";
 
 contract RecoveryDeploy is Test {
     /// @notice base mainnet address to deploy to
@@ -45,7 +45,7 @@ contract RecoveryDeploy is Test {
     function mainnetDeployScript(address owner) public returns (Recovery) {
         /// 1901 tx's to get to the right nonce
         for (uint256 i = 0; i < 1901; i++) {
-            (bool success, ) = address(owner).call{value: 1}("");
+            (bool success,) = address(owner).call{value: 1}("");
             success;
             console.log(vm.getNonce(owner));
         }
@@ -65,9 +65,10 @@ contract RecoveryDeploy is Test {
     }
 
     /// @notice deploy, then verify the address is correct
-    function mainnetDeployAndVerifyScript(
-        address owner
-    ) public returns (Recovery) {
+    function mainnetDeployAndVerifyScript(address owner)
+        public
+        returns (Recovery)
+    {
         Recovery recover = mainnetDeployScript(owner);
         require(verifyDeploy(recover), "incorrect deploy address");
 

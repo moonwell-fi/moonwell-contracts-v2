@@ -1,11 +1,15 @@
 pragma solidity 0.8.19;
 
-import {AddressToString, StringToAddress} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
+import {
+    AddressToString,
+    StringToAddress
+} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
 
 import "@test/helper/BaseTest.t.sol";
 
 import {AxelarBridgeAdapter} from "@protocol/xWELL/AxelarBridgeAdapter.sol";
-import {MockAxelarGatewayGasService} from "@test/mock/MockAxelarGatewayGasService.sol";
+import {MockAxelarGatewayGasService} from
+    "@test/mock/MockAxelarGatewayGasService.sol";
 
 contract AxelarBridgeAdapterUnitTest is BaseTest {
     using StringToAddress for string;
@@ -40,17 +44,14 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
     /// @param tokenReceiver address to receive tokens on destination chain
     /// @param amount of tokens bridged in
     event TokensSent(
-        uint16 indexed dstChainId,
-        address indexed tokenReceiver,
-        uint256 amount
+        uint16 indexed dstChainId, address indexed tokenReceiver, uint256 amount
     );
 
     /// @notice chain id of the target chain to address for bridging
     /// @param dstChainId destination chain id to send tokens to
     /// @param target address to send tokens to
     event TargetAddressUpdated(
-        uint16 indexed dstChainId,
-        address indexed target
+        uint16 indexed dstChainId, address indexed target
     );
 
     /// @notice emitted when the gas limit changes on external chains
@@ -90,20 +91,19 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
             axelarid: axelarId
         });
 
-        (, address axelarBridgeAdapter) = deployAxelarBridgeAdapter(
-            address(proxyAdmin)
-        );
+        (, address axelarBridgeAdapter) =
+            deployAxelarBridgeAdapter(address(proxyAdmin));
         gasService = new MockAxelarGatewayGasService();
         vm.label(address(gasService), "gasService mock");
 
         adapter = AxelarBridgeAdapter(axelarBridgeAdapter);
 
-        AxelarBridgeAdapter.ChainIds[]
-            memory chainids = new AxelarBridgeAdapter.ChainIds[](1);
+        AxelarBridgeAdapter.ChainIds[] memory chainids =
+            new AxelarBridgeAdapter.ChainIds[](1);
         chainids[0] = chainIds;
 
-        AxelarBridgeAdapter.ChainConfig[]
-            memory chainConfigs = new AxelarBridgeAdapter.ChainConfig[](1);
+        AxelarBridgeAdapter.ChainConfig[] memory chainConfigs =
+            new AxelarBridgeAdapter.ChainConfig[](1);
         chainConfigs[0] = chainConfig;
 
         initializeAxelarBridgeAdapter(
@@ -130,9 +130,7 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
             "invalid gas service"
         );
         assertEq(
-            address(adapter.gateway()),
-            address(gasService),
-            "invalid gateway"
+            address(adapter.gateway()), address(gasService), "invalid gateway"
         );
         assertTrue(
             adapter.isApproved(axelarId, address(this)),
@@ -198,8 +196,8 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
     /// Success tests
 
     function testAddChainIdsOwnerSucceeds() public {
-        AxelarBridgeAdapter.ChainIds[]
-            memory chainids = new AxelarBridgeAdapter.ChainIds[](1);
+        AxelarBridgeAdapter.ChainIds[] memory chainids =
+            new AxelarBridgeAdapter.ChainIds[](1);
 
         uint256 newChainId = 999999999999999;
         string memory newAxelarId = "axelar 999999999999999";
@@ -210,17 +208,14 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
         adapter.addChainIds(chainids);
 
         assertTrue(adapter.validChainId(newChainId), "invalid chain id");
-        assertTrue(
-            adapter.validAxelarChainid(newAxelarId),
-            "invalid axelar id"
-        );
+        assertTrue(adapter.validAxelarChainid(newAxelarId), "invalid axelar id");
     }
 
     function testRemoveChainIdsOwnerSucceeds() public {
         testAddChainIdsOwnerSucceeds();
 
-        AxelarBridgeAdapter.ChainIds[]
-            memory chainids = new AxelarBridgeAdapter.ChainIds[](1);
+        AxelarBridgeAdapter.ChainIds[] memory chainids =
+            new AxelarBridgeAdapter.ChainIds[](1);
 
         uint256 removedChainId = 999999999999999;
         string memory removedAxelarId = "axelar 999999999999999";
@@ -231,20 +226,18 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
         adapter.removeChainIds(chainids);
 
         assertFalse(
-            adapter.validChainId(removedChainId),
-            "chain id not removed"
+            adapter.validChainId(removedChainId), "chain id not removed"
         );
         assertFalse(
-            adapter.validAxelarChainid(removedAxelarId),
-            "axelar id not removed"
+            adapter.validAxelarChainid(removedAxelarId), "axelar id not removed"
         );
     }
 
     function testaddExternalChainSendersOwnerSucceeds() public {
         address newAdapter = address(999999999999999);
 
-        AxelarBridgeAdapter.ChainConfig[]
-            memory newChainConfigs = new AxelarBridgeAdapter.ChainConfig[](1);
+        AxelarBridgeAdapter.ChainConfig[] memory newChainConfigs =
+            new AxelarBridgeAdapter.ChainConfig[](1);
 
         newChainConfigs[0].adapter = newAdapter;
         newChainConfigs[0].axelarid = axelarId;
@@ -253,8 +246,7 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
         adapter.addExternalChainSenders(newChainConfigs);
 
         assertTrue(
-            adapter.isApproved(axelarId, newAdapter),
-            "trusted sender not set"
+            adapter.isApproved(axelarId, newAdapter), "trusted sender not set"
         );
     }
 
@@ -263,8 +255,8 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
 
         address newAdapter = address(999999999999999);
 
-        AxelarBridgeAdapter.ChainConfig[]
-            memory newChainConfigs = new AxelarBridgeAdapter.ChainConfig[](1);
+        AxelarBridgeAdapter.ChainConfig[] memory newChainConfigs =
+            new AxelarBridgeAdapter.ChainConfig[](1);
 
         newChainConfigs[0].adapter = newAdapter;
         newChainConfigs[0].axelarid = axelarId;
@@ -284,8 +276,8 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
         testaddExternalChainSendersOwnerSucceeds();
         address newAdapter = address(999999999999999);
 
-        AxelarBridgeAdapter.ChainConfig[]
-            memory newChainConfigs = new AxelarBridgeAdapter.ChainConfig[](1);
+        AxelarBridgeAdapter.ChainConfig[] memory newChainConfigs =
+            new AxelarBridgeAdapter.ChainConfig[](1);
 
         newChainConfigs[0].adapter = newAdapter;
         newChainConfigs[0].axelarid = axelarId;
@@ -298,8 +290,8 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
     function testAddChainIdsOwnerFailsNonExistingAxelarId() public {
         testaddExternalChainSendersOwnerSucceeds();
 
-        AxelarBridgeAdapter.ChainConfig[]
-            memory newChainConfigs = new AxelarBridgeAdapter.ChainConfig[](1);
+        AxelarBridgeAdapter.ChainConfig[] memory newChainConfigs =
+            new AxelarBridgeAdapter.ChainConfig[](1);
 
         newChainConfigs[0].adapter = address(1000010);
         newChainConfigs[0].axelarid = "new axelar id that's invalid";
@@ -310,8 +302,8 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
     }
 
     function testRemoveChainIdsOwnerFailsNonExistingAdaper() public {
-        AxelarBridgeAdapter.ChainConfig[]
-            memory newChainConfigs = new AxelarBridgeAdapter.ChainConfig[](1);
+        AxelarBridgeAdapter.ChainConfig[] memory newChainConfigs =
+            new AxelarBridgeAdapter.ChainConfig[](1);
 
         /// axelar id does not matter as it is not validated, use non-approved adapter to cause revert
         newChainConfigs[0].adapter = address(1000010);
@@ -322,8 +314,8 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
     }
 
     function testAddChainIdsOwnerFailsPreexistingConfig() public {
-        AxelarBridgeAdapter.ChainIds[]
-            memory chainids = new AxelarBridgeAdapter.ChainIds[](1);
+        AxelarBridgeAdapter.ChainIds[] memory chainids =
+            new AxelarBridgeAdapter.ChainIds[](1);
         chainids[0] = chainIds;
 
         vm.prank(owner);
@@ -332,10 +324,11 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
     }
 
     function testAddChainIdsOwnerFailsPreexistingChainIdConfig() public {
-        AxelarBridgeAdapter.ChainIds[]
-            memory chainids = new AxelarBridgeAdapter.ChainIds[](1);
+        AxelarBridgeAdapter.ChainIds[] memory chainids =
+            new AxelarBridgeAdapter.ChainIds[](1);
         chainids[0] = chainIds;
-        chainids[0].chainid = 198138182811; /// new chainid, same axelarid
+        chainids[0].chainid = 198138182811;
+        /// new chainid, same axelarid
 
         vm.prank(owner);
         vm.expectRevert("AxelarBridge: existing axelarId config");
@@ -343,8 +336,8 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
     }
 
     function testRemoveChainIdsOwnerFailsNoPreexistingConfig() public {
-        AxelarBridgeAdapter.ChainIds[]
-            memory chainids = new AxelarBridgeAdapter.ChainIds[](1);
+        AxelarBridgeAdapter.ChainIds[] memory chainids =
+            new AxelarBridgeAdapter.ChainIds[](1);
         chainids[0].chainid = 10391821728172;
 
         vm.prank(owner);
@@ -353,10 +346,11 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
     }
 
     function testAddChainIdsOwnerFailsNoPreexistingAxelarIdConfig() public {
-        AxelarBridgeAdapter.ChainIds[]
-            memory chainids = new AxelarBridgeAdapter.ChainIds[](1);
+        AxelarBridgeAdapter.ChainIds[] memory chainids =
+            new AxelarBridgeAdapter.ChainIds[](1);
         chainids[0] = chainIds;
-        chainids[0].axelarid = "23892aa axelar"; /// new axelarid, same chainid
+        chainids[0].axelarid = "23892aa axelar";
+        /// new axelarid, same chainid
 
         vm.prank(owner);
         vm.expectRevert("AxelarBridge: non-existent axelarId config");
@@ -402,10 +396,7 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
         uint256 startingBalance = xwellProxy.balanceOf(address(this));
 
         adapter.execute(
-            bytes32(bridgeAmount),
-            axelarId,
-            address(this).toString(),
-            payload
+            bytes32(bridgeAmount), axelarId, address(this).toString(), payload
         );
 
         uint256 endingBalance = xwellProxy.balanceOf(address(this));
@@ -427,10 +418,7 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
 
         vm.expectRevert("AxelarBridgeAdapter: call not approved by gateway");
         adapter.execute(
-            bytes32(bridgeAmount),
-            axelarId,
-            address(this).toString(),
-            payload
+            bytes32(bridgeAmount), axelarId, address(this).toString(), payload
         );
     }
 
@@ -473,10 +461,10 @@ contract AxelarBridgeAdapterUnitTest is BaseTest {
     function _setupxERC20() private {
         MintLimits.RateLimitMidPointInfo memory ratelimit = MintLimits
             .RateLimitMidPointInfo({
-                bridge: address(adapter),
-                bufferCap: 100_000_000 * 1e18,
-                rateLimitPerSecond: 100 * 1e18
-            });
+            bridge: address(adapter),
+            bufferCap: 100_000_000 * 1e18,
+            rateLimitPerSecond: 100 * 1e18
+        });
 
         vm.prank(xwellProxy.owner());
         xwellProxy.addBridge(ratelimit);

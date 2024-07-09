@@ -36,12 +36,12 @@ contract ComptrollerVXStorage is UnitrollerAdminStorage {
     /**
      * @notice Multiplier used to calculate the maximum repayAmount when liquidating a borrow
      */
-    uint public closeFactorMantissa;
+    uint256 public closeFactorMantissa;
 
     /**
      * @notice Multiplier representing the discount on collateral that a liquidator receives
      */
-    uint public liquidationIncentiveMantissa;
+    uint256 public liquidationIncentiveMantissa;
 
     /**
      * @notice Per-account mapping of "assets you are in", capped by maxAssets
@@ -56,7 +56,7 @@ contract ComptrollerVXStorage is UnitrollerAdminStorage {
          *  For instance, 0.9 to allow borrowing 90% of collateral value.
          *  Must be between 0 and 1, and stored as a mantissa.
          */
-        uint collateralFactorMantissa;
+        uint256 collateralFactorMantissa;
         /// @notice Per-market mapping of "accounts in this asset"
         mapping(address => bool) accountMembership;
     }
@@ -85,7 +85,7 @@ contract ComptrollerVXStorage is UnitrollerAdminStorage {
     address public borrowCapGuardian;
 
     // @notice Borrow caps enforced by borrowAllowed for each mToken address. Defaults to zero which corresponds to unlimited borrowing.
-    mapping(address => uint) public borrowCaps;
+    mapping(address => uint256) public borrowCaps;
 
     struct RewardMarketState {
         /// @notice The market's last updated rewardBorrowIndex or rewardSupplyIndex
@@ -103,7 +103,7 @@ contract ComptrollerV2Storage is ComptrollerVXStorage {
     address public supplyCapGuardian;
 
     /// @notice Supply caps enforced by mintAllowed for each cToken address. Defaults to zero which corresponds to unlimited supplying.
-    mapping(address => uint) public supplyCaps;
+    mapping(address => uint256) public supplyCaps;
 
     /// @notice The Reward distributor used to emit protocol rewards
     MultiRewardDistributor public rewardDistributor;

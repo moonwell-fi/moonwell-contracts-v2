@@ -2,8 +2,8 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MockWeth} from "@test/mock/MockWeth.sol";
 import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
+import {MockWeth} from "@test/mock/MockWeth.sol";
 
 contract WethUnwrapperUnitTest is Test {
     WethUnwrapper unwrapper;
@@ -41,8 +41,9 @@ contract WethUnwrapperUnitTest is Test {
     function testSendRawEthToWethUnwrapperFails() public {
         vm.deal(address(this), 1 ether);
         vm.expectRevert("not accepting eth");
-        (bool success, ) = address(unwrapper).call{value: 1 ether}("");
-        assertEq(success, true); /// idk why this is true, but it is even though it reverts
+        (bool success,) = address(unwrapper).call{value: 1 ether}("");
+        assertEq(success, true);
+        /// idk why this is true, but it is even though it reverts
     }
 
     receive() external payable {

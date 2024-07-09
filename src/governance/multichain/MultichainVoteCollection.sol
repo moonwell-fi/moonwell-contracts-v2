@@ -1,12 +1,15 @@
 pragma solidity 0.8.19;
 
-import {IMultichainVoteCollection} from "@protocol/governance/multichain/IMultichainVoteCollection.sol";
-import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import {Ownable2StepUpgradeable} from
+    "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import {IMultichainVoteCollection} from
+    "@protocol/governance/multichain/IMultichainVoteCollection.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
-import {SnapshotInterface} from "@protocol/governance/multichain/SnapshotInterface.sol";
+import {SnapshotInterface} from
+    "@protocol/governance/multichain/SnapshotInterface.sol";
 import {WormholeBridgeBase} from "@protocol/wormhole/WormholeBridgeBase.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 
 /// @notice Upgradeable contract, constructor disables the implementation contract
 /// This contract is intentionally as minimal as possible. It is only responsible for
@@ -73,10 +76,13 @@ contract MultichainVoteCollection is
 
         _setWormholeRelayer(_wormholeRelayer);
 
-        _setGasLimit(Constants.MIN_GAS_LIMIT); /// set the gas limit to 400k
+        _setGasLimit(Constants.MIN_GAS_LIMIT);
+
+        /// set the gas limit to 400k
 
         __Ownable_init();
-        _transferOwnership(_owner); /// directly set the new owner without waiting for pending owner to accept
+        _transferOwnership(_owner);
+        /// directly set the new owner without waiting for pending owner to accept
     }
 
     /// --------------------------------------------------------- ///
@@ -88,10 +94,11 @@ contract MultichainVoteCollection is
     /// @notice returns a user's vote receipt on a given proposal
     /// @param proposalId the id of the proposal to check
     /// @param voter the address of the voter to check
-    function getReceipt(
-        uint256 proposalId,
-        address voter
-    ) external view returns (bool hasVoted, uint8 voteValue, uint256 votes) {
+    function getReceipt(uint256 proposalId, address voter)
+        external
+        view
+        returns (bool hasVoted, uint8 voteValue, uint256 votes)
+    {
         MultichainProposal storage proposal = proposals[proposalId];
         Receipt storage receipt = proposal.receipts[voter];
 
@@ -102,9 +109,7 @@ contract MultichainVoteCollection is
 
     /// @notice returns information on a proposal
     /// @param proposalId the id of the proposal to check
-    function proposalInformation(
-        uint256 proposalId
-    )
+    function proposalInformation(uint256 proposalId)
         external
         view
         returns (
@@ -124,8 +129,8 @@ contract MultichainVoteCollection is
         voteSnapshotTimestamp = proposal.voteSnapshotTimestamp;
         votingStartTime = proposal.votingStartTime;
         votingEndTime = proposal.votingEndTime;
-        crossChainVoteCollectionEndTimestamp = proposal
-            .crossChainVoteCollectionEndTimestamp;
+        crossChainVoteCollectionEndTimestamp =
+            proposal.crossChainVoteCollectionEndTimestamp;
 
         /// votes
         totalVotes = proposal.votes.totalVotes;
@@ -137,9 +142,7 @@ contract MultichainVoteCollection is
     /// @notice returns the vote counts for a proposal
     /// includes the total vote count, for, against and abstain votes
     /// @param proposalId the id of the proposal to check
-    function proposalVotes(
-        uint256 proposalId
-    )
+    function proposalVotes(uint256 proposalId)
         external
         view
         returns (
@@ -161,13 +164,13 @@ contract MultichainVoteCollection is
     /// returns the sum of votes across both xWELL and stkWELL at the given timestamp
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
-    function getVotes(
-        address account,
-        uint256 timestamp
-    ) public view returns (uint256) {
-        return
-            xWell.getPastVotes(account, timestamp) +
-            stkWell.getPriorVotes(account, timestamp);
+    function getVotes(address account, uint256 timestamp)
+        public
+        view
+        returns (uint256)
+    {
+        return xWell.getPastVotes(account, timestamp)
+            + stkWell.getPriorVotes(account, timestamp);
     }
 
     /// --------------------------------------------------------- ///
@@ -211,10 +214,7 @@ contract MultichainVoteCollection is
         );
 
         /// Get voting power
-        uint256 userVotes = getVotes(
-            msg.sender,
-            proposal.voteSnapshotTimestamp
-        );
+        uint256 userVotes = getVotes(msg.sender, proposal.voteSnapshotTimestamp);
 
         require(userVotes != 0, "MultichainVoteCollection: voter has no votes");
 
@@ -278,10 +278,7 @@ contract MultichainVoteCollection is
         );
 
         emit VotesEmitted(
-            proposalId,
-            votes.forVotes,
-            votes.againstVotes,
-            votes.abstainVotes
+            proposalId, votes.forVotes, votes.againstVotes, votes.abstainVotes
         );
     }
 
@@ -343,8 +340,8 @@ contract MultichainVoteCollection is
         MultichainProposal storage proposal = proposals[proposalId];
         proposal.votingStartTime = votingStartTime;
         proposal.votingEndTime = votingEndTime;
-        proposal
-            .crossChainVoteCollectionEndTimestamp = crossChainVoteCollectionEndTimestamp;
+        proposal.crossChainVoteCollectionEndTimestamp =
+            crossChainVoteCollectionEndTimestamp;
         proposal.voteSnapshotTimestamp = voteSnapshotTimestamp;
 
         /// Emit the ProposalCreated event

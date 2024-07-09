@@ -3,12 +3,12 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// This MIP sets the IRM for an MToken contract.
 /// It is intended to be used as a template for future MIPs that need to set IRM's.
@@ -52,14 +52,13 @@ contract mipb01 is HybridProposal, Configs {
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
-        JumpRateModel jrm = JumpRateModel(
-            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH")
-        );
+        JumpRateModel jrm =
+            JumpRateModel(addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH"));
 
         assertEq(
             address(
-                MToken(addresses.getAddress("MOONWELL_WETH"))
-                    .interestRateModel()
+                MToken(addresses.getAddress("MOONWELL_WETH")).interestRateModel(
+                )
             ),
             address(jrm)
         );

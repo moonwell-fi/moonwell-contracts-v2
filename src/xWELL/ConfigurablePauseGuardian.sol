@@ -15,8 +15,7 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
     /// @param oldPauseGuardian old pause guardian
     /// @param newPauseGuardian new pause guardian
     event PauseGuardianUpdated(
-        address indexed oldPauseGuardian,
-        address indexed newPauseGuardian
+        address indexed oldPauseGuardian, address indexed newPauseGuardian
     );
 
     /// @notice returns whether the pause has been used by the pause guardian
@@ -45,9 +44,13 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
     function _resetPauseState() private {
         address previousPauseGuardian = pauseGuardian;
 
-        pauseGuardian = address(0); /// remove the pause guardian
+        pauseGuardian = address(0);
 
-        _setPauseTime(0); /// fully unpause, set pauseStartTime to 0
+        /// remove the pause guardian
+
+        _setPauseTime(0);
+
+        /// fully unpause, set pauseStartTime to 0
 
         emit PauseGuardianUpdated(previousPauseGuardian, address(0));
     }

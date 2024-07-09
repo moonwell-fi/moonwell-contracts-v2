@@ -56,9 +56,7 @@ contract xWELLPauseUnitTest is BaseTest {
         assertEq(xwellProxy.pauseStartTime(), 0, "pauseStartTime incorrect");
         assertFalse(xwellProxy.pauseUsed(), "pause should be used");
         assertEq(
-            xwellProxy.pauseGuardian(),
-            address(0),
-            "pause guardian incorrect"
+            xwellProxy.pauseGuardian(), address(0), "pause guardian incorrect"
         );
     }
 
@@ -86,9 +84,7 @@ contract xWELLPauseUnitTest is BaseTest {
         xwellProxy.kickGuardian();
 
         assertEq(
-            xwellProxy.pauseGuardian(),
-            address(0),
-            "incorrect pause guardian"
+            xwellProxy.pauseGuardian(), address(0), "incorrect pause guardian"
         );
         assertEq(xwellProxy.pauseStartTime(), 0, "pauseStartTime incorrect");
         assertFalse(xwellProxy.pauseUsed(), "incorrect pause used");

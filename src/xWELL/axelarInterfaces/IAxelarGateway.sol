@@ -20,10 +20,11 @@ pragma solidity ^0.8.0;
 import {IGovernable} from "./IGovernable.sol";
 
 interface IAxelarGateway is IGovernable {
-    /**********\
-    |* Errors *|
-    \**********/
-
+    /**
+     * \
+     * |* Errors *|
+     * \*********
+     */
     error NotSelf();
     error NotProxy();
     error InvalidCodeHash();
@@ -42,10 +43,11 @@ interface IAxelarGateway is IGovernable {
     error InvalidSetMintLimitsParams();
     error ExceedMintLimit(string symbol);
 
-    /**********\
-    |* Events *|
-    \**********/
-
+    /**
+     * \
+     * |* Events *|
+     * \*********
+     */
     event TokenSent(
         address indexed sender,
         string destinationChain,
@@ -104,10 +106,11 @@ interface IAxelarGateway is IGovernable {
 
     event Upgraded(address indexed implementation);
 
-    /********************\
-    |* Public Functions *|
-    \********************/
-
+    /**
+     * \
+     * |* Public Functions *|
+     * \*******************
+     */
     function sendToken(
         string calldata destinationChain,
         string calldata destinationAddress,
@@ -163,33 +166,40 @@ interface IAxelarGateway is IGovernable {
         uint256 amount
     ) external returns (bool);
 
-    /***********\
-    |* Getters *|
-    \***********/
-
+    /**
+     * \
+     * |* Getters *|
+     * \**********
+     */
     function authModule() external view returns (address);
 
     function tokenDeployer() external view returns (address);
 
-    function tokenMintLimit(
-        string memory symbol
-    ) external view returns (uint256);
+    function tokenMintLimit(string memory symbol)
+        external
+        view
+        returns (uint256);
 
-    function tokenMintAmount(
-        string memory symbol
-    ) external view returns (uint256);
+    function tokenMintAmount(string memory symbol)
+        external
+        view
+        returns (uint256);
 
     function allTokensFrozen() external view returns (bool);
 
     function implementation() external view returns (address);
 
-    function tokenAddresses(
-        string memory symbol
-    ) external view returns (address);
+    function tokenAddresses(string memory symbol)
+        external
+        view
+        returns (address);
 
     function tokenFrozen(string memory symbol) external view returns (bool);
 
-    function isCommandExecuted(bytes32 commandId) external view returns (bool);
+    function isCommandExecuted(bytes32 commandId)
+        external
+        view
+        returns (bool);
 
     function adminEpoch() external view returns (uint256);
 
@@ -197,10 +207,11 @@ interface IAxelarGateway is IGovernable {
 
     function admins(uint256 epoch) external view returns (address[] memory);
 
-    /*******************\
-    |* Admin Functions *|
-    \*******************/
-
+    /**
+     * \
+     * |* Admin Functions *|
+     * \******************
+     */
     function setTokenMintLimits(
         string[] calldata symbols,
         uint256[] calldata limits
@@ -212,10 +223,11 @@ interface IAxelarGateway is IGovernable {
         bytes calldata setupParams
     ) external;
 
-    /**********************\
-    |* External Functions *|
-    \**********************/
-
+    /**
+     * \
+     * |* External Functions *|
+     * \*********************
+     */
     function setup(bytes calldata params) external;
 
     function execute(bytes calldata input) external;

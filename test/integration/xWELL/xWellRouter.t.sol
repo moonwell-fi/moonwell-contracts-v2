@@ -6,12 +6,17 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
-import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
+
+import {
+    BASE_WORMHOLE_CHAIN_ID,
+    MOONBEAM_WORMHOLE_CHAIN_ID
+} from "@utils/ChainIds.sol";
 
 contract xWellRouterTest is Test {
     /// @notice addresses contract, stores all addresses
@@ -64,14 +69,14 @@ contract xWellRouterTest is Test {
             address(wormholeAdapter)
         );
 
-        fallbackReverts = false; /// default to not revert
+        fallbackReverts = false;
+
+        /// default to not revert
     }
 
     function testSetup() public view {
         assertEq(
-            address(router.xwell()),
-            address(xwell),
-            "Xwell address incorrect"
+            address(router.xwell()), address(xwell), "Xwell address incorrect"
         );
         assertEq(
             address(router.well()),
@@ -127,17 +132,14 @@ contract xWellRouterTest is Test {
         testBridgeOutSuccess(300_000_000 * 1e18);
     }
 
-    function testBridgeOutToSuccess(
-        uint256 mintAmount,
-        uint256 glmrAmount
-    ) public returns (uint256) {
+    function testBridgeOutToSuccess(uint256 mintAmount, uint256 glmrAmount)
+        public
+        returns (uint256)
+    {
         uint256 bridgeCost = router.bridgeCost();
 
-        mintAmount = _bound(
-            mintAmount,
-            1,
-            xwell.buffer(address(wormholeAdapter))
-        );
+        mintAmount =
+            _bound(mintAmount, 1, xwell.buffer(address(wormholeAdapter)));
         glmrAmount = _bound(glmrAmount, bridgeCost, type(uint256).max);
 
         uint256 startingXWellBalance = xwell.balanceOf(address(this));
@@ -192,12 +194,12 @@ contract xWellRouterTest is Test {
         return mintAmount;
     }
 
-    function testBridgeOutSuccess(uint256 mintAmount) public returns (uint256) {
-        mintAmount = _bound(
-            mintAmount,
-            1,
-            xwell.buffer(address(wormholeAdapter))
-        );
+    function testBridgeOutSuccess(uint256 mintAmount)
+        public
+        returns (uint256)
+    {
+        mintAmount =
+            _bound(mintAmount, 1, xwell.buffer(address(wormholeAdapter)));
 
         uint256 startingXWellBalance = xwell.balanceOf(address(this));
         uint256 startingXWellTotalSupply = xwell.totalSupply();
@@ -252,7 +254,9 @@ contract xWellRouterTest is Test {
 
         deal(address(well), address(this), mintAmount);
 
-        uint256 bridgeCost = router.bridgeCost() * 2; /// a little extra
+        uint256 bridgeCost = router.bridgeCost() * 2;
+
+        /// a little extra
         vm.deal(address(this), bridgeCost);
 
         well.approve(address(router), mintAmount);
@@ -267,7 +271,9 @@ contract xWellRouterTest is Test {
 
         deal(address(well), address(this), mintAmount);
 
-        uint256 bridgeCost = router.bridgeCost(); /// no extra, no refund amount
+        uint256 bridgeCost = router.bridgeCost();
+
+        /// no extra, no refund amount
         vm.deal(address(this), bridgeCost);
 
         well.approve(address(router), mintAmount);

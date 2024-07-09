@@ -40,31 +40,35 @@ interface IWormholeRelayerBase {
         uint256 paymentForExtraReceiverValue
     );
 
-    function getRegisteredWormholeRelayerContract(
-        uint16 chainId
-    ) external view returns (bytes32);
+    function getRegisteredWormholeRelayerContract(uint16 chainId)
+        external
+        view
+        returns (bytes32);
 
     /**
      * @notice Returns true if a delivery has been attempted for the given deliveryHash
      * Note: invalid deliveries where the tx reverts are not considered attempted
      */
-    function deliveryAttempted(
-        bytes32 deliveryHash
-    ) external view returns (bool attempted);
+    function deliveryAttempted(bytes32 deliveryHash)
+        external
+        view
+        returns (bool attempted);
 
     /**
      * @notice block number at which a delivery was successfully executed
      */
-    function deliverySuccessBlock(
-        bytes32 deliveryHash
-    ) external view returns (uint256 blockNumber);
+    function deliverySuccessBlock(bytes32 deliveryHash)
+        external
+        view
+        returns (uint256 blockNumber);
 
     /**
      * @notice block number of the latest attempt to execute a delivery that failed
      */
-    function deliveryFailureBlock(
-        bytes32 deliveryHash
-    ) external view returns (uint256 blockNumber);
+    function deliveryFailureBlock(bytes32 deliveryHash)
+        external
+        view
+        returns (uint256 blockNumber);
 }
 
 /**

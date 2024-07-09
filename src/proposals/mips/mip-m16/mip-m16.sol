@@ -3,10 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {GovernanceProposal} from
+    "@proposals/proposalTypes/GovernanceProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
-import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipm16 is GovernanceProposal {
     string public constant override name = "MIP-M16";
@@ -33,9 +34,7 @@ contract mipm16 is GovernanceProposal {
     function build(Addresses addresses) public override {
         address mUSDCAddress = addresses.getAddress("MOONWELL_mUSDC");
         address mETHAddress = addresses.getAddress("DEPRECATED_MOONWELL_mETH");
-        address mwBTCAddress = addresses.getAddress(
-            "DEPRECATED_MOONWELL_mWBTC"
-        );
+        address mwBTCAddress = addresses.getAddress("DEPRECATED_MOONWELL_mWBTC");
 
         /// @dev mUSDC.mad
         MErc20Delegator mUSDC = MErc20Delegator(payable(mUSDCAddress));
@@ -78,9 +77,8 @@ contract mipm16 is GovernanceProposal {
         );
 
         /// @dev Nomad reallocation multisig
-        address nomadReallocationMultisig = addresses.getAddress(
-            "NOMAD_REALLOCATION_MULTISIG"
-        );
+        address nomadReallocationMultisig =
+            addresses.getAddress("NOMAD_REALLOCATION_MULTISIG");
 
         /// @dev transfer USDC from the timelock to the multisig
         _pushGovernanceAction(

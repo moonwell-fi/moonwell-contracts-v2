@@ -1,28 +1,27 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "./ErrorReporter.sol";
 import "./ComptrollerStorage.sol";
+import "./ErrorReporter.sol";
 /**
  * @title ComptrollerCore
  * @dev Storage for the comptroller is at this address, while execution is delegated to the `comptrollerImplementation`.
  * MTokens should reference this contract as their comptroller.
  */
+
 contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
     /**
      * @notice Emitted when pendingComptrollerImplementation is changed
      */
     event NewPendingImplementation(
-        address oldPendingImplementation,
-        address newPendingImplementation
+        address oldPendingImplementation, address newPendingImplementation
     );
 
     /**
      * @notice Emitted when pendingComptrollerImplementation is accepted, which means comptroller implementation is updated
      */
     event NewImplementation(
-        address oldImplementation,
-        address newImplementation
+        address oldImplementation, address newImplementation
     );
 
     /**
@@ -40,16 +39,18 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
         admin = msg.sender;
     }
 
-    /*** Admin Functions ***/
-    function _setPendingImplementation(
-        address newPendingImplementation
-    ) public returns (uint) {
+    /**
+     * Admin Functions **
+     */
+    function _setPendingImplementation(address newPendingImplementation)
+        public
+        returns (uint256)
+    {
         if (msg.sender != admin) {
-            return
-                fail(
-                    Error.UNAUTHORIZED,
-                    FailureInfo.SET_PENDING_IMPLEMENTATION_OWNER_CHECK
-                );
+            return fail(
+                Error.UNAUTHORIZED,
+                FailureInfo.SET_PENDING_IMPLEMENTATION_OWNER_CHECK
+            );
         }
 
         address oldPendingImplementation = pendingComptrollerImplementation;
@@ -57,11 +58,10 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
         pendingComptrollerImplementation = newPendingImplementation;
 
         emit NewPendingImplementation(
-            oldPendingImplementation,
-            pendingComptrollerImplementation
+            oldPendingImplementation, pendingComptrollerImplementation
         );
 
-        return uint(Error.NO_ERROR);
+        return uint256(Error.NO_ERROR);
     }
 
     /**
@@ -69,17 +69,16 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
      * @dev Admin function for new implementation to accept it's role as implementation
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function _acceptImplementation() public returns (uint) {
+    function _acceptImplementation() public returns (uint256) {
         // Check caller is pendingImplementation and pendingImplementation ≠ address(0)
         if (
-            msg.sender != pendingComptrollerImplementation ||
-            pendingComptrollerImplementation == address(0)
+            msg.sender != pendingComptrollerImplementation
+                || pendingComptrollerImplementation == address(0)
         ) {
-            return
-                fail(
-                    Error.UNAUTHORIZED,
-                    FailureInfo.ACCEPT_PENDING_IMPLEMENTATION_ADDRESS_CHECK
-                );
+            return fail(
+                Error.UNAUTHORIZED,
+                FailureInfo.ACCEPT_PENDING_IMPLEMENTATION_ADDRESS_CHECK
+            );
         }
 
         // Save current values for inclusion in log
@@ -92,11 +91,10 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
 
         emit NewImplementation(oldImplementation, comptrollerImplementation);
         emit NewPendingImplementation(
-            oldPendingImplementation,
-            pendingComptrollerImplementation
+            oldPendingImplementation, pendingComptrollerImplementation
         );
 
-        return uint(Error.NO_ERROR);
+        return uint256(Error.NO_ERROR);
     }
 
     /**
@@ -105,14 +103,15 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
      * @param newPendingAdmin New pending admin.
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function _setPendingAdmin(address newPendingAdmin) public returns (uint) {
+    function _setPendingAdmin(address newPendingAdmin)
+        public
+        returns (uint256)
+    {
         // Check caller = admin
         if (msg.sender != admin) {
-            return
-                fail(
-                    Error.UNAUTHORIZED,
-                    FailureInfo.SET_PENDING_ADMIN_OWNER_CHECK
-                );
+            return fail(
+                Error.UNAUTHORIZED, FailureInfo.SET_PENDING_ADMIN_OWNER_CHECK
+            );
         }
 
         // Save current value, if any, for inclusion in log
@@ -124,7 +123,7 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
         // Emit NewPendingAdmin(oldPendingAdmin, newPendingAdmin)
         emit NewPendingAdmin(oldPendingAdmin, newPendingAdmin);
 
-        return uint(Error.NO_ERROR);
+        return uint256(Error.NO_ERROR);
     }
 
     /**
@@ -132,14 +131,12 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
      * @dev Admin function for pending admin to accept role and update admin
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function _acceptAdmin() public returns (uint) {
+    function _acceptAdmin() public returns (uint256) {
         // Check caller is pendingAdmin and pendingAdmin ≠ address(0)
         if (msg.sender != pendingAdmin || msg.sender == address(0)) {
-            return
-                fail(
-                    Error.UNAUTHORIZED,
-                    FailureInfo.ACCEPT_ADMIN_PENDING_ADMIN_CHECK
-                );
+            return fail(
+                Error.UNAUTHORIZED, FailureInfo.ACCEPT_ADMIN_PENDING_ADMIN_CHECK
+            );
         }
 
         // Save current values for inclusion in log
@@ -155,7 +152,7 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
         emit NewAdmin(oldAdmin, admin);
         emit NewPendingAdmin(oldPendingAdmin, pendingAdmin);
 
-        return uint(Error.NO_ERROR);
+        return uint256(Error.NO_ERROR);
     }
 
     /**
@@ -165,19 +162,15 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
      */
     fallback() external {
         // delegate all other functions to current implementation
-        (bool success, ) = comptrollerImplementation.delegatecall(msg.data);
+        (bool success,) = comptrollerImplementation.delegatecall(msg.data);
 
         assembly {
             let free_mem_ptr := mload(0x40)
             returndatacopy(free_mem_ptr, 0, returndatasize())
 
             switch success
-            case 0 {
-                revert(free_mem_ptr, returndatasize())
-            }
-            default {
-                return(free_mem_ptr, returndatasize())
-            }
+            case 0 { revert(free_mem_ptr, returndatasize()) }
+            default { return(free_mem_ptr, returndatasize()) }
         }
     }
 }

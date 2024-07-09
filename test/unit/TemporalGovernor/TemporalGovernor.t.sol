@@ -2,9 +2,13 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {
+    ITemporalGovernor,
+    TemporalGovernor
+} from "@protocol/governance/TemporalGovernor.sol";
 
-import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import {SafeCast} from
+    "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {Address} from "@utils/Address.sol";
 
 interface InstrumentedExternalEvents {
@@ -12,17 +16,14 @@ interface InstrumentedExternalEvents {
     event DecodedVAA(
         address intendedRecipient,
         address[] targets,
-        uint[] values,
+        uint256[] values,
         string[] signatures,
         bytes[] calldatas
     );
 
     /// @notice Emitted when a transaction is executed
     event ExecutedTransaction(
-        address target,
-        uint value,
-        string signature,
-        bytes data
+        address target, uint256 value, string signature, bytes data
     );
 
     /// @notice emitted when guardian pause is granted
@@ -47,8 +48,8 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
     uint256 public constant permissionlessUnpauseTime = 30 days;
 
     function setUp() public {
-        TemporalGovernor.TrustedSender[]
-            memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders =
+            new TemporalGovernor.TrustedSender[](1);
         trustedSenders[0] = ITemporalGovernor.TrustedSender({
             chainId: block.chainid.toUint16(),
             addr: admin
@@ -69,8 +70,8 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
     }
 
     function testCannotsetTrustedSendersNonTemporalGovernor() public {
-        TemporalGovernor.TrustedSender[]
-            memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders =
+            new TemporalGovernor.TrustedSender[](1);
 
         vm.expectRevert(
             "TemporalGovernor: Only this contract can update trusted senders"
@@ -121,20 +122,18 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
 
         vm.deal(address(this), value);
 
-        (bool success, ) = address(governor).call{value: value}("");
+        (bool success,) = address(governor).call{value: value}("");
 
         assertEq(
-            address(governor).balance,
-            value,
-            "governor did not receive value"
+            address(governor).balance, value, "governor did not receive value"
         );
         assertTrue(success, "send eth failed");
     }
 
     function testsetTrustedSendersAsTemporalGovernorSucceeds() public {
         address newAdmin = address(100_000_001);
-        TemporalGovernor.TrustedSender[]
-            memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders =
+            new TemporalGovernor.TrustedSender[](1);
         trustedSenders[0] = ITemporalGovernor.TrustedSender({
             chainId: block.chainid.toUint16(),
             addr: newAdmin
@@ -145,8 +144,7 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
 
         assertTrue(
             governor.isTrustedSender(
-                block.chainid.toUint16(),
-                newAdmin.toBytes()
+                block.chainid.toUint16(), newAdmin.toBytes()
             )
         );
         assertTrue(
@@ -156,8 +154,8 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
 
     function testUnsetTrustedSendersAsTemporalGovernorSucceeds() public {
         address newAdmin = address(100_000_001);
-        TemporalGovernor.TrustedSender[]
-            memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders =
+            new TemporalGovernor.TrustedSender[](1);
         trustedSenders[0] = ITemporalGovernor.TrustedSender({
             chainId: block.chainid.toUint16(),
             addr: newAdmin
@@ -168,8 +166,7 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
 
         assertFalse(
             governor.isTrustedSender(
-                block.chainid.toUint16(),
-                newAdmin.toBytes()
+                block.chainid.toUint16(), newAdmin.toBytes()
             )
         );
         assertTrue(
@@ -178,8 +175,8 @@ contract TemporalGovernorUnitTest is Test, InstrumentedExternalEvents {
     }
 
     function testUnsetTrustedSendersNotAsTemporalGovernorFails() public {
-        TemporalGovernor.TrustedSender[]
-            memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders =
+            new TemporalGovernor.TrustedSender[](1);
 
         vm.expectRevert(
             "TemporalGovernor: Only this contract can update trusted senders"

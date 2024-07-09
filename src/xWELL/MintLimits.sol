@@ -1,7 +1,11 @@
 pragma solidity 0.8.19;
 
-import {RateLimitedMidpointLibrary} from "@zelt/src/lib/RateLimitedMidpointLibrary.sol";
-import {RateLimitMidPoint, RateLimitMidpointCommonLibrary} from "@zelt/src/lib/RateLimitMidpointCommonLibrary.sol";
+import {
+    RateLimitMidPoint,
+    RateLimitMidpointCommonLibrary
+} from "@zelt/src/lib/RateLimitMidpointCommonLibrary.sol";
+import {RateLimitedMidpointLibrary} from
+    "@zelt/src/lib/RateLimitedMidpointLibrary.sol";
 
 abstract contract MintLimits {
     using RateLimitMidpointCommonLibrary for RateLimitMidPoint;
@@ -18,17 +22,15 @@ abstract contract MintLimits {
     }
 
     /// @notice rate limit for each bridge contract
-    mapping(address bridge => RateLimitMidPoint bridgeRateLimit)
-        public rateLimits;
+    mapping(address bridge => RateLimitMidPoint bridgeRateLimit) public
+        rateLimits;
 
     /// @notice emitted when a rate limit is added or removed
     /// @param bridge the bridge address
     /// @param bufferCap the new buffer cap for this bridge
     /// @param rateLimitPerSecond the new rate limit per second for this bridge
     event ConfigurationChanged(
-        address indexed bridge,
-        uint112 bufferCap,
-        uint128 rateLimitPerSecond
+        address indexed bridge, uint112 bufferCap, uint128 rateLimitPerSecond
     );
 
     //// ------------------------------------------------------------
@@ -87,10 +89,9 @@ abstract contract MintLimits {
     /// then sets the new rate limit per second
     /// @param from address to set rate limit for
     /// @param newRateLimitPerSecond new rate limit per second
-    function _setRateLimitPerSecond(
-        address from,
-        uint128 newRateLimitPerSecond
-    ) internal {
+    function _setRateLimitPerSecond(address from, uint128 newRateLimitPerSecond)
+        internal
+    {
         require(
             newRateLimitPerSecond <= maxRateLimitPerSecond(),
             "MintLimits: rateLimitPerSecond too high"
@@ -103,9 +104,7 @@ abstract contract MintLimits {
         rateLimits[from].setRateLimitPerSecond(newRateLimitPerSecond);
 
         emit ConfigurationChanged(
-            from,
-            rateLimits[from].bufferCap,
-            newRateLimitPerSecond
+            from, rateLimits[from].bufferCap, newRateLimitPerSecond
         );
     }
 
@@ -121,16 +120,13 @@ abstract contract MintLimits {
             "MintLimits: non-existent rate limit"
         );
         require(
-            newBufferCap > minBufferCap(),
-            "MintLimits: buffer cap below min"
+            newBufferCap > minBufferCap(), "MintLimits: buffer cap below min"
         );
 
         rateLimits[from].setBufferCap(newBufferCap);
 
         emit ConfigurationChanged(
-            from,
-            newBufferCap,
-            rateLimits[from].rateLimitPerSecond
+            from, newBufferCap, rateLimits[from].rateLimitPerSecond
         );
     }
 
@@ -153,8 +149,7 @@ abstract contract MintLimits {
             "MintLimits: rateLimitPerSecond too high"
         );
         require(
-            rateLimit.bridge != address(0),
-            "MintLimits: invalid bridge address"
+            rateLimit.bridge != address(0), "MintLimits: invalid bridge address"
         );
         require(
             rateLimits[rateLimit.bridge].bufferCap == 0,
@@ -174,9 +169,7 @@ abstract contract MintLimits {
         });
 
         emit ConfigurationChanged(
-            rateLimit.bridge,
-            rateLimit.bufferCap,
-            rateLimit.rateLimitPerSecond
+            rateLimit.bridge, rateLimit.bufferCap, rateLimit.rateLimitPerSecond
         );
     }
 

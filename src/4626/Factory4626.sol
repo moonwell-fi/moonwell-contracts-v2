@@ -1,12 +1,13 @@
 pragma solidity 0.8.19;
 
-import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from
+    "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
-import {MErc20} from "@protocol/MErc20.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
 import {Comptroller as IMoontroller} from "@protocol/Comptroller.sol";
+import {MErc20} from "@protocol/MErc20.sol";
 
 contract Factory4626 {
     using SafeERC20 for *;
@@ -45,10 +46,10 @@ contract Factory4626 {
     /// @notice Deploy a MoonwellERC4626 vault
     /// @param mToken The corresponding mToken
     /// @param rewardRecipient The address to receive rewards
-    function deployMoonwellERC4626(
-        address mToken,
-        address rewardRecipient
-    ) external returns (address vault) {
+    function deployMoonwellERC4626(address mToken, address rewardRecipient)
+        external
+        returns (address vault)
+    {
         address asset = MErc20(mToken).underlying();
         /// parameter checks
         require(rewardRecipient != address(0), "INVALID_RECIPIENT");
@@ -57,10 +58,7 @@ contract Factory4626 {
         /// create the vault contract
         vault = address(
             new MoonwellERC4626(
-                ERC20(asset),
-                MErc20(mToken),
-                rewardRecipient,
-                moontroller
+                ERC20(asset), MErc20(mToken), rewardRecipient, moontroller
             )
         );
 
@@ -70,9 +68,7 @@ contract Factory4626 {
         uint256 initialMintAmount = 10 ** ((ERC20(asset).decimals() * 2) / 3);
 
         IERC20(asset).safeTransferFrom(
-            msg.sender,
-            address(this),
-            initialMintAmount
+            msg.sender, address(this), initialMintAmount
         );
 
         IERC20(asset).safeApprove(vault, initialMintAmount);

@@ -1,13 +1,16 @@
 pragma solidity 0.8.19;
 
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
 import "@test/helper/BaseTest.t.sol";
 
+import {ProxyAdmin} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from
+    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 
 contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
     IStakedWell stakedWell;
@@ -28,7 +31,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         cooldown = 1 days;
         unstakePeriod = 3 weeks;
 
-        (address stkWellProxy, ) = deployStakedWell(
+        (address stkWellProxy,) = deployStakedWell(
             address(xwellProxy),
             address(xwellProxy),
             cooldown,
@@ -77,9 +80,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         uint256 stkWellSupplyAfter = stakedWell.totalSupply();
 
         assertEq(
-            userBalanceBefore - amount,
-            userBalanceAfter,
-            "Wrong user balance"
+            userBalanceBefore - amount, userBalanceAfter, "Wrong user balance"
         );
         assertEq(
             userStkWellBalanceBefore + amount,
@@ -101,9 +102,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         vm.prank(address(stakedWell.EMISSION_MANAGER()));
         vm.expectRevert("PARAM_LENGTHS");
         stakedWell.configureAssets(
-            emissionPerSecond,
-            totalStaked,
-            underlyingAsset
+            emissionPerSecond, totalStaked, underlyingAsset
         );
     }
 
@@ -115,9 +114,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         vm.prank(address(1));
         vm.expectRevert("ONLY_EMISSION_MANAGER");
         stakedWell.configureAssets(
-            emissionPerSecond,
-            totalStaked,
-            underlyingAsset
+            emissionPerSecond, totalStaked, underlyingAsset
         );
     }
 
@@ -219,9 +216,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         stakedWell.setUnstakeWindow(newUnstakeWindow);
 
         assertEq(
-            stakedWell.UNSTAKE_WINDOW(),
-            newUnstakeWindow,
-            "Wrong cooldown"
+            stakedWell.UNSTAKE_WINDOW(), newUnstakeWindow, "Wrong cooldown"
         );
     }
 
@@ -237,9 +232,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         stakedWell.setUnstakeWindow(newUnstakeWindow);
 
         assertEq(
-            stakedWell.UNSTAKE_WINDOW(),
-            newUnstakeWindow,
-            "Wrong cooldown"
+            stakedWell.UNSTAKE_WINDOW(), newUnstakeWindow, "Wrong cooldown"
         );
     }
 
@@ -252,11 +245,17 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
 
         vm.startPrank(user);
 
-        stakedWell.cooldown(); /// start the cooldown
+        stakedWell.cooldown();
 
-        vm.warp(block.timestamp + 1); /// fast forward 1 second to get around gt INSUFFICIENT_COOLDOWN check
+        /// start the cooldown
 
-        stakedWell.redeem(user, amount); /// withdraw
+        vm.warp(block.timestamp + 1);
+
+        /// fast forward 1 second to get around gt INSUFFICIENT_COOLDOWN check
+
+        stakedWell.redeem(user, amount);
+
+        /// withdraw
 
         vm.stopPrank();
 

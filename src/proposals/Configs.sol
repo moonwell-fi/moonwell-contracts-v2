@@ -2,30 +2,44 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {WETH9} from "@protocol/router/IWETH.sol";
-import {MockWeth} from "@test/mock/MockWeth.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
-import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
+
+import {ChainlinkCompositeOracle} from
+    "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {WETH9} from "@protocol/router/IWETH.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
-import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
+import {MockWeth} from "@test/mock/MockWeth.sol";
+import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
+
 import "@utils/ChainIds.sol";
 
 abstract contract Configs is Test {
     struct CTokenConfiguration {
-        string addressesString; /// string used to set address in Addresses.sol
-        uint256 borrowCap; /// borrow cap
-        uint256 collateralFactor; /// collateral factor of the asset
+        string addressesString;
+        /// string used to set address in Addresses.sol
+        uint256 borrowCap;
+        /// borrow cap
+        uint256 collateralFactor;
+        /// collateral factor of the asset
         uint256 initialMintAmount;
-        JumpRateModelConfiguration jrm; /// jump rate model configuration information
-        string name; /// name of the mToken
-        string priceFeedName; /// chainlink price oracle
-        uint256 reserveFactor; /// reserve factor of the asset
-        uint256 seizeShare; /// fee gotten from liquidation
-        uint256 supplyCap; /// supply cap
-        string symbol; /// symbol of the mToken
-        string tokenAddressName; /// underlying token address
+        JumpRateModelConfiguration jrm;
+        /// jump rate model configuration information
+        string name;
+        /// name of the mToken
+        string priceFeedName;
+        /// chainlink price oracle
+        uint256 reserveFactor;
+        /// reserve factor of the asset
+        uint256 seizeShare;
+        /// fee gotten from liquidation
+        uint256 supplyCap;
+        /// supply cap
+        string symbol;
+        /// symbol of the mToken
+        string tokenAddressName;
     }
+    /// underlying token address
 
     struct JumpRateModelConfiguration {
         uint256 baseRatePerYear;
@@ -64,10 +78,8 @@ abstract contract Configs is Test {
     function _setEmissionConfiguration(string memory emissionPath) internal {
         string memory fileContents = vm.readFile(emissionPath);
         bytes memory rawJson = vm.parseJson(fileContents);
-        EmissionConfig[] memory decodedEmissions = abi.decode(
-            rawJson,
-            (EmissionConfig[])
-        );
+        EmissionConfig[] memory decodedEmissions =
+            abi.decode(rawJson, (EmissionConfig[]));
 
         for (uint256 i = 0; i < decodedEmissions.length; i++) {
             emissions[block.chainid].push(decodedEmissions[i]);
@@ -78,10 +90,8 @@ abstract contract Configs is Test {
         string memory fileContents = vm.readFile(mTokenPath);
         bytes memory rawJson = vm.parseJson(fileContents);
 
-        CTokenConfiguration[] memory decodedJson = abi.decode(
-            rawJson,
-            (CTokenConfiguration[])
-        );
+        CTokenConfiguration[] memory decodedJson =
+            abi.decode(rawJson, (CTokenConfiguration[]));
 
         for (uint256 i = 0; i < decodedJson.length; i++) {
             require(
@@ -119,31 +129,27 @@ abstract contract Configs is Test {
             // USDBC
             address usdbc = addresses.getAddress("USDBC");
             FaucetTokenWithPermit(usdbc).allocateTo(
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                initialMintAmount
+                addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount
             );
 
             address cbeth = addresses.getAddress("cbETH");
             FaucetTokenWithPermit(cbeth).allocateTo(
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                initialMintAmount
+                addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount
             );
 
             // WETH
             WETH9 weth = WETH9(addresses.getAddress("WETH"));
             vm.deal(address(this), 0.00001e18);
             weth.deposit{value: 0.00001e18}();
-            weth.transfer(
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                0.00001e18
-            );
+            weth.transfer(addresses.getAddress("TEMPORAL_GOVERNOR"), 0.00001e18);
         }
         if (block.chainid == OPTIMISM_SEPOLIA_CHAIN_ID) {
             // allocate tokens to temporal governor
             FaucetTokenWithPermit usdc = new FaucetTokenWithPermit(
                 1e18,
                 "USD Coin",
-                6, /// 6 decimals
+                6,
+                /// 6 decimals
                 "USDC"
             );
 
@@ -152,31 +158,27 @@ abstract contract Configs is Test {
             FaucetTokenWithPermit wsteth = new FaucetTokenWithPermit(
                 1e18,
                 "wstETH",
-                18, /// 18 decimals
+                18,
+                /// 18 decimals
                 "wstETH"
             );
 
             addresses.addAddress("wstETH", address(wsteth));
 
             FaucetTokenWithPermit(usdc).allocateTo(
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                initialMintAmount
+                addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount
             );
 
             // wstETH
             FaucetTokenWithPermit(wsteth).allocateTo(
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                initialMintAmount
+                addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount
             );
 
             // WETH
             WETH9 weth = WETH9(addresses.getAddress("WETH"));
             vm.deal(address(this), 0.00001e18);
             weth.deposit{value: 0.00001e18}();
-            weth.transfer(
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                0.00001e18
-            );
+            weth.transfer(addresses.getAddress("TEMPORAL_GOVERNOR"), 0.00001e18);
         }
     }
 
@@ -187,40 +189,37 @@ abstract contract Configs is Test {
             /// cToken config for WETH, WBTC and USDBC on local
 
             {
-                MockChainlinkOracle usdcOracle = new MockChainlinkOracle(
-                    1e18,
-                    6
-                );
-                MockChainlinkOracle ethOracle = new MockChainlinkOracle(
-                    2_000e18,
-                    18
-                );
+                MockChainlinkOracle usdcOracle =
+                    new MockChainlinkOracle(1e18, 6);
+                MockChainlinkOracle ethOracle =
+                    new MockChainlinkOracle(2_000e18, 18);
                 FaucetTokenWithPermit token = new FaucetTokenWithPermit(
                     1e18,
                     "USD Coin",
-                    6, /// 6 decimals
+                    6,
+                    /// 6 decimals
                     "USDBC"
                 );
 
                 token.allocateTo(
-                    addresses.getAddress("TEMPORAL_GOVERNOR"),
-                    initialMintAmount
+                    addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount
                 );
 
                 addresses.addAddress("USDBC", address(token));
                 addresses.addAddress("USDC_ORACLE", address(usdcOracle));
                 addresses.addAddress("ETH_ORACLE", address(ethOracle));
 
-                JumpRateModelConfiguration
-                    memory jrmConfig = JumpRateModelConfiguration(
-                        0.04e18, // 0.04 Base
-                        0.45e18, // 0.45 Multiplier
-                        0.8e18, // 0.8 Jump Multiplier
-                        0.8e18 // 0.8 Kink
-                    );
+                JumpRateModelConfiguration memory jrmConfig =
+                JumpRateModelConfiguration(
+                    0.04e18, // 0.04 Base
+                    0.45e18, // 0.45 Multiplier
+                    0.8e18, // 0.8 Jump Multiplier
+                    0.8e18 // 0.8 Kink
+                );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
-                    initialMintAmount: 1e6, /// supply 1 USDBC
+                    initialMintAmount: 1e6,
+                    /// supply 1 USDBC
                     collateralFactor: 0.9e18,
                     reserveFactor: 0.1e18,
                     seizeShare: 2.8e16, //2.8%,
@@ -240,21 +239,21 @@ abstract contract Configs is Test {
             {
                 MockWeth token = new MockWeth();
                 token.mint(
-                    addresses.getAddress("TEMPORAL_GOVERNOR"),
-                    initialMintAmount
+                    addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount
                 );
                 addresses.addAddress("WETH", address(token));
 
-                JumpRateModelConfiguration
-                    memory jrmConfig = JumpRateModelConfiguration(
-                        0.04e18, // 0.04 Base
-                        0.45e18, // 0.45 Multiplier
-                        0.8e18, // 0.8 Jump Multiplier
-                        0.8e18 // 0.8 Kink
-                    );
+                JumpRateModelConfiguration memory jrmConfig =
+                JumpRateModelConfiguration(
+                    0.04e18, // 0.04 Base
+                    0.45e18, // 0.45 Multiplier
+                    0.8e18, // 0.8 Jump Multiplier
+                    0.8e18 // 0.8 Kink
+                );
 
                 CTokenConfiguration memory config = CTokenConfiguration({
-                    initialMintAmount: 0.00001e18, /// supply .00001 eth
+                    initialMintAmount: 0.00001e18,
+                    /// supply .00001 eth
                     collateralFactor: 0.6e18,
                     reserveFactor: 0.1e18,
                     seizeShare: 2.8e16, //2.8%,
@@ -277,10 +276,10 @@ abstract contract Configs is Test {
         if (block.chainid == BASE_CHAIN_ID) {
             if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
                 ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
-                        addresses.getAddress("ETH_ORACLE"),
-                        addresses.getAddress("cbETHETH_ORACLE"),
-                        address(0)
-                    );
+                    addresses.getAddress("ETH_ORACLE"),
+                    addresses.getAddress("cbETHETH_ORACLE"),
+                    address(0)
+                );
 
                 addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
             }
@@ -290,17 +289,18 @@ abstract contract Configs is Test {
     }
 
     function initEmissions(Addresses addresses, address) public {
-        Configs.CTokenConfiguration[]
-            memory mTokenConfigs = getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory mTokenConfigs =
+            getCTokenConfigurations(block.chainid);
 
         if (
-            (block.chainid == LOCAL_CHAIN_ID) &&
-            addresses.getAddress("GOVTOKEN") == address(0)
+            (block.chainid == LOCAL_CHAIN_ID)
+                && addresses.getAddress("GOVTOKEN") == address(0)
         ) {
             FaucetTokenWithPermit token = new FaucetTokenWithPermit(
                 1e18,
                 "Wormhole WELL",
-                18, /// WELL is 18 decimals
+                18,
+                /// WELL is 18 decimals
                 "WELL"
             );
 
@@ -329,8 +329,8 @@ abstract contract Configs is Test {
                 }
 
                 if (
-                    block.chainid == BASE_SEPOLIA_CHAIN_ID ||
-                    block.chainid == BASE_CHAIN_ID
+                    block.chainid == BASE_SEPOLIA_CHAIN_ID
+                        || block.chainid == BASE_CHAIN_ID
                 ) {
                     /// pay USDBC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({
@@ -348,12 +348,13 @@ abstract contract Configs is Test {
         }
     }
 
-    function getCTokenConfigurations(
-        uint256 chainId
-    ) public view returns (CTokenConfiguration[] memory) {
-        CTokenConfiguration[] memory configs = new CTokenConfiguration[](
-            cTokenConfigurations[chainId].length
-        );
+    function getCTokenConfigurations(uint256 chainId)
+        public
+        view
+        returns (CTokenConfiguration[] memory)
+    {
+        CTokenConfiguration[] memory configs =
+            new CTokenConfiguration[](cTokenConfigurations[chainId].length);
 
         unchecked {
             uint256 configLength = configs.length;
@@ -363,15 +364,13 @@ abstract contract Configs is Test {
                         .initialMintAmount,
                     collateralFactor: cTokenConfigurations[chainId][i]
                         .collateralFactor,
-                    reserveFactor: cTokenConfigurations[chainId][i]
-                        .reserveFactor,
+                    reserveFactor: cTokenConfigurations[chainId][i].reserveFactor,
                     seizeShare: cTokenConfigurations[chainId][i].seizeShare,
                     supplyCap: cTokenConfigurations[chainId][i].supplyCap,
                     borrowCap: cTokenConfigurations[chainId][i].borrowCap,
                     addressesString: cTokenConfigurations[chainId][i]
                         .addressesString,
-                    priceFeedName: cTokenConfigurations[chainId][i]
-                        .priceFeedName,
+                    priceFeedName: cTokenConfigurations[chainId][i].priceFeedName,
                     tokenAddressName: cTokenConfigurations[chainId][i]
                         .tokenAddressName,
                     symbol: cTokenConfigurations[chainId][i].symbol,
@@ -384,12 +383,13 @@ abstract contract Configs is Test {
         return configs;
     }
 
-    function getEmissionConfigurations(
-        uint256 chainId
-    ) public view returns (EmissionConfig[] memory) {
-        EmissionConfig[] memory configs = new EmissionConfig[](
-            emissions[chainId].length
-        );
+    function getEmissionConfigurations(uint256 chainId)
+        public
+        view
+        returns (EmissionConfig[] memory)
+    {
+        EmissionConfig[] memory configs =
+            new EmissionConfig[](emissions[chainId].length);
 
         unchecked {
             for (uint256 i = 0; i < configs.length; i++) {
@@ -397,8 +397,7 @@ abstract contract Configs is Test {
                     mToken: emissions[chainId][i].mToken,
                     owner: emissions[chainId][i].owner,
                     emissionToken: emissions[chainId][i].emissionToken,
-                    supplyEmissionPerSec: emissions[chainId][i]
-                        .supplyEmissionPerSec,
+                    supplyEmissionPerSec: emissions[chainId][i].supplyEmissionPerSec,
                     borrowEmissionsPerSec: emissions[chainId][i]
                         .borrowEmissionsPerSec,
                     endTime: emissions[chainId][i].endTime

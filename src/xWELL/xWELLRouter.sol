@@ -1,10 +1,12 @@
 pragma solidity 0.8.19;
 
-import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from
+    "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 
 /// @notice xWELL Router Contract that allows users to bridge their WELL to xWELL on the base chain
 /// this reduces the amount of transactions needed from 4 to 2 to turn WELL into xWELL
@@ -74,13 +76,11 @@ contract xWELLRouter {
     /// @param to address to receive the xWELL
     /// @param amount amount of WELL to bridge
     function _bridgeToBase(address to, uint256 amount) private {
-        uint256 bridgeCostGlmr = wormholeBridge.bridgeCost(
-            BASE_WORMHOLE_CHAIN_ID
-        );
+        uint256 bridgeCostGlmr =
+            wormholeBridge.bridgeCost(BASE_WORMHOLE_CHAIN_ID);
 
         require(
-            bridgeCostGlmr <= msg.value,
-            "xWELLRouter: insufficient GLMR sent"
+            bridgeCostGlmr <= msg.value, "xWELLRouter: insufficient GLMR sent"
         );
 
         /// transfer WELL to this contract from the sender
@@ -100,15 +100,11 @@ contract xWELLRouter {
 
         /// bridge the xWELL to the base chain
         wormholeBridge.bridge{value: bridgeCostGlmr}(
-            BASE_WORMHOLE_CHAIN_ID,
-            xwellAmount,
-            to
+            BASE_WORMHOLE_CHAIN_ID, xwellAmount, to
         );
 
         if (address(this).balance != 0) {
-            (bool success, ) = msg.sender.call{value: address(this).balance}(
-                ""
-            );
+            (bool success,) = msg.sender.call{value: address(this).balance}("");
             require(success, "xWELLRouter: failed to refund excess GLMR");
         }
 

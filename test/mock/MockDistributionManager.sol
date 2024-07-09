@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity 0.6.12;
 
-import {IERC20} from "@protocol/stkWell/IERC20.sol";
-import {SafeMath} from "@protocol/stkWell/SafeMath.sol";
 import {DistributionTypes} from "@protocol/stkWell/DistributionTypes.sol";
 import {IDistributionManager} from "@protocol/stkWell/IDistributionManager.sol";
+import {IERC20} from "@protocol/stkWell/IERC20.sol";
+import {SafeMath} from "@protocol/stkWell/SafeMath.sol";
 
 /**
  * @title DistributionManager
  * @notice Accounting contract to manage multiple staking distributions
  * @author Moonwell
- **/
+ *
+ */
 contract MockDistributionManager is IDistributionManager {
     using SafeMath for uint256;
 
@@ -32,9 +33,7 @@ contract MockDistributionManager is IDistributionManager {
     event AssetConfigUpdated(address indexed asset, uint256 emission);
     event AssetIndexUpdated(address indexed asset, uint256 index);
     event UserIndexUpdated(
-        address indexed user,
-        address indexed asset,
-        uint256 index
+        address indexed user, address indexed asset, uint256 index
     );
 
     function __DistributionManager_init_unchained(
@@ -49,11 +48,12 @@ contract MockDistributionManager is IDistributionManager {
     /**
      * @dev Configures the distribution of rewards for an asset. This method is useful because it automatically
      *      computes the amount of the asset that is staked.
-     **/
-    function configureAsset(
-        uint128 emissionsPerSecond,
-        IERC20 underlyingAsset
-    ) external override {
+     *
+     */
+    function configureAsset(uint128 emissionsPerSecond, IERC20 underlyingAsset)
+        external
+        override
+    {
         require(msg.sender == EMISSION_MANAGER, "ONLY_EMISSION_MANAGER");
 
         // Grab the balance of the underlying asset.
@@ -61,9 +61,7 @@ contract MockDistributionManager is IDistributionManager {
 
         // Pass data through to the configure assets function.
         _configureAssetInternal(
-            emissionsPerSecond,
-            totalStaked,
-            address(underlyingAsset)
+            emissionsPerSecond, totalStaked, address(underlyingAsset)
         );
     }
 
@@ -72,7 +70,8 @@ contract MockDistributionManager is IDistributionManager {
      * @param emissionPerSecond The list of emissions per second
      * @param totalStaked The list of total staked assets
      * @param underlyingAsset The list of underlying assets
-     **/
+     *
+     */
     function configureAssets(
         uint128[] memory emissionPerSecond,
         uint256[] memory totalStaked,
@@ -80,16 +79,14 @@ contract MockDistributionManager is IDistributionManager {
     ) external override {
         require(msg.sender == EMISSION_MANAGER, "ONLY_EMISSION_MANAGER");
         require(
-            emissionPerSecond.length == totalStaked.length &&
-                totalStaked.length == underlyingAsset.length,
+            emissionPerSecond.length == totalStaked.length
+                && totalStaked.length == underlyingAsset.length,
             "PARAM_LENGTHS"
         );
 
         for (uint256 i = 0; i < emissionPerSecond.length; ++i) {
             _configureAssetInternal(
-                emissionPerSecond[i],
-                totalStaked[i],
-                underlyingAsset[i]
+                emissionPerSecond[i], totalStaked[i], underlyingAsset[i]
             );
         }
     }
@@ -114,7 +111,8 @@ contract MockDistributionManager is IDistributionManager {
      * @param assetConfig Storage pointer to the distribution's config
      * @param totalStaked Current total of staked assets for this distribution
      * @return The new distribution index
-     **/
+     *
+     */
     function _updateAssetStateInternal(
         address underlyingAsset,
         AssetData storage assetConfig,
@@ -151,7 +149,8 @@ contract MockDistributionManager is IDistributionManager {
      * @param stakedByUser Amount of tokens staked by the user in the distribution at the moment
      * @param totalStaked Total tokens staked in the distribution
      * @return The accrued rewards for the user until the moment
-     **/
+     *
+     */
     function _updateUserAssetInternal(
         address user,
         address asset,
@@ -162,11 +161,8 @@ contract MockDistributionManager is IDistributionManager {
         uint256 userIndex = assetData.users[user];
         uint256 accruedRewards = 0;
 
-        uint256 newIndex = _updateAssetStateInternal(
-            asset,
-            assetData,
-            totalStaked
-        );
+        uint256 newIndex =
+            _updateAssetStateInternal(asset, assetData, totalStaked);
 
         if (userIndex != newIndex) {
             if (stakedByUser != 0) {
@@ -185,7 +181,8 @@ contract MockDistributionManager is IDistributionManager {
      * @param user The address of the user
      * @param stakes List of structs of the user data related with his stake
      * @return The accrued rewards for the user until the moment
-     **/
+     *
+     */
     function _claimRewards(
         address user,
         DistributionTypes.UserStakeInput[] memory stakes
@@ -211,7 +208,8 @@ contract MockDistributionManager is IDistributionManager {
      * @param user The address of the user
      * @param stakes List of structs of the user data related with his stake
      * @return The accrued rewards for the user until the moment
-     **/
+     *
+     */
     function _getUnclaimedRewards(
         address user,
         DistributionTypes.UserStakeInput[] memory stakes
@@ -229,9 +227,7 @@ contract MockDistributionManager is IDistributionManager {
 
             accruedRewards = accruedRewards.add(
                 _getRewards(
-                    stakes[i].stakedByUser,
-                    assetIndex,
-                    assetConfig.users[user]
+                    stakes[i].stakedByUser, assetIndex, assetConfig.users[user]
                 )
             );
         }
@@ -244,7 +240,8 @@ contract MockDistributionManager is IDistributionManager {
      * @param reserveIndex Current index of the distribution
      * @param userIndex Index stored for the user, representation his staking moment
      * @return The rewards
-     **/
+     *
+     */
     function _getRewards(
         uint256 principalUserBalance,
         uint256 reserveIndex,
@@ -260,7 +257,8 @@ contract MockDistributionManager is IDistributionManager {
      * @param lastUpdateTimestamp Last moment this distribution was updated
      * @param totalBalance of tokens considered for the distribution
      * @return The new index.
-     **/
+     *
+     */
     function _getAssetIndex(
         uint256 currentIndex,
         uint256 emissionPerSecond,
@@ -268,22 +266,19 @@ contract MockDistributionManager is IDistributionManager {
         uint256 totalBalance
     ) internal view returns (uint256) {
         if (
-            emissionPerSecond == 0 ||
-            totalBalance == 0 ||
-            lastUpdateTimestamp == block.number ||
-            lastUpdateTimestamp >= DISTRIBUTION_END
+            emissionPerSecond == 0 || totalBalance == 0
+                || lastUpdateTimestamp == block.number
+                || lastUpdateTimestamp >= DISTRIBUTION_END
         ) {
             return currentIndex;
         }
 
-        uint256 currentTimestamp = block.number > DISTRIBUTION_END
-            ? DISTRIBUTION_END
-            : block.number;
+        uint256 currentTimestamp =
+            block.number > DISTRIBUTION_END ? DISTRIBUTION_END : block.number;
         uint256 timeDelta = currentTimestamp.sub(lastUpdateTimestamp);
-        return
-            emissionPerSecond.mul(timeDelta).mul(1e18).div(totalBalance).add(
-                currentIndex
-            );
+        return emissionPerSecond.mul(timeDelta).mul(1e18).div(totalBalance).add(
+            currentIndex
+        );
     }
 
     /**
@@ -291,11 +286,13 @@ contract MockDistributionManager is IDistributionManager {
      * @param user Address of the user
      * @param asset The address of the reference asset of the distribution
      * @return The new index
-     **/
-    function getUserAssetData(
-        address user,
-        address asset
-    ) public view returns (uint256) {
+     *
+     */
+    function getUserAssetData(address user, address asset)
+        public
+        view
+        returns (uint256)
+    {
         return assets[asset].users[user];
     }
 

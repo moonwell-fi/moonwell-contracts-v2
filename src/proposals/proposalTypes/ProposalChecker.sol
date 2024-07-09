@@ -1,11 +1,14 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ChainIds} from "@utils/ChainIds.sol";
-import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
-import {AddressToString} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_CHAIN_ID, MOONBASE_CHAIN_ID} from "@protocol/utils/ChainIds.sol";
+import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
+import {
+    MOONBASE_CHAIN_ID, MOONBEAM_CHAIN_ID
+} from "@protocol/utils/ChainIds.sol";
+import {AddressToString} from
+    "@protocol/xWELL/axelarInterfaces/AddressString.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 
 abstract contract ProposalChecker {
     using ChainIds for uint256;
@@ -16,8 +19,8 @@ abstract contract ProposalChecker {
     /// @param targets the list of targets for the Moonbeam actions
     function checkMoonbeamActions(address[] memory targets) public view {
         require(
-            MOONBEAM_CHAIN_ID == block.chainid ||
-                MOONBASE_CHAIN_ID == block.chainid,
+            MOONBEAM_CHAIN_ID == block.chainid
+                || MOONBASE_CHAIN_ID == block.chainid,
             "cannot run Moonbeam checks on non-Moonbeam network"
         );
 
@@ -40,9 +43,10 @@ abstract contract ProposalChecker {
     /// @dev checks that the actions do not include the wormhole core address
     /// checks that all action targets are pointing to contracts
     /// @param actions the list of actions for Base or Optimism
-    function checkBaseOptimismActions(
-        ProposalAction[] memory actions
-    ) public view {
+    function checkBaseOptimismActions(ProposalAction[] memory actions)
+        public
+        view
+    {
         /// check that we are on the proper chain id here
         require(
             block.chainid.nonMoonbeamChainIds(),
@@ -90,14 +94,10 @@ abstract contract ProposalChecker {
         Addresses addresses,
         ProposalAction[] memory moonbeamActions
     ) public view {
-        address wormholeCoreMoonbase = addresses.getAddress(
-            "WORMHOLE_CORE",
-            MOONBASE_CHAIN_ID
-        );
-        address wormholeCoreMoonbeam = addresses.getAddress(
-            "WORMHOLE_CORE",
-            MOONBEAM_CHAIN_ID
-        );
+        address wormholeCoreMoonbase =
+            addresses.getAddress("WORMHOLE_CORE", MOONBASE_CHAIN_ID);
+        address wormholeCoreMoonbeam =
+            addresses.getAddress("WORMHOLE_CORE", MOONBEAM_CHAIN_ID);
 
         for (uint256 i = 0; i < moonbeamActions.length; i++) {
             /// require all moonbeam actions targets are contracts
@@ -119,9 +119,7 @@ abstract contract ProposalChecker {
         }
     }
 
-    function getTargetsPayloadsValues(
-        Addresses addresses
-    )
+    function getTargetsPayloadsValues(Addresses addresses)
         public
         view
         virtual

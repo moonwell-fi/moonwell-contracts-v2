@@ -1,20 +1,32 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import {Ownable2StepUpgradeable} from
+    "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 
 import "@forge-std/Test.sol";
 
 import "@protocol/utils/ChainIds.sol";
 
-import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
-import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {
+    ActionType,
+    HybridProposal
+} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+
+import {MultichainGovernorDeploy} from
+    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
+
+import {
+    BASE_FORK_ID,
+    ChainIds,
+    MOONBEAM_FORK_ID,
+    MOONBEAM_WORMHOLE_CHAIN_ID
+} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to accept governance powers, finalizing
 /// the transfer of admin and owner from the current Artemis Timelock to the
@@ -42,14 +54,11 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
 
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
-        ITemporalGovernor.TrustedSender[]
-            memory trustedSendersToRemove = new ITemporalGovernor.TrustedSender[](
-                1
-            );
+        ITemporalGovernor.TrustedSender[] memory trustedSendersToRemove =
+            new ITemporalGovernor.TrustedSender[](1);
 
-        trustedSendersToRemove[0].addr = addresses.getAddress(
-            "MOONBEAM_TIMELOCK"
-        );
+        trustedSendersToRemove[0].addr =
+            addresses.getAddress("MOONBEAM_TIMELOCK");
         trustedSendersToRemove[0].chainId = MOONBEAM_WORMHOLE_CHAIN_ID;
 
         /// Base action
@@ -57,8 +66,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         /// remove the artemis timelock as a trusted sender in the wormhole bridge adapter on base
         _pushAction(
             addresses.getAddress(
-                "TEMPORAL_GOVERNOR",
-                block.chainid.toBaseChainId()
+                "TEMPORAL_GOVERNOR", block.chainid.toBaseChainId()
             ),
             abi.encodeWithSignature(
                 "unSetTrustedSenders((uint16,address)[])",
@@ -222,8 +230,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             "xWELL_PROXY pending owner incorrect"
         );
         assertEq(
-            Ownable2StepUpgradeable(addresses.getAddress("xWELL_PROXY"))
-                .owner(),
+            Ownable2StepUpgradeable(addresses.getAddress("xWELL_PROXY")).owner(),
             governor,
             "xWELL_PROXY owner incorrect"
         );
@@ -365,9 +372,8 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
         vm.selectFork(BASE_FORK_ID);
 
         // check that the multichain governor now is the only trusted sender on the temporal governor
-        TemporalGovernor temporalGovernor = TemporalGovernor(
-            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
-        );
+        TemporalGovernor temporalGovernor =
+            TemporalGovernor(payable(addresses.getAddress("TEMPORAL_GOVERNOR")));
 
         bytes32[] memory trustedSenders = temporalGovernor.allTrustedSenders(
             block.chainid.toMoonbeamWormholeChainId()

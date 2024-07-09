@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipb09 is HybridProposal, Configs {
     string public constant override name = "MIP-b09";
@@ -44,9 +44,8 @@ contract mipb09 is HybridProposal, Configs {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         Comptroller unitroller = Comptroller(unitrollerAddress);
 
-        (bool listed, uint256 collateralFactorMantissa) = unitroller.markets(
-            tokenAddress
-        );
+        (bool listed, uint256 collateralFactorMantissa) =
+            unitroller.markets(tokenAddress);
 
         assertTrue(listed);
 
@@ -113,23 +112,17 @@ contract mipb09 is HybridProposal, Configs {
     function validate(Addresses addresses, address) public view override {
         // ======== WETH CF Update =========
         _validateCF(
-            addresses,
-            addresses.getAddress("MOONWELL_WETH"),
-            WETH_NEW_CF
+            addresses, addresses.getAddress("MOONWELL_WETH"), WETH_NEW_CF
         );
 
         // ======== USDC CF Update =========
         _validateCF(
-            addresses,
-            addresses.getAddress("MOONWELL_USDC"),
-            USDC_NEW_CF
+            addresses, addresses.getAddress("MOONWELL_USDC"), USDC_NEW_CF
         );
 
         // ======== USDC CF Update =========
         _validateCF(
-            addresses,
-            addresses.getAddress("MOONWELL_cbETH"),
-            cbETH_NEW_CF
+            addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF
         );
     }
 }

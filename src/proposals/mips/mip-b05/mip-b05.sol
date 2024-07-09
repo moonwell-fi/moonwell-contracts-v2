@@ -3,13 +3,14 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {MToken} from "@protocol/MToken.sol";
+
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract mipb05 is HybridProposal, Configs {
     string public constant override name = "MIP-B05";
@@ -75,9 +76,8 @@ contract mipb05 is HybridProposal, Configs {
         );
         assertEq(
             jrm.jumpMultiplierPerTimestamp(),
-            (params.jumpMultiplierPerTimestamp * SCALE) /
-                timestampsPerYear /
-                SCALE,
+            (params.jumpMultiplierPerTimestamp * SCALE) / timestampsPerYear
+                / SCALE,
             "jump multiplier per timestamp validation failed"
         );
     }
@@ -90,9 +90,8 @@ contract mipb05 is HybridProposal, Configs {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         Comptroller unitroller = Comptroller(unitrollerAddress);
 
-        (bool listed, uint256 collateralFactorMantissa) = unitroller.markets(
-            tokenAddress
-        );
+        (bool listed, uint256 collateralFactorMantissa) =
+            unitroller.markets(tokenAddress);
 
         assertTrue(listed);
 
@@ -207,24 +206,16 @@ contract mipb05 is HybridProposal, Configs {
     function validate(Addresses addresses, address) public view override {
         // ======== ETH CF Update =========
         _validateCF(
-            addresses,
-            addresses.getAddress("MOONWELL_WETH"),
-            ETH_NEW_CF
+            addresses, addresses.getAddress("MOONWELL_WETH"), ETH_NEW_CF
         );
 
         // ======== cbETH CF Update =========
         _validateCF(
-            addresses,
-            addresses.getAddress("MOONWELL_cbETH"),
-            cbETH_NEW_CF
+            addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF
         );
 
         // ======== DAI CF Update =========
-        _validateCF(
-            addresses,
-            addresses.getAddress("MOONWELL_DAI"),
-            DAI_NEW_CF
-        );
+        _validateCF(addresses, addresses.getAddress("MOONWELL_DAI"), DAI_NEW_CF);
 
         // =========== WETH IR Update ============
 

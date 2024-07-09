@@ -24,9 +24,7 @@ contract MockWormholeCore {
         emitterAddress = _emitterAddress;
     }
 
-    function parseAndVerifyVM(
-        bytes calldata VAA
-    )
+    function parseAndVerifyVM(bytes calldata VAA)
         external
         view
         returns (IWormhole.VM memory vm, bool valid, string memory reason)

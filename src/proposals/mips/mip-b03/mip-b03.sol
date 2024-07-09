@@ -5,17 +5,23 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {MErc20} from "@protocol/MErc20.sol";
-import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {MToken} from "@protocol/MToken.sol";
+
+import {
+    InterestRateModel, JumpRateModel
+} from "@protocol/irm/JumpRateModel.sol";
+import {MultiRewardDistributor} from
+    "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from
+    "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// @notice This lists all new markets provided in `mainnetMTokens.json`
 /// This is a template of a MIP proposal that can be used to add new mTokens
@@ -46,12 +52,10 @@ contract mip03 is HybridProposal, Configs {
     constructor() {
         /// for example, should be set to
         string memory descriptionPath = vm.envOr(
-            "LISTING_PATH",
-            string("./src/proposals/mips/mip-b03/mip-b03.md")
+            "LISTING_PATH", string("./src/proposals/mips/mip-b03/mip-b03.md")
         );
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile(descriptionPath)
-        );
+        bytes memory proposalDescription =
+            abi.encodePacked(vm.readFile(descriptionPath));
 
         _setProposalDescription(proposalDescription);
 
@@ -65,8 +69,8 @@ contract mip03 is HybridProposal, Configs {
 
     /// @notice no contracts are deployed in this proposal
     function deploy(Addresses addresses, address deployer) public override {
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory cTokenConfigs =
+            getCTokenConfigurations(block.chainid);
 
         uint256 cTokenConfigsLength = cTokenConfigs.length;
 
@@ -89,8 +93,7 @@ contract mip03 is HybridProposal, Configs {
                     addresses.addAddress(
                         string(
                             abi.encodePacked(
-                                "JUMP_RATE_IRM_",
-                                config.addressesString
+                                "JUMP_RATE_IRM_", config.addressesString
                             )
                         ),
                         address(irModel)
@@ -103,8 +106,7 @@ contract mip03 is HybridProposal, Configs {
                     irModel: addresses.getAddress(
                         string(
                             abi.encodePacked(
-                                "JUMP_RATE_IRM_",
-                                config.addressesString
+                                "JUMP_RATE_IRM_", config.addressesString
                             )
                         )
                     ),
@@ -117,9 +119,13 @@ contract mip03 is HybridProposal, Configs {
                 ///    = 2e26
                 /// (10 ** (6 + 8)) * 2 // 6 decimals example
                 ///    = 2e14
-                uint256 initialExchangeRate = (10 **
-                    (ERC20(addresses.getAddress(config.tokenAddressName))
-                        .decimals() + 8)) * 2;
+                uint256 initialExchangeRate = (
+                    10
+                        ** (
+                            ERC20(addresses.getAddress(config.tokenAddressName))
+                                .decimals() + 8
+                        )
+                ) * 2;
 
                 MErc20Delegator mToken = new MErc20Delegator(
                     addresses.getAddress(config.tokenAddressName),
@@ -141,8 +147,8 @@ contract mip03 is HybridProposal, Configs {
 
     function afterDeploy(Addresses addresses, address) public override {
         address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory cTokenConfigs =
+            getCTokenConfigurations(block.chainid);
 
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
@@ -157,22 +163,22 @@ contract mip03 is HybridProposal, Configs {
 
                 mTokens[i]._setReserveFactor(config.reserveFactor);
                 mTokens[i]._setProtocolSeizeShare(config.seizeShare);
-                mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+                mTokens[i]._setPendingAdmin(payable(governor));
+                /// set governor as pending admin of the mToken
             }
         }
     }
 
     function preBuildMock(Addresses addresses) public override {
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory cTokenConfigs =
+            getCTokenConfigurations(block.chainid);
 
         uint256 cTokenConfigsLength = cTokenConfigs.length;
         unchecked {
             for (uint256 i = 0; i < cTokenConfigsLength; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-                address tokenAddress = addresses.getAddress(
-                    config.tokenAddressName
-                );
+                address tokenAddress =
+                    addresses.getAddress(config.tokenAddressName);
 
                 deal(
                     tokenAddress,
@@ -187,8 +193,10 @@ contract mip03 is HybridProposal, Configs {
 
     function build(Addresses addresses) public override {
         // workaround to find calldata on TestProposalCalldataGeneration
-        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
-        delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
+        delete cTokenConfigurations[block.chainid];
+        /// wipe existing mToken Configs.sol
+        delete emissions[block.chainid];
+        /// wipe existing reward loaded in Configs.sol
 
         {
             string memory mtokensPath = vm.envOr(
@@ -198,10 +206,8 @@ contract mip03 is HybridProposal, Configs {
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
 
-            CTokenConfiguration[] memory decodedJson = abi.decode(
-                rawJson,
-                (CTokenConfiguration[])
-            );
+            CTokenConfiguration[] memory decodedJson =
+                abi.decode(rawJson, (CTokenConfiguration[]));
 
             for (uint256 i = 0; i < decodedJson.length; i++) {
                 require(
@@ -231,10 +237,8 @@ contract mip03 is HybridProposal, Configs {
             );
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
-            EmissionConfig[] memory decodedEmissions = abi.decode(
-                rawJson,
-                (EmissionConfig[])
-            );
+            EmissionConfig[] memory decodedEmissions =
+                abi.decode(rawJson, (EmissionConfig[]));
 
             for (uint256 i = 0; i < decodedEmissions.length; i++) {
                 emissions[block.chainid].push(decodedEmissions[i]);
@@ -246,14 +250,11 @@ contract mip03 is HybridProposal, Configs {
             "Loaded %d MToken configs",
             cTokenConfigurations[block.chainid].length
         );
-        console.log(
-            "Loaded %d reward configs",
-            emissions[block.chainid].length
-        );
+        console.log("Loaded %d reward configs", emissions[block.chainid].length);
         console.log("\n\n");
 
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory cTokenConfigs =
+            getCTokenConfigurations(block.chainid);
 
         for (uint256 i = 0; i < cTokenConfigs.length; i++) {
             Configs.CTokenConfiguration memory config = cTokenConfigs[i];
@@ -265,16 +266,13 @@ contract mip03 is HybridProposal, Configs {
         }
 
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
-        address chainlinkOracleAddress = addresses.getAddress(
-            "CHAINLINK_ORACLE"
-        );
+        address chainlinkOracleAddress =
+            addresses.getAddress("CHAINLINK_ORACLE");
 
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setMarketSupplyCaps(address[],uint256[])",
-                mTokens,
-                supplyCaps
+                "_setMarketSupplyCaps(address[],uint256[])", mTokens, supplyCaps
             ),
             "Set supply caps MToken market"
         );
@@ -282,9 +280,7 @@ contract mip03 is HybridProposal, Configs {
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setMarketBorrowCaps(address[],uint256[])",
-                mTokens,
-                borrowCaps
+                "_setMarketBorrowCaps(address[],uint256[])", mTokens, borrowCaps
             ),
             "Set borrow caps MToken market"
         );
@@ -293,9 +289,8 @@ contract mip03 is HybridProposal, Configs {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
-                address cTokenAddress = addresses.getAddress(
-                    config.addressesString
-                );
+                address cTokenAddress =
+                    addresses.getAddress(config.addressesString);
 
                 _pushAction(
                     chainlinkOracleAddress,
@@ -339,8 +334,7 @@ contract mip03 is HybridProposal, Configs {
                 _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
-                        "mint(uint256)",
-                        config.initialMintAmount
+                        "mint(uint256)", config.initialMintAmount
                     ),
                     "Initialize token market to prevent exploit"
                 );
@@ -348,9 +342,7 @@ contract mip03 is HybridProposal, Configs {
                 _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
-                        "transfer(address,uint256)",
-                        address(0),
-                        1
+                        "transfer(address,uint256)", address(0), 1
                     ),
                     "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
                 );
@@ -369,12 +361,10 @@ contract mip03 is HybridProposal, Configs {
 
         /// -------------- EMISSION CONFIGURATION --------------
 
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
-        MultiRewardDistributor mrd = MultiRewardDistributor(
-            addresses.getAddress("MRD_PROXY")
-        );
+        EmissionConfig[] memory emissionConfig =
+            getEmissionConfigurations(block.chainid);
+        MultiRewardDistributor mrd =
+            MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
 
         unchecked {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
@@ -400,12 +390,11 @@ contract mip03 is HybridProposal, Configs {
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory cTokenConfigs =
+            getCTokenConfigurations(block.chainid);
         address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        Comptroller comptroller = Comptroller(
-            addresses.getAddress("UNITROLLER")
-        );
+        Comptroller comptroller =
+            Comptroller(addresses.getAddress("UNITROLLER"));
 
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
@@ -421,8 +410,7 @@ contract mip03 is HybridProposal, Configs {
                 uint256 maxBorrowCap = (supplyCap * 10) / 9;
 
                 assertTrue(
-                    borrowCap <= maxBorrowCap,
-                    "borrow cap exceeds max borrow"
+                    borrowCap <= maxBorrowCap, "borrow cap exceeds max borrow"
                 );
 
                 /// CToken Assertions
@@ -430,12 +418,14 @@ contract mip03 is HybridProposal, Configs {
                     comptroller.mintGuardianPaused(
                         addresses.getAddress(config.addressesString)
                     )
-                ); /// minting allowed by guardian
+                );
+                /// minting allowed by guardian
                 assertFalse(
                     comptroller.borrowGuardianPaused(
                         addresses.getAddress(config.addressesString)
                     )
-                ); /// borrowing allowed by guardian
+                );
+                /// borrowing allowed by guardian
                 assertEq(borrowCap, config.borrowCap);
                 assertEq(supplyCap, config.supplyCap);
 
@@ -444,8 +434,7 @@ contract mip03 is HybridProposal, Configs {
                     addresses.getAddress(
                         string(
                             abi.encodePacked(
-                                "JUMP_RATE_IRM_",
-                                config.addressesString
+                                "JUMP_RATE_IRM_", config.addressesString
                             )
                         )
                     )
@@ -458,20 +447,18 @@ contract mip03 is HybridProposal, Configs {
                     address(jrm)
                 );
 
-                MErc20 mToken = MErc20(
-                    addresses.getAddress(config.addressesString)
-                );
+                MErc20 mToken =
+                    MErc20(addresses.getAddress(config.addressesString));
 
                 /// reserve factor and protocol seize share
-                assertEq(
-                    mToken.protocolSeizeShareMantissa(),
-                    config.seizeShare
-                );
+                assertEq(mToken.protocolSeizeShareMantissa(), config.seizeShare);
                 assertEq(mToken.reserveFactorMantissa(), config.reserveFactor);
 
                 /// assert initial mToken balances are correct
-                assertTrue(mToken.balanceOf(address(governor)) > 0); /// governor has some
-                assertEq(mToken.balanceOf(address(0)), 1); /// address 0 has 1 wei of assets
+                assertTrue(mToken.balanceOf(address(governor)) > 0);
+                /// governor has some
+                assertEq(mToken.balanceOf(address(0)), 1);
+                /// address 0 has 1 wei of assets
 
                 /// assert cToken admin is the temporal governor
                 assertEq(address(mToken.admin()), address(governor));
@@ -491,16 +478,20 @@ contract mip03 is HybridProposal, Configs {
                 /// assert mToken delegate is uniform across contracts
                 assertEq(
                     address(
-                        MErc20Delegator(payable(address(mToken)))
-                            .implementation()
+                        MErc20Delegator(payable(address(mToken))).implementation(
+                        )
                     ),
                     addresses.getAddress("MTOKEN_IMPLEMENTATION")
                 );
 
-                uint256 initialExchangeRate = (10 **
-                    (8 +
-                        ERC20(addresses.getAddress(config.tokenAddressName))
-                            .decimals())) * 2;
+                uint256 initialExchangeRate = (
+                    10
+                        ** (
+                            8
+                                + ERC20(addresses.getAddress(config.tokenAddressName))
+                                    .decimals()
+                        )
+                ) * 2;
 
                 /// assert mToken initial exchange rate is correct
                 assertEq(mToken.exchangeRateCurrent(), initialExchangeRate);
@@ -514,21 +505,18 @@ contract mip03 is HybridProposal, Configs {
                 {
                     assertEq(
                         jrm.baseRatePerTimestamp(),
-                        (config.jrm.baseRatePerYear * 1e18) /
-                            jrm.timestampsPerYear() /
-                            1e18
+                        (config.jrm.baseRatePerYear * 1e18)
+                            / jrm.timestampsPerYear() / 1e18
                     );
                     assertEq(
                         jrm.multiplierPerTimestamp(),
-                        (config.jrm.multiplierPerYear * 1e18) /
-                            jrm.timestampsPerYear() /
-                            1e18
+                        (config.jrm.multiplierPerYear * 1e18)
+                            / jrm.timestampsPerYear() / 1e18
                     );
                     assertEq(
                         jrm.jumpMultiplierPerTimestamp(),
-                        (config.jrm.jumpMultiplierPerYear * 1e18) /
-                            jrm.timestampsPerYear() /
-                            1e18
+                        (config.jrm.jumpMultiplierPerYear * 1e18)
+                            / jrm.timestampsPerYear() / 1e18
                     );
                     assertEq(jrm.kink(), config.jrm.kink);
                 }
@@ -536,25 +524,22 @@ contract mip03 is HybridProposal, Configs {
         }
 
         {
-            EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-                block.chainid
-            );
-            MultiRewardDistributor distributor = MultiRewardDistributor(
-                addresses.getAddress("MRD_PROXY")
-            );
+            EmissionConfig[] memory emissionConfig =
+                getEmissionConfigurations(block.chainid);
+            MultiRewardDistributor distributor =
+                MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
 
             unchecked {
                 for (uint256 i = 0; i < emissionConfig.length; i++) {
                     EmissionConfig memory config = emissionConfig[i];
-                    MultiRewardDistributorCommon.MarketConfig
-                        memory marketConfig = distributor.getConfigForMarket(
+                    MultiRewardDistributorCommon.MarketConfig memory
+                        marketConfig = distributor.getConfigForMarket(
                             MToken(addresses.getAddress(config.mToken)),
                             config.emissionToken
                         );
 
                     assertEq(
-                        marketConfig.owner,
-                        addresses.getAddress(config.owner)
+                        marketConfig.owner, addresses.getAddress(config.owner)
                     );
                     assertEq(marketConfig.emissionToken, config.emissionToken);
                     assertEq(marketConfig.endTime, config.endTime);

@@ -39,7 +39,9 @@ contract xWELLVoteUnitTest is BaseTest {
             "Incorrect delegate"
         );
 
-        vm.warp(block.timestamp + 1); /// avoid future lookup error
+        vm.warp(block.timestamp + 1);
+
+        /// avoid future lookup error
 
         assertEq(
             xwellProxy.getPastVotes(address(this), delegateTime),
@@ -48,7 +50,8 @@ contract xWELLVoteUnitTest is BaseTest {
         );
 
         xwellProxy.transfer(address(1), xwellProxy.balanceOf(address(this)));
-        vm.warp(block.timestamp + 1); /// avoid future lookup error
+        vm.warp(block.timestamp + 1);
+        /// avoid future lookup error
 
         assertEq(
             xwellProxy.getPastVotes(address(this), block.timestamp - 1),
@@ -62,14 +65,10 @@ contract xWELLVoteUnitTest is BaseTest {
             "Incorrect delegate"
         );
         assertEq(
-            xwellProxy.balanceOf(address(this)),
-            0,
-            "Incorrect balance this"
+            xwellProxy.balanceOf(address(this)), 0, "Incorrect balance this"
         );
         assertEq(
-            xwellProxy.balanceOf(address(1)),
-            mintAmount,
-            "Incorrect balance 1"
+            xwellProxy.balanceOf(address(1)), mintAmount, "Incorrect balance 1"
         );
     }
 
@@ -92,7 +91,9 @@ contract xWELLVoteUnitTest is BaseTest {
             "Incorrect delegate"
         );
 
-        vm.warp(block.timestamp + 1); /// avoid future lookup error
+        vm.warp(block.timestamp + 1);
+
+        /// avoid future lookup error
 
         assertEq(
             xwellProxy.getPastVotes(address(this), delegateTime - 1),
@@ -121,7 +122,9 @@ contract xWELLVoteUnitTest is BaseTest {
         uint256 delegateTime = block.timestamp;
         xwellProxy.delegate(address(this));
 
-        vm.warp(block.timestamp + 1); /// avoid future lookup error
+        vm.warp(block.timestamp + 1);
+
+        /// avoid future lookup error
 
         assertEq(
             xwellProxy.getPastVotes(address(this), delegateTime),
@@ -144,7 +147,9 @@ contract xWELLVoteUnitTest is BaseTest {
             "Incorrect current votes"
         );
 
-        vm.warp(block.timestamp + 1); /// avoid future lookup error
+        vm.warp(block.timestamp + 1);
+
+        /// avoid future lookup error
 
         delegateTime++;
 

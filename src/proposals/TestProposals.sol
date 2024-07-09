@@ -1,10 +1,10 @@
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
 import {Test} from "@forge-std/Test.sol";
+import {console} from "@forge-std/console.sol";
 
-import {Proposal} from "@proposals/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
 
 /*
@@ -74,9 +74,7 @@ contract TestProposals is Test {
     ) public returns (uint256[] memory postProposalVmSnapshots) {
         if (debug) {
             console.log(
-                "TestProposals: running",
-                proposals.length,
-                "proposals."
+                "TestProposals: running", proposals.length, "proposals."
             );
         }
 
@@ -89,9 +87,12 @@ contract TestProposals is Test {
                 if (debug) {
                     console.log("Proposal", name, "deploy()");
                 }
-                addresses.resetRecordingAddresses(); /// reset the recording addresses so deployment has clean slate
+                addresses.resetRecordingAddresses();
+                /// reset the recording addresses so deployment has clean slate
 
-                proposals[i].deploy(addresses, address(proposals[i])); /// mip itself is the deployer
+                proposals[i].deploy(addresses, address(proposals[i]));
+
+                /// mip itself is the deployer
                 if (debug) {
                     (
                         string[] memory recordedNames,
@@ -100,8 +101,7 @@ contract TestProposals is Test {
                     ) = addresses.getRecordedAddresses();
                     for (uint256 j = 0; j < recordedNames.length; j++) {
                         console.log(
-                            "{\n        'addr': '%s', ",
-                            recordedAddresses[j]
+                            "{\n        'addr': '%s', ", recordedAddresses[j]
                         );
                         console.log("        'chainId': %d,", block.chainid);
                         console.log(
@@ -161,16 +161,15 @@ contract TestProposals is Test {
         public
         returns (uint256[] memory postProposalVmSnapshots)
     {
-        return
-            testProposals(
-                DEBUG,
-                DO_DEPLOY,
-                DO_AFTER_DEPLOY,
-                DO_PRE_BUILD_MOCK,
-                DO_BUILD,
-                DO_RUN,
-                DO_TEARDOWN,
-                DO_VALIDATE
-            );
+        return testProposals(
+            DEBUG,
+            DO_DEPLOY,
+            DO_AFTER_DEPLOY,
+            DO_PRE_BUILD_MOCK,
+            DO_BUILD,
+            DO_RUN,
+            DO_TEARDOWN,
+            DO_VALIDATE
+        );
     }
 }

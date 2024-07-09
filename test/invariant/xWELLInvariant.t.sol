@@ -1,7 +1,11 @@
 pragma solidity 0.8.19;
 
-import {RateLimitMidPoint, RateLimitMidpointCommonLibrary} from "@zelt/src/lib/RateLimitMidpointCommonLibrary.sol";
-import {RateLimitedMidpointLibrary} from "@zelt/src/lib/RateLimitedMidpointLibrary.sol";
+import {
+    RateLimitMidPoint,
+    RateLimitMidpointCommonLibrary
+} from "@zelt/src/lib/RateLimitMidpointCommonLibrary.sol";
+import {RateLimitedMidpointLibrary} from
+    "@zelt/src/lib/RateLimitedMidpointLibrary.sol";
 import {CommonBase} from "forge-std/Base.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
@@ -23,17 +27,15 @@ contract xWELLInvariant is BaseTest {
         super.setUp();
 
         handler = new xWELLOwnerHandler(
-            address(xwellProxy),
-            address(well),
-            address(xerc20Lockbox)
+            address(xwellProxy), address(well), address(xerc20Lockbox)
         );
 
         MintLimits.RateLimitMidPointInfo memory handlerRateLimits = MintLimits
             .RateLimitMidPointInfo({
-                bufferCap: 50_000_000 * 1e18,
-                rateLimitPerSecond: 100 * 1e18,
-                bridge: address(handler)
-            });
+            bufferCap: 50_000_000 * 1e18,
+            rateLimitPerSecond: 100 * 1e18,
+            bridge: address(handler)
+        });
 
         vm.prank(owner);
         xwellProxy.addBridge(handlerRateLimits);
@@ -134,30 +136,26 @@ contract xWELLInvariant is BaseTest {
 
     function invariant_bufferStoredLteBufferCap() public view {
         {
-            (, uint112 bufferCap, , uint112 bufferStored, ) = xwellProxy
-                .rateLimits(address(handler));
+            (, uint112 bufferCap,, uint112 bufferStored,) =
+                xwellProxy.rateLimits(address(handler));
 
             assertTrue(
-                bufferStored <= bufferCap,
-                "handler buffer stored gt buffer cap"
+                bufferStored <= bufferCap, "handler buffer stored gt buffer cap"
             );
         }
         {
-            (, uint112 bufferCap, , uint112 bufferStored, ) = xwellProxy
-                .rateLimits(address(xerc20Lockbox));
+            (, uint112 bufferCap,, uint112 bufferStored,) =
+                xwellProxy.rateLimits(address(xerc20Lockbox));
 
             assertTrue(
-                bufferStored <= bufferCap,
-                "lockbox buffer stored gt buffer cap"
+                bufferStored <= bufferCap, "lockbox buffer stored gt buffer cap"
             );
         }
     }
 
     function invariant_bufferLteBufferCap() public view {
         {
-            (, uint112 bufferCap, , , ) = xwellProxy.rateLimits(
-                address(handler)
-            );
+            (, uint112 bufferCap,,,) = xwellProxy.rateLimits(address(handler));
 
             assertTrue(
                 xwellProxy.buffer(address(handler)) <= bufferCap,
@@ -165,9 +163,8 @@ contract xWELLInvariant is BaseTest {
             );
         }
         {
-            (, uint112 bufferCap, , , ) = xwellProxy.rateLimits(
-                address(xerc20Lockbox)
-            );
+            (, uint112 bufferCap,,,) =
+                xwellProxy.rateLimits(address(xerc20Lockbox));
 
             assertTrue(
                 xwellProxy.buffer(address(xerc20Lockbox)) <= bufferCap,
@@ -178,9 +175,8 @@ contract xWELLInvariant is BaseTest {
 
     function invariant_rateLimitPerSecondLteRLPSMax() public view {
         {
-            (uint128 rateLimitPerSecond, , , , ) = xwellProxy.rateLimits(
-                address(handler)
-            );
+            (uint128 rateLimitPerSecond,,,,) =
+                xwellProxy.rateLimits(address(handler));
 
             assertTrue(
                 rateLimitPerSecond <= xwellProxy.maxRateLimitPerSecond(),
@@ -188,9 +184,8 @@ contract xWELLInvariant is BaseTest {
             );
         }
         {
-            (uint128 rateLimitPerSecond, , , , ) = xwellProxy.rateLimits(
-                address(xerc20Lockbox)
-            );
+            (uint128 rateLimitPerSecond,,,,) =
+                xwellProxy.rateLimits(address(xerc20Lockbox));
 
             assertTrue(
                 rateLimitPerSecond <= xwellProxy.maxRateLimitPerSecond(),

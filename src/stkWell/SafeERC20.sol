@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity 0.6.12;
 
+import {Address} from "./Address.sol";
 import {IERC20} from "./IERC20.sol";
 import {SafeMath} from "./SafeMath.sol";
-import {Address} from "./Address.sol";
 
 /**
  * @title SafeERC20
@@ -21,8 +21,7 @@ library SafeERC20 {
 
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
         _callOptionalReturn(
-            token,
-            abi.encodeWithSelector(token.transfer.selector, to, value)
+            token, abi.encodeWithSelector(token.transfer.selector, to, value)
         );
     }
 
@@ -38,11 +37,9 @@ library SafeERC20 {
         );
     }
 
-    function safeApprove(
-        IERC20 token,
-        address spender,
-        uint256 value
-    ) internal {
+    function safeApprove(IERC20 token, address spender, uint256 value)
+        internal
+    {
         require(
             (value == 0) || (token.allowance(address(this), spender) == 0),
             "SafeERC20: approve from non-zero to non-zero allowance"
@@ -53,18 +50,14 @@ library SafeERC20 {
         );
     }
 
-    function safeIncreaseAllowance(
-        IERC20 token,
-        address spender,
-        uint256 value
-    ) internal {
+    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value)
+        internal
+    {
         uint256 newAllowance = token.allowance(address(this), spender) + value;
         _callOptionalReturn(
             token,
             abi.encodeWithSelector(
-                token.approve.selector,
-                spender,
-                newAllowance
+                token.approve.selector, spender, newAllowance
             )
         );
     }

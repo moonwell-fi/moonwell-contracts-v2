@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
+import {console} from "@forge-std/console.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
+import {ProxyAdmin} from
+    "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MoonwellViewsV2} from "@protocol/views/MoonwellViewsV2.sol";
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 /*
 to run:
@@ -49,9 +54,7 @@ contract DeployMoonwellViewsV2 is Script, Test {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
         new TransparentUpgradeableProxy(
-            address(viewsContract),
-            address(proxyAdmin),
-            initdata
+            address(viewsContract), address(proxyAdmin), initdata
         );
 
         vm.stopBroadcast();

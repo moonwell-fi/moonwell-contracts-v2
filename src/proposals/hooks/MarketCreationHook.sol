@@ -2,10 +2,10 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
+import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
-import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 
 contract MarketCreationHook {
     /// private so that contracts that inherit cannot write to functionDetectors
@@ -99,9 +99,13 @@ contract MarketCreationHook {
                     "must approve mtoken to spend tokens"
                 );
 
-                createdMTokens.push(mtoken); /// add mToken to created mTokens array
+                createdMTokens.push(mtoken);
 
-                i += 3; /// skip to next action
+                /// add mToken to created mTokens array
+
+                i += 3;
+
+                /// skip to next action
             }
         }
     }
@@ -118,8 +122,8 @@ contract MarketCreationHook {
         /// and that they have been minted and sent to the burn address
         for (uint256 i = 0; i < createdMTokens.length; i++) {
             require(
-                MToken(createdMTokens[i]).admin() ==
-                    Comptroller(comptroller).admin(),
+                MToken(createdMTokens[i]).admin()
+                    == Comptroller(comptroller).admin(),
                 "mToken admin must be the same as comptroller admin"
             );
             require(
@@ -139,9 +143,11 @@ contract MarketCreationHook {
         comptroller = address(0);
     }
 
-    function getTokenAmount(
-        bytes memory input
-    ) public pure returns (uint256 result) {
+    function getTokenAmount(bytes memory input)
+        public
+        pure
+        returns (uint256 result)
+    {
         require(input.length == 68, "invalid length, input must be 68 bytes");
 
         /// first 32 bytes of a dynamic byte array is just the length of the array
@@ -156,9 +162,11 @@ contract MarketCreationHook {
         result = uint256(rawBytes);
     }
 
-    function getMintAmount(
-        bytes memory input
-    ) public pure returns (uint256 result) {
+    function getMintAmount(bytes memory input)
+        public
+        pure
+        returns (uint256 result)
+    {
         require(input.length == 36, "invalid length, input must be 36 bytes");
 
         /// first 32 bytes of a dynamic byte array is just the length of the array
@@ -173,9 +181,11 @@ contract MarketCreationHook {
         result = uint256(rawBytes);
     }
 
-    function extractAddress(
-        bytes memory input
-    ) public pure returns (address result) {
+    function extractAddress(bytes memory input)
+        public
+        pure
+        returns (address result)
+    {
         /// first 32 bytes of a dynamic byte array is just the length of the array
         bytes32 rawBytes;
         assembly {
@@ -187,9 +197,11 @@ contract MarketCreationHook {
     }
 
     /// @notice function to grab the first 4 bytes of calldata payload
-    function bytesToBytes4(
-        bytes memory toSlice
-    ) public pure returns (bytes4 functionSignature) {
+    function bytesToBytes4(bytes memory toSlice)
+        public
+        pure
+        returns (bytes4 functionSignature)
+    {
         if (toSlice.length < 4) {
             return bytes4(0);
         }

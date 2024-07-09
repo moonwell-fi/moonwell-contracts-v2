@@ -1,11 +1,18 @@
 pragma solidity 0.8.19;
 
-import {xERC20BridgeAdapter} from "@protocol/xWELL/xERC20BridgeAdapter.sol";
-import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {IAxelarGateway} from "@protocol/xWELL/axelarInterfaces/IAxelarGateway.sol";
-import {IAxelarGasService} from "@protocol/xWELL/axelarInterfaces/IAxelarGasService.sol";
-import {AddressToString, StringToAddress} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
+import {SafeERC20} from
+    "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import {
+    AddressToString,
+    StringToAddress
+} from "@protocol/xWELL/axelarInterfaces/AddressString.sol";
+import {IAxelarGasService} from
+    "@protocol/xWELL/axelarInterfaces/IAxelarGasService.sol";
+import {IAxelarGateway} from
+    "@protocol/xWELL/axelarInterfaces/IAxelarGateway.sol";
+import {xERC20BridgeAdapter} from "@protocol/xWELL/xERC20BridgeAdapter.sol";
 
 /// @notice Axelar Token Bridge adapter for XERC20 tokens
 /// @dev the access control model for this contract is to deploy
@@ -75,9 +82,7 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter {
     /// @param axelarId axelar chain id
     /// @param approval whether or not the bridge address is approved
     event AxelarBridgeApprovalUpdated(
-        address indexed bridge,
-        string indexed axelarId,
-        bool approval
+        address indexed bridge, string indexed axelarId, bool approval
     );
 
     /// @notice emitted when a new sender approval is updated
@@ -85,9 +90,7 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter {
     /// @param axelarId axelar chain id
     /// @param approval whether or not the bridge adapter address is approved
     event SenderApprovalUpdated(
-        address indexed bridge,
-        string indexed axelarId,
-        bool approval
+        address indexed bridge, string indexed axelarId, bool approval
     );
 
     /// --------------------------------------------------------
@@ -132,9 +135,11 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter {
     /// --------------------------------------------------------
 
     /// @notice return whether the axelar chain id is valid and configured in this contract
-    function validAxelarChainid(
-        string memory axelarid
-    ) public view returns (bool) {
+    function validAxelarChainid(string memory axelarid)
+        public
+        view
+        returns (bool)
+    {
         return axelarIdToChainId[axelarid] != 0;
     }
 
@@ -173,9 +178,10 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter {
 
     /// @notice add approved external bridge address on a different chain
     /// @param configs of bridges and chainids to add
-    function addExternalChainSenders(
-        ChainConfig[] memory configs
-    ) external onlyOwner {
+    function addExternalChainSenders(ChainConfig[] memory configs)
+        external
+        onlyOwner
+    {
         unchecked {
             for (uint256 i = 0; i < configs.length; i++) {
                 _addExternalSender(configs[i]);
@@ -185,9 +191,10 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter {
 
     /// @notice remove bridge addresses as trusted senders from a different chain
     /// @param configs of bridges and chainids to remove
-    function removeExternalChainSenders(
-        ChainConfig[] memory configs
-    ) external onlyOwner {
+    function removeExternalChainSenders(ChainConfig[] memory configs)
+        external
+        onlyOwner
+    {
         unchecked {
             for (uint256 i = 0; i < configs.length; i++) {
                 _removeExternalSender(configs[i]);
@@ -310,9 +317,7 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter {
 
         // Send message to receiving bridge to mint tokens to user.
         gateway.callContract(
-            chainIdToAxelarId[dstChainId],
-            address(this).toString(),
-            payload
+            chainIdToAxelarId[dstChainId], address(this).toString(), payload
         );
 
         emit BridgedOut(dstChainId, user, to, amount);
@@ -348,18 +353,12 @@ contract AxelarBridgeAdapter is xERC20BridgeAdapter {
 
         require(
             gateway.validateContractCall(
-                commandId,
-                sourceChain,
-                sourceAddress,
-                payloadHash
+                commandId, sourceChain, sourceAddress, payloadHash
             ),
             "AxelarBridgeAdapter: call not approved by gateway"
         );
 
-        (address user, uint256 amount) = abi.decode(
-            payload,
-            (address, uint256)
-        );
+        (address user, uint256 amount) = abi.decode(payload, (address, uint256));
 
         _bridgeIn(axelarIdToChainId[sourceChain], user, amount);
     }

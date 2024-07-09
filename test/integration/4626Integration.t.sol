@@ -5,19 +5,22 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {MToken} from "@protocol/MToken.sol";
-import {MErc20} from "@protocol/MErc20.sol";
-import {MockERC20} from "@test/mock/MockERC20.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {LibCompound} from "@protocol/4626/LibCompound.sol";
-import {Factory4626} from "@protocol/4626/Factory4626.sol";
+
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {deployFactory} from "@protocol/4626/4626FactoryDeploy.sol";
+import {Factory4626} from "@protocol/4626/Factory4626.sol";
+import {LibCompound} from "@protocol/4626/LibCompound.sol";
+
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
 import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {MockERC20} from "@test/mock/MockERC20.sol";
 
 contract MoonwellERC4626LiveSystemBaseTest is Test {
     using LibCompound for MErc20;
+
     address constant rewardRecipient = address(10_000_000);
     Addresses addresses;
     TestProposals proposals;
@@ -43,8 +46,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
         vault = MoonwellERC4626(
             factory.deployMoonwellERC4626(
-                addresses.getAddress("MOONWELL_USDBC"),
-                rewardRecipient
+                addresses.getAddress("MOONWELL_USDBC"), rewardRecipient
             )
         );
 
@@ -56,12 +58,10 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
     function testSetup() public view {
         assertEq(address(vault.asset()), address(underlying));
         assertEq(
-            address(vault.mToken()),
-            addresses.getAddress("MOONWELL_USDBC")
+            address(vault.mToken()), addresses.getAddress("MOONWELL_USDBC")
         );
         assertEq(
-            address(vault.comptroller()),
-            addresses.getAddress("UNITROLLER")
+            address(vault.comptroller()), addresses.getAddress("UNITROLLER")
         );
         assertEq(vault.rewardRecipient(), rewardRecipient);
 
@@ -146,8 +146,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSignature(
-                "CompoundERC4626__CompoundError(uint256)",
-                9
+                "CompoundERC4626__CompoundError(uint256)", 9
             )
         );
         vault.withdraw(withdrawAmount, address(this), address(this));
@@ -185,8 +184,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
     function testMintGuardianPausedMaxMintReturnsZero() public {
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         comptroller._setMintPaused(
-            MToken(addresses.getAddress("MOONWELL_USDBC")),
-            true
+            MToken(addresses.getAddress("MOONWELL_USDBC")), true
         );
         vm.stopPrank();
 
@@ -208,9 +206,8 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
     function testMaxMint() public view {
         uint256 maxMint = vault.maxMint(address(this));
-        uint256 supplyCap = comptroller.supplyCaps(
-            addresses.getAddress("MOONWELL_USDBC")
-        );
+        uint256 supplyCap =
+            comptroller.supplyCaps(addresses.getAddress("MOONWELL_USDBC"));
 
         assertGt(maxMint, 0);
         assertLt(maxMint, supplyCap);
@@ -224,9 +221,8 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         );
 
         uint256 maxMint = vault.maxMint(address(this));
-        uint256 supplyCap = comptroller.supplyCaps(
-            addresses.getAddress("MOONWELL_USDBC")
-        );
+        uint256 supplyCap =
+            comptroller.supplyCaps(addresses.getAddress("MOONWELL_USDBC"));
 
         assertGt(maxMint, 0, "max mint not gt 0");
         assertLt(maxMint, supplyCap, "max mint not lt supply cap");
@@ -238,9 +234,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         vault.mint(maxMint, address(this));
 
         assertEq(
-            vault.maxMint(address(this)),
-            0,
-            "should be nothing left to mint"
+            vault.maxMint(address(this)), 0, "should be nothing left to mint"
         );
         assertGt(
             depositAmount,
@@ -288,8 +282,8 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
             "balance should remain unchanged"
         );
         assertEq(
-            startingAssets -
-                vault.convertToAssets(vault.balanceOf(address(this))),
+            startingAssets
+                - vault.convertToAssets(vault.balanceOf(address(this))),
             0,
             "assets should remain unchanged"
         );
@@ -311,8 +305,8 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
             "balance should remain unchanged"
         );
         assertEq(
-            startingAssets -
-                vault.convertToAssets(vault.balanceOf(address(this))),
+            startingAssets
+                - vault.convertToAssets(vault.balanceOf(address(this))),
             0,
             "assets should remain unchanged"
         );
@@ -374,9 +368,10 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         vm.stopPrank();
     }
 
-    function testConvertToShareThenAssetsRoundsDown(
-        uint256 assets
-    ) public view {
+    function testConvertToShareThenAssetsRoundsDown(uint256 assets)
+        public
+        view
+    {
         assets = _bound(assets, 1, 100_000_000 * 1e18);
 
         uint256 shares = vault.convertToShares(assets);
@@ -385,9 +380,10 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         assertGt(assets, assets2, "initial assets should be gt assets2");
     }
 
-    function testConvertFromSharesToAssetsRoundsDown(
-        uint256 shares
-    ) public view {
+    function testConvertFromSharesToAssetsRoundsDown(uint256 shares)
+        public
+        view
+    {
         shares = _bound(shares, 1, 1_000_000 * 1e18);
 
         uint256 assets = vault.convertToAssets(shares);

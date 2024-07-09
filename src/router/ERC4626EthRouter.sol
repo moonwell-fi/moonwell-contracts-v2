@@ -88,8 +88,7 @@ contract ERC4626EthRouter {
         returns (uint256 amountIn)
     {
         require(
-            (amountIn = vault.mint(shares, to)) <= maxAmountIn,
-            "MINT_FAILED"
+            (amountIn = vault.mint(shares, to)) <= maxAmountIn, "MINT_FAILED"
         );
     }
 

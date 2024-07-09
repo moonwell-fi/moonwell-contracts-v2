@@ -1,10 +1,11 @@
 pragma solidity 0.8.19;
 
-import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from
+    "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
+import {WETH9} from "@protocol/router/IWETH.sol";
 
 /// @notice WETH router for depositing raw ETH into Moonwell by wrapping into WETH then calling mint
 /// allows for a single transaction to remove ETH from Moonwell
@@ -34,8 +35,7 @@ contract WETHRouter {
         require(mToken.mint(msg.value) == 0, "WETHRouter: mint failed");
 
         IERC20(address(mToken)).safeTransfer(
-            recipient,
-            mToken.balanceOf(address(this))
+            recipient, mToken.balanceOf(address(this))
         );
     }
 
@@ -54,9 +54,7 @@ contract WETHRouter {
                 "WETHRouter: repay borrow behalf failed"
             );
 
-            (bool success, ) = msg.sender.call{value: address(this).balance}(
-                ""
-            );
+            (bool success,) = msg.sender.call{value: address(this).balance}("");
             require(success, "WETHRouter: ETH transfer failed");
         } else {
             weth.deposit{value: received}();

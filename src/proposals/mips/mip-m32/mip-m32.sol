@@ -3,15 +3,19 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {mipm30} from "@proposals/mips/mip-m30/mip-m30.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
-import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
-import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {mipm30} from "@proposals/mips/mip-m30/mip-m30.sol";
+
+import {
+    ActionType,
+    HybridProposal
+} from "@proposals/proposalTypes/HybridProposal.sol";
+import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 contract mipm32 is Configs, HybridProposal, ParameterValidation {
     using ProposalActions for *;
@@ -60,8 +64,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_mWBTC"),
             abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                NEW_M_WBTCWH_RESERVE_FACTOR
+                "_setReserveFactor(uint256)", NEW_M_WBTCWH_RESERVE_FACTOR
             ),
             "Set reserve factor for MOONWELL_mWBTC to updated reserve factor",
             ActionType.Moonbeam
@@ -105,8 +108,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
         );
 
         _validateRF(
-            addresses.getAddress("MOONWELL_mWBTC"),
-            NEW_M_WBTCWH_RESERVE_FACTOR
+            addresses.getAddress("MOONWELL_mWBTC"), NEW_M_WBTCWH_RESERVE_FACTOR
         );
 
         _validateCF(

@@ -5,21 +5,24 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {MErc20} from "@protocol/MErc20.sol";
-import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
-import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
-import {MWethDelegate} from "@protocol/MWethDelegate.sol";
-import {mipb02 as mip} from "@proposals/mips/mip-b02/mip-b02.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
-import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {MaliciousBorrower} from "@test/mock/MaliciousBorrower.sol";
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
-import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {TestProposals} from "@proposals/TestProposals.sol";
+import {mipb02 as mip} from "@proposals/mips/mip-b02/mip-b02.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+
+import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {MWethDelegate} from "@protocol/MWethDelegate.sol";
+import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
+import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {MaliciousBorrower} from "@test/mock/MaliciousBorrower.sol";
+
+import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 /// verify that the new MWETH Delegate and Unwrapper are working as expected
 contract WETHPostProposalCheck is Configs, PostProposalCheck {
@@ -36,9 +39,7 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
         vm.selectFork(BASE_FORK_ID);
 
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
-        mToken = MErc20Delegator(
-            payable(addresses.getAddress("MOONWELL_WETH"))
-        );
+        mToken = MErc20Delegator(payable(addresses.getAddress("MOONWELL_WETH")));
         router = WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));
 
         unwrapper = new WethUnwrapper(addresses.getAddress("WETH"));
@@ -77,15 +78,20 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
 
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
-        vm.deal(sender, mintAmount); /// fund with raw eth
+        vm.deal(sender, mintAmount);
+
+        /// fund with raw eth
         token.approve(address(mToken), mintAmount);
 
-        router.mint{value: mintAmount}(address(this)); /// ensure successful mint
-        assertTrue(mToken.balanceOf(sender) > 0); /// ensure balance is gt 0
+        router.mint{value: mintAmount}(address(this));
+
+        /// ensure successful mint
+        assertTrue(mToken.balanceOf(sender) > 0);
+        /// ensure balance is gt 0
         assertEq(
-            token.balanceOf(address(mToken)) - startingTokenBalance,
-            mintAmount
-        ); /// ensure underlying balance is sent to mToken
+            token.balanceOf(address(mToken)) - startingTokenBalance, mintAmount
+        );
+        /// ensure underlying balance is sent to mToken
 
         address[] memory mTokens = new address[](1);
         mTokens[0] = address(mToken);
@@ -93,30 +99,28 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
         comptroller.enterMarkets(mTokens);
         assertTrue(
             comptroller.checkMembership(
-                sender,
-                MToken(addresses.getAddress("MOONWELL_WETH"))
+                sender, MToken(addresses.getAddress("MOONWELL_WETH"))
             )
-        ); /// ensure sender and mToken is in market
+        );
+        /// ensure sender and mToken is in market
 
-        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
-            .getAccountLiquidity(address(this));
+        (uint256 err, uint256 liquidity, uint256 shortfall) =
+            comptroller.getAccountLiquidity(address(this));
 
         assertEq(err, 0, "Error getting account liquidity");
         assertGt(liquidity, mintAmount * 1_000, "liquidity not correct");
         assertEq(shortfall, 0, "Incorrect shortfall");
 
         assertEq(
-            comptroller.exitMarket(address(mToken)),
-            0,
-            "exit market failed"
+            comptroller.exitMarket(address(mToken)), 0, "exit market failed"
         );
 
         assertFalse(
             comptroller.checkMembership(
-                sender,
-                MToken(addresses.getAddress("MOONWELL_WETH"))
+                sender, MToken(addresses.getAddress("MOONWELL_WETH"))
             )
-        ); /// ensure sender and mToken is not in market
+        );
+        /// ensure sender and mToken is not in market
     }
 
     function testRedeemSendsRawEthToReceiver() public {
@@ -126,7 +130,9 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
         uint256 redeemAmount = 100e18;
         uint256 startingBalance = address(this).balance;
 
-        vm.warp(block.timestamp + 1000); /// accrue enough interest to redeem at least 100 eth
+        vm.warp(block.timestamp + 1000);
+
+        /// accrue enough interest to redeem at least 100 eth
 
         assertEq(mToken.redeemUnderlying(redeemAmount), 0, "redeem failure");
 

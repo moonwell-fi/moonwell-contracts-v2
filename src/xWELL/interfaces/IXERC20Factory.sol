@@ -5,31 +5,26 @@ interface IXERC20Factory {
     /**
      * @notice Emitted when a new XERC20 is deployed
      */
-
     event XERC20Deployed(address _xerc20);
 
     /**
      * @notice Emitted when a new XERC20Lockbox is deployed
      */
-
     event LockboxDeployed(address _lockbox);
 
     /**
      * @notice Reverts when a non-owner attempts to call
      */
-
     error IXERC20Factory_NotOwner();
 
     /**
      * @notice Reverts when a lockbox is trying to be deployed from a malicious address
      */
-
     error IXERC20Factory_BadTokenAddress();
 
     /**
      * @notice Reverts when a lockbox is already deployed
      */
-
     error IXERC20Factory_LockboxAlreadyDeployed();
 
     /**
@@ -45,7 +40,6 @@ interface IXERC20Factory {
      * @param _burnerLimits The array of limits that you are adding (optional, can be an empty array)
      * @param _bridges The array of burners that you are adding (optional, can be an empty array)
      */
-
     function deployXERC20(
         string memory _name,
         string memory _symbol,
@@ -61,10 +55,7 @@ interface IXERC20Factory {
      * @param _baseToken The address of the base token that you want to lock
      * @param _isNative Whether or not the base token is native
      */
-
-    function deployLockbox(
-        address _xerc20,
-        address _baseToken,
-        bool _isNative
-    ) external returns (address payable _lockbox);
+    function deployLockbox(address _xerc20, address _baseToken, bool _isNative)
+        external
+        returns (address payable _lockbox);
 }

@@ -6,14 +6,12 @@ interface IEcosystemReserveUplift {
     function initialize(address reserveController) external;
 
     /// @notice approve tokens from ecosystem reserve to recipient
-    function approve(address token, address recipient, uint256 amount) external;
+    function approve(address token, address recipient, uint256 amount)
+        external;
 
     /// @notice transfer tokens from ecosystem reserve to recipient
-    function transfer(
-        address token,
-        address recipient,
-        uint256 amount
-    ) external;
+    function transfer(address token, address recipient, uint256 amount)
+        external;
 
     /// @notice set funds admin
     function setFundsAdmin(address admin) external;
@@ -24,14 +22,12 @@ interface IEcosystemReserveUplift {
 
 interface IEcosystemReserveControllerUplift {
     /// @notice approve tokens from ecosystem reserve to recipient
-    function approve(address token, address recipient, uint256 amount) external;
+    function approve(address token, address recipient, uint256 amount)
+        external;
 
     /// @notice transfer tokens from ecosystem reserve to recipient
-    function transfer(
-        address token,
-        address recipient,
-        uint256 amount
-    ) external;
+    function transfer(address token, address recipient, uint256 amount)
+        external;
 
     /// @notice set funds admin
     function setFundsAdmin(address admin) external;

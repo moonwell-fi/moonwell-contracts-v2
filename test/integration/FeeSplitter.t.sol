@@ -5,13 +5,15 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {MToken} from "@protocol/MToken.sol";
-import {MErc20} from "@protocol/MErc20.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {MToken} from "@protocol/MToken.sol";
+
 import {FeeSplitter} from "@protocol/morpho/FeeSplitter.sol";
-import {IMorphoBlue} from "@protocol/morpho/IMorphoBlue.sol";
-import {IMetaMorphoFactory} from "@protocol/morpho/IMetaMorphoFactory.sol";
+
 import {IMetaMorpho, MarketParams} from "@protocol/morpho/IMetaMorpho.sol";
+import {IMetaMorphoFactory} from "@protocol/morpho/IMetaMorphoFactory.sol";
+import {IMorphoBlue} from "@protocol/morpho/IMorphoBlue.sol";
 
 contract FeeSplitterLiveSystemBaseTest is Test {
     /// @notice the addresses contract
@@ -57,9 +59,8 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         /// addresses
         addresses = new Addresses();
 
-        factory = IMetaMorphoFactory(
-            addresses.getAddress("META_MORPHO_FACTORY")
-        );
+        factory =
+            IMetaMorphoFactory(addresses.getAddress("META_MORPHO_FACTORY"));
         usdc = ERC20(addresses.getAddress("USDC"));
         weth = ERC20(addresses.getAddress("WETH"));
         mWeth = addresses.getAddress("MOONWELL_WETH");
@@ -88,17 +89,11 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         );
 
         usdcSplitter = new FeeSplitter(
-            rewardRecipientB,
-            5_000,
-            address(metaMorphoUsdc),
-            mUsdc
+            rewardRecipientB, 5_000, address(metaMorphoUsdc), mUsdc
         );
 
         wethSplitter = new FeeSplitter(
-            rewardRecipientB,
-            5_000,
-            address(metaMorphoWeth),
-            mWeth
+            rewardRecipientB, 5_000, address(metaMorphoWeth), mWeth
         );
 
         /// mint usdc
@@ -175,20 +170,10 @@ contract FeeSplitterLiveSystemBaseTest is Test {
     function testConstructionFailsUnderlyingAssetMismatch() public {
         /// weth vault, usdc mtoken
         vm.expectRevert("FeeSplitter: asset mismatch");
-        new FeeSplitter(
-            rewardRecipientB,
-            5_000,
-            address(metaMorphoUsdc),
-            mWeth
-        );
+        new FeeSplitter(rewardRecipientB, 5_000, address(metaMorphoUsdc), mWeth);
 
         vm.expectRevert("FeeSplitter: asset mismatch");
-        new FeeSplitter(
-            rewardRecipientB,
-            5_000,
-            address(metaMorphoWeth),
-            mUsdc
-        );
+        new FeeSplitter(rewardRecipientB, 5_000, address(metaMorphoWeth), mUsdc);
         /// weth mtoken, usdc vault
     }
 
@@ -202,10 +187,7 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         splitA = bound(splitA, 0, 10_000);
 
         FeeSplitter splitter = new FeeSplitter(
-            rewardRecipientB,
-            splitA,
-            address(metaMorphoWeth),
-            mWeth
+            rewardRecipientB, splitA, address(metaMorphoWeth), mWeth
         );
 
         assertEq(splitter.splitA(), splitA, "split a");
@@ -223,15 +205,13 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         assertEq(MErc20(mWeth).accrueInterest(), 0, "accrue interest failed");
 
         uint256 startingReserves = MErc20(mWeth).totalReserves();
-        uint256 startingWethSharesBalance = metaMorphoWeth.balanceOf(
-            rewardRecipientB
-        );
+        uint256 startingWethSharesBalance =
+            metaMorphoWeth.balanceOf(rewardRecipientB);
 
         wethSplitter.split();
 
-        uint256 endingWethSharesBalance = metaMorphoWeth.balanceOf(
-            rewardRecipientB
-        );
+        uint256 endingWethSharesBalance =
+            metaMorphoWeth.balanceOf(rewardRecipientB);
         uint256 endingReserves = MErc20(mWeth).totalReserves();
 
         assertEq(
@@ -249,10 +229,7 @@ contract FeeSplitterLiveSystemBaseTest is Test {
 
     function testWethSplitSixtyForty() public {
         wethSplitter = new FeeSplitter(
-            rewardRecipientB,
-            6_000,
-            address(metaMorphoWeth),
-            mWeth
+            rewardRecipientB, 6_000, address(metaMorphoWeth), mWeth
         );
 
         /// accrue fee
@@ -264,15 +241,13 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         assertEq(MErc20(mWeth).accrueInterest(), 0, "accrue interest failed");
 
         uint256 startingReserves = MErc20(mWeth).totalReserves();
-        uint256 startingWethSharesBalance = metaMorphoWeth.balanceOf(
-            rewardRecipientB
-        );
+        uint256 startingWethSharesBalance =
+            metaMorphoWeth.balanceOf(rewardRecipientB);
 
         wethSplitter.split();
 
-        uint256 endingWethSharesBalance = metaMorphoWeth.balanceOf(
-            rewardRecipientB
-        );
+        uint256 endingWethSharesBalance =
+            metaMorphoWeth.balanceOf(rewardRecipientB);
         uint256 endingReserves = MErc20(mWeth).totalReserves();
 
         assertEq(
@@ -282,8 +257,8 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         );
         assertApproxEqAbs(
             endingReserves,
-            startingReserves +
-                metaMorphoWeth.previewRedeem((splitAmount * 6000) / 10_000),
+            startingReserves
+                + metaMorphoWeth.previewRedeem((splitAmount * 6000) / 10_000),
             1,
             "reserves balance"
         );
@@ -291,10 +266,7 @@ contract FeeSplitterLiveSystemBaseTest is Test {
 
     function testWethSplitSeventyThirty() public {
         wethSplitter = new FeeSplitter(
-            rewardRecipientB,
-            7_000,
-            address(metaMorphoWeth),
-            mWeth
+            rewardRecipientB, 7_000, address(metaMorphoWeth), mWeth
         );
 
         /// accrue fee
@@ -306,15 +278,13 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         assertEq(MErc20(mWeth).accrueInterest(), 0, "accrue interest failed");
 
         uint256 startingReserves = MErc20(mWeth).totalReserves();
-        uint256 startingWethSharesBalance = metaMorphoWeth.balanceOf(
-            rewardRecipientB
-        );
+        uint256 startingWethSharesBalance =
+            metaMorphoWeth.balanceOf(rewardRecipientB);
 
         wethSplitter.split();
 
-        uint256 endingWethSharesBalance = metaMorphoWeth.balanceOf(
-            rewardRecipientB
-        );
+        uint256 endingWethSharesBalance =
+            metaMorphoWeth.balanceOf(rewardRecipientB);
         uint256 endingReserves = MErc20(mWeth).totalReserves();
 
         assertEq(
@@ -324,8 +294,8 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         );
         assertApproxEqAbs(
             endingReserves,
-            startingReserves +
-                metaMorphoWeth.previewRedeem((splitAmount * 7_000) / 10_000),
+            startingReserves
+                + metaMorphoWeth.previewRedeem((splitAmount * 7_000) / 10_000),
             1,
             "reserves balance"
         );
@@ -336,10 +306,7 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         uint256 splitB = 10_000 - splitA;
 
         wethSplitter = new FeeSplitter(
-            rewardRecipientB,
-            splitA,
-            address(metaMorphoWeth),
-            mWeth
+            rewardRecipientB, splitA, address(metaMorphoWeth), mWeth
         );
 
         /// accrue fee
@@ -351,15 +318,13 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         assertEq(MErc20(mWeth).accrueInterest(), 0, "accrue interest failed");
 
         uint256 startingReserves = MErc20(mWeth).totalReserves();
-        uint256 startingWethSharesBalance = metaMorphoWeth.balanceOf(
-            rewardRecipientB
-        );
+        uint256 startingWethSharesBalance =
+            metaMorphoWeth.balanceOf(rewardRecipientB);
 
         wethSplitter.split();
 
-        uint256 endingWethSharesBalance = metaMorphoWeth.balanceOf(
-            rewardRecipientB
-        );
+        uint256 endingWethSharesBalance =
+            metaMorphoWeth.balanceOf(rewardRecipientB);
         uint256 endingReserves = MErc20(mWeth).totalReserves();
 
         assertEq(
@@ -369,8 +334,8 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         );
         assertApproxEqAbs(
             endingReserves,
-            startingReserves +
-                metaMorphoWeth.previewRedeem((splitAmount * splitA) / 10_000),
+            startingReserves
+                + metaMorphoWeth.previewRedeem((splitAmount * splitA) / 10_000),
             1,
             "reserves balance"
         );
@@ -386,15 +351,13 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         assertEq(MErc20(mUsdc).accrueInterest(), 0, "accrue interest failed");
 
         uint256 startingReserves = MErc20(mUsdc).totalReserves();
-        uint256 startingUsdcSharesBalance = metaMorphoUsdc.balanceOf(
-            rewardRecipientB
-        );
+        uint256 startingUsdcSharesBalance =
+            metaMorphoUsdc.balanceOf(rewardRecipientB);
 
         usdcSplitter.split();
 
-        uint256 endingUsdcSharesBalance = metaMorphoUsdc.balanceOf(
-            rewardRecipientB
-        );
+        uint256 endingUsdcSharesBalance =
+            metaMorphoUsdc.balanceOf(rewardRecipientB);
         uint256 endingReserves = MErc20(mUsdc).totalReserves();
 
         assertEq(
@@ -405,7 +368,8 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         assertApproxEqAbs(
             endingReserves,
             startingReserves + metaMorphoUsdc.previewRedeem(splitAmount / 2),
-            1, /// allow off by one in either direction
+            1,
+            /// allow off by one in either direction
             "reserves balance"
         );
     }
@@ -415,10 +379,7 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         uint256 splitB = 10_000 - splitA;
 
         usdcSplitter = new FeeSplitter(
-            rewardRecipientB,
-            splitA,
-            address(metaMorphoUsdc),
-            mUsdc
+            rewardRecipientB, splitA, address(metaMorphoUsdc), mUsdc
         );
 
         /// accrue fee
@@ -430,15 +391,13 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         assertEq(MErc20(mUsdc).accrueInterest(), 0, "accrue interest failed");
 
         uint256 startingReserves = MErc20(mUsdc).totalReserves();
-        uint256 startingUsdcSharesBalance = metaMorphoUsdc.balanceOf(
-            rewardRecipientB
-        );
+        uint256 startingUsdcSharesBalance =
+            metaMorphoUsdc.balanceOf(rewardRecipientB);
 
         usdcSplitter.split();
 
-        uint256 endingUsdcSharesBalance = metaMorphoUsdc.balanceOf(
-            rewardRecipientB
-        );
+        uint256 endingUsdcSharesBalance =
+            metaMorphoUsdc.balanceOf(rewardRecipientB);
         uint256 endingReserves = MErc20(mUsdc).totalReserves();
 
         assertEq(
@@ -448,21 +407,22 @@ contract FeeSplitterLiveSystemBaseTest is Test {
         );
         assertApproxEqAbs(
             endingReserves,
-            startingReserves +
-                metaMorphoUsdc.previewRedeem((splitAmount * splitA) / 10_000),
-            10, /// allow off by 10 and no more
+            startingReserves
+                + metaMorphoUsdc.previewRedeem((splitAmount * splitA) / 10_000),
+            10,
+            /// allow off by 10 and no more
             "reserves balance"
         );
     }
 
-    function id(
-        MarketParams memory marketParams
-    ) internal pure returns (bytes32 marketParamsId) {
+    function id(MarketParams memory marketParams)
+        internal
+        pure
+        returns (bytes32 marketParamsId)
+    {
         assembly ("memory-safe") {
-            marketParamsId := keccak256(
-                marketParams,
-                MARKET_PARAMS_BYTES_LENGTH
-            )
+            marketParamsId :=
+                keccak256(marketParams, MARKET_PARAMS_BYTES_LENGTH)
         }
     }
 }

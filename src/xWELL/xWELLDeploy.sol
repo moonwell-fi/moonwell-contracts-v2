@@ -1,14 +1,17 @@
 pragma solidity 0.8.19;
 
-import {TransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {TransparentUpgradeableProxy} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
-import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+
 import {AxelarBridgeAdapter} from "@protocol/xWELL/AxelarBridgeAdapter.sol";
+import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 
 contract xWELLDeploy {
     /// @notice for base deployment
@@ -46,9 +49,7 @@ contract xWELLDeploy {
 
         xwellImpl = address(
             new TransparentUpgradeableProxy(
-                address(xwellLogic),
-                address(proxyAdmin),
-                initData
+                address(xwellLogic), address(proxyAdmin), initData
             )
         );
     }
@@ -86,21 +87,18 @@ contract xWELLDeploy {
         /// do not initialize the proxy, that is the final step
         xwellProxy = address(
             new TransparentUpgradeableProxy(
-                address(xwellLogic),
-                address(proxyAdmin),
-                ""
+                address(xwellLogic), address(proxyAdmin), ""
             )
         );
 
         lockbox = deployLockBox(
-            xwellProxy, /// proxy is actually the xWELL token contract
+            xwellProxy,
+            /// proxy is actually the xWELL token contract
             addresses.getAddress("GOVTOKEN")
         );
 
-        MintLimits.RateLimitMidPointInfo[]
-            memory _newRateLimits = new MintLimits.RateLimitMidPointInfo[](
-                newRateLimits.length + 1
-            );
+        MintLimits.RateLimitMidPointInfo[] memory _newRateLimits =
+            new MintLimits.RateLimitMidPointInfo[](newRateLimits.length + 1);
 
         for (uint256 i = 0; i < newRateLimits.length; i++) {
             _newRateLimits[i] = newRateLimits[i];
@@ -108,10 +106,12 @@ contract xWELLDeploy {
 
         _newRateLimits[_newRateLimits.length - 1] = MintLimits
             .RateLimitMidPointInfo({
-                bufferCap: type(uint112).max, /// max buffer cap, lock box can infinite mint up to max supply
-                rateLimitPerSecond: 0, /// no rate limit
-                bridge: lockbox
-            });
+            bufferCap: type(uint112).max,
+            /// max buffer cap, lock box can infinite mint up to max supply
+            rateLimitPerSecond: 0,
+            /// no rate limit
+            bridge: lockbox
+        });
 
         xWELL(xwellProxy).initialize(
             tokenName,
@@ -127,9 +127,7 @@ contract xWELLDeploy {
     /// this includes the xWELL token, the proxy, the proxy admin, and the wormhole adapter
     /// but does not include the xWELL lockbox as there is no native WELL token on base
     /// @param existingProxyAdmin The proxy admin to use, if any
-    function deployBaseSystem(
-        address existingProxyAdmin
-    )
+    function deployBaseSystem(address existingProxyAdmin)
         public
         returns (
             address xwellLogic,
@@ -151,15 +149,12 @@ contract xWELLDeploy {
         }
 
         /// do not initialize the proxy, that is the final step
-        xwellProxy = address(
-            new TransparentUpgradeableProxy(xwellLogic, proxyAdmin, "")
-        );
+        xwellProxy =
+            address(new TransparentUpgradeableProxy(xwellLogic, proxyAdmin, ""));
 
         wormholeAdapter = address(
             new TransparentUpgradeableProxy(
-                wormholeAdapterLogic,
-                proxyAdmin,
-                ""
+                wormholeAdapterLogic, proxyAdmin, ""
             )
         );
     }
@@ -188,7 +183,8 @@ contract xWELLDeploy {
         ) = deployBaseSystem(existingProxyAdmin);
         /// lockbox is deployed at the end so that xWELL and wormhole adapter can have the same addresses on all chains.
         lockbox = deployLockBox(
-            xwellProxy, /// proxy is actually the xWELL token contract
+            xwellProxy,
+            /// proxy is actually the xWELL token contract
             wellAddress
         );
     }
@@ -220,28 +216,26 @@ contract xWELLDeploy {
         uint16 chainId
     ) public {
         WormholeBridgeAdapter(wormholeAdapter).initialize(
-            xwellProxy,
-            tokenOwner,
-            wormholeRelayerAddress,
-            chainId
+            xwellProxy, tokenOwner, wormholeRelayerAddress, chainId
         );
     }
 
     /// @notice deploy lock box, for use on base only
     /// @param xwell The xWELL token address
     /// @param well The WELL token address
-    function deployLockBox(
-        address xwell,
-        address well
-    ) public returns (address) {
+    function deployLockBox(address xwell, address well)
+        public
+        returns (address)
+    {
         return address(new XERC20Lockbox(xwell, well));
     }
 
     /// @notice deploy the axelar bridge adapter
     /// @param proxyAdmin The proxy admin address
-    function deployAxelarBridgeAdapter(
-        address proxyAdmin
-    ) public returns (address axelarBridgeAddress, address axelarBridgeProxy) {
+    function deployAxelarBridgeAdapter(address proxyAdmin)
+        public
+        returns (address axelarBridgeAddress, address axelarBridgeProxy)
+    {
         axelarBridgeAddress = address(new AxelarBridgeAdapter());
 
         axelarBridgeProxy = address(

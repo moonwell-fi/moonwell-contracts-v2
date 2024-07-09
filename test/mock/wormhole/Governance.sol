@@ -3,10 +3,10 @@
 
 pragma solidity ^0.8.0;
 
-import "@wormhole/Structs.sol";
-import "@wormhole/GovernanceStructs.sol";
 import "./Messages.sol";
+import "@wormhole/GovernanceStructs.sol";
 import "@wormhole/Setters.sol";
+import "@wormhole/Structs.sol";
 
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
 
@@ -21,8 +21,7 @@ abstract contract Governance is
     ERC1967Upgrade
 {
     event ContractUpgraded(
-        address indexed oldContract,
-        address indexed newContract
+        address indexed oldContract, address indexed newContract
     );
     event GuardianSetAdded(uint32 indexed index);
 
@@ -42,9 +41,8 @@ abstract contract Governance is
         (bool isValid, string memory reason) = verifyGovernanceVM(vm);
         require(isValid, reason);
 
-        GovernanceStructs.ContractUpgrade memory upgrade = parseContractUpgrade(
-            vm.payload
-        );
+        GovernanceStructs.ContractUpgrade memory upgrade =
+            parseContractUpgrade(vm.payload);
 
         // Verify the VAA is for this module
         require(upgrade.module == module, "Invalid Module");
@@ -69,9 +67,8 @@ abstract contract Governance is
         (bool isValid, string memory reason) = verifyGovernanceVM(vm);
         require(isValid, reason);
 
-        GovernanceStructs.SetMessageFee memory upgrade = parseSetMessageFee(
-            vm.payload
-        );
+        GovernanceStructs.SetMessageFee memory upgrade =
+            parseSetMessageFee(vm.payload);
 
         // Verify the VAA is for this module
         require(upgrade.module == module, "Invalid Module");
@@ -96,8 +93,8 @@ abstract contract Governance is
         (bool isValid, string memory reason) = verifyGovernanceVM(vm);
         require(isValid, reason);
 
-        GovernanceStructs.GuardianSetUpgrade
-            memory upgrade = parseGuardianSetUpgrade(vm.payload);
+        GovernanceStructs.GuardianSetUpgrade memory upgrade =
+            parseGuardianSetUpgrade(vm.payload);
 
         // Verify the VAA is for this module
         require(upgrade.module == module, "invalid Module");
@@ -111,8 +108,7 @@ abstract contract Governance is
         // Verify the Guardian Set keys are not empty, this guards
         // against the accidential upgrade to an empty GuardianSet
         require(
-            upgrade.newGuardianSet.keys.length > 0,
-            "new guardian set is empty"
+            upgrade.newGuardianSet.keys.length > 0, "new guardian set is empty"
         );
 
         // Verify that the index is incrementing via a predictable +1 pattern
@@ -145,9 +141,8 @@ abstract contract Governance is
         require(isValid, reason);
 
         // Obtains the transfer from the VAA payload
-        GovernanceStructs.TransferFees memory transfer = parseTransferFees(
-            vm.payload
-        );
+        GovernanceStructs.TransferFees memory transfer =
+            parseTransferFees(vm.payload);
 
         // Verify the VAA is for this module
         require(transfer.module == module, "invalid Module");
@@ -162,9 +157,8 @@ abstract contract Governance is
         setGovernanceActionConsumed(vm.hash);
 
         // Obtains the recipient address to be paid transfer fees
-        address payable recipient = payable(
-            address(uint160(uint256(transfer.recipient)))
-        );
+        address payable recipient =
+            payable(address(uint160(uint256(transfer.recipient))));
 
         // Transfers transfer fees to the recipient
         recipient.transfer(transfer.amount);
@@ -182,9 +176,8 @@ abstract contract Governance is
         (bool isValid, string memory reason) = verifyGovernanceVM(vm);
         require(isValid, reason);
 
-        GovernanceStructs.RecoverChainId memory rci = parseRecoverChainId(
-            vm.payload
-        );
+        GovernanceStructs.RecoverChainId memory rci =
+            parseRecoverChainId(vm.payload);
 
         // Verify the VAA is for this module
         require(rci.module == module, "invalid Module");
@@ -221,9 +214,11 @@ abstract contract Governance is
     /**
      * @dev Verifies a Governance VAA/VM is valid
      */
-    function verifyGovernanceVM(
-        Structs.VM memory vm
-    ) internal view returns (bool, string memory) {
+    function verifyGovernanceVM(Structs.VM memory vm)
+        internal
+        view
+        returns (bool, string memory)
+    {
         // Verify the VAA is valid
         (bool isValid, string memory reason) = verifyVM(vm);
         if (!isValid) {

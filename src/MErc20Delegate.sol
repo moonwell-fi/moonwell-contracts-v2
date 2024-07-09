@@ -28,8 +28,7 @@ contract MErc20Delegate is MErc20, MDelegateInterface {
         }
 
         require(
-            msg.sender == admin,
-            "only the admin may call _becomeImplementation"
+            msg.sender == admin, "only the admin may call _becomeImplementation"
         );
     }
 
@@ -43,8 +42,7 @@ contract MErc20Delegate is MErc20, MDelegateInterface {
         }
 
         require(
-            msg.sender == admin,
-            "only the admin may call _resignImplementation"
+            msg.sender == admin, "only the admin may call _resignImplementation"
         );
     }
 }

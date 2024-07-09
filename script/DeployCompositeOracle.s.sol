@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
+import {console} from "@forge-std/console.sol";
 
-import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ChainlinkCompositeOracle} from
+    "@protocol/oracles/ChainlinkCompositeOracle.sol";
 
 /*
 How to use:
@@ -28,8 +29,9 @@ contract DeployCompositeOracle is Script {
         ChainlinkCompositeOracle clco = new ChainlinkCompositeOracle(
             addresses.getAddress("CHAINLINK_ETH_USD"),
             addresses.getAddress("CHAINLINK_RETH_ETH"),
-            address(0) /// only 2 oracles for this composite oracle
+            address(0)
         );
+        /// only 2 oracles for this composite oracle
 
         console.log(
             "successfully deployed chainlink composite oracle: %s",
@@ -38,9 +40,11 @@ contract DeployCompositeOracle is Script {
 
         vm.stopBroadcast();
 
-        (, int256 price, , , ) = clco.latestRoundData();
+        (, int256 price,,,) = clco.latestRoundData();
 
-        console.log("price: %d", uint256(price)); /// sanity check that params are correct
+        console.log("price: %d", uint256(price));
+
+        /// sanity check that params are correct
 
         return clco;
     }

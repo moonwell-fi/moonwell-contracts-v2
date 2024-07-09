@@ -5,7 +5,9 @@ import "./MockERC20.sol";
 import "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface CToken {
-    function redeemUnderlying(uint256 redeemAmount) external returns (uint256);
+    function redeemUnderlying(uint256 redeemAmount)
+        external
+        returns (uint256);
 
     function exchangeRateStored() external view returns (uint256);
 
@@ -56,7 +58,10 @@ contract MockCToken is MockERC20 {
         return error ? 1 : 0;
     }
 
-    function redeemUnderlying(uint256 redeemAmount) external returns (uint256) {
+    function redeemUnderlying(uint256 redeemAmount)
+        external
+        returns (uint256)
+    {
         _burn(msg.sender, redeemAmount / effectiveExchangeRate);
         if (address(this).balance >= redeemAmount) {
             payable(msg.sender).transfer(redeemAmount);
@@ -66,10 +71,10 @@ contract MockCToken is MockERC20 {
         return error ? 1 : 0;
     }
 
-    function repayBorrowBehalf(
-        address borrower,
-        uint256 amt
-    ) external returns (uint256) {
+    function repayBorrowBehalf(address borrower, uint256 amt)
+        external
+        returns (uint256)
+    {
         token.transferFrom(msg.sender, address(this), amt);
         borrowBalanceRepaid[borrower] += amt;
 

@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract mipb11 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-b11";
@@ -80,9 +80,7 @@ contract mipb11 is HybridProposal, Configs, ParameterValidation {
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
         _validateCF(
-            addresses,
-            addresses.getAddress("MOONWELL_wstETH"),
-            wstETH_NEW_CF
+            addresses, addresses.getAddress("MOONWELL_wstETH"), wstETH_NEW_CF
         );
 
         _validateJRM(

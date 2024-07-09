@@ -2,19 +2,27 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {EnumerableSet} from
+    "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {IStakedWell} from "@protocol/IStakedWell.sol";
+import {WormholeTrustedSender} from
+    "@protocol/governance/WormholeTrustedSender.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
+
+import {
+    IMultichainGovernor,
+    MultichainGovernor
+} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MultichainGovernorDeploy} from
+    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainVoteCollection} from
+    "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {MultichainBaseTest} from "@test/helper/MultichainBaseTest.t.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
-import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
-import {IStakedWell} from "@protocol/IStakedWell.sol";
+import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 
 contract MultichainGovernanceFuzzing is MultichainBaseTest {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -59,9 +67,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         for (uint256 i = 0; i < voters; i++) {
             assertEq(
                 governor.getVotes(
-                    users[i],
-                    block.timestamp - 1,
-                    block.number - 1
+                    users[i], block.timestamp - 1, block.number - 1
                 ),
                 voteAmount,
                 "incorrect vote amount"
@@ -82,7 +88,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             address user = users[i];
             vm.prank(user);
             governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
-            (bool hasVoted, , ) = governor.getReceipt(proposalId, user);
+            (bool hasVoted,,) = governor.getReceipt(proposalId, user);
             assertTrue(hasVoted, "user did not vote");
         }
 
@@ -113,9 +119,11 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
         for (uint256 i = 0; i < voters; i++) {
             // Assigning a random vote amount for each user, ensuring it's at least 1e18
-            uint256 voteAmount = (uint256(
-                uint160(uint256(keccak256(abi.encode(i, block.timestamp))))
-            ) * 1e18) % maxVoteAmount;
+            uint256 voteAmount = (
+                uint256(
+                    uint160(uint256(keccak256(abi.encode(i, block.timestamp))))
+                ) * 1e18
+            ) % maxVoteAmount;
 
             voteAmounts[i] = voteAmount;
             totalVoteAmount += voteAmount;
@@ -130,9 +138,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             uint256 random = i % 3;
             address tokenToVote = random == 0
                 ? address(well)
-                : random == 1
-                    ? address(xwell)
-                    : address(stkWellMoonbeam);
+                : random == 1 ? address(xwell) : address(stkWellMoonbeam);
 
             address user = address(uint160(i + 1));
             users[i] = user;
@@ -147,9 +153,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         for (uint256 i = 0; i < voters; i++) {
             assertEq(
                 governor.getVotes(
-                    users[i],
-                    block.timestamp - 1,
-                    block.number - 1
+                    users[i], block.timestamp - 1, block.number - 1
                 ),
                 voteAmounts[i],
                 "Incorrect vote amount for user"
@@ -169,14 +173,13 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             address user = users[i];
             vm.prank(user);
             governor.castVote(proposalId, Constants.VOTE_VALUE_YES);
-            (bool hasVoted, , ) = governor.getReceipt(proposalId, user);
+            (bool hasVoted,,) = governor.getReceipt(proposalId, user);
             assertTrue(hasVoted, "User did not vote");
         }
 
         // Checking the vote counts
-        (uint256 totalVotes, uint256 votesFor, , ) = governor.proposalVotes(
-            proposalId
-        );
+        (uint256 totalVotes, uint256 votesFor,,) =
+            governor.proposalVotes(proposalId);
 
         assertEq(votesFor, totalVoteAmount, "Votes for incorrect");
         assertEq(totalVotes, totalVoteAmount, "Total votes incorrect");
@@ -198,9 +201,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
         for (uint256 i = 0; i < voters; i++) {
             // random pick of token to delegate, can be well, xwell or stkwell
             uint256 random = i % 2;
-            address tokenToVote = random == 0
-                ? address(xwell)
-                : address(stkWellBase);
+            address tokenToVote =
+                random == 0 ? address(xwell) : address(stkWellBase);
 
             address user = address(uint160(i + 1));
             users[i] = user;
@@ -234,7 +236,7 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             address user = users[i];
             vm.prank(user);
             voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
-            (bool hasVoted, , ) = voteCollection.getReceipt(proposalId, user);
+            (bool hasVoted,,) = voteCollection.getReceipt(proposalId, user);
             assertTrue(hasVoted, "user did not vote");
         }
 
@@ -266,9 +268,11 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
         for (uint256 i = 0; i < voters; i++) {
             // Assigning a random vote amount for each user, ensuring it's at least 1e18
-            uint256 voteAmount = (uint256(
-                uint160(uint256(keccak256(abi.encode(i, block.timestamp))))
-            ) * 1e18) % maxVoteAmount;
+            uint256 voteAmount = (
+                uint256(
+                    uint160(uint256(keccak256(abi.encode(i, block.timestamp))))
+                ) * 1e18
+            ) % maxVoteAmount;
 
             voteAmounts[i] = voteAmount;
             totalVoteAmount += voteAmount;
@@ -281,9 +285,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
             // random pick of token to delegate
             uint256 random = i % 2;
-            address tokenToVote = random == 0
-                ? address(xwell)
-                : address(stkWellBase);
+            address tokenToVote =
+                random == 0 ? address(xwell) : address(stkWellBase);
             address user = address(uint160(i + 1));
             users[i] = user;
 
@@ -314,13 +317,13 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             address user = users[i];
             vm.prank(user);
             voteCollection.castVote(proposalId, Constants.VOTE_VALUE_YES);
-            (bool hasVoted, , ) = voteCollection.getReceipt(proposalId, user);
+            (bool hasVoted,,) = voteCollection.getReceipt(proposalId, user);
             assertTrue(hasVoted, "User did not vote");
         }
 
         // Checking the vote counts
-        (uint256 totalVotes, uint256 votesFor, , ) = voteCollection
-            .proposalVotes(proposalId);
+        (uint256 totalVotes, uint256 votesFor,,) =
+            voteCollection.proposalVotes(proposalId);
 
         assertEq(votesFor, totalVoteAmount, "Votes for incorrect");
         assertEq(totalVotes, totalVoteAmount, "Total votes incorrect");
@@ -403,10 +406,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             );
             totalWellRemaining -= input.vestingWellAmount;
 
-            uint256 totalVoteAmount = input.wellAmount +
-                input.xwellAmount +
-                input.stkwellAmount +
-                input.vestingWellAmount;
+            uint256 totalVoteAmount = input.wellAmount + input.xwellAmount
+                + input.stkwellAmount + input.vestingWellAmount;
 
             // only add to arrays if total vote amount is greater than 0
             if (totalVoteAmount == 0) {
@@ -420,30 +421,22 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
             if (input.stkwellAmount > 0) {
                 _delegateVoteAmountForUser(
-                    address(stkWellMoonbeam),
-                    userAddress,
-                    input.stkwellAmount
+                    address(stkWellMoonbeam), userAddress, input.stkwellAmount
                 );
             }
             if (input.wellAmount > 0) {
                 _delegateVoteAmountForUser(
-                    address(well),
-                    userAddress,
-                    input.wellAmount
+                    address(well), userAddress, input.wellAmount
                 );
             }
             if (input.xwellAmount > 0) {
                 _delegateVoteAmountForUser(
-                    address(xwell),
-                    userAddress,
-                    input.xwellAmount
+                    address(xwell), userAddress, input.xwellAmount
                 );
             }
             if (input.vestingWellAmount > 0) {
                 _delegateVoteAmountForUser(
-                    address(distributor),
-                    userAddress,
-                    input.vestingWellAmount
+                    address(distributor), userAddress, input.vestingWellAmount
                 );
             }
 
@@ -508,10 +501,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             vm.prank(user);
             governor.castVote(proposalId, voteValue);
             // get votes
-            (bool hasVoted, uint8 value, uint256 votes) = governor.getReceipt(
-                proposalId,
-                user
-            );
+            (bool hasVoted, uint8 value, uint256 votes) =
+                governor.getReceipt(proposalId, user);
             assertTrue(hasVoted, "user did not vote");
             assertEq(votes, voteAmount, "incorrect vote amount");
             assertEq(voteValue, value, "incorrect vote value");
@@ -599,16 +590,12 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
 
             if (input.stkwellAmount > 0) {
                 _delegateVoteAmountForUser(
-                    address(stkWellBase),
-                    userAddress,
-                    input.stkwellAmount
+                    address(stkWellBase), userAddress, input.stkwellAmount
                 );
             }
             if (input.xwellAmount > 0) {
                 _delegateVoteAmountForUser(
-                    address(xwell),
-                    userAddress,
-                    input.xwellAmount
+                    address(xwell), userAddress, input.xwellAmount
                 );
             }
             // check user balance to ensure it's correct
@@ -660,8 +647,8 @@ contract MultichainGovernanceFuzzing is MultichainBaseTest {
             vm.prank(user);
             voteCollection.castVote(proposalId, voteValue);
             // get votes
-            (bool hasVoted, uint8 value, uint256 votes) = voteCollection
-                .getReceipt(proposalId, user);
+            (bool hasVoted, uint8 value, uint256 votes) =
+                voteCollection.getReceipt(proposalId, user);
             assertTrue(hasVoted, "user did not vote");
             assertEq(votes, voteAmount, "incorrect vote amount");
             assertEq(voteValue, value, "incorrect vote value");

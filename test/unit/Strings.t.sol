@@ -1,7 +1,7 @@
 pragma solidity 0.8.19;
 
-import {String} from "@utils/String.sol";
 import "@forge-std/Test.sol";
+import {String} from "@utils/String.sol";
 
 contract StringTest is Test {
     using String for string;
@@ -58,8 +58,8 @@ contract StringTest is Test {
     }
 
     function testSplitCommaDelimitedPaths() public pure {
-        string
-            memory testString = "artifacts/foundry/mip-b05.sol/mipb05.json,artifacts/foundry/mip-b04.sol/mipb04.json,artifacts/foundry/mip-b03.sol/mipb03.json";
+        string memory testString =
+            "artifacts/foundry/mip-b05.sol/mipb05.json,artifacts/foundry/mip-b04.sol/mipb04.json,artifacts/foundry/mip-b03.sol/mipb03.json";
         bytes1 delimiter = ",";
         string[] memory splitResult = testString.split(delimiter);
         assertEq(splitResult.length, 3, "split failed, length is not 3");
@@ -81,8 +81,8 @@ contract StringTest is Test {
     }
 
     function testSplitCommaDelimitedMixed() public pure {
-        string
-            memory testString = "hello,world,artifacts/foundry/mip-b05.sol/mipb05.json";
+        string memory testString =
+            "hello,world,artifacts/foundry/mip-b05.sol/mipb05.json";
         bytes1 delimiter = ",";
         string[] memory splitResult = testString.split(delimiter);
         assertEq(splitResult.length, 3, "split failed, length is not 3");

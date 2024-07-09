@@ -1,17 +1,19 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
-import {ERC20Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
+import {Ownable2StepUpgradeable} from
+    "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import {ERC20Upgradeable} from
+    "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 
 import "@forge-std/Test.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {FeeSplitter as Splitter} from "@protocol/morpho/FeeSplitter.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// DO_PRE_BUILD_MOCK=true DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b21/mip-b21.sol:mipb21
@@ -48,9 +50,8 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
         startingWellAllowance = ERC20Upgradeable(
             addresses.getAddress("xWELL_PROXY")
         ).allowance(
-                addresses.getAddress("FOUNDATION_MULTISIG"),
-                temporalGovernor
-            );
+            addresses.getAddress("FOUNDATION_MULTISIG"), temporalGovernor
+        );
     }
 
     function build(Addresses addresses) public override {
@@ -82,9 +83,8 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
         /// --------------------- WELL ---------------------
-        ERC20Upgradeable well = ERC20Upgradeable(
-            addresses.getAddress("xWELL_PROXY")
-        );
+        ERC20Upgradeable well =
+            ERC20Upgradeable(addresses.getAddress("xWELL_PROXY"));
 
         assertEq(
             well.balanceOf(addresses.getAddress("MOONWELL_METAMORPHO_URD")),
@@ -92,8 +92,8 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
             "well amount incorrect"
         );
         assertEq(
-            startingWellAllowance -
-                well.allowance(
+            startingWellAllowance
+                - well.allowance(
                     addresses.getAddress("FOUNDATION_MULTISIG"),
                     addresses.getAddress("TEMPORAL_GOVERNOR")
                 ),
@@ -138,9 +138,8 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
 
         /// --------------------- SPLITTERS ---------------------
 
-        Splitter wethSplitter = Splitter(
-            addresses.getAddress("WETH_METAMORPHO_FEE_SPLITTER")
-        );
+        Splitter wethSplitter =
+            Splitter(addresses.getAddress("WETH_METAMORPHO_FEE_SPLITTER"));
 
         assertEq(
             wethSplitter.mToken(),
@@ -153,19 +152,14 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
             "WETH Metamorpho Fee Splitter Vault incorrect"
         );
         assertEq(
-            wethSplitter.splitA(),
-            5_000,
-            "WETH Metamorpho Fee Split incorrect"
+            wethSplitter.splitA(), 5_000, "WETH Metamorpho Fee Split incorrect"
         );
         assertEq(
-            wethSplitter.splitB(),
-            5_000,
-            "WETH Metamorpho Fee Split incorrect"
+            wethSplitter.splitB(), 5_000, "WETH Metamorpho Fee Split incorrect"
         );
 
-        Splitter usdcSplitter = Splitter(
-            addresses.getAddress("USDC_METAMORPHO_FEE_SPLITTER")
-        );
+        Splitter usdcSplitter =
+            Splitter(addresses.getAddress("USDC_METAMORPHO_FEE_SPLITTER"));
 
         assertEq(
             usdcSplitter.mToken(),

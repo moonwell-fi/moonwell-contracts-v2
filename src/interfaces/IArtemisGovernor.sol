@@ -14,14 +14,12 @@ interface IArtemisGovernor {
         Executed
     }
 
-    function getActions(
-        uint proposalId
-    )
+    function getActions(uint256 proposalId)
         external
         view
         returns (
             address[] memory targets,
-            uint[] memory values,
+            uint256[] memory values,
             string[] memory signatures,
             bytes[] memory calldatas
         );
@@ -48,9 +46,7 @@ interface IArtemisGovernor {
 
     function timelock() external view returns (address);
 
-    function proposals(
-        uint256
-    )
+    function proposals(uint256)
         external
         view
         returns (

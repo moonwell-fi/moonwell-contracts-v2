@@ -2,24 +2,32 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
-import {MockWeth} from "@test/mock/MockWeth.sol";
-import {MockCToken} from "@test/mock/MockCToken.sol";
-import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {WETH9} from "@protocol/router/IWETH.sol";
 
-import {MToken} from "@protocol/MToken.sol";
-import {SigUtils} from "@test/helper/SigUtils.sol";
+import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {MockCToken} from "@test/mock/MockCToken.sol";
+import {MockWeth} from "@test/mock/MockWeth.sol";
+
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
-import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
-import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
-import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
-import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
+import {WhitePaperInterestRateModel} from
+    "@protocol/irm/WhitePaperInterestRateModel.sol";
+import {MultiRewardDistributor} from
+    "@protocol/rewards/MultiRewardDistributor.sol";
+import {SigUtils} from "@test/helper/SigUtils.sol";
+import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
+import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
 
 contract WETHRouterUnitTest is Test {
     MockWeth public weth;
@@ -54,14 +62,10 @@ contract WETHRouterUnitTest is Test {
 
         distributor = new MultiRewardDistributor();
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(comptroller),
-            address(this)
+            "initialize(address,address)", address(comptroller), address(this)
         );
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor),
-            address(this),
-            initdata
+            address(distributor), address(this), initdata
         );
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
@@ -139,9 +143,7 @@ contract WETHRouterUnitTest is Test {
         router.repayBorrowBehalf{value: 10 ether}(address(this));
 
         assertEq(
-            address(this).balance,
-            9 ether,
-            "this contract balance should be 9"
+            address(this).balance, 9 ether, "this contract balance should be 9"
         );
         assertEq(
             weth.balanceOf(address(router)),
@@ -209,13 +211,12 @@ contract WETHRouterUnitTest is Test {
         vm.deal(address(this), 1 ether);
 
         vm.expectRevert("WETHRouter: not weth");
-        (bool success, ) = address(router).call{value: 1 ether}("");
-        success; /// shhhhh apparently this call succeeds but reverts? go figure
+        (bool success,) = address(router).call{value: 1 ether}("");
+        success;
+        /// shhhhh apparently this call succeeds but reverts? go figure
 
         assertEq(
-            address(this).balance,
-            1 ether,
-            "incorrect test contract eth value"
+            address(this).balance, 1 ether, "incorrect test contract eth value"
         );
         assertEq(address(router).balance, 0, "incorrect router eth value");
     }

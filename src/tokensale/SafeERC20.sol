@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.10;
 
-import "./IERC20.sol";
 import "./Address.sol";
+import "./IERC20.sol";
 
 /**
  * @title SafeERC20
@@ -18,8 +18,7 @@ library SafeERC20 {
 
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
         _callOptionalReturn(
-            token,
-            abi.encodeWithSelector(token.transfer.selector, to, value)
+            token, abi.encodeWithSelector(token.transfer.selector, to, value)
         );
     }
 
@@ -42,11 +41,9 @@ library SafeERC20 {
      * Whenever possible, use {safeIncreaseAllowance} and
      * {safeDecreaseAllowance} instead.
      */
-    function safeApprove(
-        IERC20 token,
-        address spender,
-        uint256 value
-    ) internal {
+    function safeApprove(IERC20 token, address spender, uint256 value)
+        internal
+    {
         // safeApprove should only be called when setting an initial allowance,
         // or when resetting it to zero. To increase and decrease it, use
         // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
@@ -72,8 +69,7 @@ library SafeERC20 {
         // the target address contains contract code and also asserts for success in the low-level call.
 
         bytes memory returndata = address(token).functionCall(
-            data,
-            "SafeERC20: low-level call failed"
+            data, "SafeERC20: low-level call failed"
         );
         if (returndata.length > 0) {
             // Return data is optional

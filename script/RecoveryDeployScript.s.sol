@@ -1,13 +1,13 @@
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
+import {console} from "@forge-std/console.sol";
 
 import "@forge-std/Test.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Recovery} from "@protocol/Recovery.sol";
 import {RecoveryDeploy} from "@test/utils/RecoveryDeploy.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
  to simulate:
@@ -26,13 +26,11 @@ contract RecoveryDeployScript is Script, Test, RecoveryDeploy {
     }
 
     function run() public returns (Recovery recovery) {
-        address foundationMultisig = addresses.getAddress(
-            "FOUNDATION_MULTISIG"
-        );
+        address foundationMultisig = addresses.getAddress("FOUNDATION_MULTISIG");
 
         vm.startBroadcast();
 
-        (, address deployerAddress, ) = vm.readCallers();
+        (, address deployerAddress,) = vm.readCallers();
 
         /// send all 1901 tx's, then deploy
         recovery = mainnetDeployAndVerifyScript(deployerAddress);

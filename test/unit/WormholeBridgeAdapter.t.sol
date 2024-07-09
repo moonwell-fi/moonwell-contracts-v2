@@ -41,17 +41,14 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     /// @param tokenReceiver address to receive tokens on destination chain
     /// @param amount of tokens bridged in
     event TokensSent(
-        uint16 indexed dstChainId,
-        address indexed tokenReceiver,
-        uint256 amount
+        uint16 indexed dstChainId, address indexed tokenReceiver, uint256 amount
     );
 
     /// @notice chain id of the target chain to address for bridging
     /// @param dstChainId destination chain id to send tokens to
     /// @param target address to send tokens to
     event TargetAddressUpdated(
-        uint16 indexed dstChainId,
-        address indexed target
+        uint16 indexed dstChainId, address indexed target
     );
 
     /// @notice emitted when the gas limit changes on external chains
@@ -87,10 +84,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
 
         assembly {
             extcodecopy(
-                sload(receiver.slot),
-                add(runtimeBytecode, 0x20),
-                0,
-                codeSize
+                sload(receiver.slot), add(runtimeBytecode, 0x20), 0, codeSize
             )
         }
 
@@ -108,8 +102,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         );
         assertTrue(
             wormholeBridgeAdapterProxy.isTrustedSender(
-                chainId,
-                address(wormholeBridgeAdapterProxy)
+                chainId, address(wormholeBridgeAdapterProxy)
             ),
             "trusted sender not set"
         );
@@ -134,26 +127,21 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             "incorrect buffer cap for wormhole bridge adapter"
         );
         assertEq(
-            MockWormholeReceiver(wormholeRelayer).price(),
-            0,
-            "price not zero"
+            MockWormholeReceiver(wormholeRelayer).price(), 0, "price not zero"
         );
         assertEq(
-            MockWormholeReceiver(wormholeRelayer).nonce(),
-            0,
-            "nonce not zero"
+            MockWormholeReceiver(wormholeRelayer).nonce(), 0, "nonce not zero"
         );
     }
 
     function testAllTrustedSendersTrusted() public view {
-        bytes32[] memory trustedSenders = wormholeBridgeAdapterProxy
-            .allTrustedSenders(chainId);
+        bytes32[] memory trustedSenders =
+            wormholeBridgeAdapterProxy.allTrustedSenders(chainId);
 
         for (uint256 i = 0; i < trustedSenders.length; i++) {
             assertTrue(
                 wormholeBridgeAdapterProxy.isTrustedSender(
-                    chainId,
-                    trustedSenders[i]
+                    chainId, trustedSenders[i]
                 ),
                 "trusted sender not trusted"
             );
@@ -204,11 +192,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         uint96 oldGasLimit = wormholeBridgeAdapterProxy.gasLimit();
         vm.prank(owner);
         vm.expectEmit(
-            true,
-            true,
-            true,
-            true,
-            address(wormholeBridgeAdapterProxy)
+            true, true, true, true, address(wormholeBridgeAdapterProxy)
         );
 
         emit GasLimitUpdated(oldGasLimit, newGasLimit);
@@ -224,8 +208,8 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     function testRemoveTrustedSendersOwnerSucceeds() public {
         testAddTrustedSendersOwnerSucceeds(address(this));
 
-        WormholeTrustedSender.TrustedSender[]
-            memory sender = new WormholeTrustedSender.TrustedSender[](1);
+        WormholeTrustedSender.TrustedSender[] memory sender =
+            new WormholeTrustedSender.TrustedSender[](1);
 
         sender[0].addr = address(this);
         sender[0].chainId = chainId;
@@ -243,8 +227,8 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     function testRemoveNonTrustedSendersOwnerFails() public {
         testRemoveTrustedSendersOwnerSucceeds();
 
-        WormholeTrustedSender.TrustedSender[]
-            memory sender = new WormholeTrustedSender.TrustedSender[](1);
+        WormholeTrustedSender.TrustedSender[] memory sender =
+            new WormholeTrustedSender.TrustedSender[](1);
 
         sender[0].addr = address(this);
         sender[0].chainId = chainId;
@@ -256,8 +240,8 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
 
     function testAddTrustedSendersOwnerSucceeds(address trustedSender) public {
         vm.assume(trustedSender != address(wormholeBridgeAdapterProxy));
-        WormholeTrustedSender.TrustedSender[]
-            memory sender = new WormholeTrustedSender.TrustedSender[](1);
+        WormholeTrustedSender.TrustedSender[] memory sender =
+            new WormholeTrustedSender.TrustedSender[](1);
 
         sender[0].addr = trustedSender;
         sender[0].chainId = chainId;
@@ -278,8 +262,8 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             testAddTrustedSendersOwnerSucceeds(trustedSender);
         }
 
-        WormholeTrustedSender.TrustedSender[]
-            memory sender = new WormholeTrustedSender.TrustedSender[](1);
+        WormholeTrustedSender.TrustedSender[] memory sender =
+            new WormholeTrustedSender.TrustedSender[](1);
 
         sender[0].addr = trustedSender;
         sender[0].chainId = chainId;
@@ -293,19 +277,15 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         address addr,
         uint16 newChainId
     ) public {
-        WormholeTrustedSender.TrustedSender[]
-            memory sender = new WormholeTrustedSender.TrustedSender[](1);
+        WormholeTrustedSender.TrustedSender[] memory sender =
+            new WormholeTrustedSender.TrustedSender[](1);
 
         sender[0].addr = addr;
         sender[0].chainId = newChainId;
 
         vm.prank(owner);
         vm.expectEmit(
-            true,
-            true,
-            true,
-            true,
-            address(wormholeBridgeAdapterProxy)
+            true, true, true, true, address(wormholeBridgeAdapterProxy)
         );
         emit TargetAddressUpdated(newChainId, addr);
         wormholeBridgeAdapterProxy.setTargetAddresses(sender);
@@ -378,11 +358,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
 
         vm.prank(wormholeRelayer);
         vm.expectEmit(
-            true,
-            true,
-            true,
-            true,
-            address(wormholeBridgeAdapterProxy)
+            true, true, true, true, address(wormholeBridgeAdapterProxy)
         );
         emit BridgedIn(chainId, to, amount);
         wormholeBridgeAdapterProxy.receiveWormholeMessages{value: 0}(
@@ -404,8 +380,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             "incorrect total supply increase"
         );
         assertTrue(
-            wormholeBridgeAdapterProxy.processedNonces(nonce),
-            "nonce not used"
+            wormholeBridgeAdapterProxy.processedNonces(nonce), "nonce not used"
         );
     }
 
@@ -441,7 +416,8 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
     function testBridgeOutFailsIncorrectTargetChain() public {
         vm.expectRevert("WormholeBridge: invalid target chain");
         wormholeBridgeAdapterProxy.bridge{value: 0}(
-            chainId + 1, /// invalid chain id
+            chainId + 1,
+            /// invalid chain id
             amount,
             to
         );
@@ -488,11 +464,7 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
         xwellProxy.approve(address(wormholeBridgeAdapterProxy), amount);
 
         vm.expectEmit(
-            true,
-            true,
-            true,
-            true,
-            address(wormholeBridgeAdapterProxy)
+            true, true, true, true, address(wormholeBridgeAdapterProxy)
         );
         emit TokensSent(chainId, to, amount);
         wormholeBridgeAdapterProxy.bridge{value: 0}(chainId, amount, to);

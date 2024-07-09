@@ -1,18 +1,25 @@
 pragma solidity 0.8.19;
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import "@forge-std/Test.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MockERC20} from "@test/mock/MockERC20.sol";
+
+import {WormholeTrustedSender} from
+    "@protocol/governance/WormholeTrustedSender.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
-import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
-import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
+import {MockERC20} from "@test/mock/MockERC20.sol";
 
 import {SigUtils} from "@test/helper/SigUtils.sol";
 
@@ -95,9 +102,8 @@ contract BaseTest is xWELLDeploy, Test {
             proxyAdmin = ProxyAdmin(proxyAdminAddress);
             xerc20Lockbox = XERC20Lockbox(lockboxAddress);
             wormholeBridgeAdapter = WormholeBridgeAdapter(wormholeAdapterLogic);
-            wormholeBridgeAdapterProxy = WormholeBridgeAdapter(
-                wormholeAdapterProxy
-            );
+            wormholeBridgeAdapterProxy =
+                WormholeBridgeAdapter(wormholeAdapterProxy);
 
             vm.label(xwellLogicAddress, "xWELL Logic");
             vm.label(xwellProxyAddress, "xWELL Proxy");
@@ -108,13 +114,12 @@ contract BaseTest is xWELLDeploy, Test {
             vm.label(pauseGuardian, "Pause Guardian");
             vm.label(address(wormholeAdapterLogic), "WormholeAdapterLogic");
             vm.label(
-                address(wormholeBridgeAdapterProxy),
-                "WormholeAdapterProxy"
+                address(wormholeBridgeAdapterProxy), "WormholeAdapterProxy"
             );
         }
 
-        MintLimits.RateLimitMidPointInfo[]
-            memory newRateLimits = new MintLimits.RateLimitMidPointInfo[](2);
+        MintLimits.RateLimitMidPointInfo[] memory newRateLimits =
+            new MintLimits.RateLimitMidPointInfo[](2);
 
         /// lock box limit
         newRateLimits[0].bufferCap = type(uint112).max;

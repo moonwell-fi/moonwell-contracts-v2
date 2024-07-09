@@ -8,7 +8,8 @@ import {StakedToken} from "./StakedToken.sol";
  * @title StakedWell
  * @notice StakedToken with WELL token as staked token
  * @author Moonwell
- **/
+ *
+ */
 contract StakedWell is StakedToken {
     string internal constant NAME = "Staked WELL";
     string internal constant SYMBOL = "stkWELL";
@@ -32,7 +33,8 @@ contract StakedWell is StakedToken {
 
     /**
      * @dev Called by the proxy contract
-     **/
+     *
+     */
     function initialize(
         IERC20 stakedToken,
         IERC20 rewardToken,
@@ -60,9 +62,10 @@ contract StakedWell is StakedToken {
 
     /// @notice update the cooldown seconds
     /// @param cooldownSeconds the new cooldown seconds
-    function setCoolDownSeconds(
-        uint256 cooldownSeconds
-    ) external onlyEmissionsManager {
+    function setCoolDownSeconds(uint256 cooldownSeconds)
+        external
+        onlyEmissionsManager
+    {
         COOLDOWN_SECONDS = cooldownSeconds;
 
         emit CooldownSecondsUpdated(cooldownSeconds);
@@ -70,9 +73,10 @@ contract StakedWell is StakedToken {
 
     /// @notice update the unstake window
     /// @param unstakeWindow the new unstake window
-    function setUnstakeWindow(
-        uint256 unstakeWindow
-    ) external onlyEmissionsManager {
+    function setUnstakeWindow(uint256 unstakeWindow)
+        external
+        onlyEmissionsManager
+    {
         UNSTAKE_WINDOW = unstakeWindow;
 
         emit UnstakeWindowUpdated(unstakeWindow);

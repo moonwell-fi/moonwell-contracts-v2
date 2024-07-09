@@ -1,22 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ERC4626} from "solmate/mixins/ERC4626.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {ERC4626} from "solmate/mixins/ERC4626.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {WETH9} from "@protocol/router/IWETH.sol";
-import {MErc20} from "@protocol/MErc20.sol";
-import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@proposals/Configs.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
+import {Configs} from "@proposals/Configs.sol";
+
+import {
+    deployFactory,
+    deployFactoryEth
+} from "@protocol/4626/4626FactoryDeploy.sol";
 import {Factory4626} from "@protocol/4626/Factory4626.sol";
 import {Factory4626Eth} from "@protocol/4626/Factory4626Eth.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
-import {deployFactory, deployFactoryEth} from "@protocol/4626/4626FactoryDeploy.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {WETH9} from "@protocol/router/IWETH.sol";
 
 contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
     /// @notice WETH9 contract
@@ -128,8 +132,8 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
         address mcbEth = addresses.getAddress("MOONWELL_cbETH");
         address rewardRecipient = address(0xeeeeeeeeeeee);
 
-        deal(cbEth, address(this), .01 ether);
-        ERC20(cbEth).approve(address(factory), .01 ether);
+        deal(cbEth, address(this), 0.01 ether);
+        ERC20(cbEth).approve(address(factory), 0.01 ether);
 
         /// take a snapshot of the current state
         uint256 snapshotId = vm.snapshot();
@@ -164,8 +168,7 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
             "incorrect moontroller address"
         );
         assertTrue(
-            MoonwellERC4626(vault).totalSupply() > 0,
-            "incorrect totalSupply"
+            MoonwellERC4626(vault).totalSupply() > 0, "incorrect totalSupply"
         );
         assertEq(
             MoonwellERC4626(vault).totalSupply(),
@@ -178,25 +181,20 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
         address mwEth = addresses.getAddress("MOONWELL_WETH");
         address rewardRecipient = address(0xeeeeeeeeeeee);
 
-        deal(address(weth), address(this), .01 ether);
-        weth.approve(address(ethFactory), .01 ether);
+        deal(address(weth), address(this), 0.01 ether);
+        weth.approve(address(ethFactory), 0.01 ether);
 
         /// take a snapshot of the current state
         uint256 snapshotId = vm.snapshot();
         /// get the address of the deployed contract
-        address vault = ethFactory.deployMoonwellERC4626Eth(
-            mwEth,
-            rewardRecipient
-        );
+        address vault =
+            ethFactory.deployMoonwellERC4626Eth(mwEth, rewardRecipient);
         /// now roll back snapshot to check the emitted event
         assertTrue(vm.revertTo(snapshotId), "rollback failed");
 
         vm.expectEmit(true, true, true, true, address(ethFactory));
         emit DeployedMoonwellERC4626(
-            address(weth),
-            mwEth,
-            rewardRecipient,
-            vault
+            address(weth), mwEth, rewardRecipient, vault
         );
 
         vault = ethFactory.deployMoonwellERC4626Eth(mwEth, rewardRecipient);
@@ -222,8 +220,7 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
             "incorrect moontroller address"
         );
         assertTrue(
-            MoonwellERC4626(vault).totalSupply() > 0,
-            "incorrect totalSupply"
+            MoonwellERC4626(vault).totalSupply() > 0, "incorrect totalSupply"
         );
         assertEq(
             MoonwellERC4626(vault).totalSupply(),

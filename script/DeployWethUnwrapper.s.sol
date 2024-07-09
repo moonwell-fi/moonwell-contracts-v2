@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
+import {console} from "@forge-std/console.sol";
 
-import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
 
 /*
 How to use:
@@ -26,13 +26,11 @@ contract DeployWethUnwrapper is Script {
     function run() public {
         vm.startBroadcast();
 
-        WethUnwrapper unwrapper = new WethUnwrapper(
-            addresses.getAddress("WETH")
-        );
+        WethUnwrapper unwrapper =
+            new WethUnwrapper(addresses.getAddress("WETH"));
 
         console.log(
-            "successfully deployed WethUnwrapper at %s",
-            address(unwrapper)
+            "successfully deployed WethUnwrapper at %s", address(unwrapper)
         );
 
         vm.stopBroadcast();

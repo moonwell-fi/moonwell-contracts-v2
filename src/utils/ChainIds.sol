@@ -35,20 +35,20 @@ library ChainIds {
         0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
     Vm internal constant vmInternal = Vm(CHEATCODE_ADDRESS);
 
-    function toMoonbeamChainId(
-        uint256 chainId
-    ) internal pure returns (uint256) {
+    function toMoonbeamChainId(uint256 chainId)
+        internal
+        pure
+        returns (uint256)
+    {
         /// map mainnet base, optimism and moonbeam chain id to moonbeam chain id
         if (
-            chainId == BASE_CHAIN_ID ||
-            chainId == OPTIMISM_CHAIN_ID ||
-            chainId == MOONBEAM_CHAIN_ID
+            chainId == BASE_CHAIN_ID || chainId == OPTIMISM_CHAIN_ID
+                || chainId == MOONBEAM_CHAIN_ID
         ) {
             return MOONBEAM_CHAIN_ID;
         } else if (
-            chainId == MOONBASE_CHAIN_ID ||
-            chainId == BASE_SEPOLIA_CHAIN_ID ||
-            chainId == OPTIMISM_SEPOLIA_CHAIN_ID
+            chainId == MOONBASE_CHAIN_ID || chainId == BASE_SEPOLIA_CHAIN_ID
+                || chainId == OPTIMISM_SEPOLIA_CHAIN_ID
         ) {
             /// map base sepolia, optimism sepolia and moonbase chain id to moonbase chain id
             return MOONBASE_CHAIN_ID;
@@ -60,15 +60,13 @@ library ChainIds {
     function toBaseChainId(uint256 chainId) internal pure returns (uint256) {
         /// map base and moonbeam chain id to base chain id
         if (
-            chainId == OPTIMISM_CHAIN_ID ||
-            chainId == MOONBEAM_CHAIN_ID ||
-            chainId == BASE_CHAIN_ID
+            chainId == OPTIMISM_CHAIN_ID || chainId == MOONBEAM_CHAIN_ID
+                || chainId == BASE_CHAIN_ID
         ) {
             return BASE_CHAIN_ID;
         } else if (
-            chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
-            chainId == MOONBASE_CHAIN_ID ||
-            chainId == BASE_SEPOLIA_CHAIN_ID
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID || chainId == MOONBASE_CHAIN_ID
+                || chainId == BASE_SEPOLIA_CHAIN_ID
         ) {
             /// map base sepolia and moonbase chain id to base sepolia chain id
             return BASE_SEPOLIA_CHAIN_ID;
@@ -77,20 +75,20 @@ library ChainIds {
         }
     }
 
-    function toOptimismChainId(
-        uint256 chainId
-    ) internal pure returns (uint256) {
+    function toOptimismChainId(uint256 chainId)
+        internal
+        pure
+        returns (uint256)
+    {
         /// map optimism and moonbeam chain id to optimism chain id
         if (
-            chainId == MOONBEAM_CHAIN_ID ||
-            chainId == OPTIMISM_CHAIN_ID ||
-            chainId == BASE_CHAIN_ID
+            chainId == MOONBEAM_CHAIN_ID || chainId == OPTIMISM_CHAIN_ID
+                || chainId == BASE_CHAIN_ID
         ) {
             return OPTIMISM_CHAIN_ID;
         } else if (
-            chainId == MOONBASE_CHAIN_ID ||
-            chainId == BASE_SEPOLIA_CHAIN_ID ||
-            chainId == OPTIMISM_SEPOLIA_CHAIN_ID
+            chainId == MOONBASE_CHAIN_ID || chainId == BASE_SEPOLIA_CHAIN_ID
+                || chainId == OPTIMISM_SEPOLIA_CHAIN_ID
         ) {
             /// map optimism sepolia and moonbase chain id to optimism sepolia chain id
             return OPTIMISM_SEPOLIA_CHAIN_ID;
@@ -102,9 +100,8 @@ library ChainIds {
     function toForkId(uint256 chainId) internal pure returns (uint256) {
         if (chainId == MOONBEAM_CHAIN_ID || chainId == MOONBASE_CHAIN_ID) {
             return MOONBEAM_FORK_ID;
-        } else if (
-            chainId == BASE_CHAIN_ID || chainId == BASE_SEPOLIA_CHAIN_ID
-        ) {
+        } else if (chainId == BASE_CHAIN_ID || chainId == BASE_SEPOLIA_CHAIN_ID)
+        {
             return BASE_FORK_ID;
         } else if (
             chainId == OPTIMISM_CHAIN_ID || chainId == OPTIMISM_SEPOLIA_CHAIN_ID
@@ -118,37 +115,32 @@ library ChainIds {
     function checkForks(uint256 forkId) internal {
         require(forkId <= OPTIMISM_FORK_ID, "ChainIds: invalid fork id");
 
-        bool isMainnet = block.chainid == MOONBEAM_CHAIN_ID ||
-            block.chainid == BASE_CHAIN_ID ||
-            block.chainid == OPTIMISM_CHAIN_ID;
+        bool isMainnet = block.chainid == MOONBEAM_CHAIN_ID
+            || block.chainid == BASE_CHAIN_ID || block.chainid == OPTIMISM_CHAIN_ID;
 
         if (isMainnet) {
             vmInternal.selectFork(MOONBEAM_FORK_ID);
 
             require(
-                block.chainid == MOONBEAM_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                block.chainid == MOONBEAM_CHAIN_ID, "ChainIds: invalid chain id"
             );
 
             vmInternal.selectFork(BASE_FORK_ID);
 
             require(
-                block.chainid == BASE_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                block.chainid == BASE_CHAIN_ID, "ChainIds: invalid chain id"
             );
 
             vmInternal.selectFork(OPTIMISM_FORK_ID);
 
             require(
-                block.chainid == OPTIMISM_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                block.chainid == OPTIMISM_CHAIN_ID, "ChainIds: invalid chain id"
             );
         } else {
             vmInternal.selectFork(MOONBEAM_FORK_ID);
 
             require(
-                block.chainid == MOONBASE_CHAIN_ID,
-                "ChainIds: invalid chain id"
+                block.chainid == MOONBASE_CHAIN_ID, "ChainIds: invalid chain id"
             );
 
             vmInternal.selectFork(BASE_FORK_ID);
@@ -179,7 +171,11 @@ library ChainIds {
         checkForks(selectFork);
     }
 
-    function toWormholeChainId(uint256 chainId) internal pure returns (uint16) {
+    function toWormholeChainId(uint256 chainId)
+        internal
+        pure
+        returns (uint16)
+    {
         if (chainId == MOONBEAM_CHAIN_ID) {
             return MOONBEAM_WORMHOLE_CHAIN_ID;
         } else if (chainId == BASE_CHAIN_ID) {
@@ -197,19 +193,20 @@ library ChainIds {
         }
     }
 
-    function toMoonbeamWormholeChainId(
-        uint256 chainId
-    ) internal pure returns (uint16) {
+    function toMoonbeamWormholeChainId(uint256 chainId)
+        internal
+        pure
+        returns (uint16)
+    {
         if (
-            chainId == BASE_CHAIN_ID ||
-            chainId == OPTIMISM_CHAIN_ID ||
-            chainId == MOONBEAM_CHAIN_ID
+            chainId == BASE_CHAIN_ID || chainId == OPTIMISM_CHAIN_ID
+                || chainId == MOONBEAM_CHAIN_ID
         ) {
             return MOONBEAM_WORMHOLE_CHAIN_ID;
         } else if (
-            chainId == BASE_SEPOLIA_CHAIN_ID ||
-            chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
-            chainId == MOONBASE_CHAIN_ID
+            chainId == BASE_SEPOLIA_CHAIN_ID
+                || chainId == OPTIMISM_SEPOLIA_CHAIN_ID
+                || chainId == MOONBASE_CHAIN_ID
         ) {
             return MOONBASE_WORMHOLE_CHAIN_ID;
         } else {
@@ -217,9 +214,11 @@ library ChainIds {
         }
     }
 
-    function toBaseWormholeChainId(
-        uint256 chainId
-    ) internal pure returns (uint16) {
+    function toBaseWormholeChainId(uint256 chainId)
+        internal
+        pure
+        returns (uint16)
+    {
         if (chainId == MOONBEAM_CHAIN_ID || chainId == BASE_CHAIN_ID) {
             return BASE_WORMHOLE_CHAIN_ID;
         } else if (
@@ -231,9 +230,11 @@ library ChainIds {
         }
     }
 
-    function chainForkToName(
-        uint256 forkId
-    ) internal pure returns (string memory) {
+    function chainForkToName(uint256 forkId)
+        internal
+        pure
+        returns (string memory)
+    {
         if (forkId == MOONBEAM_FORK_ID) {
             return "Moonbeam";
         } else if (forkId == BASE_FORK_ID) {
@@ -245,7 +246,11 @@ library ChainIds {
         }
     }
 
-    function nonMoonbeamChainIds(uint256 chainId) internal pure returns (bool) {
+    function nonMoonbeamChainIds(uint256 chainId)
+        internal
+        pure
+        returns (bool)
+    {
         return chainId != MOONBEAM_CHAIN_ID && chainId != MOONBASE_CHAIN_ID;
     }
 }

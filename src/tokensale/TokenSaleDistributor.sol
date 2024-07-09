@@ -3,26 +3,32 @@
 pragma solidity 0.8.10;
 
 import "./IERC20.sol";
-import "./SafeERC20.sol";
-import "./TokenSaleDistributorStorage.sol";
-import "./TokenSaleDistributorProxy.sol";
+
 import "./ReentrancyGuard.sol";
+import "./SafeERC20.sol";
+import "./TokenSaleDistributorProxy.sol";
+import "./TokenSaleDistributorStorage.sol";
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
+contract TokenSaleDistributor is
+    ReentrancyGuard,
+    TokenSaleDistributorStorage
+{
     using SafeERC20 for IERC20;
 
-    event Claimed(address indexed recipient, uint amount);
+    event Claimed(address indexed recipient, uint256 amount);
 
-    /** The token address was set by the administrator. */
+    /**
+     * The token address was set by the administrator.
+     */
     event AdminSetToken(address tokenAddress);
 
-    /** The administratory withdrew tokens. */
+    /**
+     * The administratory withdrew tokens.
+     */
     event AdminWithdrewTokens(
-        address tokenAddress,
-        uint amount,
-        address targetAddress
+        address tokenAddress, uint256 amount, address targetAddress
     );
 
     /// @notice An event thats emitted when an account changes its delegate
@@ -34,9 +40,7 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
 
     /// @notice An event thats emitted when a delegate account's vote balance changes
     event DelegateVotesChanged(
-        address indexed delegate,
-        uint previousBalance,
-        uint newBalance
+        address indexed delegate, uint256 previousBalance, uint256 newBalance
     );
 
     /// @notice An event thats emitted when the voting enabled property changes.
@@ -48,7 +52,7 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
     /// @notice A checkpoint for marking number of votes from a given block
     struct Checkpoint {
         uint32 fromBlock;
-        uint votes;
+        uint256 votes;
     }
 
     /// @notice A record of votes checkpoints for each account, by index
@@ -58,17 +62,16 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
     mapping(address => uint32) public numCheckpoints;
 
     /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH =
-        keccak256(
-            "EIP712Domain(string name,uint256 chainId,address verifyingContract)"
-        );
+    bytes32 public constant DOMAIN_TYPEHASH = keccak256(
+        "EIP712Domain(string name,uint256 chainId,address verifyingContract)"
+    );
 
     /// @notice The EIP-712 typehash for the delegation struct used by the contract
     bytes32 public constant DELEGATION_TYPEHASH =
         keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
 
     /// @notice A record of states for signing / validating signatures
-    mapping(address => uint) public nonces;
+    mapping(address => uint256) public nonces;
 
     /// @notice Whether or not voting is enabled.
     bool public votingEnabled;
@@ -76,7 +79,7 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
     /// @notice EIP-20 token name for this token
     string public constant name = "vWELL";
 
-    function getChainId() internal view returns (uint) {
+    function getChainId() internal view returns (uint256) {
         uint256 chainId;
         assembly {
             chainId := chainid()
@@ -103,8 +106,8 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
      */
     function delegateBySig(
         address delegatee,
-        uint nonce,
-        uint expiry,
+        uint256 nonce,
+        uint256 expiry,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -117,18 +120,12 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
                 address(this)
             )
         );
-        bytes32 structHash = keccak256(
-            abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry)
-        );
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator, structHash)
-        );
-        (address signatory, ECDSA.RecoverError error) = ECDSA.tryRecover(
-            digest,
-            v,
-            r,
-            s
-        );
+        bytes32 structHash =
+            keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
+        bytes32 digest =
+            keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        (address signatory, ECDSA.RecoverError error) =
+            ECDSA.tryRecover(digest, v, r, s);
 
         require(error == ECDSA.RecoverError.NoError, "invalid sig");
         require(signatory != address(0), "invalid sig");
@@ -142,7 +139,7 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
      * @param account The address to get votes balance
      * @return The number of current votes for `account`
      */
-    function getCurrentVotes(address account) external view returns (uint) {
+    function getCurrentVotes(address account) external view returns (uint256) {
         // No users have any voting power if voting is disabled.
         if (!votingEnabled) {
             return 0;
@@ -150,9 +147,7 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
 
         uint32 nCheckpoints = numCheckpoints[account];
         return
-            nCheckpoints != 0
-                ? checkpoints[account][nCheckpoints - 1].votes
-                : 0;
+            nCheckpoints != 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
     }
 
     /**
@@ -162,10 +157,11 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
      * @param blockNumber The block number to get the vote balance at
      * @return The number of votes the account had as of the given block
      */
-    function getPriorVotes(
-        address account,
-        uint blockNumber
-    ) external view returns (uint) {
+    function getPriorVotes(address account, uint256 blockNumber)
+        external
+        view
+        returns (uint256)
+    {
         require(blockNumber < block.number, "not yet determined");
 
         // No users have any voting power if voting is disabled.
@@ -206,7 +202,7 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
 
     function _delegate(address delegator, address delegatee) internal {
         address currentDelegate = delegates[delegator];
-        uint delegatorBalance = totalVotingPower(delegator);
+        uint256 delegatorBalance = totalVotingPower(delegator);
         delegates[delegator] = delegatee;
 
         emit DelegateChanged(delegator, currentDelegate, delegatee);
@@ -214,27 +210,25 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
         _moveDelegates(currentDelegate, delegatee, delegatorBalance);
     }
 
-    function _moveDelegates(
-        address srcRep,
-        address dstRep,
-        uint amount
-    ) internal {
+    function _moveDelegates(address srcRep, address dstRep, uint256 amount)
+        internal
+    {
         if (srcRep != dstRep && amount != 0) {
             if (srcRep != address(0)) {
                 uint32 srcRepNum = numCheckpoints[srcRep];
-                uint srcRepOld = srcRepNum != 0
+                uint256 srcRepOld = srcRepNum != 0
                     ? checkpoints[srcRep][srcRepNum - 1].votes
                     : 0;
-                uint srcRepNew = srcRepOld - amount;
+                uint256 srcRepNew = srcRepOld - amount;
                 _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
             }
 
             if (dstRep != address(0)) {
                 uint32 dstRepNum = numCheckpoints[dstRep];
-                uint dstRepOld = dstRepNum != 0
+                uint256 dstRepOld = dstRepNum != 0
                     ? checkpoints[dstRep][dstRepNum - 1].votes
                     : 0;
-                uint dstRepNew = dstRepOld + amount;
+                uint256 dstRepNew = dstRepOld + amount;
                 _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
             }
         }
@@ -243,47 +237,47 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
     function _writeCheckpoint(
         address delegatee,
         uint32 nCheckpoints,
-        uint oldVotes,
-        uint newVotes
+        uint256 oldVotes,
+        uint256 newVotes
     ) internal {
         uint32 blockNumber = uint32(block.number);
 
         if (
-            nCheckpoints != 0 &&
-            checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber
+            nCheckpoints != 0
+                && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber
         ) {
             checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
         } else {
-            checkpoints[delegatee][nCheckpoints] = Checkpoint(
-                blockNumber,
-                newVotes
-            );
+            checkpoints[delegatee][nCheckpoints] =
+                Checkpoint(blockNumber, newVotes);
             numCheckpoints[delegatee] = nCheckpoints + 1;
         }
 
         emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
     }
 
-    function totalVotingPower(address user) public view returns (uint) {
-        uint totalAllocatedToUser = totalAllocated(user);
-        uint totalClaimedByUser = totalClaimed(user);
+    function totalVotingPower(address user) public view returns (uint256) {
+        uint256 totalAllocatedToUser = totalAllocated(user);
+        uint256 totalClaimedByUser = totalClaimed(user);
         return totalAllocatedToUser - totalClaimedByUser;
     }
 
-    /********************************************************
+    /**
+     *
      *                                                      *
      *                   PUBLIC FUNCTIONS                   *
      *                                                      *
-     ********************************************************/
+     *
+     */
 
     /**
      * @notice Claim the tokens that have already vested
      */
     function claim() external nonReentrant {
-        uint claimed;
+        uint256 claimed;
 
-        uint length = allocations[msg.sender].length;
-        for (uint i; i < length; ++i) {
+        uint256 length = allocations[msg.sender].length;
+        for (uint256 i; i < length; ++i) {
             claimed += _claim(allocations[msg.sender][i]);
         }
 
@@ -296,27 +290,33 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
     /**
      * @notice Get the total number of allocations for `recipient`
      */
-    function totalAllocations(address recipient) external view returns (uint) {
+    function totalAllocations(address recipient)
+        external
+        view
+        returns (uint256)
+    {
         return allocations[recipient].length;
     }
 
     /**
      * @notice Get all allocations for `recipient`
      */
-    function getUserAllocations(
-        address recipient
-    ) external view returns (Allocation[] memory) {
+    function getUserAllocations(address recipient)
+        external
+        view
+        returns (Allocation[] memory)
+    {
         return allocations[recipient];
     }
 
     /**
      * @notice Get the total amount of tokens allocated for `recipient`
      */
-    function totalAllocated(address recipient) public view returns (uint) {
-        uint total;
+    function totalAllocated(address recipient) public view returns (uint256) {
+        uint256 total;
 
-        uint length = allocations[recipient].length;
-        for (uint i; i < length; ++i) {
+        uint256 length = allocations[recipient].length;
+        for (uint256 i; i < length; ++i) {
             total += allocations[recipient][i].amount;
         }
 
@@ -326,11 +326,11 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
     /**
      * @notice Get the total amount of vested tokens for `recipient` so far
      */
-    function totalVested(address recipient) external view returns (uint) {
-        uint tokensVested;
+    function totalVested(address recipient) external view returns (uint256) {
+        uint256 tokensVested;
 
-        uint length = allocations[recipient].length;
-        for (uint i; i < length; ++i) {
+        uint256 length = allocations[recipient].length;
+        for (uint256 i; i < length; ++i) {
             tokensVested += _vested(allocations[recipient][i]);
         }
 
@@ -340,11 +340,11 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
     /**
      * @notice Get the total amount of claimed tokens by `recipient`
      */
-    function totalClaimed(address recipient) public view returns (uint) {
-        uint total;
+    function totalClaimed(address recipient) public view returns (uint256) {
+        uint256 total;
 
-        uint length = allocations[recipient].length;
-        for (uint i; i < length; ++i) {
+        uint256 length = allocations[recipient].length;
+        for (uint256 i; i < length; ++i) {
             total += allocations[recipient][i].claimed;
         }
 
@@ -354,22 +354,28 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
     /**
      * @notice Get the total amount of claimable tokens by `recipient`
      */
-    function totalClaimable(address recipient) external view returns (uint) {
-        uint total;
+    function totalClaimable(address recipient)
+        external
+        view
+        returns (uint256)
+    {
+        uint256 total;
 
-        uint length = allocations[recipient].length;
-        for (uint i; i < length; ++i) {
+        uint256 length = allocations[recipient].length;
+        for (uint256 i; i < length; ++i) {
             total += _claimable(allocations[recipient][i]);
         }
 
         return total;
     }
 
-    /********************************************************
+    /**
+     *
      *                                                      *
      *               ADMIN-ONLY FUNCTIONS                   *
      *                                                      *
-     ********************************************************/
+     *
+     */
 
     /**
      * @notice Set the amount of purchased tokens per user.
@@ -384,11 +390,11 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
     function setAllocations(
         address[] memory recipients,
         bool[] memory isLinear,
-        uint[] memory epochs,
-        uint[] memory vestingDurations,
-        uint[] memory cliffs,
-        uint[] memory cliffPercentages,
-        uint[] memory amounts
+        uint256[] memory epochs,
+        uint256[] memory vestingDurations,
+        uint256[] memory cliffs,
+        uint256[] memory cliffPercentages,
+        uint256[] memory amounts
     ) external adminOnly {
         require(recipients.length == epochs.length);
         require(recipients.length == isLinear.length);
@@ -397,8 +403,8 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
         require(recipients.length == cliffPercentages.length);
         require(recipients.length == amounts.length);
 
-        uint length = recipients.length;
-        for (uint i; i < length; ++i) {
+        uint256 length = recipients.length;
+        for (uint256 i; i < length; ++i) {
             require(cliffPercentages[i] <= 1e18);
 
             allocations[recipients[i]].push(
@@ -423,7 +429,7 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
      */
     function resetAllocationsByUser(address targetUser) external adminOnly {
         // Get the user's current total voting power, which is the number of unclaimed tokens in the contract
-        uint votingPower = totalVotingPower(targetUser);
+        uint256 votingPower = totalVotingPower(targetUser);
 
         // Decrease the voting power to zero
         _moveDelegates(delegates[targetUser], address(0), votingPower);
@@ -444,7 +450,7 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
      * @param token The token address to withdraw
      * @param amount Amount to withdraw from the contract balance
      */
-    function withdraw(address token, uint amount) external adminOnly {
+    function withdraw(address token, uint256 amount) external adminOnly {
         require(token != tokenAddress, "use resetAllocationsByUser");
 
         if (amount != 0) {
@@ -485,44 +491,48 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
         proxy.acceptPendingImplementation();
     }
 
-    /********************************************************
+    /**
+     *
      *                                                      *
      *                  INTERNAL FUNCTIONS                  *
      *                                                      *
-     ********************************************************/
+     *
+     */
 
     /**
      * @notice Calculate the amount of vested tokens at the time of calling
      * @return Amount of vested tokens
      */
-    function _vested(
-        Allocation memory allocation
-    ) internal view returns (uint) {
+    function _vested(Allocation memory allocation)
+        internal
+        view
+        returns (uint256)
+    {
         if (block.timestamp < allocation.epoch + allocation.cliff) {
             return 0;
         }
 
-        uint initialAmount = (allocation.amount * allocation.cliffPercentage) /
-            1e18;
-        uint postCliffAmount = allocation.amount - initialAmount;
-        uint elapsed = block.timestamp - allocation.epoch - allocation.cliff;
+        uint256 initialAmount =
+            (allocation.amount * allocation.cliffPercentage) / 1e18;
+        uint256 postCliffAmount = allocation.amount - initialAmount;
+        uint256 elapsed = block.timestamp - allocation.epoch - allocation.cliff;
 
         if (allocation.isLinear) {
             if (elapsed >= allocation.vestingDuration) {
                 return allocation.amount;
             }
 
-            return
-                initialAmount +
-                ((postCliffAmount * elapsed) / allocation.vestingDuration);
+            return initialAmount
+                + ((postCliffAmount * elapsed) / allocation.vestingDuration);
         }
 
-        uint elapsedPeriods = elapsed / monthlyVestingInterval;
+        uint256 elapsedPeriods = elapsed / monthlyVestingInterval;
         if (elapsedPeriods >= allocation.vestingDuration) {
             return allocation.amount;
         }
 
-        uint monthlyVestedAmount = postCliffAmount / allocation.vestingDuration;
+        uint256 monthlyVestedAmount =
+            postCliffAmount / allocation.vestingDuration;
 
         return initialAmount + (monthlyVestedAmount * elapsedPeriods);
     }
@@ -530,9 +540,11 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
     /**
      * @notice Get the amount of claimable tokens for `allocation`
      */
-    function _claimable(
-        Allocation memory allocation
-    ) internal view returns (uint) {
+    function _claimable(Allocation memory allocation)
+        internal
+        view
+        returns (uint256)
+    {
         return _vested(allocation) - allocation.claimed;
     }
 
@@ -540,8 +552,8 @@ contract TokenSaleDistributor is ReentrancyGuard, TokenSaleDistributorStorage {
      * @notice Claim all vested tokens from the allocation
      * @return The amount of claimed tokens
      */
-    function _claim(Allocation storage allocation) internal returns (uint) {
-        uint claimable = _claimable(allocation);
+    function _claim(Allocation storage allocation) internal returns (uint256) {
+        uint256 claimable = _claimable(allocation);
         if (claimable == 0) {
             return 0;
         }

@@ -2,34 +2,44 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {MToken} from "@protocol/MToken.sol";
-import {SigUtils} from "@test/helper/SigUtils.sol";
-import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
-import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
-import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
-import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
-import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
+import {WhitePaperInterestRateModel} from
+    "@protocol/irm/WhitePaperInterestRateModel.sol";
+import {MultiRewardDistributor} from
+    "@protocol/rewards/MultiRewardDistributor.sol";
+import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
+import {SigUtils} from "@test/helper/SigUtils.sol";
+
+import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
+import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
 
 interface InstrumentedExternalEvents {
     event PricePosted(
         address asset,
-        uint previousPriceMantissa,
-        uint requestedPriceMantissa,
-        uint newPriceMantissa
+        uint256 previousPriceMantissa,
+        uint256 requestedPriceMantissa,
+        uint256 newPriceMantissa
     );
     event NewCollateralFactor(
         MToken mToken,
-        uint oldCollateralFactorMantissa,
-        uint newCollateralFactorMantissa
+        uint256 oldCollateralFactorMantissa,
+        uint256 newCollateralFactorMantissa
     );
-    event Transfer(address indexed from, address indexed to, uint amount);
-    event Mint(address minter, uint mintAmount, uint mintTokens);
-    event Approval(address indexed owner, address indexed spender, uint amount);
+    event Transfer(address indexed from, address indexed to, uint256 amount);
+    event Mint(address minter, uint256 mintAmount, uint256 mintTokens);
+    event Approval(
+        address indexed owner, address indexed spender, uint256 amount
+    );
 }
 
 contract ComptrollerUnitTest is
@@ -65,14 +75,10 @@ contract ComptrollerUnitTest is
 
         distributor = new MultiRewardDistributor();
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(comptroller),
-            address(this)
+            "initialize(address,address)", address(comptroller), address(this)
         );
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor),
-            address(proxyAdmin),
-            initdata
+            address(distributor), address(proxyAdmin), initdata
         );
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
@@ -94,7 +100,7 @@ contract ComptrollerUnitTest is
         assertEq(faucetToken.balanceOf(address(this)), 1e18);
 
         // Ensure our market is listed
-        (bool isListed, ) = comptroller.markets(address(mToken));
+        (bool isListed,) = comptroller.markets(address(mToken));
         assertTrue(isListed);
 
         // 1 TEST === $1
@@ -105,9 +111,9 @@ contract ComptrollerUnitTest is
         assertEq(oracle.getUnderlyingPrice(mToken), 2e18);
     }
 
-    function testSettingCF(uint cfToSet) public {
+    function testSettingCF(uint256 cfToSet) public {
         // Ensure our market is listed
-        (, uint originalCF) = comptroller.markets(address(mToken));
+        (, uint256 originalCF) = comptroller.markets(address(mToken));
         assertEq(originalCF, 0);
 
         assertEq(oracle.getUnderlyingPrice(mToken), 1e18);
@@ -116,8 +122,8 @@ contract ComptrollerUnitTest is
         if (cfToSet > 0.9e18) {
             vm.expectEmit(true, true, true, true, address(comptroller));
             emit Failure(
-                uint(Error.INVALID_COLLATERAL_FACTOR),
-                uint(FailureInfo.SET_COLLATERAL_FACTOR_VALIDATION),
+                uint256(Error.INVALID_COLLATERAL_FACTOR),
+                uint256(FailureInfo.SET_COLLATERAL_FACTOR_VALIDATION),
                 0
             );
             comptroller._setCollateralFactor(mToken, cfToSet);
@@ -125,15 +131,12 @@ contract ComptrollerUnitTest is
             vm.expectEmit(true, true, true, true, address(comptroller));
             emit NewCollateralFactor(mToken, originalCF, cfToSet);
 
-            uint setCollateralResult = comptroller._setCollateralFactor(
-                mToken,
-                cfToSet
-            );
+            uint256 setCollateralResult =
+                comptroller._setCollateralFactor(mToken, cfToSet);
             assertEq(setCollateralResult, 0);
 
-            (, uint collateralFactorUpdated) = comptroller.markets(
-                address(mToken)
-            );
+            (, uint256 collateralFactorUpdated) =
+                comptroller.markets(address(mToken));
             assertEq(collateralFactorUpdated, cfToSet);
         }
     }
@@ -143,7 +146,7 @@ contract ComptrollerUnitTest is
 
         comptroller._setCollateralFactor(mToken, 0.5e18);
 
-        (, uint cf) = comptroller.markets(address(mToken));
+        (, uint256 cf) = comptroller.markets(address(mToken));
         assertEq(cf, 0.5e18);
 
         faucetToken.approve(address(mToken), 1e18);
@@ -151,16 +154,11 @@ contract ComptrollerUnitTest is
 
         assertEq(faucetToken.balanceOf(address(this)), 0);
 
-        uint time = 1678430000;
+        uint256 time = 1678430000;
         vm.warp(time);
 
         distributor._addEmissionConfig(
-            mToken,
-            address(this),
-            address(faucetToken),
-            0.5e18,
-            0,
-            time + 86400
+            mToken, address(this), address(faucetToken), 0.5e18, 0, time + 86400
         );
         faucetToken.allocateTo(address(distributor), 100000e18);
         comptroller.claimReward();

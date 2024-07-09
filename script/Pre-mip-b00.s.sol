@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 import "@forge-std/Test.sol";
+import {console} from "@forge-std/console.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+
+import {ChainlinkCompositeOracle} from
+    "@protocol/oracles/ChainlinkCompositeOracle.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
-import {MockWeth} from "@test/mock/MockWeth.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
-import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {MockWeth} from "@test/mock/MockWeth.sol";
 
 /*
 to run:
@@ -28,16 +30,13 @@ contract PreMipB00Script is Script, Test {
     function run() public {
         vm.startBroadcast();
 
-        FaucetTokenWithPermit usdc = new FaucetTokenWithPermit(
-            1e18,
-            "USDBC",
-            6,
-            "USDBC"
-        );
+        FaucetTokenWithPermit usdc =
+            new FaucetTokenWithPermit(1e18, "USDBC", 6, "USDBC");
         FaucetTokenWithPermit cbETH = new FaucetTokenWithPermit(
             1e18,
             "Coinbase Wrapped Staked ETH",
-            18, /// cbETH is 18 decimals
+            18,
+            /// cbETH is 18 decimals
             "cbETH"
         );
 
@@ -62,20 +61,15 @@ contract PreMipB00Script is Script, Test {
         // cbETH is a composite oracle
         MockChainlinkOracle oracle = new MockChainlinkOracle(1.04296945e18, 18);
         ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
-            addresses.getAddress("ETH_ORACLE"),
-            address(oracle),
-            address(0)
+            addresses.getAddress("ETH_ORACLE"), address(oracle), address(0)
         );
 
         vm.stopBroadcast();
 
         addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
 
-        (
-            string[] memory recordedNames,
-            ,
-            address[] memory recordedAddresses
-        ) = addresses.getRecordedAddresses();
+        (string[] memory recordedNames,, address[] memory recordedAddresses) =
+            addresses.getRecordedAddresses();
         for (uint256 i = 0; i < recordedNames.length; i++) {
             console.log("Deployed", recordedAddresses[i], recordedNames[i]);
         }

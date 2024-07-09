@@ -3,8 +3,9 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Recovery} from "@protocol/Recovery.sol";
-import {RecoveryDeploy} from "@test/utils/RecoveryDeploy.sol";
+
 import {FailingReceiver} from "@test/mock/FailingReceiver.sol";
+import {RecoveryDeploy} from "@test/utils/RecoveryDeploy.sol";
 
 contract RecoveryUnitTest is Test, RecoveryDeploy {
     Recovery recover;
@@ -38,9 +39,9 @@ contract RecoveryUnitTest is Test, RecoveryDeploy {
         recover.sendAllEth(payable(address(this)));
     }
 
-    function testOwnerCanCallEmergencyActionAndRecoverEth(
-        uint128 ethAmount
-    ) public {
+    function testOwnerCanCallEmergencyActionAndRecoverEth(uint128 ethAmount)
+        public
+    {
         vm.deal(address(recover), ethAmount);
         uint256 startingEthBalance = address(this).balance;
 

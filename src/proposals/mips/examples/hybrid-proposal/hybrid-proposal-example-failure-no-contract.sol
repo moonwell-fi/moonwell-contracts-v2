@@ -3,16 +3,24 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {IMultichainGovernor} from "@protocol/governance/multichain/IMultichainGovernor.sol";
-import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {
+    ActionType,
+    HybridProposal
+} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {IMultichainGovernor} from
+    "@protocol/governance/multichain/IMultichainGovernor.sol";
+import {MultichainGovernorDeploy} from
+    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultiRewardDistributor} from
+    "@protocol/rewards/MultiRewardDistributor.sol";
+
+import {MultiRewardDistributorCommon} from
+    "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 /// @notice DO NOT USE THIS IN PRODUCTION, this is a completely hypothetical example
 /// adds stkwell as reward streams, completely hypothetical situation that makes no sense and would not work in production
@@ -50,8 +58,7 @@ contract HybridProposalExample is
         _pushAction(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
             abi.encodeWithSignature(
-                "updateVotingPeriod(uint256)",
-                NEW_VOTING_PERIOD
+                "updateVotingPeriod(uint256)", NEW_VOTING_PERIOD
             ),
             "Set voting period on Multichain Governor to 6 days",
             ActionType.Base
@@ -65,8 +72,7 @@ contract HybridProposalExample is
             "no configs allowed"
         );
         require(
-            emissions[block.chainid].length == 0,
-            "no emission configs allowed"
+            emissions[block.chainid].length == 0, "no emission configs allowed"
         );
 
         {
@@ -77,9 +83,8 @@ contract HybridProposalExample is
 
         /// -------------- EMISSION CONFIGURATION --------------
 
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
+        EmissionConfig[] memory emissionConfig =
+            getEmissionConfigurations(block.chainid);
         address mrd = addresses.getAddress("MRD_PROXY");
 
         unchecked {
@@ -99,8 +104,7 @@ contract HybridProposalExample is
                     ),
                     string(
                         abi.encodePacked(
-                            "Emission configuration set for ",
-                            config.mToken
+                            "Emission configuration set for ", config.mToken
                         )
                     ),
                     ActionType.Base
@@ -135,21 +139,19 @@ contract HybridProposalExample is
 
         vm.selectFork(primaryForkId());
 
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
-        MultiRewardDistributor distributor = MultiRewardDistributor(
-            addresses.getAddress("MRD_PROXY")
-        );
+        EmissionConfig[] memory emissionConfig =
+            getEmissionConfigurations(block.chainid);
+        MultiRewardDistributor distributor =
+            MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
 
         unchecked {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
-                MultiRewardDistributorCommon.MarketConfig
-                    memory marketConfig = distributor.getConfigForMarket(
-                        MToken(addresses.getAddress(config.mToken)),
-                        config.emissionToken
-                    );
+                MultiRewardDistributorCommon.MarketConfig memory marketConfig =
+                distributor.getConfigForMarket(
+                    MToken(addresses.getAddress(config.mToken)),
+                    config.emissionToken
+                );
 
                 assertEq(
                     marketConfig.owner,
@@ -162,9 +164,7 @@ contract HybridProposalExample is
                     "emission token incorrect"
                 );
                 assertEq(
-                    marketConfig.endTime,
-                    config.endTime,
-                    "end time incorrect"
+                    marketConfig.endTime, config.endTime, "end time incorrect"
                 );
                 assertEq(
                     marketConfig.supplyEmissionsPerSec,

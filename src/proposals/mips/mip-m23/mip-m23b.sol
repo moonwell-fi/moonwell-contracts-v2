@@ -3,15 +3,21 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {validateProxy} from "@protocol/proposals/utils/ProxyUtils.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
-import {BASE_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
-import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {MultichainGovernorDeploy} from
+    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainVoteCollection} from
+    "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {validateProxy} from "@protocol/proposals/utils/ProxyUtils.sol";
+
+import {
+    IEcosystemReserveControllerUplift,
+    IEcosystemReserveUplift
+} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
+import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {BASE_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Base to create the Multichain Vote Collection Contract
 /// As well as the Ecosystem Reserve and Ecosystem Reserve Controller.
@@ -62,16 +68,13 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             ) = deployEcosystemReserve(proxyAdmin);
 
             addresses.addAddress(
-                "ECOSYSTEM_RESERVE_PROXY",
-                ecosystemReserveProxy
+                "ECOSYSTEM_RESERVE_PROXY", ecosystemReserveProxy
             );
             addresses.addAddress(
-                "ECOSYSTEM_RESERVE_IMPL",
-                ecosystemReserveImplementation
+                "ECOSYSTEM_RESERVE_IMPL", ecosystemReserveImplementation
             );
             addresses.addAddress(
-                "ECOSYSTEM_RESERVE_CONTROLLER",
-                ecosystemReserveController
+                "ECOSYSTEM_RESERVE_CONTROLLER", ecosystemReserveController
             );
 
             {
@@ -84,7 +87,8 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                     /// check that emissions manager on Moonbeam is the Artemis Timelock, so on Base it should be the temporal governor
                     addresses.getAddress("TEMPORAL_GOVERNOR"),
                     distributionDuration,
-                    address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
+                    address(0),
+                    /// stop error on beforeTransfer hook in ERC20WithSnapshot
                     proxyAdmin
                 );
                 addresses.addAddress("STK_GOVTOKEN", stkWellProxy);
@@ -93,39 +97,37 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         }
 
         if (!addresses.isAddressSet("VOTE_COLLECTION_PROXY", block.chainid)) {
-            (
-                address collectionProxy,
-                address collectionImpl
-            ) = deployVoteCollection(
-                    addresses.getAddress("xWELL_PROXY"),
-                    addresses.getAddress("STK_GOVTOKEN"),
-                    addresses.getAddress(
-                        "MULTICHAIN_GOVERNOR_PROXY",
-                        block.chainid.toMoonbeamChainId()
-                    ), /// fetch multichain governor address on Moonbeam
-                    addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                    block.chainid.toMoonbeamWormholeChainId(),
-                    proxyAdmin,
-                    addresses.getAddress("TEMPORAL_GOVERNOR")
-                );
+            (address collectionProxy, address collectionImpl) =
+            deployVoteCollection(
+                addresses.getAddress("xWELL_PROXY"),
+                addresses.getAddress("STK_GOVTOKEN"),
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    block.chainid.toMoonbeamChainId()
+                ),
+                /// fetch multichain governor address on Moonbeam
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+                block.chainid.toMoonbeamWormholeChainId(),
+                proxyAdmin,
+                addresses.getAddress("TEMPORAL_GOVERNOR")
+            );
 
             addresses.addAddress("VOTE_COLLECTION_PROXY", collectionProxy);
             addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl);
         }
     }
 
-    function afterDeploy(
-        Addresses addresses,
-        address deployer
-    ) public override {
-        IEcosystemReserveControllerUplift ecosystemReserveController = IEcosystemReserveControllerUplift(
-                addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
-            );
+    function afterDeploy(Addresses addresses, address deployer)
+        public
+        override
+    {
+        IEcosystemReserveControllerUplift ecosystemReserveController =
+        IEcosystemReserveControllerUplift(
+            addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
+        );
 
         assertEq(
-            ecosystemReserveController.owner(),
-            deployer,
-            "incorrect owner"
+            ecosystemReserveController.owner(), deployer, "incorrect owner"
         );
         assertEq(
             address(ecosystemReserveController.ECOSYSTEM_RESERVE()),
@@ -133,9 +135,8 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             "ECOSYSTEM_RESERVE set when it should not be"
         );
 
-        address ecosystemReserve = addresses.getAddress(
-            "ECOSYSTEM_RESERVE_PROXY"
-        );
+        address ecosystemReserve =
+            addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
 
         /// set the ecosystem reserve
         ecosystemReserveController.setEcosystemReserve(ecosystemReserve);
@@ -152,9 +153,8 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
 
-        IEcosystemReserveUplift ecosystemReserveContract = IEcosystemReserveUplift(
-                addresses.getAddress("ECOSYSTEM_RESERVE_IMPL")
-            );
+        IEcosystemReserveUplift ecosystemReserveContract =
+        IEcosystemReserveUplift(addresses.getAddress("ECOSYSTEM_RESERVE_IMPL"));
 
         /// take ownership of the ecosystem reserve impl to prevent any further changes or hijacking
         ecosystemReserveContract.initialize(address(1));
@@ -198,9 +198,10 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
         /// ecosystem reserve and controller
         {
-            IEcosystemReserveControllerUplift ecosystemReserveController = IEcosystemReserveControllerUplift(
-                    addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
-                );
+            IEcosystemReserveControllerUplift ecosystemReserveController =
+            IEcosystemReserveControllerUplift(
+                addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
+            );
 
             assertEq(
                 ecosystemReserveController.owner(),
@@ -250,9 +251,8 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
         /// validate stkWELL contract
         {
-            IStakedWellUplift stkWell = IStakedWellUplift(
-                addresses.getAddress("STK_GOVTOKEN")
-            );
+            IStakedWellUplift stkWell =
+                IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"));
 
             /// stake and reward token are the same
             assertEq(

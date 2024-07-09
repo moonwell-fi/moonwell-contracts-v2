@@ -39,6 +39,7 @@ library Address {
      * constructor.
      * ====
      */
+
     function isContract(address account) internal view returns (bool) {
         // This method relies on extcodesize/address.code.length, which returns 0
         // for contracts in construction, since the code is only stored at the end
@@ -65,11 +66,10 @@ library Address {
      */
     function sendValue(address payable recipient, uint256 amount) internal {
         require(
-            address(this).balance >= amount,
-            "Address: insufficient balance"
+            address(this).balance >= amount, "Address: insufficient balance"
         );
 
-        (bool success, ) = recipient.call{value: amount}("");
+        (bool success,) = recipient.call{value: amount}("");
         require(
             success,
             "Address: unable to send value, recipient may have reverted"
@@ -94,17 +94,13 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(
-        address target,
-        bytes memory data
-    ) internal returns (bytes memory) {
-        return
-            functionCallWithValue(
-                target,
-                data,
-                0,
-                "Address: low-level call failed"
-            );
+    function functionCall(address target, bytes memory data)
+        internal
+        returns (bytes memory)
+    {
+        return functionCallWithValue(
+            target, data, 0, "Address: low-level call failed"
+        );
     }
 
     /**
@@ -137,13 +133,9 @@ library Address {
         bytes memory data,
         uint256 value
     ) internal returns (bytes memory) {
-        return
-            functionCallWithValue(
-                target,
-                data,
-                value,
-                "Address: low-level call with value failed"
-            );
+        return functionCallWithValue(
+            target, data, value, "Address: low-level call with value failed"
+        );
     }
 
     /**
@@ -162,16 +154,11 @@ library Address {
             address(this).balance >= value,
             "Address: insufficient balance for call"
         );
-        (bool success, bytes memory returndata) = target.call{value: value}(
-            data
+        (bool success, bytes memory returndata) =
+            target.call{value: value}(data);
+        return verifyCallResultFromTarget(
+            target, success, returndata, errorMessage
         );
-        return
-            verifyCallResultFromTarget(
-                target,
-                success,
-                returndata,
-                errorMessage
-            );
     }
 
     /**
@@ -180,16 +167,14 @@ library Address {
      *
      * _Available since v3.3._
      */
-    function functionStaticCall(
-        address target,
-        bytes memory data
-    ) internal view returns (bytes memory) {
-        return
-            functionStaticCall(
-                target,
-                data,
-                "Address: low-level static call failed"
-            );
+    function functionStaticCall(address target, bytes memory data)
+        internal
+        view
+        returns (bytes memory)
+    {
+        return functionStaticCall(
+            target, data, "Address: low-level static call failed"
+        );
     }
 
     /**
@@ -204,13 +189,9 @@ library Address {
         string memory errorMessage
     ) internal view returns (bytes memory) {
         (bool success, bytes memory returndata) = target.staticcall(data);
-        return
-            verifyCallResultFromTarget(
-                target,
-                success,
-                returndata,
-                errorMessage
-            );
+        return verifyCallResultFromTarget(
+            target, success, returndata, errorMessage
+        );
     }
 
     /**
@@ -219,16 +200,13 @@ library Address {
      *
      * _Available since v3.4._
      */
-    function functionDelegateCall(
-        address target,
-        bytes memory data
-    ) internal returns (bytes memory) {
-        return
-            functionDelegateCall(
-                target,
-                data,
-                "Address: low-level delegate call failed"
-            );
+    function functionDelegateCall(address target, bytes memory data)
+        internal
+        returns (bytes memory)
+    {
+        return functionDelegateCall(
+            target, data, "Address: low-level delegate call failed"
+        );
     }
 
     /**
@@ -243,13 +221,9 @@ library Address {
         string memory errorMessage
     ) internal returns (bytes memory) {
         (bool success, bytes memory returndata) = target.delegatecall(data);
-        return
-            verifyCallResultFromTarget(
-                target,
-                success,
-                returndata,
-                errorMessage
-            );
+        return verifyCallResultFromTarget(
+            target, success, returndata, errorMessage
+        );
     }
 
     /**
@@ -294,10 +268,10 @@ library Address {
         }
     }
 
-    function _revert(
-        bytes memory returndata,
-        string memory errorMessage
-    ) private pure {
+    function _revert(bytes memory returndata, string memory errorMessage)
+        private
+        pure
+    {
         // Look for revert reason and bubble it up if present
         if (returndata.length > 0) {
             // The easiest way to bubble the revert reason is using memory via assembly

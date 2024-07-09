@@ -1,41 +1,56 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {TransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {TransparentUpgradeableProxy} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
 
-import {WETH9} from "@protocol/router/IWETH.sol";
-import {MErc20} from "@protocol/MErc20.sol";
-import {MToken} from "@protocol/MToken.sol";
-import {Address} from "@utils/Address.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {Unitroller} from "@protocol/Unitroller.sol";
-import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
-import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {ChainIds, BASE_FORK_ID, BASE_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {Unitroller} from "@protocol/Unitroller.sol";
+
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {
+    InterestRateModel, JumpRateModel
+} from "@protocol/irm/JumpRateModel.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
+import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
+
+import {MultiRewardDistributor} from
+    "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from
+    "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {WETH9} from "@protocol/router/IWETH.sol";
+import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {Address} from "@utils/Address.sol";
+
+import {
+    BASE_FORK_ID, BASE_SEPOLIA_CHAIN_ID, ChainIds
+} from "@utils/ChainIds.sol";
 
 contract mipb00 is HybridProposal, Configs {
     using Address for address;
     using ChainIds for uint256;
 
     string public constant override name = "MIP-B00";
-    uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
-    uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
-    uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
+    uint256 public constant liquidationIncentive = 1.1e18;
+    /// liquidation incentive is 110%
+    uint256 public constant closeFactor = 0.5e18;
+    /// close factor is 50%, i.e. seize share
+    uint8 public constant mTokenDecimals = 8;
+    /// all mTokens have 8 decimals
 
     /// @notice time before anyone can unpause the contract after a guardian pause
     uint256 public constant permissionlessUnpauseTime = 30 days;
@@ -83,19 +98,18 @@ contract mipb00 is HybridProposal, Configs {
         /// ------- TemporalGovernor -------
         localInit(addresses);
         {
-            TemporalGovernor.TrustedSender[]
-                memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
-            trustedSenders[0].chainId = block
-                .chainid
-                .toMoonbeamWormholeChainId();
+            TemporalGovernor.TrustedSender[] memory trustedSenders =
+                new TemporalGovernor.TrustedSender[](1);
+            trustedSenders[0].chainId =
+                block.chainid.toMoonbeamWormholeChainId();
             trustedSenders[0].addr = addresses.getAddress(
-                "MOONBEAM_TIMELOCK",
-                block.chainid.toMoonbeamChainId()
+                "MOONBEAM_TIMELOCK", block.chainid.toMoonbeamChainId()
             );
 
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
-                addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
+                addresses.getAddress("WORMHOLE_CORE"),
+                /// get wormhole core address for the chain deployment is on
                 temporalGovDelay[block.chainid], // get timelock period for the chain deployment is on
                 permissionlessUnpauseTime,
                 trustedSenders
@@ -108,8 +122,7 @@ contract mipb00 is HybridProposal, Configs {
         {
             MultiRewardDistributor distributor = new MultiRewardDistributor();
             addresses.addAddress(
-                "MULTI_REWARD_DISTRIBUTOR",
-                address(distributor)
+                "MULTI_REWARD_DISTRIBUTOR", address(distributor)
             );
         }
         {
@@ -125,9 +138,7 @@ contract mipb00 is HybridProposal, Configs {
                 proxyAdmin = new ProxyAdmin();
                 addresses.addAddress("MRD_PROXY_ADMIN", address(proxyAdmin));
             } else {
-                proxyAdmin = ProxyAdmin(
-                    addresses.getAddress("MRD_PROXY_ADMIN")
-                );
+                proxyAdmin = ProxyAdmin(addresses.getAddress("MRD_PROXY_ADMIN"));
             }
             bytes memory initData = abi.encodeWithSignature(
                 "initialize(address,address)",
@@ -135,10 +146,10 @@ contract mipb00 is HybridProposal, Configs {
                 addresses.getAddress("PAUSE_GUARDIAN")
             );
             TransparentUpgradeableProxy mrdProxy = new TransparentUpgradeableProxy(
-                    addresses.getAddress("MULTI_REWARD_DISTRIBUTOR"),
-                    address(proxyAdmin),
-                    initData
-                );
+                addresses.getAddress("MULTI_REWARD_DISTRIBUTOR"),
+                address(proxyAdmin),
+                initData
+            );
             addresses.addAddress("MRD_PROXY", address(mrdProxy));
         }
         /// ------ MTOKENS -------
@@ -148,8 +159,8 @@ contract mipb00 is HybridProposal, Configs {
         }
 
         _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory cTokenConfigs =
+            getCTokenConfigurations(block.chainid);
         uint256 cTokenConfigsLength = cTokenConfigs.length;
         //// create all of the CTokens according to the configuration in Config.sol
         unchecked {
@@ -168,8 +179,7 @@ contract mipb00 is HybridProposal, Configs {
                     addresses.addAddress(
                         string(
                             abi.encodePacked(
-                                "JUMP_RATE_IRM_",
-                                config.addressesString
+                                "JUMP_RATE_IRM_", config.addressesString
                             )
                         ),
                         address(irModel)
@@ -181,8 +191,7 @@ contract mipb00 is HybridProposal, Configs {
                     irModel: addresses.getAddress(
                         string(
                             abi.encodePacked(
-                                "JUMP_RATE_IRM_",
-                                config.addressesString
+                                "JUMP_RATE_IRM_", config.addressesString
                             )
                         )
                     ),
@@ -194,9 +203,13 @@ contract mipb00 is HybridProposal, Configs {
                 ///    = 2e26
                 /// (10 ** (6 + 8)) * 2 // 6 decimals example
                 ///    = 2e14
-                uint256 initialExchangeRate = (10 **
-                    (ERC20(addresses.getAddress(config.tokenAddressName))
-                        .decimals() + 8)) * 2;
+                uint256 initialExchangeRate = (
+                    10
+                        ** (
+                            ERC20(addresses.getAddress(config.tokenAddressName))
+                                .decimals() + 8
+                        )
+                ) * 2;
                 MErc20Delegator mToken = new MErc20Delegator(
                     addresses.getAddress(config.tokenAddressName),
                     ComptrollerInterface(addr.unitroller),
@@ -230,18 +243,15 @@ contract mipb00 is HybridProposal, Configs {
 
     function afterDeploy(Addresses addresses, address) public override {
         {
-            ProxyAdmin proxyAdmin = ProxyAdmin(
-                addresses.getAddress("MRD_PROXY_ADMIN")
-            );
-            Unitroller unitroller = Unitroller(
-                addresses.getAddress("UNITROLLER")
-            );
+            ProxyAdmin proxyAdmin =
+                ProxyAdmin(addresses.getAddress("MRD_PROXY_ADMIN"));
+            Unitroller unitroller =
+                Unitroller(addresses.getAddress("UNITROLLER"));
 
             address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
-            ChainlinkOracle oracle = ChainlinkOracle(
-                addresses.getAddress("CHAINLINK_ORACLE")
-            );
+            ChainlinkOracle oracle =
+                ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"));
 
             /// set temporal governor as owner of the proxy admin
             proxyAdmin.transferOwnership(governor);
@@ -255,8 +265,8 @@ contract mipb00 is HybridProposal, Configs {
                 PriceOracle(address(oracle))
             );
 
-            Configs.CTokenConfiguration[]
-                memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+            Configs.CTokenConfiguration[] memory cTokenConfigs =
+                getCTokenConfigurations(block.chainid);
             MToken[] memory mTokens = new MToken[](cTokenConfigs.length);
             uint256[] memory supplyCaps = new uint256[](cTokenConfigs.length);
             uint256[] memory borrowCaps = new uint256[](cTokenConfigs.length);
@@ -264,9 +274,7 @@ contract mipb00 is HybridProposal, Configs {
             //// set mint paused for all of the deployed MTokens
             unchecked {
                 for (uint256 i = 0; i < cTokenConfigs.length; i++) {
-                    Configs.CTokenConfiguration memory config = cTokenConfigs[
-                        i
-                    ];
+                    Configs.CTokenConfiguration memory config = cTokenConfigs[i];
                     supplyCaps[i] = config.supplyCap;
                     borrowCaps[i] = config.borrowCap;
 
@@ -284,44 +292,37 @@ contract mipb00 is HybridProposal, Configs {
                     /// set mint unpaused for all MTokens if is on sepolia
                     if (block.chainid == BASE_SEPOLIA_CHAIN_ID) {
                         Comptroller(address(unitroller))._setMintPaused(
-                            MToken(
-                                addresses.getAddress(config.addressesString)
-                            ),
+                            MToken(addresses.getAddress(config.addressesString)),
                             false
                         );
                     } else {
                         /// set mint paused for all MTokens
                         Comptroller(address(unitroller))._setMintPaused(
-                            MToken(
-                                addresses.getAddress(config.addressesString)
-                            ),
+                            MToken(addresses.getAddress(config.addressesString)),
                             true
                         );
                     }
 
                     /// get the mToken
-                    mTokens[i] = MToken(
-                        addresses.getAddress(config.addressesString)
-                    );
+                    mTokens[i] =
+                        MToken(addresses.getAddress(config.addressesString));
 
                     mTokens[i]._setReserveFactor(config.reserveFactor);
                     mTokens[i]._setProtocolSeizeShare(config.seizeShare);
-                    mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+                    mTokens[i]._setPendingAdmin(payable(governor));
+                    /// set governor as pending admin of the mToken
 
                     Comptroller(address(unitroller))._setCollateralFactor(
-                        mTokens[i],
-                        config.collateralFactor
+                        mTokens[i], config.collateralFactor
                     );
                 }
             }
 
             Comptroller(address(unitroller))._setMarketSupplyCaps(
-                mTokens,
-                supplyCaps
+                mTokens, supplyCaps
             );
             Comptroller(address(unitroller))._setMarketBorrowCaps(
-                mTokens,
-                borrowCaps
+                mTokens, borrowCaps
             );
             Comptroller(address(unitroller))._setRewardDistributor(
                 MultiRewardDistributor(addresses.getAddress("MRD_PROXY"))
@@ -351,12 +352,10 @@ contract mipb00 is HybridProposal, Configs {
         }
         /// -------------- EMISSION CONFIGURATION --------------
 
-        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-            block.chainid
-        );
-        MultiRewardDistributor mrd = MultiRewardDistributor(
-            addresses.getAddress("MRD_PROXY")
-        );
+        EmissionConfig[] memory emissionConfig =
+            getEmissionConfigurations(block.chainid);
+        MultiRewardDistributor mrd =
+            MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
 
         unchecked {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
@@ -375,16 +374,15 @@ contract mipb00 is HybridProposal, Configs {
     }
 
     function preBuildMock(Addresses addresses) public override {
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory cTokenConfigs =
+            getCTokenConfigurations(block.chainid);
 
         uint256 cTokenConfigsLength = cTokenConfigs.length;
         unchecked {
             for (uint256 i = 0; i < cTokenConfigsLength; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-                address tokenAddress = addresses.getAddress(
-                    config.tokenAddressName
-                );
+                address tokenAddress =
+                    addresses.getAddress(config.tokenAddressName);
                 deal(
                     tokenAddress,
                     addresses.getAddress("TEMPORAL_GOVERNOR"),
@@ -406,8 +404,8 @@ contract mipb00 is HybridProposal, Configs {
             "Temporal governor accepts admin on Unitroller"
         );
 
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory cTokenConfigs =
+            getCTokenConfigurations(block.chainid);
 
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
 
@@ -416,9 +414,8 @@ contract mipb00 is HybridProposal, Configs {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
-                address cTokenAddress = addresses.getAddress(
-                    config.addressesString
-                );
+                address cTokenAddress =
+                    addresses.getAddress(config.addressesString);
 
                 /// ------------ MTOKEN MARKET ACTIVIATION ------------
 
@@ -432,9 +429,7 @@ contract mipb00 is HybridProposal, Configs {
                 _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
-                        "_setMintPaused(address,bool)",
-                        cTokenAddress,
-                        false
+                        "_setMintPaused(address,bool)", cTokenAddress, false
                     ),
                     "Unpause MToken market"
                 );
@@ -454,8 +449,7 @@ contract mipb00 is HybridProposal, Configs {
                 _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
-                        "mint(uint256)",
-                        config.initialMintAmount
+                        "mint(uint256)", config.initialMintAmount
                     ),
                     "Initialize token market to prevent exploit"
                 );
@@ -463,9 +457,7 @@ contract mipb00 is HybridProposal, Configs {
                 _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
-                        "transfer(address,uint256)",
-                        address(0),
-                        1
+                        "transfer(address,uint256)", address(0), 1
                     ),
                     "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
                 );
@@ -476,33 +468,28 @@ contract mipb00 is HybridProposal, Configs {
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
-        TemporalGovernor governor = TemporalGovernor(
-            payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
-        );
+        TemporalGovernor governor =
+            TemporalGovernor(payable(addresses.getAddress("TEMPORAL_GOVERNOR")));
 
         assertEq(
-            governor.owner(),
-            addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN")
+            governor.owner(), addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN")
         );
         assertEq(temporalGovDelay[block.chainid], governor.proposalDelay());
 
         {
-            ChainlinkOracle oracle = ChainlinkOracle(
-                addresses.getAddress("CHAINLINK_ORACLE")
-            );
+            ChainlinkOracle oracle =
+                ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"));
 
             assertEq(oracle.admin(), address(governor));
             /// validate chainlink price feeds are correctly set according to config in oracle
 
-            Configs.CTokenConfiguration[]
-                memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+            Configs.CTokenConfiguration[] memory cTokenConfigs =
+                getCTokenConfigurations(block.chainid);
 
             //// set mint paused for all of the deployed MTokens
             unchecked {
                 for (uint256 i = 0; i < cTokenConfigs.length; i++) {
-                    Configs.CTokenConfiguration memory config = cTokenConfigs[
-                        i
-                    ];
+                    Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
                     assertEq(
                         address(
@@ -522,12 +509,10 @@ contract mipb00 is HybridProposal, Configs {
 
         /// assert comptroller and unitroller are wired together properly
         {
-            Unitroller unitroller = Unitroller(
-                addresses.getAddress("UNITROLLER")
-            );
-            Comptroller comptroller = Comptroller(
-                addresses.getAddress("COMPTROLLER")
-            );
+            Unitroller unitroller =
+                Unitroller(addresses.getAddress("UNITROLLER"));
+            Comptroller comptroller =
+                Comptroller(addresses.getAddress("COMPTROLLER"));
 
             assertEq(comptroller.pendingAdmin(), address(0));
             assertEq(comptroller.pauseGuardian(), address(0));
@@ -540,8 +525,7 @@ contract mipb00 is HybridProposal, Configs {
                 addresses.getAddress("TEMPORAL_GOVERNOR")
             );
             assertEq(
-                Comptroller(address(unitroller)).pendingAdmin(),
-                address(0)
+                Comptroller(address(unitroller)).pendingAdmin(), address(0)
             );
             assertEq(
                 Comptroller(address(unitroller)).pauseGuardian(),
@@ -572,21 +556,18 @@ contract mipb00 is HybridProposal, Configs {
 
         /// assert WETH router is properly wired into the system
         {
-            WETHRouter router = WETHRouter(
-                payable(addresses.getAddress("WETH_ROUTER"))
-            );
+            WETHRouter router =
+                WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));
             assertEq(address(router.weth()), addresses.getAddress("WETH"));
             assertEq(
-                address(router.mToken()),
-                addresses.getAddress("MOONWELL_WETH")
+                address(router.mToken()), addresses.getAddress("MOONWELL_WETH")
             );
         }
 
         /// assert multi reward distributor proxy is wired into unitroller correctly
         {
-            MultiRewardDistributor distributor = MultiRewardDistributor(
-                addresses.getAddress("MRD_PROXY")
-            );
+            MultiRewardDistributor distributor =
+                MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
             assertEq(
                 address(distributor.comptroller()),
                 addresses.getAddress("UNITROLLER")
@@ -610,20 +591,18 @@ contract mipb00 is HybridProposal, Configs {
 
         /// assert proxy admin is owned by temporal governor
         {
-            ProxyAdmin proxyAdmin = ProxyAdmin(
-                addresses.getAddress("MRD_PROXY_ADMIN")
-            );
+            ProxyAdmin proxyAdmin =
+                ProxyAdmin(addresses.getAddress("MRD_PROXY_ADMIN"));
             assertEq(proxyAdmin.owner(), address(governor));
         }
 
         /// admin is owned by proxy admin
         {
-            bytes32 _ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+            bytes32 _ADMIN_SLOT =
+                0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
-            bytes32 data = vm.load(
-                addresses.getAddress("MRD_PROXY"),
-                _ADMIN_SLOT
-            );
+            bytes32 data =
+                vm.load(addresses.getAddress("MRD_PROXY"), _ADMIN_SLOT);
             assertEq(
                 bytes32(
                     uint256(uint160(addresses.getAddress("MRD_PROXY_ADMIN")))
@@ -631,12 +610,11 @@ contract mipb00 is HybridProposal, Configs {
                 data
             );
 
-            bytes32 _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+            bytes32 _IMPLEMENTATION_SLOT =
+                0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
-            data = vm.load(
-                addresses.getAddress("MRD_PROXY"),
-                _IMPLEMENTATION_SLOT
-            );
+            data =
+                vm.load(addresses.getAddress("MRD_PROXY"), _IMPLEMENTATION_SLOT);
             assertEq(
                 bytes32(
                     uint256(
@@ -657,45 +635,40 @@ contract mipb00 is HybridProposal, Configs {
         assertTrue(
             governor.isTrustedSender(
                 block.chainid.toMoonbeamWormholeChainId(),
-                addresses
-                    .getAddress(
-                        "MOONBEAM_TIMELOCK",
-                        block.chainid.toMoonbeamChainId()
-                    )
-                    .toBytes()
+                addresses.getAddress(
+                    "MOONBEAM_TIMELOCK", block.chainid.toMoonbeamChainId()
+                ).toBytes()
             )
         );
         {
-            Comptroller comptroller = Comptroller(
-                addresses.getAddress("UNITROLLER")
-            );
+            Comptroller comptroller =
+                Comptroller(addresses.getAddress("UNITROLLER"));
 
             assertEq(comptroller.closeFactorMantissa(), closeFactor);
             assertEq(
-                comptroller.liquidationIncentiveMantissa(),
-                liquidationIncentive
+                comptroller.liquidationIncentiveMantissa(), liquidationIncentive
             );
 
-            Configs.CTokenConfiguration[]
-                memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+            Configs.CTokenConfiguration[] memory cTokenConfigs =
+                getCTokenConfigurations(block.chainid);
 
             unchecked {
                 for (uint256 i = 0; i < cTokenConfigs.length; i++) {
-                    Configs.CTokenConfiguration memory config = cTokenConfigs[
-                        i
-                    ];
+                    Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
                     /// CToken Assertions
                     assertFalse(
                         comptroller.mintGuardianPaused(
                             addresses.getAddress(config.addressesString)
                         )
-                    ); /// minting allowed by guardian
+                    );
+                    /// minting allowed by guardian
                     assertFalse(
                         comptroller.borrowGuardianPaused(
                             addresses.getAddress(config.addressesString)
                         )
-                    ); /// borrowing allowed by guardian
+                    );
+                    /// borrowing allowed by guardian
                     assertEq(
                         comptroller.borrowCaps(
                             addresses.getAddress(config.addressesString)
@@ -714,8 +687,7 @@ contract mipb00 is HybridProposal, Configs {
                         addresses.getAddress(
                             string(
                                 abi.encodePacked(
-                                    "JUMP_RATE_IRM_",
-                                    config.addressesString
+                                    "JUMP_RATE_IRM_", config.addressesString
                                 )
                             )
                         )
@@ -728,23 +700,22 @@ contract mipb00 is HybridProposal, Configs {
                         address(jrm)
                     );
 
-                    MErc20 mToken = MErc20(
-                        addresses.getAddress(config.addressesString)
-                    );
+                    MErc20 mToken =
+                        MErc20(addresses.getAddress(config.addressesString));
 
                     /// reserve factor and protocol seize share
                     assertEq(
-                        mToken.protocolSeizeShareMantissa(),
-                        config.seizeShare
+                        mToken.protocolSeizeShareMantissa(), config.seizeShare
                     );
                     assertEq(
-                        mToken.reserveFactorMantissa(),
-                        config.reserveFactor
+                        mToken.reserveFactorMantissa(), config.reserveFactor
                     );
 
                     /// assert initial mToken balances are correct
-                    assertTrue(mToken.balanceOf(address(governor)) > 0); /// governor has some
-                    assertEq(mToken.balanceOf(address(0)), 1); /// address 0 has 1 wei of assets
+                    assertTrue(mToken.balanceOf(address(governor)) > 0);
+                    /// governor has some
+                    assertEq(mToken.balanceOf(address(0)), 1);
+                    /// address 0 has 1 wei of assets
 
                     /// assert cToken admin is the temporal governor
                     assertEq(address(mToken.admin()), address(governor));
@@ -770,10 +741,15 @@ contract mipb00 is HybridProposal, Configs {
                         addresses.getAddress("MTOKEN_IMPLEMENTATION")
                     );
 
-                    uint256 initialExchangeRate = (10 **
-                        (8 +
-                            ERC20(addresses.getAddress(config.tokenAddressName))
-                                .decimals())) * 2;
+                    uint256 initialExchangeRate = (
+                        10
+                            ** (
+                                8
+                                    + ERC20(
+                                        addresses.getAddress(config.tokenAddressName)
+                                    ).decimals()
+                            )
+                    ) * 2;
 
                     /// assert mToken initial exchange rate is correct
                     assertEq(mToken.exchangeRateCurrent(), initialExchangeRate);
@@ -787,21 +763,18 @@ contract mipb00 is HybridProposal, Configs {
                     {
                         assertEq(
                             jrm.baseRatePerTimestamp(),
-                            (config.jrm.baseRatePerYear * 1e18) /
-                                jrm.timestampsPerYear() /
-                                1e18
+                            (config.jrm.baseRatePerYear * 1e18)
+                                / jrm.timestampsPerYear() / 1e18
                         );
                         assertEq(
                             jrm.multiplierPerTimestamp(),
-                            (config.jrm.multiplierPerYear * 1e18) /
-                                jrm.timestampsPerYear() /
-                                1e18
+                            (config.jrm.multiplierPerYear * 1e18)
+                                / jrm.timestampsPerYear() / 1e18
                         );
                         assertEq(
                             jrm.jumpMultiplierPerTimestamp(),
-                            (config.jrm.jumpMultiplierPerYear * 1e18) /
-                                jrm.timestampsPerYear() /
-                                1e18
+                            (config.jrm.jumpMultiplierPerYear * 1e18)
+                                / jrm.timestampsPerYear() / 1e18
                         );
                         assertEq(jrm.kink(), config.jrm.kink);
                     }
@@ -819,25 +792,22 @@ contract mipb00 is HybridProposal, Configs {
         }
 
         {
-            EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
-                block.chainid
-            );
-            MultiRewardDistributor distributor = MultiRewardDistributor(
-                addresses.getAddress("MRD_PROXY")
-            );
+            EmissionConfig[] memory emissionConfig =
+                getEmissionConfigurations(block.chainid);
+            MultiRewardDistributor distributor =
+                MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
 
             unchecked {
                 for (uint256 i = 0; i < emissionConfig.length; i++) {
                     EmissionConfig memory config = emissionConfig[i];
-                    MultiRewardDistributorCommon.MarketConfig
-                        memory marketConfig = distributor.getConfigForMarket(
+                    MultiRewardDistributorCommon.MarketConfig memory
+                        marketConfig = distributor.getConfigForMarket(
                             MToken(addresses.getAddress(config.mToken)),
                             config.emissionToken
                         );
 
                     assertEq(
-                        marketConfig.owner,
-                        addresses.getAddress(config.owner)
+                        marketConfig.owner, addresses.getAddress(config.owner)
                     );
                     assertEq(marketConfig.emissionToken, config.emissionToken);
                     assertEq(marketConfig.endTime, config.endTime);

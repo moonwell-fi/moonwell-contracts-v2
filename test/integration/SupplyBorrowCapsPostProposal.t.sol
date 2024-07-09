@@ -5,13 +5,14 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import "@forge-std/Test.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {TestProposals} from "@proposals/TestProposals.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {Configs} from "@proposals/Configs.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
+
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
@@ -72,12 +73,10 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     function testBorrowingOverBorrowCapFailscbEth() public {
         mcbEth.accrueInterest();
 
-        uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_cbETH")
-        ) - 1;
-        uint256 borrowAmount = _getMaxBorrowAmount(
-            addresses.getAddress("MOONWELL_cbETH")
-        );
+        uint256 mintAmount =
+            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_cbETH")) - 1;
+        uint256 borrowAmount =
+            _getMaxBorrowAmount(addresses.getAddress("MOONWELL_cbETH"));
         address underlying = address(mcbEth.underlying());
 
         deal(underlying, address(this), mintAmount);
@@ -95,12 +94,10 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     }
 
     function testBorrowingOverBorrowCapFailsWeth() public {
-        uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_WETH")
-        ) - 1e18;
-        uint256 borrowAmount = _getMaxBorrowAmount(
-            addresses.getAddress("MOONWELL_WETH")
-        );
+        uint256 mintAmount =
+            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_WETH")) - 1e18;
+        uint256 borrowAmount =
+            _getMaxBorrowAmount(addresses.getAddress("MOONWELL_WETH"));
         address underlying = address(mWeth.underlying());
 
         deal(underlying, address(this), mintAmount);
@@ -142,9 +139,11 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
         mUSDbC.borrow(borrowAmount);
     }
 
-    function _getMaxSupplyAmount(
-        address mToken
-    ) internal view returns (uint256) {
+    function _getMaxSupplyAmount(address mToken)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         uint256 totalCash = MToken(mToken).getCash();
@@ -157,9 +156,11 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
         return supplyCap - totalSupplies - 1;
     }
 
-    function _getMaxBorrowAmount(
-        address mToken
-    ) internal view returns (uint256) {
+    function _getMaxBorrowAmount(address mToken)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = MToken(mToken).totalBorrows();
 

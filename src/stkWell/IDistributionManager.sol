@@ -4,10 +4,8 @@ pragma solidity 0.6.12;
 import {IERC20} from "./IERC20.sol";
 
 interface IDistributionManager {
-    function configureAsset(
-        uint128 emissionPerSecond,
-        IERC20 underlyingAsset
-    ) external;
+    function configureAsset(uint128 emissionPerSecond, IERC20 underlyingAsset)
+        external;
 
     function configureAssets(
         uint128[] memory emissionPerSecond,

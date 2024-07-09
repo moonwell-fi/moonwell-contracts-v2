@@ -1,21 +1,23 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity 0.6.12;
 
-import {IERC20} from "./IERC20.sol";
-import {SafeERC20} from "./SafeERC20.sol";
-import {IStakedToken} from "./IStakedToken.sol";
-import {Initializable} from "./Initializable.sol";
-import {ITransferHook} from "./ITransferHook.sol";
-import {ERC20WithSnapshot} from "./ERC20WithSnapshot.sol";
-import {DistributionTypes} from "./DistributionTypes.sol";
 import {DistributionManager} from "./DistributionManager.sol";
+import {DistributionTypes} from "./DistributionTypes.sol";
+import {ERC20WithSnapshot} from "./ERC20WithSnapshot.sol";
+import {IERC20} from "./IERC20.sol";
+import {IStakedToken} from "./IStakedToken.sol";
+import {ITransferHook} from "./ITransferHook.sol";
+import {Initializable} from "./Initializable.sol";
+
 import {ReentrancyGuardUpgradeable} from "./ReentrancyGuardUpgradeable.sol";
+import {SafeERC20} from "./SafeERC20.sol";
 
 /**
  * @title StakedToken
  * @notice Contract to stake MFAM token, tokenize the position and get rewards, inheriting from a distribution manager contract
  * @author Moonwell
- **/
+ *
+ */
 contract StakedToken is
     IStakedToken,
     ERC20WithSnapshot,
@@ -39,17 +41,13 @@ contract StakedToken is
     mapping(address => uint256) public stakersCooldowns;
 
     event Staked(
-        address indexed from,
-        address indexed onBehalfOf,
-        uint256 amount
+        address indexed from, address indexed onBehalfOf, uint256 amount
     );
     event Redeem(address indexed from, address indexed to, uint256 amount);
 
     event RewardsAccrued(address user, uint256 amount);
     event RewardsClaimed(
-        address indexed from,
-        address indexed to,
-        uint256 amount
+        address indexed from, address indexed to, uint256 amount
     );
 
     event Cooldown(address indexed user);
@@ -70,8 +68,7 @@ contract StakedToken is
         __ReentrancyGuard_init();
         __ERC20_init_unchained(name, symbol, decimals);
         __DistributionManager_init_unchained(
-            emissionManager,
-            distributionDuration
+            emissionManager, distributionDuration
         );
         __StakedToken_init_unchained(
             stakedToken,
@@ -99,39 +96,29 @@ contract StakedToken is
         _setGovernance(ITransferHook(governance));
     }
 
-    function stake(
-        address onBehalfOf,
-        uint256 amount
-    ) external override nonReentrant {
+    function stake(address onBehalfOf, uint256 amount)
+        external
+        override
+        nonReentrant
+    {
         require(amount != 0, "INVALID_ZERO_AMOUNT");
         require(onBehalfOf != address(0), "STAKE_ZERO_ADDRESS");
         uint256 balanceOfUser = balanceOf(onBehalfOf);
 
         uint256 accruedRewards = _updateUserAssetInternal(
-            onBehalfOf,
-            address(this),
-            balanceOfUser,
-            totalSupply()
+            onBehalfOf, address(this), balanceOfUser, totalSupply()
         );
         if (accruedRewards != 0) {
             emit RewardsAccrued(onBehalfOf, accruedRewards);
-            stakerRewardsToClaim[onBehalfOf] = stakerRewardsToClaim[onBehalfOf]
-                .add(accruedRewards);
+            stakerRewardsToClaim[onBehalfOf] =
+                stakerRewardsToClaim[onBehalfOf].add(accruedRewards);
         }
 
-        stakersCooldowns[onBehalfOf] = getNextCooldownTimestamp(
-            0,
-            amount,
-            onBehalfOf,
-            balanceOfUser
-        );
+        stakersCooldowns[onBehalfOf] =
+            getNextCooldownTimestamp(0, amount, onBehalfOf, balanceOfUser);
 
         _mint(onBehalfOf, amount);
-        IERC20(STAKED_TOKEN).safeTransferFrom(
-            msg.sender,
-            address(this),
-            amount
-        );
+        IERC20(STAKED_TOKEN).safeTransferFrom(msg.sender, address(this), amount);
 
         emit Staked(msg.sender, onBehalfOf, amount);
     }
@@ -140,8 +127,13 @@ contract StakedToken is
      * @dev Redeems staked tokens, and stop earning rewards
      * @param to Address to redeem to
      * @param amount Amount to redeem
-     **/
-    function redeem(address to, uint256 amount) external override nonReentrant {
+     *
+     */
+    function redeem(address to, uint256 amount)
+        external
+        override
+        nonReentrant
+    {
         require(amount != 0, "INVALID_ZERO_AMOUNT");
         require(to != address(0), "REDEEM_ZERO_ADDRESS");
         //solium-disable-next-line
@@ -151,21 +143,16 @@ contract StakedToken is
             "INSUFFICIENT_COOLDOWN"
         );
         require(
-            block.timestamp.sub(cooldownStartTimestamp.add(COOLDOWN_SECONDS)) <=
-                UNSTAKE_WINDOW,
+            block.timestamp.sub(cooldownStartTimestamp.add(COOLDOWN_SECONDS))
+                <= UNSTAKE_WINDOW,
             "UNSTAKE_WINDOW_FINISHED"
         );
         uint256 balanceOfMessageSender = balanceOf(msg.sender);
 
-        uint256 amountToRedeem = (amount > balanceOfMessageSender)
-            ? balanceOfMessageSender
-            : amount;
+        uint256 amountToRedeem =
+            (amount > balanceOfMessageSender) ? balanceOfMessageSender : amount;
 
-        _updateCurrentUnclaimedRewards(
-            msg.sender,
-            balanceOfMessageSender,
-            true
-        );
+        _updateCurrentUnclaimedRewards(msg.sender, balanceOfMessageSender, true);
 
         _burn(msg.sender, amountToRedeem);
 
@@ -181,7 +168,8 @@ contract StakedToken is
     /**
      * @dev Activates the cooldown period to unstake
      * - It can't be called if the user is not staking
-     **/
+     *
+     */
     function cooldown() external override {
         require(balanceOf(msg.sender) != 0, "INVALID_BALANCE_ON_COOLDOWN");
         //solium-disable-next-line
@@ -194,24 +182,21 @@ contract StakedToken is
      * @dev Claims an `amount` of `REWARD_TOKEN` to the address `to`
      * @param to Address to stake for
      * @param amount Amount to stake
-     **/
-    function claimRewards(
-        address to,
-        uint256 amount
-    ) external override nonReentrant {
+     *
+     */
+    function claimRewards(address to, uint256 amount)
+        external
+        override
+        nonReentrant
+    {
         uint256 newTotalRewards = _updateCurrentUnclaimedRewards(
-            msg.sender,
-            balanceOf(msg.sender),
-            false
+            msg.sender, balanceOf(msg.sender), false
         );
-        uint256 amountToClaim = (amount == type(uint256).max)
-            ? newTotalRewards
-            : amount;
+        uint256 amountToClaim =
+            (amount == type(uint256).max) ? newTotalRewards : amount;
 
-        stakerRewardsToClaim[msg.sender] = newTotalRewards.sub(
-            amountToClaim,
-            "INVALID_AMOUNT"
-        );
+        stakerRewardsToClaim[msg.sender] =
+            newTotalRewards.sub(amountToClaim, "INVALID_AMOUNT");
 
         IERC20(REWARD_TOKEN).safeTransferFrom(REWARDS_VAULT, to, amountToClaim);
 
@@ -223,12 +208,12 @@ contract StakedToken is
      * @param from Address to transfer from
      * @param to Address to transfer to
      * @param amount Amount to transfer
-     **/
-    function _transfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override {
+     *
+     */
+    function _transfer(address from, address to, uint256 amount)
+        internal
+        override
+    {
         uint256 balanceOfFrom = balanceOf(from);
         // Sender
         _updateCurrentUnclaimedRewards(from, balanceOfFrom, true);
@@ -240,10 +225,7 @@ contract StakedToken is
 
             uint256 previousSenderCooldown = stakersCooldowns[from];
             stakersCooldowns[to] = getNextCooldownTimestamp(
-                previousSenderCooldown,
-                amount,
-                to,
-                balanceOfTo
+                previousSenderCooldown, amount, to, balanceOfTo
             );
             // if cooldown was set and whole balance of sender was transferred - clear cooldown
             if (balanceOfFrom == amount && previousSenderCooldown != 0) {
@@ -260,21 +242,18 @@ contract StakedToken is
      * @param userBalance The current balance of the user
      * @param updateStorage Boolean flag used to update or not the stakerRewardsToClaim of the user
      * @return The unclaimed rewards that were added to the total accrued
-     **/
+     *
+     */
     function _updateCurrentUnclaimedRewards(
         address user,
         uint256 userBalance,
         bool updateStorage
     ) internal returns (uint256) {
         uint256 accruedRewards = _updateUserAssetInternal(
-            user,
-            address(this),
-            userBalance,
-            totalSupply()
+            user, address(this), userBalance, totalSupply()
         );
-        uint256 unclaimedRewards = stakerRewardsToClaim[user].add(
-            accruedRewards
-        );
+        uint256 unclaimedRewards =
+            stakerRewardsToClaim[user].add(accruedRewards);
 
         if (accruedRewards != 0) {
             if (updateStorage) {
@@ -299,7 +278,8 @@ contract StakedToken is
      * @param toAddress Address of the recipient
      * @param toBalance Current balance of the receiver
      * @return The new cooldown timestamp
-     **/
+     *
+     */
     function getNextCooldownTimestamp(
         uint256 fromCooldownTimestamp,
         uint256 amountToReceive,
@@ -311,18 +291,15 @@ contract StakedToken is
             return 0;
         }
 
-        uint256 minimalValidCooldownTimestamp = block
-            .timestamp
-            .sub(COOLDOWN_SECONDS)
-            .sub(UNSTAKE_WINDOW);
+        uint256 minimalValidCooldownTimestamp =
+            block.timestamp.sub(COOLDOWN_SECONDS).sub(UNSTAKE_WINDOW);
 
         if (minimalValidCooldownTimestamp > toCooldownTimestamp) {
             toCooldownTimestamp = 0;
         } else {
-            uint256 fromCooldownTimestampFinal = (minimalValidCooldownTimestamp >
-                    fromCooldownTimestamp)
-                    ? block.timestamp
-                    : fromCooldownTimestamp;
+            uint256 fromCooldownTimestampFinal = (
+                minimalValidCooldownTimestamp > fromCooldownTimestamp
+            ) ? block.timestamp : fromCooldownTimestamp;
 
             if (fromCooldownTimestampFinal < toCooldownTimestamp) {
                 return toCooldownTimestamp;
@@ -344,19 +321,20 @@ contract StakedToken is
      * @param staker The staker address
      * @return The rewards
      */
-    function getTotalRewardsBalance(
-        address staker
-    ) external view returns (uint256) {
-        DistributionTypes.UserStakeInput[]
-            memory userStakeInputs = new DistributionTypes.UserStakeInput[](1);
+    function getTotalRewardsBalance(address staker)
+        external
+        view
+        returns (uint256)
+    {
+        DistributionTypes.UserStakeInput[] memory userStakeInputs =
+            new DistributionTypes.UserStakeInput[](1);
         userStakeInputs[0] = DistributionTypes.UserStakeInput({
             underlyingAsset: address(this),
             stakedByUser: balanceOf(staker),
             totalStaked: totalSupply()
         });
-        return
-            stakerRewardsToClaim[staker].add(
-                _getUnclaimedRewards(staker, userStakeInputs)
-            );
+        return stakerRewardsToClaim[staker].add(
+            _getUnclaimedRewards(staker, userStakeInputs)
+        );
     }
 }

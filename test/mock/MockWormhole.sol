@@ -16,6 +16,8 @@ contract MockWormhole {
         lastPayload = payload;
         lastConsistencyLevel = consistencyLevel;
 
-        return uint64(block.prevrandao); /// return semi random number, doesn't matter because return value is unused
+        return uint64(block.prevrandao);
+
+        /// return semi random number, doesn't matter because return value is unused
     }
 }

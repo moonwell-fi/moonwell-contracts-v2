@@ -1,7 +1,7 @@
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
+import {console} from "@forge-std/console.sol";
 
 import "@forge-std/Test.sol";
 
@@ -21,22 +21,18 @@ contract WellDeployerNonceIncrement is Script, Test {
 
         vm.startBroadcast();
 
-        (, address deployerAddress, ) = vm.readCallers();
+        (, address deployerAddress,) = vm.readCallers();
 
         uint256 currentNonce = vm.getNonce(deployerAddress);
         uint256 increment = expectedNonce - currentNonce;
 
         for (uint256 i = 0; i < increment; i++) {
-            (bool success, ) = address(deployerAddress).call{value: 1}("");
+            (bool success,) = address(deployerAddress).call{value: 1}("");
             success;
             console.log(vm.getNonce(deployerAddress));
         }
         vm.stopBroadcast();
 
-        assertEq(
-            vm.getNonce(deployerAddress),
-            expectedNonce,
-            "incorrect nonce"
-        );
+        assertEq(vm.getNonce(deployerAddress), expectedNonce, "incorrect nonce");
     }
 }

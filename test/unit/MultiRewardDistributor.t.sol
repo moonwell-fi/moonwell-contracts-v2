@@ -1,16 +1,26 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
-import "@protocol/rewards/MultiRewardDistributor.sol";
-import {MToken} from "@protocol/MToken.sol";
-import {FaucetToken, FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
-import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
-import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
-import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
-import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
 
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {MToken} from "@protocol/MToken.sol";
+
+import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
+
+import {WhitePaperInterestRateModel} from
+    "@protocol/irm/WhitePaperInterestRateModel.sol";
+import "@protocol/rewards/MultiRewardDistributor.sol";
+import {
+    FaucetToken, FaucetTokenWithPermit
+} from "@test/helper/FaucetToken.sol";
+import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
+import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
+
+import {
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from
+    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 contract Common is Test, MultiRewardDistributorCommon {
@@ -51,22 +61,16 @@ contract Common is Test, MultiRewardDistributorCommon {
 
         comptroller._setCollateralFactor(mToken, 0.5e18); // 50% CF
 
-        emissionToken = new FaucetTokenWithPermit(
-            0,
-            "Emission Token",
-            18,
-            "EMIT"
-        );
+        emissionToken =
+            new FaucetTokenWithPermit(0, "Emission Token", 18, "EMIT");
     }
 
     function assertInitialMarketState(
         MultiRewardDistributor distributor,
         uint256 endTime
     ) internal view {
-        MarketConfig memory config = distributor.marketConfigs(
-            address(mToken),
-            0
-        );
+        MarketConfig memory config =
+            distributor.marketConfigs(address(mToken), 0);
 
         assertEq(MTokenInterface(mToken).totalSupply(), 0);
 
@@ -90,14 +94,10 @@ contract Common is Test, MultiRewardDistributorCommon {
 
         MultiRewardDistributor distributor = new MultiRewardDistributor();
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(comptroller),
-            address(this)
+            "initialize(address,address)", address(comptroller), address(this)
         );
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor),
-            proxyAdmin,
-            initdata
+            address(distributor), proxyAdmin, initdata
         );
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
@@ -128,14 +128,10 @@ contract Common is Test, MultiRewardDistributorCommon {
 
         distributor = new MultiRewardDistributor();
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(comptroller),
-            address(this)
+            "initialize(address,address)", address(comptroller), address(this)
         );
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor),
-            proxyAdmin,
-            initdata
+            address(distributor), proxyAdmin, initdata
         );
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
@@ -185,11 +181,12 @@ contract MultiRewardBorrowSideDistributorUnitTest is
         vm.warp(startTime);
 
         // Only incentivize borrowers
-        MultiRewardDistributor distributor = createDistributorWithRoundValuesAndConfig(
-                2e18, // Amount to give us
-                1e18, // Supply side
-                0.5e18 // Borrow side
-            );
+        MultiRewardDistributor distributor =
+        createDistributorWithRoundValuesAndConfig(
+            2e18, // Amount to give us
+            1e18, // Supply side
+            0.5e18 // Borrow side
+        );
         emissionToken.allocateTo(address(distributor), 1000000e18);
         comptroller._setRewardDistributor(distributor);
 
@@ -219,9 +216,8 @@ contract MultiRewardBorrowSideDistributorUnitTest is
 
         // At this point we should have 600s of 1e18/s == 600e18 supply side emissions
         // and 600s of 0.5e18/s == 300e18 borrow side emissions, so 900e18 in total
-        uint256 expectedEmissions1 = (warpSeconds * 0.5e18) +
-            (warpSeconds * 1e18) -
-            1; // -1 due to index rounding/resolution
+        uint256 expectedEmissions1 =
+            (warpSeconds * 0.5e18) + (warpSeconds * 1e18) - 1; // -1 due to index rounding/resolution
 
         assertEq(emissionToken.balanceOf(address(this)), expectedEmissions1);
 
@@ -232,9 +228,8 @@ contract MultiRewardBorrowSideDistributorUnitTest is
         comptroller.claimReward();
 
         // Make sure that we now have 86400 * 0.5e18 == 43,200 for supply side and 86400 * 1e18 tokens
-        uint256 expectedEmissions2 = (warpSeconds * 0.5e18) +
-            (warpSeconds * 1e18) -
-            1; // -1 due to index rounding/resolution
+        uint256 expectedEmissions2 =
+            (warpSeconds * 0.5e18) + (warpSeconds * 1e18) - 1; // -1 due to index rounding/resolution
         assertEq(
             emissionToken.balanceOf(address(this)),
             expectedEmissions2 + expectedEmissions1
@@ -246,7 +241,8 @@ contract MultiRewardBorrowSideDistributorUnitTest is
         uint256 startTime = 1678340000;
         vm.warp(startTime);
 
-        MultiRewardDistributor distributor = createDistributorWithOddValuesAndConfig();
+        MultiRewardDistributor distributor =
+            createDistributorWithOddValuesAndConfig();
 
         mToken.mint(1.2345e18);
         mToken.borrow(0.5e18);
@@ -305,7 +301,8 @@ contract MultiRewardSupplySideDistributorUnitTest is
         uint256 startTime = 1678340000;
         vm.warp(startTime);
 
-        MultiRewardDistributor distributor = createDistributorWithOddValuesAndConfig();
+        MultiRewardDistributor distributor =
+            createDistributorWithOddValuesAndConfig();
 
         mToken.mint(1.2345e18);
 
@@ -353,11 +350,8 @@ contract MultiRewardSupplySideDistributorUnitTest is
         mToken.mint(2e18);
 
         // THEN create the distributor and add a config
-        MultiRewardDistributor distributor = createDistributorWithRoundValuesAndConfig(
-                2e18,
-                0.5e18,
-                0.5e18
-            );
+        MultiRewardDistributor distributor =
+            createDistributorWithRoundValuesAndConfig(2e18, 0.5e18, 0.5e18);
 
         // Make sure we have an expected amt of mTokens issued
         assertEq(MTokenInterface(mToken).totalSupply(), 2e18);
@@ -381,11 +375,8 @@ contract MultiRewardSupplySideDistributorUnitTest is
         uint256 startTime = 1678340000;
         vm.warp(startTime);
 
-        MultiRewardDistributor distributor = createDistributorWithRoundValuesAndConfig(
-                2e18,
-                0.5e18,
-                0.5e18
-            );
+        MultiRewardDistributor distributor =
+            createDistributorWithRoundValuesAndConfig(2e18, 0.5e18, 0.5e18);
         comptroller._setRewardDistributor(distributor);
 
         emissionToken.allocateTo(address(distributor), 10000e18);
@@ -415,11 +406,8 @@ contract MultiRewardSupplySideDistributorUnitTest is
         uint256 startTime = 1678340000;
         vm.warp(startTime);
 
-        MultiRewardDistributor distributor = createDistributorWithRoundValuesAndConfig(
-                2e18,
-                0.5e18,
-                0.5e18
-            );
+        MultiRewardDistributor distributor =
+            createDistributorWithRoundValuesAndConfig(2e18, 0.5e18, 0.5e18);
         comptroller._setRewardDistributor(distributor);
 
         emissionToken.allocateTo(address(distributor), 10000e18);
@@ -450,7 +438,8 @@ contract MultiRewardSupplySideDistributorUnitTest is
         uint256 startTime = 1678340000;
         vm.warp(startTime);
 
-        MultiRewardDistributor distributor = createDistributorWithOddValuesAndConfig();
+        MultiRewardDistributor distributor =
+            createDistributorWithOddValuesAndConfig();
 
         mToken.mint(1.2345e18);
 
@@ -491,9 +480,8 @@ contract MultiRewardSupplySideDistributorUnitTest is
 
         // Go disburse the amount
         Double memory delta3 = fraction(10 * 0.54321e18, 1.2345e18);
-        uint256 supplierTokens = MTokenInterface(mToken).balanceOf(
-            address(this)
-        );
+        uint256 supplierTokens =
+            MTokenInterface(mToken).balanceOf(address(this));
         uint256 expectedSupplierRewards = mul_(supplierTokens, delta3);
 
         // Emissions are (4400243013365735115431348724179829890 / 1e36) * (1234500000000000000 / 1e18) or 4.4002430134 * 1.2345 == 5.4321
@@ -502,8 +490,7 @@ contract MultiRewardSupplySideDistributorUnitTest is
 
         // Should have disbursed 10 emission tokens to us
         assertEq(
-            emissionToken.balanceOf(address(this)),
-            expectedSupplierRewards
+            emissionToken.balanceOf(address(this)), expectedSupplierRewards
         );
     }
 
@@ -511,26 +498,18 @@ contract MultiRewardSupplySideDistributorUnitTest is
         uint256 EMISSION_TOKEN_1 = 1e18;
         uint256 EMISSION_TOKEN_2 = 1e10;
 
-        FaucetToken emissionToken2 = new FaucetTokenWithPermit(
-            0,
-            "Testing2",
-            10,
-            "TEST2"
-        );
+        FaucetToken emissionToken2 =
+            new FaucetTokenWithPermit(0, "Testing2", 10, "TEST2");
 
         uint256 startTime = 1678340000;
         vm.warp(startTime);
 
         MultiRewardDistributor distributor = new MultiRewardDistributor();
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(comptroller),
-            address(this)
+            "initialize(address,address)", address(comptroller), address(this)
         );
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor),
-            proxyAdmin,
-            initdata
+            address(distributor), proxyAdmin, initdata
         );
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
@@ -584,17 +563,15 @@ contract MultiRewardSupplySideDistributorUnitTest is
 
         // Ensure we got paid out in the tokens we expected, 20 timestamps worth of token 1 and 10 timestamps of token 2
         assertEq(emissionToken.balanceOf(address(this)), EMISSION_TOKEN_1 * 20); // 20 secs worth of accrual @ 1 token/sec == 20 tokens
-        assertEq(
-            emissionToken2.balanceOf(address(this)),
-            EMISSION_TOKEN_2 * 10
-        ); // 10 secs worth of accrual @ 1 token/sec == 10 tokens
+        assertEq(emissionToken2.balanceOf(address(this)), EMISSION_TOKEN_2 * 10); // 10 secs worth of accrual @ 1 token/sec == 10 tokens
     }
 
     function testOutstandingRewardCalcs() public {
         uint256 startTime = 1678340000;
         vm.warp(startTime);
 
-        MultiRewardDistributor distributor = createDistributorWithOddValuesAndConfig();
+        MultiRewardDistributor distributor =
+            createDistributorWithOddValuesAndConfig();
         comptroller._setRewardDistributor(distributor);
 
         mToken.mint(1.2345e18);
@@ -602,32 +579,25 @@ contract MultiRewardSupplySideDistributorUnitTest is
         uint256 timeDelta1 = 10;
         vm.warp(startTime + timeDelta1);
 
-        RewardWithMToken[] memory rewardInfo = distributor
-            .getOutstandingRewardsForUser(address(this));
+        RewardWithMToken[] memory rewardInfo =
+            distributor.getOutstandingRewardsForUser(address(this));
 
         assertEq(rewardInfo.length, 1);
         assertEq(rewardInfo[0].rewards.length, 1);
+        assertEq(rewardInfo[0].rewards[0].emissionToken, address(emissionToken));
         assertEq(
-            rewardInfo[0].rewards[0].emissionToken,
-            address(emissionToken)
+            rewardInfo[0].rewards[0].totalAmount, (0.54321e18 * timeDelta1) - 1
         );
         assertEq(
-            rewardInfo[0].rewards[0].totalAmount,
-            (0.54321e18 * timeDelta1) - 1
-        );
-        assertEq(
-            rewardInfo[0].rewards[0].supplySide,
-            (0.54321e18 * timeDelta1) - 1
+            rewardInfo[0].rewards[0].supplySide, (0.54321e18 * timeDelta1) - 1
         );
         assertEq(rewardInfo[0].rewards[0].borrowSide, 0);
 
         uint256 timeDelta2 = 20;
         vm.warp(startTime + timeDelta2);
 
-        RewardInfo[] memory rewards = distributor.getOutstandingRewardsForUser(
-            mToken,
-            address(this)
-        );
+        RewardInfo[] memory rewards =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         assertEq(rewards.length, 1);
         assertEq(rewards[0].emissionToken, address(emissionToken));
@@ -639,7 +609,8 @@ contract MultiRewardSupplySideDistributorUnitTest is
     function testOutstandingRewardCalcsOneSecond() public {
         uint256 startTime = 1678340000;
         vm.warp(startTime);
-        MultiRewardDistributor distributor = createDistributorWithOddValuesAndConfig();
+        MultiRewardDistributor distributor =
+            createDistributorWithOddValuesAndConfig();
         comptroller._setRewardDistributor(distributor);
 
         mToken.mint(1.2345e18);
@@ -647,8 +618,8 @@ contract MultiRewardSupplySideDistributorUnitTest is
         uint256 timeDelta1 = 100;
         vm.warp(block.timestamp + timeDelta1);
 
-        RewardInfo[] memory rewardInfo = distributor
-            .getOutstandingRewardsForUser(mToken, address(this));
+        RewardInfo[] memory rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         assertEq(rewardInfo[0].totalAmount, (0.54321e18 * timeDelta1) - 1);
         assertEq(rewardInfo[0].supplySide, (0.54321e18 * timeDelta1) - 1);
@@ -657,10 +628,8 @@ contract MultiRewardSupplySideDistributorUnitTest is
         uint256 timeDelta2 = 200;
         vm.warp(block.timestamp + timeDelta2);
 
-        rewardInfo = distributor.getOutstandingRewardsForUser(
-            mToken,
-            address(this)
-        );
+        rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         assertEq(rewardInfo[0].borrowSide, 0);
         assertEq(
@@ -679,14 +648,10 @@ contract MultiRewardSupplySideDistributorUnitTest is
 
         MultiRewardDistributor distributor = new MultiRewardDistributor();
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(comptroller),
-            address(this)
+            "initialize(address,address)", address(comptroller), address(this)
         );
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor),
-            proxyAdmin,
-            initdata
+            address(distributor), proxyAdmin, initdata
         );
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
@@ -695,17 +660,12 @@ contract MultiRewardSupplySideDistributorUnitTest is
 
         uint256 ITERATION_COUNT = 10;
 
-        FaucetToken[] memory emissionTokens = new FaucetToken[](
-            ITERATION_COUNT
-        );
+        FaucetToken[] memory emissionTokens = new FaucetToken[](ITERATION_COUNT);
 
         uint256 endTime = block.timestamp + 1000;
         for (uint256 i = 0; i < ITERATION_COUNT; i++) {
             FaucetToken multiEmissionToken = new FaucetTokenWithPermit(
-                0,
-                "Testing Token",
-                10,
-                string(abi.encodePacked("TEST", i))
+                0, "Testing Token", 10, string(abi.encodePacked("TEST", i))
             );
 
             distributor._addEmissionConfig(
@@ -745,14 +705,10 @@ contract MultiRewardSupplySideDistributorUnitTest is
 
         MultiRewardDistributor distributor = new MultiRewardDistributor();
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(comptroller),
-            address(this)
+            "initialize(address,address)", address(comptroller), address(this)
         );
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor),
-            proxyAdmin,
-            initdata
+            address(distributor), proxyAdmin, initdata
         );
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
@@ -816,14 +772,10 @@ contract MultiRewardDistributorCommonUnitTest is
         setupEnvironment();
         distributor = new MultiRewardDistributor();
         bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(comptroller),
-            address(this)
+            "initialize(address,address)", address(comptroller), address(this)
         );
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor),
-            proxyAdmin,
-            initdata
+            address(distributor), proxyAdmin, initdata
         );
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
@@ -974,9 +926,7 @@ contract MultiRewardDistributorCommonUnitTest is
 
         // Turn on emissions for 100 more seconds
         distributor._updateEndTime(
-            mToken,
-            address(emissionToken),
-            block.timestamp + 100
+            mToken, address(emissionToken), block.timestamp + 100
         );
 
         // Accrue some rewards and claim them
@@ -1005,11 +955,8 @@ contract MultiRewardDistributorCommonUnitTest is
         vm.warp(startTime);
 
         // Wire up a different distributor
-        distributor = createDistributorWithRoundValuesAndConfig(
-            2e18,
-            0.5e18,
-            0.5e18
-        );
+        distributor =
+            createDistributorWithRoundValuesAndConfig(2e18, 0.5e18, 0.5e18);
         comptroller._setRewardDistributor(distributor);
 
         vm.warp(block.timestamp + 10);
@@ -1048,14 +995,12 @@ contract MultiRewardDistributorCommonUnitTest is
         uint256 TIME_DELTA
     ) public pure returns (uint256) {
         uint256 supplyRatio = fraction(user.supplied, totalSupplied).mantissa;
-        uint256 supplySideEmissions = (SUPPLY_SPEED *
-            TIME_DELTA *
-            supplyRatio) / 1e36;
+        uint256 supplySideEmissions =
+            (SUPPLY_SPEED * TIME_DELTA * supplyRatio) / 1e36;
 
         uint256 borrowRatio = fraction(user.borrowed, totalBorrows).mantissa;
-        uint256 borrowSideEmissions = (BORROW_SPEED *
-            TIME_DELTA *
-            borrowRatio) / 1e36;
+        uint256 borrowSideEmissions =
+            (BORROW_SPEED * TIME_DELTA * borrowRatio) / 1e36;
 
         return borrowSideEmissions + supplySideEmissions;
     }
@@ -1136,8 +1081,8 @@ contract MultiRewardDistributorCommonUnitTest is
         vm.warp(block.timestamp + TIME_DELTA);
 
         // Tally up total supplied/borrowed
-        uint256 totalSupplied = (mToken.totalSupply() *
-            mToken.exchangeRateStored()) / 1e18;
+        uint256 totalSupplied =
+            (mToken.totalSupply() * mToken.exchangeRateStored()) / 1e18;
         uint256 totalBorrows = mToken.totalBorrows();
 
         // Go calculate our expected emissions and ensure when we call claimReward() it's the
@@ -1170,7 +1115,7 @@ contract MultiRewardDistributorCommonUnitTest is
             assertLe(
                 delta,
                 1e6 // Due to truncation our calcs might be off by a wei or two of rounding error. Make sure we're
-                // within a variance band of 1e6 wei (0.0000000000001 of an 18 digit token)
+                    // within a variance band of 1e6 wei (0.0000000000001 of an 18 digit token)
             );
         }
 
@@ -1244,9 +1189,7 @@ contract MultiRewardDistributorCommonUnitTest is
             "Cannot set a supply reward speed higher than the emission cap!"
         );
         distributor._updateSupplySpeed(
-            mToken,
-            address(emissionToken),
-            currentEmissionCap + 1
+            mToken, address(emissionToken), currentEmissionCap + 1
         );
     }
 
@@ -1266,9 +1209,7 @@ contract MultiRewardDistributorCommonUnitTest is
             "Cannot set a borrow reward speed higher than the emission cap!"
         );
         distributor._updateBorrowSpeed(
-            mToken,
-            address(emissionToken),
-            currentEmissionCap + 1
+            mToken, address(emissionToken), currentEmissionCap + 1
         );
     }
 
@@ -1317,14 +1258,13 @@ contract MultiRewardDistributorCommonUnitTest is
         assertEq(emissionToken.balanceOf(address(this)), 0);
 
         /// pull all the funds out of the contract
-        uint256 emissionTokenBalance = emissionToken.balanceOf(
-            address(distributor)
-        );
+        uint256 emissionTokenBalance =
+            emissionToken.balanceOf(address(distributor));
         vm.prank(address(distributor));
         emissionToken.transfer(holdingAddress, emissionTokenBalance);
 
-        RewardInfo[] memory rewardInfo = distributor
-            .getOutstandingRewardsForUser(mToken, address(this));
+        RewardInfo[] memory rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         assertEq(rewardInfo[0].emissionToken, address(emissionToken));
         assertEq(rewardInfo[0].totalAmount, (0.5e18 * timeDelta));
@@ -1340,12 +1280,12 @@ contract MultiRewardDistributorCommonUnitTest is
 
         comptroller.claimReward();
 
-        rewardInfo = distributor.getOutstandingRewardsForUser(
-            mToken,
-            address(this)
-        );
+        rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
-        assertEq(rewardInfo[0].supplySide, (0.5e18 * timeDelta)); /// no change in unpaid rewards
+        assertEq(rewardInfo[0].supplySide, (0.5e18 * timeDelta));
+
+        /// no change in unpaid rewards
         assertEq(rewardInfo[0].totalAmount, (0.5e18 * timeDelta));
     }
 
@@ -1375,14 +1315,13 @@ contract MultiRewardDistributorCommonUnitTest is
         assertEq(emissionToken.balanceOf(address(this)), 0);
 
         /// pull all the funds out of the contract
-        uint256 emissionTokenBalance = emissionToken.balanceOf(
-            address(distributor)
-        );
+        uint256 emissionTokenBalance =
+            emissionToken.balanceOf(address(distributor));
         vm.prank(address(distributor));
         emissionToken.transfer(holdingAddress, emissionTokenBalance);
 
-        RewardInfo[] memory rewardInfo = distributor
-            .getOutstandingRewardsForUser(mToken, address(this));
+        RewardInfo[] memory rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         assertEq(rewardInfo[0].emissionToken, address(emissionToken));
         assertEq(rewardInfo[0].totalAmount, (0.5e18 * timeDelta));
@@ -1398,13 +1337,12 @@ contract MultiRewardDistributorCommonUnitTest is
 
         comptroller.claimReward();
 
-        rewardInfo = distributor.getOutstandingRewardsForUser(
-            mToken,
-            address(this)
-        );
+        rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         assertEq(rewardInfo[0].supplySide, 0);
-        assertEq(rewardInfo[0].borrowSide, (0.5e18 * timeDelta)); /// no change in unpaid rewards
+        assertEq(rewardInfo[0].borrowSide, (0.5e18 * timeDelta));
+        /// no change in unpaid rewards
         assertEq(rewardInfo[0].totalAmount, (0.5e18 * timeDelta));
     }
 
@@ -1426,15 +1364,18 @@ contract MultiRewardDistributorCommonUnitTest is
 
         // Supply some tokens
         mToken.mint(2e18);
-        mToken.borrow(1); /// borrow 1 wei
+        mToken.borrow(1);
+        /// borrow 1 wei
 
-        uint256 timeDelta = 1; /// smallest unit of time
+        uint256 timeDelta = 1;
+
+        /// smallest unit of time
         vm.warp(block.timestamp + timeDelta);
 
         assertEq(emissionToken.balanceOf(address(this)), 0);
 
-        RewardInfo[] memory rewardInfo = distributor
-            .getOutstandingRewardsForUser(mToken, address(this));
+        RewardInfo[] memory rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         assertEq(rewardInfo[0].emissionToken, address(emissionToken));
         assertEq(rewardInfo[0].totalAmount, (rewardsPerSecond * timeDelta));
@@ -1443,10 +1384,8 @@ contract MultiRewardDistributorCommonUnitTest is
 
         comptroller.claimReward();
 
-        rewardInfo = distributor.getOutstandingRewardsForUser(
-            mToken,
-            address(this)
-        );
+        rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         /// all rewards paid
         assertEq(rewardInfo[0].supplySide, 0);
@@ -1454,8 +1393,7 @@ contract MultiRewardDistributorCommonUnitTest is
         assertEq(rewardInfo[0].totalAmount, 0);
 
         assertEq(
-            emissionToken.balanceOf(address(this)),
-            timeDelta * rewardsPerSecond
+            emissionToken.balanceOf(address(this)), timeDelta * rewardsPerSecond
         );
     }
 
@@ -1464,7 +1402,8 @@ contract MultiRewardDistributorCommonUnitTest is
         uint256 secondsToWarp
     ) public {
         rewardsPerSecond = _bound(rewardsPerSecond, 0.0001e18, 1e18);
-        secondsToWarp = _bound(secondsToWarp, 1, 365 days); /// between 1 second and 365 days
+        secondsToWarp = _bound(secondsToWarp, 1, 365 days);
+        /// between 1 second and 365 days
 
         distributor._addEmissionConfig(
             mToken,
@@ -1487,8 +1426,8 @@ contract MultiRewardDistributorCommonUnitTest is
 
         assertEq(emissionToken.balanceOf(address(this)), 0);
 
-        RewardInfo[] memory rewardInfo = distributor
-            .getOutstandingRewardsForUser(mToken, address(this));
+        RewardInfo[] memory rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         assertEq(rewardInfo[0].emissionToken, address(emissionToken));
         assertEq(rewardInfo[0].totalAmount, (rewardsPerSecond * secondsToWarp));
@@ -1497,10 +1436,8 @@ contract MultiRewardDistributorCommonUnitTest is
 
         comptroller.claimReward();
 
-        rewardInfo = distributor.getOutstandingRewardsForUser(
-            mToken,
-            address(this)
-        );
+        rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         /// all rewards paid
         assertEq(rewardInfo[0].supplySide, 0);
@@ -1540,8 +1477,8 @@ contract MultiRewardDistributorCommonUnitTest is
 
         assertEq(emissionToken.balanceOf(address(this)), 0);
 
-        RewardInfo[] memory rewardInfo = distributor
-            .getOutstandingRewardsForUser(mToken, address(this));
+        RewardInfo[] memory rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         assertEq(rewardInfo[0].emissionToken, address(emissionToken));
         assertEq(rewardInfo[0].totalAmount, (rewardsPerSecond * secondsToWarp));
@@ -1550,10 +1487,8 @@ contract MultiRewardDistributorCommonUnitTest is
 
         comptroller.claimReward();
 
-        rewardInfo = distributor.getOutstandingRewardsForUser(
-            mToken,
-            address(this)
-        );
+        rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         /// all rewards paid
         assertEq(rewardInfo[0].supplySide, 0);
@@ -1571,16 +1506,8 @@ contract MultiRewardDistributorCommonUnitTest is
         uint256 rewardsPerSecondSupply,
         uint256 secondsToWarp
     ) public {
-        rewardsPerSecondBorrow = _bound(
-            rewardsPerSecondBorrow,
-            0.0001e18,
-            1e18
-        );
-        rewardsPerSecondSupply = _bound(
-            rewardsPerSecondSupply,
-            0.0001e18,
-            1e18
-        );
+        rewardsPerSecondBorrow = _bound(rewardsPerSecondBorrow, 0.0001e18, 1e18);
+        rewardsPerSecondSupply = _bound(rewardsPerSecondSupply, 0.0001e18, 1e18);
         secondsToWarp = _bound(secondsToWarp, 1, 365 days);
 
         distributor._addEmissionConfig(
@@ -1604,29 +1531,25 @@ contract MultiRewardDistributorCommonUnitTest is
 
         assertEq(emissionToken.balanceOf(address(this)), 0);
 
-        RewardInfo[] memory rewardInfo = distributor
-            .getOutstandingRewardsForUser(mToken, address(this));
+        RewardInfo[] memory rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         assertEq(
             rewardInfo[0].totalAmount,
-            (rewardsPerSecondBorrow * secondsToWarp) +
-                (rewardsPerSecondSupply * secondsToWarp)
-        );
-        assertEq(
-            rewardInfo[0].supplySide,
-            (rewardsPerSecondSupply * secondsToWarp)
-        );
-        assertEq(
-            rewardInfo[0].borrowSide,
             (rewardsPerSecondBorrow * secondsToWarp)
+                + (rewardsPerSecondSupply * secondsToWarp)
+        );
+        assertEq(
+            rewardInfo[0].supplySide, (rewardsPerSecondSupply * secondsToWarp)
+        );
+        assertEq(
+            rewardInfo[0].borrowSide, (rewardsPerSecondBorrow * secondsToWarp)
         );
 
         comptroller.claimReward();
 
-        rewardInfo = distributor.getOutstandingRewardsForUser(
-            mToken,
-            address(this)
-        );
+        rewardInfo =
+            distributor.getOutstandingRewardsForUser(mToken, address(this));
 
         /// all rewards paid
         assertEq(rewardInfo[0].supplySide, 0);
@@ -1635,18 +1558,16 @@ contract MultiRewardDistributorCommonUnitTest is
 
         assertEq(
             emissionToken.balanceOf(address(this)),
-            (rewardsPerSecondBorrow * secondsToWarp) +
-                (rewardsPerSecondSupply * secondsToWarp)
+            (rewardsPerSecondBorrow * secondsToWarp)
+                + (rewardsPerSecondSupply * secondsToWarp)
         );
     }
 
     function testGlobalSupplyIndexProperlyUpdates() public {
         testVariousSuppliersAndBorrowers(1e18, 0);
 
-        uint256 currSupplyIndex = distributor.getGlobalSupplyIndex(
-            address(mToken),
-            0
-        );
+        uint256 currSupplyIndex =
+            distributor.getGlobalSupplyIndex(address(mToken), 0);
 
         assertTrue(currSupplyIndex > 1e36);
     }
@@ -1657,22 +1578,17 @@ contract MultiRewardDistributorCommonUnitTest is
 
         testVariousSuppliersAndBorrowers(supplySpeed, 0);
 
-        uint256 rewardsSpent = type(uint256).max -
-            emissionToken.balanceOf(address(distributor));
+        uint256 rewardsSpent =
+            type(uint256).max - emissionToken.balanceOf(address(distributor));
         uint256 endTime = block.timestamp;
         uint256 expectedRewards = (endTime - startTime) * supplySpeed;
-        uint256 currSupplyIndex = distributor.getGlobalSupplyIndex(
-            address(mToken),
-            0
-        );
+        uint256 currSupplyIndex =
+            distributor.getGlobalSupplyIndex(address(mToken), 0);
 
         assertTrue(currSupplyIndex > 1e36);
 
-        assertApproxEqRel(
-            rewardsSpent,
-            expectedRewards,
-            0.00001e18 /// 1 basis point of deviation allowed
-        );
+        assertApproxEqRel(rewardsSpent, expectedRewards, 0.00001e18);
+        /// 1 basis point of deviation allowed
     }
 
     function testAddEmissionConfigUnlistedTokenFails() public {
@@ -1768,9 +1684,7 @@ contract MultiRewardDistributorCommonUnitTest is
 
         vm.expectRevert("_newEndTime MUST be > currentEndTime");
         distributor._updateEndTime(
-            mToken,
-            address(emissionToken),
-            block.timestamp + 365 days
+            mToken, address(emissionToken), block.timestamp + 365 days
         );
     }
 
@@ -1787,9 +1701,7 @@ contract MultiRewardDistributorCommonUnitTest is
         vm.warp(block.timestamp + 366 days);
         vm.expectRevert("_newEndTime MUST be > block.timestamp");
         distributor._updateEndTime(
-            mToken,
-            address(emissionToken),
-            block.timestamp
+            mToken, address(emissionToken), block.timestamp
         );
     }
 
@@ -1804,21 +1716,19 @@ contract MultiRewardDistributorCommonUnitTest is
         );
 
         uint256 invalidStartTime = block.timestamp + 380 days;
-        vm.warp(block.timestamp + 400 days); /// past end time now,
+        vm.warp(block.timestamp + 400 days);
+        /// past end time now,
 
         vm.expectRevert("_newEndTime MUST be > block.timestamp");
         distributor._updateEndTime(
-            mToken,
-            address(emissionToken),
-            invalidStartTime
+            mToken, address(emissionToken), invalidStartTime
         );
     }
 
     function testGetConfigForNonExistentMarketFails() public {
         vm.expectRevert("Unable to find emission token in mToken configs");
         distributor.getConfigForMarket(
-            MToken(address(0)),
-            address(emissionToken)
+            MToken(address(0)), address(emissionToken)
         );
     }
 
@@ -1834,10 +1744,8 @@ contract MultiRewardDistributorCommonUnitTest is
 
         distributor._updateSupplySpeed(mToken, address(emissionToken), 0.5e18);
 
-        MarketConfig memory config = distributor.getConfigForMarket(
-            mToken,
-            address(emissionToken)
-        );
+        MarketConfig memory config =
+            distributor.getConfigForMarket(mToken, address(emissionToken));
 
         assertEq(config.owner, address(this));
         assertEq(config.emissionToken, address(emissionToken));
@@ -1860,10 +1768,8 @@ contract MultiRewardDistributorCommonUnitTest is
 
         distributor._updateBorrowSpeed(mToken, address(emissionToken), 0.5e18);
 
-        MarketConfig memory config = distributor.getConfigForMarket(
-            mToken,
-            address(emissionToken)
-        );
+        MarketConfig memory config =
+            distributor.getConfigForMarket(mToken, address(emissionToken));
 
         assertEq(config.owner, address(this));
         assertEq(config.emissionToken, address(emissionToken));
@@ -1877,17 +1783,16 @@ contract MultiRewardDistributorCommonUnitTest is
     function testUpdateOwnerConfigOwnerSucceeds() public {
         distributor._addEmissionConfig(
             mToken,
-            address(1), /// address 1 is owner of this config
+            address(1),
+            /// address 1 is owner of this config
             address(emissionToken),
             1e18,
             1e18,
             block.timestamp + 365 days
         );
 
-        MarketConfig memory config = distributor.getConfigForMarket(
-            mToken,
-            address(emissionToken)
-        );
+        MarketConfig memory config =
+            distributor.getConfigForMarket(mToken, address(emissionToken));
 
         assertEq(config.owner, address(1));
         vm.prank(address(1));
@@ -1901,17 +1806,16 @@ contract MultiRewardDistributorCommonUnitTest is
     function testGetConfigForExistingMarketSucceeds() public {
         distributor._addEmissionConfig(
             mToken,
-            address(1), /// address 1 is owner of this config
+            address(1),
+            /// address 1 is owner of this config
             address(emissionToken),
             1e18,
             1e18,
             block.timestamp + 365 days
         );
 
-        MarketConfig memory config = distributor.getConfigForMarket(
-            mToken,
-            address(emissionToken)
-        );
+        MarketConfig memory config =
+            distributor.getConfigForMarket(mToken, address(emissionToken));
 
         assertEq(config.owner, address(1));
         assertEq(config.emissionToken, address(emissionToken));
@@ -1925,7 +1829,8 @@ contract MultiRewardDistributorCommonUnitTest is
     function testUpdateSupplySpeedNonConfigOwnerFails() public {
         distributor._addEmissionConfig(
             mToken,
-            address(1), /// address 1 is owner of this config
+            address(1),
+            /// address 1 is owner of this config
             address(emissionToken),
             1e18,
             1e18,
@@ -1942,7 +1847,8 @@ contract MultiRewardDistributorCommonUnitTest is
     function testUpdateBorrowSpeedNonConfigOwnerFails() public {
         distributor._addEmissionConfig(
             mToken,
-            address(1), /// address 1 is owner of this config
+            address(1),
+            /// address 1 is owner of this config
             address(emissionToken),
             1e18,
             1e18,
@@ -1959,7 +1865,8 @@ contract MultiRewardDistributorCommonUnitTest is
     function testUpdateOwnerNonConfigOwnerFails() public {
         distributor._addEmissionConfig(
             mToken,
-            address(1), /// address 1 is owner of this config
+            address(1),
+            /// address 1 is owner of this config
             address(emissionToken),
             1e18,
             1e18,
@@ -1970,25 +1877,23 @@ contract MultiRewardDistributorCommonUnitTest is
         vm.expectRevert(
             "Only the config owner or comptroller admin can call this function"
         );
-        distributor._updateOwner(
-            mToken,
-            address(emissionToken),
-            address(100) /// doesn't matter as it will not be set
-        );
+        distributor._updateOwner(mToken, address(emissionToken), address(100));
+        /// doesn't matter as it will not be set
     }
 
     function testConfigAssertValues() public {
         distributor._addEmissionConfig(
             mToken,
-            address(1), /// address 1 is owner of this config
+            address(1),
+            /// address 1 is owner of this config
             address(emissionToken),
             1e18,
             1e18,
             block.timestamp + 365 days
         );
 
-        MultiRewardDistributorCommon.MarketConfig[]
-            memory allConfigs = distributor.getAllMarketConfigs(mToken);
+        MultiRewardDistributorCommon.MarketConfig[] memory allConfigs =
+            distributor.getAllMarketConfigs(mToken);
 
         assertEq(allConfigs.length, 1);
         assertEq(
@@ -2000,7 +1905,8 @@ contract MultiRewardDistributorCommonUnitTest is
     function testUpdateEndTimeConfigOwnerFails() public {
         distributor._addEmissionConfig(
             mToken,
-            address(1), /// address 1 is owner of this config
+            address(1),
+            /// address 1 is owner of this config
             address(emissionToken),
             1e18,
             1e18,
@@ -2012,9 +1918,7 @@ contract MultiRewardDistributorCommonUnitTest is
             "Only the config owner or comptroller admin can call this function"
         );
         distributor._updateEndTime(
-            mToken,
-            address(emissionToken),
-            block.timestamp + 366 days
+            mToken, address(emissionToken), block.timestamp + 366 days
         );
     }
 }

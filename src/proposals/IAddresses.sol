@@ -12,23 +12,26 @@ interface IAddresses {
     /// @notice check if an address is set for a specific chain id
     /// @param name the name of the address
     /// @param chainId the chain id
-    function isAddressSet(
-        string memory name,
-        uint256 chainId
-    ) external view returns (bool);
+    function isAddressSet(string memory name, uint256 chainId)
+        external
+        view
+        returns (bool);
 
     /// @notice check if an address is a contract
     /// @param name the name of the address
-    function isAddressContract(string memory name) external view returns (bool);
+    function isAddressContract(string memory name)
+        external
+        view
+        returns (bool);
 
     /// @notice get an address for the current chainId
     function getAddress(string memory name) external view returns (address);
 
     /// @notice get an address for a specific chainId
-    function getAddress(
-        string memory name,
-        uint256 _chainId
-    ) external view returns (address);
+    function getAddress(string memory name, uint256 _chainId)
+        external
+        view
+        returns (address);
 
     /// @notice add a contract address for the current chainId
     function addAddress(string memory name, address addr) external;
@@ -37,11 +40,8 @@ interface IAddresses {
     function addAddressEOA(string memory name, address addr) external;
 
     /// @notice add an EOA address to the specified chainId
-    function addAddressEOA(
-        string memory name,
-        address addr,
-        uint256 chainId
-    ) external;
+    function addAddressEOA(string memory name, address addr, uint256 chainId)
+        external;
 
     /// @notice add an address for a specific chainId
     function addAddress(
@@ -52,11 +52,8 @@ interface IAddresses {
     ) external;
 
     /// @notice change an address for the current chainId
-    function changeAddress(
-        string memory name,
-        address addr,
-        bool isContract
-    ) external;
+    function changeAddress(string memory name, address addr, bool isContract)
+        external;
 
     /// @notice change an address for an specific chainId and change the isContract flag
     function changeAddress(

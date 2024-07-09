@@ -4,14 +4,15 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
-import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {ChainIds, BASE_CHAIN_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
+
+import {BASE_CHAIN_ID, ChainIds, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 /// to run locally:
 ///     DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployMoonbeam.sol:xwellDeployMoonbeam --fork-url moonbeam
@@ -48,10 +49,12 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
 
     // @notice search for a on-chain proposal that matches the proposal calldata
     // @returns the proposal id, 0 if no proposal is found
-    function getProposalId(
-        Addresses,
-        address
-    ) public pure override returns (uint256) {
+    function getProposalId(Addresses, address)
+        public
+        pure
+        override
+        returns (uint256)
+    {
         revert("Not implemented");
     }
 
@@ -64,14 +67,12 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
 
         {
             /// stkWELL proxy admin
-            address existingProxyAdmin = addresses.getAddress(
-                "MOONBEAM_PROXY_ADMIN"
-            );
+            address existingProxyAdmin =
+                addresses.getAddress("MOONBEAM_PROXY_ADMIN");
 
             /// pause guardian on moonbeam
-            address pauseGuardian = addresses.getAddress(
-                "MOONBEAM_PAUSE_GUARDIAN_MULTISIG"
-            );
+            address pauseGuardian =
+                addresses.getAddress("MOONBEAM_PAUSE_GUARDIAN_MULTISIG");
 
             /// @notice this is the address that will be own the xWELL contract
             address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
@@ -87,8 +88,8 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
             address xwellProxy;
             address wormholeAdapterLogic;
             address wormholeAdapter;
-            MintLimits.RateLimitMidPointInfo[]
-                memory limits = new MintLimits.RateLimitMidPointInfo[](2);
+            MintLimits.RateLimitMidPointInfo[] memory limits =
+                new MintLimits.RateLimitMidPointInfo[](2);
 
             {
                 address lockbox;
@@ -132,12 +133,10 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
 
             /// add to moonbeam addresses
             addresses.addAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                wormholeAdapter
+                "WORMHOLE_BRIDGE_ADAPTER_PROXY", wormholeAdapter
             );
             addresses.addAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
-                wormholeAdapterLogic
+                "WORMHOLE_BRIDGE_ADAPTER_LOGIC", wormholeAdapterLogic
             );
             addresses.addAddress("xWELL_LOGIC", xwellLogic);
             addresses.addAddress("xWELL_PROXY", xwellProxy);
@@ -174,13 +173,11 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
         /// --------------------------------------------------
         {
             address moonbeamxWellProxy = addresses.getAddress("xWELL_PROXY");
-            address wormholeBridgeAdapterProxy = addresses.getAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_PROXY"
-            );
+            address wormholeBridgeAdapterProxy =
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
             address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
-            address pauseGuardian = addresses.getAddress(
-                "MOONBEAM_PAUSE_GUARDIAN_MULTISIG"
-            );
+            address pauseGuardian =
+                addresses.getAddress("MOONBEAM_PAUSE_GUARDIAN_MULTISIG");
             address lockbox = addresses.getAddress("xWELL_LOCKBOX");
 
             assertEq(
@@ -229,17 +226,16 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
             assertTrue(
                 WormholeBridgeAdapter(wormholeBridgeAdapterProxy)
                     .isTrustedSender(
-                        block.chainid.toBaseWormholeChainId(),
-                        wormholeBridgeAdapterProxy
-                    ),
+                    block.chainid.toBaseWormholeChainId(),
+                    wormholeBridgeAdapterProxy
+                ),
                 "trusted sender not trusted"
             );
 
             assertEq(
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC"),
                 addresses.getAddress(
-                    "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
-                    BASE_CHAIN_ID
+                    "WORMHOLE_BRIDGE_ADAPTER_LOGIC", BASE_CHAIN_ID
                 ),
                 "wormhole bridge adapter logic address is not the same across chains"
             );
@@ -247,8 +243,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
             assertEq(
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
                 addresses.getAddress(
-                    "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                    BASE_CHAIN_ID
+                    "WORMHOLE_BRIDGE_ADAPTER_PROXY", BASE_CHAIN_ID
                 ),
                 "wormhole bridge adapter proxy address is not the same across chains"
             );
@@ -279,11 +274,8 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
     }
 
     function printAddresses(Addresses addresses) private view {
-        (
-            string[] memory recordedNames,
-            ,
-            address[] memory recordedAddresses
-        ) = addresses.getRecordedAddresses();
+        (string[] memory recordedNames,, address[] memory recordedAddresses) =
+            addresses.getRecordedAddresses();
         for (uint256 j = 0; j < recordedNames.length; j++) {
             console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
             console.log("        'chainId': %d,", block.chainid);

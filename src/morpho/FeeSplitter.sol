@@ -1,8 +1,9 @@
 pragma solidity 0.8.19;
 
-import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC4626} from "@forge-std/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from
+    "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 
@@ -89,9 +90,7 @@ contract FeeSplitter {
 
         /// 2. call withdraw on MetaMorpho Vault
         uint256 withdrawnAssets = IERC4626(metaMorphoVault).redeem(
-            amountA,
-            address(this),
-            address(this)
+            amountA, address(this), address(this)
         );
 
         /// 3. call approve on underlying token to approve mToken to spend

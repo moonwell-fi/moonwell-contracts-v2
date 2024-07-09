@@ -5,9 +5,11 @@ import "@forge-std/Test.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
-import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
+import {GovernanceProposal} from
+    "@proposals/proposalTypes/GovernanceProposal.sol";
+
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
@@ -34,17 +36,15 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
 
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
-        address multichainGovernorAddress = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        );
+        address multichainGovernorAddress =
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
 
         /// set pending admin of MOONWELL_mWBTC to the Multichain Governor
         _pushGovernanceAction(
             addresses.getAddress("MOONWELL_mWBTC"),
             "Set the pending admin of the new wBTC market to the Multichain Governor",
             abi.encodeWithSignature(
-                "_setPendingAdmin(address)",
-                multichainGovernorAddress
+                "_setPendingAdmin(address)", multichainGovernorAddress
             )
         );
     }

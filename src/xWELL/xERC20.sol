@@ -1,8 +1,10 @@
 pragma solidity 0.8.19;
 
-import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
+import {SafeCast} from
+    "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
+import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 
 abstract contract xERC20 is IXERC20, MintLimits {
     using SafeCast for uint256;
@@ -16,36 +18,44 @@ abstract contract xERC20 is IXERC20, MintLimits {
     /// @notice Returns the max limit of a minter
     /// @param minter The minter we are viewing the limits of
     /// @return limit The limit the minter has
-    function mintingMaxLimitOf(
-        address minter
-    ) external view returns (uint256 limit) {
+    function mintingMaxLimitOf(address minter)
+        external
+        view
+        returns (uint256 limit)
+    {
         return bufferCap(minter);
     }
 
     /// @notice Returns the max limit of a bridge
     /// @param bridge the bridge we are viewing the limits of
     /// @return limit The limit the bridge has
-    function burningMaxLimitOf(
-        address bridge
-    ) external view returns (uint256 limit) {
+    function burningMaxLimitOf(address bridge)
+        external
+        view
+        returns (uint256 limit)
+    {
         return bufferCap(bridge);
     }
 
     /// @notice Returns the current limit of a minter
     /// @param minter The minter we are viewing the limits of
     /// @return limit The limit the minter has
-    function mintingCurrentLimitOf(
-        address minter
-    ) external view returns (uint256 limit) {
+    function mintingCurrentLimitOf(address minter)
+        external
+        view
+        returns (uint256 limit)
+    {
         return buffer(minter);
     }
 
     /// @notice Returns the current limit of a bridge
     /// @param bridge the bridge we are viewing the limits of
     /// @return limit The limit the bridge has
-    function burningCurrentLimitOf(
-        address bridge
-    ) external view returns (uint256 limit) {
+    function burningCurrentLimitOf(address bridge)
+        external
+        view
+        returns (uint256 limit)
+    {
         /// buffer <= bufferCap, so this can never revert, just return 0
         return bufferCap(bridge) - buffer(bridge);
     }
@@ -109,9 +119,7 @@ abstract contract xERC20 is IXERC20, MintLimits {
     function _burn(address user, uint256 amount) internal virtual;
 
     /// @notice spend allowance from a user
-    function _spendAllowance(
-        address owner,
-        address spender,
-        uint256 amount
-    ) internal virtual;
+    function _spendAllowance(address owner, address spender, uint256 amount)
+        internal
+        virtual;
 }
