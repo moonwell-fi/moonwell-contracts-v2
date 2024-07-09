@@ -1,4 +1,5 @@
 name: Foundry arb integration tests
+
 on: [pull_request]
 
 env:
@@ -7,7 +8,7 @@ env:
 jobs:
   run-arb-tests:
     name: arb-integration-tests
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
