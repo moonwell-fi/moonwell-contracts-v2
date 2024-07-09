@@ -40,7 +40,7 @@ contract Addresses is IAddresses, Test {
         uint256 chainId;
     }
 
-    // @notice struct to record addresses changed during a proposal
+    /// @notice struct to record addresses changed during a proposal
     struct ChangedAddress {
         string name;
         uint256 chainId;
@@ -94,6 +94,11 @@ contract Addresses is IAddresses, Test {
 
     /// Address Restrictions
 
+    /// @notice view function to return the number of restrictions on the stack
+    function restrictionLength() public view returns (uint256) {
+        return _allowedChainIds.length;
+    }
+
     /// @notice function to remove all restrictions on which chainIds this
     /// contract can be used for.
     function removeAllRestrictions() public {
@@ -102,6 +107,7 @@ contract Addresses is IAddresses, Test {
             while (_allowedChainIds[0].length() != 0) {
                 _allowedChainIds[0].remove(_allowedChainIds[0].at(0));
             }
+            _allowedChainIds.pop();
         }
     }
 
@@ -194,11 +200,24 @@ contract Addresses is IAddresses, Test {
     /// @param name the name of the address
     /// @param addr the address to add
     function addAddressEOA(string memory name, address addr) public override {
-        _addAddress(name, addr, block.chainid, false);
+        addAddressEOA(name, addr, block.chainid);
+    }
 
-        recordedAddresses.push(
-            RecordedAddress({name: name, chainId: block.chainid})
-        );
+    /// it is assumed that all addresses added through this method are EOA's
+    /// (without bytecode). any contract address should be added through the
+    /// addAddress method.
+    /// @notice add an address for the current chainId
+    /// @param name the name of the address
+    /// @param addr the address to add
+    /// @param chainId the chain id to add the address
+    function addAddressEOA(
+        string memory name,
+        address addr,
+        uint256 chainId
+    ) public override {
+        _addAddress(name, addr, chainId, false);
+
+        recordedAddresses.push(RecordedAddress({name: name, chainId: chainId}));
     }
 
     /// @notice add an address for a specific chainId
