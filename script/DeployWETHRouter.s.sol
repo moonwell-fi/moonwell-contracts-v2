@@ -19,25 +19,9 @@ Remove --broadcast if you want to try locally first, without paying any gas.
 */
 
 contract DeployWETHRouter is Script {
-    uint256 public PRIVATE_KEY;
-    Addresses addresses;
-
-    function setUp() public {
-        addresses = new Addresses();
-
-        // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = vm.envOr(
-            "MOONWELL_DEPLOY_PK",
-            77814517325470205911140941194401928579557062014761831930645393041380819009408
-        );
-    }
-
     function run() public {
-        address deployerAddress = vm.addr(PRIVATE_KEY);
-
-        console.log("deployer address: ", deployerAddress);
-
-        vm.startBroadcast(PRIVATE_KEY);
+        Addresses addresses = new Addresses();
+        vm.startBroadcast();
 
         WETHRouter router = new WETHRouter(
             WETH9(addresses.getAddress("WETH")),

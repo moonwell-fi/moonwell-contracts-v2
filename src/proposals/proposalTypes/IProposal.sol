@@ -2,6 +2,12 @@ pragma solidity 0.8.19;
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
+enum ActionType {
+    Moonbeam,
+    Base,
+    Optimism
+}
+
 struct ProposalAction {
     /// address to call
     address target;
@@ -11,6 +17,8 @@ struct ProposalAction {
     bytes data;
     /// for human description
     string description;
+    /// action type
+    ActionType actionType;
 }
 
 interface IProposal {

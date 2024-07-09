@@ -5,13 +5,14 @@ import "@forge-std/Test.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {IMultichainGovernor} from "@protocol/governance/multichain/IMultichainGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// @notice DO NOT USE THIS IN PRODUCTION, this is a completely hypothetical example
 /// adds stkwell as reward streams, completely hypothetical situation that makes no sense and would not work in production
@@ -21,6 +22,8 @@ contract HybridProposalExample is
     HybridProposal,
     MultichainGovernorDeploy
 {
+    using ProposalActions for *;
+
     string public constant override name = "Example Proposal";
 
     uint256 public constant NEW_VOTING_PERIOD = 6 days;
@@ -42,7 +45,7 @@ contract HybridProposalExample is
     function build(Addresses addresses) public override {
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
             abi.encodeWithSignature(
                 "updateVotingPeriod(uint256)",
@@ -81,7 +84,7 @@ contract HybridProposalExample is
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
 
-                _pushHybridAction(
+                _pushAction(
                     mrd,
                     abi.encodeWithSignature(
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
@@ -109,10 +112,8 @@ contract HybridProposalExample is
 
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(primaryForkId());
-
-        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        _runBase(addresses, temporalGovernor);
+        vm.selectFork(uint256(primaryForkId()));
+        _runExtChain(addresses, actions.filter(ActionType.Base));
 
         // switch back to the base fork so we can run the validations
         vm.selectFork(primaryForkId());

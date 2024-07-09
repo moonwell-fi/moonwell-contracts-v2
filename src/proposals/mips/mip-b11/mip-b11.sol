@@ -4,14 +4,13 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
-    string public constant override name = "MIP-B11";
+contract mipb11 is HybridProposal, Configs, ParameterValidation {
+    string public constant override name = "MIP-b11";
 
     uint256 public constant wstETH_NEW_CF = 0.76e18;
 
@@ -37,7 +36,7 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     function build(Addresses addresses) public override {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
 
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -47,7 +46,7 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set collateral factor for Moonwell wstETH to updated collateral factor"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_DAI"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -56,7 +55,7 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set interest rate model for Moonwell DAI to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -65,7 +64,7 @@ contract mipb11 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_USDBC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",

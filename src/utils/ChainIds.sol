@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {Vm} from "@forge-std/Vm.sol";
+
 // Fork Ids
 uint256 constant MOONBEAM_FORK_ID = 0;
 uint256 constant BASE_FORK_ID = 1;
@@ -58,10 +59,16 @@ library ChainIds {
 
     function toBaseChainId(uint256 chainId) internal pure returns (uint256) {
         /// map base and moonbeam chain id to base chain id
-        if (chainId == MOONBEAM_CHAIN_ID || chainId == BASE_CHAIN_ID) {
+        if (
+            chainId == OPTIMISM_CHAIN_ID ||
+            chainId == MOONBEAM_CHAIN_ID ||
+            chainId == BASE_CHAIN_ID
+        ) {
             return BASE_CHAIN_ID;
         } else if (
-            chainId == MOONBASE_CHAIN_ID || chainId == BASE_SEPOLIA_CHAIN_ID
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID ||
+            chainId == MOONBASE_CHAIN_ID ||
+            chainId == BASE_SEPOLIA_CHAIN_ID
         ) {
             /// map base sepolia and moonbase chain id to base sepolia chain id
             return BASE_SEPOLIA_CHAIN_ID;
@@ -74,10 +81,16 @@ library ChainIds {
         uint256 chainId
     ) internal pure returns (uint256) {
         /// map optimism and moonbeam chain id to optimism chain id
-        if (chainId == MOONBEAM_CHAIN_ID || chainId == OPTIMISM_CHAIN_ID) {
+        if (
+            chainId == MOONBEAM_CHAIN_ID ||
+            chainId == OPTIMISM_CHAIN_ID ||
+            chainId == BASE_CHAIN_ID
+        ) {
             return OPTIMISM_CHAIN_ID;
         } else if (
-            chainId == MOONBASE_CHAIN_ID || chainId == OPTIMISM_SEPOLIA_CHAIN_ID
+            chainId == MOONBASE_CHAIN_ID ||
+            chainId == BASE_SEPOLIA_CHAIN_ID ||
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID
         ) {
             /// map optimism sepolia and moonbase chain id to optimism sepolia chain id
             return OPTIMISM_SEPOLIA_CHAIN_ID;
@@ -216,5 +229,23 @@ library ChainIds {
         } else {
             revert("ChainIds: invalid chain id");
         }
+    }
+
+    function chainForkToName(
+        uint256 forkId
+    ) internal pure returns (string memory) {
+        if (forkId == MOONBEAM_FORK_ID) {
+            return "Moonbeam";
+        } else if (forkId == BASE_FORK_ID) {
+            return "Base";
+        } else if (forkId == OPTIMISM_FORK_ID) {
+            return "Optimism";
+        } else {
+            revert("ChainIds: invalid fork id");
+        }
+    }
+
+    function nonMoonbeamChainIds(uint256 chainId) internal pure returns (bool) {
+        return chainId != MOONBEAM_CHAIN_ID && chainId != MOONBASE_CHAIN_ID;
     }
 }

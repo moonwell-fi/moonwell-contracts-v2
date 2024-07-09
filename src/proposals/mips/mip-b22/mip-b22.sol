@@ -5,14 +5,13 @@ import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b22/mip-b22.sol:mipb22
-contract mipb22 is Proposal, CrossChainProposal, Configs, ParameterValidation {
+contract mipb22 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B22";
 
     constructor() {
@@ -20,6 +19,8 @@ contract mipb22 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b22/MIP-B22.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 22;
     }
 
     function primaryForkId() public pure override returns (uint256) {
@@ -33,7 +34,7 @@ contract mipb22 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -42,7 +43,7 @@ contract mipb22 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_cbETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -51,7 +52,7 @@ contract mipb22 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set interest rate model for Moonwell cbETH to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_wstETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -60,7 +61,7 @@ contract mipb22 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set interest rate model for Moonwell wstETH to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_rETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -69,7 +70,7 @@ contract mipb22 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set interest rate model for Moonwell rETH to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_AERO"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
