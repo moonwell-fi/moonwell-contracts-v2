@@ -6,15 +6,15 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import "@forge-std/Test.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {SigUtils} from "@test/helper/SigUtils.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-
-import {SigUtils} from "@test/helper/SigUtils.sol";
+import {BASE_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract BaseTest is xWELLDeploy, Test {
     /// @notice addresses contract, stores all addresses
@@ -69,7 +69,7 @@ contract BaseTest is xWELLDeploy, Test {
     uint112 public externalChainRateLimitPerSecond = 1_000 * 1e18;
 
     /// @notice wormhole chainid for base chain
-    uint16 public chainId = 30;
+    uint16 public chainId = BASE_WORMHOLE_CHAIN_ID;
 
     function setUp() public virtual {
         addresses = new Addresses();
@@ -137,12 +137,20 @@ contract BaseTest is xWELLDeploy, Test {
             pauseGuardian
         );
 
+        /// initialize wormhole adapter
+        uint16[] memory chainIds = new uint16[](1);
+        chainIds[0] = BASE_WORMHOLE_CHAIN_ID;
+
+        address[] memory targets = new address[](1);
+        targets[0] = address(wormholeBridgeAdapterProxy);
+
         initializeWormholeAdapter(
             address(wormholeBridgeAdapterProxy),
             address(xwellProxy),
             owner,
             wormholeRelayer,
-            chainId
+            chainIds,
+            targets
         );
 
         sigUtils = new SigUtils(xwellProxy.DOMAIN_SEPARATOR());
