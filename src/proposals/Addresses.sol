@@ -193,9 +193,9 @@ contract Addresses is IAddresses, Test {
         );
     }
 
-    /// it is assumed that all addresses added through this method are EOA's
-    /// (without bytecode). any contract address should be added through the
-    /// addAddress method.
+    /// @notice it is assumed that all addresses added through this method are
+    /// EOA's (without bytecode). any contract address should be added through
+    /// the addAddress method.
     /// @notice add an address for the current chainId
     /// @param name the name of the address
     /// @param addr the address to add
@@ -203,9 +203,9 @@ contract Addresses is IAddresses, Test {
         addAddressEOA(name, addr, block.chainid);
     }
 
-    /// it is assumed that all addresses added through this method are EOA's
-    /// (without bytecode). any contract address should be added through the
-    /// addAddress method.
+    /// @notice it is assumed that all addresses added through this method are
+    /// EOA's (without bytecode). any contract address should be added through
+    /// the addAddress method.
     /// @notice add an address for the current chainId
     /// @param name the name of the address
     /// @param addr the address to add
