@@ -3333,6 +3333,5 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
     receive() external payable {
         require(_receivingFunds);
-        console.log("received: %d", msg.value);
     }
 }
