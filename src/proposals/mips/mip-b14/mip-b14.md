@@ -43,5 +43,7 @@ A proposal to adjust DAI's IR curve:
 | Multiplier        | **0.05** | **0.067**   |
 | Jump Multiplier   | **8.6**  | **9.0**     |
 
-Our recommendation post is located in the forums, please refer to this [link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-02-28/800).
-By approving this proposal, you agree that any services provided by Gauntlet shall be governed by the terms of service available at gauntlet.network/tos
+Our recommendation post is located in the forums, please refer to this
+[link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-02-28/800).
+By approving this proposal, you agree that any services provided by Gauntlet
+shall be governed by the terms of service available at gauntlet.network/tos
