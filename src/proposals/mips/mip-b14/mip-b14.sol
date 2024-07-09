@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
@@ -86,7 +85,7 @@ contract mipb14 is HybridProposal, Configs, ParameterValidation {
 
     function teardown(Addresses, address) public pure override {}
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         _validateJRM(
             addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI"),
             addresses.getAddress("MOONWELL_DAI"),
