@@ -17,25 +17,14 @@ Remove --broadcast if you want to try locally first, without paying any gas.
 */
 
 contract DeployCompositeOracle is Script {
-    uint256 public PRIVATE_KEY;
     Addresses addresses;
 
     function setUp() public {
         addresses = new Addresses();
-
-        // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = uint256(
-            vm.envOr(
-                "MOONWELL_DEPLOY_PK",
-                bytes32(
-                    0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-                )
-            )
-        );
     }
 
     function run() public returns (ChainlinkCompositeOracle) {
-        vm.startBroadcast(PRIVATE_KEY);
+        vm.startBroadcast();
         ChainlinkCompositeOracle clco = new ChainlinkCompositeOracle(
             addresses.getAddress("CHAINLINK_ETH_USD"),
             addresses.getAddress("CHAINLINK_RETH_ETH"),

@@ -4,14 +4,13 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract mipb13 is Proposal, CrossChainProposal, Configs, ParameterValidation {
-    string public constant override name = "MIP-B13";
+contract mipb13 is HybridProposal, Configs, ParameterValidation {
+    string public constant override name = "MIP-b13";
 
     uint256 public constant wstETH_NEW_CF = 0.78e18;
     uint256 public constant rETH_NEW_CF = 0.78e18;
@@ -39,7 +38,7 @@ contract mipb13 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     function build(Addresses addresses) public override {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
 
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -49,7 +48,7 @@ contract mipb13 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set collateral factor for Moonwell wstETH to updated collateral factor"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -59,7 +58,7 @@ contract mipb13 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set collateral factor for Moonwell rETH to updated collateral factor"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -69,7 +68,7 @@ contract mipb13 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set collateral factor for Moonwell cbETH to updated collateral factor"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_cbETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -78,7 +77,7 @@ contract mipb13 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set interest rate model for Moonwell cbETH to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",

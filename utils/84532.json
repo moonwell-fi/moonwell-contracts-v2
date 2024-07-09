@@ -11,7 +11,7 @@
     },
     {
         "addr": "0x79A1027a6A159502049F10906D333EC57E95F083",
-        "name": "WORMHOLE_CORE_SEPOLIA_BASE",
+        "name": "WORMHOLE_CORE",
         "isContract": true
     },
     {

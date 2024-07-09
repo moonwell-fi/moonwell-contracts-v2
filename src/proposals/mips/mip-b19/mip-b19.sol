@@ -5,13 +5,11 @@ import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {MIPProposal} from "@proposals/MIPProposal.s.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
+contract mipb19 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B19";
 
     constructor() {
@@ -34,7 +32,7 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -43,7 +41,7 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
@@ -52,24 +50,13 @@ contract mipb19 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_AERO"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 addresses.getAddress("JUMP_RATE_IRM_MOONWELL_AERO_MIP_B19")
             ),
             "Set interest rate model for Moonwell AERO to updated rate model"
-        );
-    }
-
-    function run(
-        Addresses addresses,
-        address
-    ) public override(CrossChainProposal, MIPProposal) {
-        printCalldata(addresses);
-        _simulateCrossChainActions(
-            addresses,
-            addresses.getAddress("TEMPORAL_GOVERNOR")
         );
     }
 

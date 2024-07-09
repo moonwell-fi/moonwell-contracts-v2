@@ -3,10 +3,9 @@ pragma solidity 0.8.19;
 import {console} from "@forge-std/console.sol";
 import {Test} from "@forge-std/Test.sol";
 
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 
 /*
 How to use:
@@ -55,17 +54,6 @@ contract TestProposals is Test {
 
         // proposals.push(Proposal(address(new mipb01())));
         nProposals = proposals.length;
-    }
-
-    function printCalldata(
-        uint256 index,
-        address temporalGovernor,
-        address wormholeCore
-    ) public {
-        CrossChainProposal(address(proposals[index])).printActions(
-            temporalGovernor,
-            wormholeCore
-        );
     }
 
     function printProposalActionSteps() public {

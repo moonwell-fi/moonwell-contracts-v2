@@ -6,7 +6,7 @@
     },
     {
         "addr": "0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901",
-        "name": "WORMHOLE_CORE_MOONBASE",
+        "name": "WORMHOLE_CORE",
         "isContract": true
     },
     {

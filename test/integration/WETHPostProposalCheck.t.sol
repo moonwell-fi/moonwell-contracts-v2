@@ -49,7 +49,7 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
         mToken._setImplementation(address(delegate), false, "");
     }
 
-    function testSetup() public {
+    function testSetup() public view {
         assertEq(
             delegate.wethUnwrapper(),
             address(unwrapper),

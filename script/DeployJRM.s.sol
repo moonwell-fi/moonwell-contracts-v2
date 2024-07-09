@@ -16,8 +16,6 @@ Remove --broadcast if you want to try locally first, without paying any gas.
 */
 
 contract DeployJRM is Script {
-    uint256 public PRIVATE_KEY;
-
     // baseRatePerYear: BigNumber { value: "10000000000000000" },
     // multiplierPerYear: BigNumber { value: "40000000000000000" },
     // jumpMultiplierPerYear: BigNumber { value: "3800000000000000000" },
@@ -28,16 +26,8 @@ contract DeployJRM is Script {
     uint256 public constant JUMP_MULTIPLIER_PER_YEAR = 3800000000000000000;
     uint256 public constant KINK = 750000000000000000;
 
-    function setUp() public {
-        // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = vm.envOr(
-            "MOONWELL_DEPLOY_PK",
-            77814517325470205911140941194401928579557062014761831930645393041380819009408
-        );
-    }
-
     function run() public {
-        vm.startBroadcast(PRIVATE_KEY);
+        vm.startBroadcast();
         JumpRateModel jrm = new JumpRateModel(
             BASE_RATE_PER_YEAR,
             MULTIPLIER_PER_YEAR,
@@ -45,8 +35,8 @@ contract DeployJRM is Script {
             KINK
         );
 
-        console.log("successfully deployed jrm: %d", address(jrm));
-
         vm.stopBroadcast();
+
+        console.log("successfully deployed jrm: %d", address(jrm));
     }
 }

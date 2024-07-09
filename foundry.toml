@@ -9,6 +9,7 @@ auto_detect_solc = true
 evm_version = 'paris' # lock to paris to prevent use of push0 opcode which is not live on base
 optimizer_runs = 1
 rpc_storage_caching = { chains = "all", endpoints = "all" }
+ignored_warnings_from = ["src/MErc20Delegator.sol", "src/tokensale/TokenSaleDistributorProxy.sol"]
 
 [fmt]
 # Maximum line length where formatter will try to wrap the line
@@ -53,5 +54,3 @@ opSepolia = "${OP_SEPOLIA_RPC_URL}"
 #base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
 #baseSepolia = { key = "${BASESCAN_API_KEY}", url= "https://sepolia.basescan.org/api" }
 #opSepolia = { key = "${OPSCAN_API_KEY}", url= "https://api.optimistic.etherscan.io/api" }
-
-

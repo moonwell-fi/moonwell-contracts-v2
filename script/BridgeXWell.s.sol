@@ -11,13 +11,7 @@ contract BridgeXWell is Script, Test {
     /// @notice addresses contract
     Addresses addresses;
 
-    /// @notice deployer private key
-    uint256 private PRIVATE_KEY;
-
     constructor() {
-        // Default behavior: use Anvil 0 private key
-        PRIVATE_KEY = uint256(vm.envBytes32("ETH_PRIVATE_KEY"));
-
         addresses = new Addresses();
     }
 
@@ -28,7 +22,7 @@ contract BridgeXWell is Script, Test {
 
         uint256 amount = 100_000 * 1e18;
 
-        vm.startBroadcast(PRIVATE_KEY);
+        vm.startBroadcast();
 
         router.bridgeToBase{value: bridgeCost}(amount);
 

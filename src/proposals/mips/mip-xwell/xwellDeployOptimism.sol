@@ -5,6 +5,8 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
+
+import "@utils/ChainIds.sol";
 import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
@@ -13,39 +15,38 @@ import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {ChainIds, BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// how to run locally:
-///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployBase.sol:xwellDeployBase --fork-url base
+///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployOptimism.sol:xwellDeployOptimism
 /// @dev do not use MIP as a base to fork off of, it will not work
-contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
+contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
     using ChainIds for uint256;
 
     /// @notice the name of the proposal
-    string public constant override name = "MIP xWELL Token Creation Base";
+    string public constant override name = "MIP xWELL Token Creation Optimism";
 
-    /// @notice the buffer cap for the xWELL token on both base and moonbeam
+    /// @notice the buffer cap for the xWELL token on all chains
     uint112 public constant bufferCap = 100_000_000 * 1e18;
 
-    /// @notice the rate limit per second for the xWELL token on both base and moonbeam
+    /// @notice the rate limit per second for the xWELL token on all chains
     /// heals at ~19m per day if buffer is fully replenished or depleted
     /// this limit is used for the wormhole bridge adapters
     uint128 public constant rateLimitPerSecond = 1158 * 1e18;
 
-    /// @notice the duration of the pause for the xWELL token on both base and moonbeam
+    /// @notice the duration of the pause for the xWELL token on all chains
     /// once the contract has been paused, in this period of time, it will automatically
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
 
     function primaryForkId() public pure override returns (uint256) {
-        return BASE_FORK_ID;
+        return OPTIMISM_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {
         /// --------------------------------------------------
         /// --------------------------------------------------
-        /// ------------------ BASE NETWORK ------------------
+        /// ---------------- OPTIMISM NETWORK ----------------
         /// --------------------------------------------------
         /// --------------------------------------------------
         {
@@ -100,7 +101,7 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
             addresses.addAddress("xWELL_LOGIC", xwellLogic);
             addresses.addAddress("xWELL_PROXY", xwellProxy);
 
-            _printAddresses(addresses);
+            printAddresses(addresses);
             addresses.resetRecordingAddresses();
         }
     }
@@ -230,7 +231,7 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
         }
     }
 
-    function _printAddresses(Addresses addresses) private view {
+    function printAddresses(Addresses addresses) private view {
         (
             string[] memory recordedNames,
             ,

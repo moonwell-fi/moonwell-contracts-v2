@@ -6,15 +6,13 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/ChainIds.sol";
 
-import {ChainIds, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Address} from "@utils/Address.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
@@ -22,27 +20,39 @@ import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
 import {MWethDelegate} from "@protocol/MWethDelegate.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
+import {ChainIds, OPTIMISM_CHAIN_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 
 /*
+to deploy:
 
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
 DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 \
- -vvv --etherscan-api-key $OPSCAN_API_KEY --broadcast
+ -vvv --etherscan-api-key $OPSCAN_API_KEY --broadcast --keystore ~/.foundry/keystores/<your-key-store>
+
+to dry-run:
+
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 \
+ -vvv --keystore ~/.foundry/keystores/<your-key-store>
 
 */
 
-contract mipo00 is Proposal, CrossChainProposal, Configs {
+contract mipo00 is HybridProposal, Configs {
     using Address for address;
     using ChainIds for uint256;
+    using ProposalActions for *;
 
     string public constant override name = "MIP-O00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
@@ -66,6 +76,20 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
         address irModel;
         address unitroller;
     }
+
+    /// ---------------------- BREAK GLASS GUARDIAN CALLDATA ----------------------
+
+    /// @notice whitelisted calldata for the break glass guardian
+    bytes[] public approvedCalldata;
+
+    /// @notice whitelisted calldata for the temporal governor
+    bytes[] public temporalGovernanceCalldata;
+
+    /// @notice address of the temporal governor
+    address[] public temporalGovernanceTargets;
+
+    /// @notice trusted senders for the temporal governor
+    ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -110,12 +134,15 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 emissions[block.chainid].length,
             "emissions length not equal to cTokenConfigurations length"
         );
+        addresses.addRestriction(OPTIMISM_CHAIN_ID);
 
         /// ------- TemporalGovernor -------
-        {
+
+        if (!addresses.isAddressSet("TEMPORAL_GOVERNOR")) {
             TemporalGovernor.TrustedSender[]
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
+            addresses.addRestriction(MOONBEAM_CHAIN_ID);
             /// this should return the moonbeam/moonbase wormhole chain id
             trustedSenders[0].chainId = block
                 .chainid
@@ -125,6 +152,9 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 /// this should return the moonbeam/moonbase chain id
                 block.chainid.toMoonbeamChainId()
             );
+
+            /// disallow getting any addreses from moonbeam from this point forward
+            addresses.removeRestriction();
 
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
@@ -140,15 +170,21 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
         init(addresses);
 
         /// ------- Reward Distributor -------
-        {
+
+        if (!addresses.isAddressSet("MULTI_REWARD_DISTRIBUTOR")) {
             MultiRewardDistributor distributor = new MultiRewardDistributor();
             addresses.addAddress(
                 "MULTI_REWARD_DISTRIBUTOR",
                 address(distributor)
             );
         }
-        {
-            /// ------- Unitroller/Comptroller -------
+
+        /// ------- Unitroller/Comptroller -------
+
+        if (
+            !addresses.isAddressSet("UNITROLLER") &&
+            !addresses.isAddressSet("COMPTROLLER")
+        ) {
             Unitroller unitroller = new Unitroller();
             Comptroller comptroller = new Comptroller();
             unitroller._setPendingImplementation(address(comptroller));
@@ -156,14 +192,20 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
             addresses.addAddress("COMPTROLLER", address(comptroller));
             addresses.addAddress("UNITROLLER", address(unitroller));
+        }
 
-            /// ------- PROXY ADMIN/ MULTI_REWARD_DISTRIBUTOR -------
+        /// ------- PROXY ADMIN / MULTI_REWARD_DISTRIBUTOR -------
+
+        if (
+            !addresses.isAddressSet("MRD_PROXY_ADMIN") &&
+            !addresses.isAddressSet("MRD_PROXY")
+        ) {
             ProxyAdmin proxyAdmin = new ProxyAdmin();
             addresses.addAddress("MRD_PROXY_ADMIN", address(proxyAdmin));
 
             bytes memory initData = abi.encodeWithSignature(
                 "initialize(address,address)",
-                address(unitroller),
+                addresses.getAddress("UNITROLLER"),
                 addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
             );
             TransparentUpgradeableProxy mrdProxy = new TransparentUpgradeableProxy(
@@ -173,19 +215,28 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 );
             addresses.addAddress("MRD_PROXY", address(mrdProxy));
         }
+
         /// ------ MTOKENS -------
-        {
+
+        if (!addresses.isAddressSet("MTOKEN_IMPLEMENTATION")) {
             MErc20Delegate mTokenLogic = new MErc20Delegate();
             addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
         }
-        WethUnwrapper unwrapper = new WethUnwrapper(
-            addresses.getAddress("WETH")
-        );
 
-        MWethDelegate delegate = new MWethDelegate(address(unwrapper));
+        if (!addresses.isAddressSet("WETH_UNWRAPPER")) {
+            WethUnwrapper unwrapper = new WethUnwrapper(
+                addresses.getAddress("WETH")
+            );
+            addresses.addAddress("WETH_UNWRAPPER", address(unwrapper));
+        }
 
-        addresses.addAddress("WETH_UNWRAPPER", address(unwrapper));
-        addresses.addAddress("MWETH_IMPLEMENTATION", address(delegate));
+        if (!addresses.isAddressSet("MWETH_IMPLEMENTATION")) {
+            MWethDelegate delegate = new MWethDelegate(
+                addresses.getAddress("WETH_UNWRAPPER")
+            );
+
+            addresses.addAddress("MWETH_IMPLEMENTATION", address(delegate));
+        }
 
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
@@ -193,8 +244,14 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
         //// create all of the CTokens according to the configuration in Config.sol
         for (uint256 i = 0; i < cTokenConfigs.length; i++) {
             Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+
             /// ----- Jump Rate IRM -------
-            {
+
+            string memory addressString = string(
+                abi.encodePacked("JUMP_RATE_IRM_", config.addressesString)
+            );
+
+            if (!addresses.isAddressSet(addressString)) {
                 address irModel = address(
                     new JumpRateModel(
                         config.jrm.baseRatePerYear,
@@ -203,70 +260,68 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                         config.jrm.kink
                     )
                 );
-                addresses.addAddress(
-                    string(
-                        abi.encodePacked(
-                            "JUMP_RATE_IRM_",
-                            config.addressesString
-                        )
-                    ),
-                    address(irModel)
-                );
+
+                addresses.addAddress(addressString, address(irModel));
             }
 
-            /// stack isn't too deep
-            CTokenAddresses memory addr = CTokenAddresses({
-                mTokenImpl: keccak256(
-                    abi.encodePacked(config.addressesString)
-                ) == keccak256(abi.encodePacked("MOONWELL_WETH"))
-                    ? addresses.getAddress("MWETH_IMPLEMENTATION")
-                    : addresses.getAddress("MTOKEN_IMPLEMENTATION"),
-                irModel: addresses.getAddress(
-                    string(
-                        abi.encodePacked(
-                            "JUMP_RATE_IRM_",
-                            config.addressesString
+            if (!addresses.isAddressSet(config.addressesString)) {
+                /// stack isn't too deep
+                CTokenAddresses memory addr = CTokenAddresses({
+                    mTokenImpl: keccak256(
+                        abi.encodePacked(config.addressesString)
+                    ) == keccak256(abi.encodePacked("MOONWELL_WETH"))
+                        ? addresses.getAddress("MWETH_IMPLEMENTATION")
+                        : addresses.getAddress("MTOKEN_IMPLEMENTATION"),
+                    irModel: addresses.getAddress(
+                        string(
+                            abi.encodePacked(
+                                "JUMP_RATE_IRM_",
+                                config.addressesString
+                            )
                         )
-                    )
-                ),
-                unitroller: addresses.getAddress("UNITROLLER")
-            });
+                    ),
+                    unitroller: addresses.getAddress("UNITROLLER")
+                });
 
-            /// calculate initial exchange rate
-            /// BigNumber.from("10").pow(token.decimals + 8).mul("2");
-            /// (10 ** (18 + 8)) * 2 // 18 decimals example
-            ///    = 2e26
-            /// (10 ** (6 + 8)) * 2 // 6 decimals example
-            ///    = 2e14
-            uint256 initialExchangeRate = (10 **
-                (ERC20(addresses.getAddress(config.tokenAddressName))
-                    .decimals() + 8)) * 2;
+                /// calculate initial exchange rate
+                /// BigNumber.from("10").pow(token.decimals + 8).mul("2");
+                /// (10 ** (18 + 8)) * 2 // 18 decimals example
+                ///    = 2e26
+                /// (10 ** (6 + 8)) * 2 // 6 decimals example
+                ///    = 2e14
+                uint256 initialExchangeRate = (10 **
+                    (ERC20(addresses.getAddress(config.tokenAddressName))
+                        .decimals() + 8)) * 2;
 
-            MErc20Delegator mToken = new MErc20Delegator(
-                addresses.getAddress(config.tokenAddressName),
-                ComptrollerInterface(addr.unitroller),
-                InterestRateModel(addr.irModel),
-                initialExchangeRate,
-                config.name,
-                config.symbol,
-                mTokenDecimals,
-                payable(deployer),
-                addr.mTokenImpl,
-                ""
-            );
+                MErc20Delegator mToken = new MErc20Delegator(
+                    addresses.getAddress(config.tokenAddressName),
+                    ComptrollerInterface(addr.unitroller),
+                    InterestRateModel(addr.irModel),
+                    initialExchangeRate,
+                    config.name,
+                    config.symbol,
+                    mTokenDecimals,
+                    payable(deployer),
+                    addr.mTokenImpl,
+                    ""
+                );
 
-            addresses.addAddress(config.addressesString, address(mToken));
+                addresses.addAddress(config.addressesString, address(mToken));
+            }
+        }
+        if (!addresses.isAddressSet("CHAINLINK_ORACLE")) {
+            /// deploy oracle, set price oracle
+            ChainlinkOracle oracle = new ChainlinkOracle("null_asset");
+            addresses.addAddress("CHAINLINK_ORACLE", address(oracle));
         }
 
-        /// deploy oracle, set price oracle
-        ChainlinkOracle oracle = new ChainlinkOracle("null_asset");
-        addresses.addAddress("CHAINLINK_ORACLE", address(oracle));
-
-        WETHRouter router = new WETHRouter(
-            WETH9(addresses.getAddress("WETH")),
-            MErc20(addresses.getAddress("MOONWELL_WETH"))
-        );
-        addresses.addAddress("WETH_ROUTER", address(router));
+        if (!addresses.isAddressSet("WETH_ROUTER")) {
+            WETHRouter router = new WETHRouter(
+                WETH9(addresses.getAddress("WETH")),
+                MErc20(addresses.getAddress("MOONWELL_WETH"))
+            );
+            addresses.addAddress("WETH_ROUTER", address(router));
+        }
     }
 
     function afterDeploy(Addresses addresses, address) public override {
@@ -335,7 +390,8 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
                     mTokens[i]._setReserveFactor(config.reserveFactor);
                     mTokens[i]._setProtocolSeizeShare(config.seizeShare);
-                    mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+                    /// Set Temporal Governor as pending admin of the mToken
+                    mTokens[i]._setPendingAdmin(payable(governor));
 
                     Comptroller(address(unitroller))._setCollateralFactor(
                         mTokens[i],
@@ -378,6 +434,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             /// set temporal governor as the admin of the chainlink feed
             oracle.setAdmin(governor);
         }
+
         /// -------------- EMISSION CONFIGURATION --------------
 
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
@@ -424,10 +481,34 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
     }
 
     function build(Addresses addresses) public override {
+        if (approvedCalldata.length == 0) {
+            _buildCalldata(addresses);
+        }
+
+        addresses.addRestriction(MOONBEAM_CHAIN_ID);
+
+        /// update approved break glass guardian calldata in Multichain Governor
+        _pushAction(
+            addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_PROXY",
+                block.chainid.toMoonbeamChainId()
+            ),
+            abi.encodeWithSignature(
+                "updateApprovedCalldata(bytes,bool)",
+                approvedCalldata[0],
+                true
+            ),
+            "Whitelist break glass calldata to add the Artemis Timelock as a trusted sender in the Temporal Governor on Optimism",
+            ActionType.Moonbeam
+        );
+
+        /// remove all restrictions
+        addresses.removeRestriction();
+
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
         /// Unitroller configuration
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Temporal governor accepts admin on Unitroller"
@@ -457,13 +538,13 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 /// ------------ MTOKEN MARKET ACTIVIATION ------------
 
                 /// temporal governor accepts admin of mToken
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature("_acceptAdmin()"),
                     "Temporal governor accepts admin on mToken"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
                         "_setMintPaused(address,bool)",
@@ -474,7 +555,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 );
 
                 /// Approvals
-                _pushCrossChainAction(
+                _pushAction(
                     addresses.getAddress(config.tokenAddressName),
                     abi.encodeWithSignature(
                         "approve(address,uint256)",
@@ -485,7 +566,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 );
 
                 /// Initialize markets
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
                         "mint(uint256)",
@@ -494,7 +575,7 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                     "Initialize token market to prevent exploit"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
                         "transfer(address,uint256)",
@@ -505,6 +586,25 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 );
             }
         }
+    }
+
+    function run(Addresses addresses, address) public override {
+        /// safety check to ensure no base actions are run
+        require(
+            actions.proposalActionTypeCount(ActionType.Base) == 0,
+            "MIP-O00: should have no base actions"
+        );
+        require(
+            actions.proposalActionTypeCount(ActionType.Optimism) > 0,
+            "MIP-O00: should have optimism actions"
+        );
+
+        require(
+            actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
+            "MIP-O00: should have 1 moonbeam actions"
+        );
+
+        super.run(addresses, address(0));
     }
 
     function teardown(Addresses addresses, address) public pure override {}
@@ -545,7 +645,8 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
             assertEq(
                 Comptroller(address(unitroller)).admin(),
-                addresses.getAddress("TEMPORAL_GOVERNOR")
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
+                "temporal governor not admin of unitroller"
             );
             assertEq(
                 Comptroller(address(unitroller)).pendingAdmin(),
@@ -669,9 +770,11 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
 
         assertEq(
             address(governor.wormholeBridge()),
-            addresses.getAddress("WORMHOLE_CORE")
+            addresses.getAddress("WORMHOLE_CORE", OPTIMISM_CHAIN_ID),
+            "temporal governor wormhole core set incorrectly"
         );
 
+        addresses.addRestriction(MOONBEAM_CHAIN_ID);
         assertTrue(
             governor.isTrustedSender(
                 block.chainid.toMoonbeamWormholeChainId(),
@@ -684,6 +787,8 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
             ),
             "multichain governor not trusted"
         );
+        addresses.removeRestriction();
+
         assertEq(
             governor
                 .allTrustedSenders(block.chainid.toMoonbeamWormholeChainId())
@@ -916,5 +1021,86 @@ contract mipo00 is Proposal, CrossChainProposal, Configs {
                 }
             }
         }
+
+        if (approvedCalldata.length == 0) {
+            _buildCalldata(addresses);
+        }
+
+        bytes memory whitelistedCalldata = approvedCalldata[0];
+
+        vm.selectFork(MOONBEAM_FORK_ID);
+        addresses.addRestriction(block.chainid.toMoonbeamChainId());
+        MultichainGovernor multiChainGovernor = MultichainGovernor(
+            addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_PROXY",
+                block.chainid.toMoonbeamChainId()
+            )
+        );
+        /// remove the moonbeam restriction from addresses
+        addresses.removeRestriction();
+
+        assertTrue(
+            multiChainGovernor.whitelistedCalldatas(whitelistedCalldata),
+            "multichain governor should have whitelisted break glass guardian calldata"
+        );
+
+        vm.selectFork(OPTIMISM_FORK_ID);
+    }
+
+    function _buildCalldata(Addresses addresses) internal {
+        addresses.addRestriction(block.chainid.toMoonbeamChainId());
+        /// get timelock from Moonbeam
+        address artemisTimelock = addresses.getAddress(
+            "MOONBEAM_TIMELOCK",
+            block.chainid.toMoonbeamChainId()
+        );
+        addresses.removeRestriction();
+
+        /// get temporal governor on Optimism
+        address temporalGovernor = addresses.getAddress(
+            "TEMPORAL_GOVERNOR",
+            block.chainid.toOptimismChainId()
+        );
+
+        temporalGovernanceTargets.push(temporalGovernor);
+
+        temporalGovernanceTrustedSenders.push(
+            ITemporalGovernor.TrustedSender({
+                chainId: MOONBEAM_WORMHOLE_CHAIN_ID, /// this chainId is 16 (MOONBEAM_WORMHOLE_CHAIN_ID) regardless of testnet or mainnet
+                addr: artemisTimelock /// the timelock on moonbeam
+            })
+        );
+
+        /// roll back trusted senders to the artemis timelock
+        /// in reality this just adds the artemis timelock as a trusted sender
+        /// a second proposal is needed to revoke the Multichain Governor as a trusted sender
+        temporalGovernanceCalldata.push(
+            abi.encodeWithSignature(
+                "setTrustedSenders((uint16,address)[])",
+                temporalGovernanceTrustedSenders
+            )
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "publishMessage(uint32,bytes,uint8)",
+                /// arbitrary nonce
+                1000,
+                abi.encode(
+                    /// target is temporal governor, this passes intended recipient check
+                    temporalGovernanceTargets[0],
+                    /// sets temporal governor target to itself
+                    temporalGovernanceTargets,
+                    /// sets values to array filled with 0 values
+                    new uint256[](1),
+                    /// sets calldata to a call to the setTrustedSenders((uint16,address)[])
+                    /// function with artemis timelock as the address and moonbeam wormhole
+                    /// chain id as the chain id
+                    temporalGovernanceCalldata
+                ),
+                /// consistency level ignored as Moonbeam has instant finality
+                200
+            )
+        );
     }
 }
