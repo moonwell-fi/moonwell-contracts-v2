@@ -36,6 +36,13 @@ interface IAddresses {
     /// @notice add an EOA address for the current chainId
     function addAddressEOA(string memory name, address addr) external;
 
+    /// @notice add an EOA address to the specified chainId
+    function addAddressEOA(
+        string memory name,
+        address addr,
+        uint256 chainId
+    ) external;
+
     /// @notice add an address for a specific chainId
     function addAddress(
         string memory name,
