@@ -31,19 +31,19 @@ contract UnitTestAddresses is Test {
         parsedJson = vm.parseJson(addressesData);
     }
 
-    function testgetAddress() public view {
+    function testGetAddress() public view {
         address addr = addresses.getAddress("EMISSIONS_ADMIN");
 
         assertEq(addr, 0xD791292655A1d382FcC1a6Cb9171476cf91F2caa);
     }
 
-    function testgetAddressChainId() public view {
+    function testGetAddressChainId() public view {
         address addr = addresses.getAddress("EMISSIONS_ADMIN", block.chainid);
 
         assertEq(addr, 0xD791292655A1d382FcC1a6Cb9171476cf91F2caa);
     }
 
-    function testchangeAddress() public {
+    function testChangeAddress() public {
         assertEq(
             addresses.getAddress("EMISSIONS_ADMIN"),
             0xD791292655A1d382FcC1a6Cb9171476cf91F2caa,
@@ -60,7 +60,7 @@ contract UnitTestAddresses is Test {
         );
     }
 
-    function testchangeAddressToSameAddressFails() public {
+    function testChangeAddressToSameAddressFails() public {
         assertEq(
             addresses.getAddress("EMISSIONS_ADMIN"),
             0xD791292655A1d382FcC1a6Cb9171476cf91F2caa,
@@ -74,7 +74,7 @@ contract UnitTestAddresses is Test {
         addresses.changeAddress("EMISSIONS_ADMIN", addr, true);
     }
 
-    function testchangeAddressChainId() public {
+    function testChangeAddressChainId() public {
         assertEq(
             addresses.getAddress("EMISSIONS_ADMIN"),
             0xD791292655A1d382FcC1a6Cb9171476cf91F2caa,
@@ -92,14 +92,14 @@ contract UnitTestAddresses is Test {
         );
     }
 
-    function testaddAddress() public {
+    function testAddAddress() public {
         address addr = vm.addr(1);
         addresses.addAddressEOA("TEST", addr);
 
         assertEq(addresses.getAddress("TEST"), addr);
     }
 
-    function testaddAddressChainId() public {
+    function testAddAddressChainId() public {
         address addr = vm.addr(1);
         uint256 chainId = 123;
         addresses.addAddress("TEST", addr, chainId, true);
@@ -107,7 +107,7 @@ contract UnitTestAddresses is Test {
         assertEq(addresses.getAddress("TEST", chainId), addr);
     }
 
-    function testaddAddressDifferentChain() public {
+    function testAddAddressDifferentChain() public {
         address addr = vm.addr(1);
         uint256 chainId = 123;
         addresses.addAddress("EMISSIONS_ADMIN", addr, chainId, true);
@@ -121,7 +121,7 @@ contract UnitTestAddresses is Test {
         );
     }
 
-    function testresetRecordingAddresses() public {
+    function testResetRecordingAddresses() public {
         addresses.resetRecordingAddresses();
 
         (
@@ -135,7 +135,7 @@ contract UnitTestAddresses is Test {
         assertEq(_addresses.length, 0);
     }
 
-    function testgetRecordingAddresses() public {
+    function testGetRecordingAddresses() public {
         // Add a new address
         address addr = vm.addr(1);
         addresses.addAddressEOA("TEST", addr);
@@ -155,7 +155,7 @@ contract UnitTestAddresses is Test {
         assertEq(_addresses[0], addr);
     }
 
-    function testresetChangedAddresses() public {
+    function testResetChangedAddresses() public {
         addresses.resetChangedAddresses();
 
         (
@@ -171,7 +171,7 @@ contract UnitTestAddresses is Test {
         assertEq(newAddresses.length, 0);
     }
 
-    function testgetChangedAddresses() public {
+    function testGetChangedAddresses() public {
         address addr = vm.addr(1);
         addresses.changeAddress("EMISSIONS_ADMIN", addr, false);
         (
@@ -197,63 +197,63 @@ contract UnitTestAddresses is Test {
         assertEq(newAddresses[0], addr);
     }
 
-    function testrevertGetAddressChainZero() public {
+    function testRevertGetAddressChainZero() public {
         vm.expectRevert("ChainId cannot be 0");
         addresses.getAddress("EMISSIONS_ADMIN", 0);
     }
 
-    function testreverGetAddressNotSet() public {
+    function testReverGetAddressNotSet() public {
         vm.expectRevert("Address: TEST not set on chain: 31337");
         addresses.getAddress("TEST");
     }
 
-    function testreverGetAddressNotSetOnChain() public {
+    function testReverGetAddressNotSetOnChain() public {
         vm.expectRevert("Address: EMISSIONS_ADMIN not set on chain: 666");
         addresses.getAddress("EMISSIONS_ADMIN", 666);
     }
 
-    function testrevertAddAddressAlreadySet() public {
+    function testRevertAddAddressAlreadySet() public {
         vm.expectRevert("Address: EMISSIONS_ADMIN already set on chain: 31337");
         addresses.addAddressEOA("EMISSIONS_ADMIN", vm.addr(1));
     }
 
-    function testrevertAddAddressChainAlreadySet() public {
+    function testRevertAddAddressChainAlreadySet() public {
         vm.expectRevert("Address: EMISSIONS_ADMIN already set on chain: 31337");
         addresses.addAddressEOA("EMISSIONS_ADMIN", vm.addr(1), 31337);
     }
 
-    function testrevertChangedAddressDoesNotExist() public {
+    function testRevertChangedAddressDoesNotExist() public {
         vm.expectRevert(
             "Address: TEST doesn't exist on chain: 31337. Use addAddress instead"
         );
         addresses.changeAddress("TEST", vm.addr(1), false);
     }
 
-    function testaddAddressCannotBeZero() public {
+    function testAddAddressCannotBeZero() public {
         vm.expectRevert("Address cannot be 0");
         addresses.addAddressEOA("EMISSIONS_ADMIN", address(0));
     }
 
-    function testaddAddressCannotBeZeroChainId() public {
+    function testAddAddressCannotBeZeroChainId() public {
         vm.expectRevert("ChainId cannot be 0");
         addresses.addAddressEOA("EMISSIONS_ADMIN", vm.addr(1), 0);
     }
 
-    function testrevertChangeAddressCannotBeZero() public {
+    function testRevertChangeAddressCannotBeZero() public {
         vm.expectRevert("Address cannot be 0");
         addresses.changeAddress("EMISSIONS_ADMIN", address(0), false);
     }
 
-    function testrevertChangeAddresCannotBeZeroChainId() public {
+    function testRevertChangeAddresCannotBeZeroChainId() public {
         vm.expectRevert("ChainId cannot be 0");
         addresses.changeAddress("EMISSIONS_ADMIN", vm.addr(1), 0, false);
     }
 
-    function testisContractFalse() public view {
+    function testIsContractFalse() public view {
         assertEq(addresses.isAddressContract("EMISSIONS_ADMIN"), false);
     }
 
-    function testisContractTrue() public {
+    function testIsContractTrue() public {
         address test = vm.addr(1);
 
         vm.etch(test, "0x01");
@@ -288,12 +288,12 @@ contract UnitTestAddresses is Test {
         assertFalse(addresses.isAddressSet("EMISSIONS_ADMIN", 123));
     }
 
-    function testcheckAddressRevertIfNotContract() public {
+    function testCheckAddressRevertIfNotContract() public {
         vm.expectRevert("Address: TEST is not a contract on chain: 31337");
         addresses.addAddress("TEST", vm.addr(1));
     }
 
-    function testcheckAddressRevertIfSetIsContractFalseButIsContract() public {
+    function testCheckAddressRevertIfSetIsContractFalseButIsContract() public {
         address test = vm.addr(1);
 
         vm.etch(test, "0x01");
