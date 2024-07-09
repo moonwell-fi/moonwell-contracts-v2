@@ -316,7 +316,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         }
 
         if (totalRefundAmount != 0) {
-            // send bridge funds back to sender using call
+            /// send bridge funds back to sender using call
             (bool success, ) = msg.sender.call{value: totalRefundAmount}("");
             require(success, "WormholeBridge: refund failed");
         }
