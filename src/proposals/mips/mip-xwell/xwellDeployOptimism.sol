@@ -82,12 +82,28 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
                 pauseGuardian
             );
 
+            /// trust same address on Base and Moonbeam
+            address[] memory trustedSenders = new address[](2);
+            trustedSenders[0] = addresses.getAddress(
+                "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                block.chainid.toBaseChainId()
+            );
+            trustedSenders[1] = addresses.getAddress(
+                "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                block.chainid.toMoonbeamChainId()
+            );
+
+            uint16[] memory trustedChainIds = new uint16[](2);
+            trustedChainIds[0] = block.chainid.toBaseWormholeChainId();
+            trustedChainIds[0] = block.chainid.toMoonbeamWormholeChainId();
+
             initializeWormholeAdapter(
                 wormholeAdapter,
                 xwellProxy,
                 temporalGov,
                 relayer,
-                block.chainid.toMoonbeamWormholeChainId()
+                trustedChainIds,
+                trustedSenders
             );
 
             addresses.addAddress(
@@ -191,9 +207,32 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
                 bufferCap,
                 "bufferCap is incorrect"
             );
+
+            assertEq(
+                WormholeBridgeAdapter(wormholeAdapter).targetAddress(
+                    block.chainid.toMoonbeamWormholeChainId()
+                ),
+                wormholeAdapter,
+                "moonbeam target address incorrect"
+            );
+            assertEq(
+                WormholeBridgeAdapter(wormholeAdapter).targetAddress(
+                    block.chainid.toBaseWormholeChainId()
+                ),
+                wormholeAdapter,
+                "base target address incorrect"
+            );
+
             assertTrue(
                 WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
                     block.chainid.toMoonbeamWormholeChainId(),
+                    wormholeAdapter
+                ),
+                "trusted sender not trusted"
+            );
+            assertTrue(
+                WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
+                    block.chainid.toBaseWormholeChainId(),
                     wormholeAdapter
                 ),
                 "trusted sender not trusted"

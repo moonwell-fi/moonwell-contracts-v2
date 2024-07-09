@@ -81,12 +81,20 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
                 pauseGuardian
             );
 
+            /// trust same address on Moonbeam
+            address[] memory trustedSenders = new address[](1);
+            trustedSenders[0] = wormholeAdapter;
+
+            uint16[] memory trustedChainIds = new uint16[](1);
+            trustedChainIds[0] = block.chainid.toMoonbeamWormholeChainId();
+
             initializeWormholeAdapter(
                 wormholeAdapter,
                 xwellProxy,
                 temporalGov,
                 relayer,
-                block.chainid.toMoonbeamWormholeChainId()
+                trustedChainIds,
+                trustedSenders
             );
 
             addresses.addAddress(
