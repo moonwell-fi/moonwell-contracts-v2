@@ -17,7 +17,6 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 */
 contract WellDeployerNonceIncrement is Script, Test {
     function run() public {
-        Addresses addresses = new Addresses();
         uint256 expectedNonce = 387;
 
         vm.startBroadcast();
