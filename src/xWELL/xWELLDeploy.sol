@@ -217,13 +217,15 @@ contract xWELLDeploy {
         address xwellProxy,
         address tokenOwner,
         address wormholeRelayerAddress,
-        uint16 chainId
+        uint16[] memory chainIds,
+        address[] memory trustedSenders
     ) public {
         WormholeBridgeAdapter(wormholeAdapter).initialize(
             xwellProxy,
             tokenOwner,
             wormholeRelayerAddress,
-            chainId
+            chainIds,
+            trustedSenders
         );
     }
 
