@@ -9,7 +9,7 @@
     },
     "scripts": {
         "prepare": "husky",
-        "lint": "yarn lint:solidity && yarn lint:javascript",
+        "lint": "yarn lint:forge && yarn lint:prettier",
         "lint:fix": "yarn lint:forge:fix && yarn lint:prettier:fix",
         "lint:forge": "forge fmt --check",
         "lint:forge:fix": "forge fmt",
