@@ -1028,10 +1028,13 @@ contract mipo00 is HybridProposal, Configs {
 
         vm.selectFork(MOONBEAM_FORK_ID);
         addresses.addRestriction(block.chainid.toMoonbeamChainId());
+
         MultichainGovernor multiChainGovernor = MultichainGovernor(
-            addresses.getAddress(
-                "MULTICHAIN_GOVERNOR_PROXY",
-                block.chainid.toMoonbeamChainId()
+            payable(
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    block.chainid.toMoonbeamChainId()
+                )
             )
         );
         /// remove the moonbeam restriction from addresses

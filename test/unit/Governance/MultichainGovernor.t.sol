@@ -154,7 +154,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
         vm.expectRevert("Initializable: contract is already initialized");
 
-        MultichainGovernor(address(governorLogic)).initialize(
+        MultichainGovernor(payable(governorLogic)).initialize(
             initData,
             trustedSenders,
             new bytes[](0)

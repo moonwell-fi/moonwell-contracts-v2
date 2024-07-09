@@ -138,7 +138,12 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
             addresses.getAddress("MOONBEAM_TIMELOCK", MOONBEAM_CHAIN_ID)
         );
         governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", MOONBEAM_CHAIN_ID)
+            payable(
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    MOONBEAM_CHAIN_ID
+                )
+            )
         );
 
         addresses.removeRestriction();
@@ -390,14 +395,14 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         bytes[] memory whitelistedCalldata = new bytes[](0);
 
         vm.expectRevert("Initializable: contract is already initialized");
-        MultichainGovernor(address(governor)).initialize(
+        governor.initialize(
             initializeData,
             trustedSenders,
             whitelistedCalldata
         );
 
         governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_IMPL")
+            payable(addresses.getAddress("MULTICHAIN_GOVERNOR_IMPL"))
         );
         vm.expectRevert("Initializable: contract is already initialized");
         governor.initialize(
@@ -437,13 +442,13 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
         vm.selectFork(MOONBEAM_FORK_ID);
 
         uint256 gasCost = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         ).bridgeCost(BASE_WORMHOLE_CHAIN_ID);
 
         assertTrue(gasCost != 0, "gas cost is 0 bridgeCost");
 
         gasCost = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         ).bridgeCostAll();
 
         assertTrue(gasCost != 0, "gas cost is 0 gas cost all");
@@ -1943,7 +1948,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
             );
             assertEq(uint256(governor.state(proposalId)), 5, "not in executed");
             assertEq(
-                MockMultichainGovernor(address(governor)).newFeature(),
+                MockMultichainGovernor(payable(governor)).newFeature(),
                 1,
                 "incorrectly upgraded"
             );
