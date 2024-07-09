@@ -3,11 +3,11 @@
 ## Summary
 
 Following up on the
-[launch of native Base USDC on September 5th](https://www.circle.com/blog/usdc-now-available-natively-on-base),
-we propose onboarding USDC as a collateral asset on Moonwell’s Base deployment.
+[launch of native Base USDC on September 5th](https://www.circle.com/blog/usdc-now-available-natively-on-base), we
+propose onboarding USDC as a collateral asset on Moonwell’s Base deployment.
 
-Due to the market demand and rapid increase in USDC liquidity on Base, we think
-it appropriate to list the asset as collateral.
+Due to the market demand and rapid increase in USDC liquidity on Base, we think it appropriate to list the asset as
+collateral.
 
 ## Recommendations
 
@@ -27,8 +27,7 @@ We propose launching USDC as collateral with the following parameters:
 
 ## Analysis
 
-KPIs for native USDC on Base, with DAI and USDbC as comparison (as of Sept 6
-2023).
+KPIs for native USDC on Base, with DAI and USDbC as comparison (as of Sept 6 2023).
 
 | Asset | Total supply (Base) | Circulating supply (Base) | Circulating supply (all chains) | Bridge | -5% liquidity depth (to ETH) |
 | ----- | ------------------- | ------------------------- | ------------------------------- | ------ | ---------------------------- |
@@ -37,24 +36,21 @@ KPIs for native USDC on Base, with DAI and USDbC as comparison (as of Sept 6
 | DAI   | 24M                 | 23.7M                     | 3.9B                            | Base   | $1M                          |
 
 DEX liquidity for USDC is currently highly concentrated in
-[Curve 4pool](https://curve.fi/#/base/pools/factory-v2-1/swap). The pool
-currently holds over 90% of USDC DEX liquidity on Base. Furthermore,
+[Curve 4pool](https://curve.fi/#/base/pools/factory-v2-1/swap). The pool currently holds over 90% of USDC DEX liquidity
+on Base. Furthermore,
 [top 10 LPs on Curve 4pool hold ~60% of the liquidity](https://basescan.org/token/tokenholderchart/0x79edc58c471acf2244b8f93d6f425fd06a439407).
 
 ![|624x508, 80%](https://i.imgur.com/Zfppx6V.png)
 
 ![image|690x464, 80%](https://i.imgur.com/k5YuRly.png)
 
-Given these observations, we propose initializing the USDC market with
-conservative supply and borrow caps as a preventive measure. Caps may be
-adjusted shortly after launching the market once more pools are bootstrapped
-with substantial liquidity. Note that the
+Given these observations, we propose initializing the USDC market with conservative supply and borrow caps as a
+preventive measure. Caps may be adjusted shortly after launching the market once more pools are bootstrapped with
+substantial liquidity. Note that the
 [Cap Guardian role](https://forum.moonwell.fi/t/gauntlets-initial-recommendations-for-moonwell-on-base/536#enable-gauntlet-as-supply-borrow-cap-guardian-6)
-allows adjusting the caps without being subject to standard 3-day voting
-period + timelock.
+allows adjusting the caps without being subject to standard 3-day voting period + timelock.
 
-Here are the proposed caps for USDC, along with current caps for other stable
-markets as a matter of comparison.
+Here are the proposed caps for USDC, along with current caps for other stable markets as a matter of comparison.
 
 | Market          | Supply cap | Borrow cap |
 | --------------- | ---------- | ---------- |
@@ -64,12 +60,12 @@ markets as a matter of comparison.
 
 ## Deployment
 
-We also strongly recommend collateral factors to be set at 0 during deployment
-to mitigate the risk of someone exploiting a known Compound v2 issue (see
+We also strongly recommend collateral factors to be set at 0 during deployment to mitigate the risk of someone
+exploiting a known Compound v2 issue (see
 [Hundred Finance exploit](https://www.comp.xyz/t/hundred-finance-exploit-and-compound-v2/4266)).
 
 Steps for safe deployment as proposed by Hexagate are the following:
 
-- Initialize markets using 0 as collateral factor (no borrowing possible).
-- Burn a small amount of collateral token supply for each market.
-- Set collateral factors for each market as specified
+-   Initialize markets using 0 as collateral factor (no borrowing possible).
+-   Burn a small amount of collateral token supply for each market.
+-   Set collateral factors for each market as specified

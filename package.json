@@ -10,11 +10,11 @@
     "scripts": {
         "prepare": "husky",
         "lint": "yarn lint:solidity && yarn lint:javascript",
-        "lint:fix": "yarn lint:solidity:fix && yarn lint:javascript:fix",
-        "lint:solidity": "forge fmt --check",
-        "lint:solidity:fix": "forge fmt",
-        "lint:javascript": "prettier --ignore-path .prettierignore --list-different .",
-        "lint:javascript:fix": "prettier --ignore-path .prettierignore --write ."
+        "lint:fix": "yarn lint:forge:fix && yarn lint:prettier:fix",
+        "lint:forge": "forge fmt --check",
+        "lint:forge:fix": "forge fmt",
+        "lint:prettier": "prettier --ignore-path .prettierignore --list-different .",
+        "lint:prettier:fix": "prettier --ignore-path .prettierignore --write ."
     },
     "repository": {
         "type": "git",

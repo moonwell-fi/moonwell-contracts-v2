@@ -1,15 +1,9 @@
 const {ethers} = require('ethers');
-const {
-    DefenderRelaySigner,
-    DefenderRelayProvider,
-} = require('defender-relay-client/lib/ethers');
+const {DefenderRelaySigner, DefenderRelayProvider} = require('defender-relay-client/lib/ethers');
 const {KeyValueStoreClient} = require('defender-kvstore-client');
 const axios = require('axios');
 
-const temporalGovernorABI = [
-    'function queueProposal(bytes VAA)',
-    'function executeProposal(bytes VAA)',
-];
+const temporalGovernorABI = ['function queueProposal(bytes VAA)', 'function executeProposal(bytes VAA)'];
 
 // moonbeam is for Base Mainnet
 const network = 'moonbeam';
@@ -22,10 +16,7 @@ const tgAddress =
         : '0x8b621804a7637b781e2BbD58e256a591F2dF7d51'; // TemporalGovernor on Base
 
 // Block explorer URL
-const blockExplorer =
-    network === 'moonbase'
-        ? 'https://goerli.basescan.org/tx/'
-        : 'https://basescan.org/tx/';
+const blockExplorer = network === 'moonbase' ? 'https://goerli.basescan.org/tx/' : 'https://basescan.org/tx/';
 
 class MoonwellEvent {
     async sendDiscordMessage(url, payload) {
@@ -42,9 +33,7 @@ class MoonwellEvent {
                 },
             });
             console.log(`Status code: ${response.status}`);
-            console.log(
-                `Response data: ${JSON.stringify(response.data, null, 2)}`,
-            );
+            console.log(`Response data: ${JSON.stringify(response.data, null, 2)}`);
         } catch (error) {
             console.error(`Error message: ${error.message}`);
         }
@@ -184,11 +173,7 @@ exports.handler = async function (event, context) {
     const signer = new DefenderRelaySigner(event, provider, {speed: 'fast'});
 
     // Create contract instance from the signer and use it to send a tx
-    const contract = new ethers.Contract(
-        tgAddress,
-        temporalGovernorABI,
-        signer,
-    );
+    const contract = new ethers.Contract(tgAddress, temporalGovernorABI, signer);
     const tx = await contract.queueProposal(vaa);
     console.log(`Called queueProposal in ${tx.hash}`);
     let timestamp = Math.floor(Date.now() / 1000);

@@ -63,6 +63,6 @@ A proposal to adjust WETH, wstETH, cbETH, rETH, and AERO's IR curve:
 | Jump Multiplier | 3.15      | 3.96        |
 
 Our recommendation post is located in the forums, please refer to this
-[link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-06-26/1075?u=gauntlet).
-By approving this proposal, you agree that any services provided by Gauntlet
-shall be governed by the terms of service available at gauntlet.network/tos
+[link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-06-26/1075?u=gauntlet). By
+approving this proposal, you agree that any services provided by Gauntlet shall be governed by the terms of service
+available at gauntlet.network/tos

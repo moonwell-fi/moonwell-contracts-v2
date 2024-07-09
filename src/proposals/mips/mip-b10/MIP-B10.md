@@ -20,10 +20,9 @@ Warden proposes onboarding rETH as collateral on Moonwell Base deployment.
 | Borrow rate          | 0%        | 3.15%      | 176.40%    |
 
 As part of our role of managing
-[Base liquidity incentives](https://forum.moonwell.fi/t/warden-finance-base-liquidity-incentives/608),
-we will also allocate supply-side rewards once rETH market is deployed to help
-bootstrap initial liquidity. We will provide further details regarding rewards
-once market is closer to be deployed.
+[Base liquidity incentives](https://forum.moonwell.fi/t/warden-finance-base-liquidity-incentives/608), we will also
+allocate supply-side rewards once rETH market is deployed to help bootstrap initial liquidity. We will provide further
+details regarding rewards once market is closer to be deployed.
 
 <img src="https://i.imgur.com/1CTYiYo.png" width="600px" />
 
@@ -31,13 +30,11 @@ once market is closer to be deployed.
 
 ### LST Market Overview
 
-Rocket pool is a decentralized and trustless ETH staking solution. Specific
-information about the protocol is available on
-[Rocket Pool’s documentation](https://docs.rocketpool.net/overview/faq.html#what-does-rocket-pool-do).
+Rocket pool is a decentralized and trustless ETH staking solution. Specific information about the protocol is available
+on [Rocket Pool’s documentation](https://docs.rocketpool.net/overview/faq.html#what-does-rocket-pool-do).
 
-Rocket Pool is currently the most adopted and liquid decentralized LST available
-on the market, which makes it a good candidate to use as collateral asset on
-lending protocols.
+Rocket Pool is currently the most adopted and liquid decentralized LST available on the market, which makes it a good
+candidate to use as collateral asset on lending protocols.
 
 <table>
   <tr>
@@ -276,73 +273,62 @@ About LST-specific risk
 
 #### Staking incentives and penalties
 
-Validators are rewarded for contributing to the chain's security, and penalized
-for failing to contribute. More implementation details about
-incentives/penalties is available over there:
+Validators are rewarded for contributing to the chain's security, and penalized for failing to contribute. More
+implementation details about incentives/penalties is available over there:
 https://eth2book.info/capella/part2/incentives/penalties/
 
-The reward, penalty and slashing design of the consensus mechanism encourages
-individual validators to behave correctly. However, from these design choices
-emerges a system that strongly incentivizes equal distribution of validators
-across multiple clients, and should strongly disincentivize single-client
-dominance.
+The reward, penalty and slashing design of the consensus mechanism encourages individual validators to behave correctly.
+However, from these design choices emerges a system that strongly incentivizes equal distribution of validators across
+multiple clients, and should strongly disincentivize single-client dominance.
 
 #### Slashing
 
-Slashing is a more severe action that results in the forceful removal of a
-validator from the network and an associated loss of their staked ether. There
-are three ways a validator can be slashed, all of which amount to the dishonest
+Slashing is a more severe action that results in the forceful removal of a validator from the network and an associated
+loss of their staked ether. There are three ways a validator can be slashed, all of which amount to the dishonest
 proposal or attestation of blocks:
 
-- By proposing and signing two different blocks for the same slot
-- By attesting to a block that "surrounds" another one (effectively changing
-  history)
-- By "double voting" by attesting to two candidates for the same block
+-   By proposing and signing two different blocks for the same slot
+-   By attesting to a block that "surrounds" another one (effectively changing history)
+-   By "double voting" by attesting to two candidates for the same block
 
-Correlation penalty is incurred when a validator is
-[slashed](https://eth2book.info/capella/part2/incentives/slashing/). The penalty
-amount is determined based on the amount of validators that also get slashed at
-the same moment. Correlation penalty aims to promote decentralization of
-validators.
+Correlation penalty is incurred when a validator is [slashed](https://eth2book.info/capella/part2/incentives/slashing/).
+The penalty amount is determined based on the amount of validators that also get slashed at the same moment. Correlation
+penalty aims to promote decentralization of validators.
 
 #### Inactivity leak
 
-If the consensus layer has gone more than four epochs without finalizing, an
-emergency protocol called the "inactivity leak" is activated.
+If the consensus layer has gone more than four epochs without finalizing, an emergency protocol called the "inactivity
+leak" is activated.
 
-Quadratic leak is a penalty that is imposed upon validators for being offline
-and missing a slot. The more longer a validator is offline, the steeper the
-penalty rate is.
+Quadratic leak is a penalty that is imposed upon validators for being offline and missing a slot. The more longer a
+validator is offline, the steeper the penalty rate is.
 
 #### Insurance
 
-In order to protect stakers funds, protocols may set up some form of insurance
-to compensate stakers in case of slashings or offline penalties.
+In order to protect stakers funds, protocols may set up some form of insurance to compensate stakers in case of
+slashings or offline penalties.
 
 <hr>
 </details>
 
 #### Correlation penalty risk
 
-Since Rocket Pool ETH relies on a diverse network of independent nodes, it is
-very unlikely that a significant part of the network gets slashed at the same
-moment.
+Since Rocket Pool ETH relies on a diverse network of independent nodes, it is very unlikely that a significant part of
+the network gets slashed at the same moment.
 
 #### Quadratic leaking risk profile
 
-Again here, Rocket Pool ETH is less prone to quadratic leaking penalties since
-node operators are well distributed and highly diversified.
+Again here, Rocket Pool ETH is less prone to quadratic leaking penalties since node operators are well distributed and
+highly diversified.
 
 #### Insurance fund
 
-When creating a minipool validator in the protocol, a minimum of 10% of the
-ETH's value provided by rETH stakers must also be staked in RPL as a security
-promise to the protocol.
+When creating a minipool validator in the protocol, a minimum of 10% of the ETH's value provided by rETH stakers must
+also be staked in RPL as a security promise to the protocol.
 
-The insurance promise acts as collateral, where if the node operator is
-penalized heavily or slashed and finishes staking with less than the 24 (or 16)
-ETH provided by rETH stakers, their collateral is sold for ETH via auction to
-help compensate the protocol for the missing ETH.
+The insurance promise acts as collateral, where if the node operator is penalized heavily or slashed and finishes
+staking with less than the 24 (or 16) ETH provided by rETH stakers, their collateral is sold for ETH via auction to help
+compensate the protocol for the missing ETH.
 
 [Source: Rocket Pool docs](https://docs.rocketpool.net/overview/faq.html#:~:text=RPL%20%E2%80%94%20Rocket%20Pool%20Protocol%20Token&text=The%20insurance%20promise%20acts%20as,protocol%20for%20the%20missing%20ETH.)
 
@@ -354,29 +340,24 @@ help compensate the protocol for the missing ETH.
 <hr>
 In order to maintain solvency, the protocol must ensure that debts are always overcollateralized by assets of a higher value. If debts were not overcollateralized, borrowers would be economically incentivized to default on their debt. Defaulting would lead to the creation of bad debts in the system.
 
-In order to mitigate asset volatility risk, the protocol enforces liquidations
-to ensure that debts are always overcollateralized.
+In order to mitigate asset volatility risk, the protocol enforces liquidations to ensure that debts are always
+overcollateralized.
 
-Time to undercollateralization measures the time required during a worst
-drawdown event for a highly leveraged position to accumulate bad debt . The
-lower the value, the less time is available for liquidators to clear risky
-positions.
+Time to undercollateralization measures the time required during a worst drawdown event for a highly leveraged position
+to accumulate bad debt . The lower the value, the less time is available for liquidators to clear risky positions.
 
-Our methodology specifies a minimum time to undercollateralization of 60 minutes
-for assets with healthy liquidity levels to ensure sufficient time is available
-to profitably liquidate risky positions of large size (i.e 20% of supply cap).
-Goal of this buffer is to reduce the risk of bad debt accumulating.
+Our methodology specifies a minimum time to undercollateralization of 60 minutes for assets with healthy liquidity
+levels to ensure sufficient time is available to profitably liquidate risky positions of large size (i.e 20% of supply
+cap). Goal of this buffer is to reduce the risk of bad debt accumulating.
 
 <hr>
 </details>
 
-The proposed collateral factor of 0.76 for rETH provides a
-undercollateralization time buffer of 9,865 minutes (6d 20hrs 24min), which is
-in line with other LST markets on Moonwell Base.
+The proposed collateral factor of 0.76 for rETH provides a undercollateralization time buffer of 9,865 minutes (6d 20hrs
+24min), which is in line with other LST markets on Moonwell Base.
 
-Given very low and unstable liquidity levels for rETH on Base at the moment, the
-proposed collateral factor aims to leave sufficient time for liquidators to
-profitably liquidate risky positions of large size (i.e $100k rETH collateral
+Given very low and unstable liquidity levels for rETH on Base at the moment, the proposed collateral factor aims to
+leave sufficient time for liquidators to profitably liquidate risky positions of large size (i.e $100k rETH collateral
 position) in a scenario where DEX liquidity is drastically deteriorated.
 
 <table>
@@ -445,26 +426,23 @@ position) in a scenario where DEX liquidity is drastically deteriorated.
 
 <hr>
 
-If an account collateral ratio breaches the minimum collateral ratio enforced by
-the protocol, it will become eligible for liquidation. In order for liquidators
-to be able to liquidate assets at a reasonable price, there must be sufficient
+If an account collateral ratio breaches the minimum collateral ratio enforced by the protocol, it will become eligible
+for liquidation. In order for liquidators to be able to liquidate assets at a reasonable price, there must be sufficient
 on-chain liquidity for liquidators to liquidate accounts profitably.
 
-Slippage tolerance measures the maximum budget allowed for slippage cost when
-liquidating a risky position during worst downturn events.
+Slippage tolerance measures the maximum budget allowed for slippage cost when liquidating a risky position during worst
+downturn events.
 
 <hr>
 
 </details>
 
-rETH circulating supply on Base is very low, with 197 rETH ($433k) currently in
-circulation. DEX liquidity is also currently not incentivized and concentrated
-in a single pool on Balancer, so it is very hard to predict how stable the
+rETH circulating supply on Base is very low, with 197 rETH ($433k) currently in circulation. DEX liquidity is also
+currently not incentivized and concentrated in a single pool on Balancer, so it is very hard to predict how stable the
 liquidity will be in the short term.
 
-Given these uncertainties, we recommend starting with a supply cap that is
-substantially less than circulating supply to avoid outsized positions from
-joining the market right now while liquidity is sparse.
+Given these uncertainties, we recommend starting with a supply cap that is substantially less than circulating supply to
+avoid outsized positions from joining the market right now while liquidity is sparse.
 
 | Symbol | Circulating supply (Base) | Slippage tolerance      | 4% depth | Proposed supply cap | Proposed borrow cap |
 | ------ | ------------------------- | ----------------------- | -------- | ------------------- | ------------------- |
@@ -480,18 +458,15 @@ joining the market right now while liquidity is sparse.
 
 ### Oracle Risk
 
-Oracle risk is the probability of the oracle price feed not accurately tracking
-the actual market price.
+Oracle risk is the probability of the oracle price feed not accurately tracking the actual market price.
 
-Given the lack of historical data for rETH on Base, we’ll assume that skew
-between oracle and spot price should have a similar behavior than wstETH on
-Optimism given an equivalent oracle setup (Chainlink wstETH/ETH + ETH/USD).
+Given the lack of historical data for rETH on Base, we’ll assume that skew between oracle and spot price should have a
+similar behavior than wstETH on Optimism given an equivalent oracle setup (Chainlink wstETH/ETH + ETH/USD).
 
-During the last 90d, for a similar oracle price feed on Optimism, 99.7% of
-observed oracle price skew data points are within [-0.689%, 0.817%].
+During the last 90d, for a similar oracle price feed on Optimism, 99.7% of observed oracle price skew data points are
+within [-0.689%, 0.817%].
 
-As a conservative measure, we’ll assume 1% skew in a worst case scenario for
-rETH on Base.
+As a conservative measure, we’ll assume 1% skew in a worst case scenario for rETH on Base.
 
 <img src="https://i.imgur.com/ntZjC67.png" width="800px" />
 
@@ -499,8 +474,6 @@ rETH on Base.
 
 The suggested interest rate model aims to
 
-- Facilitate borrowing rETH considering additional borrowing cost due to staking
-  yield (~3.12%)
-- Attract more suppliers when liquidity risk is high. Higher borrow rates above
-  the kink incentivize borrowers to repay their loans and can attract new
-  lenders in order to maximize liquidity at all times.
+-   Facilitate borrowing rETH considering additional borrowing cost due to staking yield (~3.12%)
+-   Attract more suppliers when liquidity risk is high. Higher borrow rates above the kink incentivize borrowers to
+    repay their loans and can attract new lenders in order to maximize liquidity at all times.

@@ -38,8 +38,7 @@ A proposal to adjust USDC's IR curve:
 
 ---
 
-Our recommendation post is located in the forums with further analysis and
-supporting data.
+Our recommendation post is located in the forums with further analysis and supporting data.
 
-By approving this proposal, you agree that any services provided by Gauntlet
-shall be governed by the terms of service available at gauntlet.network/tos.
+By approving this proposal, you agree that any services provided by Gauntlet shall be governed by the terms of service
+available at gauntlet.network/tos.

@@ -1,15 +1,9 @@
 const {ethers} = require('ethers');
-const {
-    DefenderRelaySigner,
-    DefenderRelayProvider,
-} = require('defender-relay-client/lib/ethers');
+const {DefenderRelaySigner, DefenderRelayProvider} = require('defender-relay-client/lib/ethers');
 const {KeyValueStoreClient} = require('defender-kvstore-client');
 const axios = require('axios');
 
-const temporalGovernorABI = [
-    'function queueProposal(bytes VAA)',
-    'function executeProposal(bytes VAA)',
-];
+const temporalGovernorABI = ['function queueProposal(bytes VAA)', 'function executeProposal(bytes VAA)'];
 
 // Use Moonbeam for Base
 const network = 'moonbeam';
@@ -22,10 +16,7 @@ const tgAddress =
         : '0x8b621804a7637b781e2BbD58e256a591F2dF7d51'; // TemporalGovernor on Base
 
 // Block explorer URL
-const blockExplorer =
-    network === 'moonbase'
-        ? 'https://goerli.basescan.org/tx/'
-        : 'https://basescan.org/tx/';
+const blockExplorer = network === 'moonbase' ? 'https://goerli.basescan.org/tx/' : 'https://basescan.org/tx/';
 
 class MoonwellEvent {
     async sendDiscordMessage(url, payload) {
@@ -42,25 +33,15 @@ class MoonwellEvent {
                 },
             });
             console.log(`Status code: ${response.status}`);
-            console.log(
-                `Response data: ${JSON.stringify(response.data, null, 2)}`,
-            );
+            console.log(`Response data: ${JSON.stringify(response.data, null, 2)}`);
         } catch (error) {
             console.error(`Error message: ${error.message}`);
         }
         console.log('Sent Discord message!');
     }
 
-    discordMessagePayload(
-        color,
-        resultText,
-        txURL,
-        networkName,
-        sequence,
-        timestamp,
-    ) {
-        const friendlyNetworkName =
-            networkName === 'moonbase' ? 'Base Goerli' : 'Base';
+    discordMessagePayload(color, resultText, txURL, networkName, sequence, timestamp) {
+        const friendlyNetworkName = networkName === 'moonbase' ? 'Base Goerli' : 'Base';
         const mipNumber = sequence - 1;
         let mipString = '';
         if (mipNumber < 10) {
@@ -189,11 +170,7 @@ async function processSequence(credentials, sequence, context) {
         });
 
         // Create contract instance from the signer and use it to send a tx
-        const contract = new ethers.Contract(
-            tgAddress,
-            temporalGovernorABI,
-            signer,
-        );
+        const contract = new ethers.Contract(tgAddress, temporalGovernorABI, signer);
         try {
             const tx = await contract.executeProposal(vaa);
             if (tx) {
@@ -216,16 +193,11 @@ Removed ${network}-${sequence} from the KV store.`,
                     sequence,
                     expiryTimestamp,
                 );
-                await moonwellEvent.sendDiscordMessage(
-                    GOVBOT_WEBHOOK,
-                    discordPayload,
-                );
+                await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
                 return true;
             }
         } catch (error) {
-            console.log(
-                `Failed to execute sequence ${sequence}, error message: ${error}`,
-            );
+            console.log(`Failed to execute sequence ${sequence}, error message: ${error}`);
             console.log(`Removing sequence ${sequence} from KV store...`);
             await kvStore.del(`${network}-${sequence}`);
             notificationClient.send({
@@ -243,16 +215,11 @@ Removed ${network}-${sequence} from the KV store.`,
                 sequence,
                 expiryTimestamp,
             );
-            await moonwellEvent.sendDiscordMessage(
-                GOVBOT_WEBHOOK,
-                discordPayload,
-            );
+            await moonwellEvent.sendDiscordMessage(GOVBOT_WEBHOOK, discordPayload);
             return true;
         }
     } else {
-        console.log(
-            `Sequence ${sequence} will be ready at ${expiry} (currently ${now}), skipping...`,
-        );
+        console.log(`Sequence ${sequence} will be ready at ${expiry} (currently ${now}), skipping...`);
         return false;
     }
 }
@@ -275,11 +242,7 @@ exports.handler = async function (credentials, context) {
     for (let i = 0; i < sequences.length; i++) {
         const sequence = sequences[i];
 
-        const isProcessed = await processSequence(
-            credentials,
-            sequence,
-            context,
-        );
+        const isProcessed = await processSequence(credentials, sequence, context);
 
         if (isProcessed) {
             anyProcessed = true;

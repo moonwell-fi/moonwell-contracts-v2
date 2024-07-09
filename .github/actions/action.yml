@@ -2,22 +2,22 @@ name: "Setup Environment"
 description: "Set up the pre-compiled environment"
 
 runs:
-  using: "composite"
-  steps:
-    - name: Checkout the repository
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
+    using: "composite"
+    steps:
+        - name: Checkout the repository
+          uses: actions/checkout@v2
+          with:
+              submodules: recursive
 
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
+        - name: Install Foundry
+          uses: foundry-rs/foundry-toolchain@v1
+          with:
+              version: nightly
 
-    - name: Clean Contracts
-      run: forge clean
-      shell: bash
+        - name: Clean Contracts
+          run: forge clean
+          shell: bash
 
-    - name: Compile Contracts
-      run: forge build
-      shell: bash
+        - name: Compile Contracts
+          run: forge build
+          shell: bash

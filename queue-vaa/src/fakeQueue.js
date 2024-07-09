@@ -16,26 +16,15 @@ class MoonwellEvent {
                 },
             });
             console.log(`Status code: ${response.status}`);
-            console.log(
-                `Response data: ${JSON.stringify(response.data, null, 2)}`,
-            );
+            console.log(`Response data: ${JSON.stringify(response.data, null, 2)}`);
         } catch (error) {
             console.error(`Error message: ${error.message}`);
         }
         console.log('Sent Discord message!');
     }
 
-    discordMessagePayload(
-        color,
-        text,
-        txURL,
-        networkName,
-        sequence,
-        timestamp,
-        details,
-    ) {
-        const friendlyNetworkName =
-            networkName === 'moonbase' ? 'Base Goerli' : 'Base';
+    discordMessagePayload(color, text, txURL, networkName, sequence, timestamp, details) {
+        const friendlyNetworkName = networkName === 'moonbase' ? 'Base Goerli' : 'Base';
         const baseFields = [
             {
                 name: 'Network',

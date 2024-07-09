@@ -6,18 +6,18 @@ env:
     ARB_RPC_URL: ${{secrets.ARB_RPC_URL}}
 
 jobs:
-  run-arb-tests:
-    name: arb-integration-tests
-    runs-on: ubuntu-latest
+    run-arb-tests:
+        name: arb-integration-tests
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+              with:
+                  submodules: recursive
 
-      - name: Setup Environment
-        uses: ./.github/actions
+            - name: Setup Environment
+              uses: ./.github/actions
 
-      - name: Arbitrum Integration Test Contracts
-        run: time forge test --match-contract ArbitrumTest --fork-url arbitrum
+            - name: Arbitrum Integration Test Contracts
+              run: time forge test --match-contract ArbitrumTest --fork-url arbitrum

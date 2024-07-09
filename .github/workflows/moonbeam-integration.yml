@@ -3,22 +3,22 @@ name: Foundry moonbeam integration tests
 on: [pull_request]
 
 env:
-  MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
-  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+    MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
+    BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
 
 jobs:
-  run-moonbeam-tests:
-    name: moonbeam-integration-tests
-    runs-on: ubuntu-latest
+    run-moonbeam-tests:
+        name: moonbeam-integration-tests
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+              with:
+                  submodules: recursive
 
-      - name: Setup Environment
-        uses: ./.github/actions
+            - name: Setup Environment
+              uses: ./.github/actions
 
-      - name: Integration Tests Moonbeam Mainnet
-        run: time forge test --match-contract MoonbeamTest --fork-url moonbeam -vvv
+            - name: Integration Tests Moonbeam Mainnet
+              run: time forge test --match-contract MoonbeamTest --fork-url moonbeam -vvv

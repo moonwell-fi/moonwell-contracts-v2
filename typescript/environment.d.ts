@@ -1,9 +1,9 @@
 declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      PROPOSAL: string;
+    namespace NodeJS {
+        interface ProcessEnv {
+            PROPOSAL: string;
+        }
     }
-  }
 }
 
 // If this file has no import/export statements (i.e. is a script)

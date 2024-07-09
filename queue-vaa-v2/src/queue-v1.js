@@ -10,10 +10,7 @@ const axios = require('axios');
 // moonbeam is for Base testnet
 const network = 'moonbase';
 
-const temporalGovernorABI = [
-    'function queueProposal(bytes VAA)',
-    'function executeProposal(bytes VAA)',
-];
+const temporalGovernorABI = ['function queueProposal(bytes VAA)', 'function executeProposal(bytes VAA)'];
 
 const tgAddress =
     network === 'moonbase'
@@ -21,10 +18,7 @@ const tgAddress =
         : '0x8b621804a7637b781e2BbD58e256a591F2dF7d51'; // TemporalGovernor on Base
 
 // Block explorer URL
-const blockExplorer =
-    network === 'moonbase'
-        ? 'https://goerli.basescan.org/tx/'
-        : 'https://basescan.org/tx/';
+const blockExplorer = network === 'moonbase' ? 'https://goerli.basescan.org/tx/' : 'https://basescan.org/tx/';
 
 class MoonwellEvent {
     async sendDiscordMessage(url, payload) {
@@ -41,9 +35,7 @@ class MoonwellEvent {
                 },
             });
             console.log(`Status code: ${response.status}`);
-            console.log(
-                `Response data: ${JSON.stringify(response.data, null, 2)}`,
-            );
+            console.log(`Response data: ${JSON.stringify(response.data, null, 2)}`);
         } catch (error) {
             console.error(`Error message: ${error.message}`);
         }
@@ -177,11 +169,7 @@ exports.handler = async function (event, context) {
     const provider = client.relaySigner.getProvider();
     const signer = client.relaySigner.getSigner(provider, {speed: 'fast'});
 
-    const contract = new ethers.Contract(
-        tgAddress,
-        temporalGovernorABI,
-        signer,
-    );
+    const contract = new ethers.Contract(tgAddress, temporalGovernorABI, signer);
 
     const tx = await contract.queueProposal(vaa);
     console.log(`Called queueProposal in ${tx.hash}`);

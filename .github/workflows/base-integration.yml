@@ -3,22 +3,21 @@ name: Foundry base integration tests
 on: [pull_request]
 
 env:
-  BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+    BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
 
 jobs:
-  run-base-tests:
-    name: base-integration-tests
-    runs-on: ubuntu-latest
+    run-base-tests:
+        name: base-integration-tests
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+              with:
+                  submodules: recursive
 
-      - name: Setup Environment
-        uses: ./.github/actions
+            - name: Setup Environment
+              uses: ./.github/actions
 
-      - name: Integration Tests Base Mainnet
-        run: time forge test --match-contract LiveSystemBaseTest --fork-url base
-          -vvv --ffi
+            - name: Integration Tests Base Mainnet
+              run: time forge test --match-contract LiveSystemBaseTest --fork-url base -vvv --ffi

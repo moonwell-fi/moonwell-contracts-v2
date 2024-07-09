@@ -43,6 +43,6 @@ A proposal to make an IR curve adjustments for FRAX:
 | Jump Multiplier    | 7.4     | 7.4         |
 
 Our recommendation post is located in the forums, please refer to this
-[link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-05-29/957?u=gauntlet).
-By approving this proposal, you agree that any services provided by Gauntlet
-shall be governed by the terms of service available at gauntlet.network/tos
+[link](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2024-05-29/957?u=gauntlet). By
+approving this proposal, you agree that any services provided by Gauntlet shall be governed by the terms of service
+available at gauntlet.network/tos

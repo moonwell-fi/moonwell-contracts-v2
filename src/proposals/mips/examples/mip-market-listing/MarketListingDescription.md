@@ -2,19 +2,16 @@
 
 ## Summary
 
-We propose onboarding DAI as a collateral asset on Moonwell’s Base deployment.
-Due to the market demand and rapid increase in DAI liquidity on Base we think it
-appropriate to list the asset as collateral.
+We propose onboarding DAI as a collateral asset on Moonwell’s Base deployment. Due to the market demand and rapid
+increase in DAI liquidity on Base we think it appropriate to list the asset as collateral.
 
 ## Recommendation
 
-We propose launching DAI as collateral with the following parameters:
-|Asset|CF|Supply cap|Borrow cap|IRM|Oracle|Protocol seize share| | --- | --- |
---- | --- | --- | --- | --- |
+We propose launching DAI as collateral with the following parameters: |Asset|CF|Supply cap|Borrow
+cap|IRM|Oracle|Protocol seize share| | --- | --- | --- | --- | --- | --- | --- |
 |[DAI](https://basescan.org/token/0x50c5725949a6f0c72e6c4a641f24049a917db0cb)|0.8|6M|5M|Stable|[Chainlink DAI / USD](https://basescan.org/address/0x591e79239a7d679378eC8c847e5038150364C78F)|30%|
 
-We propose to set DAI’s interest rate curve parameters to the stable IRM
-configuration.
+We propose to set DAI’s interest rate curve parameters to the stable IRM configuration.
 
 | Stable IRM Parameter | Value |
 | -------------------- | ----- |
@@ -38,9 +35,8 @@ KPIs for Dai on Base, with USDbC as comparison (as of August 15 2023)
 | ----- | ------------------------- | ------------------------------- | ------------- | ---------------------------- | --- | ----- | --- | --- | ------------- | ------ |
 | DAI   | 15M                       | 4B                              | Base (Native) | $384k                        |     | USDbC | 52M | 26B | Base (Native) | $1.33M |
 
-Given the significant difference in on-chain liquidity of DAI vs USDbC, we
-recommend scaling the supply and borrow caps for DAI to around ⅛ of those of
-USDbC.
+Given the significant difference in on-chain liquidity of DAI vs USDbC, we recommend scaling the supply and borrow caps
+for DAI to around ⅛ of those of USDbC.
 
 | Market | Supply cap | Borrow cap |
 | ------ | ---------- | ---------- |
@@ -49,14 +45,14 @@ USDbC.
 
 ## Deployment
 
-We strongly recommend collateral factors to be set at 0 during deployment to
-mitigate the risk of someone exploiting a known Compound v2 issue (see
-[Hundred Finance exploit](https://www.comp.xyz/t/hundred-finance-exploit-and-compound-v2/4266)).
-Steps for safe deployment as proposed by Hexagate are the following:
+We strongly recommend collateral factors to be set at 0 during deployment to mitigate the risk of someone exploiting a
+known Compound v2 issue (see
+[Hundred Finance exploit](https://www.comp.xyz/t/hundred-finance-exploit-and-compound-v2/4266)). Steps for safe
+deployment as proposed by Hexagate are the following:
 
-- Initialize markets using 0 as collateral factor (no borrowing possible).
-- Burn a small amount of collateral token supply for each market.
-- Set collateral factors for each market as specified
+-   Initialize markets using 0 as collateral factor (no borrowing possible).
+-   Burn a small amount of collateral token supply for each market.
+-   Set collateral factors for each market as specified
 
 ## References
 

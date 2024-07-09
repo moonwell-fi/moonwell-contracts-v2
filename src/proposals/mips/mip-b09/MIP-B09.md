@@ -13,8 +13,8 @@ A proposal to adjust 3 risk parameters:
 | USDC Collateral Factor  | 82%           | 83%               |
 
 Here is the forum
-[post](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2023-11-07/669?u=gauntlet)
-with further analysis and supporting data for our recommendations.
+[post](https://forum.moonwell.fi/t/gauntlet-s-base-moonbeam-moonriver-recommendations-2023-11-07/669?u=gauntlet) with
+further analysis and supporting data for our recommendations.
 
-_By approving this proposal, you agree that any services provided by Gauntlet
-shall be governed by the terms of service available at gauntlet.network/tos._
+_By approving this proposal, you agree that any services provided by Gauntlet shall be governed by the terms of service
+available at gauntlet.network/tos._
