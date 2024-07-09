@@ -390,7 +390,8 @@ contract mipo00 is HybridProposal, Configs {
 
                     mTokens[i]._setReserveFactor(config.reserveFactor);
                     mTokens[i]._setProtocolSeizeShare(config.seizeShare);
-                    mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+                    /// Set Temporal Governor as pending admin of the mToken
+                    mTokens[i]._setPendingAdmin(payable(governor));
 
                     Comptroller(address(unitroller))._setCollateralFactor(
                         mTokens[i],
@@ -433,6 +434,7 @@ contract mipo00 is HybridProposal, Configs {
             /// set temporal governor as the admin of the chainlink feed
             oracle.setAdmin(governor);
         }
+
         /// -------------- EMISSION CONFIGURATION --------------
 
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
