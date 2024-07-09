@@ -71,7 +71,8 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21 {
             address(1),
             address(1),
             address(1),
-            0
+            new uint16[](0),
+            new address[](0)
         );
     }
 
@@ -91,7 +92,8 @@ contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21 {
             address(1),
             address(1),
             address(1),
-            wormholeBaseChainid
+            new uint16[](0),
+            new address[](0)
         );
     }
 

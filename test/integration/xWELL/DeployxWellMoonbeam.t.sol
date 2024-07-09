@@ -72,7 +72,8 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
             address(1),
             address(1),
             address(1),
-            wormholeBaseChainid
+            new uint16[](0),
+            new address[](0)
         );
     }
 
