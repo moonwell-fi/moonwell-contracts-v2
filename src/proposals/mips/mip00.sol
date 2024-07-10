@@ -577,7 +577,7 @@ contract mip00 is HybridProposal, Configs {
 
     function run(Addresses addresses, address) public override {
         require(
-            actions.proposalActionTypeCount(primaryForkId()) > 0,
+            actions.proposalActionTypeCount(ActionType(primaryForkId())) > 0,
             "MIP-00: should have actions on the chain being deployed to"
         );
 
