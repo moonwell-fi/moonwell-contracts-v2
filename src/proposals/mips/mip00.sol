@@ -54,7 +54,7 @@ contract mip00 is HybridProposal, Configs {
     using ChainIds for uint256;
     using ProposalActions for *;
 
-    string public constant override name = "MIP-O00";
+    string public constant override name = "MIP-00: System Deploy";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
     uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
@@ -125,7 +125,7 @@ contract mip00 is HybridProposal, Configs {
                 emissions[block.chainid].length,
             "emissions length not equal to cTokenConfigurations length"
         );
-        addresses.addRestriction(primaryForkId());
+        addresses.addRestriction(block.chainid);
 
         /// ------- TemporalGovernor -------
 
