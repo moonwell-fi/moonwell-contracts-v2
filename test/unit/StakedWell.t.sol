@@ -1,16 +1,13 @@
 pragma solidity 0.8.19;
 
-import {ProxyAdmin} from
-    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
 import "@test/helper/BaseTest.t.sol";
 
-import {ProxyAdmin} from
-    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {MultichainGovernorDeploy} from
-    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 
 contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
     IStakedWell stakedWell;
@@ -79,19 +76,9 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         uint256 userStkWellBalanceAfter = stakedWell.balanceOf(user);
         uint256 stkWellSupplyAfter = stakedWell.totalSupply();
 
-        assertEq(
-            userBalanceBefore - amount, userBalanceAfter, "Wrong user balance"
-        );
-        assertEq(
-            userStkWellBalanceBefore + amount,
-            userStkWellBalanceAfter,
-            "Wrong user staked balance"
-        );
-        assertEq(
-            stkWellSupplyBefore + amount,
-            stkWellSupplyAfter,
-            "Wrong total supply"
-        );
+        assertEq(userBalanceBefore - amount, userBalanceAfter, "Wrong user balance");
+        assertEq(userStkWellBalanceBefore + amount, userStkWellBalanceAfter, "Wrong user staked balance");
+        assertEq(stkWellSupplyBefore + amount, stkWellSupplyAfter, "Wrong total supply");
     }
 
     function testConfigureAssetsIncorrectArityFails() public {
@@ -101,9 +88,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
 
         vm.prank(address(stakedWell.EMISSION_MANAGER()));
         vm.expectRevert("PARAM_LENGTHS");
-        stakedWell.configureAssets(
-            emissionPerSecond, totalStaked, underlyingAsset
-        );
+        stakedWell.configureAssets(emissionPerSecond, totalStaked, underlyingAsset);
     }
 
     function testConfigureAssetsNonManagerFails() public {
@@ -113,9 +98,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
 
         vm.prank(address(1));
         vm.expectRevert("ONLY_EMISSION_MANAGER");
-        stakedWell.configureAssets(
-            emissionPerSecond, totalStaked, underlyingAsset
-        );
+        stakedWell.configureAssets(emissionPerSecond, totalStaked, underlyingAsset);
     }
 
     function testGetPriorVotes() public {
@@ -124,11 +107,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         uint256 blockTimestamp = block.timestamp;
 
         vm.warp(block.timestamp + 1);
-        assertEq(
-            stakedWell.getPriorVotes(user, blockTimestamp),
-            amount,
-            "Wrong prior votes"
-        );
+        assertEq(stakedWell.getPriorVotes(user, blockTimestamp), amount, "Wrong prior votes");
     }
 
     function testRedeem() public {
@@ -142,16 +121,8 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         stakedWell.redeem(user, amount);
 
         assertEq(stakedWell.balanceOf(user), 0, "Wrong staked amount");
-        assertEq(
-            xwellProxy.balanceOf(user),
-            userBalanceBefore + amount,
-            "Wrong user balance"
-        );
-        assertEq(
-            stkWellSupplyBefore - amount,
-            stakedWell.totalSupply(),
-            "Wrong total supply"
-        );
+        assertEq(xwellProxy.balanceOf(user), userBalanceBefore + amount, "Wrong user balance");
+        assertEq(stkWellSupplyBefore - amount, stakedWell.totalSupply(), "Wrong total supply");
     }
 
     function testRedeemBeforeCooldown() public {
@@ -190,14 +161,8 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         uint256 userBalanceAfter = xwellProxy.balanceOf(user);
         uint256 vaultBalanceAfter = xwellProxy.balanceOf(address(this));
 
-        assertTrue(
-            userBalanceBefore + expectedRewardAmount == userBalanceAfter,
-            "User balance should increase"
-        );
-        assertTrue(
-            vaultBalanceBefore - expectedRewardAmount == vaultBalanceAfter,
-            "Vault balance should decrease"
-        );
+        assertTrue(userBalanceBefore + expectedRewardAmount == userBalanceAfter, "User balance should increase");
+        assertTrue(vaultBalanceBefore - expectedRewardAmount == vaultBalanceAfter, "Vault balance should decrease");
     }
 
     function testSetCoolDownSeconds() public {
@@ -215,9 +180,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         vm.prank(address(stakedWell.EMISSION_MANAGER()));
         stakedWell.setUnstakeWindow(newUnstakeWindow);
 
-        assertEq(
-            stakedWell.UNSTAKE_WINDOW(), newUnstakeWindow, "Wrong cooldown"
-        );
+        assertEq(stakedWell.UNSTAKE_WINDOW(), newUnstakeWindow, "Wrong cooldown");
     }
 
     function testSetCoolDownSeconds(uint256 newCooldown) public {
@@ -231,9 +194,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
         vm.prank(address(stakedWell.EMISSION_MANAGER()));
         stakedWell.setUnstakeWindow(newUnstakeWindow);
 
-        assertEq(
-            stakedWell.UNSTAKE_WINDOW(), newUnstakeWindow, "Wrong cooldown"
-        );
+        assertEq(stakedWell.UNSTAKE_WINDOW(), newUnstakeWindow, "Wrong cooldown");
     }
 
     function testStakeSetCooldownToZeroUnstakeImmediately() public {
@@ -259,11 +220,7 @@ contract StakedWellUnitTest is BaseTest, MultichainGovernorDeploy {
 
         vm.stopPrank();
 
-        assertEq(
-            xwellProxy.balanceOf(user),
-            startingUserxWellBalance + amount,
-            "User should have received xWell"
-        );
+        assertEq(xwellProxy.balanceOf(user), startingUserxWellBalance + amount, "User should have received xWell");
     }
 
     function testSetCoolDownSecondsNonEmissionsManagerFails() public {

@@ -13,10 +13,7 @@ contract JumpRateModel is InterestRateModel {
     using SafeMath for uint256;
 
     event NewInterestParams(
-        uint256 baseRatePerTimestamp,
-        uint256 multiplierPerTimestamp,
-        uint256 jumpMultiplierPerTimestamp,
-        uint256 kink
+        uint256 baseRatePerTimestamp, uint256 multiplierPerTimestamp, uint256 jumpMultiplierPerTimestamp, uint256 kink
     );
 
     /**
@@ -54,26 +51,13 @@ contract JumpRateModel is InterestRateModel {
      * @param jumpMultiplierPerYear The multiplierPerTimestamp after hitting a specified utilization point
      * @param kink_ The utilization point at which the jump multiplier is applied
      */
-    constructor(
-        uint256 baseRatePerYear,
-        uint256 multiplierPerYear,
-        uint256 jumpMultiplierPerYear,
-        uint256 kink_
-    ) {
-        baseRatePerTimestamp =
-            baseRatePerYear.mul(1e18).div(timestampsPerYear).div(1e18);
-        multiplierPerTimestamp =
-            multiplierPerYear.mul(1e18).div(timestampsPerYear).div(1e18);
-        jumpMultiplierPerTimestamp =
-            jumpMultiplierPerYear.mul(1e18).div(timestampsPerYear).div(1e18);
+    constructor(uint256 baseRatePerYear, uint256 multiplierPerYear, uint256 jumpMultiplierPerYear, uint256 kink_) {
+        baseRatePerTimestamp = baseRatePerYear.mul(1e18).div(timestampsPerYear).div(1e18);
+        multiplierPerTimestamp = multiplierPerYear.mul(1e18).div(timestampsPerYear).div(1e18);
+        jumpMultiplierPerTimestamp = jumpMultiplierPerYear.mul(1e18).div(timestampsPerYear).div(1e18);
         kink = kink_;
 
-        emit NewInterestParams(
-            baseRatePerTimestamp,
-            multiplierPerTimestamp,
-            jumpMultiplierPerTimestamp,
-            kink
-        );
+        emit NewInterestParams(baseRatePerTimestamp, multiplierPerTimestamp, jumpMultiplierPerTimestamp, kink);
     }
 
     /**
@@ -83,11 +67,7 @@ contract JumpRateModel is InterestRateModel {
      * @param reserves The amount of reserves in the market (currently unused)
      * @return The utilization rate as a mantissa between [0, 1e18]
      */
-    function utilizationRate(uint256 cash, uint256 borrows, uint256 reserves)
-        public
-        pure
-        returns (uint256)
-    {
+    function utilizationRate(uint256 cash, uint256 borrows, uint256 reserves) public pure returns (uint256) {
         // Utilization rate is 0 when there are no borrows
         if (borrows == 0) {
             return 0;
@@ -103,26 +83,15 @@ contract JumpRateModel is InterestRateModel {
      * @param reserves The amount of reserves in the market
      * @return The borrow rate percentage per timestamp as a mantissa (scaled by 1e18)
      */
-    function getBorrowRate(uint256 cash, uint256 borrows, uint256 reserves)
-        public
-        view
-        override
-        returns (uint256)
-    {
+    function getBorrowRate(uint256 cash, uint256 borrows, uint256 reserves) public view override returns (uint256) {
         uint256 util = utilizationRate(cash, borrows, reserves);
 
         if (util <= kink) {
-            return util.mul(multiplierPerTimestamp).div(1e18).add(
-                baseRatePerTimestamp
-            );
+            return util.mul(multiplierPerTimestamp).div(1e18).add(baseRatePerTimestamp);
         } else {
-            uint256 normalRate = kink.mul(multiplierPerTimestamp).div(1e18).add(
-                baseRatePerTimestamp
-            );
+            uint256 normalRate = kink.mul(multiplierPerTimestamp).div(1e18).add(baseRatePerTimestamp);
             uint256 excessUtil = util.sub(kink);
-            return excessUtil.mul(jumpMultiplierPerTimestamp).div(1e18).add(
-                normalRate
-            );
+            return excessUtil.mul(jumpMultiplierPerTimestamp).div(1e18).add(normalRate);
         }
     }
 
@@ -143,7 +112,6 @@ contract JumpRateModel is InterestRateModel {
         uint256 oneMinusReserveFactor = uint256(1e18).sub(reserveFactorMantissa);
         uint256 borrowRate = getBorrowRate(cash, borrows, reserves);
         uint256 rateToPool = borrowRate.mul(oneMinusReserveFactor).div(1e18);
-        return
-            utilizationRate(cash, borrows, reserves).mul(rateToPool).div(1e18);
+        return utilizationRate(cash, borrows, reserves).mul(rateToPool).div(1e18);
     }
 }

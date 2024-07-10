@@ -19,19 +19,13 @@ contract WormholeRelayerAdapter {
 
     mapping(uint16 chainId => bool shouldRevert) public shouldRevertQuoteAtChain;
 
-    function setShouldRevertQuoteAtChain(
-        uint16[] memory chainIds,
-        bool shouldRevert
-    ) external {
+    function setShouldRevertQuoteAtChain(uint16[] memory chainIds, bool shouldRevert) external {
         for (uint16 i = 0; i < chainIds.length; i++) {
             shouldRevertQuoteAtChain[chainIds[i]] = shouldRevert;
         }
     }
 
-    function setShouldRevertAtChain(
-        uint16[] memory chainIds,
-        bool _shouldRevert
-    ) external {
+    function setShouldRevertAtChain(uint16[] memory chainIds, bool _shouldRevert) external {
         for (uint16 i = 0; i < chainIds.length; i++) {
             shouldRevertAtChain[chainIds[i]] = _shouldRevert;
         }
@@ -93,11 +87,11 @@ contract WormholeRelayerAdapter {
 
     /// @notice Retrieve the price for relaying messages to another chain
     /// currently hardcoded to 0.01 ether
-    function quoteEVMDeliveryPrice(uint16 targetChain, uint256, uint256)
-        public
-        view
-        returns (uint256 nativePrice, uint256 targetChainRefundPerGasUnused)
-    {
+    function quoteEVMDeliveryPrice(
+        uint16 targetChain,
+        uint256,
+        uint256
+    ) public view returns (uint256 nativePrice, uint256 targetChainRefundPerGasUnused) {
         if (shouldRevertQuoteAtChain[targetChain]) {
             revert("WormholeBridgeAdapter: quoteEVMDeliveryPrice revert");
         }

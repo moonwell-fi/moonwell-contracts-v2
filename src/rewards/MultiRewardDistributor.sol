@@ -1,23 +1,19 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import {Initializable} from
-    "@openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import {Initializable} from "@openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 
 import {Pausable} from "@openzeppelin-contracts/contracts/security/Pausable.sol";
-import {ReentrancyGuard} from
-    "@openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from
-    "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {Comptroller} from "@protocol/Comptroller.sol";
 
 import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {MTokenInterface} from "@protocol/MTokenInterfaces.sol";
-import {MultiRewardDistributorCommon} from
-    "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
 /**
  * @title A multi-asset distributor that tracks mTokens supply/borrows
@@ -91,25 +87,14 @@ contract MultiRewardDistributor is
         _disableInitializers();
     }
 
-    function initialize(address _comptroller, address _pauseGuardian)
-        external
-        initializer
-    {
+    function initialize(address _comptroller, address _pauseGuardian) external initializer {
         // Sanity check the params
-        require(
-            _comptroller != address(0), "Comptroller can't be the 0 address!"
-        );
-        require(
-            _pauseGuardian != address(0),
-            "Pause Guardian can't be the 0 address!"
-        );
+        require(_comptroller != address(0), "Comptroller can't be the 0 address!");
+        require(_pauseGuardian != address(0), "Pause Guardian can't be the 0 address!");
 
         comptroller = Comptroller(payable(_comptroller));
 
-        require(
-            comptroller.isComptroller(),
-            "Can't bind to something that's not a comptroller!"
-        );
+        require(comptroller.isComptroller(), "Can't bind to something that's not a comptroller!");
 
         pauseGuardian = _pauseGuardian;
         emissionCap = 100e18;
@@ -127,33 +112,24 @@ contract MultiRewardDistributor is
 
     /// @notice Only allow the comptroller's admin to take an action, usually the timelock
     modifier onlyComptrollersAdmin() {
-        require(
-            msg.sender == address(comptroller.admin()),
-            "Only the comptroller's administrator can do this!"
-        );
+        require(msg.sender == address(comptroller.admin()), "Only the comptroller's administrator can do this!");
         _;
     }
 
     /// @notice Only allow the comptroller OR the comptroller's admin to take an action
     modifier onlyComptrollerOrAdmin() {
         require(
-            msg.sender == address(comptroller)
-                || msg.sender == comptroller.admin(),
+            msg.sender == address(comptroller) || msg.sender == comptroller.admin(),
             "Only the comptroller or comptroller admin can call this function"
         );
         _;
     }
 
     /// @notice Only allow the emission config owner OR the comptroller's admin to take an action
-    modifier onlyEmissionConfigOwnerOrAdmin(
-        MToken _mToken,
-        address emissionToken
-    ) {
-        MarketEmissionConfig storage emissionConfig =
-            fetchConfigByEmissionToken(_mToken, emissionToken);
+    modifier onlyEmissionConfigOwnerOrAdmin(MToken _mToken, address emissionToken) {
+        MarketEmissionConfig storage emissionConfig = fetchConfigByEmissionToken(_mToken, emissionToken);
         require(
-            msg.sender == emissionConfig.config.owner
-                || msg.sender == comptroller.admin(),
+            msg.sender == emissionConfig.config.owner || msg.sender == comptroller.admin(),
             "Only the config owner or comptroller admin can call this function"
         );
         _;
@@ -183,26 +159,16 @@ contract MultiRewardDistributor is
      * @param _mToken The market to get a config for
      * @param _emissionToken The reward token address
      */
-    function getCurrentOwner(MToken _mToken, address _emissionToken)
-        external
-        view
-        returns (address)
-    {
-        MarketEmissionConfig storage emissionConfig =
-            fetchConfigByEmissionToken(_mToken, _emissionToken);
+    function getCurrentOwner(MToken _mToken, address _emissionToken) external view returns (address) {
+        MarketEmissionConfig storage emissionConfig = fetchConfigByEmissionToken(_mToken, _emissionToken);
         return emissionConfig.config.owner;
     }
 
     /// @notice A view to enumerate all configs for a given market, does not include index data
-    function getAllMarketConfigs(MToken _mToken)
-        external
-        view
-        returns (MarketConfig[] memory)
-    {
+    function getAllMarketConfigs(MToken _mToken) external view returns (MarketConfig[] memory) {
         MarketEmissionConfig[] storage configs = marketConfigs[address(_mToken)];
 
-        MarketConfig[] memory outputMarketConfigs =
-            new MarketConfig[](configs.length);
+        MarketConfig[] memory outputMarketConfigs = new MarketConfig[](configs.length);
 
         // Pop out the MarketConfigs to return them
         for (uint256 index = 0; index < configs.length; index++) {
@@ -214,44 +180,28 @@ contract MultiRewardDistributor is
     }
 
     /// @notice A view to get a config for a specific market/emission token pair
-    function getConfigForMarket(MToken _mToken, address _emissionToken)
-        external
-        view
-        returns (MarketConfig memory)
-    {
-        MarketEmissionConfig storage emissionConfig =
-            fetchConfigByEmissionToken(_mToken, _emissionToken);
+    function getConfigForMarket(MToken _mToken, address _emissionToken) external view returns (MarketConfig memory) {
+        MarketEmissionConfig storage emissionConfig = fetchConfigByEmissionToken(_mToken, _emissionToken);
         return emissionConfig.config;
     }
 
     /// @notice A view to enumerate a user's rewards across all markets and all emission tokens
-    function getOutstandingRewardsForUser(address _user)
-        external
-        view
-        returns (RewardWithMToken[] memory)
-    {
+    function getOutstandingRewardsForUser(address _user) external view returns (RewardWithMToken[] memory) {
         MToken[] memory markets = comptroller.getAllMarkets();
 
-        RewardWithMToken[] memory outputData =
-            new RewardWithMToken[](markets.length);
+        RewardWithMToken[] memory outputData = new RewardWithMToken[](markets.length);
 
         for (uint256 index = 0; index < markets.length; index++) {
-            RewardInfo[] memory rewardInfo =
-                getOutstandingRewardsForUser(markets[index], _user);
+            RewardInfo[] memory rewardInfo = getOutstandingRewardsForUser(markets[index], _user);
 
-            outputData[index] =
-                RewardWithMToken(address(markets[index]), rewardInfo);
+            outputData[index] = RewardWithMToken(address(markets[index]), rewardInfo);
         }
 
         return outputData;
     }
 
     /// @notice A view to enumerate a user's rewards across a specified market and all emission tokens for that market
-    function getOutstandingRewardsForUser(MToken _mToken, address _user)
-        public
-        view
-        returns (RewardInfo[] memory)
-    {
+    function getOutstandingRewardsForUser(MToken _mToken, address _user) public view returns (RewardInfo[] memory) {
         // Global config for this mToken
         MarketEmissionConfig[] storage configs = marketConfigs[address(_mToken)];
 
@@ -289,26 +239,16 @@ contract MultiRewardDistributor is
                 emissionConfig.config.borrowGlobalTimestamp,
                 emissionConfig.config.borrowGlobalIndex,
                 emissionConfig.config.endTime,
-                div_(
-                    calcData.marketData.totalBorrows,
-                    calcData.marketData.marketBorrowIndex
-                )
+                div_(calcData.marketData.totalBorrows, calcData.marketData.marketBorrowIndex)
             );
 
             // Calculate outstanding supplier side rewards
             uint256 supplierRewardsAccrued = calculateSupplyRewardsForUser(
-                emissionConfig,
-                supplyUpdate.newIndex,
-                calcData.mTokenInfo.mTokenBalance,
-                _user
+                emissionConfig, supplyUpdate.newIndex, calcData.mTokenInfo.mTokenBalance, _user
             );
 
             uint256 borrowerRewardsAccrued = calculateBorrowRewardsForUser(
-                emissionConfig,
-                borrowUpdate.newIndex,
-                calcData.marketData.marketBorrowIndex,
-                calcData.mTokenInfo,
-                _user
+                emissionConfig, borrowUpdate.newIndex, calcData.marketData.marketBorrowIndex, calcData.mTokenInfo, _user
             );
 
             outputRewardData[index] = RewardInfo({
@@ -330,13 +270,8 @@ contract MultiRewardDistributor is
     /// @notice view to get the cached global supply index for an mToken and emission index
     /// @param mToken The market to get a config for
     /// @param index The index of the config to get
-    function getGlobalSupplyIndex(address mToken, uint256 index)
-        public
-        view
-        returns (uint256)
-    {
-        MarketEmissionConfig storage emissionConfig =
-            marketConfigs[mToken][index];
+    function getGlobalSupplyIndex(address mToken, uint256 index) public view returns (uint256) {
+        MarketEmissionConfig storage emissionConfig = marketConfigs[mToken][index];
 
         // Set the new values in storage
         return emissionConfig.config.supplyGlobalIndex;
@@ -345,13 +280,8 @@ contract MultiRewardDistributor is
     /// @notice view to get the cached global borrow index for an mToken and emission index
     /// @param mToken The market to get a config for
     /// @param index The index of the config to get
-    function getGlobalBorrowIndex(address mToken, uint256 index)
-        public
-        view
-        returns (uint256)
-    {
-        MarketEmissionConfig storage emissionConfig =
-            marketConfigs[mToken][index];
+    function getGlobalBorrowIndex(address mToken, uint256 index) public view returns (uint256) {
+        MarketEmissionConfig storage emissionConfig = marketConfigs[mToken][index];
 
         // Set the new values in storage
         return emissionConfig.config.borrowGlobalIndex;
@@ -386,30 +316,18 @@ contract MultiRewardDistributor is
         require(tokenIsListed, "The market requested to be added is un-listed!");
 
         // Sanity check emission speeds are below emissionCap
-        require(
-            _supplyEmissionPerSec < emissionCap,
-            "Cannot set a supply reward speed higher than the emission cap!"
-        );
-        require(
-            _borrowEmissionsPerSec < emissionCap,
-            "Cannot set a borrow reward speed higher than the emission cap!"
-        );
+        require(_supplyEmissionPerSec < emissionCap, "Cannot set a supply reward speed higher than the emission cap!");
+        require(_borrowEmissionsPerSec < emissionCap, "Cannot set a borrow reward speed higher than the emission cap!");
 
         // Sanity check end time is some time in the future
-        require(
-            _endTime > block.timestamp + 1,
-            "The _endTime parameter must be in the future!"
-        );
+        require(_endTime > block.timestamp + 1, "The _endTime parameter must be in the future!");
 
         MarketEmissionConfig[] storage configs = marketConfigs[address(_mToken)];
 
         // Sanity check to ensure that the emission token doesn't already exist in a config
         for (uint256 index = 0; index < configs.length; index++) {
             MarketEmissionConfig storage mTokenConfig = configs[index];
-            require(
-                mTokenConfig.config.emissionToken != _emissionToken,
-                "Emission token already listed!"
-            );
+            require(mTokenConfig.config.emissionToken != _emissionToken, "Emission token already listed!");
         }
 
         // Things look good, create a config
@@ -421,28 +339,17 @@ contract MultiRewardDistributor is
             // Set the time that the emission campaign should end at
             endTime: _endTime,
             // Initialize the global supply
-            supplyGlobalTimestamp: safe32(
-                block.timestamp, "block timestamp exceeds 32 bits"
-            ),
+            supplyGlobalTimestamp: safe32(block.timestamp, "block timestamp exceeds 32 bits"),
             supplyGlobalIndex: initialIndexConstant,
             // Initialize the global borrow index + timestamp
-            borrowGlobalTimestamp: safe32(
-                block.timestamp, "block timestamp exceeds 32 bits"
-            ),
+            borrowGlobalTimestamp: safe32(block.timestamp, "block timestamp exceeds 32 bits"),
             borrowGlobalIndex: initialIndexConstant,
             // Set supply and reward borrow speeds
             supplyEmissionsPerSec: _supplyEmissionPerSec,
             borrowEmissionsPerSec: _borrowEmissionsPerSec
         });
 
-        emit NewConfigCreated(
-            _mToken,
-            _owner,
-            _emissionToken,
-            _supplyEmissionPerSec,
-            _borrowEmissionsPerSec,
-            _endTime
-        );
+        emit NewConfigCreated(_mToken, _owner, _emissionToken, _supplyEmissionPerSec, _borrowEmissionsPerSec, _endTime);
 
         // Go push in our new config
         MarketEmissionConfig storage newConfig = configs.push();
@@ -454,16 +361,11 @@ contract MultiRewardDistributor is
      * @param _tokenAddress The address of the token to transfer
      * @param _amount The amount of tokens to sweep, uint256.max means everything
      */
-    function _rescueFunds(address _tokenAddress, uint256 _amount)
-        external
-        onlyComptrollersAdmin
-    {
+    function _rescueFunds(address _tokenAddress, uint256 _amount) external onlyComptrollersAdmin {
         IERC20 token = IERC20(_tokenAddress);
         // Similar to mTokens, if this is uint256.max that means "transfer everything"
         if (_amount == type(uint256).max) {
-            token.safeTransfer(
-                comptroller.admin(), token.balanceOf(address(this))
-            );
+            token.safeTransfer(comptroller.admin(), token.balanceOf(address(this)));
         } else {
             token.safeTransfer(comptroller.admin(), _amount);
         }
@@ -475,14 +377,8 @@ contract MultiRewardDistributor is
      * @notice Sets a new pause guardian, callable by the CURRENT pause guardian or comptroller's admin
      * @param _newPauseGuardian The new pause guardian
      */
-    function _setPauseGuardian(address _newPauseGuardian)
-        external
-        onlyPauseGuardianOrAdmin
-    {
-        require(
-            _newPauseGuardian != address(0),
-            "Pause Guardian can't be the 0 address!"
-        );
+    function _setPauseGuardian(address _newPauseGuardian) external onlyPauseGuardianOrAdmin {
+        require(_newPauseGuardian != address(0), "Pause Guardian can't be the 0 address!");
 
         address currentPauseGuardian = pauseGuardian;
 
@@ -495,10 +391,7 @@ contract MultiRewardDistributor is
      * @notice Sets a new emission cap for supply/borrow speeds
      * @param _newEmissionCap The new emission cap
      */
-    function _setEmissionCap(uint256 _newEmissionCap)
-        external
-        onlyComptrollersAdmin
-    {
+    function _setEmissionCap(uint256 _newEmissionCap) external onlyComptrollersAdmin {
         uint256 oldEmissionCap = emissionCap;
 
         emissionCap = _newEmissionCap;
@@ -520,10 +413,7 @@ contract MultiRewardDistributor is
      * @notice Updates the supply indices for a given market
      * @param _mToken The market to update
      */
-    function updateMarketSupplyIndex(MToken _mToken)
-        external
-        onlyComptrollerOrAdmin
-    {
+    function updateMarketSupplyIndex(MToken _mToken) external onlyComptrollerOrAdmin {
         updateMarketSupplyIndexInternal(_mToken);
     }
 
@@ -562,10 +452,7 @@ contract MultiRewardDistributor is
      * @notice Updates the borrow indices for a given market
      * @param _mToken The market to update
      */
-    function updateMarketBorrowIndex(MToken _mToken)
-        external
-        onlyComptrollerOrAdmin
-    {
+    function updateMarketBorrowIndex(MToken _mToken) external onlyComptrollerOrAdmin {
         updateMarketBorrowIndexInternal(_mToken);
     }
 
@@ -650,19 +537,12 @@ contract MultiRewardDistributor is
         address _emissionToken,
         uint256 _newSupplySpeed
     ) external onlyEmissionConfigOwnerOrAdmin(_mToken, _emissionToken) {
-        MarketEmissionConfig storage emissionConfig =
-            fetchConfigByEmissionToken(_mToken, _emissionToken);
+        MarketEmissionConfig storage emissionConfig = fetchConfigByEmissionToken(_mToken, _emissionToken);
 
         uint256 currentSupplySpeed = emissionConfig.config.supplyEmissionsPerSec;
 
-        require(
-            _newSupplySpeed != currentSupplySpeed,
-            "Can't set new supply emissions to be equal to current!"
-        );
-        require(
-            _newSupplySpeed < emissionCap,
-            "Cannot set a supply reward speed higher than the emission cap!"
-        );
+        require(_newSupplySpeed != currentSupplySpeed, "Can't set new supply emissions to be equal to current!");
+        require(_newSupplySpeed < emissionCap, "Cannot set a supply reward speed higher than the emission cap!");
 
         // Make sure we update our indices before setting the new speed
         updateMarketSupplyIndexInternal(_mToken);
@@ -670,9 +550,7 @@ contract MultiRewardDistributor is
         // Update supply speed
         emissionConfig.config.supplyEmissionsPerSec = _newSupplySpeed;
 
-        emit NewSupplyRewardSpeed(
-            _mToken, _emissionToken, currentSupplySpeed, _newSupplySpeed
-        );
+        emit NewSupplyRewardSpeed(_mToken, _emissionToken, currentSupplySpeed, _newSupplySpeed);
     }
 
     /**
@@ -686,19 +564,12 @@ contract MultiRewardDistributor is
         address _emissionToken,
         uint256 _newBorrowSpeed
     ) external onlyEmissionConfigOwnerOrAdmin(_mToken, _emissionToken) {
-        MarketEmissionConfig storage emissionConfig =
-            fetchConfigByEmissionToken(_mToken, _emissionToken);
+        MarketEmissionConfig storage emissionConfig = fetchConfigByEmissionToken(_mToken, _emissionToken);
 
         uint256 currentBorrowSpeed = emissionConfig.config.borrowEmissionsPerSec;
 
-        require(
-            _newBorrowSpeed != currentBorrowSpeed,
-            "Can't set new borrow emissions to be equal to current!"
-        );
-        require(
-            _newBorrowSpeed < emissionCap,
-            "Cannot set a borrow reward speed higher than the emission cap!"
-        );
+        require(_newBorrowSpeed != currentBorrowSpeed, "Can't set new borrow emissions to be equal to current!");
+        require(_newBorrowSpeed < emissionCap, "Cannot set a borrow reward speed higher than the emission cap!");
 
         // Make sure we update our indices before setting the new speed
         updateMarketBorrowIndexInternal(_mToken);
@@ -706,9 +577,7 @@ contract MultiRewardDistributor is
         // Update borrow speed
         emissionConfig.config.borrowEmissionsPerSec = _newBorrowSpeed;
 
-        emit NewBorrowRewardSpeed(
-            _mToken, _emissionToken, currentBorrowSpeed, _newBorrowSpeed
-        );
+        emit NewBorrowRewardSpeed(_mToken, _emissionToken, currentBorrowSpeed, _newBorrowSpeed);
     }
 
     /**
@@ -722,15 +591,12 @@ contract MultiRewardDistributor is
         address _emissionToken,
         address _newOwner
     ) external onlyEmissionConfigOwnerOrAdmin(_mToken, _emissionToken) {
-        MarketEmissionConfig storage emissionConfig =
-            fetchConfigByEmissionToken(_mToken, _emissionToken);
+        MarketEmissionConfig storage emissionConfig = fetchConfigByEmissionToken(_mToken, _emissionToken);
 
         address currentOwner = emissionConfig.config.owner;
 
         emissionConfig.config.owner = _newOwner;
-        emit NewEmissionConfigOwner(
-            _mToken, _emissionToken, currentOwner, _newOwner
-        );
+        emit NewEmissionConfigOwner(_mToken, _emissionToken, currentOwner, _newOwner);
     }
 
     /**
@@ -744,19 +610,13 @@ contract MultiRewardDistributor is
         address _emissionToken,
         uint256 _newEndTime
     ) external onlyEmissionConfigOwnerOrAdmin(_mToken, _emissionToken) {
-        MarketEmissionConfig storage emissionConfig =
-            fetchConfigByEmissionToken(_mToken, _emissionToken);
+        MarketEmissionConfig storage emissionConfig = fetchConfigByEmissionToken(_mToken, _emissionToken);
 
         uint256 currentEndTime = emissionConfig.config.endTime;
 
         // Must be older than our existing end time AND the current block
-        require(
-            _newEndTime > currentEndTime, "_newEndTime MUST be > currentEndTime"
-        );
-        require(
-            _newEndTime > block.timestamp,
-            "_newEndTime MUST be > block.timestamp"
-        );
+        require(_newEndTime > currentEndTime, "_newEndTime MUST be > currentEndTime");
+        require(_newEndTime > block.timestamp, "_newEndTime MUST be > block.timestamp");
 
         // Update both global indices before setting the new end time. If rewards are off this just updates the
         // global block timestamp to the current second
@@ -764,9 +624,7 @@ contract MultiRewardDistributor is
         updateMarketSupplyIndexInternal(_mToken);
 
         emissionConfig.config.endTime = _newEndTime;
-        emit NewRewardEndTime(
-            _mToken, _emissionToken, currentEndTime, _newEndTime
-        );
+        emit NewRewardEndTime(_mToken, _emissionToken, currentEndTime, _newEndTime);
     }
 
     /*
@@ -793,21 +651,17 @@ contract MultiRewardDistributor is
         uint256 userSupplyIndex = _emissionConfig.supplierIndices[_supplier];
 
         // If our user's index isn't set yet, set to the current global supply index
-        if (userSupplyIndex == 0 && _globalSupplyIndex >= initialIndexConstant)
-        {
+        if (userSupplyIndex == 0 && _globalSupplyIndex >= initialIndexConstant) {
             userSupplyIndex = initialIndexConstant; //_globalSupplyIndex;
         }
 
         // Calculate change in the cumulative sum of the reward per cToken accrued
-        Double memory deltaIndex =
-            Double({mantissa: sub_(_globalSupplyIndex, userSupplyIndex)});
+        Double memory deltaIndex = Double({mantissa: sub_(_globalSupplyIndex, userSupplyIndex)});
 
         // Calculate reward accrued: cTokenAmount * accruedPerCToken
         uint256 supplierDelta = mul_(_supplierTokens, deltaIndex);
 
-        return add_(
-            _emissionConfig.supplierRewardsAccrued[_supplier], supplierDelta
-        );
+        return add_(_emissionConfig.supplierRewardsAccrued[_supplier], supplierDelta);
     }
 
     /**
@@ -828,24 +682,19 @@ contract MultiRewardDistributor is
         uint256 userBorrowIndex = _emissionConfig.borrowerIndices[_borrower];
 
         // If our user's index isn't set yet, set to the current global borrow index
-        if (userBorrowIndex == 0 && _globalBorrowIndex >= initialIndexConstant)
-        {
+        if (userBorrowIndex == 0 && _globalBorrowIndex >= initialIndexConstant) {
             userBorrowIndex = initialIndexConstant; //userBorrowIndex = _globalBorrowIndex;
         }
 
         // Calculate change in the cumulative sum of the reward per cToken accrued
-        Double memory deltaIndex =
-            Double({mantissa: sub_(_globalBorrowIndex, userBorrowIndex)});
+        Double memory deltaIndex = Double({mantissa: sub_(_globalBorrowIndex, userBorrowIndex)});
 
-        uint256 borrowerAmount =
-            div_(_mTokenData.borrowBalanceStored, _marketBorrowIndex);
+        uint256 borrowerAmount = div_(_mTokenData.borrowBalanceStored, _marketBorrowIndex);
 
         // Calculate reward accrued: mTokenAmount * accruedPerMToken
         uint256 borrowerDelta = mul_(borrowerAmount, deltaIndex);
 
-        return add_(
-            _emissionConfig.borrowerRewardsAccrued[_borrower], borrowerDelta
-        );
+        return add_(_emissionConfig.borrowerRewardsAccrued[_borrower], borrowerDelta);
     }
 
     /**
@@ -866,10 +715,8 @@ contract MultiRewardDistributor is
         uint256 _rewardEndTime,
         uint256 _denominator
     ) internal view returns (IndexUpdate memory) {
-        uint32 blockTimestamp =
-            safe32(block.timestamp, "block timestamp exceeds 32 bits");
-        uint256 deltaTimestamps =
-            sub_(blockTimestamp, uint256(_currentTimestamp));
+        uint32 blockTimestamp = safe32(block.timestamp, "block timestamp exceeds 32 bits");
+        uint256 deltaTimestamps = sub_(blockTimestamp, uint256(_currentTimestamp));
 
         // If our current block timestamp is newer than our emission end time, we need to halt
         // reward emissions by stinting the growth of the global index, but importantly not
@@ -892,22 +739,15 @@ contract MultiRewardDistributor is
         // Short circuit to update the timestamp but *not* the index if there's nothing
         // to calculate
         if (deltaTimestamps == 0 || _emissionsPerSecond == 0) {
-            return IndexUpdate({
-                newIndex: _currentIndex,
-                newTimestamp: blockTimestamp
-            });
+            return IndexUpdate({newIndex: _currentIndex, newTimestamp: blockTimestamp});
         }
 
         // At this point we know we have to calculate a new index, so do so
         uint256 tokenAccrued = mul_(deltaTimestamps, _emissionsPerSecond);
-        Double memory ratio = _denominator > 0
-            ? fraction(tokenAccrued, _denominator)
-            : Double({mantissa: 0});
+        Double memory ratio = _denominator > 0 ? fraction(tokenAccrued, _denominator) : Double({mantissa: 0});
 
-        uint224 newIndex = safe224(
-            add_(Double({mantissa: _currentIndex}), ratio).mantissa,
-            "new index exceeds 224 bits"
-        );
+        uint224 newIndex =
+            safe224(add_(Double({mantissa: _currentIndex}), ratio).mantissa, "new index exceeds 224 bits");
 
         return IndexUpdate({newIndex: newIndex, newTimestamp: blockTimestamp});
     }
@@ -918,11 +758,10 @@ contract MultiRewardDistributor is
      * @param _mToken The market to fetch a config for
      * @param _emissionToken The emission token to fetch a config for
      */
-    function fetchConfigByEmissionToken(MToken _mToken, address _emissionToken)
-        internal
-        view
-        returns (MarketEmissionConfig storage)
-    {
+    function fetchConfigByEmissionToken(
+        MToken _mToken,
+        address _emissionToken
+    ) internal view returns (MarketEmissionConfig storage) {
         MarketEmissionConfig[] storage configs = marketConfigs[address(_mToken)];
         for (uint256 index = 0; index < configs.length; index++) {
             MarketEmissionConfig storage emissionConfig = configs[index];
@@ -962,13 +801,9 @@ contract MultiRewardDistributor is
 
             // Set the new values in storage
             emissionConfig.config.supplyGlobalIndex = supplyUpdate.newIndex;
-            emissionConfig.config.supplyGlobalTimestamp =
-                supplyUpdate.newTimestamp;
+            emissionConfig.config.supplyGlobalTimestamp = supplyUpdate.newTimestamp;
             emit GlobalSupplyIndexUpdated(
-                _mToken,
-                emissionConfig.config.emissionToken,
-                supplyUpdate.newIndex,
-                supplyUpdate.newTimestamp
+                _mToken, emissionConfig.config.emissionToken, supplyUpdate.newIndex, supplyUpdate.newTimestamp
             );
         }
     }
@@ -980,11 +815,7 @@ contract MultiRewardDistributor is
      * @param _supplier The supplier to disburse rewards for
      * @param _sendTokens Whether to actually send tokens instead of just accruing
      */
-    function disburseSupplierRewardsInternal(
-        MToken _mToken,
-        address _supplier,
-        bool _sendTokens
-    ) internal {
+    function disburseSupplierRewardsInternal(MToken _mToken, address _supplier, bool _sendTokens) internal {
         MarketEmissionConfig[] storage configs = marketConfigs[address(_mToken)];
 
         uint256 supplierTokens = _mToken.balanceOf(_supplier);
@@ -994,15 +825,11 @@ contract MultiRewardDistributor is
             MarketEmissionConfig storage emissionConfig = configs[index];
 
             uint256 totalRewardsOwed = calculateSupplyRewardsForUser(
-                emissionConfig,
-                emissionConfig.config.supplyGlobalIndex,
-                supplierTokens,
-                _supplier
+                emissionConfig, emissionConfig.config.supplyGlobalIndex, supplierTokens, _supplier
             );
 
             // Update user's index to match global index
-            emissionConfig.supplierIndices[_supplier] =
-                emissionConfig.config.supplyGlobalIndex;
+            emissionConfig.supplierIndices[_supplier] = emissionConfig.config.supplyGlobalIndex;
             // Update the user's total rewards owed
             emissionConfig.supplierRewardsAccrued[_supplier] = totalRewardsOwed;
 
@@ -1026,8 +853,7 @@ contract MultiRewardDistributor is
                     emissionConfig.config.emissionToken
                 );
 
-                emissionConfig.supplierRewardsAccrued[_supplier] =
-                    unsendableRewards;
+                emissionConfig.supplierRewardsAccrued[_supplier] = unsendableRewards;
             }
         }
     }
@@ -1039,8 +865,7 @@ contract MultiRewardDistributor is
     function updateMarketBorrowIndexInternal(MToken _mToken) internal {
         MarketEmissionConfig[] storage configs = marketConfigs[address(_mToken)];
 
-        Exp memory marketBorrowIndex =
-            Exp({mantissa: MToken(_mToken).borrowIndex()});
+        Exp memory marketBorrowIndex = Exp({mantissa: MToken(_mToken).borrowIndex()});
         uint256 totalBorrows = MToken(_mToken).totalBorrows();
 
         // Iterate over all market configs and update their indexes + timestamps
@@ -1058,8 +883,7 @@ contract MultiRewardDistributor is
 
             // Set the new values in storage
             emissionConfig.config.borrowGlobalIndex = borrowIndexUpdate.newIndex;
-            emissionConfig.config.borrowGlobalTimestamp =
-                borrowIndexUpdate.newTimestamp;
+            emissionConfig.config.borrowGlobalTimestamp = borrowIndexUpdate.newTimestamp;
 
             // Emit an update
             emit GlobalBorrowIndexUpdated(
@@ -1078,11 +902,7 @@ contract MultiRewardDistributor is
      * @param _borrower The borrower to disburse rewards for
      * @param _sendTokens Whether to actually send tokens instead of just accruing
      */
-    function disburseBorrowerRewardsInternal(
-        MToken _mToken,
-        address _borrower,
-        bool _sendTokens
-    ) internal {
+    function disburseBorrowerRewardsInternal(MToken _mToken, address _borrower, bool _sendTokens) internal {
         MarketEmissionConfig[] storage configs = marketConfigs[address(_mToken)];
 
         Exp memory marketBorrowIndex = Exp({mantissa: _mToken.borrowIndex()});
@@ -1097,16 +917,11 @@ contract MultiRewardDistributor is
 
             // Go calculate the total outstanding rewards for this user
             uint256 owedRewards = calculateBorrowRewardsForUser(
-                emissionConfig,
-                emissionConfig.config.borrowGlobalIndex,
-                marketBorrowIndex,
-                mTokenData,
-                _borrower
+                emissionConfig, emissionConfig.config.borrowGlobalIndex, marketBorrowIndex, mTokenData, _borrower
             );
 
             // Update user's index to global index
-            emissionConfig.borrowerIndices[_borrower] =
-                emissionConfig.config.borrowGlobalIndex;
+            emissionConfig.borrowerIndices[_borrower] = emissionConfig.config.borrowGlobalIndex;
 
             // Update the accrued borrow side rewards for this user
             emissionConfig.borrowerRewardsAccrued[_borrower] = owedRewards;
@@ -1128,8 +943,7 @@ contract MultiRewardDistributor is
                     emissionConfig.config.emissionToken
                 );
 
-                emissionConfig.borrowerRewardsAccrued[_borrower] =
-                    pendingRewards;
+                emissionConfig.borrowerRewardsAccrued[_borrower] = pendingRewards;
             }
         }
     }

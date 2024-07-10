@@ -8,25 +8,15 @@ abstract contract ComptrollerInterface {
     /**
      * Assets You Are In **
      */
-    function enterMarkets(address[] calldata mTokens)
-        external
-        virtual
-        returns (uint256[] memory);
+    function enterMarkets(address[] calldata mTokens) external virtual returns (uint256[] memory);
     function exitMarket(address mToken) external virtual returns (uint256);
 
     /**
      * Policy Hooks **
      */
-    function mintAllowed(address mToken, address minter, uint256 mintAmount)
-        external
-        virtual
-        returns (uint256);
+    function mintAllowed(address mToken, address minter, uint256 mintAmount) external virtual returns (uint256);
 
-    function redeemAllowed(
-        address mToken,
-        address redeemer,
-        uint256 redeemTokens
-    ) external virtual returns (uint256);
+    function redeemAllowed(address mToken, address redeemer, uint256 redeemTokens) external virtual returns (uint256);
 
     // Do not remove, still used by MToken
     function redeemVerify(
@@ -36,11 +26,7 @@ abstract contract ComptrollerInterface {
         uint256 redeemTokens
     ) external pure virtual;
 
-    function borrowAllowed(
-        address mToken,
-        address borrower,
-        uint256 borrowAmount
-    ) external virtual returns (uint256);
+    function borrowAllowed(address mToken, address borrower, uint256 borrowAmount) external virtual returns (uint256);
 
     function repayBorrowAllowed(
         address mToken,
@@ -83,24 +69,13 @@ abstract contract ComptrollerInterface {
 }
 
 // The hooks that were patched out of the comptroller to make room for the supply caps, if we need them
-abstract contract ComptrollerInterfaceWithAllVerificationHooks is
-    ComptrollerInterface
-{
-    function mintVerify(
-        address mToken,
-        address minter,
-        uint256 mintAmount,
-        uint256 mintTokens
-    ) external virtual;
+abstract contract ComptrollerInterfaceWithAllVerificationHooks is ComptrollerInterface {
+    function mintVerify(address mToken, address minter, uint256 mintAmount, uint256 mintTokens) external virtual;
 
     // Included in ComptrollerInterface already
     // function redeemVerify(address mToken, address redeemer, uint redeemAmount, uint redeemTokens) virtual external;
 
-    function borrowVerify(
-        address mToken,
-        address borrower,
-        uint256 borrowAmount
-    ) external virtual;
+    function borrowVerify(address mToken, address borrower, uint256 borrowAmount) external virtual;
 
     function repayBorrowVerify(
         address mToken,
@@ -127,10 +102,5 @@ abstract contract ComptrollerInterfaceWithAllVerificationHooks is
         uint256 seizeTokens
     ) external virtual;
 
-    function transferVerify(
-        address mToken,
-        address src,
-        address dst,
-        uint256 transferTokens
-    ) external virtual;
+    function transferVerify(address mToken, address src, address dst, uint256 transferTokens) external virtual;
 }

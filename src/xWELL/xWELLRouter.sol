@@ -1,7 +1,6 @@
 pragma solidity 0.8.19;
 
-import {SafeERC20} from
-    "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
@@ -41,12 +40,7 @@ contract xWELLRouter {
     /// @param _well the standard WELL token
     /// @param _lockbox the xWELL lockbox
     /// @param _wormholeBridge the wormhole bridge adapter proxy
-    constructor(
-        address _xwell,
-        address _well,
-        address _lockbox,
-        address _wormholeBridge
-    ) {
+    constructor(address _xwell, address _well, address _lockbox, address _wormholeBridge) {
         xwell = xWELL(_xwell);
         well = ERC20(_well);
         lockbox = XERC20Lockbox(_lockbox);
@@ -76,12 +70,9 @@ contract xWELLRouter {
     /// @param to address to receive the xWELL
     /// @param amount amount of WELL to bridge
     function _bridgeToBase(address to, uint256 amount) private {
-        uint256 bridgeCostGlmr =
-            wormholeBridge.bridgeCost(BASE_WORMHOLE_CHAIN_ID);
+        uint256 bridgeCostGlmr = wormholeBridge.bridgeCost(BASE_WORMHOLE_CHAIN_ID);
 
-        require(
-            bridgeCostGlmr <= msg.value, "xWELLRouter: insufficient GLMR sent"
-        );
+        require(bridgeCostGlmr <= msg.value, "xWELLRouter: insufficient GLMR sent");
 
         /// transfer WELL to this contract from the sender
         well.safeTransferFrom(msg.sender, address(this), amount);
@@ -99,9 +90,7 @@ contract xWELLRouter {
         xwell.approve(address(wormholeBridge), xwellAmount);
 
         /// bridge the xWELL to the base chain
-        wormholeBridge.bridge{value: bridgeCostGlmr}(
-            BASE_WORMHOLE_CHAIN_ID, xwellAmount, to
-        );
+        wormholeBridge.bridge{value: bridgeCostGlmr}(BASE_WORMHOLE_CHAIN_ID, xwellAmount, to);
 
         if (address(this).balance != 0) {
             (bool success,) = msg.sender.call{value: address(this).balance}("");

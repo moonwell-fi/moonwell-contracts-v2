@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import {SafeCast} from
-    "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
-import {AggregatorV3Interface} from
-    "@protocol/oracles/AggregatorV3Interface.sol";
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 
 /// @notice contract to combine multiple chainlink oracle prices together
 /// allows combination of either 2 or 3 chainlink oracles
@@ -34,11 +32,7 @@ contract ChainlinkCompositeOracle {
     /// @param baseAddress The base oracle address
     /// @param multiplierAddress The multiplier oracle address
     /// @param secondMultiplierAddress The second multiplier oracle address
-    constructor(
-        address baseAddress,
-        address multiplierAddress,
-        address secondMultiplierAddress
-    ) {
+    constructor(address baseAddress, address multiplierAddress, address secondMultiplierAddress) {
         base = baseAddress;
         multiplier = multiplierAddress;
         secondMultiplier = secondMultiplierAddress;
@@ -80,9 +74,7 @@ contract ChainlinkCompositeOracle {
         return (
             0,
             /// unused
-            getDerivedPriceThreeOracles(
-                base, multiplier, secondMultiplier, decimals
-            ).toInt256(),
+            getDerivedPriceThreeOracles(base, multiplier, secondMultiplier, decimals).toInt256(),
             0,
             /// unused
             block.timestamp,
@@ -114,18 +106,14 @@ contract ChainlinkCompositeOracle {
         address multiplierAddress,
         uint8 expectedDecimals
     ) public view returns (uint256) {
-        require(
-            expectedDecimals > uint8(0) && expectedDecimals <= uint8(18),
-            "CLCOracle: Invalid expected decimals"
-        );
+        require(expectedDecimals > uint8(0) && expectedDecimals <= uint8(18), "CLCOracle: Invalid expected decimals");
 
         int256 scalingFactor = int256(10 ** uint256(expectedDecimals));
 
         /// calculate expected decimals for end quote
 
         int256 basePrice = getPriceAndScale(baseAddress, expectedDecimals);
-        int256 quotePrice =
-            getPriceAndScale(multiplierAddress, expectedDecimals);
+        int256 quotePrice = getPriceAndScale(multiplierAddress, expectedDecimals);
 
         /// both quote and base price should be scaled up to 18 decimals by now if expectedDecimals is 18
         return calculatePrice(basePrice, quotePrice, scalingFactor);
@@ -145,36 +133,25 @@ contract ChainlinkCompositeOracle {
         address secondMultiplierAddress,
         uint8 expectedDecimals
     ) public view returns (uint256) {
-        require(
-            expectedDecimals > uint8(0) && expectedDecimals <= uint8(18),
-            "CLCOracle: Invalid expected decimals"
-        );
+        require(expectedDecimals > uint8(0) && expectedDecimals <= uint8(18), "CLCOracle: Invalid expected decimals");
 
         /// should never overflow as should return 1e36
         int256 scalingFactor = int256(10 ** uint256(expectedDecimals * 2));
         /// calculate expected decimals for end quote
 
         int256 firstPrice = getPriceAndScale(usdBaseAddress, expectedDecimals);
-        int256 secondPrice =
-            getPriceAndScale(multiplierAddress, expectedDecimals);
-        int256 thirdPrice =
-            getPriceAndScale(secondMultiplierAddress, expectedDecimals);
+        int256 secondPrice = getPriceAndScale(multiplierAddress, expectedDecimals);
+        int256 thirdPrice = getPriceAndScale(secondMultiplierAddress, expectedDecimals);
 
-        return ((firstPrice * secondPrice * thirdPrice) / scalingFactor)
-            .toUint256();
+        return ((firstPrice * secondPrice * thirdPrice) / scalingFactor).toUint256();
     }
 
     /// @notice Get the price of a base/quote pair
     /// and then scale up to the expected decimals amount
     /// @param oracleAddress The oracle address
     /// @param expectedDecimals The amount of decimals the price should have
-    function getPriceAndScale(address oracleAddress, uint8 expectedDecimals)
-        public
-        view
-        returns (int256)
-    {
-        (int256 price, uint8 actualDecimals) =
-            getPriceAndDecimals(oracleAddress);
+    function getPriceAndScale(address oracleAddress, uint8 expectedDecimals) public view returns (int256) {
+        (int256 price, uint8 actualDecimals) = getPriceAndDecimals(oracleAddress);
         return scalePrice(price, actualDecimals, expectedDecimals);
     }
 
@@ -182,11 +159,7 @@ contract ChainlinkCompositeOracle {
     /// @param oracleAddress The address of the chainlink oracle
     /// returns the price and then the decimals of the given asset
     /// reverts if price is 0 or if the oracle data is invalid
-    function getPriceAndDecimals(address oracleAddress)
-        public
-        view
-        returns (int256, uint8)
-    {
+    function getPriceAndDecimals(address oracleAddress) public view returns (int256, uint8) {
         (uint80 roundId, int256 price,,, uint80 answeredInRound) =
             AggregatorV3Interface(oracleAddress).latestRoundData();
         bool valid = price > 0 && answeredInRound == roundId;
@@ -203,17 +176,11 @@ contract ChainlinkCompositeOracle {
     /// @param priceDecimals The amount of decimals the price has
     /// @param expectedDecimals The amount of decimals the price should have
     /// @return the scaled price
-    function scalePrice(
-        int256 price,
-        uint8 priceDecimals,
-        uint8 expectedDecimals
-    ) public pure returns (int256) {
+    function scalePrice(int256 price, uint8 priceDecimals, uint8 expectedDecimals) public pure returns (int256) {
         if (priceDecimals < expectedDecimals) {
-            return price
-                * (10 ** uint256(expectedDecimals - priceDecimals)).toInt256();
+            return price * (10 ** uint256(expectedDecimals - priceDecimals)).toInt256();
         } else if (priceDecimals > expectedDecimals) {
-            return price
-                / (10 ** uint256(priceDecimals - expectedDecimals)).toInt256();
+            return price / (10 ** uint256(priceDecimals - expectedDecimals)).toInt256();
         }
 
         /// if priceDecimals == expectedDecimals, return price without any changes

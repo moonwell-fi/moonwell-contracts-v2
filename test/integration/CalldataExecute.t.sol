@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ERC20Votes} from
-    "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
 import "@forge-std/Test.sol";
 
@@ -10,10 +9,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 
-import {
-    IMultichainGovernor,
-    MultichainGovernor
-} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {IArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 
 contract CalldataExecute is Test, Configs {
@@ -34,8 +30,7 @@ contract CalldataExecute is Test, Configs {
 
     /// forge test --mt testSimExecPassedProposalMoonbeam --fork-url moonbeam -vvvv
     function testSimExecPassedProposalMoonbeam() public {
-        address governorAddress =
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        address governorAddress = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
         MultichainGovernor governor = MultichainGovernor(governorAddress);
 
         governor.execute(9);
@@ -45,14 +40,12 @@ contract CalldataExecute is Test, Configs {
     function testSimExistingProposalMoonbeam() public {
         address caller = addresses.getAddress("WELL_FOUNDATION_MULTISIG");
         address governanceToken = addresses.getAddress("GOVTOKEN");
-        address governorAddress =
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        address governorAddress = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
         MultichainGovernor governor = MultichainGovernor(governorAddress);
         uint256 proposalId = 14;
 
         {
-            (,,,,, uint256 voteSnapshotBlock,,,,,,) =
-                governor.proposals(proposalId);
+            (,,,,, uint256 voteSnapshotBlock,,,,,,) = governor.proposals(proposalId);
 
             vm.roll(voteSnapshotBlock - 1);
         }
@@ -61,9 +54,7 @@ contract CalldataExecute is Test, Configs {
             // Ensure proposer has meets minimum proposal threshold and quorum votes to pass the proposal
             uint256 quorumVotes = governor.quorum();
             uint256 proposalThreshold = governor.proposalThreshold();
-            uint256 votingPower = quorumVotes > proposalThreshold
-                ? quorumVotes
-                : proposalThreshold;
+            uint256 votingPower = quorumVotes > proposalThreshold ? quorumVotes : proposalThreshold;
             deal(governanceToken, caller, votingPower);
 
             // Delegate proposer's votes to itself
@@ -81,16 +72,13 @@ contract CalldataExecute is Test, Configs {
         vm.warp(block.timestamp + governor.votingPeriod() + 1);
 
         require(
-            governor.state(proposalId)
-                == IMultichainGovernor.ProposalState.CrossChainVoteCollection,
+            governor.state(proposalId) == IMultichainGovernor.ProposalState.CrossChainVoteCollection,
             "incorrect state, not succeeded"
         );
 
         vm.warp(block.timestamp + governor.crossChainVoteCollectionPeriod() + 1);
         require(
-            governor.state(proposalId)
-                == IMultichainGovernor.ProposalState.Succeeded,
-            "incorrect state, not succeeded"
+            governor.state(proposalId) == IMultichainGovernor.ProposalState.Succeeded, "incorrect state, not succeeded"
         );
 
         governor.execute(proposalId);
@@ -100,8 +88,7 @@ contract CalldataExecute is Test, Configs {
     function testSimulateExecMoonbeam() public {
         address caller = address(this);
         address governanceToken = addresses.getAddress("GOVTOKEN");
-        address governorAddress =
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        address governorAddress = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
         MultichainGovernor governor = MultichainGovernor(governorAddress);
 
         vm.prank(addresses.getAddress("MGLIMMER_MULTISIG"));
@@ -111,9 +98,7 @@ contract CalldataExecute is Test, Configs {
             // Ensure proposer has meets minimum proposal threshold and quorum votes to pass the proposal
             uint256 quorumVotes = governor.quorum();
             uint256 proposalThreshold = governor.proposalThreshold();
-            uint256 votingPower = quorumVotes > proposalThreshold
-                ? quorumVotes
-                : proposalThreshold;
+            uint256 votingPower = quorumVotes > proposalThreshold ? quorumVotes : proposalThreshold;
             deal(governanceToken, caller, votingPower);
 
             // Delegate proposer's votes to itself
@@ -122,14 +107,11 @@ contract CalldataExecute is Test, Configs {
             vm.roll(block.number + 1);
         }
 
-        uint256 cost = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        ).bridgeCostAll();
+        uint256 cost = MultichainGovernor(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")).bridgeCostAll();
 
         vm.deal(address(this), cost);
-        (bool success, bytes memory result) = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
-        ).call{value: cost}(execData);
+        (bool success, bytes memory result) =
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY").call{value: cost}(execData);
 
         require(success, "propose failed");
         uint256 proposalId = abi.decode(result, (uint256));
@@ -142,16 +124,13 @@ contract CalldataExecute is Test, Configs {
         vm.warp(block.timestamp + governor.votingPeriod() + 1);
 
         require(
-            governor.state(proposalId)
-                == IMultichainGovernor.ProposalState.CrossChainVoteCollection,
+            governor.state(proposalId) == IMultichainGovernor.ProposalState.CrossChainVoteCollection,
             "incorrect state, not succeeded"
         );
 
         vm.warp(block.timestamp + governor.crossChainVoteCollectionPeriod() + 1);
         require(
-            governor.state(proposalId)
-                == IMultichainGovernor.ProposalState.Succeeded,
-            "incorrect state, not succeeded"
+            governor.state(proposalId) == IMultichainGovernor.ProposalState.Succeeded, "incorrect state, not succeeded"
         );
 
         governor.execute(proposalId);
@@ -168,9 +147,7 @@ contract CalldataExecute is Test, Configs {
             // Ensure proposer has meets minimum proposal threshold and quorum votes to pass the proposal
             uint256 quorumVotes = governor.currentQuorum();
             uint256 proposalThreshold = governor.proposalThreshold();
-            uint256 votingPower = quorumVotes > proposalThreshold
-                ? quorumVotes
-                : proposalThreshold;
+            uint256 votingPower = quorumVotes > proposalThreshold ? quorumVotes : proposalThreshold;
             deal(governanceToken, caller, votingPower);
 
             // Delegate proposer's votes to itself
@@ -179,8 +156,7 @@ contract CalldataExecute is Test, Configs {
             vm.roll(block.number + 1);
         }
 
-        (bool success, bytes memory result) =
-            address(governorAddress).call(execDataMoonriver);
+        (bool success, bytes memory result) = address(governorAddress).call(execDataMoonriver);
 
         require(success, "propose failed");
         uint256 proposalId = abi.decode(result, (uint256));
@@ -204,8 +180,7 @@ contract CalldataExecute is Test, Configs {
 
     /// forge test --mt testSimExistingProposalMoonriver --fork-url moonriver -vvvv
     function testSimExistingProposalMoonriver() public {
-        IArtemisGovernor governor =
-            IArtemisGovernor(addresses.getAddress("APOLLO_GOVERNOR"));
+        IArtemisGovernor governor = IArtemisGovernor(addresses.getAddress("APOLLO_GOVERNOR"));
 
         {
             /// hard code starting block number, change with each proposal
@@ -219,9 +194,7 @@ contract CalldataExecute is Test, Configs {
             // Ensure proposer has meets minimum proposal threshold and quorum votes to pass the proposal
             uint256 quorumVotes = governor.currentQuorum();
             uint256 proposalThreshold = governor.proposalThreshold();
-            uint256 votingPower = quorumVotes > proposalThreshold
-                ? quorumVotes
-                : proposalThreshold;
+            uint256 votingPower = quorumVotes > proposalThreshold ? quorumVotes : proposalThreshold;
             deal(governanceToken, caller, votingPower);
 
             // Delegate proposer's votes to itself
@@ -247,10 +220,6 @@ contract CalldataExecute is Test, Configs {
 
         governor.execute(proposalId);
 
-        require(
-            governor.state(proposalId)
-                == IArtemisGovernor.ProposalState.Executed,
-            "incorrect state, not succeeded"
-        );
+        require(governor.state(proposalId) == IArtemisGovernor.ProposalState.Executed, "incorrect state, not succeeded");
     }
 }

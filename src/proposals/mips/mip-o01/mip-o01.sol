@@ -7,23 +7,16 @@ import "@utils/ChainIds.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {
-    ActionType,
-    HybridProposal
-} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ActionType, HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 
-import {WormholeTrustedSender} from
-    "@protocol/governance/WormholeTrustedSender.sol";
-import {MultichainGovernorDeploy} from
-    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {MultichainVoteCollection} from
-    "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 
 import {
-    IEcosystemReserveControllerUplift,
-    IEcosystemReserveUplift
+    IEcosystemReserveControllerUplift, IEcosystemReserveUplift
 } from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
@@ -70,9 +63,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
     uint256 public constant approvalAmount = 5_000_000_000 * 1e18;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-o01/MIP-O01.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-o01/MIP-O01.md"));
 
         _setProposalDescription(proposalDescription);
     }
@@ -86,21 +77,12 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
             address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
             /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
-            (
-                address ecosystemReserveProxy,
-                address ecosystemReserveImplementation,
-                address ecosystemReserveController
-            ) = deployEcosystemReserve(proxyAdmin);
+            (address ecosystemReserveProxy, address ecosystemReserveImplementation, address ecosystemReserveController)
+            = deployEcosystemReserve(proxyAdmin);
 
-            addresses.addAddress(
-                "ECOSYSTEM_RESERVE_PROXY", ecosystemReserveProxy
-            );
-            addresses.addAddress(
-                "ECOSYSTEM_RESERVE_IMPL", ecosystemReserveImplementation
-            );
-            addresses.addAddress(
-                "ECOSYSTEM_RESERVE_CONTROLLER", ecosystemReserveController
-            );
+            addresses.addAddress("ECOSYSTEM_RESERVE_PROXY", ecosystemReserveProxy);
+            addresses.addAddress("ECOSYSTEM_RESERVE_IMPL", ecosystemReserveImplementation);
+            addresses.addAddress("ECOSYSTEM_RESERVE_CONTROLLER", ecosystemReserveController);
 
             {
                 (address stkWellProxy, address stkWellImpl) = deployStakedWell(
@@ -122,14 +104,10 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
         }
 
         if (!addresses.isAddressSet("VOTE_COLLECTION_PROXY")) {
-            (address collectionProxy, address collectionImpl) =
-            deployVoteCollection(
+            (address collectionProxy, address collectionImpl) = deployVoteCollection(
                 addresses.getAddress("xWELL_PROXY"),
                 addresses.getAddress("STK_GOVTOKEN"),
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    block.chainid.toMoonbeamChainId()
-                ),
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", block.chainid.toMoonbeamChainId()),
                 addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
                 block.chainid.toMoonbeamWormholeChainId(),
                 addresses.getAddress("MRD_PROXY_ADMIN"),
@@ -146,44 +124,32 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
         }
     }
 
-    function afterDeploy(Addresses addresses, address deployer)
-        public
-        override
-    {
+    function afterDeploy(Addresses addresses, address deployer) public override {
         IEcosystemReserveControllerUplift ecosystemReserveController =
-        IEcosystemReserveControllerUplift(
-            addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
-        );
+            IEcosystemReserveControllerUplift(addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"));
 
-        assertEq(
-            ecosystemReserveController.owner(), deployer, "incorrect owner"
-        );
+        assertEq(ecosystemReserveController.owner(), deployer, "incorrect owner");
         assertEq(
             address(ecosystemReserveController.ECOSYSTEM_RESERVE()),
             address(0),
             "ECOSYSTEM_RESERVE set when it should not be"
         );
 
-        address ecosystemReserve =
-            addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
+        address ecosystemReserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
 
         /// set the ecosystem reserve
         ecosystemReserveController.setEcosystemReserve(ecosystemReserve);
 
         /// approve stkWELL contract to spend xWELL from the ecosystem reserve contract
         ecosystemReserveController.approve(
-            addresses.getAddress("xWELL_PROXY"),
-            addresses.getAddress("STK_GOVTOKEN"),
-            approvalAmount
+            addresses.getAddress("xWELL_PROXY"), addresses.getAddress("STK_GOVTOKEN"), approvalAmount
         );
 
         /// transfer ownership of the ecosystem reserve controller to the temporal governor
-        ecosystemReserveController.transferOwnership(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
-        );
+        ecosystemReserveController.transferOwnership(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
         IEcosystemReserveUplift ecosystemReserveContract =
-        IEcosystemReserveUplift(addresses.getAddress("ECOSYSTEM_RESERVE_IMPL"));
+            IEcosystemReserveUplift(addresses.getAddress("ECOSYSTEM_RESERVE_IMPL"));
 
         /// take ownership of the ecosystem reserve impl to prevent any further changes or hijacking
         ecosystemReserveContract.initialize(address(1));
@@ -196,24 +162,16 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
         {
-            WormholeTrustedSender.TrustedSender[] memory
-                voteCollectionTrustedSender =
-                    new WormholeTrustedSender.TrustedSender[](1);
+            WormholeTrustedSender.TrustedSender[] memory voteCollectionTrustedSender =
+                new WormholeTrustedSender.TrustedSender[](1);
             voteCollectionTrustedSender[0] = WormholeTrustedSender.TrustedSender(
-                OPTIMISM_WORMHOLE_CHAIN_ID,
-                addresses.getAddress("VOTE_COLLECTION_PROXY")
+                OPTIMISM_WORMHOLE_CHAIN_ID, addresses.getAddress("VOTE_COLLECTION_PROXY")
             );
 
             /// Add OP vote collection to the MultichainGovernor
             _pushAction(
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    block.chainid.toMoonbeamChainId()
-                ),
-                abi.encodeWithSignature(
-                    "addExternalChainConfigs((uint16,address)[])",
-                    voteCollectionTrustedSender
-                ),
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", block.chainid.toMoonbeamChainId()),
+                abi.encodeWithSignature("addExternalChainConfigs((uint16,address)[])", voteCollectionTrustedSender),
                 "Add Vote Collection on Optimism to Target Addresses",
                 ActionType.Moonbeam
             );
@@ -221,26 +179,18 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
 
         /// update xWELL implementation across both Moonbeam and Base
         _pushAction(
-            addresses.getAddress(
-                "MOONBEAM_PROXY_ADMIN", block.chainid.toMoonbeamChainId()
-            ),
+            addresses.getAddress("MOONBEAM_PROXY_ADMIN", block.chainid.toMoonbeamChainId()),
             abi.encodeWithSignature(
-                "upgrade(address,address)",
-                addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("NEW_XWELL_IMPL")
+                "upgrade(address,address)", addresses.getAddress("xWELL_PROXY"), addresses.getAddress("NEW_XWELL_IMPL")
             ),
             "Upgrade the xWELL implementation on Moonbeam",
             ActionType.Moonbeam
         );
 
         _pushAction(
-            addresses.getAddress(
-                "MRD_PROXY_ADMIN", block.chainid.toBaseChainId()
-            ),
+            addresses.getAddress("MRD_PROXY_ADMIN", block.chainid.toBaseChainId()),
             abi.encodeWithSignature(
-                "upgrade(address,address)",
-                addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("NEW_XWELL_IMPL")
+                "upgrade(address,address)", addresses.getAddress("xWELL_PROXY"), addresses.getAddress("NEW_XWELL_IMPL")
             ),
             "Upgrade the xWELL implementation on Base",
             ActionType.Base
@@ -249,38 +199,23 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// open up rate limits to move tokens across all chains
 
         {
-            WormholeTrustedSender.TrustedSender[] memory
-                moonbeamWormholeBridgeAdapter =
-                    new WormholeTrustedSender.TrustedSender[](1);
-            moonbeamWormholeBridgeAdapter[0] = WormholeTrustedSender
-                .TrustedSender(
-                OPTIMISM_WORMHOLE_CHAIN_ID,
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            WormholeTrustedSender.TrustedSender[] memory moonbeamWormholeBridgeAdapter =
+                new WormholeTrustedSender.TrustedSender[](1);
+            moonbeamWormholeBridgeAdapter[0] = WormholeTrustedSender.TrustedSender(
+                OPTIMISM_WORMHOLE_CHAIN_ID, addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
             );
 
             /// Add moonbeam -> optimism xWELL route
             _pushAction(
-                addresses.getAddress(
-                    "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                    block.chainid.toMoonbeamChainId()
-                ),
-                abi.encodeWithSignature(
-                    "addExternalChainConfigs((uint16,address)[])",
-                    moonbeamWormholeBridgeAdapter
-                ),
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY", block.chainid.toMoonbeamChainId()),
+                abi.encodeWithSignature("addExternalChainConfigs((uint16,address)[])", moonbeamWormholeBridgeAdapter),
                 "Add xWELL route from Moonbeam to Optimism",
                 ActionType.Moonbeam
             );
 
             _pushAction(
-                addresses.getAddress(
-                    "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                    block.chainid.toBaseChainId()
-                ),
-                abi.encodeWithSignature(
-                    "addExternalChainConfigs((uint16,address)[])",
-                    moonbeamWormholeBridgeAdapter
-                ),
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY", block.chainid.toBaseChainId()),
+                abi.encodeWithSignature("addExternalChainConfigs((uint16,address)[])", moonbeamWormholeBridgeAdapter),
                 "Add xWELL route from Base to Optimism",
                 ActionType.Base
             );
@@ -290,21 +225,15 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// Optimism -> Moonbeam + Optimism -> Base
         /// route in the constructor
         {
-            WormholeTrustedSender.TrustedSender[] memory
-                optimismWormholeBridgeAdapter =
-                    new WormholeTrustedSender.TrustedSender[](1);
+            WormholeTrustedSender.TrustedSender[] memory optimismWormholeBridgeAdapter =
+                new WormholeTrustedSender.TrustedSender[](1);
 
-            optimismWormholeBridgeAdapter[0] = WormholeTrustedSender
-                .TrustedSender(
-                BASE_WORMHOLE_CHAIN_ID,
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            optimismWormholeBridgeAdapter[0] = WormholeTrustedSender.TrustedSender(
+                BASE_WORMHOLE_CHAIN_ID, addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
             );
             _pushAction(
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-                abi.encodeWithSignature(
-                    "addExternalChainConfigs((uint16,address)[])",
-                    optimismWormholeBridgeAdapter
-                ),
+                abi.encodeWithSignature("addExternalChainConfigs((uint16,address)[])", optimismWormholeBridgeAdapter),
                 "Add xWELL route from Optimism to Base",
                 ActionType.Optimism
             );
@@ -313,18 +242,9 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
 
     function run(Addresses addresses, address) public override {
         /// TODO update numbers once proposal changes
-        require(
-            actions.proposalActionTypeCount(ActionType.Base) == 0,
-            "MIP-O01: should have X base actions"
-        );
-        require(
-            actions.proposalActionTypeCount(ActionType.Moonbeam) == 0,
-            "MIP-O01: should have X moonbeam actions"
-        );
-        require(
-            actions.proposalActionTypeCount(ActionType.Optimism) == 0,
-            "MIP-O01: should have X optimism actions"
-        );
+        require(actions.proposalActionTypeCount(ActionType.Base) == 0, "MIP-O01: should have X base actions");
+        require(actions.proposalActionTypeCount(ActionType.Moonbeam) == 0, "MIP-O01: should have X moonbeam actions");
+        require(actions.proposalActionTypeCount(ActionType.Optimism) == 0, "MIP-O01: should have X optimism actions");
 
         super.run(addresses, address(0));
     }
@@ -368,9 +288,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// ecosystem reserve and controller
         {
             IEcosystemReserveControllerUplift ecosystemReserveController =
-            IEcosystemReserveControllerUplift(
-                addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
-            );
+                IEcosystemReserveControllerUplift(addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"));
 
             assertEq(
                 ecosystemReserveController.owner(),
@@ -382,14 +300,10 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"),
                 "ecosystem reserve controller not pointing to ECOSYSTEM_RESERVE_PROXY"
             );
-            assertTrue(
-                ecosystemReserveController.initialized(),
-                "ecosystem reserve not initialized"
-            );
+            assertTrue(ecosystemReserveController.initialized(), "ecosystem reserve not initialized");
 
-            IEcosystemReserveUplift ecosystemReserve = IEcosystemReserveUplift(
-                addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
-            );
+            IEcosystemReserveUplift ecosystemReserve =
+                IEcosystemReserveUplift(addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"));
 
             assertEq(
                 ecosystemReserve.getFundsAdmin(),
@@ -400,98 +314,51 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
             xWELL xWell = xWELL(addresses.getAddress("xWELL_PROXY"));
 
             assertEq(
-                xWell.allowance(
-                    address(ecosystemReserve),
-                    addresses.getAddress("STK_GOVTOKEN")
-                ),
+                xWell.allowance(address(ecosystemReserve), addresses.getAddress("STK_GOVTOKEN")),
                 approvalAmount,
                 "ecosystem reserve not approved to give stkWELL_PROXY approvalAmount"
             );
 
-            ecosystemReserve = IEcosystemReserveUplift(
-                addresses.getAddress("ECOSYSTEM_RESERVE_IMPL")
-            );
-            assertEq(
-                ecosystemReserve.getFundsAdmin(),
-                address(1),
-                "funds admin on impl incorrect"
-            );
+            ecosystemReserve = IEcosystemReserveUplift(addresses.getAddress("ECOSYSTEM_RESERVE_IMPL"));
+            assertEq(ecosystemReserve.getFundsAdmin(), address(1), "funds admin on impl incorrect");
         }
 
         /// validate stkWELL contract
         {
-            IStakedWellUplift stkWell =
-                IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"));
+            IStakedWellUplift stkWell = IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"));
 
             /// stake and reward token are the same
-            assertEq(
-                stkWell.STAKED_TOKEN(),
-                addresses.getAddress("xWELL_PROXY"),
-                "incorrect staked token"
-            );
-            assertEq(
-                stkWell.REWARD_TOKEN(),
-                addresses.getAddress("xWELL_PROXY"),
-                "incorrect reward token"
-            );
+            assertEq(stkWell.STAKED_TOKEN(), addresses.getAddress("xWELL_PROXY"), "incorrect staked token");
+            assertEq(stkWell.REWARD_TOKEN(), addresses.getAddress("xWELL_PROXY"), "incorrect reward token");
 
             assertEq(
                 stkWell.REWARDS_VAULT(),
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"),
                 "incorrect rewards vault, not ECOSYSTEM_RESERVE_PROXY"
             );
+            assertEq(stkWell.UNSTAKE_WINDOW(), unstakeWindow, "incorrect unstake window");
+            assertEq(stkWell.COOLDOWN_SECONDS(), cooldownSeconds, "incorrect cooldown seconds");
             assertEq(
-                stkWell.UNSTAKE_WINDOW(),
-                unstakeWindow,
-                "incorrect unstake window"
+                stkWell.DISTRIBUTION_END(), block.timestamp + distributionDuration, "incorrect distribution duration"
             );
             assertEq(
-                stkWell.COOLDOWN_SECONDS(),
-                cooldownSeconds,
-                "incorrect cooldown seconds"
+                stkWell.EMISSION_MANAGER(), addresses.getAddress("TEMPORAL_GOVERNOR"), "incorrect emissions manager"
             );
-            assertEq(
-                stkWell.DISTRIBUTION_END(),
-                block.timestamp + distributionDuration,
-                "incorrect distribution duration"
-            );
-            assertEq(
-                stkWell.EMISSION_MANAGER(),
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                "incorrect emissions manager"
-            );
-            assertEq(
-                stkWell._governance(),
-                address(0),
-                "incorrect _governance, not address(0)"
-            );
+            assertEq(stkWell._governance(), address(0), "incorrect _governance, not address(0)");
             assertEq(stkWell.name(), "Staked WELL", "incorrect stkWell name");
             assertEq(stkWell.symbol(), "stkWELL", "incorrect stkWell symbol");
             assertEq(stkWell.decimals(), 18, "incorrect stkWell decimals");
-            assertEq(
-                stkWell.totalSupply(),
-                0,
-                "incorrect stkWell starting total supply"
-            );
+            assertEq(stkWell.totalSupply(), 0, "incorrect stkWell starting total supply");
         }
 
         /// validate vote collection contract
         {
-            MultichainVoteCollection voteCollection = MultichainVoteCollection(
-                addresses.getAddress("VOTE_COLLECTION_PROXY")
-            );
+            MultichainVoteCollection voteCollection =
+                MultichainVoteCollection(addresses.getAddress("VOTE_COLLECTION_PROXY"));
 
-            assertEq(
-                address(voteCollection.xWell()),
-                addresses.getAddress("xWELL_PROXY"),
-                "incorrect xWELL"
-            );
+            assertEq(address(voteCollection.xWell()), addresses.getAddress("xWELL_PROXY"), "incorrect xWELL");
 
-            assertEq(
-                address(voteCollection.stkWell()),
-                addresses.getAddress("STK_GOVTOKEN"),
-                "incorrect stkWELL"
-            );
+            assertEq(address(voteCollection.stkWell()), addresses.getAddress("STK_GOVTOKEN"), "incorrect stkWELL");
 
             assertEq(
                 address(voteCollection.wormholeRelayer()),
@@ -504,40 +371,24 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 "incorrect vote collection owner, not temporal governor"
             );
-            assertEq(
-                voteCollection.getAllTargetChains().length,
-                1,
-                "incorrect target chain length"
-            );
+            assertEq(voteCollection.getAllTargetChains().length, 1, "incorrect target chain length");
             assertEq(
                 voteCollection.getAllTargetChains()[0],
                 block.chainid.toMoonbeamWormholeChainId(),
                 "incorrect target chain, not moonbeam"
             );
-            assertEq(
-                voteCollection.gasLimit(),
-                400_000,
-                "incorrect gas limit on vote collection contract"
-            );
+            assertEq(voteCollection.gasLimit(), 400_000, "incorrect gas limit on vote collection contract");
 
             assertEq(
-                voteCollection.targetAddress(
-                    block.chainid.toMoonbeamWormholeChainId()
-                ),
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    block.chainid.toMoonbeamChainId()
-                ),
+                voteCollection.targetAddress(block.chainid.toMoonbeamWormholeChainId()),
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", block.chainid.toMoonbeamChainId()),
                 "target address not multichain governor on moonbeam"
             );
 
             assertTrue(
                 voteCollection.isTrustedSender(
                     block.chainid.toMoonbeamWormholeChainId(),
-                    addresses.getAddress(
-                        "MULTICHAIN_GOVERNOR_PROXY",
-                        block.chainid.toMoonbeamChainId()
-                    )
+                    addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", block.chainid.toMoonbeamChainId())
                 ),
                 "multichain governor not trusted sender in vote collection"
             );

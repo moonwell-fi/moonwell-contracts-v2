@@ -12,9 +12,7 @@ contract Malicious4626Minter {
     /// 1. redeem shares
     function startAttack(address target) public {
         MoonwellERC4626Eth vault = MoonwellERC4626Eth(payable(target));
-        vault.redeem(
-            vault.balanceOf(address(this)), address(this), address(this)
-        );
+        vault.redeem(vault.balanceOf(address(this)), address(this), address(this));
     }
 
     /// 2. received eth gets sent to fallback
@@ -25,13 +23,9 @@ contract Malicious4626Minter {
         } else if (action == 2) {
             MoonwellERC4626Eth(payable(msg.sender)).mint(0, address(this));
         } else if (action == 3) {
-            MoonwellERC4626Eth(payable(msg.sender)).withdraw(
-                1, address(this), address(this)
-            );
+            MoonwellERC4626Eth(payable(msg.sender)).withdraw(1, address(this), address(this));
         } else {
-            MoonwellERC4626Eth(payable(msg.sender)).redeem(
-                1, address(this), address(this)
-            );
+            MoonwellERC4626Eth(payable(msg.sender)).redeem(1, address(this), address(this));
         }
     }
 }

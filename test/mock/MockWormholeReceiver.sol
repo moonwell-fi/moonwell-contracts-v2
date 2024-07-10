@@ -8,11 +8,7 @@ contract MockWormholeReceiver {
         price = nativePriceQuote;
     }
 
-    function quoteEVMDeliveryPrice(uint16, uint256, uint256)
-        external
-        view
-        returns (uint256, uint256)
-    {
+    function quoteEVMDeliveryPrice(uint16, uint256, uint256) external view returns (uint256, uint256) {
         return (price, 0);
     }
 

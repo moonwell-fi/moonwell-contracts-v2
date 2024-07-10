@@ -26,15 +26,13 @@ contract DeployFaucetToken is Script {
     function setUp() public {
         symbol = string(vm.envOr("SYMBOL", bytes("DAI")));
         name = string(vm.envOr("NAME", bytes("DAI Faucet Token")));
-        initialMintAmount =
-            vm.envOr("INITIAL_MINT_AMOUNT", uint256(100_000_000e18));
+        initialMintAmount = vm.envOr("INITIAL_MINT_AMOUNT", uint256(100_000_000e18));
         decimals = uint8(vm.envOr("DECIMALS", uint8(18)));
     }
 
     function run() public {
         vm.startBroadcast();
-        FaucetTokenWithPermit token =
-            new FaucetTokenWithPermit(initialMintAmount, name, decimals, symbol);
+        FaucetTokenWithPermit token = new FaucetTokenWithPermit(initialMintAmount, name, decimals, symbol);
 
         vm.stopBroadcast();
 

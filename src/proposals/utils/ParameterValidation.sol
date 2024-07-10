@@ -20,24 +20,14 @@ contract ParameterValidation is Test {
         uint256 jumpMultiplierPerTimestamp;
     }
 
-    function _validateJRM(
-        address jrmAddress,
-        address tokenAddress,
-        IRParams memory params
-    ) internal view {
+    function _validateJRM(address jrmAddress, address tokenAddress, IRParams memory params) internal view {
         JumpRateModel jrm = JumpRateModel(jrmAddress);
         assertEq(
-            address(MToken(tokenAddress).interestRateModel()),
-            address(jrm),
-            "interest rate model not set correctly"
+            address(MToken(tokenAddress).interestRateModel()), address(jrm), "interest rate model not set correctly"
         );
 
         assertEq(jrm.kink(), params.kink, "kink verification failed");
-        assertEq(
-            jrm.timestampsPerYear(),
-            timestampsPerYear,
-            "timestamps per year verifiacation failed"
-        );
+        assertEq(jrm.timestampsPerYear(), timestampsPerYear, "timestamps per year verifiacation failed");
         assertEq(
             jrm.baseRatePerTimestamp(),
             (params.baseRatePerTimestamp * SCALE) / timestampsPerYear / SCALE,
@@ -50,44 +40,27 @@ contract ParameterValidation is Test {
         );
         assertEq(
             jrm.jumpMultiplierPerTimestamp(),
-            (params.jumpMultiplierPerTimestamp * SCALE) / timestampsPerYear
-                / SCALE,
+            (params.jumpMultiplierPerTimestamp * SCALE) / timestampsPerYear / SCALE,
             "jump multiplier per timestamp validation failed"
         );
     }
 
-    function _validateCF(
-        Addresses addresses,
-        address tokenAddress,
-        uint256 collateralFactor
-    ) internal view {
+    function _validateCF(Addresses addresses, address tokenAddress, uint256 collateralFactor) internal view {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         Comptroller unitroller = Comptroller(unitrollerAddress);
 
-        (bool listed, uint256 collateralFactorMantissa) =
-            unitroller.markets(tokenAddress);
+        (bool listed, uint256 collateralFactorMantissa) = unitroller.markets(tokenAddress);
 
         assertTrue(listed);
 
-        assertEq(
-            collateralFactorMantissa,
-            collateralFactor,
-            "collateral factor validation failed"
-        );
+        assertEq(collateralFactorMantissa, collateralFactor, "collateral factor validation failed");
     }
 
-    function _validateRF(address tokenAddress, uint256 reserveFactor)
-        internal
-        view
-    {
+    function _validateRF(address tokenAddress, uint256 reserveFactor) internal view {
         MToken token = MToken(tokenAddress);
 
         uint256 reserveFactorMantissa = token.reserveFactorMantissa();
 
-        assertEq(
-            reserveFactorMantissa,
-            reserveFactor,
-            "reserve factor validation failed"
-        );
+        assertEq(reserveFactorMantissa, reserveFactor, "reserve factor validation failed");
     }
 }

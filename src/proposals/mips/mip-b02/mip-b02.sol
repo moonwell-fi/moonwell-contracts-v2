@@ -31,9 +31,7 @@ contract mipb02 is HybridProposal, Configs {
     uint256 public constant SCALE = 1e18;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b02/MIP-B02.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-b02/MIP-B02.md"));
 
         _setProposalDescription(proposalDescription);
 
@@ -48,8 +46,7 @@ contract mipb02 is HybridProposal, Configs {
     /// @notice deploy the new MWETH logic contract and the ERC4626 Wrappers
     function deploy(Addresses addresses, address) public override {
         if (!addresses.isAddressSet("WETH_UNWRAPPER")) {
-            MWethDelegate mWethLogic =
-                new MWethDelegate(addresses.getAddress("WETH_UNWRAPPER"));
+            MWethDelegate mWethLogic = new MWethDelegate(addresses.getAddress("WETH_UNWRAPPER"));
 
             addresses.addAddress("MWETH_IMPLEMENTATION", address(mWethLogic));
         }
@@ -64,10 +61,7 @@ contract mipb02 is HybridProposal, Configs {
         _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
-                "_setImplementation(address,bool,bytes)",
-                addresses.getAddress("MWETH_IMPLEMENTATION"),
-                true,
-                ""
+                "_setImplementation(address,bool,bytes)", addresses.getAddress("MWETH_IMPLEMENTATION"), true, ""
             ),
             "Point Moonwell WETH to new logic contract"
         );
@@ -78,35 +72,16 @@ contract mipb02 is HybridProposal, Configs {
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
-        assertTrue(
-            addresses.getAddress("MOONWELL_WETH") != address(0),
-            "MOONWELL_WETH not set"
-        );
-        assertTrue(
-            addresses.getAddress("MWETH_IMPLEMENTATION") != address(0),
-            "MWETH_IMPLEMENTATION not set"
-        );
-        assertTrue(
-            addresses.getAddress("WETH_ROUTER") != address(0),
-            "WETH_ROUTER not set"
-        );
+        assertTrue(addresses.getAddress("MOONWELL_WETH") != address(0), "MOONWELL_WETH not set");
+        assertTrue(addresses.getAddress("MWETH_IMPLEMENTATION") != address(0), "MWETH_IMPLEMENTATION not set");
+        assertTrue(addresses.getAddress("WETH_ROUTER") != address(0), "WETH_ROUTER not set");
 
-        WETHRouter router =
-            WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));
-        assertEq(
-            address(router.weth()),
-            addresses.getAddress("WETH"),
-            "WETH_ROUTER weth not set"
-        );
-        assertEq(
-            address(router.mToken()),
-            addresses.getAddress("MOONWELL_WETH"),
-            "WETH_ROUTER mWeth not set"
-        );
+        WETHRouter router = WETHRouter(payable(addresses.getAddress("WETH_ROUTER")));
+        assertEq(address(router.weth()), addresses.getAddress("WETH"), "WETH_ROUTER weth not set");
+        assertEq(address(router.mToken()), addresses.getAddress("MOONWELL_WETH"), "WETH_ROUTER mWeth not set");
 
         /// ensure that the mWeth implementation is set correctly
-        MErc20Delegator mWeth =
-            MErc20Delegator(payable(addresses.getAddress("MOONWELL_WETH")));
+        MErc20Delegator mWeth = MErc20Delegator(payable(addresses.getAddress("MOONWELL_WETH")));
         assertEq(
             mWeth.implementation(),
             addresses.getAddress("MWETH_IMPLEMENTATION"),

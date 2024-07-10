@@ -23,10 +23,7 @@ contract MLikeDelegate is MErc20Delegate {
      * @param mLikeDelegatee The address to delegate votes to
      */
     function _delegateMLikeTo(address mLikeDelegatee) external {
-        require(
-            msg.sender == admin,
-            "only the admin may set the Moonwell-like delegate"
-        );
+        require(msg.sender == admin, "only the admin may set the Moonwell-like delegate");
         MLike(underlying).delegate(mLikeDelegatee);
     }
 }

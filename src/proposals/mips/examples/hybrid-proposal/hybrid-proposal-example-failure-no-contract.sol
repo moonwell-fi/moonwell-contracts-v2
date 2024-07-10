@@ -5,31 +5,20 @@ import "@forge-std/Test.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {
-    ActionType,
-    HybridProposal
-} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ActionType, HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {IMultichainGovernor} from
-    "@protocol/governance/multichain/IMultichainGovernor.sol";
-import {MultichainGovernorDeploy} from
-    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {MultiRewardDistributor} from
-    "@protocol/rewards/MultiRewardDistributor.sol";
+import {IMultichainGovernor} from "@protocol/governance/multichain/IMultichainGovernor.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 
-import {MultiRewardDistributorCommon} from
-    "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 /// @notice DO NOT USE THIS IN PRODUCTION, this is a completely hypothetical example
 /// adds stkwell as reward streams, completely hypothetical situation that makes no sense and would not work in production
 /// DO_BUILD=true DO_VALIDATE=true DO_RUN=true DO_PRINT=true forge script src/proposals/mips/examples/hybrid-proposal/hybrid-proposal-example-failure-no-contract.sol:HybridProposalExample
-contract HybridProposalExample is
-    Configs,
-    HybridProposal,
-    MultichainGovernorDeploy
-{
+contract HybridProposalExample is Configs, HybridProposal, MultichainGovernorDeploy {
     using ProposalActions for *;
 
     string public constant override name = "Example Proposal";
@@ -37,11 +26,8 @@ contract HybridProposalExample is
     uint256 public constant NEW_VOTING_PERIOD = 6 days;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile(
-                "./src/proposals/mips/examples/hybrid-proposal/ProposalDescription.md"
-            )
-        );
+        bytes memory proposalDescription =
+            abi.encodePacked(vm.readFile("./src/proposals/mips/examples/hybrid-proposal/ProposalDescription.md"));
         _setProposalDescription(proposalDescription);
     }
 
@@ -57,9 +43,7 @@ contract HybridProposalExample is
         /// due to no contract bytecode at this address
         _pushAction(
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
-            abi.encodeWithSignature(
-                "updateVotingPeriod(uint256)", NEW_VOTING_PERIOD
-            ),
+            abi.encodeWithSignature("updateVotingPeriod(uint256)", NEW_VOTING_PERIOD),
             "Set voting period on Multichain Governor to 6 days",
             ActionType.Base
         );
@@ -67,24 +51,16 @@ contract HybridProposalExample is
         vm.selectFork(primaryForkId());
 
         /// ensure no existing reward configs have already been loaded from Configs.sol
-        require(
-            cTokenConfigurations[block.chainid].length == 0,
-            "no configs allowed"
-        );
-        require(
-            emissions[block.chainid].length == 0, "no emission configs allowed"
-        );
+        require(cTokenConfigurations[block.chainid].length == 0, "no configs allowed");
+        require(emissions[block.chainid].length == 0, "no emission configs allowed");
 
         {
-            _setEmissionConfiguration(
-                "./src/proposals/mips/examples/hybrid-proposal/mip-example.json"
-            );
+            _setEmissionConfiguration("./src/proposals/mips/examples/hybrid-proposal/mip-example.json");
         }
 
         /// -------------- EMISSION CONFIGURATION --------------
 
-        EmissionConfig[] memory emissionConfig =
-            getEmissionConfigurations(block.chainid);
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(block.chainid);
         address mrd = addresses.getAddress("MRD_PROXY");
 
         unchecked {
@@ -102,11 +78,7 @@ contract HybridProposalExample is
                         config.borrowEmissionsPerSec,
                         config.endTime
                     ),
-                    string(
-                        abi.encodePacked(
-                            "Emission configuration set for ", config.mToken
-                        )
-                    ),
+                    string(abi.encodePacked("Emission configuration set for ", config.mToken)),
                     ActionType.Base
                 );
             }
@@ -127,45 +99,24 @@ contract HybridProposalExample is
     function validate(Addresses addresses, address) public override {
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        IMultichainGovernor governor = IMultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        );
+        IMultichainGovernor governor = IMultichainGovernor(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"));
 
-        assertEq(
-            governor.votingPeriod(),
-            NEW_VOTING_PERIOD,
-            "voting period not set correctly"
-        );
+        assertEq(governor.votingPeriod(), NEW_VOTING_PERIOD, "voting period not set correctly");
 
         vm.selectFork(primaryForkId());
 
-        EmissionConfig[] memory emissionConfig =
-            getEmissionConfigurations(block.chainid);
-        MultiRewardDistributor distributor =
-            MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(block.chainid);
+        MultiRewardDistributor distributor = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
 
         unchecked {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
                 MultiRewardDistributorCommon.MarketConfig memory marketConfig =
-                distributor.getConfigForMarket(
-                    MToken(addresses.getAddress(config.mToken)),
-                    config.emissionToken
-                );
+                    distributor.getConfigForMarket(MToken(addresses.getAddress(config.mToken)), config.emissionToken);
 
-                assertEq(
-                    marketConfig.owner,
-                    addresses.getAddress(config.owner),
-                    "emission owner incorrect"
-                );
-                assertEq(
-                    marketConfig.emissionToken,
-                    config.emissionToken,
-                    "emission token incorrect"
-                );
-                assertEq(
-                    marketConfig.endTime, config.endTime, "end time incorrect"
-                );
+                assertEq(marketConfig.owner, addresses.getAddress(config.owner), "emission owner incorrect");
+                assertEq(marketConfig.emissionToken, config.emissionToken, "emission token incorrect");
+                assertEq(marketConfig.endTime, config.endTime, "end time incorrect");
                 assertEq(
                     marketConfig.supplyEmissionsPerSec,
                     config.supplyEmissionPerSec,
@@ -176,16 +127,8 @@ contract HybridProposalExample is
                     config.borrowEmissionsPerSec,
                     "borrow emission per second incorrect"
                 );
-                assertEq(
-                    marketConfig.supplyGlobalIndex,
-                    1e36,
-                    "supply global index incorrect"
-                );
-                assertEq(
-                    marketConfig.borrowGlobalIndex,
-                    1e36,
-                    "borrow global index incorrect"
-                );
+                assertEq(marketConfig.supplyGlobalIndex, 1e36, "supply global index incorrect");
+                assertEq(marketConfig.borrowGlobalIndex, 1e36, "borrow global index incorrect");
             }
         }
 

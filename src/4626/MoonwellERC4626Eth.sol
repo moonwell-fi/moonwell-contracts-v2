@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.19;
 
-import {ReentrancyGuard} from
-    "@openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
@@ -29,10 +28,7 @@ contract MoonwellERC4626Eth is MoonwellERC4626, ReentrancyGuard {
         address rewardRecipient_,
         IMoontroller moontroller_
     ) MoonwellERC4626(asset_, mToken_, rewardRecipient_, moontroller_) {
-        require(
-            address(asset_) == address(MErc20(mToken_).underlying()),
-            "ASSET_MISMATCH"
-        );
+        require(address(asset_) == address(MErc20(mToken_).underlying()), "ASSET_MISMATCH");
     }
 
     /// @notice checks effects interactions are followed, so no need to use
@@ -40,12 +36,7 @@ contract MoonwellERC4626Eth is MoonwellERC4626, ReentrancyGuard {
     /// however out of an abundance of caution, reentrancy locks are used.
     /// @param assets The amount of assets to deposit.
     /// @param receiver The address to receive the shares.
-    function deposit(uint256 assets, address receiver)
-        public
-        override
-        nonReentrant
-        returns (uint256 shares)
-    {
+    function deposit(uint256 assets, address receiver) public override nonReentrant returns (uint256 shares) {
         shares = super.deposit(assets, receiver);
     }
 
@@ -54,12 +45,7 @@ contract MoonwellERC4626Eth is MoonwellERC4626, ReentrancyGuard {
     /// however out of an abundance of caution, reentrancy locks are used.
     /// @param shares The number of shares to mint.
     /// @param receiver The address to receive the shares.
-    function mint(uint256 shares, address receiver)
-        public
-        override
-        nonReentrant
-        returns (uint256 assets)
-    {
+    function mint(uint256 shares, address receiver) public override nonReentrant returns (uint256 assets) {
         assets = super.mint(shares, receiver);
     }
 
@@ -69,12 +55,11 @@ contract MoonwellERC4626Eth is MoonwellERC4626, ReentrancyGuard {
     /// @param assets The amount of assets to withdraw.
     /// @param receiver The address to receive the ETH.
     /// @param owner The address of the account to withdraw from.
-    function withdraw(uint256 assets, address receiver, address owner)
-        public
-        override
-        nonReentrant
-        returns (uint256 shares)
-    {
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) public override nonReentrant returns (uint256 shares) {
         shares = previewWithdraw(assets); // No need to check for rounding error, previewWithdraw rounds up.
 
         if (msg.sender != owner) {
@@ -100,12 +85,11 @@ contract MoonwellERC4626Eth is MoonwellERC4626, ReentrancyGuard {
     /// @param shares The number of shares to redeem.
     /// @param receiver The address to receive the ETH.
     /// @param owner The address of the account to redeem from.
-    function redeem(uint256 shares, address receiver, address owner)
-        public
-        override
-        nonReentrant
-        returns (uint256 assets)
-    {
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address owner
+    ) public override nonReentrant returns (uint256 assets) {
         if (msg.sender != owner) {
             uint256 allowed = allowance[owner][msg.sender]; // Saves gas for limited approvals.
 

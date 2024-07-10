@@ -2,8 +2,7 @@
 pragma solidity 0.8.19;
 
 import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
-import {EnumerableSet} from
-    "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 
 import {Test} from "@forge-std/Test.sol";
 
@@ -22,8 +21,7 @@ contract Addresses is IAddresses, Test {
     }
 
     /// @notice mapping from contract name to network chain id to address
-    mapping(string name => mapping(uint256 chainId => Address)) public
-        _addresses;
+    mapping(string name => mapping(uint256 chainId => Address)) public _addresses;
 
     /// @notice json structure to read addresses into storage from file
     struct SavedAddresses {
@@ -62,31 +60,17 @@ contract Addresses is IAddresses, Test {
 
         for (uint256 j = 0; j < chainids.length; j++) {
             /// fetch <chainid>.json file path and read its raw contents
-            string memory data = vm.readFile(
-                string(
-                    abi.encodePacked(
-                        projectRoot,
-                        "/utils/",
-                        vm.toString(chainids[j]),
-                        ".json"
-                    )
-                )
-            );
+            string memory data =
+                vm.readFile(string(abi.encodePacked(projectRoot, "/utils/", vm.toString(chainids[j]), ".json")));
             bytes memory parsedJson = vm.parseJson(data);
 
-            SavedAddresses[] memory savedAddresses =
-                abi.decode(parsedJson, (SavedAddresses[]));
+            SavedAddresses[] memory savedAddresses = abi.decode(parsedJson, (SavedAddresses[]));
 
             uint256 length = savedAddresses.length;
             uint256 chainId = chainids[j];
 
             for (uint256 i = 0; i < length; i++) {
-                _addAddress(
-                    savedAddresses[i].name,
-                    savedAddresses[i].addr,
-                    chainId,
-                    savedAddresses[i].isContract
-                );
+                _addAddress(savedAddresses[i].name, savedAddresses[i].addr, chainId, savedAddresses[i].isContract);
             }
         }
     }
@@ -132,9 +116,7 @@ contract Addresses is IAddresses, Test {
         _allowedChainIds.push();
 
         for (uint256 i = 0; i < allowedChainIds.length; i++) {
-            _allowedChainIds[_allowedChainIds.length - 1].add(
-                allowedChainIds[i]
-            );
+            _allowedChainIds[_allowedChainIds.length - 1].add(allowedChainIds[i]);
         }
     }
 
@@ -143,8 +125,7 @@ contract Addresses is IAddresses, Test {
     /// in the restriction.
     /// @notice Returns true if there are no restrictions.
     function chainIdAllowed(uint256 chainId) public view returns (bool) {
-        return _allowedChainIds.length == 0
-            || _allowedChainIds[_allowedChainIds.length - 1].contains(chainId);
+        return _allowedChainIds.length == 0 || _allowedChainIds[_allowedChainIds.length - 1].contains(chainId);
     }
 
     /// @notice helper function to check if a chainId is allowed to be accessed
@@ -152,12 +133,7 @@ contract Addresses is IAddresses, Test {
     function _restrictionCheck(uint256 chainId) private view {
         require(
             chainIdAllowed(chainId),
-            string(
-                abi.encodePacked(
-                    "ChainIds are restricted from using chainId: ",
-                    vm.toString(chainId)
-                )
-            )
+            string(abi.encodePacked("ChainIds are restricted from using chainId: ", vm.toString(chainId)))
         );
     }
 
@@ -170,11 +146,7 @@ contract Addresses is IAddresses, Test {
     /// @notice get an address for a specific chainId
     /// @param name the name of the address
     /// @param _chainId the chain id
-    function getAddress(string memory name, uint256 _chainId)
-        public
-        view
-        returns (address)
-    {
+    function getAddress(string memory name, uint256 _chainId) public view returns (address) {
         return _getAddress(name, _chainId);
     }
 
@@ -187,9 +159,7 @@ contract Addresses is IAddresses, Test {
     function addAddress(string memory name, address addr) public override {
         _addAddress(name, addr, block.chainid, true);
 
-        recordedAddresses.push(
-            RecordedAddress({name: name, chainId: block.chainid})
-        );
+        recordedAddresses.push(RecordedAddress({name: name, chainId: block.chainid}));
     }
 
     /// @notice it is assumed that all addresses added through this method are
@@ -209,10 +179,7 @@ contract Addresses is IAddresses, Test {
     /// @param name the name of the address
     /// @param addr the address to add
     /// @param chainId the chain id to add the address
-    function addAddressEOA(string memory name, address addr, uint256 chainId)
-        public
-        override
-    {
+    function addAddressEOA(string memory name, address addr, uint256 chainId) public override {
         _addAddress(name, addr, chainId, false);
 
         recordedAddresses.push(RecordedAddress({name: name, chainId: chainId}));
@@ -223,12 +190,7 @@ contract Addresses is IAddresses, Test {
     /// @param addr the address to add
     /// @param _chainId the chain id
     /// @param isContract whether the address is a contract
-    function addAddress(
-        string memory name,
-        address addr,
-        uint256 _chainId,
-        bool isContract
-    ) public {
+    function addAddress(string memory name, address addr, uint256 _chainId, bool isContract) public {
         _addAddress(name, addr, _chainId, isContract);
 
         recordedAddresses.push(RecordedAddress({name: name, chainId: _chainId}));
@@ -239,12 +201,7 @@ contract Addresses is IAddresses, Test {
     /// @param _addr the address to change to
     /// @param chainId the chain id
     /// @param isContract whether the address is a contract
-    function changeAddress(
-        string memory name,
-        address _addr,
-        uint256 chainId,
-        bool isContract
-    ) public {
+    function changeAddress(string memory name, address _addr, uint256 chainId, bool isContract) public {
         Address storage data = _addresses[name][chainId];
 
         require(_addr != address(0), "Address cannot be 0");
@@ -255,32 +212,19 @@ contract Addresses is IAddresses, Test {
             data.addr != address(0),
             string(
                 abi.encodePacked(
-                    "Address: ",
-                    name,
-                    " doesn't exist on chain: ",
-                    chainId.toString(),
-                    ". Use addAddress instead"
+                    "Address: ", name, " doesn't exist on chain: ", chainId.toString(), ". Use addAddress instead"
                 )
             )
         );
 
         require(
             data.addr != _addr,
-            string(
-                abi.encodePacked(
-                    "Address: ",
-                    name,
-                    " already set to the same value on chain: ",
-                    chainId.toString()
-                )
-            )
+            string(abi.encodePacked("Address: ", name, " already set to the same value on chain: ", chainId.toString()))
         );
 
         _checkAddress(_addr, isContract, name, chainId);
 
-        changedAddresses.push(
-            ChangedAddress({name: name, chainId: chainId, oldAddress: data.addr})
-        );
+        changedAddresses.push(ChangedAddress({name: name, chainId: chainId, oldAddress: data.addr}));
 
         data.addr = _addr;
         data.isContract = isContract;
@@ -291,9 +235,7 @@ contract Addresses is IAddresses, Test {
     /// @param name the name of the address
     /// @param addr the address to change to
     /// @param isContract whether the address is a contract
-    function changeAddress(string memory name, address addr, bool isContract)
-        public
-    {
+    function changeAddress(string memory name, address addr, bool isContract) public {
         _restrictionCheck(block.chainid);
 
         changeAddress(name, addr, block.chainid, isContract);
@@ -308,11 +250,7 @@ contract Addresses is IAddresses, Test {
     function getRecordedAddresses()
         external
         view
-        returns (
-            string[] memory names,
-            uint256[] memory chainIds,
-            address[] memory addresses
-        )
+        returns (string[] memory names, uint256[] memory chainIds, address[] memory addresses)
     {
         uint256 length = recordedAddresses.length;
         names = new string[](length);
@@ -322,8 +260,7 @@ contract Addresses is IAddresses, Test {
         for (uint256 i = 0; i < length; i++) {
             names[i] = recordedAddresses[i].name;
             chainIds[i] = recordedAddresses[i].chainId;
-            addresses[i] = _addresses[recordedAddresses[i].name][recordedAddresses[i]
-                .chainId].addr;
+            addresses[i] = _addresses[recordedAddresses[i].name][recordedAddresses[i].chainId].addr;
         }
     }
 
@@ -353,8 +290,7 @@ contract Addresses is IAddresses, Test {
             names[i] = changedAddresses[i].name;
             chainIds[i] = changedAddresses[i].chainId;
             oldAddresses[i] = changedAddresses[i].oldAddress;
-            newAddresses[i] = _addresses[changedAddresses[i].name][changedAddresses[i]
-                .chainId].addr;
+            newAddresses[i] = _addresses[changedAddresses[i].name][changedAddresses[i].chainId].addr;
         }
     }
 
@@ -375,11 +311,7 @@ contract Addresses is IAddresses, Test {
     /// @notice check if an address is set for a specific chain id
     /// @param name the name of the address
     /// @param chainId the chain id
-    function isAddressSet(string memory name, uint256 chainId)
-        public
-        view
-        returns (bool)
-    {
+    function isAddressSet(string memory name, uint256 chainId) public view returns (bool) {
         _restrictionCheck(chainId);
 
         return _addresses[name][chainId].addr != address(0);
@@ -390,12 +322,7 @@ contract Addresses is IAddresses, Test {
     /// @param addr the address to add
     /// @param chainId the chain id
     /// @param isContract whether the address is a contract
-    function _addAddress(
-        string memory name,
-        address addr,
-        uint256 chainId,
-        bool isContract
-    ) private {
+    function _addAddress(string memory name, address addr, uint256 chainId, bool isContract) private {
         Address storage currentAddress = _addresses[name][chainId];
 
         require(addr != address(0), "Address cannot be 0");
@@ -404,14 +331,7 @@ contract Addresses is IAddresses, Test {
 
         require(
             currentAddress.addr == address(0),
-            string(
-                abi.encodePacked(
-                    "Address: ",
-                    name,
-                    " already set on chain: ",
-                    chainId.toString()
-                )
-            )
+            string(abi.encodePacked("Address: ", name, " already set on chain: ", chainId.toString()))
         );
 
         _checkAddress(addr, isContract, name, chainId);
@@ -425,23 +345,14 @@ contract Addresses is IAddresses, Test {
     /// @notice get an address for a specific chainId
     /// @param name the name of the address
     /// @param chainId the chain id
-    function _getAddress(string memory name, uint256 chainId)
-        private
-        view
-        returns (address addr)
-    {
+    function _getAddress(string memory name, uint256 chainId) private view returns (address addr) {
         require(chainId != 0, "ChainId cannot be 0");
 
         Address memory data = _addresses[name][chainId];
         addr = data.addr;
 
         require(
-            addr != address(0),
-            string(
-                abi.encodePacked(
-                    "Address: ", name, " not set on chain: ", chainId.toString()
-                )
-            )
+            addr != address(0), string(abi.encodePacked("Address: ", name, " not set on chain: ", chainId.toString()))
         );
 
         _checkAddress(addr, data.isContract, name, chainId);
@@ -452,38 +363,19 @@ contract Addresses is IAddresses, Test {
     /// @param isContract whether the address is a contract
     /// @param name the name of the address
     /// @param chainId the chain id
-    function _checkAddress(
-        address _addr,
-        bool isContract,
-        string memory name,
-        uint256 chainId
-    ) private view {
+    function _checkAddress(address _addr, bool isContract, string memory name, uint256 chainId) private view {
         _restrictionCheck(chainId);
 
         if (chainId == block.chainid) {
             if (isContract) {
                 require(
                     _addr.code.length > 0,
-                    string(
-                        abi.encodePacked(
-                            "Address: ",
-                            name,
-                            " is not a contract on chain: ",
-                            chainId.toString()
-                        )
-                    )
+                    string(abi.encodePacked("Address: ", name, " is not a contract on chain: ", chainId.toString()))
                 );
             } else {
                 require(
                     _addr.code.length == 0,
-                    string(
-                        abi.encodePacked(
-                            "Address: ",
-                            name,
-                            " is a contract on chain: ",
-                            chainId.toString()
-                        )
-                    )
+                    string(abi.encodePacked("Address: ", name, " is a contract on chain: ", chainId.toString()))
                 );
             }
         }
@@ -491,8 +383,7 @@ contract Addresses is IAddresses, Test {
 }
 
 contract AllChainAddresses is Addresses {
-    uint256[] public supportedChainIds =
-        [8453, 84532, 1285, 1284, 1287, 11155111, 11155420, 31337, 10];
+    uint256[] public supportedChainIds = [8453, 84532, 1285, 1284, 1287, 11155111, 11155420, 31337, 10];
 
     constructor() Addresses(supportedChainIds) {}
 }

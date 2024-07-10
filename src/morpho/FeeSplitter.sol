@@ -2,8 +2,7 @@ pragma solidity 0.8.19;
 
 import {IERC4626} from "@forge-std/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from
-    "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 
@@ -55,12 +54,7 @@ contract FeeSplitter {
     /// address A
     /// @param _metaMorphoVault the address of the MetaMorpho Vault
     /// @param _mToken the address of the mToken
-    constructor(
-        address _b,
-        uint256 _splitA,
-        address _metaMorphoVault,
-        address _mToken
-    ) {
+    constructor(address _b, uint256 _splitA, address _metaMorphoVault, address _mToken) {
         b = _b;
         splitA = _splitA;
         splitB = SPLIT_TOTAL - _splitA;
@@ -89,19 +83,14 @@ contract FeeSplitter {
         IERC20(metaMorphoVault).safeTransfer(b, amountB);
 
         /// 2. call withdraw on MetaMorpho Vault
-        uint256 withdrawnAssets = IERC4626(metaMorphoVault).redeem(
-            amountA, address(this), address(this)
-        );
+        uint256 withdrawnAssets = IERC4626(metaMorphoVault).redeem(amountA, address(this), address(this));
 
         /// 3. call approve on underlying token to approve mToken to spend
         /// withdrawnAssets amount
         token.safeApprove(mToken, withdrawnAssets);
 
         /// 4. call addReserves on the mToken
-        require(
-            MErc20(mToken)._addReserves(withdrawnAssets) == 0,
-            "FeeSplitter: add reserves failure"
-        );
+        require(MErc20(mToken)._addReserves(withdrawnAssets) == 0, "FeeSplitter: add reserves failure");
 
         emit TokensSplit(amountA, amountB);
     }

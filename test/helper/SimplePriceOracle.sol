@@ -8,10 +8,7 @@ contract SimplePriceOracle is PriceOracle {
     mapping(address => uint256) prices;
 
     event PricePosted(
-        address asset,
-        uint256 previousPriceMantissa,
-        uint256 requestedPriceMantissa,
-        uint256 newPriceMantissa
+        address asset, uint256 previousPriceMantissa, uint256 requestedPriceMantissa, uint256 newPriceMantissa
     );
 
     address public admin;
@@ -20,12 +17,7 @@ contract SimplePriceOracle is PriceOracle {
         admin = msg.sender;
     }
 
-    function getUnderlyingPrice(MToken mToken)
-        public
-        view
-        override
-        returns (uint256)
-    {
+    function getUnderlyingPrice(MToken mToken) public view override returns (uint256) {
         if (compareStrings(mToken.symbol(), "mGLMR")) {
             return 1e18;
         } else {
@@ -33,18 +25,11 @@ contract SimplePriceOracle is PriceOracle {
         }
     }
 
-    function setUnderlyingPrice(MToken mToken, uint256 underlyingPriceMantissa)
-        public
-    {
+    function setUnderlyingPrice(MToken mToken, uint256 underlyingPriceMantissa) public {
         require(msg.sender == admin, "Only admin can set the price");
 
         address asset = address(MErc20(address(mToken)).underlying());
-        emit PricePosted(
-            asset,
-            prices[asset],
-            underlyingPriceMantissa,
-            underlyingPriceMantissa
-        );
+        emit PricePosted(asset, prices[asset], underlyingPriceMantissa, underlyingPriceMantissa);
         prices[asset] = underlyingPriceMantissa;
     }
 
@@ -60,13 +45,7 @@ contract SimplePriceOracle is PriceOracle {
         return prices[asset];
     }
 
-    function compareStrings(string memory a, string memory b)
-        internal
-        pure
-        returns (bool)
-    {
-        return (
-            keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b)))
-        );
+    function compareStrings(string memory a, string memory b) internal pure returns (bool) {
+        return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
     }
 }

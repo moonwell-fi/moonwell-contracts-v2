@@ -2,28 +2,23 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ChainlinkCompositeOracle} from
-    "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 
 contract ChainlinkCompositeOracleArbitrumTest is Test {
     ChainlinkCompositeOracle public oracle;
 
     /// @notice usd-eth exchange rate
-    address public constant usdEthOracle =
-        0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+    address public constant usdEthOracle = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
 
     /// @notice steth-eth exchange rate
-    address public constant stethEthOracle =
-        0xded2c52b75B24732e9107377B7Ba93eC1fFa4BAf;
+    address public constant stethEthOracle = 0xded2c52b75B24732e9107377B7Ba93eC1fFa4BAf;
 
     /// @notice wsteth-steth exchange rate
-    address public constant wstethstEthOracle =
-        0xB1552C5e96B312d0Bf8b554186F846C40614a540;
+    address public constant wstethstEthOracle = 0xB1552C5e96B312d0Bf8b554186F846C40614a540;
 
     /// @notice cbeth-eth exchange rate
-    address public constant cbethEthOracle =
-        0xa668682974E3f121185a3cD94f00322beC674275;
+    address public constant cbethEthOracle = 0xa668682974E3f121185a3cD94f00322beC674275;
 
     /// @notice expected wsteth/usd price
     uint256 public constant expectedwstEthUsdPrice = 3614882813449691700118;
@@ -35,9 +30,7 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
     uint256 public constant expectedcbEthUsdPrice = 3308361417282418265307;
 
     function setUp() public {
-        oracle = new ChainlinkCompositeOracle(
-            usdEthOracle, stethEthOracle, wstethstEthOracle
-        );
+        oracle = new ChainlinkCompositeOracle(usdEthOracle, stethEthOracle, wstethstEthOracle);
 
         /// this needs to be updated every 6 months for tests to pass as rolling
         /// to blocks too far in the past will cause the test to fail due to the rpc provider
@@ -74,33 +67,21 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         ) =
         /// always 0, value unused in ChainlinkOracle.sol
          oracle.latestRoundData();
-        uint256 price = oracle.getDerivedPriceThreeOracles(
-            usdEthOracle, stethEthOracle, wstethstEthOracle, 18
-        );
+        uint256 price = oracle.getDerivedPriceThreeOracles(usdEthOracle, stethEthOracle, wstethstEthOracle, 18);
 
         assertTrue(answer > 0, "Price should be greater than 0");
 
         assertEq(price, uint256(answer), "Price should be equal to answer");
-        assertEq(
-            updatedAt,
-            block.timestamp,
-            "updatedAt should be equal to block.timestamp"
-        );
+        assertEq(updatedAt, block.timestamp, "updatedAt should be equal to block.timestamp");
         assertEq(roundId, 0, "roundId should be equal to 0");
         assertEq(startedAt, 0, "startedAt should be equal to 0");
         assertEq(answeredInRound, 0, "answeredInRound should be equal to 0");
 
-        assertEq(
-            expectedwstEthUsdPrice,
-            price,
-            "Price should be equal to expectedwstEthUsdPrice"
-        );
+        assertEq(expectedwstEthUsdPrice, price, "Price should be equal to expectedwstEthUsdPrice");
     }
 
     function testTestLatestRoundDataCbEth() public {
-        oracle = new ChainlinkCompositeOracle(
-            usdEthOracle, cbethEthOracle, address(0)
-        );
+        oracle = new ChainlinkCompositeOracle(usdEthOracle, cbethEthOracle, address(0));
         (
             uint80 roundId,
             /// always 0, value unused in ChainlinkOracle.sol
@@ -127,11 +108,7 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         assertEq(expectedcbEthUsdPrice, price);
     }
 
-    function testScalePrice(
-        int256 price,
-        uint8 priceDecimals,
-        uint8 expectedDecimals
-    ) public view {
+    function testScalePrice(int256 price, uint8 priceDecimals, uint8 expectedDecimals) public view {
         price = int256(_bound(uint256(price), 100, 10_000e18));
         /// bound price between 100 and 10_000e18
         priceDecimals = uint8(_bound(priceDecimals, 0, 18));
@@ -139,21 +116,12 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         expectedDecimals = uint8(_bound(expectedDecimals, 0, 18));
         /// bound expectedDecimals between 0 and 18
 
-        int256 scaledPrice =
-            oracle.scalePrice(price, priceDecimals, expectedDecimals);
+        int256 scaledPrice = oracle.scalePrice(price, priceDecimals, expectedDecimals);
 
         if (priceDecimals > expectedDecimals) {
-            assertEq(
-                uint256(scaledPrice),
-                uint256(price)
-                    / (10 ** (_getAbsDelta(expectedDecimals, priceDecimals)))
-            );
+            assertEq(uint256(scaledPrice), uint256(price) / (10 ** (_getAbsDelta(expectedDecimals, priceDecimals))));
         } else {
-            assertEq(
-                uint256(scaledPrice),
-                uint256(price)
-                    * (10 ** (_getAbsDelta(expectedDecimals, priceDecimals)))
-            );
+            assertEq(uint256(scaledPrice), uint256(price) * (10 ** (_getAbsDelta(expectedDecimals, priceDecimals))));
         }
 
         if (expectedDecimals > priceDecimals) {
@@ -163,24 +131,17 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         }
     }
 
-    function testCalculatePrice(
-        int256 basePrice,
-        int256 priceMultiplier,
-        uint8 decimals
-    ) public view {
+    function testCalculatePrice(int256 basePrice, int256 priceMultiplier, uint8 decimals) public view {
         basePrice = int256(_bound(uint256(basePrice), 100, 10_000e18));
         /// bound price between 100 and 10_000e18
-        priceMultiplier =
-            int256(_bound(uint256(priceMultiplier), 1e18, 10_000e18));
+        priceMultiplier = int256(_bound(uint256(priceMultiplier), 1e18, 10_000e18));
         /// bound price multiplier between 1e18 and 10_000e18
         /// scaling factor is between 1 and 1e18
         uint256 scalingFactor = 10 ** uint256(_bound(decimals, 0, 18));
         /// bound decimals between 0 and 18
 
         assertEq(
-            oracle.calculatePrice(
-                basePrice, priceMultiplier, int256(scalingFactor)
-            ),
+            oracle.calculatePrice(basePrice, priceMultiplier, int256(scalingFactor)),
             uint256((basePrice * priceMultiplier) / int256(scalingFactor))
         );
     }

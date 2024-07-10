@@ -5,15 +5,12 @@ import "@forge-std/Test.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {MultichainGovernorDeploy} from
-    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {MultichainVoteCollection} from
-    "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {validateProxy} from "@protocol/proposals/utils/ProxyUtils.sol";
 
 import {
-    IEcosystemReserveControllerUplift,
-    IEcosystemReserveUplift
+    IEcosystemReserveControllerUplift, IEcosystemReserveUplift
 } from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
@@ -61,21 +58,12 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
         if (!addresses.isAddressSet("STK_GOVTOKEN", block.chainid)) {
             /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
-            (
-                address ecosystemReserveProxy,
-                address ecosystemReserveImplementation,
-                address ecosystemReserveController
-            ) = deployEcosystemReserve(proxyAdmin);
+            (address ecosystemReserveProxy, address ecosystemReserveImplementation, address ecosystemReserveController)
+            = deployEcosystemReserve(proxyAdmin);
 
-            addresses.addAddress(
-                "ECOSYSTEM_RESERVE_PROXY", ecosystemReserveProxy
-            );
-            addresses.addAddress(
-                "ECOSYSTEM_RESERVE_IMPL", ecosystemReserveImplementation
-            );
-            addresses.addAddress(
-                "ECOSYSTEM_RESERVE_CONTROLLER", ecosystemReserveController
-            );
+            addresses.addAddress("ECOSYSTEM_RESERVE_PROXY", ecosystemReserveProxy);
+            addresses.addAddress("ECOSYSTEM_RESERVE_IMPL", ecosystemReserveImplementation);
+            addresses.addAddress("ECOSYSTEM_RESERVE_CONTROLLER", ecosystemReserveController);
 
             {
                 (address stkWellProxy, address stkWellImpl) = deployStakedWell(
@@ -97,14 +85,10 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         }
 
         if (!addresses.isAddressSet("VOTE_COLLECTION_PROXY", block.chainid)) {
-            (address collectionProxy, address collectionImpl) =
-            deployVoteCollection(
+            (address collectionProxy, address collectionImpl) = deployVoteCollection(
                 addresses.getAddress("xWELL_PROXY"),
                 addresses.getAddress("STK_GOVTOKEN"),
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    block.chainid.toMoonbeamChainId()
-                ),
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", block.chainid.toMoonbeamChainId()),
                 /// fetch multichain governor address on Moonbeam
                 addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
                 block.chainid.toMoonbeamWormholeChainId(),
@@ -117,44 +101,32 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         }
     }
 
-    function afterDeploy(Addresses addresses, address deployer)
-        public
-        override
-    {
+    function afterDeploy(Addresses addresses, address deployer) public override {
         IEcosystemReserveControllerUplift ecosystemReserveController =
-        IEcosystemReserveControllerUplift(
-            addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
-        );
+            IEcosystemReserveControllerUplift(addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"));
 
-        assertEq(
-            ecosystemReserveController.owner(), deployer, "incorrect owner"
-        );
+        assertEq(ecosystemReserveController.owner(), deployer, "incorrect owner");
         assertEq(
             address(ecosystemReserveController.ECOSYSTEM_RESERVE()),
             address(0),
             "ECOSYSTEM_RESERVE set when it should not be"
         );
 
-        address ecosystemReserve =
-            addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
+        address ecosystemReserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
 
         /// set the ecosystem reserve
         ecosystemReserveController.setEcosystemReserve(ecosystemReserve);
 
         /// approve stkWELL contract to spend xWELL from the ecosystem reserve contract
         ecosystemReserveController.approve(
-            addresses.getAddress("xWELL_PROXY"),
-            addresses.getAddress("STK_GOVTOKEN"),
-            approvalAmount
+            addresses.getAddress("xWELL_PROXY"), addresses.getAddress("STK_GOVTOKEN"), approvalAmount
         );
 
         /// transfer ownership of the ecosystem reserve controller to the temporal governor
-        ecosystemReserveController.transferOwnership(
-            addresses.getAddress("TEMPORAL_GOVERNOR")
-        );
+        ecosystemReserveController.transferOwnership(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
         IEcosystemReserveUplift ecosystemReserveContract =
-        IEcosystemReserveUplift(addresses.getAddress("ECOSYSTEM_RESERVE_IMPL"));
+            IEcosystemReserveUplift(addresses.getAddress("ECOSYSTEM_RESERVE_IMPL"));
 
         /// take ownership of the ecosystem reserve impl to prevent any further changes or hijacking
         ecosystemReserveContract.initialize(address(1));
@@ -199,9 +171,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         /// ecosystem reserve and controller
         {
             IEcosystemReserveControllerUplift ecosystemReserveController =
-            IEcosystemReserveControllerUplift(
-                addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
-            );
+                IEcosystemReserveControllerUplift(addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"));
 
             assertEq(
                 ecosystemReserveController.owner(),
@@ -213,14 +183,10 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"),
                 "ecosystem reserve controller not pointing to ECOSYSTEM_RESERVE_PROXY"
             );
-            assertTrue(
-                ecosystemReserveController.initialized(),
-                "ecosystem reserve not initialized"
-            );
+            assertTrue(ecosystemReserveController.initialized(), "ecosystem reserve not initialized");
 
-            IEcosystemReserveUplift ecosystemReserve = IEcosystemReserveUplift(
-                addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
-            );
+            IEcosystemReserveUplift ecosystemReserve =
+                IEcosystemReserveUplift(addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"));
 
             assertEq(
                 ecosystemReserve.getFundsAdmin(),
@@ -231,98 +197,51 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             xWELL xWell = xWELL(addresses.getAddress("xWELL_PROXY"));
 
             assertEq(
-                xWell.allowance(
-                    address(ecosystemReserve),
-                    addresses.getAddress("STK_GOVTOKEN")
-                ),
+                xWell.allowance(address(ecosystemReserve), addresses.getAddress("STK_GOVTOKEN")),
                 approvalAmount,
                 "ecosystem reserve not approved to give stkWELL_PROXY approvalAmount"
             );
 
-            ecosystemReserve = IEcosystemReserveUplift(
-                addresses.getAddress("ECOSYSTEM_RESERVE_IMPL")
-            );
-            assertEq(
-                ecosystemReserve.getFundsAdmin(),
-                address(1),
-                "funds admin on impl incorrect"
-            );
+            ecosystemReserve = IEcosystemReserveUplift(addresses.getAddress("ECOSYSTEM_RESERVE_IMPL"));
+            assertEq(ecosystemReserve.getFundsAdmin(), address(1), "funds admin on impl incorrect");
         }
 
         /// validate stkWELL contract
         {
-            IStakedWellUplift stkWell =
-                IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"));
+            IStakedWellUplift stkWell = IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"));
 
             /// stake and reward token are the same
-            assertEq(
-                stkWell.STAKED_TOKEN(),
-                addresses.getAddress("xWELL_PROXY"),
-                "incorrect staked token"
-            );
-            assertEq(
-                stkWell.REWARD_TOKEN(),
-                addresses.getAddress("xWELL_PROXY"),
-                "incorrect reward token"
-            );
+            assertEq(stkWell.STAKED_TOKEN(), addresses.getAddress("xWELL_PROXY"), "incorrect staked token");
+            assertEq(stkWell.REWARD_TOKEN(), addresses.getAddress("xWELL_PROXY"), "incorrect reward token");
 
             assertEq(
                 stkWell.REWARDS_VAULT(),
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"),
                 "incorrect rewards vault, not ECOSYSTEM_RESERVE_PROXY"
             );
+            assertEq(stkWell.UNSTAKE_WINDOW(), unstakeWindow, "incorrect unstake window");
+            assertEq(stkWell.COOLDOWN_SECONDS(), cooldownSeconds, "incorrect cooldown seconds");
             assertEq(
-                stkWell.UNSTAKE_WINDOW(),
-                unstakeWindow,
-                "incorrect unstake window"
+                stkWell.DISTRIBUTION_END(), block.timestamp + distributionDuration, "incorrect distribution duration"
             );
             assertEq(
-                stkWell.COOLDOWN_SECONDS(),
-                cooldownSeconds,
-                "incorrect cooldown seconds"
+                stkWell.EMISSION_MANAGER(), addresses.getAddress("TEMPORAL_GOVERNOR"), "incorrect emissions manager"
             );
-            assertEq(
-                stkWell.DISTRIBUTION_END(),
-                block.timestamp + distributionDuration,
-                "incorrect distribution duration"
-            );
-            assertEq(
-                stkWell.EMISSION_MANAGER(),
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                "incorrect emissions manager"
-            );
-            assertEq(
-                stkWell._governance(),
-                address(0),
-                "incorrect _governance, not address(0)"
-            );
+            assertEq(stkWell._governance(), address(0), "incorrect _governance, not address(0)");
             assertEq(stkWell.name(), "Staked WELL", "incorrect stkWell name");
             assertEq(stkWell.symbol(), "stkWELL", "incorrect stkWell symbol");
             assertEq(stkWell.decimals(), 18, "incorrect stkWell decimals");
-            assertEq(
-                stkWell.totalSupply(),
-                0,
-                "incorrect stkWell starting total supply"
-            );
+            assertEq(stkWell.totalSupply(), 0, "incorrect stkWell starting total supply");
         }
 
         /// validate vote collection contract
         {
-            MultichainVoteCollection voteCollection = MultichainVoteCollection(
-                addresses.getAddress("VOTE_COLLECTION_PROXY")
-            );
+            MultichainVoteCollection voteCollection =
+                MultichainVoteCollection(addresses.getAddress("VOTE_COLLECTION_PROXY"));
 
-            assertEq(
-                address(voteCollection.xWell()),
-                addresses.getAddress("xWELL_PROXY"),
-                "incorrect xWELL"
-            );
+            assertEq(address(voteCollection.xWell()), addresses.getAddress("xWELL_PROXY"), "incorrect xWELL");
 
-            assertEq(
-                address(voteCollection.stkWell()),
-                addresses.getAddress("STK_GOVTOKEN"),
-                "incorrect stkWELL"
-            );
+            assertEq(address(voteCollection.stkWell()), addresses.getAddress("STK_GOVTOKEN"), "incorrect stkWELL");
 
             assertEq(
                 address(voteCollection.wormholeRelayer()),
@@ -335,40 +254,24 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 "incorrect vote collection owner, not temporal governor"
             );
-            assertEq(
-                voteCollection.getAllTargetChains().length,
-                1,
-                "incorrect target chain length"
-            );
+            assertEq(voteCollection.getAllTargetChains().length, 1, "incorrect target chain length");
             assertEq(
                 voteCollection.getAllTargetChains()[0],
                 block.chainid.toMoonbeamWormholeChainId(),
                 "incorrect target chain, not moonbeam"
             );
-            assertEq(
-                voteCollection.gasLimit(),
-                400_000,
-                "incorrect gas limit on vote collection contract"
-            );
+            assertEq(voteCollection.gasLimit(), 400_000, "incorrect gas limit on vote collection contract");
 
             assertEq(
-                voteCollection.targetAddress(
-                    block.chainid.toMoonbeamWormholeChainId()
-                ),
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    block.chainid.toMoonbeamChainId()
-                ),
+                voteCollection.targetAddress(block.chainid.toMoonbeamWormholeChainId()),
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", block.chainid.toMoonbeamChainId()),
                 "target address not multichain governor on moonbeam"
             );
 
             assertTrue(
                 voteCollection.isTrustedSender(
                     block.chainid.toMoonbeamWormholeChainId(),
-                    addresses.getAddress(
-                        "MULTICHAIN_GOVERNOR_PROXY",
-                        block.chainid.toMoonbeamChainId()
-                    )
+                    addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", block.chainid.toMoonbeamChainId())
                 ),
                 "multichain governor not trusted sender"
             );

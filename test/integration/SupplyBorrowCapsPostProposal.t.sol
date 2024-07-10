@@ -73,10 +73,8 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     function testBorrowingOverBorrowCapFailscbEth() public {
         mcbEth.accrueInterest();
 
-        uint256 mintAmount =
-            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_cbETH")) - 1;
-        uint256 borrowAmount =
-            _getMaxBorrowAmount(addresses.getAddress("MOONWELL_cbETH"));
+        uint256 mintAmount = _getMaxSupplyAmount(addresses.getAddress("MOONWELL_cbETH")) - 1;
+        uint256 borrowAmount = _getMaxBorrowAmount(addresses.getAddress("MOONWELL_cbETH"));
         address underlying = address(mcbEth.underlying());
 
         deal(underlying, address(this), mintAmount);
@@ -94,10 +92,8 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     }
 
     function testBorrowingOverBorrowCapFailsWeth() public {
-        uint256 mintAmount =
-            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_WETH")) - 1e18;
-        uint256 borrowAmount =
-            _getMaxBorrowAmount(addresses.getAddress("MOONWELL_WETH"));
+        uint256 mintAmount = _getMaxSupplyAmount(addresses.getAddress("MOONWELL_WETH")) - 1e18;
+        uint256 borrowAmount = _getMaxBorrowAmount(addresses.getAddress("MOONWELL_WETH"));
         address underlying = address(mWeth.underlying());
 
         deal(underlying, address(this), mintAmount);
@@ -115,9 +111,7 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     }
 
     function testBorrowingOverBorrowCapFailsUsdc() public {
-        uint256 usdcMintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_USDBC")
-        ) - 1_000e6;
+        uint256 usdcMintAmount = _getMaxSupplyAmount(addresses.getAddress("MOONWELL_USDBC")) - 1_000e6;
         uint256 borrowAmount = comptroller.borrowCaps(address(mUSDbC)) + 1;
         address underlying = address(mUSDbC.underlying());
 
@@ -139,11 +133,7 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
         mUSDbC.borrow(borrowAmount);
     }
 
-    function _getMaxSupplyAmount(address mToken)
-        internal
-        view
-        returns (uint256)
-    {
+    function _getMaxSupplyAmount(address mToken) internal view returns (uint256) {
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         uint256 totalCash = MToken(mToken).getCash();
@@ -156,11 +146,7 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
         return supplyCap - totalSupplies - 1;
     }
 
-    function _getMaxBorrowAmount(address mToken)
-        internal
-        view
-        returns (uint256)
-    {
+    function _getMaxBorrowAmount(address mToken) internal view returns (uint256) {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = MToken(mToken).totalBorrows();
 

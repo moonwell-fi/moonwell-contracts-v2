@@ -15,10 +15,7 @@ interface IMultichainVoteCollection {
     /// @param votingEndTime the timestamp when voting ends
     /// @param votingCollectionEndTime the timestamp when voting collection ends
     event ProposalCreated(
-        uint256 proposalId,
-        uint256 votingStartTime,
-        uint256 votingEndTime,
-        uint256 votingCollectionEndTime
+        uint256 proposalId, uint256 votingStartTime, uint256 votingEndTime, uint256 votingCollectionEndTime
     );
 
     /// @notice emitted when votes are emitted to the Moonbeam chain
@@ -26,21 +23,14 @@ interface IMultichainVoteCollection {
     /// @param forVotes number of votes for the proposal
     /// @param againstVotes number of votes against the proposal
     /// @param abstainVotes number of votes abstaining the proposal
-    event VotesEmitted(
-        uint256 proposalId,
-        uint256 forVotes,
-        uint256 againstVotes,
-        uint256 abstainVotes
-    );
+    event VotesEmitted(uint256 proposalId, uint256 forVotes, uint256 againstVotes, uint256 abstainVotes);
 
     /// @notice event emitted when a vote has been cast on a proposal
     /// @param voter the address of the voter
     /// @param proposalId the id of the proposal
     /// @param voteValue the value of the vote
     /// @param votes the number of votes cast
-    event VoteCast(
-        address voter, uint256 proposalId, uint8 voteValue, uint256 votes
-    );
+    event VoteCast(address voter, uint256 proposalId, uint8 voteValue, uint256 votes);
 
     /// @notice event emitted when the new staked well is set
     event NewStakedWellSet(address newStakedWell);
@@ -117,10 +107,10 @@ interface IMultichainVoteCollection {
     /// @notice returns a user's vote receipt on a given proposal
     /// @param proposalId the id of the proposal to check
     /// @param voter the address of the voter to check
-    function getReceipt(uint256 proposalId, address voter)
-        external
-        view
-        returns (bool hasVoted, uint8 voteValue, uint256 votes);
+    function getReceipt(
+        uint256 proposalId,
+        address voter
+    ) external view returns (bool hasVoted, uint8 voteValue, uint256 votes);
 
     /// @notice returns information on a proposal
     /// @param proposalId the id of the proposal to check
@@ -144,21 +134,13 @@ interface IMultichainVoteCollection {
     function proposalVotes(uint256 proposalId)
         external
         view
-        returns (
-            uint256 totalVotes,
-            uint256 forVotes,
-            uint256 againstVotes,
-            uint256 abstainVotes
-        );
+        returns (uint256 totalVotes, uint256 forVotes, uint256 againstVotes, uint256 abstainVotes);
 
     /// @notice returns the total voting power for an address at a given block number and timestamp
     /// returns the sum of votes across both xWELL and stkWELL at the given timestamp
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
-    function getVotes(address account, uint256 timestamp)
-        external
-        view
-        returns (uint256);
+    function getVotes(address account, uint256 timestamp) external view returns (uint256);
 
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////

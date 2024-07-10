@@ -10,8 +10,7 @@ import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MToken} from "@protocol/MToken.sol";
 
 import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
-import {WhitePaperInterestRateModel} from
-    "@protocol/irm/WhitePaperInterestRateModel.sol";
+import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {SigUtils} from "@test/helper/SigUtils.sol";
 
@@ -21,8 +20,7 @@ import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
 import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
-} from
-    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 contract MultiRewardDistributorFailures is Test {
@@ -44,12 +42,9 @@ contract MultiRewardDistributorFailures is Test {
         faucetToken = new FaucetTokenWithPermit(0, "Testing", 18, "TEST");
         irModel = new WhitePaperInterestRateModel(0.1e18, 0.45e18);
         distributor = new MultiRewardDistributor();
-        bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)", address(comptroller), pauseGuardian
-        );
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor), proxyAdmin, initdata
-        );
+        bytes memory initdata =
+            abi.encodeWithSignature("initialize(address,address)", address(comptroller), pauseGuardian);
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(address(distributor), proxyAdmin, initdata);
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
 
@@ -70,8 +65,7 @@ contract MultiRewardDistributorFailures is Test {
 
         comptroller._setCollateralFactor(mToken, 0.5e18); // 50% CF
 
-        emissionToken =
-            new FaucetTokenWithPermit(0, "Emission Token", 18, "EMIT");
+        emissionToken = new FaucetTokenWithPermit(0, "Emission Token", 18, "EMIT");
     }
 
     function testSetup() public view {
@@ -92,39 +86,29 @@ contract MultiRewardDistributorFailures is Test {
     function testComptrollerZeroAddressFails() public {
         new MultiRewardDistributor();
         distributor = new MultiRewardDistributor();
-        bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)", address(0), address(pauseGuardian)
-        );
+        bytes memory initdata =
+            abi.encodeWithSignature("initialize(address,address)", address(0), address(pauseGuardian));
 
         vm.expectRevert("Comptroller can't be the 0 address!");
-        new TransparentUpgradeableProxy(
-            address(distributor), proxyAdmin, initdata
-        );
+        new TransparentUpgradeableProxy(address(distributor), proxyAdmin, initdata);
     }
 
     function testPauseGuardianZeroAddressFails() public {
         new MultiRewardDistributor();
         distributor = new MultiRewardDistributor();
-        bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)", address(this), address(0)
-        );
+        bytes memory initdata = abi.encodeWithSignature("initialize(address,address)", address(this), address(0));
 
         vm.expectRevert("Pause Guardian can't be the 0 address!");
-        new TransparentUpgradeableProxy(
-            address(distributor), proxyAdmin, initdata
-        );
+        new TransparentUpgradeableProxy(address(distributor), proxyAdmin, initdata);
     }
 
     function testNonComptrollerBindFails() public {
         distributor = new MultiRewardDistributor();
-        bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)", address(this), address(pauseGuardian)
-        );
+        bytes memory initdata =
+            abi.encodeWithSignature("initialize(address,address)", address(this), address(pauseGuardian));
 
         vm.expectRevert("Can't bind to something that's not a comptroller!");
-        new TransparentUpgradeableProxy(
-            address(distributor), proxyAdmin, initdata
-        );
+        new TransparentUpgradeableProxy(address(distributor), proxyAdmin, initdata);
     }
 
     function isComptroller() external pure returns (bool) {
@@ -134,16 +118,12 @@ contract MultiRewardDistributorFailures is Test {
     /// ACL tests
 
     function testSetPauseGuardianNonGuardianOrAdminFails() public {
-        vm.expectRevert(
-            "Only the pause guardian or comptroller admin can call this function"
-        );
+        vm.expectRevert("Only the pause guardian or comptroller admin can call this function");
         distributor._setPauseGuardian(address(100000));
     }
 
     function testPauseRewardsNonGuardianOrAdminFails() public {
-        vm.expectRevert(
-            "Only the pause guardian or comptroller admin can call this function"
-        );
+        vm.expectRevert("Only the pause guardian or comptroller admin can call this function");
         distributor._pauseRewards();
     }
 
@@ -161,12 +141,7 @@ contract MultiRewardDistributorFailures is Test {
     function testAddEmissionConfigNonComptrollerAdminFails() public {
         vm.expectRevert("Only the comptroller's administrator can do this!");
         distributor._addEmissionConfig(
-            MToken(address(1)),
-            compAdmin,
-            address(emissionToken),
-            1e18,
-            1e18,
-            block.timestamp + 365 days
+            MToken(address(1)), compAdmin, address(emissionToken), 1e18, 1e18, block.timestamp + 365 days
         );
     }
 
@@ -176,50 +151,32 @@ contract MultiRewardDistributorFailures is Test {
     }
 
     function testUpdateMarketSupplyIndexNonComptrollerAdminFails() public {
-        vm.expectRevert(
-            "Only the comptroller or comptroller admin can call this function"
-        );
+        vm.expectRevert("Only the comptroller or comptroller admin can call this function");
         distributor.updateMarketSupplyIndex(mToken);
     }
 
     function testDisburseSupplierRewardsNonComptrollerAdminFails() public {
-        vm.expectRevert(
-            "Only the comptroller or comptroller admin can call this function"
-        );
+        vm.expectRevert("Only the comptroller or comptroller admin can call this function");
         distributor.disburseSupplierRewards(mToken, address(1), true);
     }
 
     function testUpdateMarketBorrowIndexNonComptrollerAdminFails() public {
-        vm.expectRevert(
-            "Only the comptroller or comptroller admin can call this function"
-        );
+        vm.expectRevert("Only the comptroller or comptroller admin can call this function");
         distributor.updateMarketBorrowIndex(mToken);
     }
 
     function testDisburseBorrowerRewardsNonComptrollerAdminFails() public {
-        vm.expectRevert(
-            "Only the comptroller or comptroller admin can call this function"
-        );
+        vm.expectRevert("Only the comptroller or comptroller admin can call this function");
         distributor.disburseBorrowerRewards(mToken, address(1), true);
     }
 
-    function testUpdateMarketBorrowIndexAndDisburseBorrowerRewardsNonComptrollerAdminFails(
-    ) public {
-        vm.expectRevert(
-            "Only the comptroller or comptroller admin can call this function"
-        );
-        distributor.updateMarketBorrowIndexAndDisburseBorrowerRewards(
-            mToken, address(1), true
-        );
+    function testUpdateMarketBorrowIndexAndDisburseBorrowerRewardsNonComptrollerAdminFails() public {
+        vm.expectRevert("Only the comptroller or comptroller admin can call this function");
+        distributor.updateMarketBorrowIndexAndDisburseBorrowerRewards(mToken, address(1), true);
     }
 
-    function testUpdateMarketSupplyIndexAndDisburseSupplierRewardsNonComptrollerAdminFails(
-    ) public {
-        vm.expectRevert(
-            "Only the comptroller or comptroller admin can call this function"
-        );
-        distributor.updateMarketSupplyIndexAndDisburseSupplierRewards(
-            mToken, address(1), true
-        );
+    function testUpdateMarketSupplyIndexAndDisburseSupplierRewardsNonComptrollerAdminFails() public {
+        vm.expectRevert("Only the comptroller or comptroller admin can call this function");
+        distributor.updateMarketSupplyIndexAndDisburseSupplierRewards(mToken, address(1), true);
     }
 }

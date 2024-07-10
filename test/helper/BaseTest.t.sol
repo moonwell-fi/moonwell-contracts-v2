@@ -1,19 +1,16 @@
 pragma solidity 0.8.19;
 
-import {ProxyAdmin} from
-    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
-} from
-    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import "@forge-std/Test.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-import {WormholeTrustedSender} from
-    "@protocol/governance/WormholeTrustedSender.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
@@ -102,8 +99,7 @@ contract BaseTest is xWELLDeploy, Test {
             proxyAdmin = ProxyAdmin(proxyAdminAddress);
             xerc20Lockbox = XERC20Lockbox(lockboxAddress);
             wormholeBridgeAdapter = WormholeBridgeAdapter(wormholeAdapterLogic);
-            wormholeBridgeAdapterProxy =
-                WormholeBridgeAdapter(wormholeAdapterProxy);
+            wormholeBridgeAdapterProxy = WormholeBridgeAdapter(wormholeAdapterProxy);
 
             vm.label(xwellLogicAddress, "xWELL Logic");
             vm.label(xwellProxyAddress, "xWELL Proxy");
@@ -113,13 +109,10 @@ contract BaseTest is xWELLDeploy, Test {
             vm.label(owner, "Owner");
             vm.label(pauseGuardian, "Pause Guardian");
             vm.label(address(wormholeAdapterLogic), "WormholeAdapterLogic");
-            vm.label(
-                address(wormholeBridgeAdapterProxy), "WormholeAdapterProxy"
-            );
+            vm.label(address(wormholeBridgeAdapterProxy), "WormholeAdapterProxy");
         }
 
-        MintLimits.RateLimitMidPointInfo[] memory newRateLimits =
-            new MintLimits.RateLimitMidPointInfo[](2);
+        MintLimits.RateLimitMidPointInfo[] memory newRateLimits = new MintLimits.RateLimitMidPointInfo[](2);
 
         /// lock box limit
         newRateLimits[0].bufferCap = type(uint112).max;
@@ -132,22 +125,10 @@ contract BaseTest is xWELLDeploy, Test {
         newRateLimits[1].rateLimitPerSecond = externalChainRateLimitPerSecond;
 
         /// give wormhole bridge adapter and lock box a rate limit
-        initializeXWell(
-            address(xwellProxy),
-            xwellName,
-            xwellSymbol,
-            owner,
-            newRateLimits,
-            pauseDuration,
-            pauseGuardian
-        );
+        initializeXWell(address(xwellProxy), xwellName, xwellSymbol, owner, newRateLimits, pauseDuration, pauseGuardian);
 
         initializeWormholeAdapter(
-            address(wormholeBridgeAdapterProxy),
-            address(xwellProxy),
-            owner,
-            wormholeRelayer,
-            chainId
+            address(wormholeBridgeAdapterProxy), address(xwellProxy), owner, wormholeRelayer, chainId
         );
 
         sigUtils = new SigUtils(xwellProxy.DOMAIN_SEPARATOR());
@@ -171,21 +152,9 @@ contract BaseTest is xWELLDeploy, Test {
         uint256 endingWellBalance = well.balanceOf(address(this));
         uint256 endingXwellBalance = xwellProxy.balanceOf(address(this));
 
-        assertEq(
-            startingTotalSupply - endingTotalSupply,
-            burnAmount,
-            "incorrect burn amount to totalSupply"
-        );
-        assertEq(
-            endingWellBalance - startingWellBalance,
-            burnAmount,
-            "incorrect burn amount to well balance"
-        );
-        assertEq(
-            startingXwellBalance - endingXwellBalance,
-            burnAmount,
-            "incorrect burn amount to xwell balance"
-        );
+        assertEq(startingTotalSupply - endingTotalSupply, burnAmount, "incorrect burn amount to totalSupply");
+        assertEq(endingWellBalance - startingWellBalance, burnAmount, "incorrect burn amount to well balance");
+        assertEq(startingXwellBalance - endingXwellBalance, burnAmount, "incorrect burn amount to xwell balance");
     }
 
     function _lockboxCanBurnTo(address to, uint112 burnAmount) internal {
@@ -200,21 +169,9 @@ contract BaseTest is xWELLDeploy, Test {
         uint256 endingWellBalance = well.balanceOf(to);
         uint256 endingXwellBalance = xwellProxy.balanceOf(address(this));
 
-        assertEq(
-            startingTotalSupply - endingTotalSupply,
-            burnAmount,
-            "incorrect burn amount to totalSupply"
-        );
-        assertEq(
-            endingWellBalance - startingWellBalance,
-            burnAmount,
-            "incorrect burn amount to well balance"
-        );
-        assertEq(
-            startingXwellBalance - endingXwellBalance,
-            burnAmount,
-            "incorrect burn amount to xwell balance"
-        );
+        assertEq(startingTotalSupply - endingTotalSupply, burnAmount, "incorrect burn amount to totalSupply");
+        assertEq(endingWellBalance - startingWellBalance, burnAmount, "incorrect burn amount to well balance");
+        assertEq(startingXwellBalance - endingXwellBalance, burnAmount, "incorrect burn amount to xwell balance");
     }
 
     function _lockboxCanMint(uint112 mintAmount) internal {
@@ -231,21 +188,9 @@ contract BaseTest is xWELLDeploy, Test {
         uint256 endingWellBalance = well.balanceOf(address(this));
         uint256 endingXwellBalance = xwellProxy.balanceOf(address(this));
 
-        assertEq(
-            endingTotalSupply - startingTotalSupply,
-            mintAmount,
-            "incorrect mint amount to totalSupply"
-        );
-        assertEq(
-            startingWellBalance - endingWellBalance,
-            mintAmount,
-            "incorrect mint amount to well balance"
-        );
-        assertEq(
-            endingXwellBalance - startingXwellBalance,
-            mintAmount,
-            "incorrect mint amount to xwell balance"
-        );
+        assertEq(endingTotalSupply - startingTotalSupply, mintAmount, "incorrect mint amount to totalSupply");
+        assertEq(startingWellBalance - endingWellBalance, mintAmount, "incorrect mint amount to well balance");
+        assertEq(endingXwellBalance - startingXwellBalance, mintAmount, "incorrect mint amount to xwell balance");
     }
 
     function _lockboxCanMintTo(address to, uint112 mintAmount) internal {
@@ -262,20 +207,8 @@ contract BaseTest is xWELLDeploy, Test {
         uint256 endingWellBalance = well.balanceOf(address(this));
         uint256 endingXwellBalance = xwellProxy.balanceOf(to);
 
-        assertEq(
-            endingTotalSupply - startingTotalSupply,
-            mintAmount,
-            "incorrect mint amount to totalSupply"
-        );
-        assertEq(
-            startingWellBalance - endingWellBalance,
-            mintAmount,
-            "incorrect mint amount to well balance"
-        );
-        assertEq(
-            endingXwellBalance - startingXwellBalance,
-            mintAmount,
-            "incorrect mint amount to xwell balance"
-        );
+        assertEq(endingTotalSupply - startingTotalSupply, mintAmount, "incorrect mint amount to totalSupply");
+        assertEq(startingWellBalance - endingWellBalance, mintAmount, "incorrect mint amount to well balance");
+        assertEq(endingXwellBalance - startingXwellBalance, mintAmount, "incorrect mint amount to xwell balance");
     }
 }

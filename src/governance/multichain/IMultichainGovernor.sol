@@ -1,7 +1,6 @@
 pragma solidity 0.8.19;
 
-import {WormholeTrustedSender} from
-    "@protocol/governance/WormholeTrustedSender.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 
 /// @notice pauseable by the guardian
 /// @notice upgradeable, constructor disables implementation
@@ -16,9 +15,7 @@ interface IMultichainGovernor {
     event StartBlockSet(uint256 proposalId, uint256 startBlock);
 
     /// @notice An event emitted when a vote has been cast on a proposal
-    event VoteCast(
-        address voter, uint256 proposalId, uint8 voteValue, uint256 votes
-    );
+    event VoteCast(address voter, uint256 proposalId, uint8 voteValue, uint256 votes);
 
     /// @notice An event emitted when a new proposal is created
     event ProposalCreated(
@@ -42,9 +39,7 @@ interface IMultichainGovernor {
     event ProposalExecuted(uint256 id);
 
     /// @notice An event emitted when the guardian breaks glass
-    event BreakGlassExecuted(
-        address breakGlassGuardian, address[] targets, bytes[] calldatas
-    );
+    event BreakGlassExecuted(address breakGlassGuardian, address[] targets, bytes[] calldatas);
 
     /// @notice An event emitted when thee quorum votes is changed.
     event QuroumVotesChanged(uint256 oldValue, uint256 newValue);
@@ -62,9 +57,7 @@ interface IMultichainGovernor {
     event GovernanceReturnAddressChanged(address oldValue, address newValue);
 
     /// @notice An event emitted when the cross chain vote collection period has changed.
-    event CrossChainVoteCollectionPeriodChanged(
-        uint256 oldValue, uint256 newValue
-    );
+    event CrossChainVoteCollectionPeriodChanged(uint256 oldValue, uint256 newValue);
 
     /// @notice An event emitted when the max user live proposals has changed.
     event UserMaxProposalsChanged(uint256 oldValue, uint256 newValue);
@@ -76,11 +69,7 @@ interface IMultichainGovernor {
     /// @param againstVotes the number of votes against the proposal
     /// @param abstainVotes the number of votes abstaining from the proposal
     event CrossChainVoteCollected(
-        uint256 proposalId,
-        uint16 sourceChain,
-        uint256 forVotes,
-        uint256 againstVotes,
-        uint256 abstainVotes
+        uint256 proposalId, uint16 sourceChain, uint256 forVotes, uint256 againstVotes, uint256 abstainVotes
     );
 
     /// @notice emitted when a calldata approval is changed for break glass guardian
@@ -201,16 +190,13 @@ interface IMultichainGovernor {
     /// - setPendingAdmin to rollback address
     /// - setAdmin to rollback address
     /// - publishMessage that adds rollback address as trusted sender in TemporalGovernor, with calldata for each chain
-    function whitelistedCalldatas(bytes calldata)
-        external
-        view
-        returns (bool);
+    function whitelistedCalldatas(bytes calldata) external view returns (bool);
 
     /// @notice return votes for a proposal id on a given chain
-    function chainAddressVotes(uint256 proposalId, uint16 chainId)
-        external
-        view
-        returns (uint256 forVotes, uint256 againstVotes, uint256 abstainVotes);
+    function chainAddressVotes(
+        uint256 proposalId,
+        uint16 chainId
+    ) external view returns (uint256 forVotes, uint256 againstVotes, uint256 abstainVotes);
 
     /// break glass guardian
     function breakGlassGuardian() external view returns (address);
@@ -241,19 +227,13 @@ interface IMultichainGovernor {
     function maxUserLiveProposals() external view returns (uint256);
 
     /// @dev Returns the number of live proposals for a given user
-    function currentUserLiveProposals(address user)
-        external
-        view
-        returns (uint256);
+    function currentUserLiveProposals(address user) external view returns (uint256);
 
     /// returns the total voting power for an address at a given block number and timestamp
     /// @param account The address of the account to check
     /// @param timestamp The unix timestamp in seconds to check the balance at
     /// @param blockNumber The block number to check the balance at
-    function getVotes(address account, uint256 timestamp, uint256 blockNumber)
-        external
-        view
-        returns (uint256);
+    function getVotes(address account, uint256 timestamp, uint256 blockNumber) external view returns (uint256);
 
     /// ---------------------------------------------- ////
     /// ---------------------------------------------- ////
@@ -301,9 +281,7 @@ interface IMultichainGovernor {
     function updateVotingPeriod(uint256 newVotingPeriod) external;
 
     /// updates the cross chain voting collection period
-    function updateCrossChainVoteCollectionPeriod(
-        uint256 newCrossChainVoteCollectionPeriod
-    ) external;
+    function updateCrossChainVoteCollectionPeriod(uint256 newCrossChainVoteCollectionPeriod) external;
 
     /// @notice sets the break glass guardian address
     /// @param newGuardian the new break glass guardian address
@@ -313,31 +291,23 @@ interface IMultichainGovernor {
     /// can only remove trusted senders from a chain that is already stored
     /// if the chain doesn't already exist in storage, revert
     /// @param _trustedSenders array of trusted senders to remove
-    function removeExternalChainConfigs(
-        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
-    ) external;
+    function removeExternalChainConfigs(WormholeTrustedSender.TrustedSender[] memory _trustedSenders) external;
 
     /// @notice add trusted senders from external chains
     /// can only add one trusted sender per chain,
     /// if more than one trusted sender per chain is added, revert
     /// @param _trustedSenders array of trusted senders to add
-    function addExternalChainConfigs(
-        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
-    ) external;
+    function addExternalChainConfigs(WormholeTrustedSender.TrustedSender[] memory _trustedSenders) external;
 
     /// @notice updates the approval for calldata to be used by break glass guardian
     /// @param data the calldata to update approval for
     /// @param approved whether or not the calldata is approved
-    function updateApprovedCalldata(bytes calldata data, bool approved)
-        external;
+    function updateApprovedCalldata(bytes calldata data, bool approved) external;
 
     //// @notice array lengths must add up
     /// calldata must be whitelisted
     /// only break glass guardian can call, once, and when they do, their role is revoked
-    function executeBreakGlass(
-        address[] calldata targets,
-        bytes[] calldata calldatas
-    ) external;
+    function executeBreakGlass(address[] calldata targets, bytes[] calldata calldatas) external;
 
     /// @notice set a gas limit for the relayer on the external chain
     /// should only be called if there is a change in gas prices on the external chain

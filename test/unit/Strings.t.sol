@@ -63,36 +63,19 @@ contract StringTest is Test {
         bytes1 delimiter = ",";
         string[] memory splitResult = testString.split(delimiter);
         assertEq(splitResult.length, 3, "split failed, length is not 3");
-        assertEq(
-            splitResult[0],
-            "artifacts/foundry/mip-b05.sol/mipb05.json",
-            "split failed, word 1"
-        );
-        assertEq(
-            splitResult[1],
-            "artifacts/foundry/mip-b04.sol/mipb04.json",
-            "split failed, word 2"
-        );
-        assertEq(
-            splitResult[2],
-            "artifacts/foundry/mip-b03.sol/mipb03.json",
-            "split failed, word 3"
-        );
+        assertEq(splitResult[0], "artifacts/foundry/mip-b05.sol/mipb05.json", "split failed, word 1");
+        assertEq(splitResult[1], "artifacts/foundry/mip-b04.sol/mipb04.json", "split failed, word 2");
+        assertEq(splitResult[2], "artifacts/foundry/mip-b03.sol/mipb03.json", "split failed, word 3");
     }
 
     function testSplitCommaDelimitedMixed() public pure {
-        string memory testString =
-            "hello,world,artifacts/foundry/mip-b05.sol/mipb05.json";
+        string memory testString = "hello,world,artifacts/foundry/mip-b05.sol/mipb05.json";
         bytes1 delimiter = ",";
         string[] memory splitResult = testString.split(delimiter);
         assertEq(splitResult.length, 3, "split failed, length is not 3");
         assertEq(splitResult[0], "hello", "split failed, word 1");
         assertEq(splitResult[1], "world", "split failed, word 2");
-        assertEq(
-            splitResult[2],
-            "artifacts/foundry/mip-b05.sol/mipb05.json",
-            "split failed, word 3"
-        );
+        assertEq(splitResult[2], "artifacts/foundry/mip-b05.sol/mipb05.json", "split failed, word 3");
     }
 
     function testSplitCommaDelimitedSingle() public pure {
@@ -100,10 +83,6 @@ contract StringTest is Test {
         bytes1 delimiter = ",";
         string[] memory splitResult = testString.split(delimiter);
         assertEq(splitResult.length, 1, "split failed, length is not 1");
-        assertEq(
-            splitResult[0],
-            "artifacts/foundry/mip-b05.sol/mipb05.json",
-            "split failed, word 1"
-        );
+        assertEq(splitResult[0], "artifacts/foundry/mip-b05.sol/mipb05.json", "split failed, word 1");
     }
 }

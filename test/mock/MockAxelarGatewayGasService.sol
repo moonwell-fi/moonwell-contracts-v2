@@ -27,12 +27,7 @@ contract MockAxelarGatewayGasService {
         validate = _validate;
     }
 
-    function validateContractCall(
-        bytes32,
-        string calldata,
-        string calldata,
-        bytes32
-    ) external view returns (bool) {
+    function validateContractCall(bytes32, string calldata, string calldata, bytes32) external view returns (bool) {
         return validate;
     }
 }

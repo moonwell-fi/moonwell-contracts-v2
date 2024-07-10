@@ -64,10 +64,7 @@ contract ERC4626EthRouter {
         /// 5. refund any remaining weth
         uint256 wethBalance = weth.balanceOf(address(this));
         if (wethBalance != 0) {
-            require(
-                weth.transfer(msg.sender, weth.balanceOf(address(this))),
-                "WETH_REFUND_FAILED"
-            );
+            require(weth.transfer(msg.sender, weth.balanceOf(address(this))), "WETH_REFUND_FAILED");
         }
     }
 
@@ -81,15 +78,8 @@ contract ERC4626EthRouter {
         address to,
         uint256 shares,
         uint256 maxAmountIn
-    )
-        public
-        payable
-        wrapApproveRefundRevoke(address(vault))
-        returns (uint256 amountIn)
-    {
-        require(
-            (amountIn = vault.mint(shares, to)) <= maxAmountIn, "MINT_FAILED"
-        );
+    ) public payable wrapApproveRefundRevoke(address(vault)) returns (uint256 amountIn) {
+        require((amountIn = vault.mint(shares, to)) <= maxAmountIn, "MINT_FAILED");
     }
 
     /// @param vault The ERC4626 vault to deposit assets into.
@@ -101,15 +91,7 @@ contract ERC4626EthRouter {
         address to,
         uint256 amount,
         uint256 minSharesOut
-    )
-        public
-        payable
-        wrapApproveRefundRevoke(address(vault))
-        returns (uint256 sharesOut)
-    {
-        require(
-            (sharesOut = vault.deposit(amount, to)) >= minSharesOut,
-            "DEPOSIT_FAILED"
-        );
+    ) public payable wrapApproveRefundRevoke(address(vault)) returns (uint256 sharesOut) {
+        require((sharesOut = vault.deposit(amount, to)) >= minSharesOut, "DEPOSIT_FAILED");
     }
 }

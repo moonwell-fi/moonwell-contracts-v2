@@ -5,18 +5,15 @@ import "@forge-std/Test.sol";
 import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
-} from
-    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {Comptroller} from "@protocol/Comptroller.sol";
 
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
-import {WhitePaperInterestRateModel} from
-    "@protocol/irm/WhitePaperInterestRateModel.sol";
-import {MultiRewardDistributor} from
-    "@protocol/rewards/MultiRewardDistributor.sol";
+import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {SigUtils} from "@test/helper/SigUtils.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
@@ -24,28 +21,15 @@ import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
 
 interface InstrumentedExternalEvents {
     event PricePosted(
-        address asset,
-        uint256 previousPriceMantissa,
-        uint256 requestedPriceMantissa,
-        uint256 newPriceMantissa
+        address asset, uint256 previousPriceMantissa, uint256 requestedPriceMantissa, uint256 newPriceMantissa
     );
-    event NewCollateralFactor(
-        MToken mToken,
-        uint256 oldCollateralFactorMantissa,
-        uint256 newCollateralFactorMantissa
-    );
+    event NewCollateralFactor(MToken mToken, uint256 oldCollateralFactorMantissa, uint256 newCollateralFactorMantissa);
     event Transfer(address indexed from, address indexed to, uint256 amount);
     event Mint(address minter, uint256 mintAmount, uint256 mintTokens);
-    event Approval(
-        address indexed owner, address indexed spender, uint256 amount
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 amount);
 }
 
-contract MErc20UnitTest is
-    Test,
-    InstrumentedExternalEvents,
-    ComptrollerErrorReporter
-{
+contract MErc20UnitTest is Test, InstrumentedExternalEvents, ComptrollerErrorReporter {
     Comptroller comptroller;
     SimplePriceOracle oracle;
     FaucetTokenWithPermit faucetToken;
@@ -72,12 +56,10 @@ contract MErc20UnitTest is
         );
 
         distributor = new MultiRewardDistributor();
-        bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)", address(comptroller), address(this)
-        );
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor), address(this), initdata
-        );
+        bytes memory initdata =
+            abi.encodeWithSignature("initialize(address,address)", address(comptroller), address(this));
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(address(distributor), address(this), initdata);
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
 
@@ -100,13 +82,8 @@ contract MErc20UnitTest is
         assertEq(mToken.balanceOf(user), 0);
 
         uint256 deadline = 1 minutes;
-        SigUtils.Permit memory permit = SigUtils.Permit({
-            owner: user,
-            spender: address(mToken),
-            value: 1e18,
-            nonce: 0,
-            deadline: deadline
-        });
+        SigUtils.Permit memory permit =
+            SigUtils.Permit({owner: user, spender: address(mToken), value: 1e18, nonce: 0, deadline: deadline});
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
 

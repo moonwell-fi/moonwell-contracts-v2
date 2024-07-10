@@ -1,20 +1,14 @@
 pragma solidity 0.8.19;
 
-import {SafeCast} from
-    "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {xERC20BridgeAdapter} from "@protocol/xWELL/xERC20BridgeAdapter.sol";
 
-import {WormholeTrustedSender} from
-    "@protocol/governance/WormholeTrustedSender.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 
 /// @notice Wormhole xERC20 Token Bridge adapter
-contract WormholeBridgeAdapter is
-    IWormholeReceiver,
-    xERC20BridgeAdapter,
-    WormholeTrustedSender
-{
+contract WormholeBridgeAdapter is IWormholeReceiver, xERC20BridgeAdapter, WormholeTrustedSender {
     using SafeCast for uint256;
 
     /// ---------------------------------------------------------
@@ -56,16 +50,12 @@ contract WormholeBridgeAdapter is
     /// @param dstChainId source chain id tokens were bridged from
     /// @param tokenReceiver address to receive tokens on destination chain
     /// @param amount of tokens bridged in
-    event TokensSent(
-        uint16 indexed dstChainId, address indexed tokenReceiver, uint256 amount
-    );
+    event TokensSent(uint16 indexed dstChainId, address indexed tokenReceiver, uint256 amount);
 
     /// @notice chain id of the target chain to address for bridging
     /// @param dstChainId destination chain id to send tokens to
     /// @param target address to send tokens to
-    event TargetAddressUpdated(
-        uint16 indexed dstChainId, address indexed target
-    );
+    event TargetAddressUpdated(uint16 indexed dstChainId, address indexed target);
 
     /// @notice emitted when the gas limit changes on external chains
     /// @param oldGasLimit old gas limit
@@ -123,17 +113,13 @@ contract WormholeBridgeAdapter is
 
     /// @notice remove trusted senders from external chains
     /// @param _trustedSenders array of trusted senders to remove
-    function removeTrustedSenders(
-        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
-    ) external onlyOwner {
+    function removeTrustedSenders(WormholeTrustedSender.TrustedSender[] memory _trustedSenders) external onlyOwner {
         _removeTrustedSenders(_trustedSenders);
     }
 
     /// @notice add trusted senders from external chains
     /// @param _trustedSenders array of trusted senders to add
-    function addTrustedSenders(
-        WormholeTrustedSender.TrustedSender[] memory _trustedSenders
-    ) external onlyOwner {
+    function addTrustedSenders(WormholeTrustedSender.TrustedSender[] memory _trustedSenders) external onlyOwner {
         _addTrustedSenders(_trustedSenders);
     }
 
@@ -141,15 +127,11 @@ contract WormholeBridgeAdapter is
     /// @dev there is no check here to ensure there isn't an existing configuration
     /// ensure the proper add or remove is being called when using this function
     /// @param _chainConfig array of chainids to addresses to add
-    function setTargetAddresses(
-        WormholeTrustedSender.TrustedSender[] memory _chainConfig
-    ) external onlyOwner {
+    function setTargetAddresses(WormholeTrustedSender.TrustedSender[] memory _chainConfig) external onlyOwner {
         for (uint256 i = 0; i < _chainConfig.length; i++) {
             targetAddress[_chainConfig[i].chainId] = _chainConfig[i].addr;
 
-            emit TargetAddressUpdated(
-                _chainConfig[i].chainId, _chainConfig[i].addr
-            );
+            emit TargetAddressUpdated(_chainConfig[i].chainId, _chainConfig[i].addr);
         }
     }
 
@@ -161,13 +143,8 @@ contract WormholeBridgeAdapter is
 
     /// @notice Estimate bridge cost to bridge out to a destination chain
     /// @param dstChainId Destination chain id
-    function bridgeCost(uint16 dstChainId)
-        public
-        view
-        returns (uint256 gasCost)
-    {
-        (gasCost,) =
-            wormholeRelayer.quoteEVMDeliveryPrice(dstChainId, 0, gasLimit);
+    function bridgeCost(uint16 dstChainId) public view returns (uint256 gasCost) {
+        (gasCost,) = wormholeRelayer.quoteEVMDeliveryPrice(dstChainId, 0, gasLimit);
     }
 
     /// --------------------------------------------------------
@@ -184,19 +161,11 @@ contract WormholeBridgeAdapter is
     /// @param targetChain Destination chain id
     /// @param amount Amount of xERC20 to bridge out
     /// @param to Address to receive funds on destination chain
-    function _bridgeOut(
-        address user,
-        uint256 targetChain,
-        uint256 amount,
-        address to
-    ) internal override {
+    function _bridgeOut(address user, uint256 targetChain, uint256 amount, address to) internal override {
         uint16 targetChainId = targetChain.toUint16();
         uint256 cost = bridgeCost(targetChainId);
         require(msg.value == cost, "WormholeBridge: cost not equal to quote");
-        require(
-            targetAddress[targetChainId] != address(0),
-            "WormholeBridge: invalid target chain"
-        );
+        require(targetAddress[targetChainId] != address(0), "WormholeBridge: invalid target chain");
 
         /// user must burn xERC20 tokens first
         _burnTokens(user, amount);
@@ -227,17 +196,9 @@ contract WormholeBridgeAdapter is
         bytes32 nonce
     ) external payable override {
         require(msg.value == 0, "WormholeBridge: no value allowed");
-        require(
-            msg.sender == address(wormholeRelayer),
-            "WormholeBridge: only relayer allowed"
-        );
-        require(
-            isTrustedSender(sourceChain, senderAddress),
-            "WormholeBridge: sender not trusted"
-        );
-        require(
-            !processedNonces[nonce], "WormholeBridge: message already processed"
-        );
+        require(msg.sender == address(wormholeRelayer), "WormholeBridge: only relayer allowed");
+        require(isTrustedSender(sourceChain, senderAddress), "WormholeBridge: sender not trusted");
+        require(!processedNonces[nonce], "WormholeBridge: message already processed");
 
         processedNonces[nonce] = true;
 

@@ -4,11 +4,9 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {GovernanceProposal} from
-    "@proposals/proposalTypes/GovernanceProposal.sol";
+import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
-import {WormholeUnwrapperAdapter} from
-    "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
+import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
 import {ChainIds, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 contract mipm21 is GovernanceProposal {
@@ -17,9 +15,7 @@ contract mipm21 is GovernanceProposal {
     string public constant override name = "MIP-M21";
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m21/MIP-M21.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-m21/MIP-M21.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 77;
@@ -31,12 +27,9 @@ contract mipm21 is GovernanceProposal {
 
     function deploy(Addresses addresses, address) public override {
         if (!addresses.isAddressSet("WORMHOLE_UNWRAPPER_ADAPTER")) {
-            WormholeUnwrapperAdapter wormholeUnwrapperAdapter =
-                new WormholeUnwrapperAdapter();
+            WormholeUnwrapperAdapter wormholeUnwrapperAdapter = new WormholeUnwrapperAdapter();
 
-            addresses.addAddress(
-                "WORMHOLE_UNWRAPPER_ADAPTER", address(wormholeUnwrapperAdapter)
-            );
+            addresses.addAddress("WORMHOLE_UNWRAPPER_ADAPTER", address(wormholeUnwrapperAdapter));
         }
     }
 
@@ -59,9 +52,7 @@ contract mipm21 is GovernanceProposal {
         _pushGovernanceAction(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
             "Set lockbox on wormhole unwrapper adapter",
-            abi.encodeWithSignature(
-                "setLockbox(address)", addresses.getAddress("xWELL_LOCKBOX")
-            )
+            abi.encodeWithSignature("setLockbox(address)", addresses.getAddress("xWELL_LOCKBOX"))
         );
     }
 
@@ -70,9 +61,7 @@ contract mipm21 is GovernanceProposal {
         setDebug(true);
 
         _simulateGovernanceActions(
-            addresses.getAddress("MOONBEAM_TIMELOCK"),
-            addresses.getAddress("ARTEMIS_GOVERNOR"),
-            address(this)
+            addresses.getAddress("MOONBEAM_TIMELOCK"), addresses.getAddress("ARTEMIS_GOVERNOR"), address(this)
         );
     }
 
@@ -88,9 +77,7 @@ contract mipm21 is GovernanceProposal {
         );
 
         assertEq(
-            WormholeUnwrapperAdapter(
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-            ).lockbox(),
+            WormholeUnwrapperAdapter(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")).lockbox(),
             addresses.getAddress("xWELL_LOCKBOX"),
             "lockbox not correctly set"
         );

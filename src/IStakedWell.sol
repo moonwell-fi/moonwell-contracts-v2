@@ -16,10 +16,7 @@ interface IStakedWell {
 
     function balanceOf(address account) external view returns (uint256);
 
-    function stakersCooldowns(address account)
-        external
-        view
-        returns (uint256);
+    function stakersCooldowns(address account) external view returns (uint256);
 
     function UNSTAKE_WINDOW() external view returns (uint256);
 
@@ -27,20 +24,13 @@ interface IStakedWell {
 
     function EMISSION_MANAGER() external view returns (address);
 
-    function getPriorVotes(address account, uint256 blockNumber)
-        external
-        view
-        returns (uint256);
+    function getPriorVotes(address account, uint256 blockNumber) external view returns (uint256);
 
     /// @notice view the reward speed for stkWELL
     function assets(address)
         external
         view
-        returns (
-            uint128 emissionsPerSecond,
-            uint128 lastUpdateTimestamp,
-            uint256 index
-        );
+        returns (uint128 emissionsPerSecond, uint128 lastUpdateTimestamp, uint256 index);
 
     function redeem(address to, uint256 amount) external;
 
@@ -53,8 +43,7 @@ interface IStakedWell {
     function cooldown() external;
 
     // from IDistributionManager
-    function configureAsset(uint128 emissionPerSecond, address underlyingAsset)
-        external;
+    function configureAsset(uint128 emissionPerSecond, address underlyingAsset) external;
 
     function configureAssets(
         uint128[] memory emissionPerSecond,

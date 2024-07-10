@@ -31,11 +31,7 @@ interface IUpgradable is IOwnable, IContractIdentifier {
 
     function implementation() external view returns (address);
 
-    function upgrade(
-        address newImplementation,
-        bytes32 newImplementationCodeHash,
-        bytes calldata params
-    ) external;
+    function upgrade(address newImplementation, bytes32 newImplementationCodeHash, bytes calldata params) external;
 
     function setup(bytes calldata data) external;
 }

@@ -32,14 +32,9 @@ contract DistributionManager is IDistributionManager {
 
     event AssetConfigUpdated(address indexed asset, uint256 emission);
     event AssetIndexUpdated(address indexed asset, uint256 index);
-    event UserIndexUpdated(
-        address indexed user, address indexed asset, uint256 index
-    );
+    event UserIndexUpdated(address indexed user, address indexed asset, uint256 index);
 
-    function __DistributionManager_init_unchained(
-        address emissionManager,
-        uint256 distributionDuration
-    ) internal {
+    function __DistributionManager_init_unchained(address emissionManager, uint256 distributionDuration) internal {
         require(emissionManager != address(0), "ZERO_ADDRESS");
         DISTRIBUTION_END = block.timestamp.add(distributionDuration);
         EMISSION_MANAGER = emissionManager;
@@ -50,19 +45,14 @@ contract DistributionManager is IDistributionManager {
      *      computes the amount of the asset that is staked.
      *
      */
-    function configureAsset(uint128 emissionsPerSecond, IERC20 underlyingAsset)
-        external
-        override
-    {
+    function configureAsset(uint128 emissionsPerSecond, IERC20 underlyingAsset) external override {
         require(msg.sender == EMISSION_MANAGER, "ONLY_EMISSION_MANAGER");
 
         // Grab the balance of the underlying asset.
         uint256 totalStaked = underlyingAsset.balanceOf(address(this));
 
         // Pass data through to the configure assets function.
-        _configureAssetInternal(
-            emissionsPerSecond, totalStaked, address(underlyingAsset)
-        );
+        _configureAssetInternal(emissionsPerSecond, totalStaked, address(underlyingAsset));
     }
 
     /**
@@ -79,15 +69,12 @@ contract DistributionManager is IDistributionManager {
     ) external override {
         require(msg.sender == EMISSION_MANAGER, "ONLY_EMISSION_MANAGER");
         require(
-            emissionPerSecond.length == totalStaked.length
-                && totalStaked.length == underlyingAsset.length,
+            emissionPerSecond.length == totalStaked.length && totalStaked.length == underlyingAsset.length,
             "PARAM_LENGTHS"
         );
 
         for (uint256 i = 0; i < emissionPerSecond.length; ++i) {
-            _configureAssetInternal(
-                emissionPerSecond[i], totalStaked[i], underlyingAsset[i]
-            );
+            _configureAssetInternal(emissionPerSecond[i], totalStaked[i], underlyingAsset[i]);
         }
     }
 
@@ -125,12 +112,7 @@ contract DistributionManager is IDistributionManager {
             return oldIndex;
         }
 
-        uint256 newIndex = _getAssetIndex(
-            oldIndex,
-            assetConfig.emissionPerSecond,
-            lastUpdateTimestamp,
-            totalStaked
-        );
+        uint256 newIndex = _getAssetIndex(oldIndex, assetConfig.emissionPerSecond, lastUpdateTimestamp, totalStaked);
 
         if (newIndex != oldIndex) {
             assetConfig.index = newIndex;
@@ -161,8 +143,7 @@ contract DistributionManager is IDistributionManager {
         uint256 userIndex = assetData.users[user];
         uint256 accruedRewards = 0;
 
-        uint256 newIndex =
-            _updateAssetStateInternal(asset, assetData, totalStaked);
+        uint256 newIndex = _updateAssetStateInternal(asset, assetData, totalStaked);
 
         if (userIndex != newIndex) {
             if (stakedByUser != 0) {
@@ -183,20 +164,12 @@ contract DistributionManager is IDistributionManager {
      * @return The accrued rewards for the user until the moment
      *
      */
-    function _claimRewards(
-        address user,
-        DistributionTypes.UserStakeInput[] memory stakes
-    ) internal returns (uint256) {
+    function _claimRewards(address user, DistributionTypes.UserStakeInput[] memory stakes) internal returns (uint256) {
         uint256 accruedRewards = 0;
 
         for (uint256 i = 0; i < stakes.length; ++i) {
             accruedRewards = accruedRewards.add(
-                _updateUserAssetInternal(
-                    user,
-                    stakes[i].underlyingAsset,
-                    stakes[i].stakedByUser,
-                    stakes[i].totalStaked
-                )
+                _updateUserAssetInternal(user, stakes[i].underlyingAsset, stakes[i].stakedByUser, stakes[i].totalStaked)
             );
         }
 
@@ -219,17 +192,11 @@ contract DistributionManager is IDistributionManager {
         for (uint256 i = 0; i < stakes.length; ++i) {
             AssetData storage assetConfig = assets[stakes[i].underlyingAsset];
             uint256 assetIndex = _getAssetIndex(
-                assetConfig.index,
-                assetConfig.emissionPerSecond,
-                assetConfig.lastUpdateTimestamp,
-                stakes[i].totalStaked
+                assetConfig.index, assetConfig.emissionPerSecond, assetConfig.lastUpdateTimestamp, stakes[i].totalStaked
             );
 
-            accruedRewards = accruedRewards.add(
-                _getRewards(
-                    stakes[i].stakedByUser, assetIndex, assetConfig.users[user]
-                )
-            );
+            accruedRewards =
+                accruedRewards.add(_getRewards(stakes[i].stakedByUser, assetIndex, assetConfig.users[user]));
         }
         return accruedRewards;
     }
@@ -266,20 +233,15 @@ contract DistributionManager is IDistributionManager {
         uint256 totalBalance
     ) internal view returns (uint256) {
         if (
-            emissionPerSecond == 0 || totalBalance == 0
-                || lastUpdateTimestamp == block.timestamp
+            emissionPerSecond == 0 || totalBalance == 0 || lastUpdateTimestamp == block.timestamp
                 || lastUpdateTimestamp >= DISTRIBUTION_END
         ) {
             return currentIndex;
         }
 
-        uint256 currentTimestamp = block.timestamp > DISTRIBUTION_END
-            ? DISTRIBUTION_END
-            : block.timestamp;
+        uint256 currentTimestamp = block.timestamp > DISTRIBUTION_END ? DISTRIBUTION_END : block.timestamp;
         uint256 timeDelta = currentTimestamp.sub(lastUpdateTimestamp);
-        return emissionPerSecond.mul(timeDelta).mul(1e18).div(totalBalance).add(
-            currentIndex
-        );
+        return emissionPerSecond.mul(timeDelta).mul(1e18).div(totalBalance).add(currentIndex);
     }
 
     /**
@@ -289,11 +251,7 @@ contract DistributionManager is IDistributionManager {
      * @return The new index
      *
      */
-    function getUserAssetData(address user, address asset)
-        public
-        view
-        returns (uint256)
-    {
+    function getUserAssetData(address user, address asset) public view returns (uint256) {
         return assets[asset].users[user];
     }
 

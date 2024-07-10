@@ -25,9 +25,7 @@ contract xWELLPauseUnitTest is BaseTest {
     }
 
     function testKickFailsWithZeroStartTime() public {
-        vm.expectRevert(
-            "ConfigurablePauseGuardian: did not pause, so cannot kick"
-        );
+        vm.expectRevert("ConfigurablePauseGuardian: did not pause, so cannot kick");
         xwellProxy.kickGuardian();
     }
 
@@ -39,11 +37,7 @@ contract xWELLPauseUnitTest is BaseTest {
 
         assertTrue(xwellProxy.pauseUsed(), "pause should be used");
         assertTrue(xwellProxy.paused(), "should be paused");
-        assertEq(
-            xwellProxy.pauseStartTime(),
-            block.timestamp,
-            "pauseStartTime incorrect"
-        );
+        assertEq(xwellProxy.pauseStartTime(), block.timestamp, "pauseStartTime incorrect");
     }
 
     function testGuardianCanUnpause() public {
@@ -55,9 +49,7 @@ contract xWELLPauseUnitTest is BaseTest {
         assertFalse(xwellProxy.paused(), "should be unpaused");
         assertEq(xwellProxy.pauseStartTime(), 0, "pauseStartTime incorrect");
         assertFalse(xwellProxy.pauseUsed(), "pause should be used");
-        assertEq(
-            xwellProxy.pauseGuardian(), address(0), "pause guardian incorrect"
-        );
+        assertEq(xwellProxy.pauseGuardian(), address(0), "pause guardian incorrect");
     }
 
     function testShouldUnpauseAutomaticallyAfterPauseDuration() public {
@@ -83,9 +75,7 @@ contract xWELLPauseUnitTest is BaseTest {
 
         xwellProxy.kickGuardian();
 
-        assertEq(
-            xwellProxy.pauseGuardian(), address(0), "incorrect pause guardian"
-        );
+        assertEq(xwellProxy.pauseGuardian(), address(0), "incorrect pause guardian");
         assertEq(xwellProxy.pauseStartTime(), 0, "pauseStartTime incorrect");
         assertFalse(xwellProxy.pauseUsed(), "incorrect pause used");
     }
@@ -104,9 +94,7 @@ contract xWELLPauseUnitTest is BaseTest {
         /// in this scenario, kickGuardian fails because the pause
         /// guardian is address(0), and the pauseStartTime is 0,
         /// this means the contract is unpaused, so
-        vm.expectRevert(
-            "ConfigurablePauseGuardian: did not pause, so cannot kick"
-        );
+        vm.expectRevert("ConfigurablePauseGuardian: did not pause, so cannot kick");
         xwellProxy.kickGuardian();
     }
 }

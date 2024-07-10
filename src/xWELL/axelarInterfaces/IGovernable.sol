@@ -27,12 +27,8 @@ interface IGovernable {
     error InvalidGovernance();
     error InvalidMintLimiter();
 
-    event GovernanceTransferred(
-        address indexed previousGovernance, address indexed newGovernance
-    );
-    event MintLimiterTransferred(
-        address indexed previousGovernance, address indexed newGovernance
-    );
+    event GovernanceTransferred(address indexed previousGovernance, address indexed newGovernance);
+    event MintLimiterTransferred(address indexed previousGovernance, address indexed newGovernance);
 
     /**
      * @notice Returns the governance address.

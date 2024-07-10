@@ -73,9 +73,7 @@ contract TestProposals is Test {
         bool validate
     ) public returns (uint256[] memory postProposalVmSnapshots) {
         if (debug) {
-            console.log(
-                "TestProposals: running", proposals.length, "proposals."
-            );
+            console.log("TestProposals: running", proposals.length, "proposals.");
         }
 
         postProposalVmSnapshots = new uint256[](proposals.length);
@@ -94,20 +92,13 @@ contract TestProposals is Test {
 
                 /// mip itself is the deployer
                 if (debug) {
-                    (
-                        string[] memory recordedNames,
-                        ,
-                        address[] memory recordedAddresses
-                    ) = addresses.getRecordedAddresses();
+                    (string[] memory recordedNames,, address[] memory recordedAddresses) =
+                        addresses.getRecordedAddresses();
                     for (uint256 j = 0; j < recordedNames.length; j++) {
-                        console.log(
-                            "{\n        'addr': '%s', ", recordedAddresses[j]
-                        );
+                        console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
                         console.log("        'chainId': %d,", block.chainid);
                         console.log(
-                            "        'name': '%s'\n}%s",
-                            recordedNames[j],
-                            j < recordedNames.length - 1 ? "," : ""
+                            "        'name': '%s'\n}%s", recordedNames[j], j < recordedNames.length - 1 ? "," : ""
                         );
                     }
                 }
@@ -115,41 +106,55 @@ contract TestProposals is Test {
 
             // After-deploy step
             if (afterDeploy) {
-                if (debug) console.log("Proposal", name, "afterDeploy()");
+                if (debug) {
+                    console.log("Proposal", name, "afterDeploy()");
+                }
                 proposals[i].afterDeploy(addresses, address(proposals[i]));
             }
 
             // After-deploy-setup step
             if (preBuildMock) {
-                if (debug) console.log("Proposal", name, "preBuildMock()");
+                if (debug) {
+                    console.log("Proposal", name, "preBuildMock()");
+                }
                 proposals[i].preBuildMock(addresses);
             }
 
             // Build step
             if (build) {
-                if (debug) console.log("Proposal", name, "build()");
+                if (debug) {
+                    console.log("Proposal", name, "build()");
+                }
                 proposals[i].build(addresses);
             }
 
             // Run step
             if (run) {
-                if (debug) console.log("Proposal", name, "run()");
+                if (debug) {
+                    console.log("Proposal", name, "run()");
+                }
                 proposals[i].run(addresses, address(proposals[i]));
             }
 
             // Teardown step
             if (teardown) {
-                if (debug) console.log("Proposal", name, "teardown()");
+                if (debug) {
+                    console.log("Proposal", name, "teardown()");
+                }
                 proposals[i].teardown(addresses, address(proposals[i]));
             }
 
             // Validate step
             if (validate) {
-                if (debug) console.log("Proposal", name, "validate()");
+                if (debug) {
+                    console.log("Proposal", name, "validate()");
+                }
                 proposals[i].validate(addresses, address(proposals[i]));
             }
 
-            if (debug) console.log("Proposal", name, "done.");
+            if (debug) {
+                console.log("Proposal", name, "done.");
+            }
 
             postProposalVmSnapshots[i] = vm.snapshot();
         }
@@ -157,19 +162,9 @@ contract TestProposals is Test {
         return postProposalVmSnapshots;
     }
 
-    function testProposals()
-        public
-        returns (uint256[] memory postProposalVmSnapshots)
-    {
+    function testProposals() public returns (uint256[] memory postProposalVmSnapshots) {
         return testProposals(
-            DEBUG,
-            DO_DEPLOY,
-            DO_AFTER_DEPLOY,
-            DO_PRE_BUILD_MOCK,
-            DO_BUILD,
-            DO_RUN,
-            DO_TEARDOWN,
-            DO_VALIDATE
+            DEBUG, DO_DEPLOY, DO_AFTER_DEPLOY, DO_PRE_BUILD_MOCK, DO_BUILD, DO_RUN, DO_TEARDOWN, DO_VALIDATE
         );
     }
 }

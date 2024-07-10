@@ -1,26 +1,17 @@
 pragma solidity 0.8.19;
 
-import {Ownable2StepUpgradeable} from
-    "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 
-import {ERC20Upgradeable} from
-    "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import {ERC20VotesUpgradeable} from
     "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
-import {SafeCast} from
-    "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
-import {ConfigurablePauseGuardian} from
-    "@protocol/xWELL/ConfigurablePauseGuardian.sol";
+import {ConfigurablePauseGuardian} from "@protocol/xWELL/ConfigurablePauseGuardian.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xERC20} from "@protocol/xWELL/xERC20.sol";
 
-contract xWELL is
-    xERC20,
-    ERC20VotesUpgradeable,
-    Ownable2StepUpgradeable,
-    ConfigurablePauseGuardian
-{
+contract xWELL is xERC20, ERC20VotesUpgradeable, Ownable2StepUpgradeable, ConfigurablePauseGuardian {
     using SafeCast for uint256;
 
     /// @notice maximum supply is 5 billion tokens if all WELL holders migrate to xWELL
@@ -54,10 +45,7 @@ contract xWELL is
         uint128 newPauseDuration,
         address newPauseGuardian
     ) external initializer {
-        require(
-            newPauseDuration <= MAX_PAUSE_DURATION,
-            "xWELL: pause duration too long"
-        );
+        require(newPauseDuration <= MAX_PAUSE_DURATION, "xWELL: pause duration too long");
         __ERC20_init(tokenName, tokenSymbol);
         __ERC20Permit_init(tokenName);
 
@@ -133,12 +121,7 @@ contract xWELL is
     /// ------------------------------------------------------------
 
     /// @notice the total supply of the token
-    function totalSupply()
-        public
-        view
-        override(ERC20Upgradeable, xERC20)
-        returns (uint256)
-    {
+    function totalSupply() public view override(ERC20Upgradeable, xERC20) returns (uint256) {
         return super.totalSupply();
     }
 
@@ -175,10 +158,7 @@ contract xWELL is
     /// @notice conform to the xERC20 setLimits interface
     /// @param bridge the bridge we are setting the limits of
     /// @param newBufferCap the new buffer cap, uint112 max for unlimited
-    function setBufferCap(address bridge, uint256 newBufferCap)
-        public
-        onlyOwner
-    {
+    function setBufferCap(address bridge, uint256 newBufferCap) public onlyOwner {
         _setBufferCap(bridge, newBufferCap.toUint112());
 
         emit BridgeLimitsSet(bridge, newBufferCap);
@@ -188,10 +168,7 @@ contract xWELL is
     /// @notice set rate limit per second for a bridge
     /// @param bridge the bridge we are setting the limits of
     /// @param newRateLimitPerSecond the new rate limit per second
-    function setRateLimitPerSecond(
-        address bridge,
-        uint128 newRateLimitPerSecond
-    ) external onlyOwner {
+    function setRateLimitPerSecond(address bridge, uint128 newRateLimitPerSecond) external onlyOwner {
         _setRateLimitPerSecond(bridge, newRateLimitPerSecond);
     }
 
@@ -199,11 +176,7 @@ contract xWELL is
     /// @dev can only be called when unpaused, otherwise the
     /// contract can be paused again
     /// @param newPauseGuardian the new pause guardian
-    function grantPauseGuardian(address newPauseGuardian)
-        external
-        onlyOwner
-        whenNotPaused
-    {
+    function grantPauseGuardian(address newPauseGuardian) external onlyOwner whenNotPaused {
         _grantGuardian(newPauseGuardian);
     }
 
@@ -221,28 +194,19 @@ contract xWELL is
     /// before an upgrade.
     /// @param newPauseDuration the new pause duration
     function setPauseDuration(uint128 newPauseDuration) external onlyOwner {
-        require(
-            newPauseDuration <= MAX_PAUSE_DURATION,
-            "xWELL: pause duration too long"
-        );
+        require(newPauseDuration <= MAX_PAUSE_DURATION, "xWELL: pause duration too long");
         _updatePauseDuration(newPauseDuration);
     }
 
     /// @notice add a new bridge to the currently active bridges
     /// @param newBridge the bridge to add
-    function addBridge(RateLimitMidPointInfo memory newBridge)
-        external
-        onlyOwner
-    {
+    function addBridge(RateLimitMidPointInfo memory newBridge) external onlyOwner {
         _addLimit(newBridge);
     }
 
     /// @notice add new bridges to the currently active bridges
     /// @param newBridges the bridges to add
-    function addBridges(RateLimitMidPointInfo[] memory newBridges)
-        external
-        onlyOwner
-    {
+    function addBridges(RateLimitMidPointInfo[] memory newBridges) external onlyOwner {
         _addLimits(newBridges);
     }
 
@@ -272,41 +236,30 @@ contract xWELL is
     /// @param from the address to transfer from
     /// @param to the address to transfer to
     /// @param amount the amount to transfer
-    function _beforeTokenTransfer(address from, address to, uint256 amount)
-        internal
-        override
-    {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
         super._beforeTokenTransfer(from, to, amount);
 
-        require(
-            to != address(this), "xERC20: cannot transfer to token contract"
-        );
+        require(to != address(this), "xERC20: cannot transfer to token contract");
     }
 
     /// @notice mint tokens for a user
-    function _mint(address user, uint256 amount)
-        internal
-        override(ERC20VotesUpgradeable, xERC20)
-    {
+    function _mint(address user, uint256 amount) internal override(ERC20VotesUpgradeable, xERC20) {
         super._mint(user, amount);
 
         xERC20._mint(user, amount);
     }
 
     /// @notice mint tokens for a user
-    function _burn(address user, uint256 amount)
-        internal
-        override(ERC20VotesUpgradeable, xERC20)
-    {
+    function _burn(address user, uint256 amount) internal override(ERC20VotesUpgradeable, xERC20) {
         super._burn(user, amount);
     }
 
     /// @notice spend allowance from a user
-    function _spendAllowance(address owner, address spender, uint256 amount)
-        internal
-        virtual
-        override(ERC20Upgradeable, xERC20)
-    {
+    function _spendAllowance(
+        address owner,
+        address spender,
+        uint256 amount
+    ) internal virtual override(ERC20Upgradeable, xERC20) {
         super._spendAllowance(owner, spender, amount);
     }
 }

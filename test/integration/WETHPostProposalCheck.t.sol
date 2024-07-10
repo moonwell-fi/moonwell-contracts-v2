@@ -51,11 +51,7 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
     }
 
     function testSetup() public view {
-        assertEq(
-            delegate.wethUnwrapper(),
-            address(unwrapper),
-            "unwrapper incorrectly set"
-        );
+        assertEq(delegate.wethUnwrapper(), address(unwrapper), "unwrapper incorrectly set");
 
         assertEq(
             MWethDelegate(address(mToken)).wethUnwrapper(),
@@ -63,11 +59,7 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
             "unwrapper incorrectly set on mToken proxy"
         );
 
-        assertEq(
-            mToken.implementation(),
-            address(delegate),
-            "delegate incorrectly set"
-        );
+        assertEq(mToken.implementation(), address(delegate), "delegate incorrectly set");
     }
 
     function testMintMWethMTokenSucceeds() public {
@@ -88,38 +80,25 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
         /// ensure successful mint
         assertTrue(mToken.balanceOf(sender) > 0);
         /// ensure balance is gt 0
-        assertEq(
-            token.balanceOf(address(mToken)) - startingTokenBalance, mintAmount
-        );
+        assertEq(token.balanceOf(address(mToken)) - startingTokenBalance, mintAmount);
         /// ensure underlying balance is sent to mToken
 
         address[] memory mTokens = new address[](1);
         mTokens[0] = address(mToken);
 
         comptroller.enterMarkets(mTokens);
-        assertTrue(
-            comptroller.checkMembership(
-                sender, MToken(addresses.getAddress("MOONWELL_WETH"))
-            )
-        );
+        assertTrue(comptroller.checkMembership(sender, MToken(addresses.getAddress("MOONWELL_WETH"))));
         /// ensure sender and mToken is in market
 
-        (uint256 err, uint256 liquidity, uint256 shortfall) =
-            comptroller.getAccountLiquidity(address(this));
+        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller.getAccountLiquidity(address(this));
 
         assertEq(err, 0, "Error getting account liquidity");
         assertGt(liquidity, mintAmount * 1_000, "liquidity not correct");
         assertEq(shortfall, 0, "Incorrect shortfall");
 
-        assertEq(
-            comptroller.exitMarket(address(mToken)), 0, "exit market failed"
-        );
+        assertEq(comptroller.exitMarket(address(mToken)), 0, "exit market failed");
 
-        assertFalse(
-            comptroller.checkMembership(
-                sender, MToken(addresses.getAddress("MOONWELL_WETH"))
-            )
-        );
+        assertFalse(comptroller.checkMembership(sender, MToken(addresses.getAddress("MOONWELL_WETH"))));
         /// ensure sender and mToken is not in market
     }
 
@@ -140,11 +119,7 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
 
         uint256 endingBalance = address(this).balance;
 
-        assertEq(
-            endingBalance - startingBalance,
-            redeemAmount,
-            "incorrect eth amount after redemption"
-        );
+        assertEq(endingBalance - startingBalance, redeemAmount, "incorrect eth amount after redemption");
     }
 
     receive() external payable {

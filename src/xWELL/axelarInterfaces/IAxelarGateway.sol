@@ -49,11 +49,7 @@ interface IAxelarGateway is IGovernable {
      * \*********
      */
     event TokenSent(
-        address indexed sender,
-        string destinationChain,
-        string destinationAddress,
-        string symbol,
-        uint256 amount
+        address indexed sender, string destinationChain, string destinationAddress, string symbol, uint256 amount
     );
 
     event ContractCall(
@@ -175,31 +171,19 @@ interface IAxelarGateway is IGovernable {
 
     function tokenDeployer() external view returns (address);
 
-    function tokenMintLimit(string memory symbol)
-        external
-        view
-        returns (uint256);
+    function tokenMintLimit(string memory symbol) external view returns (uint256);
 
-    function tokenMintAmount(string memory symbol)
-        external
-        view
-        returns (uint256);
+    function tokenMintAmount(string memory symbol) external view returns (uint256);
 
     function allTokensFrozen() external view returns (bool);
 
     function implementation() external view returns (address);
 
-    function tokenAddresses(string memory symbol)
-        external
-        view
-        returns (address);
+    function tokenAddresses(string memory symbol) external view returns (address);
 
     function tokenFrozen(string memory symbol) external view returns (bool);
 
-    function isCommandExecuted(bytes32 commandId)
-        external
-        view
-        returns (bool);
+    function isCommandExecuted(bytes32 commandId) external view returns (bool);
 
     function adminEpoch() external view returns (uint256);
 
@@ -212,10 +196,7 @@ interface IAxelarGateway is IGovernable {
      * |* Admin Functions *|
      * \******************
      */
-    function setTokenMintLimits(
-        string[] calldata symbols,
-        uint256[] calldata limits
-    ) external;
+    function setTokenMintLimits(string[] calldata symbols, uint256[] calldata limits) external;
 
     function upgrade(
         address newImplementation,

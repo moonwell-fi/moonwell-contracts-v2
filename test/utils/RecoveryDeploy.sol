@@ -10,12 +10,10 @@ import {Recovery} from "@protocol/Recovery.sol";
 
 contract RecoveryDeploy is Test {
     /// @notice base mainnet address to deploy to
-    address public constant recoveryAddress =
-        0x3b995646420BcfE8395bA9F44251415126f7BD7A;
+    address public constant recoveryAddress = 0x3b995646420BcfE8395bA9F44251415126f7BD7A;
 
     /// @notice base mainnet address to deploy from
-    address public constant deployer =
-        0xc191A4db4E05e478778eDB6a201cb7F13A257C23;
+    address public constant deployer = 0xc191A4db4E05e478778eDB6a201cb7F13A257C23;
 
     /// @notice deploy a new recovery contract
     /// returns freshly deployed contract
@@ -65,10 +63,7 @@ contract RecoveryDeploy is Test {
     }
 
     /// @notice deploy, then verify the address is correct
-    function mainnetDeployAndVerifyScript(address owner)
-        public
-        returns (Recovery)
-    {
+    function mainnetDeployAndVerifyScript(address owner) public returns (Recovery) {
         Recovery recover = mainnetDeployScript(owner);
         require(verifyDeploy(recover), "incorrect deploy address");
 

@@ -54,30 +54,16 @@ interface MultiRewardDistributorCommon {
 
     // Global index updates
     event GlobalSupplyIndexUpdated(
-        MToken mToken,
-        address emissionToken,
-        uint256 newSupplyIndex,
-        uint32 newSupplyGlobalTimestamp
+        MToken mToken, address emissionToken, uint256 newSupplyIndex, uint32 newSupplyGlobalTimestamp
     );
-    event GlobalBorrowIndexUpdated(
-        MToken mToken,
-        address emissionToken,
-        uint256 newIndex,
-        uint32 newTimestamp
-    );
+    event GlobalBorrowIndexUpdated(MToken mToken, address emissionToken, uint256 newIndex, uint32 newTimestamp);
 
     // Reward Disbursal
     event DisbursedSupplierRewards(
-        MToken indexed mToken,
-        address indexed supplier,
-        address indexed emissionToken,
-        uint256 totalAccrued
+        MToken indexed mToken, address indexed supplier, address indexed emissionToken, uint256 totalAccrued
     );
     event DisbursedBorrowerRewards(
-        MToken indexed mToken,
-        address indexed borrower,
-        address indexed emissionToken,
-        uint256 totalAccrued
+        MToken indexed mToken, address indexed borrower, address indexed emissionToken, uint256 totalAccrued
     );
 
     // Admin update events
@@ -92,28 +78,16 @@ interface MultiRewardDistributorCommon {
     event NewPauseGuardian(address oldPauseGuardian, address newPauseGuardian);
     event NewEmissionCap(uint256 oldEmissionCap, uint256 newEmissionCap);
     event NewEmissionConfigOwner(
-        MToken indexed mToken,
-        address indexed emissionToken,
-        address currentOwner,
-        address newOwner
+        MToken indexed mToken, address indexed emissionToken, address currentOwner, address newOwner
     );
     event NewRewardEndTime(
-        MToken indexed mToken,
-        address indexed emissionToken,
-        uint256 currentEndTime,
-        uint256 newEndTime
+        MToken indexed mToken, address indexed emissionToken, uint256 currentEndTime, uint256 newEndTime
     );
     event NewSupplyRewardSpeed(
-        MToken indexed mToken,
-        address indexed emissionToken,
-        uint256 oldRewardSpeed,
-        uint256 newRewardSpeed
+        MToken indexed mToken, address indexed emissionToken, uint256 oldRewardSpeed, uint256 newRewardSpeed
     );
     event NewBorrowRewardSpeed(
-        MToken indexed mToken,
-        address indexed emissionToken,
-        uint256 oldRewardSpeed,
-        uint256 newRewardSpeed
+        MToken indexed mToken, address indexed emissionToken, uint256 oldRewardSpeed, uint256 newRewardSpeed
     );
     event FundsRescued(address token, uint256 amount);
 
@@ -122,7 +96,5 @@ interface MultiRewardDistributorCommon {
     event RewardsUnpaused();
 
     // Errors
-    event InsufficientTokensToEmit(
-        address payable user, address rewardToken, uint256 amount
-    );
+    event InsufficientTokensToEmit(address payable user, address rewardToken, uint256 amount);
 }

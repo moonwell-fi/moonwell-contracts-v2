@@ -22,7 +22,9 @@ contract WethUnwrapper {
         (bool success, bytes memory returndata) = to.call{value: amount}("");
 
         if (!success) {
-            if (returndata.length == 0) revert();
+            if (returndata.length == 0) {
+                revert();
+            }
             assembly {
                 revert(add(32, returndata), mload(returndata))
             }

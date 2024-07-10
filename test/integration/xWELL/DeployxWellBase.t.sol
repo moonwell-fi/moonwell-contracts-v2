@@ -7,8 +7,7 @@ import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {xwellDeployBase} from
-    "@protocol/proposals/mips/mip-xwell/xwellDeployBase.sol";
+import {xwellDeployBase} from "@protocol/proposals/mips/mip-xwell/xwellDeployBase.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
@@ -41,48 +40,25 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         addresses = new Addresses();
 
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
-        wormholeAdapter = WormholeBridgeAdapter(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-        );
+        wormholeAdapter = WormholeBridgeAdapter(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
     }
 
     function testReinitializeFails() public {
         vm.expectRevert("Initializable: contract is already initialized");
-        xwell.initialize(
-            "WELL",
-            "WELL",
-            address(1),
-            new MintLimits.RateLimitMidPointInfo[](0),
-            0,
-            address(0)
-        );
+        xwell.initialize("WELL", "WELL", address(1), new MintLimits.RateLimitMidPointInfo[](0), 0, address(0));
 
         vm.expectRevert("Initializable: contract is already initialized");
-        wormholeAdapter.initialize(
-            address(1), address(1), address(1), MOONBEAM_WORMHOLE_CHAIN_ID
-        );
+        wormholeAdapter.initialize(address(1), address(1), address(1), MOONBEAM_WORMHOLE_CHAIN_ID);
     }
 
     function testSetup() public view {
-        address externalChainAddress =
-            wormholeAdapter.targetAddress(MOONBEAM_WORMHOLE_CHAIN_ID);
-        assertEq(
-            externalChainAddress,
-            address(wormholeAdapter),
-            "incorrect target address config"
-        );
-        bytes32[] memory externalAddresses =
-            wormholeAdapter.allTrustedSenders(MOONBEAM_WORMHOLE_CHAIN_ID);
+        address externalChainAddress = wormholeAdapter.targetAddress(MOONBEAM_WORMHOLE_CHAIN_ID);
+        assertEq(externalChainAddress, address(wormholeAdapter), "incorrect target address config");
+        bytes32[] memory externalAddresses = wormholeAdapter.allTrustedSenders(MOONBEAM_WORMHOLE_CHAIN_ID);
         assertEq(externalAddresses.length, 1, "incorrect trusted senders");
-        assertEq(
-            externalAddresses[0],
-            address(wormholeAdapter).toBytes(),
-            "incorrect actual trusted senders"
-        );
+        assertEq(externalAddresses[0], address(wormholeAdapter).toBytes(), "incorrect actual trusted senders");
         assertTrue(
-            wormholeAdapter.isTrustedSender(
-                uint16(MOONBEAM_WORMHOLE_CHAIN_ID), address(wormholeAdapter)
-            ),
+            wormholeAdapter.isTrustedSender(uint16(MOONBEAM_WORMHOLE_CHAIN_ID), address(wormholeAdapter)),
             "self on moonbeam not trusted sender"
         );
     }
@@ -109,21 +85,12 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
 
         assertEq(endingBuffer, startingBuffer + mintAmount, "buffer incorrect");
-        assertEq(
-            endingXWellBalance,
-            startingXWellBalance - mintAmount,
-            "user xWELL balance incorrect"
-        );
-        assertEq(
-            endingXWellTotalSupply,
-            startingXWellTotalSupply - mintAmount,
-            "total xWELL supply incorrect"
-        );
+        assertEq(endingXWellBalance, startingXWellBalance - mintAmount, "user xWELL balance incorrect");
+        assertEq(endingXWellTotalSupply, startingXWellTotalSupply - mintAmount, "total xWELL supply incorrect");
     }
 
     function testBridgeInSuccess(uint256 mintAmount) public returns (uint256) {
-        mintAmount =
-            _bound(mintAmount, 1, xwell.buffer(address(wormholeAdapter)));
+        mintAmount = _bound(mintAmount, 1, xwell.buffer(address(wormholeAdapter)));
 
         uint256 startingXWellBalance = xwell.balanceOf(user);
         uint256 startingXWellTotalSupply = xwell.totalSupply();
@@ -136,24 +103,14 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
         bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));
 
         vm.prank(address(wormholeAdapter.wormholeRelayer()));
-        wormholeAdapter.receiveWormholeMessages(
-            payload, new bytes[](0), sender, dstChainId, nonce
-        );
+        wormholeAdapter.receiveWormholeMessages(payload, new bytes[](0), sender, dstChainId, nonce);
 
         uint256 endingXWellBalance = xwell.balanceOf(user);
         uint256 endingXWellTotalSupply = xwell.totalSupply();
         uint256 endingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        assertEq(
-            endingXWellBalance,
-            startingXWellBalance + mintAmount,
-            "user xWELL balance incorrect"
-        );
-        assertEq(
-            endingXWellTotalSupply,
-            startingXWellTotalSupply + mintAmount,
-            "total xWELL supply incorrect"
-        );
+        assertEq(endingXWellBalance, startingXWellBalance + mintAmount, "user xWELL balance incorrect");
+        assertEq(endingXWellTotalSupply, startingXWellTotalSupply + mintAmount, "total xWELL supply incorrect");
         assertTrue(wormholeAdapter.processedNonces(nonce), "nonce not used");
         assertEq(endingBuffer, startingBuffer - mintAmount, "buffer incorrect");
 

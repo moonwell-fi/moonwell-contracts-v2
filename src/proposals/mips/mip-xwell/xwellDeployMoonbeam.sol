@@ -49,12 +49,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
 
     // @notice search for a on-chain proposal that matches the proposal calldata
     // @returns the proposal id, 0 if no proposal is found
-    function getProposalId(Addresses, address)
-        public
-        pure
-        override
-        returns (uint256)
-    {
+    function getProposalId(Addresses, address) public pure override returns (uint256) {
         revert("Not implemented");
     }
 
@@ -67,12 +62,10 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
 
         {
             /// stkWELL proxy admin
-            address existingProxyAdmin =
-                addresses.getAddress("MOONBEAM_PROXY_ADMIN");
+            address existingProxyAdmin = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
 
             /// pause guardian on moonbeam
-            address pauseGuardian =
-                addresses.getAddress("MOONBEAM_PAUSE_GUARDIAN_MULTISIG");
+            address pauseGuardian = addresses.getAddress("MOONBEAM_PAUSE_GUARDIAN_MULTISIG");
 
             /// @notice this is the address that will be own the xWELL contract
             address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
@@ -88,19 +81,12 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
             address xwellProxy;
             address wormholeAdapterLogic;
             address wormholeAdapter;
-            MintLimits.RateLimitMidPointInfo[] memory limits =
-                new MintLimits.RateLimitMidPointInfo[](2);
+            MintLimits.RateLimitMidPointInfo[] memory limits = new MintLimits.RateLimitMidPointInfo[](2);
 
             {
                 address lockbox;
-                (
-                    xwellLogic,
-                    xwellProxy,
-                    ,
-                    wormholeAdapterLogic,
-                    wormholeAdapter,
-                    lockbox
-                ) = deployMoonbeamSystem(wellAddress, existingProxyAdmin);
+                (xwellLogic, xwellProxy,, wormholeAdapterLogic, wormholeAdapter, lockbox) =
+                    deployMoonbeamSystem(wellAddress, existingProxyAdmin);
 
                 limits[0].bridge = wormholeAdapter;
                 limits[0].rateLimitPerSecond = rateLimitPerSecond;
@@ -113,31 +99,15 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
                 addresses.addAddress("xWELL_LOCKBOX", lockbox);
             }
 
-            initializeXWell(
-                xwellProxy,
-                "WELL",
-                "WELL",
-                artemisTimelock,
-                limits,
-                pauseDuration,
-                pauseGuardian
-            );
+            initializeXWell(xwellProxy, "WELL", "WELL", artemisTimelock, limits, pauseDuration, pauseGuardian);
 
             initializeWormholeAdapter(
-                wormholeAdapter,
-                xwellProxy,
-                artemisTimelock,
-                relayer,
-                block.chainid.toBaseWormholeChainId()
+                wormholeAdapter, xwellProxy, artemisTimelock, relayer, block.chainid.toBaseWormholeChainId()
             );
 
             /// add to moonbeam addresses
-            addresses.addAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_PROXY", wormholeAdapter
-            );
-            addresses.addAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_LOGIC", wormholeAdapterLogic
-            );
+            addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY", wormholeAdapter);
+            addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC", wormholeAdapterLogic);
             addresses.addAddress("xWELL_LOGIC", xwellLogic);
             addresses.addAddress("xWELL_PROXY", xwellProxy);
 
@@ -173,23 +143,16 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
         /// --------------------------------------------------
         {
             address moonbeamxWellProxy = addresses.getAddress("xWELL_PROXY");
-            address wormholeBridgeAdapterProxy =
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
+            address wormholeBridgeAdapterProxy = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
             address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
-            address pauseGuardian =
-                addresses.getAddress("MOONBEAM_PAUSE_GUARDIAN_MULTISIG");
+            address pauseGuardian = addresses.getAddress("MOONBEAM_PAUSE_GUARDIAN_MULTISIG");
             address lockbox = addresses.getAddress("xWELL_LOCKBOX");
 
             assertEq(
-                xWELL(wormholeBridgeAdapterProxy).owner(),
-                artemisTimelock,
-                "wormhole bridge adapter owner is incorrect"
+                xWELL(wormholeBridgeAdapterProxy).owner(), artemisTimelock, "wormhole bridge adapter owner is incorrect"
             );
             assertEq(
-                address(
-                    WormholeBridgeAdapter(wormholeBridgeAdapterProxy)
-                        .wormholeRelayer()
-                ),
+                address(WormholeBridgeAdapter(wormholeBridgeAdapterProxy).wormholeRelayer()),
                 addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
                 "wormhole bridge adapter relayer is incorrect"
             );
@@ -200,9 +163,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
             );
 
             assertEq(
-                xWELL(moonbeamxWellProxy).rateLimitPerSecond(
-                    wormholeBridgeAdapterProxy
-                ),
+                xWELL(moonbeamxWellProxy).rateLimitPerSecond(wormholeBridgeAdapterProxy),
                 rateLimitPerSecond,
                 "rateLimitPerSecond is incorrect"
             );
@@ -214,37 +175,25 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
             );
             /// ensure correct buffer cap
             assertEq(
-                xWELL(moonbeamxWellProxy).bufferCap(wormholeBridgeAdapterProxy),
-                bufferCap,
-                "bufferCap is incorrect"
+                xWELL(moonbeamxWellProxy).bufferCap(wormholeBridgeAdapterProxy), bufferCap, "bufferCap is incorrect"
             );
-            assertEq(
-                xWELL(moonbeamxWellProxy).bufferCap(lockbox),
-                lockBoxBufferCap,
-                "lockbox bufferCap is incorrect"
-            );
+            assertEq(xWELL(moonbeamxWellProxy).bufferCap(lockbox), lockBoxBufferCap, "lockbox bufferCap is incorrect");
             assertTrue(
-                WormholeBridgeAdapter(wormholeBridgeAdapterProxy)
-                    .isTrustedSender(
-                    block.chainid.toBaseWormholeChainId(),
-                    wormholeBridgeAdapterProxy
+                WormholeBridgeAdapter(wormholeBridgeAdapterProxy).isTrustedSender(
+                    block.chainid.toBaseWormholeChainId(), wormholeBridgeAdapterProxy
                 ),
                 "trusted sender not trusted"
             );
 
             assertEq(
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC"),
-                addresses.getAddress(
-                    "WORMHOLE_BRIDGE_ADAPTER_LOGIC", BASE_CHAIN_ID
-                ),
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC", BASE_CHAIN_ID),
                 "wormhole bridge adapter logic address is not the same across chains"
             );
 
             assertEq(
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-                addresses.getAddress(
-                    "WORMHOLE_BRIDGE_ADAPTER_PROXY", BASE_CHAIN_ID
-                ),
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY", BASE_CHAIN_ID),
                 "wormhole bridge adapter proxy address is not the same across chains"
             );
 
@@ -261,29 +210,18 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
 
             /// ensure correct owner
             assertEq(
-                xWELL(moonbeamxWellProxy).owner(),
-                artemisTimelock,
-                "xwell owner address is incorrect, not timelock"
+                xWELL(moonbeamxWellProxy).owner(), artemisTimelock, "xwell owner address is incorrect, not timelock"
             );
-            assertEq(
-                xWELL(moonbeamxWellProxy).pauseGuardian(),
-                pauseGuardian,
-                "pause guardian address is incorrect"
-            );
+            assertEq(xWELL(moonbeamxWellProxy).pauseGuardian(), pauseGuardian, "pause guardian address is incorrect");
         }
     }
 
     function printAddresses(Addresses addresses) private view {
-        (string[] memory recordedNames,, address[] memory recordedAddresses) =
-            addresses.getRecordedAddresses();
+        (string[] memory recordedNames,, address[] memory recordedAddresses) = addresses.getRecordedAddresses();
         for (uint256 j = 0; j < recordedNames.length; j++) {
             console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
             console.log("        'chainId': %d,", block.chainid);
-            console.log(
-                "        'name': '%s'\n}%s",
-                recordedNames[j],
-                j < recordedNames.length - 1 ? "," : ""
-            );
+            console.log("        'name': '%s'\n}%s", recordedNames[j], j < recordedNames.length - 1 ? "," : "");
         }
     }
 

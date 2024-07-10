@@ -1,11 +1,7 @@
 pragma solidity 0.8.19;
 
-import {
-    RateLimitMidPoint,
-    RateLimitMidpointCommonLibrary
-} from "@zelt/src/lib/RateLimitMidpointCommonLibrary.sol";
-import {RateLimitedMidpointLibrary} from
-    "@zelt/src/lib/RateLimitedMidpointLibrary.sol";
+import {RateLimitMidPoint, RateLimitMidpointCommonLibrary} from "@zelt/src/lib/RateLimitMidpointCommonLibrary.sol";
+import {RateLimitedMidpointLibrary} from "@zelt/src/lib/RateLimitedMidpointLibrary.sol";
 import {CommonBase} from "forge-std/Base.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
@@ -26,12 +22,9 @@ contract xWELLInvariant is BaseTest {
     function setUp() public override {
         super.setUp();
 
-        handler = new xWELLOwnerHandler(
-            address(xwellProxy), address(well), address(xerc20Lockbox)
-        );
+        handler = new xWELLOwnerHandler(address(xwellProxy), address(well), address(xerc20Lockbox));
 
-        MintLimits.RateLimitMidPointInfo memory handlerRateLimits = MintLimits
-            .RateLimitMidPointInfo({
+        MintLimits.RateLimitMidPointInfo memory handlerRateLimits = MintLimits.RateLimitMidPointInfo({
             bufferCap: 50_000_000 * 1e18,
             rateLimitPerSecond: 100 * 1e18,
             bridge: address(handler)
@@ -81,9 +74,7 @@ contract xWELLInvariant is BaseTest {
         // Set fuzzer to only call the handler
         targetContract(address(handler));
 
-        targetSelector(
-            FuzzSelector({addr: address(handler), selectors: selectors})
-        );
+        targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
     }
 
     function invariant_totalSupplySumOfBalances() public view {
@@ -102,11 +93,7 @@ contract xWELLInvariant is BaseTest {
         address[] memory users = handler.getUsers();
 
         for (uint256 i = 0; i < users.length; i++) {
-            assertEq(
-                xwellProxy.balanceOf(users[i]),
-                handler.userBalances(users[i]),
-                "handlers balances incorrect"
-            );
+            assertEq(xwellProxy.balanceOf(users[i]), handler.userBalances(users[i]), "handlers balances incorrect");
         }
     }
 
@@ -119,37 +106,24 @@ contract xWELLInvariant is BaseTest {
                 sumOfDelegatesBalances += xwellProxy.balanceOf(delegators[j]);
             }
 
-            assertEq(
-                sumOfDelegatesBalances,
-                xwellProxy.getVotes(users[i]),
-                "incorrect votes count"
-            );
+            assertEq(sumOfDelegatesBalances, xwellProxy.getVotes(users[i]), "incorrect votes count");
         }
     }
 
     function invariant_totalSupplyLteMaxSupply() public view {
-        assertTrue(
-            xwellProxy.totalSupply() <= xwellProxy.maxSupply(),
-            "total supply gt max supply"
-        );
+        assertTrue(xwellProxy.totalSupply() <= xwellProxy.maxSupply(), "total supply gt max supply");
     }
 
     function invariant_bufferStoredLteBufferCap() public view {
         {
-            (, uint112 bufferCap,, uint112 bufferStored,) =
-                xwellProxy.rateLimits(address(handler));
+            (, uint112 bufferCap,, uint112 bufferStored,) = xwellProxy.rateLimits(address(handler));
 
-            assertTrue(
-                bufferStored <= bufferCap, "handler buffer stored gt buffer cap"
-            );
+            assertTrue(bufferStored <= bufferCap, "handler buffer stored gt buffer cap");
         }
         {
-            (, uint112 bufferCap,, uint112 bufferStored,) =
-                xwellProxy.rateLimits(address(xerc20Lockbox));
+            (, uint112 bufferCap,, uint112 bufferStored,) = xwellProxy.rateLimits(address(xerc20Lockbox));
 
-            assertTrue(
-                bufferStored <= bufferCap, "lockbox buffer stored gt buffer cap"
-            );
+            assertTrue(bufferStored <= bufferCap, "lockbox buffer stored gt buffer cap");
         }
     }
 
@@ -157,26 +131,18 @@ contract xWELLInvariant is BaseTest {
         {
             (, uint112 bufferCap,,,) = xwellProxy.rateLimits(address(handler));
 
-            assertTrue(
-                xwellProxy.buffer(address(handler)) <= bufferCap,
-                "handler buffer gt buffer cap"
-            );
+            assertTrue(xwellProxy.buffer(address(handler)) <= bufferCap, "handler buffer gt buffer cap");
         }
         {
-            (, uint112 bufferCap,,,) =
-                xwellProxy.rateLimits(address(xerc20Lockbox));
+            (, uint112 bufferCap,,,) = xwellProxy.rateLimits(address(xerc20Lockbox));
 
-            assertTrue(
-                xwellProxy.buffer(address(xerc20Lockbox)) <= bufferCap,
-                "xerc20Lockbox buffer gt buffer cap"
-            );
+            assertTrue(xwellProxy.buffer(address(xerc20Lockbox)) <= bufferCap, "xerc20Lockbox buffer gt buffer cap");
         }
     }
 
     function invariant_rateLimitPerSecondLteRLPSMax() public view {
         {
-            (uint128 rateLimitPerSecond,,,,) =
-                xwellProxy.rateLimits(address(handler));
+            (uint128 rateLimitPerSecond,,,,) = xwellProxy.rateLimits(address(handler));
 
             assertTrue(
                 rateLimitPerSecond <= xwellProxy.maxRateLimitPerSecond(),
@@ -184,8 +150,7 @@ contract xWELLInvariant is BaseTest {
             );
         }
         {
-            (uint128 rateLimitPerSecond,,,,) =
-                xwellProxy.rateLimits(address(xerc20Lockbox));
+            (uint128 rateLimitPerSecond,,,,) = xwellProxy.rateLimits(address(xerc20Lockbox));
 
             assertTrue(
                 rateLimitPerSecond <= xwellProxy.maxRateLimitPerSecond(),
@@ -195,10 +160,6 @@ contract xWELLInvariant is BaseTest {
     }
 
     function invariant_totalSupplyMirrorCorrect() public view {
-        assertEq(
-            handler.totalSupply(),
-            xwellProxy.totalSupply(),
-            "total supply mirror incorrect"
-        );
+        assertEq(handler.totalSupply(), xwellProxy.totalSupply(), "total supply mirror incorrect");
     }
 }

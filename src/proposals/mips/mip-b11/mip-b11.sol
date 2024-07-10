@@ -15,9 +15,7 @@ contract mipb11 is HybridProposal, Configs, ParameterValidation {
     uint256 public constant wstETH_NEW_CF = 0.76e18;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b11/MIP-B11.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-b11/MIP-B11.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 64;
@@ -39,37 +37,26 @@ contract mipb11 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_wstETH"),
-                wstETH_NEW_CF
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("MOONWELL_wstETH"), wstETH_NEW_CF
             ),
             "Set collateral factor for Moonwell wstETH to updated collateral factor"
         );
 
         _pushAction(
             addresses.getAddress("MOONWELL_DAI"),
-            abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                0x32f3A6134590fc2d9440663d35a2F0a6265F04c4
-            ),
+            abi.encodeWithSignature("_setInterestRateModel(address)", 0x32f3A6134590fc2d9440663d35a2F0a6265F04c4),
             "Set interest rate model for Moonwell DAI to updated rate model"
         );
 
         _pushAction(
             addresses.getAddress("MOONWELL_USDC"),
-            abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                0x32f3A6134590fc2d9440663d35a2F0a6265F04c4
-            ),
+            abi.encodeWithSignature("_setInterestRateModel(address)", 0x32f3A6134590fc2d9440663d35a2F0a6265F04c4),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
 
         _pushAction(
             addresses.getAddress("MOONWELL_USDBC"),
-            abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                0xF22c8255eA615b3Da6CA5CF5aeCc8956bfF07Aa8
-            ),
+            abi.encodeWithSignature("_setInterestRateModel(address)", 0xF22c8255eA615b3Da6CA5CF5aeCc8956bfF07Aa8),
             "Set interest rate model for Moonwell USDBC to updated rate model"
         );
     }
@@ -79,9 +66,7 @@ contract mipb11 is HybridProposal, Configs, ParameterValidation {
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
-        _validateCF(
-            addresses, addresses.getAddress("MOONWELL_wstETH"), wstETH_NEW_CF
-        );
+        _validateCF(addresses, addresses.getAddress("MOONWELL_wstETH"), wstETH_NEW_CF);
 
         _validateJRM(
             addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDBC"),

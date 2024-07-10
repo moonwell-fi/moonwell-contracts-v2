@@ -14,9 +14,7 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
     /// @notice emitted when the pause guardian is updated
     /// @param oldPauseGuardian old pause guardian
     /// @param newPauseGuardian new pause guardian
-    event PauseGuardianUpdated(
-        address indexed oldPauseGuardian, address indexed newPauseGuardian
-    );
+    event PauseGuardianUpdated(address indexed oldPauseGuardian, address indexed newPauseGuardian);
 
     /// @notice returns whether the pause has been used by the pause guardian
     /// if pauseStartTime is 0, contract pause is not used, if non zero, it is used
@@ -29,10 +27,7 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
     /// the pauseDuration lapses
     /// removes the guardian, sets pause time to 0, and resets the pauseUsed flag to false
     function kickGuardian() public whenNotPaused {
-        require(
-            pauseUsed(),
-            "ConfigurablePauseGuardian: did not pause, so cannot kick"
-        );
+        require(pauseUsed(), "ConfigurablePauseGuardian: did not pause, so cannot kick");
 
         _resetPauseState();
     }
@@ -58,10 +53,7 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
     /// @notice pause the contracts, can only pause while the contracts are unpaused
     /// uses up the pause, and starts the pause timer
     function pause() public virtual whenNotPaused {
-        require(
-            msg.sender == pauseGuardian,
-            "ConfigurablePauseGuardian: only pause guardian"
-        );
+        require(msg.sender == pauseGuardian, "ConfigurablePauseGuardian: only pause guardian");
         require(!pauseUsed(), "ConfigurablePauseGuardian: pause already used");
 
         /// pause, set pauseStartTime to current block timestamp
@@ -73,10 +65,7 @@ contract ConfigurablePauseGuardian is ConfigurablePause {
     /// @notice unpause the contracts as pause guardian.
     /// revokes pause guardian role after unpausing
     function unpause() external whenPaused {
-        require(
-            msg.sender == pauseGuardian,
-            "ConfigurablePauseGuardian: only pause guardian"
-        );
+        require(msg.sender == pauseGuardian, "ConfigurablePauseGuardian: only pause guardian");
 
         /// kick the guardian
         /// set pauseUsed to false

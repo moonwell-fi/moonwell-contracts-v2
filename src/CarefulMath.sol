@@ -21,11 +21,7 @@ contract CarefulMath {
     /**
      * @dev Multiplies two numbers, returns an error on overflow.
      */
-    function mulUInt(uint256 a, uint256 b)
-        internal
-        pure
-        returns (MathError, uint256)
-    {
+    function mulUInt(uint256 a, uint256 b) internal pure returns (MathError, uint256) {
         if (a == 0) {
             return (MathError.NO_ERROR, 0);
         }
@@ -42,11 +38,7 @@ contract CarefulMath {
     /**
      * @dev Integer division of two numbers, truncating the quotient.
      */
-    function divUInt(uint256 a, uint256 b)
-        internal
-        pure
-        returns (MathError, uint256)
-    {
+    function divUInt(uint256 a, uint256 b) internal pure returns (MathError, uint256) {
         if (b == 0) {
             return (MathError.DIVISION_BY_ZERO, 0);
         }
@@ -57,11 +49,7 @@ contract CarefulMath {
     /**
      * @dev Subtracts two numbers, returns an error on overflow (i.e. if subtrahend is greater than minuend).
      */
-    function subUInt(uint256 a, uint256 b)
-        internal
-        pure
-        returns (MathError, uint256)
-    {
+    function subUInt(uint256 a, uint256 b) internal pure returns (MathError, uint256) {
         if (b <= a) {
             return (MathError.NO_ERROR, a - b);
         } else {
@@ -72,11 +60,7 @@ contract CarefulMath {
     /**
      * @dev Adds two numbers, returns an error on overflow.
      */
-    function addUInt(uint256 a, uint256 b)
-        internal
-        pure
-        returns (MathError, uint256)
-    {
+    function addUInt(uint256 a, uint256 b) internal pure returns (MathError, uint256) {
         uint256 c = a + b;
 
         if (c >= a) {
@@ -89,11 +73,7 @@ contract CarefulMath {
     /**
      * @dev add a and b and then subtract c
      */
-    function addThenSubUInt(uint256 a, uint256 b, uint256 c)
-        internal
-        pure
-        returns (MathError, uint256)
-    {
+    function addThenSubUInt(uint256 a, uint256 b, uint256 c) internal pure returns (MathError, uint256) {
         (MathError err0, uint256 sum) = addUInt(a, b);
 
         if (err0 != MathError.NO_ERROR) {

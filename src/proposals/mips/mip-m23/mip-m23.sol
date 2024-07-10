@@ -3,18 +3,14 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Ownable2StepUpgradeable} from
-    "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import "@protocol/utils/ChainIds.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {
-    ActionType,
-    HybridProposal
-} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ActionType, HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {MToken} from "@protocol/MToken.sol";
@@ -22,23 +18,15 @@ import {MToken} from "@protocol/MToken.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 
-import {MultichainGovernorDeploy} from
-    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
-import {MultiRewardDistributor} from
-    "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 
-import {MultiRewardDistributorCommon} from
-    "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 
-import {
-    BASE_FORK_ID,
-    ChainIds,
-    MOONBEAM_FORK_ID,
-    MOONBEAM_WORMHOLE_CHAIN_ID
-} from "@utils/ChainIds.sol";
+import {BASE_FORK_ID, ChainIds, MOONBEAM_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// After this proposal, the Temporal Governor will have 2 admins, the
@@ -58,9 +46,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
     uint128 public constant XWELL_RATE_LIMIT_PER_SECOND = 1158 * 1e18;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m23/MIP-M23.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-m23/MIP-M23.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 79;
@@ -74,12 +60,10 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
     function build(Addresses addresses) public override {
         vm.selectFork(primaryForkId());
 
-        address multichainGovernorAddress =
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        address multichainGovernorAddress = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
 
-        ITemporalGovernor.TrustedSender[] memory
-            temporalGovernanceTrustedSenders =
-                new ITemporalGovernor.TrustedSender[](1);
+        ITemporalGovernor.TrustedSender[] memory temporalGovernanceTrustedSenders =
+            new ITemporalGovernor.TrustedSender[](1);
 
         temporalGovernanceTrustedSenders[0].addr = multichainGovernorAddress;
         temporalGovernanceTrustedSenders[0].chainId = MOONBEAM_WORMHOLE_CHAIN_ID;
@@ -89,13 +73,8 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// add the Multichain Governor as a trusted sender in the wormhole bridge adapter on base
         /// this is an action that takes place on base, not on moonbeam, so flag is flipped to false for isMoonbeam
         _pushAction(
-            addresses.getAddress(
-                "TEMPORAL_GOVERNOR", block.chainid.toBaseChainId()
-            ),
-            abi.encodeWithSignature(
-                "setTrustedSenders((uint16,address)[])",
-                temporalGovernanceTrustedSenders
-            ),
+            addresses.getAddress("TEMPORAL_GOVERNOR", block.chainid.toBaseChainId()),
+            abi.encodeWithSignature("setTrustedSenders((uint16,address)[])", temporalGovernanceTrustedSenders),
             "Add Multichain Governor as a trusted sender to the Temporal Governor",
             ActionType.Base
         );
@@ -104,9 +83,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("xWELL_PROXY"),
             /// address is the same on both chains
             abi.encodeWithSignature(
-                "setBufferCap(address,uint256)",
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-                XWELL_BUFFER_CAP
+                "setBufferCap(address,uint256)", addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"), XWELL_BUFFER_CAP
             ),
             "Set the buffer cap of the wormhole bridge adapter to 100m",
             ActionType.Base
@@ -129,9 +106,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// transfer ownership of the wormhole bridge adapter on the moonbeam chain to the Multichain Governor
         _pushAction(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-            abi.encodeWithSignature(
-                "transferOwnership(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("transferOwnership(address)", multichainGovernorAddress),
             "Set the pending owner of the Wormhole Bridge Adapter to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -139,9 +114,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// transfer ownership of proxy admin to the Multichain Governor
         _pushAction(
             addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
-            abi.encodeWithSignature(
-                "transferOwnership(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("transferOwnership(address)", multichainGovernorAddress),
             "Set the owner of the Moonbeam Proxy Admin to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -150,9 +123,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// This one has to go through Temporal Governance
         _pushAction(
             addresses.getAddress("xWELL_PROXY"),
-            abi.encodeWithSignature(
-                "transferOwnership(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("transferOwnership(address)", multichainGovernorAddress),
             "Set the pending owner of the xWELL Token to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -162,9 +133,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             addresses.getAddress("xWELL_PROXY"),
             /// address is the same on both chains
             abi.encodeWithSignature(
-                "setBufferCap(address,uint256)",
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-                XWELL_BUFFER_CAP
+                "setBufferCap(address,uint256)", addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"), XWELL_BUFFER_CAP
             ),
             "Set the buffer cap of the wormhole bridge adapter to 100m",
             ActionType.Moonbeam
@@ -185,9 +154,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// transfer ownership of chainlink oracle
         _pushAction(
             addresses.getAddress("CHAINLINK_ORACLE"),
-            abi.encodeWithSignature(
-                "setAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("setAdmin(address)", multichainGovernorAddress),
             "Set the admin of the Chainlink Oracle to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -195,9 +162,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// transfer emissions manager of safety module
         _pushAction(
             addresses.getAddress("STK_GOVTOKEN"),
-            abi.encodeWithSignature(
-                "setEmissionsManager(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("setEmissionsManager(address)", multichainGovernorAddress),
             "Set the Emissions Config of the Safety Module to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -205,9 +170,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set pending admin of unitroller
         _pushAction(
             addresses.getAddress("UNITROLLER"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress),
             "Set the pending admin of the Unitroller to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -215,9 +178,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set funds admin of ecosystem reserve controller
         _pushAction(
             addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER"),
-            abi.encodeWithSignature(
-                "transferOwnership(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("transferOwnership(address)", multichainGovernorAddress),
             "Set the owner of the Ecosystem Reserve Controller to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -225,9 +186,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set pending admin of DEPRECATED_MOONWELL_mWBTC to the Multichain Governor
         _pushAction(
             addresses.getAddress("DEPRECATED_MOONWELL_mWBTC"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress),
             "Set the pending admin of DEPRECATED_MOONWELL_mWBTC to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -235,9 +194,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set pending admin of MOONWELL_mBUSD to the Multichain Governor
         _pushAction(
             addresses.getAddress("MOONWELL_mBUSD"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress),
             "Set the pending admin of MOONWELL_mBUSD to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -245,9 +202,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set pending admin of DEPRECATED_MOONWELL_mETH to the Multichain Governor
         _pushAction(
             addresses.getAddress("DEPRECATED_MOONWELL_mETH"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress),
             "Set the pending admin of DEPRECATED_MOONWELL_mETH to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -255,9 +210,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set pending admin of MOONWELL_mUSDC to the Multichain Governor
         _pushAction(
             addresses.getAddress("MOONWELL_mUSDC"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress),
             "Set the pending admin of MOONWELL_mUSDC to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -265,9 +218,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set pending admin of MNATIVE to the Multichain Governor
         _pushAction(
             addresses.getAddress("MNATIVE"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress),
             "Set the pending admin of MNATIVE to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -275,9 +226,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set pending admin of mxcDOT to the Multichain Governor
         _pushAction(
             addresses.getAddress("mxcDOT"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress),
             "Set the pending admin of mxcDOT to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -285,9 +234,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set pending admin of mxcUSDT to the Multichain Governor
         _pushAction(
             addresses.getAddress("mxcUSDT"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress),
             "Set the pending admin of mxcUSDT to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -295,9 +242,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set pending admin of mFRAX to the Multichain Governor
         _pushAction(
             addresses.getAddress("mFRAX"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress),
             "Set the pending admin of mFRAX to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -305,9 +250,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set pending admin of mUSDCwh to the Multichain Governor
         _pushAction(
             addresses.getAddress("mUSDCwh"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress),
             "Set the pending admin of mUSDCwh to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -315,9 +258,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set pending admin of mxcUSDC to the Multichain Governor
         _pushAction(
             addresses.getAddress("mxcUSDC"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress),
             "Set the pending admin of mxcUSDC to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -325,9 +266,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// set pending admin of MOONWELL_mETH to the Multichain Governor
         _pushAction(
             addresses.getAddress("MOONWELL_mETH"),
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            ),
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress),
             "Set the pending admin of MOONWELL_mETH to the Multichain Governor",
             ActionType.Moonbeam
         );
@@ -341,15 +280,12 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         /// wipe existing reward loaded in Configs.sol
 
         {
-            _setEmissionConfiguration(
-                "./src/proposals/mips/mip-m23/mip-m23.json"
-            );
+            _setEmissionConfiguration("./src/proposals/mips/mip-m23/mip-m23.json");
         }
 
         /// -------------- EMISSION CONFIGURATION --------------
 
-        EmissionConfig[] memory emissionConfig =
-            getEmissionConfigurations(block.chainid);
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(block.chainid);
         address mrd = addresses.getAddress("MRD_PROXY");
 
         unchecked {
@@ -367,11 +303,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                         config.borrowEmissionsPerSec,
                         config.endTime
                     ),
-                    string(
-                        abi.encodePacked(
-                            "Emission configuration set for ", config.mToken
-                        )
-                    ),
+                    string(abi.encodePacked("Emission configuration set for ", config.mToken)),
                     ActionType.Base
                 );
             }
@@ -396,29 +328,23 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         address timelock = addresses.getAddress("MOONBEAM_TIMELOCK");
 
         assertEq(
-            IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"))
-                .EMISSION_MANAGER(),
+            IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN")).EMISSION_MANAGER(),
             governor,
             "stkWELL EMISSIONS MANAGER"
         );
 
         assertEq(
-            Ownable(addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")).owner(
-            ),
+            Ownable(addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")).owner(),
             governor,
             "ecosystem reserve controller owner incorrect"
         );
         assertEq(
-            Ownable2StepUpgradeable(
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-            ).pendingOwner(),
+            Ownable2StepUpgradeable(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")).pendingOwner(),
             governor,
             "WORMHOLE_BRIDGE_ADAPTER_PROXY pending owner incorrect"
         );
         assertEq(
-            Ownable2StepUpgradeable(
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-            ).owner(),
+            Ownable2StepUpgradeable(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")).owner(),
             timelock,
             "WORMHOLE_BRIDGE_ADAPTER_PROXY owner incorrect"
         );
@@ -433,8 +359,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             "xWELL_PROXY owner incorrect"
         );
         assertEq(
-            Ownable2StepUpgradeable(addresses.getAddress("xWELL_PROXY"))
-                .pendingOwner(),
+            Ownable2StepUpgradeable(addresses.getAddress("xWELL_PROXY")).pendingOwner(),
             governor,
             "xWELL_PROXY pending owner incorrect"
         );
@@ -444,103 +369,42 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             governor,
             "MOONWELL_mETH pending admin incorrect"
         );
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mETH")).admin(),
-            timelock,
-            "MOONWELL_mETH admin incorrect"
-        );
+        assertEq(Timelock(addresses.getAddress("MOONWELL_mETH")).admin(), timelock, "MOONWELL_mETH admin incorrect");
 
-        assertEq(
-            Timelock(addresses.getAddress("mxcUSDC")).pendingAdmin(),
-            governor,
-            "mxcUSDC pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("mxcUSDC")).admin(),
-            timelock,
-            "mxcUSDC admin incorrect"
-        );
+        assertEq(Timelock(addresses.getAddress("mxcUSDC")).pendingAdmin(), governor, "mxcUSDC pending admin incorrect");
+        assertEq(Timelock(addresses.getAddress("mxcUSDC")).admin(), timelock, "mxcUSDC admin incorrect");
 
-        assertEq(
-            Timelock(addresses.getAddress("mUSDCwh")).pendingAdmin(),
-            governor,
-            "mUSDCwh pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("mUSDCwh")).admin(),
-            timelock,
-            "mUSDCwh admin incorrect"
-        );
+        assertEq(Timelock(addresses.getAddress("mUSDCwh")).pendingAdmin(), governor, "mUSDCwh pending admin incorrect");
+        assertEq(Timelock(addresses.getAddress("mUSDCwh")).admin(), timelock, "mUSDCwh admin incorrect");
 
-        assertEq(
-            Timelock(addresses.getAddress("mFRAX")).pendingAdmin(),
-            governor,
-            "mFRAX pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("mFRAX")).admin(),
-            timelock,
-            "mFRAX admin incorrect"
-        );
+        assertEq(Timelock(addresses.getAddress("mFRAX")).pendingAdmin(), governor, "mFRAX pending admin incorrect");
+        assertEq(Timelock(addresses.getAddress("mFRAX")).admin(), timelock, "mFRAX admin incorrect");
 
-        assertEq(
-            Timelock(addresses.getAddress("mxcUSDT")).pendingAdmin(),
-            governor,
-            "mxcUSDT pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("mxcUSDT")).admin(),
-            timelock,
-            "mxcUSDT admin incorrect"
-        );
+        assertEq(Timelock(addresses.getAddress("mxcUSDT")).pendingAdmin(), governor, "mxcUSDT pending admin incorrect");
+        assertEq(Timelock(addresses.getAddress("mxcUSDT")).admin(), timelock, "mxcUSDT admin incorrect");
 
-        assertEq(
-            Timelock(addresses.getAddress("mxcDOT")).pendingAdmin(),
-            governor,
-            "mxcDOT pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("mxcDOT")).admin(),
-            timelock,
-            "mxcDOT admin incorrect"
-        );
+        assertEq(Timelock(addresses.getAddress("mxcDOT")).pendingAdmin(), governor, "mxcDOT pending admin incorrect");
+        assertEq(Timelock(addresses.getAddress("mxcDOT")).admin(), timelock, "mxcDOT admin incorrect");
 
-        assertEq(
-            Timelock(addresses.getAddress("MNATIVE")).pendingAdmin(),
-            governor,
-            "MNATIVE pending admin incorrect"
-        );
-        assertEq(
-            Timelock(addresses.getAddress("MNATIVE")).admin(),
-            timelock,
-            "MNATIVE admin incorrect"
-        );
+        assertEq(Timelock(addresses.getAddress("MNATIVE")).pendingAdmin(), governor, "MNATIVE pending admin incorrect");
+        assertEq(Timelock(addresses.getAddress("MNATIVE")).admin(), timelock, "MNATIVE admin incorrect");
 
         assertEq(
             Timelock(addresses.getAddress("MOONWELL_mUSDC")).pendingAdmin(),
             governor,
             "MOONWELL_mUSDC pending admin incorrect"
         );
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mUSDC")).admin(),
-            timelock,
-            "MOONWELL_mUSDC admin incorrect"
-        );
+        assertEq(Timelock(addresses.getAddress("MOONWELL_mUSDC")).admin(), timelock, "MOONWELL_mUSDC admin incorrect");
 
         assertEq(
             Timelock(addresses.getAddress("MOONWELL_mBUSD")).pendingAdmin(),
             governor,
             "MOONWELL_mBUSD pending admin incorrect"
         );
-        assertEq(
-            Timelock(addresses.getAddress("MOONWELL_mBUSD")).admin(),
-            timelock,
-            "MOONWELL_mBUSD admin incorrect"
-        );
+        assertEq(Timelock(addresses.getAddress("MOONWELL_mBUSD")).admin(), timelock, "MOONWELL_mBUSD admin incorrect");
 
         assertEq(
-            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mWBTC"))
-                .pendingAdmin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mWBTC")).pendingAdmin(),
             governor,
             "DEPRECATED_MOONWELL_mWBTC pending admin incorrect"
         );
@@ -551,8 +415,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mETH"))
-                .pendingAdmin(),
+            Timelock(addresses.getAddress("DEPRECATED_MOONWELL_mETH")).pendingAdmin(),
             governor,
             "DEPRECATED_MOONWELL_mETH pending admin incorrect"
         );
@@ -563,26 +426,16 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         );
 
         assertEq(
-            Timelock(addresses.getAddress("UNITROLLER")).pendingAdmin(),
-            governor,
-            "UNITROLLER pending admin incorrect"
+            Timelock(addresses.getAddress("UNITROLLER")).pendingAdmin(), governor, "UNITROLLER pending admin incorrect"
         );
+        assertEq(Timelock(addresses.getAddress("UNITROLLER")).admin(), timelock, "UNITROLLER admin incorrect");
+
         assertEq(
-            Timelock(addresses.getAddress("UNITROLLER")).admin(),
-            timelock,
-            "UNITROLLER admin incorrect"
+            Timelock(addresses.getAddress("CHAINLINK_ORACLE")).admin(), governor, "Chainlink oracle admin incorrect"
         );
 
         assertEq(
-            Timelock(addresses.getAddress("CHAINLINK_ORACLE")).admin(),
-            governor,
-            "Chainlink oracle admin incorrect"
-        );
-
-        assertEq(
-            xWELL(addresses.getAddress("xWELL_PROXY")).bufferCap(
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-            ),
+            xWELL(addresses.getAddress("xWELL_PROXY")).bufferCap(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")),
             XWELL_BUFFER_CAP,
             "xWELL buffer cap incorrect"
         );
@@ -597,9 +450,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         vm.selectFork(BASE_FORK_ID);
 
         assertEq(
-            xWELL(addresses.getAddress("xWELL_PROXY")).bufferCap(
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-            ),
+            xWELL(addresses.getAddress("xWELL_PROXY")).bufferCap(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")),
             XWELL_BUFFER_CAP,
             "xWELL buffer cap incorrect"
         );
@@ -611,15 +462,12 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             "xWELL rate limit per second incorrect"
         );
 
-        TemporalGovernor temporalGovernor =
-            TemporalGovernor(payable(addresses.getAddress("TEMPORAL_GOVERNOR")));
+        TemporalGovernor temporalGovernor = TemporalGovernor(payable(addresses.getAddress("TEMPORAL_GOVERNOR")));
 
         assertTrue(
             temporalGovernor.isTrustedSender(
                 block.chainid.toMoonbeamWormholeChainId(),
-                addresses.getAddress(
-                    "MOONBEAM_TIMELOCK", block.chainid.toMoonbeamChainId()
-                )
+                addresses.getAddress("MOONBEAM_TIMELOCK", block.chainid.toMoonbeamChainId())
             ),
             "timelock not trusted sender"
         );
@@ -627,10 +475,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         assertTrue(
             temporalGovernor.isTrustedSender(
                 block.chainid.toMoonbeamWormholeChainId(),
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    block.chainid.toMoonbeamChainId()
-                )
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY", block.chainid.toMoonbeamChainId())
             ),
             "MultichainGovernor not trusted sender"
         );
@@ -643,33 +488,18 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
             "moonbeam proxies for multichain governor"
         );
 
-        EmissionConfig[] memory emissionConfig =
-            getEmissionConfigurations(block.chainid);
-        MultiRewardDistributor distributor =
-            MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(block.chainid);
+        MultiRewardDistributor distributor = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
 
         unchecked {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
                 MultiRewardDistributorCommon.MarketConfig memory marketConfig =
-                distributor.getConfigForMarket(
-                    MToken(addresses.getAddress(config.mToken)),
-                    config.emissionToken
-                );
+                    distributor.getConfigForMarket(MToken(addresses.getAddress(config.mToken)), config.emissionToken);
 
-                assertEq(
-                    marketConfig.owner,
-                    addresses.getAddress(config.owner),
-                    "emission owner incorrect"
-                );
-                assertEq(
-                    marketConfig.emissionToken,
-                    config.emissionToken,
-                    "emission token incorrect"
-                );
-                assertEq(
-                    marketConfig.endTime, config.endTime, "end time incorrect"
-                );
+                assertEq(marketConfig.owner, addresses.getAddress(config.owner), "emission owner incorrect");
+                assertEq(marketConfig.emissionToken, config.emissionToken, "emission token incorrect");
+                assertEq(marketConfig.endTime, config.endTime, "end time incorrect");
                 assertEq(
                     marketConfig.supplyEmissionsPerSec,
                     config.supplyEmissionPerSec,
@@ -680,16 +510,8 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
                     config.borrowEmissionsPerSec,
                     "borrow emission per second incorrect"
                 );
-                assertEq(
-                    marketConfig.supplyGlobalIndex,
-                    1e36,
-                    "supply global index incorrect"
-                );
-                assertEq(
-                    marketConfig.borrowGlobalIndex,
-                    1e36,
-                    "borrow global index incorrect"
-                );
+                assertEq(marketConfig.supplyGlobalIndex, 1e36, "supply global index incorrect");
+                assertEq(marketConfig.borrowGlobalIndex, 1e36, "borrow global index incorrect");
             }
         }
 

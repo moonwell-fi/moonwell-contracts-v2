@@ -12,9 +12,7 @@ import "./InterestRateModel.sol";
 contract WhitePaperInterestRateModel is InterestRateModel {
     using SafeMath for uint256;
 
-    event NewInterestParams(
-        uint256 baseRatePerTimestamp, uint256 multiplierPerTimestamp
-    );
+    event NewInterestParams(uint256 baseRatePerTimestamp, uint256 multiplierPerTimestamp);
 
     /**
      * @notice The approximate number of timestamps per year that is assumed by the interest rate model
@@ -37,10 +35,8 @@ contract WhitePaperInterestRateModel is InterestRateModel {
      * @param multiplierPerYear The rate of increase in interest rate wrt utilization (scaled by 1e18)
      */
     constructor(uint256 baseRatePerYear, uint256 multiplierPerYear) {
-        baseRatePerTimestamp =
-            baseRatePerYear.mul(1e18).div(timestampsPerYear).div(1e18);
-        multiplierPerTimestamp =
-            multiplierPerYear.mul(1e18).div(timestampsPerYear).div(1e18);
+        baseRatePerTimestamp = baseRatePerYear.mul(1e18).div(timestampsPerYear).div(1e18);
+        multiplierPerTimestamp = multiplierPerYear.mul(1e18).div(timestampsPerYear).div(1e18);
 
         emit NewInterestParams(baseRatePerTimestamp, multiplierPerTimestamp);
     }
@@ -52,11 +48,7 @@ contract WhitePaperInterestRateModel is InterestRateModel {
      * @param reserves The amount of reserves in the market (currently unused)
      * @return The utilization rate as a mantissa between [0, 1e18]
      */
-    function utilizationRate(uint256 cash, uint256 borrows, uint256 reserves)
-        public
-        pure
-        returns (uint256)
-    {
+    function utilizationRate(uint256 cash, uint256 borrows, uint256 reserves) public pure returns (uint256) {
         // Utilization rate is 0 when there are no borrows
         if (borrows == 0) {
             return 0;
@@ -72,15 +64,9 @@ contract WhitePaperInterestRateModel is InterestRateModel {
      * @param reserves The amount of reserves in the market
      * @return The borrow rate percentage per timestmp as a mantissa (scaled by 1e18)
      */
-    function getBorrowRate(uint256 cash, uint256 borrows, uint256 reserves)
-        public
-        view
-        override
-        returns (uint256)
-    {
+    function getBorrowRate(uint256 cash, uint256 borrows, uint256 reserves) public view override returns (uint256) {
         uint256 ur = utilizationRate(cash, borrows, reserves);
-        return
-            ur.mul(multiplierPerTimestamp).div(1e18).add(baseRatePerTimestamp);
+        return ur.mul(multiplierPerTimestamp).div(1e18).add(baseRatePerTimestamp);
     }
 
     /**
@@ -100,7 +86,6 @@ contract WhitePaperInterestRateModel is InterestRateModel {
         uint256 oneMinusReserveFactor = uint256(1e18).sub(reserveFactorMantissa);
         uint256 borrowRate = getBorrowRate(cash, borrows, reserves);
         uint256 rateToPool = borrowRate.mul(oneMinusReserveFactor).div(1e18);
-        return
-            utilizationRate(cash, borrows, reserves).mul(rateToPool).div(1e18);
+        return utilizationRate(cash, borrows, reserves).mul(rateToPool).div(1e18);
     }
 }

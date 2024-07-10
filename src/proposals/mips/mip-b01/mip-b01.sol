@@ -18,9 +18,7 @@ contract mipb01 is HybridProposal, Configs {
     uint256 public constant SCALE = 1e18;
 
     constructor() {
-        _setProposalDescription(
-            bytes(vm.readFile("./src/proposals/mips/mip-b01/MIP-B01.md"))
-        );
+        _setProposalDescription(bytes(vm.readFile("./src/proposals/mips/mip-b01/MIP-B01.md")));
 
         onchainProposalId = 41;
         nonce = 2;
@@ -40,8 +38,7 @@ contract mipb01 is HybridProposal, Configs {
         _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B01")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B01")
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
@@ -52,23 +49,12 @@ contract mipb01 is HybridProposal, Configs {
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
-        JumpRateModel jrm =
-            JumpRateModel(addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH"));
+        JumpRateModel jrm = JumpRateModel(addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH"));
 
-        assertEq(
-            address(
-                MToken(addresses.getAddress("MOONWELL_WETH")).interestRateModel(
-                )
-            ),
-            address(jrm)
-        );
+        assertEq(address(MToken(addresses.getAddress("MOONWELL_WETH")).interestRateModel()), address(jrm));
 
         assertEq(jrm.kink(), 0.75e18, "kink verification failed");
-        assertEq(
-            jrm.timestampsPerYear(),
-            365 days,
-            "timestamps per year verifiacation failed"
-        );
+        assertEq(jrm.timestampsPerYear(), 365 days, "timestamps per year verifiacation failed");
         assertEq(
             jrm.baseRatePerTimestamp(),
             (0.01e18 * SCALE) / timestampsPerYear / SCALE,

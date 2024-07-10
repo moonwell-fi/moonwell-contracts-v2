@@ -26,12 +26,9 @@ contract DeployWethUnwrapper is Script {
     function run() public {
         vm.startBroadcast();
 
-        WethUnwrapper unwrapper =
-            new WethUnwrapper(addresses.getAddress("WETH"));
+        WethUnwrapper unwrapper = new WethUnwrapper(addresses.getAddress("WETH"));
 
-        console.log(
-            "successfully deployed WethUnwrapper at %s", address(unwrapper)
-        );
+        console.log("successfully deployed WethUnwrapper at %s", address(unwrapper));
 
         vm.stopBroadcast();
     }

@@ -1,9 +1,7 @@
 pragma solidity 0.8.19;
 
-import {EnumerableSet} from
-    "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
-import {WormholeTrustedSender} from
-    "@protocol/governance/WormholeTrustedSender.sol";
+import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 
@@ -63,9 +61,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @notice chain id of the target chain to address for bridging
     /// @param dstChainId destination chain id to send tokens to
     /// @param target address to send tokens to
-    event TargetAddressUpdated(
-        uint16 indexed dstChainId, address indexed target
-    );
+    event TargetAddressUpdated(uint16 indexed dstChainId, address indexed target);
 
     /// @notice emitted when the gas limit changes on external chains
     /// @param oldGasLimit old gas limit
@@ -76,18 +72,14 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @param dstChainId destination chain id to send tokens to
     /// @param payload payload that failed to send
     /// @param refundAmount amount to refund
-    event BridgeOutFailed(
-        uint16 dstChainId, bytes payload, uint256 refundAmount
-    );
+    event BridgeOutFailed(uint16 dstChainId, bytes payload, uint256 refundAmount);
 
     /// @notice event emitted when a bridge out succeeds
     /// @param dstWormholeChainId destination wormhole chain id to send tokens to
     /// @param cost cost of the bridge out
     /// @param dst destination address to send tokens to
     /// @param payload payload that was sent
-    event BridgeOutSuccess(
-        uint16 dstWormholeChainId, uint256 cost, address dst, bytes payload
-    );
+    event BridgeOutSuccess(uint16 dstWormholeChainId, uint256 cost, address dst, bytes payload);
 
     /// ---------------------------------------------------------
     /// ---------------------------------------------------------
@@ -109,9 +101,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @dev there is no check here to ensure there isn't an existing configuration
     /// ensure the proper add or remove is being called when using this function
     /// @param _chainConfig array of chainids to addresses to add
-    function _addTargetAddresses(
-        WormholeTrustedSender.TrustedSender[] memory _chainConfig
-    ) internal {
+    function _addTargetAddresses(WormholeTrustedSender.TrustedSender[] memory _chainConfig) internal {
         for (uint256 i = 0; i < _chainConfig.length;) {
             _addTargetAddress(_chainConfig[i].chainId, _chainConfig[i].addr);
 
@@ -125,17 +115,11 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @param chainId chain id to add
     /// @param addr address to add
     function _addTargetAddress(uint16 chainId, address addr) internal {
-        require(
-            targetAddress[chainId] == address(0),
-            "WormholeBridge: chain already added"
-        );
+        require(targetAddress[chainId] == address(0), "WormholeBridge: chain already added");
         require(addr != address(0), "WormholeBridge: invalid target address");
 
         /// this code should be unreachable
-        require(
-            _targetChains.add(chainId),
-            "WormholeBridge: chain already added to set"
-        );
+        require(_targetChains.add(chainId), "WormholeBridge: chain already added to set");
 
         targetAddress[chainId] = addr;
 
@@ -146,15 +130,11 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @dev there is no check here to ensure there isn't an existing configuration
     /// ensure the proper add or remove is being called when using this function
     /// @param _chainConfig array of chainids to addresses to remove
-    function _removeTargetAddresses(
-        WormholeTrustedSender.TrustedSender[] memory _chainConfig
-    ) internal {
+    function _removeTargetAddresses(WormholeTrustedSender.TrustedSender[] memory _chainConfig) internal {
         for (uint256 i = 0; i < _chainConfig.length;) {
             uint16 chainId = _chainConfig[i].chainId;
             targetAddress[chainId] = address(0);
-            require(
-                _targetChains.remove(chainId), "WormholeBridge: chain not added"
-            );
+            require(_targetChains.remove(chainId), "WormholeBridge: chain not added");
 
             emit TargetAddressUpdated(chainId, address(0));
 
@@ -167,10 +147,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @notice sets the wormhole relayer contract
     /// @param _wormholeRelayer address of the wormhole relayer
     function _setWormholeRelayer(address _wormholeRelayer) internal {
-        require(
-            address(wormholeRelayer) == address(0),
-            "WormholeBridge: relayer already set"
-        );
+        require(address(wormholeRelayer) == address(0), "WormholeBridge: relayer already set");
 
         wormholeRelayer = IWormholeRelayer(_wormholeRelayer);
     }
@@ -205,14 +182,8 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @dev this function returns 0 if the quote fails.
     /// in all other cases, the value returned should be non zero.
     /// @param dstWormholeChainId Destination chain id
-    function bridgeCost(uint16 dstWormholeChainId)
-        public
-        view
-        returns (uint256 gasCost)
-    {
-        try wormholeRelayer.quoteEVMDeliveryPrice(
-            dstWormholeChainId, 0, gasLimit
-        ) returns (uint256 cost, uint256) {
+    function bridgeCost(uint16 dstWormholeChainId) public view returns (uint256 gasCost) {
+        try wormholeRelayer.quoteEVMDeliveryPrice(dstWormholeChainId, 0, gasLimit) returns (uint256 cost, uint256) {
             gasCost = cost;
         } catch {
             /// this is a bad situation, but we still want to allow the bridge out
@@ -243,22 +214,14 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @notice returns whether or not the address is in the trusted senders list for a given chain
     /// @param chainId The wormhole chain id to check
     /// @param addr The address to check
-    function isTrustedSender(uint16 chainId, bytes32 addr)
-        public
-        view
-        returns (bool)
-    {
+    function isTrustedSender(uint16 chainId, bytes32 addr) public view returns (bool) {
         return isTrustedSender(chainId, fromWormholeFormat(addr));
     }
 
     /// @notice returns whether or not the address is in the trusted senders list for a given chain
     /// @param chainId The wormhole chain id to check
     /// @param addr The address to check
-    function isTrustedSender(uint16 chainId, address addr)
-        public
-        view
-        returns (bool)
-    {
+    function isTrustedSender(uint16 chainId, address addr) public view returns (bool) {
         return targetAddress[chainId] == addr;
     }
 
@@ -271,10 +234,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @notice Bridge Out Funds to all external chains.
     /// @param payload Payload to send to the external chain
     function _bridgeOutAll(bytes memory payload) internal {
-        require(
-            bridgeCostAll() == msg.value,
-            "WormholeBridge: total cost not equal to quote"
-        );
+        require(bridgeCostAll() == msg.value, "WormholeBridge: total cost not equal to quote");
 
         uint256 chainsLength = _targetChains.length();
 
@@ -292,9 +252,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
                 0,
                 gasLimit
             ) {
-                emit BridgeOutSuccess(
-                    targetChain, cost, targetAddress[targetChain], payload
-                );
+                emit BridgeOutSuccess(targetChain, cost, targetAddress[targetChain], payload);
             } catch {
                 totalRefundAmount += cost;
                 emit BridgeOutFailed(targetChain, payload, cost);
@@ -326,17 +284,9 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
         bytes32 nonce
     ) external payable override {
         require(msg.value == 0, "WormholeBridge: no value allowed");
-        require(
-            msg.sender == address(wormholeRelayer),
-            "WormholeBridge: only relayer allowed"
-        );
-        require(
-            isTrustedSender(sourceChain, senderAddress),
-            "WormholeBridge: sender not trusted"
-        );
-        require(
-            !processedNonces[nonce], "WormholeBridge: message already processed"
-        );
+        require(msg.sender == address(wormholeRelayer), "WormholeBridge: only relayer allowed");
+        require(isTrustedSender(sourceChain, senderAddress), "WormholeBridge: sender not trusted");
+        require(!processedNonces[nonce], "WormholeBridge: message already processed");
 
         processedNonces[nonce] = true;
 
@@ -349,15 +299,8 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// a non zero value, we know we have the wrong address
     /// @param whFormatAddress the bytes32 address to convert
     /// @return the address
-    function fromWormholeFormat(bytes32 whFormatAddress)
-        public
-        pure
-        returns (address)
-    {
-        require(
-            uint256(whFormatAddress) >> 160 == 0,
-            "WormholeBridge: invalid address"
-        );
+    function fromWormholeFormat(bytes32 whFormatAddress) public pure returns (address) {
+        require(uint256(whFormatAddress) >> 160 == 0, "WormholeBridge: invalid address");
 
         return address(uint160(uint256(whFormatAddress)));
     }
@@ -366,7 +309,5 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     // @dev must be overridden by implementation contract
     // @param sourceChain the chain id of the source chain
     // @param payload the payload of the message
-    function _bridgeIn(uint16 sourceChain, bytes memory payload)
-        internal
-        virtual;
+    function _bridgeIn(uint16 sourceChain, bytes memory payload) internal virtual;
 }

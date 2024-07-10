@@ -3,8 +3,7 @@ pragma solidity 0.8.19;
 
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin-contracts/contracts/security/Pausable.sol";
-import {EnumerableSet} from
-    "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 
@@ -71,9 +70,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
         // Mark 0xf16165f1046f1b3cdb37da25e835b986e696313a as trusted to emit from eth mainnet
         // Establish a list of trusted emitters from eash chain
         for (uint256 i = 0; i < _trustedSenders.length; i++) {
-            trustedSenders[_trustedSenders[i].chainId].add(
-                addressToBytes(_trustedSenders[i].addr)
-            );
+            trustedSenders[_trustedSenders[i].chainId].add(addressToBytes(_trustedSenders[i].addr));
         }
     }
 
@@ -82,36 +79,22 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// @notice returns whether or not the address is in the trusted senders list for a given chain
     /// @param chainId The wormhole chain id to check
     /// @param addr The address to check
-    function isTrustedSender(uint16 chainId, bytes32 addr)
-        public
-        view
-        returns (bool)
-    {
+    function isTrustedSender(uint16 chainId, bytes32 addr) public view returns (bool) {
         return trustedSenders[chainId].contains(addr);
     }
 
     /// @notice returns whether or not the address is in the trusted senders list for a given chain
     /// @param chainId The wormhole chain id to check
     /// @param addr The address to check
-    function isTrustedSender(uint16 chainId, address addr)
-        external
-        view
-        returns (bool)
-    {
+    function isTrustedSender(uint16 chainId, address addr) external view returns (bool) {
         return isTrustedSender(chainId, addressToBytes(addr));
     }
 
     /// @notice returns the list of trusted senders for a given chain
     /// @param chainId The wormhole chain id to check
     /// @return The list of trusted senders
-    function allTrustedSenders(uint16 chainId)
-        external
-        view
-        override
-        returns (bytes32[] memory)
-    {
-        bytes32[] memory trustedSendersList =
-            new bytes32[](trustedSenders[chainId].length());
+    function allTrustedSenders(uint16 chainId) external view override returns (bytes32[] memory) {
+        bytes32[] memory trustedSendersList = new bytes32[](trustedSenders[chainId].length());
 
         unchecked {
             for (uint256 i = 0; i < trustedSendersList.length; i++) {
@@ -134,23 +117,14 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// @dev Updates the list of trusted senders
     /// @param _trustedSenders The list of trusted senders, allowing one
     /// trusted sender per chain id
-    function setTrustedSenders(TrustedSender[] calldata _trustedSenders)
-        external
-    {
-        require(
-            msg.sender == address(this),
-            "TemporalGovernor: Only this contract can update trusted senders"
-        );
+    function setTrustedSenders(TrustedSender[] calldata _trustedSenders) external {
+        require(msg.sender == address(this), "TemporalGovernor: Only this contract can update trusted senders");
 
         unchecked {
             for (uint256 i = 0; i < _trustedSenders.length; i++) {
-                trustedSenders[_trustedSenders[i].chainId].add(
-                    addressToBytes(_trustedSenders[i].addr)
-                );
+                trustedSenders[_trustedSenders[i].chainId].add(addressToBytes(_trustedSenders[i].addr));
 
-                emit TrustedSenderUpdated(
-                    _trustedSenders[i].chainId, _trustedSenders[i].addr, true
-                );
+                emit TrustedSenderUpdated(_trustedSenders[i].chainId, _trustedSenders[i].addr, true);
                 /// added to list
             }
         }
@@ -160,23 +134,14 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// @dev Removes trusted senders from the list
     /// @param _trustedSenders The list of trusted senders, allowing multiple
     /// trusted sender per chain id
-    function unSetTrustedSenders(TrustedSender[] calldata _trustedSenders)
-        external
-    {
-        require(
-            msg.sender == address(this),
-            "TemporalGovernor: Only this contract can update trusted senders"
-        );
+    function unSetTrustedSenders(TrustedSender[] calldata _trustedSenders) external {
+        require(msg.sender == address(this), "TemporalGovernor: Only this contract can update trusted senders");
 
         unchecked {
             for (uint256 i = 0; i < _trustedSenders.length; i++) {
-                trustedSenders[_trustedSenders[i].chainId].remove(
-                    addressToBytes(_trustedSenders[i].addr)
-                );
+                trustedSenders[_trustedSenders[i].chainId].remove(addressToBytes(_trustedSenders[i].addr));
 
-                emit TrustedSenderUpdated(
-                    _trustedSenders[i].chainId, _trustedSenders[i].addr, false
-                );
+                emit TrustedSenderUpdated(_trustedSenders[i].chainId, _trustedSenders[i].addr, false);
                 /// removed from list
             }
         }
@@ -184,10 +149,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
 
     /// @notice grant the guardians the pause ability
     function grantGuardiansPause() external {
-        require(
-            msg.sender == address(this),
-            "TemporalGovernor: Only this contract can update grant guardian pause"
-        );
+        require(msg.sender == address(this), "TemporalGovernor: Only this contract can update grant guardian pause");
 
         guardianPauseAllowed = true;
         lastPauseTime = 0;
@@ -199,10 +161,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// this transfers the guardian to a new address
     /// @param newGuardian The new guardian address
     function changeGuardian(address newGuardian) external {
-        require(
-            msg.sender == address(this),
-            "TemporalGovernor: cannot change guardian"
-        );
+        require(msg.sender == address(this), "TemporalGovernor: cannot change guardian");
 
         _transferOwnership(newGuardian);
 
@@ -219,10 +178,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// unpauses the contract if paused
     function revokeGuardian() external {
         address oldGuardian = owner();
-        require(
-            msg.sender == oldGuardian || msg.sender == address(this),
-            "TemporalGovernor: cannot revoke guardian"
-        );
+        require(msg.sender == oldGuardian || msg.sender == address(this), "TemporalGovernor: cannot revoke guardian");
 
         _transferOwnership(address(0));
         guardianPauseAllowed = false;
@@ -260,10 +216,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
         /// toggle pause will set lastPauseTime to block.timestamp
         /// which means if the contract is paused on a live network,
         /// its lastPauseTime cannot be 0
-        require(
-            lastPauseTime + permissionlessUnpauseTime <= block.timestamp,
-            "TemporalGovernor: not past pause window"
-        );
+        require(lastPauseTime + permissionlessUnpauseTime <= block.timestamp, "TemporalGovernor: not past pause window");
 
         lastPauseTime = 0;
         _unpause();
@@ -276,12 +229,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     /// periods of emergency when the governance on moonbeam is
     /// compromised and we need to stop additional proposals from going through.
     /// @param VAA The signed Verified Action Approval to process
-    function fastTrackProposalExecution(bytes memory VAA)
-        external
-        payable
-        onlyOwner
-        whenPaused
-    {
+    function fastTrackProposalExecution(bytes memory VAA) external payable onlyOwner whenPaused {
         _executeProposal(VAA, true);
         /// override timestamp checks and execute
     }
@@ -294,10 +242,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
         if (paused()) {
             _unpause();
         } else {
-            require(
-                guardianPauseAllowed,
-                "TemporalGovernor: guardian pause not allowed"
-            );
+            require(guardianPauseAllowed, "TemporalGovernor: guardian pause not allowed");
 
             guardianPauseAllowed = false;
             lastPauseTime = uint248(block.timestamp);
@@ -312,8 +257,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
         /// Checks
 
         // This call accepts single VAAs and headless VAAs
-        (IWormhole.VM memory vm, bool valid, string memory reason) =
-            wormholeBridge.parseAndVerifyVM(VAA);
+        (IWormhole.VM memory vm, bool valid, string memory reason) = wormholeBridge.parseAndVerifyVM(VAA);
 
         // Ensure VAA parsing verification succeeded.
         require(valid, reason);
@@ -333,10 +277,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
 
         // Very important to check to make sure that the VAA we're processing is specifically designed
         // to be sent to this contract
-        require(
-            intendedRecipient == address(this),
-            "TemporalGovernor: Incorrect destination"
-        );
+        require(intendedRecipient == address(this), "TemporalGovernor: Incorrect destination");
 
         // Ensure the emitterAddress of this VAA is a trusted address
         require(
@@ -346,10 +287,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
         );
 
         /// Check that the VAA hasn't already been processed (replay protection)
-        require(
-            queuedTransactions[vm.hash].queueTime == 0,
-            "TemporalGovernor: Message already queued"
-        );
+        require(queuedTransactions[vm.hash].queueTime == 0, "TemporalGovernor: Message already queued");
 
         /// Effect
 
@@ -361,21 +299,16 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
 
     function _executeProposal(bytes memory VAA, bool overrideDelay) private {
         // This call accepts single VAAs and headless VAAs
-        (IWormhole.VM memory vm, bool valid, string memory reason) =
-            wormholeBridge.parseAndVerifyVM(VAA);
+        (IWormhole.VM memory vm, bool valid, string memory reason) = wormholeBridge.parseAndVerifyVM(VAA);
 
         require(valid, reason);
 
         /// ensure VAA parsing verification succeeded
 
         if (!overrideDelay) {
+            require(queuedTransactions[vm.hash].queueTime != 0, "TemporalGovernor: tx not queued");
             require(
-                queuedTransactions[vm.hash].queueTime != 0,
-                "TemporalGovernor: tx not queued"
-            );
-            require(
-                queuedTransactions[vm.hash].queueTime + proposalDelay
-                    <= block.timestamp,
+                queuedTransactions[vm.hash].queueTime + proposalDelay <= block.timestamp,
                 "TemporalGovernor: timelock not finished"
             );
         } else if (queuedTransactions[vm.hash].queueTime == 0) {
@@ -390,10 +323,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
             "TemporalGovernor: Invalid Emitter Address"
         );
 
-        require(
-            !queuedTransactions[vm.hash].executed,
-            "TemporalGovernor: tx already executed"
-        );
+        require(!queuedTransactions[vm.hash].executed, "TemporalGovernor: tx already executed");
 
         queuedTransactions[vm.hash].executed = true;
 
@@ -404,8 +334,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
         /// native token amount to send
         bytes[] memory calldatas;
         /// calldata to send
-        (, targets, values, calldatas) =
-            abi.decode(vm.payload, (address, address[], uint256[], bytes[]));
+        (, targets, values, calldatas) = abi.decode(vm.payload, (address, address[], uint256[], bytes[]));
 
         /// Interaction (s)
 
@@ -417,8 +346,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
             bytes memory data = calldatas[i];
 
             // Go make our call, and if it is not successful revert with the error bubbling up
-            (bool success, bytes memory returnData) =
-                target.call{value: value}(data);
+            (bool success, bytes memory returnData) = target.call{value: value}(data);
 
             /// revert on failure with error message if any
             require(success, string(returnData));
@@ -435,8 +363,7 @@ contract TemporalGovernor is ITemporalGovernor, Ownable, Pausable {
     ) private pure {
         require(targets.length != 0, "TemporalGovernor: Empty proposal");
         require(
-            targets.length == values.length
-                && targets.length == calldatas.length,
+            targets.length == values.length && targets.length == calldatas.length,
             "TemporalGovernor: Arity mismatch for payload"
         );
     }

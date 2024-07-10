@@ -15,9 +15,7 @@ contract mipb22 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B22";
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b22/MIP-B22.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-b22/MIP-B22.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 22;
@@ -37,8 +35,7 @@ contract mipb22 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B22")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B22")
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
@@ -46,8 +43,7 @@ contract mipb22 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_cbETH"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B22")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B22")
             ),
             "Set interest rate model for Moonwell cbETH to updated rate model"
         );
@@ -55,8 +51,7 @@ contract mipb22 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_wstETH"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WSTETH_MIP_B22")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WSTETH_MIP_B22")
             ),
             "Set interest rate model for Moonwell wstETH to updated rate model"
         );
@@ -64,8 +59,7 @@ contract mipb22 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_rETH"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_RETH_MIP_B22")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_RETH_MIP_B22")
             ),
             "Set interest rate model for Moonwell rETH to updated rate model"
         );
@@ -73,8 +67,7 @@ contract mipb22 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_AERO"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_AERO_MIP_B22")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_AERO_MIP_B22")
             ),
             "Set interest rate model for Moonwell AERO to updated rate model"
         );

@@ -1,16 +1,13 @@
 pragma solidity 0.8.19;
 
-import {ERC20Votes} from
-    "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
 import {console} from "@forge-std/console.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Proposal} from "@proposals/Proposal.sol";
-import {MultichainGovernor} from
-    "@protocol/governance/multichain/MultichainGovernor.sol";
-import {IArtemisGovernor as MoonwellArtemisGovernor} from
-    "@protocol/interfaces/IArtemisGovernor.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {ITimelock} from "@protocol/interfaces/ITimelock.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
@@ -30,9 +27,7 @@ abstract contract GovernanceProposal is Proposal {
     bytes public PROPOSAL_DESCRIPTION;
 
     /// @notice set the governance proposal's description
-    function _setProposalDescription(bytes memory newProposalDescription)
-        internal
-    {
+    function _setProposalDescription(bytes memory newProposalDescription) internal {
         PROPOSAL_DESCRIPTION = newProposalDescription;
     }
 
@@ -42,16 +37,7 @@ abstract contract GovernanceProposal is Proposal {
     }
 
     /// @notice get actions
-    function _getActions()
-        public
-        view
-        returns (
-            address[] memory,
-            uint256[] memory,
-            string[] memory,
-            bytes[] memory
-        )
-    {
+    function _getActions() public view returns (address[] memory, uint256[] memory, string[] memory, bytes[] memory) {
         uint256 actionsLength = actions.length;
         address[] memory targets = new address[](actionsLength);
         uint256[] memory values = new uint256[](actionsLength);
@@ -70,12 +56,8 @@ abstract contract GovernanceProposal is Proposal {
 
     /// @notice print the actions that will be executed by the proposal
     function printActions() public {
-        (
-            address[] memory targets,
-            uint256[] memory values,
-            string[] memory signatures,
-            bytes[] memory calldatas
-        ) = _getActions();
+        (address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas) =
+            _getActions();
         bytes memory governorCalldata = abi.encodeWithSignature(
             "propose(address[],uint256[],string[],bytes[],string)",
             targets,
@@ -96,18 +78,12 @@ abstract contract GovernanceProposal is Proposal {
 
     /// @notice search for a on-chain proposal that matches the proposal calldata
     /// @return proposalId 0 if no proposal is found
-    function getProposalId(Addresses, address governor)
-        public
-        override
-        returns (uint256 proposalId)
-    {
+    function getProposalId(Addresses, address governor) public override returns (uint256 proposalId) {
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        MoonwellArtemisGovernor governorContract =
-            MoonwellArtemisGovernor(governor);
-        uint256 proposalCount = onchainProposalId != 0
-            ? onchainProposalId
-            : MultichainGovernor(governor).proposalCount();
+        MoonwellArtemisGovernor governorContract = MoonwellArtemisGovernor(governor);
+        uint256 proposalCount =
+            onchainProposalId != 0 ? onchainProposalId : MultichainGovernor(governor).proposalCount();
 
         (
             address[] memory proposalTargets,
@@ -155,21 +131,13 @@ abstract contract GovernanceProposal is Proposal {
 
     /// @notice print the proposal action steps
     function printProposalActionSteps() public override {
-        console.log(
-            "\n\nProposal Description:\n\n%s", string(PROPOSAL_DESCRIPTION)
-        );
+        console.log("\n\nProposal Description:\n\n%s", string(PROPOSAL_DESCRIPTION));
 
-        console.log(
-            "\n\n------------------ Proposal Actions ------------------"
-        );
+        console.log("\n\n------------------ Proposal Actions ------------------");
 
         for (uint256 i = 0; i < actions.length; i++) {
             console.log("%d). %s", i + 1, actions[i].description);
-            console.log(
-                "target: %s\nvalue: %d\npayload",
-                actions[i].target,
-                actions[i].value
-            );
+            console.log("target: %s\nvalue: %d\npayload", actions[i].target, actions[i].value);
             emit log_bytes(actions[i].data);
 
             console.log("\n");
@@ -202,25 +170,14 @@ abstract contract GovernanceProposal is Proposal {
         string memory description,
         bytes memory data
     ) internal {
-        actions.push(
-            GovernanceAction({
-                target: target,
-                value: value,
-                description: description,
-                data: data
-            })
-        );
+        actions.push(GovernanceAction({target: target, value: value, description: description, data: data}));
     }
 
     /// @notice push an action to the Governance proposal with a value of 0
     /// @param target the target contract
     /// @param description description of the action
     /// @param data calldata
-    function _pushGovernanceAction(
-        address target,
-        string memory description,
-        bytes memory data
-    ) internal {
+    function _pushGovernanceAction(address target, string memory description, bytes memory data) internal {
         _pushGovernanceAction(target, 0, description, data);
     }
 
@@ -246,14 +203,9 @@ abstract contract GovernanceProposal is Proposal {
         vm.roll(block.number + 1000);
 
         /// @dev build proposal
-        (
-            address[] memory targets,
-            uint256[] memory values,
-            string[] memory signatures,
-            bytes[] memory calldatas
-        ) = _getActions();
-        MoonwellArtemisGovernor governor =
-            MoonwellArtemisGovernor(governorAddress);
+        (address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas) =
+            _getActions();
+        MoonwellArtemisGovernor governor = MoonwellArtemisGovernor(governorAddress);
         bytes memory encoded = abi.encodeWithSignature(
             "propose(address[],uint256[],string[],bytes[],string)",
             targets,
@@ -265,29 +217,19 @@ abstract contract GovernanceProposal is Proposal {
 
         /// @dev output
         if (DEBUG) {
-            console.log(
-                "Governance proposal with",
-                actionsLength,
-                (actionsLength > 1 ? "actions." : "action.")
-            );
+            console.log("Governance proposal with", actionsLength, (actionsLength > 1 ? "actions." : "action."));
             emit log_bytes(encoded);
         }
 
         vm.prank(proposerAddress);
-        (bool success, bytes memory data) =
-            address(governor).call{value: 0}(encoded);
-        require(
-            success, "GovernanceProposal: failed to raise governance proposal"
-        );
+        (bool success, bytes memory data) = address(governor).call{value: 0}(encoded);
+        require(success, "GovernanceProposal: failed to raise governance proposal");
 
         uint256 proposalId = abi.decode(data, (uint256));
         {
             /// @dev check that the proposal is in the pending state
-            MoonwellArtemisGovernor.ProposalState proposalState =
-                governor.state(proposalId);
-            require(
-                proposalState == MoonwellArtemisGovernor.ProposalState.Pending
-            );
+            MoonwellArtemisGovernor.ProposalState proposalState = governor.state(proposalId);
+            require(proposalState == MoonwellArtemisGovernor.ProposalState.Pending);
 
             /// @dev warp past the voting delay
             vm.warp(block.timestamp + governor.votingDelay() + 1);

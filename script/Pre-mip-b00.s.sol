@@ -7,8 +7,7 @@ import {console} from "@forge-std/console.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-import {ChainlinkCompositeOracle} from
-    "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
@@ -30,8 +29,7 @@ contract PreMipB00Script is Script, Test {
     function run() public {
         vm.startBroadcast();
 
-        FaucetTokenWithPermit usdc =
-            new FaucetTokenWithPermit(1e18, "USDBC", 6, "USDBC");
+        FaucetTokenWithPermit usdc = new FaucetTokenWithPermit(1e18, "USDBC", 6, "USDBC");
         FaucetTokenWithPermit cbETH = new FaucetTokenWithPermit(
             1e18,
             "Coinbase Wrapped Staked ETH",
@@ -60,16 +58,14 @@ contract PreMipB00Script is Script, Test {
 
         // cbETH is a composite oracle
         MockChainlinkOracle oracle = new MockChainlinkOracle(1.04296945e18, 18);
-        ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
-            addresses.getAddress("ETH_ORACLE"), address(oracle), address(0)
-        );
+        ChainlinkCompositeOracle cbEthOracle =
+            new ChainlinkCompositeOracle(addresses.getAddress("ETH_ORACLE"), address(oracle), address(0));
 
         vm.stopBroadcast();
 
         addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
 
-        (string[] memory recordedNames,, address[] memory recordedAddresses) =
-            addresses.getRecordedAddresses();
+        (string[] memory recordedNames,, address[] memory recordedAddresses) = addresses.getRecordedAddresses();
         for (uint256 i = 0; i < recordedNames.length; i++) {
             console.log("Deployed", recordedAddresses[i], recordedNames[i]);
         }
@@ -79,11 +75,7 @@ contract PreMipB00Script is Script, Test {
         for (uint256 j = 0; j < recordedNames.length; j++) {
             console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
             console.log("        'chainId': %d,", block.chainid);
-            console.log(
-                "        'name': '%s'\n}%s",
-                recordedNames[j],
-                j < recordedNames.length - 1 ? "," : ""
-            );
+            console.log("        'name': '%s'\n}%s", recordedNames[j], j < recordedNames.length - 1 ? "," : "");
         }
     }
 }

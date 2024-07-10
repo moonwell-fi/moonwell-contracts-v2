@@ -15,9 +15,7 @@ contract mipb15 is HybridProposal, Configs, ParameterValidation {
     uint256 public constant USDbC_NEW_RF = 0.2e18;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b15/MIP-B15.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-b15/MIP-B15.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 3;
@@ -43,8 +41,7 @@ contract mipb15 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B15")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B15")
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );

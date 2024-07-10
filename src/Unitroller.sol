@@ -13,16 +13,12 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
     /**
      * @notice Emitted when pendingComptrollerImplementation is changed
      */
-    event NewPendingImplementation(
-        address oldPendingImplementation, address newPendingImplementation
-    );
+    event NewPendingImplementation(address oldPendingImplementation, address newPendingImplementation);
 
     /**
      * @notice Emitted when pendingComptrollerImplementation is accepted, which means comptroller implementation is updated
      */
-    event NewImplementation(
-        address oldImplementation, address newImplementation
-    );
+    event NewImplementation(address oldImplementation, address newImplementation);
 
     /**
      * @notice Emitted when pendingAdmin is changed
@@ -42,24 +38,16 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
     /**
      * Admin Functions **
      */
-    function _setPendingImplementation(address newPendingImplementation)
-        public
-        returns (uint256)
-    {
+    function _setPendingImplementation(address newPendingImplementation) public returns (uint256) {
         if (msg.sender != admin) {
-            return fail(
-                Error.UNAUTHORIZED,
-                FailureInfo.SET_PENDING_IMPLEMENTATION_OWNER_CHECK
-            );
+            return fail(Error.UNAUTHORIZED, FailureInfo.SET_PENDING_IMPLEMENTATION_OWNER_CHECK);
         }
 
         address oldPendingImplementation = pendingComptrollerImplementation;
 
         pendingComptrollerImplementation = newPendingImplementation;
 
-        emit NewPendingImplementation(
-            oldPendingImplementation, pendingComptrollerImplementation
-        );
+        emit NewPendingImplementation(oldPendingImplementation, pendingComptrollerImplementation);
 
         return uint256(Error.NO_ERROR);
     }
@@ -71,14 +59,8 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
      */
     function _acceptImplementation() public returns (uint256) {
         // Check caller is pendingImplementation and pendingImplementation ≠ address(0)
-        if (
-            msg.sender != pendingComptrollerImplementation
-                || pendingComptrollerImplementation == address(0)
-        ) {
-            return fail(
-                Error.UNAUTHORIZED,
-                FailureInfo.ACCEPT_PENDING_IMPLEMENTATION_ADDRESS_CHECK
-            );
+        if (msg.sender != pendingComptrollerImplementation || pendingComptrollerImplementation == address(0)) {
+            return fail(Error.UNAUTHORIZED, FailureInfo.ACCEPT_PENDING_IMPLEMENTATION_ADDRESS_CHECK);
         }
 
         // Save current values for inclusion in log
@@ -90,9 +72,7 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
         pendingComptrollerImplementation = address(0);
 
         emit NewImplementation(oldImplementation, comptrollerImplementation);
-        emit NewPendingImplementation(
-            oldPendingImplementation, pendingComptrollerImplementation
-        );
+        emit NewPendingImplementation(oldPendingImplementation, pendingComptrollerImplementation);
 
         return uint256(Error.NO_ERROR);
     }
@@ -103,15 +83,10 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
      * @param newPendingAdmin New pending admin.
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function _setPendingAdmin(address newPendingAdmin)
-        public
-        returns (uint256)
-    {
+    function _setPendingAdmin(address newPendingAdmin) public returns (uint256) {
         // Check caller = admin
         if (msg.sender != admin) {
-            return fail(
-                Error.UNAUTHORIZED, FailureInfo.SET_PENDING_ADMIN_OWNER_CHECK
-            );
+            return fail(Error.UNAUTHORIZED, FailureInfo.SET_PENDING_ADMIN_OWNER_CHECK);
         }
 
         // Save current value, if any, for inclusion in log
@@ -134,9 +109,7 @@ contract Unitroller is UnitrollerAdminStorage, ComptrollerErrorReporter {
     function _acceptAdmin() public returns (uint256) {
         // Check caller is pendingAdmin and pendingAdmin ≠ address(0)
         if (msg.sender != pendingAdmin || msg.sender == address(0)) {
-            return fail(
-                Error.UNAUTHORIZED, FailureInfo.ACCEPT_ADMIN_PENDING_ADMIN_CHECK
-            );
+            return fail(Error.UNAUTHORIZED, FailureInfo.ACCEPT_ADMIN_PENDING_ADMIN_CHECK);
         }
 
         // Save current values for inclusion in log

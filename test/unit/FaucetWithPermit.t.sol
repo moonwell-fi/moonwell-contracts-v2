@@ -29,21 +29,14 @@ contract FaucetWithPermitUnitTest is Test {
     function testPermit() public {
         assertEq(token.balanceOf(owner), 1e18);
 
-        SigUtils.Permit memory permit = SigUtils.Permit({
-            owner: owner,
-            spender: spender,
-            value: 1e18,
-            nonce: 0,
-            deadline: 1 minutes
-        });
+        SigUtils.Permit memory permit =
+            SigUtils.Permit({owner: owner, spender: spender, value: 1e18, nonce: 0, deadline: 1 minutes});
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
 
-        token.permit(
-            permit.owner, permit.spender, permit.value, permit.deadline, v, r, s
-        );
+        token.permit(permit.owner, permit.spender, permit.value, permit.deadline, v, r, s);
 
         assertEq(token.allowance(owner, spender), 1e18);
         assertEq(token.nonces(owner), 1);

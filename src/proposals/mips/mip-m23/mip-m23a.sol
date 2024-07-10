@@ -7,8 +7,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 
-import {MultichainGovernorDeploy} from
-    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to create the Multichain Governor contract
@@ -29,15 +28,13 @@ contract mipm23a is HybridProposal, MultichainGovernorDeploy {
     }
 
     function deploy(Addresses addresses, address) public override {
-        if (addresses.isAddressSet("MULTICHAIN_GOVERNOR_PROXY", block.chainid))
-        {
+        if (addresses.isAddressSet("MULTICHAIN_GOVERNOR_PROXY", block.chainid)) {
             return;
         }
 
         address proxyAdmin = addresses.getAddress("MOONBEAM_PROXY_ADMIN");
 
-        (address governorProxy, address governorImpl) =
-            deployMultichainGovernor(proxyAdmin);
+        (address governorProxy, address governorImpl) = deployMultichainGovernor(proxyAdmin);
 
         addresses.addAddress("MULTICHAIN_GOVERNOR_PROXY", governorProxy);
         addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", governorImpl);

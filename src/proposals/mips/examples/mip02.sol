@@ -15,9 +15,7 @@ import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MToken} from "@protocol/MToken.sol";
 
-import {
-    InterestRateModel, JumpRateModel
-} from "@protocol/irm/JumpRateModel.sol";
+import {InterestRateModel, JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
@@ -51,8 +49,7 @@ contract mip02 is HybridProposal, Configs {
             addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
         }
 
-        Configs.CTokenConfiguration[] memory cTokenConfigs =
-            getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
         uint256 cTokenConfigsLength = cTokenConfigs.length;
         //// create all of the CTokens according to the configuration in Config.sol
@@ -72,25 +69,14 @@ contract mip02 is HybridProposal, Configs {
                     );
 
                     addresses.addAddress(
-                        string(
-                            abi.encodePacked(
-                                "JUMP_RATE_IRM_", config.addressesString
-                            )
-                        ),
-                        address(irModel)
+                        string(abi.encodePacked("JUMP_RATE_IRM_", config.addressesString)), address(irModel)
                     );
                 }
 
                 /// stack isn't too deep
                 CTokenAddresses memory addr = CTokenAddresses({
                     mTokenImpl: addresses.getAddress("MTOKEN_IMPLEMENTATION"),
-                    irModel: addresses.getAddress(
-                        string(
-                            abi.encodePacked(
-                                "JUMP_RATE_IRM_", config.addressesString
-                            )
-                        )
-                    ),
+                    irModel: addresses.getAddress(string(abi.encodePacked("JUMP_RATE_IRM_", config.addressesString))),
                     unitroller: addresses.getAddress("UNITROLLER")
                 });
 
@@ -100,13 +86,8 @@ contract mip02 is HybridProposal, Configs {
                 ///    = 2e26
                 /// (10 ** (6 + 8)) * 2 // 6 decimals example
                 ///    = 2e14
-                uint256 initialExchangeRate = (
-                    10
-                        ** (
-                            ERC20(addresses.getAddress(config.tokenAddressName))
-                                .decimals() + 8
-                        )
-                ) * 2;
+                uint256 initialExchangeRate =
+                    (10 ** (ERC20(addresses.getAddress(config.tokenAddressName)).decimals() + 8)) * 2;
 
                 MErc20Delegator mToken = new MErc20Delegator(
                     addresses.getAddress(config.tokenAddressName),
@@ -129,8 +110,7 @@ contract mip02 is HybridProposal, Configs {
     function afterDeploy(Addresses addresses, address) public override {
         address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
-        Configs.CTokenConfiguration[] memory cTokenConfigs =
-            getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         MToken[] memory mTokens = new MToken[](cTokenConfigs.length);
         uint256[] memory supplyCaps = new uint256[](cTokenConfigs.length);
         uint256[] memory borrowCaps = new uint256[](cTokenConfigs.length);
@@ -143,8 +123,7 @@ contract mip02 is HybridProposal, Configs {
                 borrowCaps[i] = config.borrowCap;
 
                 /// get the mToken
-                mTokens[i] =
-                    MToken(addresses.getAddress(config.addressesString));
+                mTokens[i] = MToken(addresses.getAddress(config.addressesString));
 
                 mTokens[i]._setReserveFactor(config.reserveFactor);
                 mTokens[i]._setProtocolSeizeShare(config.seizeShare);
@@ -157,11 +136,9 @@ contract mip02 is HybridProposal, Configs {
     function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-        ChainlinkOracle oracle =
-            ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"));
+        ChainlinkOracle oracle = ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"));
 
-        Configs.CTokenConfiguration[] memory cTokenConfigs =
-            getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         uint256[] memory supplyCaps = new uint256[](cTokenConfigs.length);
         uint256[] memory borrowCaps = new uint256[](cTokenConfigs.length);
         MToken[] memory mTokens = new MToken[](cTokenConfigs.length);
@@ -176,16 +153,14 @@ contract mip02 is HybridProposal, Configs {
                 supplyCaps[i] = config.supplyCap;
                 borrowCaps[i] = config.borrowCap;
 
-                address cTokenAddress =
-                    addresses.getAddress(config.addressesString);
+                address cTokenAddress = addresses.getAddress(config.addressesString);
                 mTokens[i] = MToken(cTokenAddress);
 
                 _pushAction(
                     address(oracle),
                     abi.encodeWithSignature(
                         "setFeed(string,uint256)",
-                        ERC20(addresses.getAddress(config.tokenAddressName))
-                            .symbol(),
+                        ERC20(addresses.getAddress(config.tokenAddressName)).symbol(),
                         addresses.getAddress(config.priceFeedName)
                     ),
                     "Temporal governor accepts admin on mToken"
@@ -193,10 +168,7 @@ contract mip02 is HybridProposal, Configs {
 
                 _pushAction(
                     unitrollerAddress,
-                    abi.encodeWithSignature(
-                        "_supportMarket(address)",
-                        addresses.getAddress(config.addressesString)
-                    ),
+                    abi.encodeWithSignature("_supportMarket(address)", addresses.getAddress(config.addressesString)),
                     "Unpause MToken market"
                 );
 
@@ -211,46 +183,34 @@ contract mip02 is HybridProposal, Configs {
 
                 _pushAction(
                     unitrollerAddress,
-                    abi.encodeWithSignature(
-                        "_setMintPaused(address,bool)", cTokenAddress, false
-                    ),
+                    abi.encodeWithSignature("_setMintPaused(address,bool)", cTokenAddress, false),
                     "Unpause MToken market"
                 );
 
                 /// Approvals
                 _pushAction(
                     addresses.getAddress(config.tokenAddressName),
-                    abi.encodeWithSignature(
-                        "approve(address,uint256)",
-                        cTokenAddress,
-                        config.initialMintAmount
-                    ),
+                    abi.encodeWithSignature("approve(address,uint256)", cTokenAddress, config.initialMintAmount),
                     "Approve underlying token to be spent by market"
                 );
 
                 /// Initialize markets
                 _pushAction(
                     cTokenAddress,
-                    abi.encodeWithSignature(
-                        "mint(uint256)", config.initialMintAmount
-                    ),
+                    abi.encodeWithSignature("mint(uint256)", config.initialMintAmount),
                     "Initialize token market to prevent exploit"
                 );
 
                 _pushAction(
                     cTokenAddress,
-                    abi.encodeWithSignature(
-                        "transfer(address,uint256)", address(0), 1
-                    ),
+                    abi.encodeWithSignature("transfer(address,uint256)", address(0), 1),
                     "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
                 );
 
                 _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
-                        "_setCollateralFactor(address,uint256)",
-                        cTokenAddress,
-                        config.collateralFactor
+                        "_setCollateralFactor(address,uint256)", cTokenAddress, config.collateralFactor
                     ),
                     "Set collateral factor for the market"
                 );
@@ -259,17 +219,13 @@ contract mip02 is HybridProposal, Configs {
 
         _pushAction(
             unitrollerAddress,
-            abi.encodeWithSignature(
-                "_setMarketSupplyCaps(address[],uint256[])", mTokens, supplyCaps
-            ),
+            abi.encodeWithSignature("_setMarketSupplyCaps(address[],uint256[])", mTokens, supplyCaps),
             "Set market supply caps for each mToken"
         );
 
         _pushAction(
             unitrollerAddress,
-            abi.encodeWithSignature(
-                "_setMarketBorrowCaps(address[],uint256[])", mTokens, borrowCaps
-            ),
+            abi.encodeWithSignature("_setMarketBorrowCaps(address[],uint256[])", mTokens, borrowCaps),
             "Set market borrow caps for each mToken"
         );
     }
@@ -280,14 +236,12 @@ contract mip02 is HybridProposal, Configs {
         address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
         {
-            ChainlinkOracle oracle =
-                ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"));
+            ChainlinkOracle oracle = ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE"));
 
             assertEq(oracle.admin(), governor);
             /// validate chainlink price feeds are correctly set according to config in oracle
 
-            Configs.CTokenConfiguration[] memory cTokenConfigs =
-                getCTokenConfigurations(block.chainid);
+            Configs.CTokenConfiguration[] memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
             //// set mint paused for all of the deployed MTokens
             unchecked {
@@ -295,15 +249,7 @@ contract mip02 is HybridProposal, Configs {
                     Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
                     assertEq(
-                        address(
-                            oracle.getFeed(
-                                ERC20(
-                                    addresses.getAddress(
-                                        config.tokenAddressName
-                                    )
-                                ).symbol()
-                            )
-                        ),
+                        address(oracle.getFeed(ERC20(addresses.getAddress(config.tokenAddressName)).symbol())),
                         addresses.getAddress(config.priceFeedName)
                     );
                 }
@@ -311,70 +257,35 @@ contract mip02 is HybridProposal, Configs {
         }
 
         {
-            Comptroller comptroller =
-                Comptroller(addresses.getAddress("UNITROLLER"));
+            Comptroller comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
 
-            Configs.CTokenConfiguration[] memory cTokenConfigs =
-                getCTokenConfigurations(block.chainid);
+            Configs.CTokenConfiguration[] memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
             unchecked {
                 for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                     Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
                     /// CToken Assertions
-                    assertFalse(
-                        comptroller.mintGuardianPaused(
-                            addresses.getAddress(config.addressesString)
-                        )
-                    );
+                    assertFalse(comptroller.mintGuardianPaused(addresses.getAddress(config.addressesString)));
                     /// minting allowed by guardian
-                    assertFalse(
-                        comptroller.borrowGuardianPaused(
-                            addresses.getAddress(config.addressesString)
-                        )
-                    );
+                    assertFalse(comptroller.borrowGuardianPaused(addresses.getAddress(config.addressesString)));
                     /// borrowing allowed by guardian
-                    assertEq(
-                        comptroller.borrowCaps(
-                            addresses.getAddress(config.addressesString)
-                        ),
-                        config.borrowCap
-                    );
-                    assertEq(
-                        comptroller.supplyCaps(
-                            addresses.getAddress(config.addressesString)
-                        ),
-                        config.supplyCap
-                    );
+                    assertEq(comptroller.borrowCaps(addresses.getAddress(config.addressesString)), config.borrowCap);
+                    assertEq(comptroller.supplyCaps(addresses.getAddress(config.addressesString)), config.supplyCap);
 
                     /// assert cToken irModel is correct
                     JumpRateModel jrm = JumpRateModel(
-                        addresses.getAddress(
-                            string(
-                                abi.encodePacked(
-                                    "JUMP_RATE_IRM_", config.addressesString
-                                )
-                            )
-                        )
+                        addresses.getAddress(string(abi.encodePacked("JUMP_RATE_IRM_", config.addressesString)))
                     );
                     assertEq(
-                        address(
-                            MToken(addresses.getAddress(config.addressesString))
-                                .interestRateModel()
-                        ),
-                        address(jrm)
+                        address(MToken(addresses.getAddress(config.addressesString)).interestRateModel()), address(jrm)
                     );
 
-                    MErc20 mToken =
-                        MErc20(addresses.getAddress(config.addressesString));
+                    MErc20 mToken = MErc20(addresses.getAddress(config.addressesString));
 
                     /// reserve factor and protocol seize share
-                    assertEq(
-                        mToken.protocolSeizeShareMantissa(), config.seizeShare
-                    );
-                    assertEq(
-                        mToken.reserveFactorMantissa(), config.reserveFactor
-                    );
+                    assertEq(mToken.protocolSeizeShareMantissa(), config.seizeShare);
+                    assertEq(mToken.reserveFactorMantissa(), config.reserveFactor);
 
                     /// assert initial mToken balances are correct
                     assertTrue(mToken.balanceOf(governor) > 0);
@@ -386,35 +297,19 @@ contract mip02 is HybridProposal, Configs {
                     assertEq(address(mToken.admin()), governor);
 
                     /// assert mToken comptroller is correct
-                    assertEq(
-                        address(mToken.comptroller()),
-                        addresses.getAddress("UNITROLLER")
-                    );
+                    assertEq(address(mToken.comptroller()), addresses.getAddress("UNITROLLER"));
 
                     /// assert mToken underlying is correct
-                    assertEq(
-                        address(mToken.underlying()),
-                        addresses.getAddress(config.tokenAddressName)
-                    );
+                    assertEq(address(mToken.underlying()), addresses.getAddress(config.tokenAddressName));
 
                     /// assert mToken delegate is uniform across contracts
                     assertEq(
-                        address(
-                            MErc20Delegator(payable(address(mToken)))
-                                .implementation()
-                        ),
+                        address(MErc20Delegator(payable(address(mToken))).implementation()),
                         addresses.getAddress("MTOKEN_IMPLEMENTATION")
                     );
 
-                    uint256 initialExchangeRate = (
-                        10
-                            ** (
-                                8
-                                    + ERC20(
-                                        addresses.getAddress(config.tokenAddressName)
-                                    ).decimals()
-                            )
-                    ) * 2;
+                    uint256 initialExchangeRate =
+                        (10 ** (8 + ERC20(addresses.getAddress(config.tokenAddressName)).decimals())) * 2;
 
                     /// assert mToken initial exchange rate is correct
                     assertEq(mToken.exchangeRateCurrent(), initialExchangeRate);
@@ -428,18 +323,15 @@ contract mip02 is HybridProposal, Configs {
                     {
                         assertEq(
                             jrm.baseRatePerTimestamp(),
-                            (config.jrm.baseRatePerYear * 1e18)
-                                / jrm.timestampsPerYear() / 1e18
+                            (config.jrm.baseRatePerYear * 1e18) / jrm.timestampsPerYear() / 1e18
                         );
                         assertEq(
                             jrm.multiplierPerTimestamp(),
-                            (config.jrm.multiplierPerYear * 1e18)
-                                / jrm.timestampsPerYear() / 1e18
+                            (config.jrm.multiplierPerYear * 1e18) / jrm.timestampsPerYear() / 1e18
                         );
                         assertEq(
                             jrm.jumpMultiplierPerTimestamp(),
-                            (config.jrm.jumpMultiplierPerYear * 1e18)
-                                / jrm.timestampsPerYear() / 1e18
+                            (config.jrm.jumpMultiplierPerYear * 1e18) / jrm.timestampsPerYear() / 1e18
                         );
                         assertEq(jrm.kink(), config.jrm.kink);
                     }

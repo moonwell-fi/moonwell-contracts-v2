@@ -2,25 +2,20 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {ChainlinkCompositeOracle} from
-    "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
 
 contract ChainlinkCompositeOracleIntegrationTest is Test {
     ChainlinkCompositeOracle public oracle;
 
     /// @notice multiplier value
-    address public constant cbEthEthOracle =
-        0xF017fcB346A1885194689bA23Eff2fE6fA5C483b;
+    address public constant cbEthEthOracle = 0xF017fcB346A1885194689bA23Eff2fE6fA5C483b;
 
     /// @notice eth usd value
-    address public constant ethUsdOracle =
-        0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+    address public constant ethUsdOracle = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
     function setUp() public {
-        oracle = new ChainlinkCompositeOracle(
-            ethUsdOracle, cbEthEthOracle, address(0)
-        );
+        oracle = new ChainlinkCompositeOracle(ethUsdOracle, cbEthEthOracle, address(0));
     }
 
     function testSetup() public view {
@@ -59,11 +54,7 @@ contract ChainlinkCompositeOracleIntegrationTest is Test {
         assertEq(answeredInRound, 0);
     }
 
-    function testScalePrice(
-        int256 price,
-        uint8 priceDecimals,
-        uint8 expectedDecimals
-    ) public view {
+    function testScalePrice(int256 price, uint8 priceDecimals, uint8 expectedDecimals) public view {
         price = int256(_bound(uint256(price), 100, 10_000e18));
         /// bound price between 100 and 10_000e18
         priceDecimals = uint8(_bound(priceDecimals, 0, 18));
@@ -71,21 +62,12 @@ contract ChainlinkCompositeOracleIntegrationTest is Test {
         expectedDecimals = uint8(_bound(expectedDecimals, 0, 18));
         /// bound expectedDecimals between 0 and 18
 
-        int256 scaledPrice =
-            oracle.scalePrice(price, priceDecimals, expectedDecimals);
+        int256 scaledPrice = oracle.scalePrice(price, priceDecimals, expectedDecimals);
 
         if (priceDecimals > expectedDecimals) {
-            assertEq(
-                uint256(scaledPrice),
-                uint256(price)
-                    / (10 ** (_getAbsDelta(expectedDecimals, priceDecimals)))
-            );
+            assertEq(uint256(scaledPrice), uint256(price) / (10 ** (_getAbsDelta(expectedDecimals, priceDecimals))));
         } else {
-            assertEq(
-                uint256(scaledPrice),
-                uint256(price)
-                    * (10 ** (_getAbsDelta(expectedDecimals, priceDecimals)))
-            );
+            assertEq(uint256(scaledPrice), uint256(price) * (10 ** (_getAbsDelta(expectedDecimals, priceDecimals))));
         }
 
         if (expectedDecimals > priceDecimals) {
@@ -95,24 +77,17 @@ contract ChainlinkCompositeOracleIntegrationTest is Test {
         }
     }
 
-    function testCalculatePrice(
-        int256 basePrice,
-        int256 priceMultiplier,
-        uint8 decimals
-    ) public view {
+    function testCalculatePrice(int256 basePrice, int256 priceMultiplier, uint8 decimals) public view {
         basePrice = int256(_bound(uint256(basePrice), 100, 10_000e18));
         /// bound price between 100 and 10_000e18
-        priceMultiplier =
-            int256(_bound(uint256(priceMultiplier), 1e18, 10_000e18));
+        priceMultiplier = int256(_bound(uint256(priceMultiplier), 1e18, 10_000e18));
         /// bound price multiplier between 1e18 and 10_000e18
         /// scaling factor is between 1 and 1e18
         uint256 scalingFactor = 10 ** uint256(_bound(decimals, 0, 18));
         /// bound decimals between 0 and 18
 
         assertEq(
-            oracle.calculatePrice(
-                basePrice, priceMultiplier, int256(scalingFactor)
-            ),
+            oracle.calculatePrice(basePrice, priceMultiplier, int256(scalingFactor)),
             uint256((basePrice * priceMultiplier) / int256(scalingFactor))
         );
     }

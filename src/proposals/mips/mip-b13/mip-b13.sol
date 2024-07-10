@@ -17,9 +17,7 @@ contract mipb13 is HybridProposal, Configs, ParameterValidation {
     uint256 public constant cbETH_NEW_CF = 0.78e18;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b13/MIP-B13.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-b13/MIP-B13.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 71;
@@ -41,9 +39,7 @@ contract mipb13 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_wstETH"),
-                wstETH_NEW_CF
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("MOONWELL_wstETH"), wstETH_NEW_CF
             ),
             "Set collateral factor for Moonwell wstETH to updated collateral factor"
         );
@@ -51,9 +47,7 @@ contract mipb13 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_rETH"),
-                rETH_NEW_CF
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("MOONWELL_rETH"), rETH_NEW_CF
             ),
             "Set collateral factor for Moonwell rETH to updated collateral factor"
         );
@@ -61,9 +55,7 @@ contract mipb13 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_cbETH"),
-                cbETH_NEW_CF
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF
             ),
             "Set collateral factor for Moonwell cbETH to updated collateral factor"
         );
@@ -71,8 +63,7 @@ contract mipb13 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_cbETH"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B13")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B13")
             ),
             "Set interest rate model for Moonwell cbETH to updated rate model"
         );
@@ -80,8 +71,7 @@ contract mipb13 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B13")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B13")
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
@@ -92,17 +82,11 @@ contract mipb13 is HybridProposal, Configs, ParameterValidation {
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
-        _validateCF(
-            addresses, addresses.getAddress("MOONWELL_wstETH"), wstETH_NEW_CF
-        );
+        _validateCF(addresses, addresses.getAddress("MOONWELL_wstETH"), wstETH_NEW_CF);
 
-        _validateCF(
-            addresses, addresses.getAddress("MOONWELL_rETH"), rETH_NEW_CF
-        );
+        _validateCF(addresses, addresses.getAddress("MOONWELL_rETH"), rETH_NEW_CF);
 
-        _validateCF(
-            addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF
-        );
+        _validateCF(addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF);
 
         _validateJRM(
             addresses.getAddress("JUMP_RATE_IRM_MOONWELL_cbETH"),

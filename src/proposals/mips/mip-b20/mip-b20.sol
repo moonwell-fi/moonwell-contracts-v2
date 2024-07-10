@@ -18,9 +18,7 @@ contract mipb20 is HybridProposal, Configs, ParameterValidation {
     uint128 public constant NEW_REWARD_SPEED = 2.47583538590144 * 1e18;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b20/MIP-B20.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-b20/MIP-B20.md"));
 
         _setProposalDescription(proposalDescription);
 
@@ -41,9 +39,7 @@ contract mipb20 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("STK_GOVTOKEN"),
             abi.encodeWithSignature(
-                "configureAsset(uint128,address)",
-                NEW_REWARD_SPEED,
-                addresses.getAddress("STK_GOVTOKEN")
+                "configureAsset(uint128,address)", NEW_REWARD_SPEED, addresses.getAddress("STK_GOVTOKEN")
             ),
             "Set new reward speed to 2.475835385901440000 WELL per second"
         );
@@ -54,10 +50,8 @@ contract mipb20 is HybridProposal, Configs, ParameterValidation {
     /// @notice assert that the new interest rate model is set correctly
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
-        IStakedWellUplift stkWell =
-            IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"));
-        (uint128 emissionsPerSecond,,) =
-            stkWell.assets(addresses.getAddress("STK_GOVTOKEN"));
+        IStakedWellUplift stkWell = IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"));
+        (uint128 emissionsPerSecond,,) = stkWell.assets(addresses.getAddress("STK_GOVTOKEN"));
 
         assertEq(emissionsPerSecond, NEW_REWARD_SPEED, "emissionsPerSecond");
     }

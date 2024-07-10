@@ -1,7 +1,6 @@
 pragma solidity 0.8.19;
 
-import {EnumerableSet} from
-    "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 
 import "forge-std/Test.sol";
 
@@ -63,19 +62,11 @@ contract xWELLOwnerHandler is Test {
         return users;
     }
 
-    function getUserDelegators(uint8 user)
-        external
-        view
-        returns (address[] memory)
-    {
+    function getUserDelegators(uint8 user) external view returns (address[] memory) {
         return _usersDelegators[users[user]].values();
     }
 
-    function getUserDelegators(address user)
-        external
-        view
-        returns (address[] memory)
-    {
+    function getUserDelegators(address user) external view returns (address[] memory) {
         return _usersDelegators[user].values();
     }
 
@@ -129,9 +120,7 @@ contract xWELLOwnerHandler is Test {
         }
     }
 
-    function transferFrom(uint8 _to, uint8 _from, uint8 _owner, uint112 amount)
-        external
-    {
+    function transferFrom(uint8 _to, uint8 _from, uint8 _owner, uint112 amount) external {
         address to = users[(_bound(_to, 0, users.length - 1))];
         address from = users[(_bound(_from, 0, users.length - 1))];
         address owner = users[(_bound(_owner, 0, users.length - 1))];
@@ -160,10 +149,7 @@ contract xWELLOwnerHandler is Test {
         /// do a check if the delegator has already delegated, if so, remove them
         address existingDelegated = xwell.delegates(delegator);
         if (existingDelegated != address(0)) {
-            require(
-                _usersDelegators[existingDelegated].remove(delegator),
-                "did not properly undelegate"
-            );
+            require(_usersDelegators[existingDelegated].remove(delegator), "did not properly undelegate");
         }
 
         require(_usersDelegators[delegatee].add(delegator), "already delegated");
@@ -177,9 +163,7 @@ contract xWELLOwnerHandler is Test {
         address delegator = users[(_bound(from, 0, users.length - 1))];
         address delegatee = xwell.delegates(delegator);
 
-        require(
-            _usersDelegators[delegatee].remove(delegator), "already delegated"
-        );
+        require(_usersDelegators[delegatee].remove(delegator), "already delegated");
 
         vm.prank(delegator);
         xwell.delegate(address(0));
@@ -192,8 +176,7 @@ contract xWELLOwnerHandler is Test {
         address to = users[(_bound(_to, 0, users.length - 1))];
 
         /// at minimum mint 1 xWELL
-        amount =
-            uint112(_bound(amount, 1, xwell.maxSupply() - xwell.totalSupply()));
+        amount = uint112(_bound(amount, 1, xwell.maxSupply() - xwell.totalSupply()));
 
         well.mint(address(this), amount);
         well.approve(address(xerc20Lockbox), amount);
@@ -211,8 +194,7 @@ contract xWELLOwnerHandler is Test {
     function withdrawTo(uint8 _to, uint112 amount) external {
         address to = users[(_bound(_to, 0, users.length - 1))];
 
-        uint256 amtCeiling = xwell.balanceOf(to)
-            > well.balanceOf(address(xerc20Lockbox))
+        uint256 amtCeiling = xwell.balanceOf(to) > well.balanceOf(address(xerc20Lockbox))
             ? well.balanceOf(address(xerc20Lockbox))
             : xwell.balanceOf(to);
 
@@ -232,8 +214,7 @@ contract xWELLOwnerHandler is Test {
     /// minting
     /// @notice should not revert, but can
     function mintToUser(uint224 amount, uint8 user) external {
-        amount =
-            uint224(_bound(amount, 1, xwell.maxSupply() - xwell.totalSupply()));
+        amount = uint224(_bound(amount, 1, xwell.maxSupply() - xwell.totalSupply()));
 
         address to = users[(_bound(user, 0, users.length - 1))];
 

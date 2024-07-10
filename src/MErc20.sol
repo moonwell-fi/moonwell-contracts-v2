@@ -30,14 +30,7 @@ contract MErc20 is MToken, MErc20Interface {
         uint8 decimals_
     ) public {
         // MToken initialize does the bulk of the work
-        super.initialize(
-            comptroller_,
-            interestRateModel_,
-            initialExchangeRateMantissa_,
-            name_,
-            symbol_,
-            decimals_
-        );
+        super.initialize(comptroller_, interestRateModel_, initialExchangeRateMantissa_, name_, symbol_, decimals_);
 
         // Set underlying and sanity check it
         underlying = underlying_;
@@ -80,9 +73,7 @@ contract MErc20 is MToken, MErc20Interface {
 
         // Go submit our pre-approval signature data to the underlying token, but
         // explicitly fail if there is an issue.
-        SafeERC20.safePermit(
-            token, msg.sender, address(this), mintAmount, deadline, v, r, s
-        );
+        SafeERC20.safePermit(token, msg.sender, address(this), mintAmount, deadline, v, r, s);
 
         (uint256 err,) = mintInternal(mintAmount);
         return err;
@@ -104,11 +95,7 @@ contract MErc20 is MToken, MErc20Interface {
      * @param redeemAmount The amount of underlying to redeem
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function redeemUnderlying(uint256 redeemAmount)
-        external
-        override
-        returns (uint256)
-    {
+    function redeemUnderlying(uint256 redeemAmount) external override returns (uint256) {
         return redeemUnderlyingInternal(redeemAmount);
     }
 
@@ -126,11 +113,7 @@ contract MErc20 is MToken, MErc20Interface {
      * @param repayAmount The amount to repay, or uint.max for the full outstanding amount
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function repayBorrow(uint256 repayAmount)
-        external
-        override
-        returns (uint256)
-    {
+    function repayBorrow(uint256 repayAmount) external override returns (uint256) {
         (uint256 err,) = repayBorrowInternal(repayAmount);
         return err;
     }
@@ -141,11 +124,7 @@ contract MErc20 is MToken, MErc20Interface {
      * @param repayAmount The amount to repay, or uint.max for the full outstanding amount
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function repayBorrowBehalf(address borrower, uint256 repayAmount)
-        external
-        override
-        returns (uint256)
-    {
+    function repayBorrowBehalf(address borrower, uint256 repayAmount) external override returns (uint256) {
         (uint256 err,) = repayBorrowBehalfInternal(borrower, repayAmount);
         return err;
     }
@@ -163,8 +142,7 @@ contract MErc20 is MToken, MErc20Interface {
         uint256 repayAmount,
         MTokenInterface mTokenCollateral
     ) external override returns (uint256) {
-        (uint256 err,) =
-            liquidateBorrowInternal(borrower, repayAmount, mTokenCollateral);
+        (uint256 err,) = liquidateBorrowInternal(borrower, repayAmount, mTokenCollateral);
         return err;
     }
 
@@ -173,14 +151,8 @@ contract MErc20 is MToken, MErc20Interface {
      * @param token The address of the ERC-20 token to sweep
      */
     function sweepToken(EIP20NonStandardInterface token) external override {
-        require(
-            msg.sender == admin,
-            "MErc20::sweepToken: only admin can sweep tokens"
-        );
-        require(
-            address(token) != underlying,
-            "MErc20::sweepToken: can not sweep underlying token"
-        );
+        require(msg.sender == admin, "MErc20::sweepToken: only admin can sweep tokens");
+        require(address(token) != underlying, "MErc20::sweepToken: can not sweep underlying token");
         uint256 balance = token.balanceOf(address(this));
         token.transfer(admin, balance);
     }
@@ -190,11 +162,7 @@ contract MErc20 is MToken, MErc20Interface {
      * @param addAmount The amount fo underlying token to add as reserves
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function _addReserves(uint256 addAmount)
-        external
-        override
-        returns (uint256)
-    {
+    function _addReserves(uint256 addAmount) external override returns (uint256) {
         return _addReservesInternal(addAmount);
     }
 
@@ -221,17 +189,11 @@ contract MErc20 is MToken, MErc20Interface {
      *      Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value.
      *            See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
-    function doTransferIn(address from, uint256 amount)
-        internal
-        virtual
-        override
-        returns (uint256)
-    {
+    function doTransferIn(address from, uint256 amount) internal virtual override returns (uint256) {
         // Read from storage once
         address underlying_ = underlying;
         EIP20NonStandardInterface token = EIP20NonStandardInterface(underlying_);
-        uint256 balanceBefore =
-            EIP20Interface(underlying_).balanceOf(address(this));
+        uint256 balanceBefore = EIP20Interface(underlying_).balanceOf(address(this));
         token.transferFrom(from, address(this), amount);
 
         bool success;
@@ -254,8 +216,7 @@ contract MErc20 is MToken, MErc20Interface {
         require(success, "TOKEN_TRANSFER_IN_FAILED");
 
         // Calculate the amount that was *actually* transferred
-        uint256 balanceAfter =
-            EIP20Interface(underlying_).balanceOf(address(this));
+        uint256 balanceAfter = EIP20Interface(underlying_).balanceOf(address(this));
         require(balanceAfter >= balanceBefore, "TOKEN_TRANSFER_IN_OVERFLOW");
         return balanceAfter - balanceBefore; // underflow already checked above, just subtract
     }
@@ -269,11 +230,7 @@ contract MErc20 is MToken, MErc20Interface {
      *      Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value.
      *            See here: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
      */
-    function doTransferOut(address payable to, uint256 amount)
-        internal
-        virtual
-        override
-    {
+    function doTransferOut(address payable to, uint256 amount) internal virtual override {
         EIP20NonStandardInterface token = EIP20NonStandardInterface(underlying);
         token.transfer(to, amount);
 

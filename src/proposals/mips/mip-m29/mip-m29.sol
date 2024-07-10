@@ -4,10 +4,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {
-    ActionType,
-    HybridProposal
-} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ActionType, HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
@@ -28,9 +25,7 @@ contract mipm29 is HybridProposal, ParameterValidation {
     uint256 public constant NEW_M_USDCWH_COLLATERAL_FACTOR = 0.58e18;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m29/MIP-M29.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-m29/MIP-M29.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 15;
@@ -50,27 +45,21 @@ contract mipm29 is HybridProposal, ParameterValidation {
 
         _pushAction(
             addresses.getAddress("mGLIMMER"),
-            abi.encodeWithSignature(
-                "_setReserveFactor(uint256)", NEW_MGLIMMER_RESERVE_FACTOR
-            ),
+            abi.encodeWithSignature("_setReserveFactor(uint256)", NEW_MGLIMMER_RESERVE_FACTOR),
             "Set reserve factor for mGLIMMER to updated reserve factor",
             ActionType.Moonbeam
         );
 
         _pushAction(
             addresses.getAddress("mxcDOT"),
-            abi.encodeWithSignature(
-                "_setReserveFactor(uint256)", NEW_MXC_DOT_RESERVE_FACTOR
-            ),
+            abi.encodeWithSignature("_setReserveFactor(uint256)", NEW_MXC_DOT_RESERVE_FACTOR),
             "Set reserve factor for mxcDOT to updated reserve factor",
             ActionType.Moonbeam
         );
 
         _pushAction(
             addresses.getAddress("mETHwh"),
-            abi.encodeWithSignature(
-                "_setReserveFactor(uint256)", NEW_M_ETHWH_RESERVE_FACTOR
-            ),
+            abi.encodeWithSignature("_setReserveFactor(uint256)", NEW_M_ETHWH_RESERVE_FACTOR),
             "Set reserve factor for mETHwh to updated reserve factor",
             ActionType.Moonbeam
         );
@@ -78,9 +67,7 @@ contract mipm29 is HybridProposal, ParameterValidation {
         _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("mETHwh"),
-                NEW_M_ETHWH_COLLATERAL_FACTOR
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("mETHwh"), NEW_M_ETHWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of mETHwh",
             ActionType.Moonbeam
@@ -89,9 +76,7 @@ contract mipm29 is HybridProposal, ParameterValidation {
         _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("mUSDCwh"),
-                NEW_M_USDCWH_COLLATERAL_FACTOR
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("mUSDCwh"), NEW_M_USDCWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of mUSDCwh",
             ActionType.Moonbeam
@@ -99,30 +84,21 @@ contract mipm29 is HybridProposal, ParameterValidation {
 
         _pushAction(
             addresses.getAddress("mxcUSDC"),
-            abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_mxcUSDC")
-            ),
+            abi.encodeWithSignature("_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_mxcUSDC")),
             "Set interest rate model for mxcUSDC to updated rate model",
             ActionType.Moonbeam
         );
 
         _pushAction(
             addresses.getAddress("mxcUSDT"),
-            abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_mxcUSDT")
-            ),
+            abi.encodeWithSignature("_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_mxcUSDT")),
             "Set interest rate model for mxcUSDT to updated rate model",
             ActionType.Moonbeam
         );
 
         _pushAction(
             addresses.getAddress("mFRAX"),
-            abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_mFRAX")
-            ),
+            abi.encodeWithSignature("_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_mFRAX")),
             "Set interest rate model for mFRAX to updated rate model",
             ActionType.Moonbeam
         );
@@ -155,35 +131,22 @@ contract mipm29 is HybridProposal, ParameterValidation {
 
     function run(Addresses addresses, address) public override {
         /// safety check to ensure no base actions are run
-        require(
-            actions.proposalActionTypeCount(ActionType.Base) == 0,
-            "MIP-M29: should have no base actions"
-        );
+        require(actions.proposalActionTypeCount(ActionType.Base) == 0, "MIP-M29: should have no base actions");
 
         /// only run actions on moonbeam
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
     }
 
     function validate(Addresses addresses, address) public view override {
-        _validateRF(
-            addresses.getAddress("mGLIMMER"), NEW_MGLIMMER_RESERVE_FACTOR
-        );
+        _validateRF(addresses.getAddress("mGLIMMER"), NEW_MGLIMMER_RESERVE_FACTOR);
 
         _validateRF(addresses.getAddress("mxcDOT"), NEW_MXC_DOT_RESERVE_FACTOR);
 
         _validateRF(addresses.getAddress("mETHwh"), NEW_M_ETHWH_RESERVE_FACTOR);
 
-        _validateCF(
-            addresses,
-            addresses.getAddress("mETHwh"),
-            NEW_M_ETHWH_COLLATERAL_FACTOR
-        );
+        _validateCF(addresses, addresses.getAddress("mETHwh"), NEW_M_ETHWH_COLLATERAL_FACTOR);
 
-        _validateCF(
-            addresses,
-            addresses.getAddress("mUSDCwh"),
-            NEW_M_USDCWH_COLLATERAL_FACTOR
-        );
+        _validateCF(addresses, addresses.getAddress("mUSDCwh"), NEW_M_USDCWH_COLLATERAL_FACTOR);
 
         _validateJRM(
             addresses.getAddress("JUMP_RATE_IRM_mxcUSDC"),

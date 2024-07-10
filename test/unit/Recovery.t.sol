@@ -25,11 +25,7 @@ contract RecoveryUnitTest is Test, RecoveryDeploy {
 
         recover.sendAllEth(payable(address(this)));
 
-        assertEq(
-            address(this).balance,
-            ethAmount + startingEthBalance,
-            "should have received eth"
-        );
+        assertEq(address(this).balance, ethAmount + startingEthBalance, "should have received eth");
         assertEq(address(recover).balance, 0, "should have no eth");
     }
 
@@ -39,9 +35,7 @@ contract RecoveryUnitTest is Test, RecoveryDeploy {
         recover.sendAllEth(payable(address(this)));
     }
 
-    function testOwnerCanCallEmergencyActionAndRecoverEth(uint128 ethAmount)
-        public
-    {
+    function testOwnerCanCallEmergencyActionAndRecoverEth(uint128 ethAmount) public {
         vm.deal(address(recover), ethAmount);
         uint256 startingEthBalance = address(this).balance;
 
@@ -52,11 +46,7 @@ contract RecoveryUnitTest is Test, RecoveryDeploy {
 
         recover.emergencyAction(calls);
 
-        assertEq(
-            address(this).balance,
-            ethAmount + startingEthBalance,
-            "should have received eth"
-        );
+        assertEq(address(this).balance, ethAmount + startingEthBalance, "should have received eth");
         assertEq(address(recover).balance, 0);
     }
 

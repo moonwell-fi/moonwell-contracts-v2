@@ -9,23 +9,13 @@ import {ERC4626EthRouter} from "@protocol/router/ERC4626EthRouter.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
 
 function deployFactory(Addresses addresses) returns (Factory4626 factory) {
-    factory = new Factory4626(
-        IComptroller(addresses.getAddress("UNITROLLER")),
-        addresses.getAddress("WETH")
-    );
+    factory = new Factory4626(IComptroller(addresses.getAddress("UNITROLLER")), addresses.getAddress("WETH"));
 }
 
-function deployFactoryEth(Addresses addresses)
-    returns (Factory4626Eth factory)
-{
-    factory = new Factory4626Eth(
-        IComptroller(addresses.getAddress("UNITROLLER")),
-        addresses.getAddress("WETH")
-    );
+function deployFactoryEth(Addresses addresses) returns (Factory4626Eth factory) {
+    factory = new Factory4626Eth(IComptroller(addresses.getAddress("UNITROLLER")), addresses.getAddress("WETH"));
 }
 
-function deploy4626Router(Addresses addresses)
-    returns (ERC4626EthRouter router)
-{
+function deploy4626Router(Addresses addresses) returns (ERC4626EthRouter router) {
     router = new ERC4626EthRouter(WETH9(addresses.getAddress("WETH")));
 }

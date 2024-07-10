@@ -6,12 +6,7 @@ import "@forge-std/Test.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
 
-function etchPrecompile(
-    Vm vm,
-    Addresses addresses,
-    string memory mockName,
-    string memory symbol
-) {
+function etchPrecompile(Vm vm, Addresses addresses, string memory mockName, string memory symbol) {
     MockERC20Params mock = new MockERC20Params(mockName, symbol);
     address mockAddress = address(mock);
     uint256 codeSize;

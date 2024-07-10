@@ -15,11 +15,7 @@ import {SafeERC20} from "./SafeERC20.sol";
  * @author Moonwell
  *
  */
-contract EcosystemReserve is
-    IEcosystemReserve,
-    Initializable,
-    ReentrancyGuardUpgradeable
-{
+contract EcosystemReserve is IEcosystemReserve, Initializable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
 
     address internal _fundsAdmin;
@@ -41,20 +37,11 @@ contract EcosystemReserve is
         _setFundsAdmin(reserveController);
     }
 
-    function approve(IERC20 token, address recipient, uint256 amount)
-        external
-        override
-        onlyFundsAdmin
-    {
+    function approve(IERC20 token, address recipient, uint256 amount) external override onlyFundsAdmin {
         token.approve(recipient, amount);
     }
 
-    function transfer(IERC20 token, address recipient, uint256 amount)
-        external
-        override
-        onlyFundsAdmin
-        nonReentrant
-    {
+    function transfer(IERC20 token, address recipient, uint256 amount) external override onlyFundsAdmin nonReentrant {
         token.transfer(recipient, amount);
     }
 

@@ -55,7 +55,9 @@ interface IXERC20Factory {
      * @param _baseToken The address of the base token that you want to lock
      * @param _isNative Whether or not the base token is native
      */
-    function deployLockbox(address _xerc20, address _baseToken, bool _isNative)
-        external
-        returns (address payable _lockbox);
+    function deployLockbox(
+        address _xerc20,
+        address _baseToken,
+        bool _isNative
+    ) external returns (address payable _lockbox);
 }

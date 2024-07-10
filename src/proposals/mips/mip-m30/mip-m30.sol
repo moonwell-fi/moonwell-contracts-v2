@@ -5,8 +5,7 @@ import "@forge-std/Test.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {GovernanceProposal} from
-    "@proposals/proposalTypes/GovernanceProposal.sol";
+import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
@@ -16,9 +15,7 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
     string public constant override name = "MIP-M30";
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m30/MIP-M30.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-m30/MIP-M30.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 80;
@@ -36,16 +33,13 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
 
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
-        address multichainGovernorAddress =
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        address multichainGovernorAddress = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
 
         /// set pending admin of MOONWELL_mWBTC to the Multichain Governor
         _pushGovernanceAction(
             addresses.getAddress("MOONWELL_mWBTC"),
             "Set the pending admin of the new wBTC market to the Multichain Governor",
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", multichainGovernorAddress
-            )
+            abi.encodeWithSignature("_setPendingAdmin(address)", multichainGovernorAddress)
         );
     }
 
@@ -54,9 +48,7 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
         setDebug(true);
 
         _simulateGovernanceActions(
-            addresses.getAddress("MOONBEAM_TIMELOCK"),
-            addresses.getAddress("ARTEMIS_GOVERNOR"),
-            address(this)
+            addresses.getAddress("MOONBEAM_TIMELOCK"), addresses.getAddress("ARTEMIS_GOVERNOR"), address(this)
         );
     }
 

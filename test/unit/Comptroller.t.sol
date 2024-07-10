@@ -5,18 +5,15 @@ import "@forge-std/Test.sol";
 import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
-} from
-    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {Comptroller} from "@protocol/Comptroller.sol";
 
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
-import {WhitePaperInterestRateModel} from
-    "@protocol/irm/WhitePaperInterestRateModel.sol";
-import {MultiRewardDistributor} from
-    "@protocol/rewards/MultiRewardDistributor.sol";
+import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {SigUtils} from "@test/helper/SigUtils.sol";
 
@@ -25,28 +22,15 @@ import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
 
 interface InstrumentedExternalEvents {
     event PricePosted(
-        address asset,
-        uint256 previousPriceMantissa,
-        uint256 requestedPriceMantissa,
-        uint256 newPriceMantissa
+        address asset, uint256 previousPriceMantissa, uint256 requestedPriceMantissa, uint256 newPriceMantissa
     );
-    event NewCollateralFactor(
-        MToken mToken,
-        uint256 oldCollateralFactorMantissa,
-        uint256 newCollateralFactorMantissa
-    );
+    event NewCollateralFactor(MToken mToken, uint256 oldCollateralFactorMantissa, uint256 newCollateralFactorMantissa);
     event Transfer(address indexed from, address indexed to, uint256 amount);
     event Mint(address minter, uint256 mintAmount, uint256 mintTokens);
-    event Approval(
-        address indexed owner, address indexed spender, uint256 amount
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 amount);
 }
 
-contract ComptrollerUnitTest is
-    Test,
-    InstrumentedExternalEvents,
-    ComptrollerErrorReporter
-{
+contract ComptrollerUnitTest is Test, InstrumentedExternalEvents, ComptrollerErrorReporter {
     Comptroller comptroller;
     SimplePriceOracle oracle;
     FaucetTokenWithPermit faucetToken;
@@ -74,12 +58,10 @@ contract ComptrollerUnitTest is
         );
 
         distributor = new MultiRewardDistributor();
-        bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)", address(comptroller), address(this)
-        );
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor), address(proxyAdmin), initdata
-        );
+        bytes memory initdata =
+            abi.encodeWithSignature("initialize(address,address)", address(comptroller), address(this));
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(address(distributor), address(proxyAdmin), initdata);
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
 
@@ -122,21 +104,17 @@ contract ComptrollerUnitTest is
         if (cfToSet > 0.9e18) {
             vm.expectEmit(true, true, true, true, address(comptroller));
             emit Failure(
-                uint256(Error.INVALID_COLLATERAL_FACTOR),
-                uint256(FailureInfo.SET_COLLATERAL_FACTOR_VALIDATION),
-                0
+                uint256(Error.INVALID_COLLATERAL_FACTOR), uint256(FailureInfo.SET_COLLATERAL_FACTOR_VALIDATION), 0
             );
             comptroller._setCollateralFactor(mToken, cfToSet);
         } else {
             vm.expectEmit(true, true, true, true, address(comptroller));
             emit NewCollateralFactor(mToken, originalCF, cfToSet);
 
-            uint256 setCollateralResult =
-                comptroller._setCollateralFactor(mToken, cfToSet);
+            uint256 setCollateralResult = comptroller._setCollateralFactor(mToken, cfToSet);
             assertEq(setCollateralResult, 0);
 
-            (, uint256 collateralFactorUpdated) =
-                comptroller.markets(address(mToken));
+            (, uint256 collateralFactorUpdated) = comptroller.markets(address(mToken));
             assertEq(collateralFactorUpdated, cfToSet);
         }
     }
@@ -157,9 +135,7 @@ contract ComptrollerUnitTest is
         uint256 time = 1678430000;
         vm.warp(time);
 
-        distributor._addEmissionConfig(
-            mToken, address(this), address(faucetToken), 0.5e18, 0, time + 86400
-        );
+        distributor._addEmissionConfig(mToken, address(this), address(faucetToken), 0.5e18, 0, time + 86400);
         faucetToken.allocateTo(address(distributor), 100000e18);
         comptroller.claimReward();
 

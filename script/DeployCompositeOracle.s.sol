@@ -5,8 +5,7 @@ import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {ChainlinkCompositeOracle} from
-    "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 
 /*
 How to use:
@@ -27,16 +26,11 @@ contract DeployCompositeOracle is Script {
     function run() public returns (ChainlinkCompositeOracle) {
         vm.startBroadcast();
         ChainlinkCompositeOracle clco = new ChainlinkCompositeOracle(
-            addresses.getAddress("CHAINLINK_ETH_USD"),
-            addresses.getAddress("CHAINLINK_RETH_ETH"),
-            address(0)
+            addresses.getAddress("CHAINLINK_ETH_USD"), addresses.getAddress("CHAINLINK_RETH_ETH"), address(0)
         );
         /// only 2 oracles for this composite oracle
 
-        console.log(
-            "successfully deployed chainlink composite oracle: %s",
-            address(clco)
-        );
+        console.log("successfully deployed chainlink composite oracle: %s", address(clco));
 
         vm.stopBroadcast();
 

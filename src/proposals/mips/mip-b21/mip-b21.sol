@@ -1,10 +1,8 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Ownable2StepUpgradeable} from
-    "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
-import {ERC20Upgradeable} from
-    "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import {ERC20Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 
 import "@forge-std/Test.sol";
 
@@ -28,9 +26,7 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
     uint256 public startingWellAllowance;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b21/MIP-B21.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-b21/MIP-B21.md"));
 
         _setProposalDescription(proposalDescription);
 
@@ -47,9 +43,7 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
 
     function preBuildMock(Addresses addresses) public override {
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        startingWellAllowance = ERC20Upgradeable(
-            addresses.getAddress("xWELL_PROXY")
-        ).allowance(
+        startingWellAllowance = ERC20Upgradeable(addresses.getAddress("xWELL_PROXY")).allowance(
             addresses.getAddress("FOUNDATION_MULTISIG"), temporalGovernor
         );
     }
@@ -83,20 +77,12 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
         /// --------------------- WELL ---------------------
-        ERC20Upgradeable well =
-            ERC20Upgradeable(addresses.getAddress("xWELL_PROXY"));
+        ERC20Upgradeable well = ERC20Upgradeable(addresses.getAddress("xWELL_PROXY"));
 
-        assertEq(
-            well.balanceOf(addresses.getAddress("MOONWELL_METAMORPHO_URD")),
-            WELL_AMOUNT,
-            "well amount incorrect"
-        );
+        assertEq(well.balanceOf(addresses.getAddress("MOONWELL_METAMORPHO_URD")), WELL_AMOUNT, "well amount incorrect");
         assertEq(
             startingWellAllowance
-                - well.allowance(
-                    addresses.getAddress("FOUNDATION_MULTISIG"),
-                    addresses.getAddress("TEMPORAL_GOVERNOR")
-                ),
+                - well.allowance(addresses.getAddress("FOUNDATION_MULTISIG"), addresses.getAddress("TEMPORAL_GOVERNOR")),
             WELL_AMOUNT,
             "well allowance decrease incorrect"
         );
@@ -105,41 +91,32 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
 
         /// actual owner
         assertEq(
-            Ownable2StepUpgradeable(
-                addresses.getAddress("USDC_METAMORPHO_VAULT")
-            ).owner(),
+            Ownable2StepUpgradeable(addresses.getAddress("USDC_METAMORPHO_VAULT")).owner(),
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             "USDC Metamorpho Vault ownership incorrect"
         );
 
         assertEq(
-            Ownable2StepUpgradeable(
-                addresses.getAddress("WETH_METAMORPHO_VAULT")
-            ).owner(),
+            Ownable2StepUpgradeable(addresses.getAddress("WETH_METAMORPHO_VAULT")).owner(),
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             "WETH Metamorpho Vault ownership incorrect"
         );
 
         /// pending owner
         assertEq(
-            Ownable2StepUpgradeable(
-                addresses.getAddress("USDC_METAMORPHO_VAULT")
-            ).pendingOwner(),
+            Ownable2StepUpgradeable(addresses.getAddress("USDC_METAMORPHO_VAULT")).pendingOwner(),
             address(0),
             "USDC Metamorpho Vault pending owner incorrect"
         );
         assertEq(
-            Ownable2StepUpgradeable(
-                addresses.getAddress("WETH_METAMORPHO_VAULT")
-            ).pendingOwner(),
+            Ownable2StepUpgradeable(addresses.getAddress("WETH_METAMORPHO_VAULT")).pendingOwner(),
             address(0),
             "WETH Metamorpho Vault pending owner incorrect"
         );
 
         /// --------------------- SPLITTERS ---------------------
 
-        Splitter wethSplitter =
-            Splitter(addresses.getAddress("WETH_METAMORPHO_FEE_SPLITTER"));
+        Splitter wethSplitter = Splitter(addresses.getAddress("WETH_METAMORPHO_FEE_SPLITTER"));
 
         assertEq(
             wethSplitter.mToken(),
@@ -151,15 +128,10 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
             addresses.getAddress("WETH_METAMORPHO_VAULT"),
             "WETH Metamorpho Fee Splitter Vault incorrect"
         );
-        assertEq(
-            wethSplitter.splitA(), 5_000, "WETH Metamorpho Fee Split incorrect"
-        );
-        assertEq(
-            wethSplitter.splitB(), 5_000, "WETH Metamorpho Fee Split incorrect"
-        );
+        assertEq(wethSplitter.splitA(), 5_000, "WETH Metamorpho Fee Split incorrect");
+        assertEq(wethSplitter.splitB(), 5_000, "WETH Metamorpho Fee Split incorrect");
 
-        Splitter usdcSplitter =
-            Splitter(addresses.getAddress("USDC_METAMORPHO_FEE_SPLITTER"));
+        Splitter usdcSplitter = Splitter(addresses.getAddress("USDC_METAMORPHO_FEE_SPLITTER"));
 
         assertEq(
             usdcSplitter.mToken(),
@@ -171,15 +143,7 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
             addresses.getAddress("USDC_METAMORPHO_VAULT"),
             "USDC Metamorpho Fee Splitter Vault incorrect"
         );
-        assertEq(
-            usdcSplitter.splitA(),
-            5_000,
-            "USDC Metamorpho Fee Split a incorrect"
-        );
-        assertEq(
-            usdcSplitter.splitB(),
-            5_000,
-            "USDC Metamorpho Fee Split b incorrect"
-        );
+        assertEq(usdcSplitter.splitA(), 5_000, "USDC Metamorpho Fee Split a incorrect");
+        assertEq(usdcSplitter.splitB(), 5_000, "USDC Metamorpho Fee Split b incorrect");
     }
 }

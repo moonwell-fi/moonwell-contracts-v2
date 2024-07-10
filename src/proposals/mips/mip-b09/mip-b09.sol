@@ -24,9 +24,7 @@ contract mipb09 is HybridProposal, Configs {
     uint256 public constant cbETH_NEW_CF = 0.76e18;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b09/MIP-B09.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-b09/MIP-B09.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 59;
@@ -36,24 +34,15 @@ contract mipb09 is HybridProposal, Configs {
         return BASE_FORK_ID;
     }
 
-    function _validateCF(
-        Addresses addresses,
-        address tokenAddress,
-        uint256 collateralFactor
-    ) internal view {
+    function _validateCF(Addresses addresses, address tokenAddress, uint256 collateralFactor) internal view {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         Comptroller unitroller = Comptroller(unitrollerAddress);
 
-        (bool listed, uint256 collateralFactorMantissa) =
-            unitroller.markets(tokenAddress);
+        (bool listed, uint256 collateralFactorMantissa) = unitroller.markets(tokenAddress);
 
         assertTrue(listed);
 
-        assertEq(
-            collateralFactorMantissa,
-            collateralFactor,
-            "collateral factor validation failed"
-        );
+        assertEq(collateralFactorMantissa, collateralFactor, "collateral factor validation failed");
     }
 
     function deploy(Addresses addresses, address) public override {}
@@ -71,9 +60,7 @@ contract mipb09 is HybridProposal, Configs {
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_WETH"),
-                WETH_NEW_CF
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("MOONWELL_WETH"), WETH_NEW_CF
             ),
             "Set collateral factor for ETH"
         );
@@ -84,9 +71,7 @@ contract mipb09 is HybridProposal, Configs {
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_USDC"),
-                USDC_NEW_CF
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("MOONWELL_USDC"), USDC_NEW_CF
             ),
             "Set collateral factor for USDC"
         );
@@ -97,9 +82,7 @@ contract mipb09 is HybridProposal, Configs {
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_cbETH"),
-                cbETH_NEW_CF
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF
             ),
             "Set collateral factor for USDC"
         );
@@ -111,18 +94,12 @@ contract mipb09 is HybridProposal, Configs {
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
         // ======== WETH CF Update =========
-        _validateCF(
-            addresses, addresses.getAddress("MOONWELL_WETH"), WETH_NEW_CF
-        );
+        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), WETH_NEW_CF);
 
         // ======== USDC CF Update =========
-        _validateCF(
-            addresses, addresses.getAddress("MOONWELL_USDC"), USDC_NEW_CF
-        );
+        _validateCF(addresses, addresses.getAddress("MOONWELL_USDC"), USDC_NEW_CF);
 
         // ======== USDC CF Update =========
-        _validateCF(
-            addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF
-        );
+        _validateCF(addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF);
     }
 }

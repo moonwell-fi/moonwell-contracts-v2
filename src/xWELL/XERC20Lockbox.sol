@@ -1,8 +1,7 @@
 pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import {SafeERC20} from
-    "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IXERC20} from "@protocol/xWELL/interfaces/IXERC20.sol";
 import {IXERC20Lockbox} from "@protocol/xWELL/interfaces/IXERC20Lockbox.sol";

@@ -8,17 +8,10 @@ import "@protocol/utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
-import {WormholeTrustedSender} from
-    "@protocol/governance/WormholeTrustedSender.sol";
-import {MultichainGovernor} from
-    "@protocol/governance/multichain/MultichainGovernor.sol";
-import {MultichainGovernorDeploy} from
-    "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-import {
-    ChainIds,
-    MOONBEAM_FORK_ID,
-    MOONBEAM_WORMHOLE_CHAIN_ID
-} from "@utils/ChainIds.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {ChainIds, MOONBEAM_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// to simulate: DO_BUILD=true DO_AFTER_DEPLOY=true DO_VALIDATE=true DO_PRINT=true
@@ -65,27 +58,13 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
     }
 
     function buildCalldata(Addresses addresses) public {
-        require(
-            temporalGovernanceTargets.length == 0,
-            "calldata already set in mip-18-c"
-        );
-        require(
-            temporalGovernanceTrustedSenders.length == 0,
-            "temporal gov trusted sender already set in mip-18-c"
-        );
-        require(
-            approvedCalldata.length == 0,
-            "approved calldata already set in mip-18-c"
-        );
-        require(
-            temporalGovernanceCalldata.length == 0,
-            "temporal gov calldata already set in mip-18-c"
-        );
+        require(temporalGovernanceTargets.length == 0, "calldata already set in mip-18-c");
+        require(temporalGovernanceTrustedSenders.length == 0, "temporal gov trusted sender already set in mip-18-c");
+        require(approvedCalldata.length == 0, "approved calldata already set in mip-18-c");
+        require(temporalGovernanceCalldata.length == 0, "temporal gov calldata already set in mip-18-c");
 
         address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
-        address temporalGovernor = addresses.getAddress(
-            "TEMPORAL_GOVERNOR", block.chainid.toBaseChainId()
-        );
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR", block.chainid.toBaseChainId());
 
         /// add temporal governor to list
         temporalGovernanceTargets.push(temporalGovernor);
@@ -105,10 +84,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         /// in reality this just adds the artemis timelock as a trusted sender
         /// a second proposal is needed to revoke the Multichain Governor as a trusted sender
         temporalGovernanceCalldata.push(
-            abi.encodeWithSignature(
-                "setTrustedSenders((uint16,address)[])",
-                temporalGovernanceTrustedSenders
-            )
+            abi.encodeWithSignature("setTrustedSenders((uint16,address)[])", temporalGovernanceTrustedSenders)
         );
 
         approvedCalldata.push(
@@ -133,50 +109,29 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
 
         /// old break glass guardian calls from Artemis Governor
 
-        approvedCalldata.push(
-            abi.encodeWithSignature(
-                "_setPendingAdmin(address)", artemisTimelock
-            )
-        );
+        approvedCalldata.push(abi.encodeWithSignature("_setPendingAdmin(address)", artemisTimelock));
 
         /// for chainlink oracle
-        approvedCalldata.push(
-            abi.encodeWithSignature("setAdmin(address)", artemisTimelock)
-        );
+        approvedCalldata.push(abi.encodeWithSignature("setAdmin(address)", artemisTimelock));
 
         /// for stkWELL
-        approvedCalldata.push(
-            abi.encodeWithSignature(
-                "setEmissionsManager(address)", artemisTimelock
-            )
-        );
+        approvedCalldata.push(abi.encodeWithSignature("setEmissionsManager(address)", artemisTimelock));
 
         /// for stkWELL
-        approvedCalldata.push(
-            abi.encodeWithSignature("changeAdmin(address)", artemisTimelock)
-        );
+        approvedCalldata.push(abi.encodeWithSignature("changeAdmin(address)", artemisTimelock));
 
-        approvedCalldata.push(
-            abi.encodeWithSignature(
-                "transferOwnership(address)", artemisTimelock
-            )
-        );
+        approvedCalldata.push(abi.encodeWithSignature("transferOwnership(address)", artemisTimelock));
     }
 
     function afterDeploy(Addresses addresses, address) public override {
         buildCalldata(addresses);
 
-        MultichainGovernor governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        );
+        MultichainGovernor governor = MultichainGovernor(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"));
 
         /// executing proposal on moonbeam, but this proposal needs an address from base
-        address multichainVoteCollection = addresses.getAddress(
-            "VOTE_COLECTION_PROXY", block.chainid.toBaseChainId()
-        );
+        address multichainVoteCollection = addresses.getAddress("VOTE_COLECTION_PROXY", block.chainid.toBaseChainId());
 
-        WormholeTrustedSender.TrustedSender[] memory trustedSenders =
-            new WormholeTrustedSender.TrustedSender[](1);
+        WormholeTrustedSender.TrustedSender[] memory trustedSenders = new WormholeTrustedSender.TrustedSender[](1);
 
         trustedSenders[0].addr = multichainVoteCollection;
         trustedSenders[0].chainId = block.chainid.toBaseWormholeChainId();
@@ -187,8 +142,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         initData.well = addresses.getAddress("GOVTOKEN");
         initData.xWell = addresses.getAddress("xWELL_PROXY");
         initData.stkWell = addresses.getAddress("STK_GOVTOKEN");
-        initData.distributor =
-            addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY");
+        initData.distributor = addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY");
         initData.proposalThreshold = proposalThreshold;
         initData.votingPeriodSeconds = votingPeriodSeconds;
         initData.crossChainVoteCollectionPeriod = crossChainVoteCollectionPeriod;
@@ -196,12 +150,9 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         initData.maxUserLiveProposals = maxUserLiveProposals;
         initData.pauseDuration = pauseDuration;
 
-        initData.pauseGuardian =
-            addresses.getAddress("MOONBEAM_PAUSE_GUARDIAN_MULTISIG");
-        initData.breakGlassGuardian =
-            addresses.getAddress("BREAK_GLASS_GUARDIAN");
-        initData.wormholeRelayer =
-            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER");
+        initData.pauseGuardian = addresses.getAddress("MOONBEAM_PAUSE_GUARDIAN_MULTISIG");
+        initData.breakGlassGuardian = addresses.getAddress("BREAK_GLASS_GUARDIAN");
+        initData.wormholeRelayer = addresses.getAddress("WORMHOLE_BRIDGE_RELAYER");
 
         require(approvedCalldata.length == 6, "calldata not set");
 
@@ -209,73 +160,32 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
     }
 
     function validate(Addresses addresses, address) public view override {
-        MultichainGovernor governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        );
+        MultichainGovernor governor = MultichainGovernor(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"));
 
-        assertFalse(
-            governor.useTimestamps(),
-            "multichain governor should not be using timestamps on initialization"
-        );
+        assertFalse(governor.useTimestamps(), "multichain governor should not be using timestamps on initialization");
 
-        assertEq(
-            governor.gasLimit(),
-            400_000,
-            "incorrect gas limit on multichain governor"
-        );
+        assertEq(governor.gasLimit(), 400_000, "incorrect gas limit on multichain governor");
 
-        assertEq(
-            governor.proposalThreshold(),
-            proposalThreshold,
-            "incorrect proposal threshold"
-        );
+        assertEq(governor.proposalThreshold(), proposalThreshold, "incorrect proposal threshold");
         assertEq(
             governor.crossChainVoteCollectionPeriod(),
             crossChainVoteCollectionPeriod,
             "incorrect cross chain vote collection period"
         );
-        assertEq(
-            governor.maxUserLiveProposals(),
-            maxUserLiveProposals,
-            "incorrect max live users proposal period"
-        );
+        assertEq(governor.maxUserLiveProposals(), maxUserLiveProposals, "incorrect max live users proposal period");
         assertEq(governor.quorum(), quorum, "incorrect quorum");
-        assertEq(
-            governor.votingPeriod(),
-            votingPeriodSeconds,
-            "incorrect voting period"
-        );
-        assertEq(
-            governor.proposalCount(), 0, "incorrect starting proposalCount"
-        );
-        assertEq(
-            address(governor.xWell()),
-            addresses.getAddress("xWELL_PROXY"),
-            "incorrect xwell address"
-        );
-        assertEq(
-            address(governor.well()),
-            addresses.getAddress("GOVTOKEN"),
-            "incorrect well address"
-        );
-        assertEq(
-            address(governor.stkWell()),
-            addresses.getAddress("STK_GOVTOKEN"),
-            "incorrect stkWell address"
-        );
+        assertEq(governor.votingPeriod(), votingPeriodSeconds, "incorrect voting period");
+        assertEq(governor.proposalCount(), 0, "incorrect starting proposalCount");
+        assertEq(address(governor.xWell()), addresses.getAddress("xWELL_PROXY"), "incorrect xwell address");
+        assertEq(address(governor.well()), addresses.getAddress("GOVTOKEN"), "incorrect well address");
+        assertEq(address(governor.stkWell()), addresses.getAddress("STK_GOVTOKEN"), "incorrect stkWell address");
         assertEq(
             address(governor.distributor()),
             addresses.getAddress("TOKEN_SALE_DISTRIBUTOR_PROXY"),
             "incorrect distributor address"
         );
-        assertEq(
-            governor.getNumLiveProposals(),
-            0,
-            "incorrect number of live proposals"
-        );
-        assertEq(
-            governor.liveProposals().length, 0, "incorrect live proposals count"
-        );
+        assertEq(governor.getNumLiveProposals(), 0, "incorrect number of live proposals");
+        assertEq(governor.liveProposals().length, 0, "incorrect live proposals count");
         assertEq(
             address(governor.wormholeRelayer()),
             addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
@@ -292,44 +202,29 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
             "incorrect moonbeam pause guardian"
         );
         assertEq(governor.pauseStartTime(), 0, "incorrect pauseStartTime");
-        assertEq(
-            governor.pauseDuration(), pauseDuration, "incorrect pauseDuration"
-        );
+        assertEq(governor.pauseDuration(), pauseDuration, "incorrect pauseDuration");
         assertFalse(governor.paused(), "incorrect paused state");
         assertFalse(governor.pauseUsed(), "incorrect pauseUsed state");
 
         assertEq(
             governor.targetAddress(block.chainid.toBaseWormholeChainId()),
-            addresses.getAddress(
-                "VOTE_COLLECTION_PROXY", block.chainid.toBaseChainId()
-            ),
+            addresses.getAddress("VOTE_COLLECTION_PROXY", block.chainid.toBaseChainId()),
             "vote collection proxy not in target address"
         );
+        assertEq(governor.getAllTargetChainsLength(), 1, "incorrect target chains length");
         assertEq(
-            governor.getAllTargetChainsLength(),
-            1,
-            "incorrect target chains length"
-        );
-        assertEq(
-            governor.getAllTargetChains()[0],
-            block.chainid.toBaseWormholeChainId(),
-            "incorrect target chains length"
+            governor.getAllTargetChains()[0], block.chainid.toBaseWormholeChainId(), "incorrect target chains length"
         );
         assertTrue(
             governor.isTrustedSender(
                 block.chainid.toBaseWormholeChainId(),
-                addresses.getAddress(
-                    "VOTE_COLLECTION_PROXY", block.chainid.toBaseChainId()
-                )
+                addresses.getAddress("VOTE_COLLECTION_PROXY", block.chainid.toBaseChainId())
             ),
             "vote collection proxy not trusted sender"
         );
 
         for (uint256 i = 0; i < approvedCalldata.length; i++) {
-            assertTrue(
-                governor.whitelistedCalldatas(approvedCalldata[i]),
-                "calldata not approved"
-            );
+            assertTrue(governor.whitelistedCalldatas(approvedCalldata[i]), "calldata not approved");
         }
     }
 }

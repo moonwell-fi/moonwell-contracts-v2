@@ -34,9 +34,7 @@ contract mipb05 is HybridProposal, Configs {
     }
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b05/MIP-B05.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-b05/MIP-B05.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 51;
@@ -46,24 +44,14 @@ contract mipb05 is HybridProposal, Configs {
         return BASE_FORK_ID;
     }
 
-    function _validateJRM(
-        address jrmAddress,
-        address tokenAddress,
-        IRParams memory params
-    ) internal view {
+    function _validateJRM(address jrmAddress, address tokenAddress, IRParams memory params) internal view {
         JumpRateModel jrm = JumpRateModel(jrmAddress);
         assertEq(
-            address(MToken(tokenAddress).interestRateModel()),
-            address(jrm),
-            "interest rate model not set correctly"
+            address(MToken(tokenAddress).interestRateModel()), address(jrm), "interest rate model not set correctly"
         );
 
         assertEq(jrm.kink(), params.kink, "kink verification failed");
-        assertEq(
-            jrm.timestampsPerYear(),
-            timestampsPerYear,
-            "timestamps per year verifiacation failed"
-        );
+        assertEq(jrm.timestampsPerYear(), timestampsPerYear, "timestamps per year verifiacation failed");
         assertEq(
             jrm.baseRatePerTimestamp(),
             (params.baseRatePerTimestamp * SCALE) / timestampsPerYear / SCALE,
@@ -76,30 +64,20 @@ contract mipb05 is HybridProposal, Configs {
         );
         assertEq(
             jrm.jumpMultiplierPerTimestamp(),
-            (params.jumpMultiplierPerTimestamp * SCALE) / timestampsPerYear
-                / SCALE,
+            (params.jumpMultiplierPerTimestamp * SCALE) / timestampsPerYear / SCALE,
             "jump multiplier per timestamp validation failed"
         );
     }
 
-    function _validateCF(
-        Addresses addresses,
-        address tokenAddress,
-        uint256 collateralFactor
-    ) internal view {
+    function _validateCF(Addresses addresses, address tokenAddress, uint256 collateralFactor) internal view {
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         Comptroller unitroller = Comptroller(unitrollerAddress);
 
-        (bool listed, uint256 collateralFactorMantissa) =
-            unitroller.markets(tokenAddress);
+        (bool listed, uint256 collateralFactorMantissa) = unitroller.markets(tokenAddress);
 
         assertTrue(listed);
 
-        assertEq(
-            collateralFactorMantissa,
-            collateralFactor,
-            "collateral factor validation failed"
-        );
+        assertEq(collateralFactorMantissa, collateralFactor, "collateral factor validation failed");
     }
 
     function deploy(Addresses addresses, address) public override {}
@@ -117,9 +95,7 @@ contract mipb05 is HybridProposal, Configs {
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_WETH"),
-                ETH_NEW_CF
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("MOONWELL_WETH"), ETH_NEW_CF
             ),
             "Set collateral factor for ETH"
         );
@@ -130,9 +106,7 @@ contract mipb05 is HybridProposal, Configs {
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_cbETH"),
-                cbETH_NEW_CF
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF
             ),
             "Set collateral factor for cbETH"
         );
@@ -143,9 +117,7 @@ contract mipb05 is HybridProposal, Configs {
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_DAI"),
-                DAI_NEW_CF
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("MOONWELL_DAI"), DAI_NEW_CF
             ),
             "Set collateral factor for DAI"
         );
@@ -156,8 +128,7 @@ contract mipb05 is HybridProposal, Configs {
         _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B05")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B05")
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
@@ -168,8 +139,7 @@ contract mipb05 is HybridProposal, Configs {
         _pushAction(
             addresses.getAddress("MOONWELL_DAI"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B05")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B05")
             ),
             "Set interest rate model for Moonwell DAI to updated rate model"
         );
@@ -180,8 +150,7 @@ contract mipb05 is HybridProposal, Configs {
         _pushAction(
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B05")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B05")
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
@@ -192,8 +161,7 @@ contract mipb05 is HybridProposal, Configs {
         _pushAction(
             addresses.getAddress("MOONWELL_USDBC"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B05")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B05")
             ),
             "Set interest rate model for Moonwell USDbC to updated rate model"
         );
@@ -205,14 +173,10 @@ contract mipb05 is HybridProposal, Configs {
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
         // ======== ETH CF Update =========
-        _validateCF(
-            addresses, addresses.getAddress("MOONWELL_WETH"), ETH_NEW_CF
-        );
+        _validateCF(addresses, addresses.getAddress("MOONWELL_WETH"), ETH_NEW_CF);
 
         // ======== cbETH CF Update =========
-        _validateCF(
-            addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF
-        );
+        _validateCF(addresses, addresses.getAddress("MOONWELL_cbETH"), cbETH_NEW_CF);
 
         // ======== DAI CF Update =========
         _validateCF(addresses, addresses.getAddress("MOONWELL_DAI"), DAI_NEW_CF);
@@ -240,9 +204,7 @@ contract mipb05 is HybridProposal, Configs {
         // =========== DAI IR Update ============
 
         _validateJRM(
-            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI"),
-            addresses.getAddress("MOONWELL_DAI"),
-            stablecoinIRParams
+            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI"), addresses.getAddress("MOONWELL_DAI"), stablecoinIRParams
         );
 
         // =========== USDC IR Update ============

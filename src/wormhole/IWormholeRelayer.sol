@@ -34,41 +34,25 @@ struct MessageKey {
 }
 
 interface IWormholeRelayerBase {
-    event SendEvent(
-        uint64 indexed sequence,
-        uint256 deliveryQuote,
-        uint256 paymentForExtraReceiverValue
-    );
+    event SendEvent(uint64 indexed sequence, uint256 deliveryQuote, uint256 paymentForExtraReceiverValue);
 
-    function getRegisteredWormholeRelayerContract(uint16 chainId)
-        external
-        view
-        returns (bytes32);
+    function getRegisteredWormholeRelayerContract(uint16 chainId) external view returns (bytes32);
 
     /**
      * @notice Returns true if a delivery has been attempted for the given deliveryHash
      * Note: invalid deliveries where the tx reverts are not considered attempted
      */
-    function deliveryAttempted(bytes32 deliveryHash)
-        external
-        view
-        returns (bool attempted);
+    function deliveryAttempted(bytes32 deliveryHash) external view returns (bool attempted);
 
     /**
      * @notice block number at which a delivery was successfully executed
      */
-    function deliverySuccessBlock(bytes32 deliveryHash)
-        external
-        view
-        returns (uint256 blockNumber);
+    function deliverySuccessBlock(bytes32 deliveryHash) external view returns (uint256 blockNumber);
 
     /**
      * @notice block number of the latest attempt to execute a delivery that failed
      */
-    function deliveryFailureBlock(bytes32 deliveryHash)
-        external
-        view
-        returns (uint256 blockNumber);
+    function deliveryFailureBlock(bytes32 deliveryHash) external view returns (uint256 blockNumber);
 }
 
 /**
@@ -447,13 +431,7 @@ interface IWormholeRelayerSend is IWormholeRelayerBase {
         uint16 targetChain,
         uint256 receiverValue,
         uint256 gasLimit
-    )
-        external
-        view
-        returns (
-            uint256 nativePriceQuote,
-            uint256 targetChainRefundPerGasUnused
-        );
+    ) external view returns (uint256 nativePriceQuote, uint256 targetChainRefundPerGasUnused);
 
     /**
      * @notice Returns the price to request a relay to chain `targetChain`, using delivery provider `deliveryProviderAddress`
@@ -474,13 +452,7 @@ interface IWormholeRelayerSend is IWormholeRelayerBase {
         uint256 receiverValue,
         uint256 gasLimit,
         address deliveryProviderAddress
-    )
-        external
-        view
-        returns (
-            uint256 nativePriceQuote,
-            uint256 targetChainRefundPerGasUnused
-        );
+    ) external view returns (uint256 nativePriceQuote, uint256 targetChainRefundPerGasUnused);
 
     /**
      * @notice Returns the price to request a relay to chain `targetChain`, using delivery provider `deliveryProviderAddress`
@@ -501,10 +473,7 @@ interface IWormholeRelayerSend is IWormholeRelayerBase {
         uint256 receiverValue,
         bytes memory encodedExecutionParameters,
         address deliveryProviderAddress
-    )
-        external
-        view
-        returns (uint256 nativePriceQuote, bytes memory encodedExecutionInfo);
+    ) external view returns (uint256 nativePriceQuote, bytes memory encodedExecutionInfo);
 
     /**
      * @notice Returns the (extra) amount of target chain currency that `targetAddress`
@@ -527,10 +496,7 @@ interface IWormholeRelayerSend is IWormholeRelayerBase {
      * @return deliveryProvider The address of (the default delivery provider)'s contract on this source
      *   chain. This must be a contract that implements IDeliveryProvider.
      */
-    function getDefaultDeliveryProvider()
-        external
-        view
-        returns (address deliveryProvider);
+    function getDefaultDeliveryProvider() external view returns (address deliveryProvider);
 }
 
 /**

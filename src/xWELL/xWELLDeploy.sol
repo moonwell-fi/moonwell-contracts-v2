@@ -1,7 +1,6 @@
 pragma solidity 0.8.19;
 
-import {ProxyAdmin} from
-    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from
     "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
@@ -28,10 +27,7 @@ contract xWELLDeploy {
         MintLimits.RateLimitMidPointInfo[] memory newRateLimits,
         uint128 newPauseDuration,
         address newPauseGuardian
-    )
-        public
-        returns (address xwellLogic, address xwellImpl, address proxyAdmin)
-    {
+    ) public returns (address xwellLogic, address xwellImpl, address proxyAdmin) {
         /// deploy the ERC20 wrapper for USDBC
         xwellLogic = address(new xWELL());
 
@@ -47,11 +43,7 @@ contract xWELLDeploy {
             newPauseGuardian
         );
 
-        xwellImpl = address(
-            new TransparentUpgradeableProxy(
-                address(xwellLogic), address(proxyAdmin), initData
-            )
-        );
+        xwellImpl = address(new TransparentUpgradeableProxy(address(xwellLogic), address(proxyAdmin), initData));
     }
 
     /// @notice for Moonbeam deployment
@@ -70,26 +62,14 @@ contract xWELLDeploy {
         MintLimits.RateLimitMidPointInfo[] memory newRateLimits,
         uint128 newPauseDuration,
         address newPauseGuardian
-    )
-        public
-        returns (
-            address xwellLogic,
-            address xwellProxy,
-            address proxyAdmin,
-            address lockbox
-        )
-    {
+    ) public returns (address xwellLogic, address xwellProxy, address proxyAdmin, address lockbox) {
         /// deploy the ERC20 wrapper for USDBC
         xwellLogic = address(new xWELL());
 
         proxyAdmin = address(new ProxyAdmin());
 
         /// do not initialize the proxy, that is the final step
-        xwellProxy = address(
-            new TransparentUpgradeableProxy(
-                address(xwellLogic), address(proxyAdmin), ""
-            )
-        );
+        xwellProxy = address(new TransparentUpgradeableProxy(address(xwellLogic), address(proxyAdmin), ""));
 
         lockbox = deployLockBox(
             xwellProxy,
@@ -104,8 +84,7 @@ contract xWELLDeploy {
             _newRateLimits[i] = newRateLimits[i];
         }
 
-        _newRateLimits[_newRateLimits.length - 1] = MintLimits
-            .RateLimitMidPointInfo({
+        _newRateLimits[_newRateLimits.length - 1] = MintLimits.RateLimitMidPointInfo({
             bufferCap: type(uint112).max,
             /// max buffer cap, lock box can infinite mint up to max supply
             rateLimitPerSecond: 0,
@@ -114,12 +93,7 @@ contract xWELLDeploy {
         });
 
         xWELL(xwellProxy).initialize(
-            tokenName,
-            tokenSymbol,
-            tokenOwner,
-            _newRateLimits,
-            newPauseDuration,
-            newPauseGuardian
+            tokenName, tokenSymbol, tokenOwner, _newRateLimits, newPauseDuration, newPauseGuardian
         );
     }
 
@@ -149,14 +123,9 @@ contract xWELLDeploy {
         }
 
         /// do not initialize the proxy, that is the final step
-        xwellProxy =
-            address(new TransparentUpgradeableProxy(xwellLogic, proxyAdmin, ""));
+        xwellProxy = address(new TransparentUpgradeableProxy(xwellLogic, proxyAdmin, ""));
 
-        wormholeAdapter = address(
-            new TransparentUpgradeableProxy(
-                wormholeAdapterLogic, proxyAdmin, ""
-            )
-        );
+        wormholeAdapter = address(new TransparentUpgradeableProxy(wormholeAdapterLogic, proxyAdmin, ""));
     }
 
     /// @notice well token address on Moonbeam
@@ -174,13 +143,8 @@ contract xWELLDeploy {
             address lockbox
         )
     {
-        (
-            xwellLogic,
-            xwellProxy,
-            proxyAdmin,
-            wormholeAdapterLogic,
-            wormholeAdapter
-        ) = deployBaseSystem(existingProxyAdmin);
+        (xwellLogic, xwellProxy, proxyAdmin, wormholeAdapterLogic, wormholeAdapter) =
+            deployBaseSystem(existingProxyAdmin);
         /// lockbox is deployed at the end so that xWELL and wormhole adapter can have the same addresses on all chains.
         lockbox = deployLockBox(
             xwellProxy,
@@ -199,12 +163,7 @@ contract xWELLDeploy {
         address newPauseGuardian
     ) public {
         xWELL(xwellProxy).initialize(
-            tokenName,
-            tokenSymbol,
-            tokenOwner,
-            newRateLimits,
-            newPauseDuration,
-            newPauseGuardian
+            tokenName, tokenSymbol, tokenOwner, newRateLimits, newPauseDuration, newPauseGuardian
         );
     }
 
@@ -215,18 +174,13 @@ contract xWELLDeploy {
         address wormholeRelayerAddress,
         uint16 chainId
     ) public {
-        WormholeBridgeAdapter(wormholeAdapter).initialize(
-            xwellProxy, tokenOwner, wormholeRelayerAddress, chainId
-        );
+        WormholeBridgeAdapter(wormholeAdapter).initialize(xwellProxy, tokenOwner, wormholeRelayerAddress, chainId);
     }
 
     /// @notice deploy lock box, for use on base only
     /// @param xwell The xWELL token address
     /// @param well The WELL token address
-    function deployLockBox(address xwell, address well)
-        public
-        returns (address)
-    {
+    function deployLockBox(address xwell, address well) public returns (address) {
         return address(new XERC20Lockbox(xwell, well));
     }
 
@@ -238,9 +192,7 @@ contract xWELLDeploy {
     {
         axelarBridgeAddress = address(new AxelarBridgeAdapter());
 
-        axelarBridgeProxy = address(
-            new TransparentUpgradeableProxy(axelarBridgeAddress, proxyAdmin, "")
-        );
+        axelarBridgeProxy = address(new TransparentUpgradeableProxy(axelarBridgeAddress, proxyAdmin, ""));
     }
 
     /// @notice initialize the axelar bridge adapter
@@ -261,12 +213,7 @@ contract xWELLDeploy {
         AxelarBridgeAdapter.ChainConfig[] memory configs
     ) public {
         AxelarBridgeAdapter(axelarBridgeProxy).initialize(
-            xwellProxy,
-            owner,
-            axelarGateway,
-            axelarGasService,
-            chainIds,
-            configs
+            xwellProxy, owner, axelarGateway, axelarGasService, chainIds, configs
         );
     }
 }

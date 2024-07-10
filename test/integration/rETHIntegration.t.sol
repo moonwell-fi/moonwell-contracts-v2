@@ -13,10 +13,8 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
-import {MultiRewardDistributor} from
-    "@protocol/rewards/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from
-    "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
@@ -43,18 +41,10 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
         assertEq(mwstETH.name(), "Moonwell Rocket Ether");
         assertEq(mwstETH.symbol(), "mrETH");
         assertEq(mwstETH.decimals(), 8);
-        assertGt(
-            mwstETH.exchangeRateCurrent(),
-            0.0002e18,
-            "incorrect starting exchange rate"
-        );
+        assertGt(mwstETH.exchangeRateCurrent(), 0.0002e18, "incorrect starting exchange rate");
         /// exchange starting price is 0.0002e18
-        assertEq(
-            mwstETH.reserveFactorMantissa(), 0.3e18, "incorrect reserve factor"
-        );
-        assertEq(
-            address(mwstETH.comptroller()), addresses.getAddress("UNITROLLER")
-        );
+        assertEq(mwstETH.reserveFactorMantissa(), 0.3e18, "incorrect reserve factor");
+        assertEq(address(mwstETH.comptroller()), addresses.getAddress("UNITROLLER"));
     }
 
     function testEmissionsAdminCanChangeRewardStream() public {
@@ -68,8 +58,7 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
     }
 
     function testSupplyingOverSupplyCapFails() public {
-        uint256 mintAmount =
-            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_rETH")) + 1;
+        uint256 mintAmount = _getMaxSupplyAmount(addresses.getAddress("MOONWELL_rETH")) + 1;
         address underlying = address(mwstETH.underlying());
         deal(underlying, address(this), mintAmount);
 
@@ -79,14 +68,12 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
     }
 
     function testBorrowingOverBorrowCapFails() public {
-        uint256 mintAmount =
-            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_rETH"));
+        uint256 mintAmount = _getMaxSupplyAmount(addresses.getAddress("MOONWELL_rETH"));
         /// filter out case where no minting allowed
         if (mintAmount == 0) {
             return;
         }
-        uint256 borrowAmount =
-            _getMaxBorrowAmount(addresses.getAddress("MOONWELL_rETH"));
+        uint256 borrowAmount = _getMaxBorrowAmount(addresses.getAddress("MOONWELL_rETH"));
         /// filter out case where no borrowing allowed
         if (borrowAmount == 0) {
             return;
@@ -111,16 +98,14 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
 
     function testMintwstETHMTokenSucceeds() public {
         address sender = address(this);
-        uint256 mintAmount =
-            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_rETH")) / 2;
+        uint256 mintAmount = _getMaxSupplyAmount(addresses.getAddress("MOONWELL_rETH")) / 2;
 
         /// filter out zero mint case
         if (mintAmount == 0) {
             return;
         }
 
-        MErc20Delegator mToken =
-            MErc20Delegator(payable(addresses.getAddress("MOONWELL_rETH")));
+        MErc20Delegator mToken = MErc20Delegator(payable(addresses.getAddress("MOONWELL_rETH")));
         IERC20 token = IERC20(mToken.underlying());
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
@@ -133,9 +118,7 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
         assertTrue(mToken.balanceOf(sender) > 0, "balance incorrect");
         /// ensure balance is gt 0
         assertEq(
-            token.balanceOf(address(mToken)) - startingTokenBalance,
-            mintAmount,
-            "mToken underlying balance incorrect"
+            token.balanceOf(address(mToken)) - startingTokenBalance, mintAmount, "mToken underlying balance incorrect"
         );
         /// ensure underlying balance is sent to mToken
 
@@ -143,23 +126,17 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
         mTokens[0] = address(mToken);
 
         comptroller.enterMarkets(mTokens);
-        assertTrue(
-            comptroller.checkMembership(
-                sender, MToken(addresses.getAddress("MOONWELL_rETH"))
-            )
-        );
+        assertTrue(comptroller.checkMembership(sender, MToken(addresses.getAddress("MOONWELL_rETH"))));
         /// ensure sender and mToken is in market
 
-        (uint256 err, uint256 liquidity, uint256 shortfall) =
-            comptroller.getAccountLiquidity(address(this));
+        (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller.getAccountLiquidity(address(this));
 
         (, uint256 collateralFactor) = comptroller.markets(address(mToken));
 
         /// fetch collateral factor
 
-        uint256 price = ChainlinkOracle(
-            addresses.getAddress("CHAINLINK_ORACLE")
-        ).getUnderlyingPrice(MToken(address(mToken)));
+        uint256 price =
+            ChainlinkOracle(addresses.getAddress("CHAINLINK_ORACLE")).getUnderlyingPrice(MToken(address(mToken)));
 
         assertEq(err, 0, "Error getting account liquidity");
         assertApproxEqRel(
@@ -190,26 +167,15 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
         deal(well, address(mrd), 4 weeks * 1e18);
         /// fund for entire period
 
-        MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(
-            MToken(addresses.getAddress("MOONWELL_rETH")),
-            addresses.getAddress("GOVTOKEN")
-        );
+        MultiRewardDistributorCommon.MarketConfig memory config =
+            mrd.getConfigForMarket(MToken(addresses.getAddress("MOONWELL_rETH")), addresses.getAddress("GOVTOKEN"));
 
-        assertEq(
-            config.owner,
-            addresses.getAddress("EMISSIONS_ADMIN"),
-            "incorrect admin"
-        );
+        assertEq(config.owner, addresses.getAddress("EMISSIONS_ADMIN"), "incorrect admin");
         assertEq(config.emissionToken, well, "incorrect reward token");
         assertEq(config.borrowEmissionsPerSec, 1e18, "incorrect reward rate");
     }
 
-    function _getMaxSupplyAmount(address mToken)
-        internal
-        view
-        returns (uint256)
-    {
+    function _getMaxSupplyAmount(address mToken) internal view returns (uint256) {
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         uint256 totalCash = MToken(mToken).getCash();
@@ -226,11 +192,7 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
         return supplyCap - totalSupplies - 1;
     }
 
-    function _getMaxBorrowAmount(address mToken)
-        internal
-        view
-        returns (uint256)
-    {
+    function _getMaxBorrowAmount(address mToken) internal view returns (uint256) {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = MToken(mToken).totalBorrows();
 

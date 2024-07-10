@@ -13,10 +13,7 @@ import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 
-import {
-    BASE_WORMHOLE_CHAIN_ID,
-    MOONBEAM_WORMHOLE_CHAIN_ID
-} from "@utils/ChainIds.sol";
+import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 contract xWellRouterTest is Test {
     /// @notice addresses contract, stores all addresses
@@ -46,8 +43,7 @@ contract xWellRouterTest is Test {
     /// @notice amount of well to mint
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
-    uint16 public constant wormholeMoonbeamChainid =
-        uint16(MOONBEAM_WORMHOLE_CHAIN_ID);
+    uint16 public constant wormholeMoonbeamChainid = uint16(MOONBEAM_WORMHOLE_CHAIN_ID);
 
     /// @notice event emitted when WELL is bridged to xWELL via the base chain
     event BridgeOutSuccess(address indexed to, uint256 amount);
@@ -57,9 +53,7 @@ contract xWellRouterTest is Test {
 
         well = IERC20(addresses.getAddress("GOVTOKEN"));
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
-        wormholeAdapter = WormholeBridgeAdapter(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-        );
+        wormholeAdapter = WormholeBridgeAdapter(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
         lockbox = XERC20Lockbox(addresses.getAddress("xWELL_LOCKBOX"));
 
         router = new xWELLRouter(
@@ -75,29 +69,11 @@ contract xWellRouterTest is Test {
     }
 
     function testSetup() public view {
-        assertEq(
-            address(router.xwell()), address(xwell), "Xwell address incorrect"
-        );
-        assertEq(
-            address(router.well()),
-            addresses.getAddress("GOVTOKEN"),
-            "Well address incorrect"
-        );
-        assertEq(
-            address(router.lockbox()),
-            addresses.getAddress("xWELL_LOCKBOX"),
-            "Lockbox address incorrect"
-        );
-        assertEq(
-            address(router.wormholeBridge()),
-            address(wormholeAdapter),
-            "Wormhole bridge address incorrect"
-        );
-        assertEq(
-            router.BASE_WORMHOLE_CHAIN_ID(),
-            BASE_WORMHOLE_CHAIN_ID,
-            "Base wormhole chain id incorrect"
-        );
+        assertEq(address(router.xwell()), address(xwell), "Xwell address incorrect");
+        assertEq(address(router.well()), addresses.getAddress("GOVTOKEN"), "Well address incorrect");
+        assertEq(address(router.lockbox()), addresses.getAddress("xWELL_LOCKBOX"), "Lockbox address incorrect");
+        assertEq(address(router.wormholeBridge()), address(wormholeAdapter), "Wormhole bridge address incorrect");
+        assertEq(router.BASE_WORMHOLE_CHAIN_ID(), BASE_WORMHOLE_CHAIN_ID, "Base wormhole chain id incorrect");
     }
 
     function testBridgeOutNoApprovalFails() public {
@@ -108,9 +84,7 @@ contract xWellRouterTest is Test {
 
         vm.deal(address(this), bridgeCost);
 
-        vm.expectRevert(
-            "Well::transferFrom: transfer amount exceeds spender allowance"
-        );
+        vm.expectRevert("Well::transferFrom: transfer amount exceeds spender allowance");
         router.bridgeToBase{value: bridgeCost}(mintAmount);
     }
 
@@ -122,9 +96,7 @@ contract xWellRouterTest is Test {
         vm.deal(address(this), bridgeCost);
         well.approve(address(router), mintAmount);
 
-        vm.expectRevert(
-            "Well::_transferTokens: transfer amount exceeds balance"
-        );
+        vm.expectRevert("Well::_transferTokens: transfer amount exceeds balance");
         router.bridgeToBase{value: bridgeCost}(mintAmount);
     }
 
@@ -132,14 +104,10 @@ contract xWellRouterTest is Test {
         testBridgeOutSuccess(300_000_000 * 1e18);
     }
 
-    function testBridgeOutToSuccess(uint256 mintAmount, uint256 glmrAmount)
-        public
-        returns (uint256)
-    {
+    function testBridgeOutToSuccess(uint256 mintAmount, uint256 glmrAmount) public returns (uint256) {
         uint256 bridgeCost = router.bridgeCost();
 
-        mintAmount =
-            _bound(mintAmount, 1, xwell.buffer(address(wormholeAdapter)));
+        mintAmount = _bound(mintAmount, 1, xwell.buffer(address(wormholeAdapter)));
         glmrAmount = _bound(glmrAmount, bridgeCost, type(uint256).max);
 
         uint256 startingXWellBalance = xwell.balanceOf(address(this));
@@ -160,46 +128,20 @@ contract xWellRouterTest is Test {
         router.bridgeToBase{value: bridgeCost}(address(this), mintAmount);
 
         assertEq(address(router).balance, 0, "incorrect router balance");
-        assertEq(
-            address(this).balance,
-            glmrAmount - bridgeCost,
-            "incorrect router balance"
-        );
+        assertEq(address(this).balance, glmrAmount - bridgeCost, "incorrect router balance");
 
+        assertEq(xwell.buffer(address(wormholeAdapter)), startingBuffer + mintAmount, "incorrect buffer");
+        assertEq(xwell.balanceOf(address(this)), startingXWellBalance, "incorrect user xwell balance");
+        assertEq(well.balanceOf(address(this)), startingWellBalance - mintAmount, "incorrect user well balance");
         assertEq(
-            xwell.buffer(address(wormholeAdapter)),
-            startingBuffer + mintAmount,
-            "incorrect buffer"
+            well.balanceOf(address(lockbox)), startingLockboxWellBalance + mintAmount, "incorrect lockbox well balance"
         );
-        assertEq(
-            xwell.balanceOf(address(this)),
-            startingXWellBalance,
-            "incorrect user xwell balance"
-        );
-        assertEq(
-            well.balanceOf(address(this)),
-            startingWellBalance - mintAmount,
-            "incorrect user well balance"
-        );
-        assertEq(
-            well.balanceOf(address(lockbox)),
-            startingLockboxWellBalance + mintAmount,
-            "incorrect lockbox well balance"
-        );
-        assertEq(
-            xwell.totalSupply(),
-            startingXWellTotalSupply,
-            "incorrect xwell total supply"
-        );
+        assertEq(xwell.totalSupply(), startingXWellTotalSupply, "incorrect xwell total supply");
         return mintAmount;
     }
 
-    function testBridgeOutSuccess(uint256 mintAmount)
-        public
-        returns (uint256)
-    {
-        mintAmount =
-            _bound(mintAmount, 1, xwell.buffer(address(wormholeAdapter)));
+    function testBridgeOutSuccess(uint256 mintAmount) public returns (uint256) {
+        mintAmount = _bound(mintAmount, 1, xwell.buffer(address(wormholeAdapter)));
 
         uint256 startingXWellBalance = xwell.balanceOf(address(this));
         uint256 startingXWellTotalSupply = xwell.totalSupply();
@@ -216,31 +158,13 @@ contract xWellRouterTest is Test {
         emit BridgeOutSuccess(address(this), mintAmount);
         router.bridgeToBase{value: bridgeCost}(mintAmount);
 
+        assertEq(xwell.buffer(address(wormholeAdapter)), startingBuffer + mintAmount, "incorrect buffer");
+        assertEq(xwell.balanceOf(address(this)), startingXWellBalance, "incorrect user xwell balance");
+        assertEq(well.balanceOf(address(this)), startingWellBalance - mintAmount, "incorrect user well balance");
         assertEq(
-            xwell.buffer(address(wormholeAdapter)),
-            startingBuffer + mintAmount,
-            "incorrect buffer"
+            well.balanceOf(address(lockbox)), startingLockboxWellBalance + mintAmount, "incorrect lockbox well balance"
         );
-        assertEq(
-            xwell.balanceOf(address(this)),
-            startingXWellBalance,
-            "incorrect user xwell balance"
-        );
-        assertEq(
-            well.balanceOf(address(this)),
-            startingWellBalance - mintAmount,
-            "incorrect user well balance"
-        );
-        assertEq(
-            well.balanceOf(address(lockbox)),
-            startingLockboxWellBalance + mintAmount,
-            "incorrect lockbox well balance"
-        );
-        assertEq(
-            xwell.totalSupply(),
-            startingXWellTotalSupply,
-            "incorrect xwell total supply"
-        );
+        assertEq(xwell.totalSupply(), startingXWellTotalSupply, "incorrect xwell total supply");
         return mintAmount;
     }
 

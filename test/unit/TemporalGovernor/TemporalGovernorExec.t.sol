@@ -2,30 +2,20 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {SafeCast} from
-    "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
-import {
-    ITemporalGovernor,
-    TemporalGovernor
-} from "@protocol/governance/TemporalGovernor.sol";
+import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {Address} from "@utils/Address.sol";
 
 interface InstrumentedExternalEvents {
     /// @notice Emitted when a VAA is decoded
     event DecodedVAA(
-        address intendedRecipient,
-        address[] targets,
-        uint256[] values,
-        string[] signatures,
-        bytes[] calldatas
+        address intendedRecipient, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas
     );
 
     /// @notice Emitted when a transaction is executed
-    event ExecutedTransaction(
-        address target, uint256 value, string signature, bytes data
-    );
+    event ExecutedTransaction(address target, uint256 value, string signature, bytes data);
 
     /// @notice emitted when guardian pause is granted
     event GuardianPauseGranted(uint256 indexed timestamp);
@@ -34,10 +24,7 @@ interface InstrumentedExternalEvents {
     event TrustedSenderUpdated(uint16 chainId, address addr);
 }
 
-contract TemporalGovernorExecutionUnitTest is
-    Test,
-    InstrumentedExternalEvents
-{
+contract TemporalGovernorExecutionUnitTest is Test, InstrumentedExternalEvents {
     using SafeCast for *;
     using Address for address;
 
@@ -66,19 +53,10 @@ contract TemporalGovernorExecutionUnitTest is
         mockCore = new MockWormholeCore();
         wormholeCore = address(mockCore);
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: admin
-        });
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: admin});
 
-        governor = new TemporalGovernor(
-            wormholeCore,
-            proposalDelay,
-            permissionlessUnpauseTime,
-            trustedSenders
-        );
+        governor = new TemporalGovernor(wormholeCore, proposalDelay, permissionlessUnpauseTime, trustedSenders);
     }
 
     function testSetup() public view {
@@ -93,13 +71,9 @@ contract TemporalGovernorExecutionUnitTest is
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: newAdmin
-        });
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: newAdmin});
 
         bytes[] memory payloads = new bytes[](1);
 
@@ -110,12 +84,9 @@ contract TemporalGovernorExecutionUnitTest is
         );
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid, admin.toBytes(), "reeeeeee", payload);
         governor.queueProposal("");
 
         bytes32 hash = keccak256(abi.encodePacked(""));
@@ -141,18 +112,14 @@ contract TemporalGovernorExecutionUnitTest is
         );
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid, admin.toBytes(), "reeeeeee", payload);
         governor.queueProposal("");
 
         {
             bytes32 hash = keccak256(abi.encodePacked(""));
-            (bool executed, uint248 queueTime) =
-                governor.queuedTransactions(hash);
+            (bool executed, uint248 queueTime) = governor.queuedTransactions(hash);
 
             assertEq(queueTime, block.timestamp);
             assertFalse(executed);
@@ -183,16 +150,13 @@ contract TemporalGovernorExecutionUnitTest is
         bytes[] memory payloads = new bytes[](1);
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
         governor.togglePause();
         assertTrue(governor.paused());
         assertFalse(governor.guardianPauseAllowed());
 
-        mockCore.setStorage(
-            true, trustedChainid, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid, admin.toBytes(), "reeeeeee", payload);
 
         vm.deal(address(this), value);
         vm.warp(block.timestamp + 100);
@@ -218,16 +182,13 @@ contract TemporalGovernorExecutionUnitTest is
         payloads[0] = abi.encodeWithSignature("grantGuardiansPause()");
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
         governor.togglePause();
         assertTrue(governor.paused());
         assertFalse(governor.guardianPauseAllowed());
 
-        mockCore.setStorage(
-            true, trustedChainid, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid, admin.toBytes(), "reeeeeee", payload);
 
         vm.warp(block.timestamp + 100);
         governor.fastTrackProposalExecution("");
@@ -259,13 +220,9 @@ contract TemporalGovernorExecutionUnitTest is
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: newAdmin
-        });
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: newAdmin});
 
         bytes[] memory payloads = new bytes[](1);
 
@@ -276,16 +233,9 @@ contract TemporalGovernorExecutionUnitTest is
         );
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            false,
-            trustedChainid,
-            admin.toBytes(),
-            "wormholeError: 0x0000",
-            payload
-        );
+        mockCore.setStorage(false, trustedChainid, admin.toBytes(), "wormholeError: 0x0000", payload);
         vm.expectRevert("wormholeError: 0x0000");
         governor.queueProposal("");
 
@@ -303,13 +253,9 @@ contract TemporalGovernorExecutionUnitTest is
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: newAdmin
-        });
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: newAdmin});
 
         bytes[] memory payloads = new bytes[](1);
 
@@ -320,16 +266,9 @@ contract TemporalGovernorExecutionUnitTest is
         );
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true,
-            trustedChainid,
-            admin.toBytes(),
-            "wormholeError: 0x0000",
-            payload
-        );
+        mockCore.setStorage(true, trustedChainid, admin.toBytes(), "wormholeError: 0x0000", payload);
 
         governor.queueProposal("");
 
@@ -358,13 +297,9 @@ contract TemporalGovernorExecutionUnitTest is
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: newAdmin
-        });
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: newAdmin});
 
         bytes[] memory payloads = new bytes[](1);
 
@@ -377,9 +312,7 @@ contract TemporalGovernorExecutionUnitTest is
         /// to be unbundled by the temporal governor
         bytes memory payload = abi.encode(newAdmin, targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid, admin.toBytes(), "reeeeeee", payload);
         vm.expectRevert("TemporalGovernor: Incorrect destination");
         governor.queueProposal("");
     }
@@ -391,13 +324,9 @@ contract TemporalGovernorExecutionUnitTest is
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: newAdmin
-        });
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: newAdmin});
 
         bytes[] memory payloads = new bytes[](1);
 
@@ -408,12 +337,9 @@ contract TemporalGovernorExecutionUnitTest is
         );
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid + 1, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid + 1, admin.toBytes(), "reeeeeee", payload);
         vm.expectRevert("TemporalGovernor: Invalid Emitter Address");
         governor.queueProposal("");
     }
@@ -425,13 +351,9 @@ contract TemporalGovernorExecutionUnitTest is
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: newAdmin
-        });
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: newAdmin});
 
         bytes[] memory payloads = new bytes[](1);
 
@@ -442,12 +364,9 @@ contract TemporalGovernorExecutionUnitTest is
         );
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid + 1, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid + 1, admin.toBytes(), "reeeeeee", payload);
 
         governor.togglePause();
         assertTrue(governor.paused());
@@ -463,13 +382,9 @@ contract TemporalGovernorExecutionUnitTest is
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: newAdmin
-        });
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: newAdmin});
 
         bytes[] memory payloads = new bytes[](1);
 
@@ -480,12 +395,9 @@ contract TemporalGovernorExecutionUnitTest is
         );
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid + 1, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid + 1, admin.toBytes(), "reeeeeee", payload);
         vm.expectRevert("TemporalGovernor: Empty proposal");
         governor.queueProposal("");
     }
@@ -496,13 +408,9 @@ contract TemporalGovernorExecutionUnitTest is
         uint256[] memory values = new uint256[](2);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: newAdmin
-        });
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: newAdmin});
 
         bytes[] memory payloads = new bytes[](1);
 
@@ -513,12 +421,9 @@ contract TemporalGovernorExecutionUnitTest is
         );
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid + 1, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid + 1, admin.toBytes(), "reeeeeee", payload);
 
         vm.expectRevert("TemporalGovernor: Arity mismatch for payload");
         governor.queueProposal("");
@@ -530,13 +435,9 @@ contract TemporalGovernorExecutionUnitTest is
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: newAdmin
-        });
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: newAdmin});
 
         bytes[] memory payloads = new bytes[](2);
 
@@ -547,12 +448,9 @@ contract TemporalGovernorExecutionUnitTest is
         );
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid + 1, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid + 1, admin.toBytes(), "reeeeeee", payload);
 
         vm.expectRevert("TemporalGovernor: Arity mismatch for payload");
         governor.queueProposal("");
@@ -575,8 +473,7 @@ contract TemporalGovernorExecutionUnitTest is
         /// existing admin is also a trusted sender
 
         assertEq(governor.allTrustedSenders(trustedChainid).length, 2);
-        bytes32[] memory trustedSenders =
-            governor.allTrustedSenders(trustedChainid);
+        bytes32[] memory trustedSenders = governor.allTrustedSenders(trustedChainid);
 
         assertEq(trustedSenders[0], admin.toBytes());
         assertEq(trustedSenders[1], newAdmin.toBytes());
@@ -600,12 +497,9 @@ contract TemporalGovernorExecutionUnitTest is
         bytes[] memory payloads = new bytes[](1);
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid, admin.toBytes(), "reeeeeee", payload);
         governor.queueProposal("");
 
         bytes32 hash = keccak256(abi.encodePacked(""));
@@ -623,8 +517,7 @@ contract TemporalGovernorExecutionUnitTest is
         /// existing admin stays as a trusted sender
 
         assertEq(governor.allTrustedSenders(trustedChainid).length, 1);
-        bytes32[] memory trustedSenders =
-            governor.allTrustedSenders(trustedChainid);
+        bytes32[] memory trustedSenders = governor.allTrustedSenders(trustedChainid);
 
         assertEq(trustedSenders[0], admin.toBytes());
 
@@ -690,13 +583,9 @@ contract TemporalGovernorExecutionUnitTest is
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: admin
-        });
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: admin});
 
         bytes[] memory payloads = new bytes[](1);
 
@@ -707,18 +596,14 @@ contract TemporalGovernorExecutionUnitTest is
         );
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid, admin.toBytes(), "reeeeeee", payload);
         governor.queueProposal("");
 
         bytes32 hash = keccak256(abi.encodePacked(""));
         {
-            (bool executed, uint248 queueTime) =
-                governor.queuedTransactions(hash);
+            (bool executed, uint248 queueTime) = governor.queuedTransactions(hash);
 
             assertEq(queueTime, block.timestamp);
             assertFalse(executed);
@@ -731,8 +616,7 @@ contract TemporalGovernorExecutionUnitTest is
         assertFalse(governor.isTrustedSender(trustedChainid, newAdmin));
 
         {
-            (bool executed, uint248 queueTime) =
-                governor.queuedTransactions(hash);
+            (bool executed, uint248 queueTime) = governor.queuedTransactions(hash);
 
             assertEq(queueTime, block.timestamp - proposalDelay);
             assertTrue(executed);
@@ -758,18 +642,14 @@ contract TemporalGovernorExecutionUnitTest is
         /// nonexistent function selector
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid, admin.toBytes(), "reeeeeee", payload);
         governor.queueProposal("");
 
         bytes32 hash = keccak256(abi.encodePacked(""));
         {
-            (bool executed, uint248 queueTime) =
-                governor.queuedTransactions(hash);
+            (bool executed, uint248 queueTime) = governor.queuedTransactions(hash);
 
             assertEq(queueTime, block.timestamp);
             assertFalse(executed);
@@ -780,8 +660,7 @@ contract TemporalGovernorExecutionUnitTest is
         governor.executeProposal("");
 
         {
-            (bool executed, uint248 queueTime) =
-                governor.queuedTransactions(hash);
+            (bool executed, uint248 queueTime) = governor.queuedTransactions(hash);
 
             assertEq(queueTime, block.timestamp - proposalDelay);
             assertFalse(executed);
@@ -821,8 +700,7 @@ contract TemporalGovernorExecutionUnitTest is
         assertTrue(governor.isTrustedSender(trustedChainid, admin));
         assertEq(governor.allTrustedSenders(trustedChainid).length, 1);
 
-        bytes32[] memory trustedSenders =
-            governor.allTrustedSenders(trustedChainid);
+        bytes32[] memory trustedSenders = governor.allTrustedSenders(trustedChainid);
         assertEq(trustedSenders[0], admin.toBytes());
     }
 
@@ -833,13 +711,9 @@ contract TemporalGovernorExecutionUnitTest is
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: newAdmin
-        });
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: newAdmin});
 
         bytes[] memory payloads = new bytes[](1);
 
@@ -850,30 +724,21 @@ contract TemporalGovernorExecutionUnitTest is
         );
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid, admin.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid, admin.toBytes(), "reeeeeee", payload);
     }
 
-    function _setupMockUnsetTrustedSenders(address _caller, address _toRemove)
-        private
-    {
+    function _setupMockUnsetTrustedSenders(address _caller, address _toRemove) private {
         address[] memory targets = new address[](1);
         targets[0] = address(governor);
 
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
 
-        TemporalGovernor.TrustedSender[] memory trustedSenders =
-            new TemporalGovernor.TrustedSender[](1);
+        TemporalGovernor.TrustedSender[] memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-        trustedSenders[0] = ITemporalGovernor.TrustedSender({
-            chainId: trustedChainid,
-            addr: _toRemove
-        });
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({chainId: trustedChainid, addr: _toRemove});
 
         bytes[] memory payloads = new bytes[](1);
 
@@ -884,12 +749,9 @@ contract TemporalGovernorExecutionUnitTest is
         );
 
         /// to be unbundled by the temporal governor
-        bytes memory payload =
-            abi.encode(address(governor), targets, values, payloads);
+        bytes memory payload = abi.encode(address(governor), targets, values, payloads);
 
-        mockCore.setStorage(
-            true, trustedChainid, _caller.toBytes(), "reeeeeee", payload
-        );
+        mockCore.setStorage(true, trustedChainid, _caller.toBytes(), "reeeeeee", payload);
     }
 
     // function testAssertionViolation() public {

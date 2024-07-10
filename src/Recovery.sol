@@ -40,20 +40,14 @@ contract Recovery {
     /// add this ability to be able to execute arbitrary calldata
     /// against arbitrary addresses.
     /// callable only by owner
-    function emergencyAction(Call[] calldata calls)
-        external
-        payable
-        onlyOwner
-        returns (bytes[] memory returnData)
-    {
+    function emergencyAction(Call[] calldata calls) external payable onlyOwner returns (bytes[] memory returnData) {
         returnData = new bytes[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {
             address payable target = payable(calls[i].target);
             uint256 value = calls[i].value;
             bytes calldata callData = calls[i].callData;
 
-            (bool success, bytes memory returned) =
-                target.call{value: value}(callData);
+            (bool success, bytes memory returned) = target.call{value: value}(callData);
             require(success, "Recovery: underlying call reverted");
             returnData[i] = returned;
         }

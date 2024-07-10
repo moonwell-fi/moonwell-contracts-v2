@@ -1,8 +1,7 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ProxyAdmin} from
-    "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {ITransparentUpgradeableProxy} from
     "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
@@ -57,45 +56,23 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
             address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
             address relayer = addresses.getAddress("WORMHOLE_BRIDGE_RELAYER");
 
-            (
-                address xwellLogic,
-                address xwellProxy,
-                ,
-                address wormholeAdapterLogic,
-                address wormholeAdapter
-            ) = deployBaseSystem(existingProxyAdmin);
+            (address xwellLogic, address xwellProxy,, address wormholeAdapterLogic, address wormholeAdapter) =
+                deployBaseSystem(existingProxyAdmin);
 
-            MintLimits.RateLimitMidPointInfo[] memory limits =
-                new MintLimits.RateLimitMidPointInfo[](1);
+            MintLimits.RateLimitMidPointInfo[] memory limits = new MintLimits.RateLimitMidPointInfo[](1);
 
             limits[0].bridge = wormholeAdapter;
             limits[0].rateLimitPerSecond = rateLimitPerSecond;
             limits[0].bufferCap = bufferCap;
 
-            initializeXWell(
-                xwellProxy,
-                "WELL",
-                "WELL",
-                temporalGov,
-                limits,
-                pauseDuration,
-                pauseGuardian
-            );
+            initializeXWell(xwellProxy, "WELL", "WELL", temporalGov, limits, pauseDuration, pauseGuardian);
 
             initializeWormholeAdapter(
-                wormholeAdapter,
-                xwellProxy,
-                temporalGov,
-                relayer,
-                block.chainid.toMoonbeamWormholeChainId()
+                wormholeAdapter, xwellProxy, temporalGov, relayer, block.chainid.toMoonbeamWormholeChainId()
             );
 
-            addresses.addAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_PROXY", wormholeAdapter
-            );
-            addresses.addAddress(
-                "WORMHOLE_BRIDGE_ADAPTER_LOGIC", wormholeAdapterLogic
-            );
+            addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY", wormholeAdapter);
+            addresses.addAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC", wormholeAdapterLogic);
             addresses.addAddress("xWELL_LOGIC", xwellLogic);
             addresses.addAddress("xWELL_PROXY", xwellProxy);
 
@@ -130,21 +107,14 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
         /// --------------------------------------------------
         {
             address basexWellProxy = addresses.getAddress("xWELL_PROXY");
-            address wormholeAdapter =
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
+            address wormholeAdapter = addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY");
             address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
             address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
             address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
+            assertEq(xWELL(wormholeAdapter).owner(), temporalGov, "wormhole bridge adapter owner is incorrect");
             assertEq(
-                xWELL(wormholeAdapter).owner(),
-                temporalGov,
-                "wormhole bridge adapter owner is incorrect"
-            );
-            assertEq(
-                address(
-                    WormholeBridgeAdapter(wormholeAdapter).wormholeRelayer()
-                ),
+                address(WormholeBridgeAdapter(wormholeAdapter).wormholeRelayer()),
                 addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
                 "wormhole bridge adapter relayer is incorrect"
             );
@@ -153,29 +123,13 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
                 300_000,
                 "wormhole bridge adapter gas limit is incorrect"
             );
-            assertEq(
-                xWELL(basexWellProxy).owner(),
-                temporalGov,
-                "temporal gov address is incorrect"
-            );
-            assertEq(
-                xWELL(basexWellProxy).pendingOwner(),
-                address(0),
-                "pending owner address is incorrect"
-            );
+            assertEq(xWELL(basexWellProxy).owner(), temporalGov, "temporal gov address is incorrect");
+            assertEq(xWELL(basexWellProxy).pendingOwner(), address(0), "pending owner address is incorrect");
 
             /// ensure correct pause guardian
-            assertEq(
-                xWELL(basexWellProxy).pauseGuardian(),
-                pauseGuardian,
-                "pause guardian address is incorrect"
-            );
+            assertEq(xWELL(basexWellProxy).pauseGuardian(), pauseGuardian, "pause guardian address is incorrect");
             /// ensure correct pause duration
-            assertEq(
-                xWELL(basexWellProxy).pauseDuration(),
-                pauseDuration,
-                "pause duration is incorrect"
-            );
+            assertEq(xWELL(basexWellProxy).pauseDuration(), pauseDuration, "pause duration is incorrect");
             /// ensure correct rate limits
             assertEq(
                 xWELL(basexWellProxy).rateLimitPerSecond(wormholeAdapter),
@@ -183,11 +137,7 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
                 "rateLimitPerSecond is incorrect"
             );
             /// ensure correct buffer cap
-            assertEq(
-                xWELL(basexWellProxy).bufferCap(wormholeAdapter),
-                bufferCap,
-                "bufferCap is incorrect"
-            );
+            assertEq(xWELL(basexWellProxy).bufferCap(wormholeAdapter), bufferCap, "bufferCap is incorrect");
             assertTrue(
                 WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
                     block.chainid.toMoonbeamWormholeChainId(), wormholeAdapter
@@ -196,31 +146,19 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
             );
             /// ensure correct wormhole adapter logic
             /// ensure correct wormhole adapter owner
-            assertEq(
-                WormholeBridgeAdapter(wormholeAdapter).owner(),
-                temporalGov,
-                "wormhole adapter owner is incorrect"
-            );
+            assertEq(WormholeBridgeAdapter(wormholeAdapter).owner(), temporalGov, "wormhole adapter owner is incorrect");
             /// ensure correct wormhole adapter relayer
             /// ensure correct wormhole adapter wormhole id
             /// ensure proxy admin has correct owner
             /// ensure proxy contract owners are proxy admin
+            assertEq(ProxyAdmin(proxyAdmin).owner(), temporalGov, "ProxyAdmin owner is incorrect");
             assertEq(
-                ProxyAdmin(proxyAdmin).owner(),
-                temporalGov,
-                "ProxyAdmin owner is incorrect"
-            );
-            assertEq(
-                ProxyAdmin(proxyAdmin).getProxyAdmin(
-                    ITransparentUpgradeableProxy(basexWellProxy)
-                ),
+                ProxyAdmin(proxyAdmin).getProxyAdmin(ITransparentUpgradeableProxy(basexWellProxy)),
                 proxyAdmin,
                 "Admin is incorrect basexWellProxy"
             );
             assertEq(
-                ProxyAdmin(proxyAdmin).getProxyAdmin(
-                    ITransparentUpgradeableProxy(wormholeAdapter)
-                ),
+                ProxyAdmin(proxyAdmin).getProxyAdmin(ITransparentUpgradeableProxy(wormholeAdapter)),
                 proxyAdmin,
                 "Admin is incorrect wormholeAdapter"
             );
@@ -228,16 +166,11 @@ contract xwellDeployOptimism is HybridProposal, Configs, xWELLDeploy {
     }
 
     function printAddresses(Addresses addresses) private view {
-        (string[] memory recordedNames,, address[] memory recordedAddresses) =
-            addresses.getRecordedAddresses();
+        (string[] memory recordedNames,, address[] memory recordedAddresses) = addresses.getRecordedAddresses();
         for (uint256 j = 0; j < recordedNames.length; j++) {
             console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
             console.log("        'chainId': %d,", block.chainid);
-            console.log(
-                "        'name': '%s'\n}%s",
-                recordedNames[j],
-                j < recordedNames.length - 1 ? "," : ""
-            );
+            console.log("        'name': '%s'\n}%s", recordedNames[j], j < recordedNames.length - 1 ? "," : "");
         }
     }
 }

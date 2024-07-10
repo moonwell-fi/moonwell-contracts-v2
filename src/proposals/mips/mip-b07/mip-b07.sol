@@ -7,10 +7,8 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {MultiRewardDistributor} from
-    "@protocol/rewards/MultiRewardDistributor.sol";
-import {MultiRewardDistributorCommon} from
-    "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 /// This MIP sets the reward speeds for different markets in the MultiRewardDistributor
@@ -19,13 +17,9 @@ contract mipb07 is HybridProposal, Configs {
 
     constructor() {
         string memory descriptionPath = vm.envOr(
-            "LISTING_PATH",
-            string(
-                "./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
-            )
+            "LISTING_PATH", string("./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md")
         );
-        bytes memory proposalDescription =
-            abi.encodePacked(vm.readFile(descriptionPath));
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile(descriptionPath));
 
         _setProposalDescription(proposalDescription);
 
@@ -49,15 +43,12 @@ contract mipb07 is HybridProposal, Configs {
         /// wipe existing reward loaded in Configs.sol
 
         {
-            string memory mtokensPath = vm.envOr(
-                "EMISSION_PATH",
-                string("./src/proposals/mips/mip-b07/RewardStreams.json")
-            );
+            string memory mtokensPath =
+                vm.envOr("EMISSION_PATH", string("./src/proposals/mips/mip-b07/RewardStreams.json"));
             /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
             string memory fileContents = vm.readFile(mtokensPath);
             bytes memory rawJson = vm.parseJson(fileContents);
-            EmissionConfig[] memory decodedEmissions =
-                abi.decode(rawJson, (EmissionConfig[]));
+            EmissionConfig[] memory decodedEmissions = abi.decode(rawJson, (EmissionConfig[]));
 
             for (uint256 i = 0; i < decodedEmissions.length; i++) {
                 emissions[block.chainid].push(decodedEmissions[i]);
@@ -66,8 +57,7 @@ contract mipb07 is HybridProposal, Configs {
 
         /// -------------- EMISSION CONFIGURATION --------------
 
-        EmissionConfig[] memory emissionConfig =
-            getEmissionConfigurations(block.chainid);
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(block.chainid);
         address mrd = addresses.getAddress("MRD_PROXY");
 
         unchecked {
@@ -97,31 +87,20 @@ contract mipb07 is HybridProposal, Configs {
     /// @dev this function is called after the proposal is executed to
     /// validate that all state transitions worked correctly
     function validate(Addresses addresses, address) public view override {
-        EmissionConfig[] memory emissionConfig =
-            getEmissionConfigurations(block.chainid);
-        MultiRewardDistributor distributor =
-            MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(block.chainid);
+        MultiRewardDistributor distributor = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
 
         unchecked {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
                 MultiRewardDistributorCommon.MarketConfig memory marketConfig =
-                distributor.getConfigForMarket(
-                    MToken(addresses.getAddress(config.mToken)),
-                    config.emissionToken
-                );
+                    distributor.getConfigForMarket(MToken(addresses.getAddress(config.mToken)), config.emissionToken);
 
                 assertEq(marketConfig.owner, addresses.getAddress(config.owner));
                 assertEq(marketConfig.emissionToken, config.emissionToken);
                 assertEq(marketConfig.endTime, config.endTime);
-                assertEq(
-                    marketConfig.supplyEmissionsPerSec,
-                    config.supplyEmissionPerSec
-                );
-                assertEq(
-                    marketConfig.borrowEmissionsPerSec,
-                    config.borrowEmissionsPerSec
-                );
+                assertEq(marketConfig.supplyEmissionsPerSec, config.supplyEmissionPerSec);
+                assertEq(marketConfig.borrowEmissionsPerSec, config.borrowEmissionsPerSec);
                 assertEq(marketConfig.supplyGlobalIndex, 1e36);
                 assertEq(marketConfig.borrowGlobalIndex, 1e36);
             }

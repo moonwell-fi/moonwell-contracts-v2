@@ -1,8 +1,7 @@
 pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from
-    "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
@@ -34,9 +33,7 @@ contract WETHRouter {
 
         require(mToken.mint(msg.value) == 0, "WETHRouter: mint failed");
 
-        IERC20(address(mToken)).safeTransfer(
-            recipient, mToken.balanceOf(address(this))
-        );
+        IERC20(address(mToken)).safeTransfer(recipient, mToken.balanceOf(address(this)));
     }
 
     /// @notice repay borrow using raw ETH with the most up to date borrow balance
@@ -49,20 +46,14 @@ contract WETHRouter {
         if (received > borrows) {
             weth.deposit{value: borrows}();
 
-            require(
-                mToken.repayBorrowBehalf(borrower, borrows) == 0,
-                "WETHRouter: repay borrow behalf failed"
-            );
+            require(mToken.repayBorrowBehalf(borrower, borrows) == 0, "WETHRouter: repay borrow behalf failed");
 
             (bool success,) = msg.sender.call{value: address(this).balance}("");
             require(success, "WETHRouter: ETH transfer failed");
         } else {
             weth.deposit{value: received}();
 
-            require(
-                mToken.repayBorrowBehalf(borrower, received) == 0,
-                "WETHRouter: repay borrow behalf failed"
-            );
+            require(mToken.repayBorrowBehalf(borrower, received) == 0, "WETHRouter: repay borrow behalf failed");
         }
     }
 

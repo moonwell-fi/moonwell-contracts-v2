@@ -23,10 +23,8 @@ contract DeployWETHRouter is Script {
         Addresses addresses = new Addresses();
         vm.startBroadcast();
 
-        WETHRouter router = new WETHRouter(
-            WETH9(addresses.getAddress("WETH")),
-            MErc20(addresses.getAddress("MOONWELL_WETH"))
-        );
+        WETHRouter router =
+            new WETHRouter(WETH9(addresses.getAddress("WETH")), MErc20(addresses.getAddress("MOONWELL_WETH")));
 
         console.log("router address: ", address(router));
 

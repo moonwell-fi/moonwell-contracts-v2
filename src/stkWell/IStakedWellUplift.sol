@@ -35,11 +35,7 @@ interface IStakedWellUplift {
 
     function getTotalRewardsBalance(address) external view returns (uint256);
 
-    function assets(address)
-        external
-        view
-        returns (uint128, uint128, uint256);
+    function assets(address) external view returns (uint128, uint128, uint256);
 
-    function configureAsset(uint128 emissionsPerSecond, address underlyingAsset)
-        external;
+    function configureAsset(uint128 emissionsPerSecond, address underlyingAsset) external;
 }

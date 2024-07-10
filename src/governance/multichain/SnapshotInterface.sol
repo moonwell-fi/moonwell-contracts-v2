@@ -11,8 +11,5 @@ interface SnapshotInterface {
     /// @param account The address of the account to check
     /// @param blockNumber The block number to get the vote balance at
     /// @return The number of votes the account had as of the given block
-    function getPriorVotes(address account, uint256 blockNumber)
-        external
-        view
-        returns (uint256);
+    function getPriorVotes(address account, uint256 blockNumber) external view returns (uint256);
 }

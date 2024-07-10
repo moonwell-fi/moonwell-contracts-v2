@@ -7,13 +7,11 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {ProxyAdmin} from
-    "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
-} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MoonwellViewsV2} from "@protocol/views/MoonwellViewsV2.sol";
 
@@ -34,14 +32,10 @@ contract UpgradeMoonwellViewsV2 is Script, Test {
 
         MoonwellViewsV2 viewsContract = new MoonwellViewsV2();
 
-        ProxyAdmin proxyAdmin =
-            ProxyAdmin(addresses.getAddress("MOONWELL_VIEWS_PROXY_ADMIN"));
+        ProxyAdmin proxyAdmin = ProxyAdmin(addresses.getAddress("MOONWELL_VIEWS_PROXY_ADMIN"));
 
         proxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(
-                addresses.getAddress("MOONWELL_VIEWS_PROXY")
-            ),
-            address(viewsContract)
+            ITransparentUpgradeableProxy(addresses.getAddress("MOONWELL_VIEWS_PROXY")), address(viewsContract)
         );
 
         vm.stopBroadcast();

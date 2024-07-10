@@ -94,41 +94,21 @@ interface IAxelarGasService {
     );
 
     event GasAdded(
-        bytes32 indexed txHash,
-        uint256 indexed logIndex,
-        address gasToken,
-        uint256 gasFeeAmount,
-        address refundAddress
+        bytes32 indexed txHash, uint256 indexed logIndex, address gasToken, uint256 gasFeeAmount, address refundAddress
     );
 
-    event NativeGasAdded(
-        bytes32 indexed txHash,
-        uint256 indexed logIndex,
-        uint256 gasFeeAmount,
-        address refundAddress
-    );
+    event NativeGasAdded(bytes32 indexed txHash, uint256 indexed logIndex, uint256 gasFeeAmount, address refundAddress);
 
     event ExpressGasAdded(
-        bytes32 indexed txHash,
-        uint256 indexed logIndex,
-        address gasToken,
-        uint256 gasFeeAmount,
-        address refundAddress
+        bytes32 indexed txHash, uint256 indexed logIndex, address gasToken, uint256 gasFeeAmount, address refundAddress
     );
 
     event NativeExpressGasAdded(
-        bytes32 indexed txHash,
-        uint256 indexed logIndex,
-        uint256 gasFeeAmount,
-        address refundAddress
+        bytes32 indexed txHash, uint256 indexed logIndex, uint256 gasFeeAmount, address refundAddress
     );
 
     event Refunded(
-        bytes32 indexed txHash,
-        uint256 indexed logIndex,
-        address payable receiver,
-        address token,
-        uint256 amount
+        bytes32 indexed txHash, uint256 indexed logIndex, address payable receiver, address token, uint256 amount
     );
 
     /**
@@ -323,11 +303,7 @@ interface IAxelarGasService {
      * @param logIndex The log index for the cross-chain call
      * @param refundAddress The address where refunds, if any, should be sent
      */
-    function addNativeGas(
-        bytes32 txHash,
-        uint256 logIndex,
-        address refundAddress
-    ) external payable;
+    function addNativeGas(bytes32 txHash, uint256 logIndex, address refundAddress) external payable;
 
     /**
      * @notice Add additional gas payment using ERC20 tokens after initiating an express cross-chain call.
@@ -353,11 +329,7 @@ interface IAxelarGasService {
      * @param logIndex The log index for the cross-chain call
      * @param refundAddress The address where refunds, if any, should be sent
      */
-    function addNativeExpressGas(
-        bytes32 txHash,
-        uint256 logIndex,
-        address refundAddress
-    ) external payable;
+    function addNativeExpressGas(bytes32 txHash, uint256 logIndex, address refundAddress) external payable;
 
     /**
      * @notice Allows the gasCollector to collect accumulated fees from the contract.
@@ -366,11 +338,7 @@ interface IAxelarGasService {
      * @param tokens Array of token addresses to be collected
      * @param amounts Array of amounts to be collected for each respective token address
      */
-    function collectFees(
-        address payable receiver,
-        address[] calldata tokens,
-        uint256[] calldata amounts
-    ) external;
+    function collectFees(address payable receiver, address[] calldata tokens, uint256[] calldata amounts) external;
 
     /**
      * @notice Refunds gas payment to the receiver in relation to a specific cross-chain transaction.

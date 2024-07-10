@@ -9,40 +9,19 @@ interface ComptrollerInterfaceV1 {
         uint32 timestamp;
     }
 
-    function supplyRewardSpeeds(uint8 reward, address market)
-        external
-        view
-        returns (uint256);
+    function supplyRewardSpeeds(uint8 reward, address market) external view returns (uint256);
 
-    function borrowRewardSpeeds(uint8 reward, address market)
-        external
-        view
-        returns (uint256);
+    function borrowRewardSpeeds(uint8 reward, address market) external view returns (uint256);
 
-    function rewardSupplyState(uint8 reward, address market)
-        external
-        view
-        returns (RewardMarketState memory);
+    function rewardSupplyState(uint8 reward, address market) external view returns (RewardMarketState memory);
 
-    function rewardBorrowState(uint8 reward, address market)
-        external
-        view
-        returns (RewardMarketState memory);
+    function rewardBorrowState(uint8 reward, address market) external view returns (RewardMarketState memory);
 
-    function rewardSupplierIndex(uint8 reward, address market, address user)
-        external
-        view
-        returns (uint256);
+    function rewardSupplierIndex(uint8 reward, address market, address user) external view returns (uint256);
 
-    function rewardBorrowerIndex(uint8 reward, address market, address user)
-        external
-        view
-        returns (uint256);
+    function rewardBorrowerIndex(uint8 reward, address market, address user) external view returns (uint256);
 
-    function rewardAccrued(uint8 reward, address user)
-        external
-        view
-        returns (uint256);
+    function rewardAccrued(uint8 reward, address user) external view returns (uint256);
 
     function wellAddress() external view returns (address);
 

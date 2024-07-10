@@ -28,12 +28,7 @@ contract DeployJRM is Script {
 
     function run() public {
         vm.startBroadcast();
-        JumpRateModel jrm = new JumpRateModel(
-            BASE_RATE_PER_YEAR,
-            MULTIPLIER_PER_YEAR,
-            JUMP_MULTIPLIER_PER_YEAR,
-            KINK
-        );
+        JumpRateModel jrm = new JumpRateModel(BASE_RATE_PER_YEAR, MULTIPLIER_PER_YEAR, JUMP_MULTIPLIER_PER_YEAR, KINK);
 
         vm.stopBroadcast();
 

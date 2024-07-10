@@ -4,8 +4,7 @@ import "@forge-std/Test.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-import {ChainlinkCompositeOracle} from
-    "@protocol/oracles/ChainlinkCompositeOracle.sol";
+import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {MockChainlinkOracle} from "@test/mock/MockChainlinkOracle.sol";
@@ -78,8 +77,7 @@ abstract contract Configs is Test {
     function _setEmissionConfiguration(string memory emissionPath) internal {
         string memory fileContents = vm.readFile(emissionPath);
         bytes memory rawJson = vm.parseJson(fileContents);
-        EmissionConfig[] memory decodedEmissions =
-            abi.decode(rawJson, (EmissionConfig[]));
+        EmissionConfig[] memory decodedEmissions = abi.decode(rawJson, (EmissionConfig[]));
 
         for (uint256 i = 0; i < decodedEmissions.length; i++) {
             emissions[block.chainid].push(decodedEmissions[i]);
@@ -90,8 +88,7 @@ abstract contract Configs is Test {
         string memory fileContents = vm.readFile(mTokenPath);
         bytes memory rawJson = vm.parseJson(fileContents);
 
-        CTokenConfiguration[] memory decodedJson =
-            abi.decode(rawJson, (CTokenConfiguration[]));
+        CTokenConfiguration[] memory decodedJson = abi.decode(rawJson, (CTokenConfiguration[]));
 
         for (uint256 i = 0; i < decodedJson.length; i++) {
             require(
@@ -128,14 +125,10 @@ abstract contract Configs is Test {
         if (block.chainid == BASE_SEPOLIA_CHAIN_ID) {
             // USDBC
             address usdbc = addresses.getAddress("USDBC");
-            FaucetTokenWithPermit(usdbc).allocateTo(
-                addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount
-            );
+            FaucetTokenWithPermit(usdbc).allocateTo(addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount);
 
             address cbeth = addresses.getAddress("cbETH");
-            FaucetTokenWithPermit(cbeth).allocateTo(
-                addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount
-            );
+            FaucetTokenWithPermit(cbeth).allocateTo(addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount);
 
             // WETH
             WETH9 weth = WETH9(addresses.getAddress("WETH"));
@@ -165,14 +158,10 @@ abstract contract Configs is Test {
 
             addresses.addAddress("wstETH", address(wsteth));
 
-            FaucetTokenWithPermit(usdc).allocateTo(
-                addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount
-            );
+            FaucetTokenWithPermit(usdc).allocateTo(addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount);
 
             // wstETH
-            FaucetTokenWithPermit(wsteth).allocateTo(
-                addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount
-            );
+            FaucetTokenWithPermit(wsteth).allocateTo(addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount);
 
             // WETH
             WETH9 weth = WETH9(addresses.getAddress("WETH"));
@@ -189,10 +178,8 @@ abstract contract Configs is Test {
             /// cToken config for WETH, WBTC and USDBC on local
 
             {
-                MockChainlinkOracle usdcOracle =
-                    new MockChainlinkOracle(1e18, 6);
-                MockChainlinkOracle ethOracle =
-                    new MockChainlinkOracle(2_000e18, 18);
+                MockChainlinkOracle usdcOracle = new MockChainlinkOracle(1e18, 6);
+                MockChainlinkOracle ethOracle = new MockChainlinkOracle(2_000e18, 18);
                 FaucetTokenWithPermit token = new FaucetTokenWithPermit(
                     1e18,
                     "USD Coin",
@@ -201,16 +188,13 @@ abstract contract Configs is Test {
                     "USDBC"
                 );
 
-                token.allocateTo(
-                    addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount
-                );
+                token.allocateTo(addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount);
 
                 addresses.addAddress("USDBC", address(token));
                 addresses.addAddress("USDC_ORACLE", address(usdcOracle));
                 addresses.addAddress("ETH_ORACLE", address(ethOracle));
 
-                JumpRateModelConfiguration memory jrmConfig =
-                JumpRateModelConfiguration(
+                JumpRateModelConfiguration memory jrmConfig = JumpRateModelConfiguration(
                     0.04e18, // 0.04 Base
                     0.45e18, // 0.45 Multiplier
                     0.8e18, // 0.8 Jump Multiplier
@@ -238,13 +222,10 @@ abstract contract Configs is Test {
 
             {
                 MockWeth token = new MockWeth();
-                token.mint(
-                    addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount
-                );
+                token.mint(addresses.getAddress("TEMPORAL_GOVERNOR"), initialMintAmount);
                 addresses.addAddress("WETH", address(token));
 
-                JumpRateModelConfiguration memory jrmConfig =
-                JumpRateModelConfiguration(
+                JumpRateModelConfiguration memory jrmConfig = JumpRateModelConfiguration(
                     0.04e18, // 0.04 Base
                     0.45e18, // 0.45 Multiplier
                     0.8e18, // 0.8 Jump Multiplier
@@ -276,9 +257,7 @@ abstract contract Configs is Test {
         if (block.chainid == BASE_CHAIN_ID) {
             if (addresses.getAddress("cbETH_ORACLE") == address(0)) {
                 ChainlinkCompositeOracle cbEthOracle = new ChainlinkCompositeOracle(
-                    addresses.getAddress("ETH_ORACLE"),
-                    addresses.getAddress("cbETHETH_ORACLE"),
-                    address(0)
+                    addresses.getAddress("ETH_ORACLE"), addresses.getAddress("cbETHETH_ORACLE"), address(0)
                 );
 
                 addresses.addAddress("cbETH_ORACLE", address(cbEthOracle));
@@ -289,13 +268,9 @@ abstract contract Configs is Test {
     }
 
     function initEmissions(Addresses addresses, address) public {
-        Configs.CTokenConfiguration[] memory mTokenConfigs =
-            getCTokenConfigurations(block.chainid);
+        Configs.CTokenConfiguration[] memory mTokenConfigs = getCTokenConfigurations(block.chainid);
 
-        if (
-            (block.chainid == LOCAL_CHAIN_ID)
-                && addresses.getAddress("GOVTOKEN") == address(0)
-        ) {
+        if ((block.chainid == LOCAL_CHAIN_ID) && addresses.getAddress("GOVTOKEN") == address(0)) {
             FaucetTokenWithPermit token = new FaucetTokenWithPermit(
                 1e18,
                 "Wormhole WELL",
@@ -328,10 +303,7 @@ abstract contract Configs is Test {
                     emissions[LOCAL_CHAIN_ID].push(emissionConfig);
                 }
 
-                if (
-                    block.chainid == BASE_SEPOLIA_CHAIN_ID
-                        || block.chainid == BASE_CHAIN_ID
-                ) {
+                if (block.chainid == BASE_SEPOLIA_CHAIN_ID || block.chainid == BASE_CHAIN_ID) {
                     /// pay USDBC Emissions for depositing ETH locally
                     EmissionConfig memory emissionConfig = EmissionConfig({
                         mToken: mTokenConfigs[i].addressesString,
@@ -348,31 +320,22 @@ abstract contract Configs is Test {
         }
     }
 
-    function getCTokenConfigurations(uint256 chainId)
-        public
-        view
-        returns (CTokenConfiguration[] memory)
-    {
-        CTokenConfiguration[] memory configs =
-            new CTokenConfiguration[](cTokenConfigurations[chainId].length);
+    function getCTokenConfigurations(uint256 chainId) public view returns (CTokenConfiguration[] memory) {
+        CTokenConfiguration[] memory configs = new CTokenConfiguration[](cTokenConfigurations[chainId].length);
 
         unchecked {
             uint256 configLength = configs.length;
             for (uint256 i = 0; i < configLength; i++) {
                 configs[i] = CTokenConfiguration({
-                    initialMintAmount: cTokenConfigurations[chainId][i]
-                        .initialMintAmount,
-                    collateralFactor: cTokenConfigurations[chainId][i]
-                        .collateralFactor,
+                    initialMintAmount: cTokenConfigurations[chainId][i].initialMintAmount,
+                    collateralFactor: cTokenConfigurations[chainId][i].collateralFactor,
                     reserveFactor: cTokenConfigurations[chainId][i].reserveFactor,
                     seizeShare: cTokenConfigurations[chainId][i].seizeShare,
                     supplyCap: cTokenConfigurations[chainId][i].supplyCap,
                     borrowCap: cTokenConfigurations[chainId][i].borrowCap,
-                    addressesString: cTokenConfigurations[chainId][i]
-                        .addressesString,
+                    addressesString: cTokenConfigurations[chainId][i].addressesString,
                     priceFeedName: cTokenConfigurations[chainId][i].priceFeedName,
-                    tokenAddressName: cTokenConfigurations[chainId][i]
-                        .tokenAddressName,
+                    tokenAddressName: cTokenConfigurations[chainId][i].tokenAddressName,
                     symbol: cTokenConfigurations[chainId][i].symbol,
                     name: cTokenConfigurations[chainId][i].name,
                     jrm: cTokenConfigurations[chainId][i].jrm
@@ -383,13 +346,8 @@ abstract contract Configs is Test {
         return configs;
     }
 
-    function getEmissionConfigurations(uint256 chainId)
-        public
-        view
-        returns (EmissionConfig[] memory)
-    {
-        EmissionConfig[] memory configs =
-            new EmissionConfig[](emissions[chainId].length);
+    function getEmissionConfigurations(uint256 chainId) public view returns (EmissionConfig[] memory) {
+        EmissionConfig[] memory configs = new EmissionConfig[](emissions[chainId].length);
 
         unchecked {
             for (uint256 i = 0; i < configs.length; i++) {
@@ -398,8 +356,7 @@ abstract contract Configs is Test {
                     owner: emissions[chainId][i].owner,
                     emissionToken: emissions[chainId][i].emissionToken,
                     supplyEmissionPerSec: emissions[chainId][i].supplyEmissionPerSec,
-                    borrowEmissionsPerSec: emissions[chainId][i]
-                        .borrowEmissionsPerSec,
+                    borrowEmissionsPerSec: emissions[chainId][i].borrowEmissionsPerSec,
                     endTime: emissions[chainId][i].endTime
                 });
             }

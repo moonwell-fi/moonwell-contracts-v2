@@ -33,43 +33,23 @@ contract xWELLVoteUnitTest is BaseTest {
         uint256 delegateTime = block.timestamp;
         xwellProxy.delegate(address(this));
 
-        assertEq(
-            xwellProxy.delegates(address(this)),
-            address(this),
-            "Incorrect delegate"
-        );
+        assertEq(xwellProxy.delegates(address(this)), address(this), "Incorrect delegate");
 
         vm.warp(block.timestamp + 1);
 
         /// avoid future lookup error
 
-        assertEq(
-            xwellProxy.getPastVotes(address(this), delegateTime),
-            mintAmount,
-            "Incorrect past votes"
-        );
+        assertEq(xwellProxy.getPastVotes(address(this), delegateTime), mintAmount, "Incorrect past votes");
 
         xwellProxy.transfer(address(1), xwellProxy.balanceOf(address(this)));
         vm.warp(block.timestamp + 1);
         /// avoid future lookup error
 
-        assertEq(
-            xwellProxy.getPastVotes(address(this), block.timestamp - 1),
-            0,
-            "Incorrect past votes"
-        );
+        assertEq(xwellProxy.getPastVotes(address(this), block.timestamp - 1), 0, "Incorrect past votes");
 
-        assertEq(
-            xwellProxy.delegates(address(this)),
-            address(this),
-            "Incorrect delegate"
-        );
-        assertEq(
-            xwellProxy.balanceOf(address(this)), 0, "Incorrect balance this"
-        );
-        assertEq(
-            xwellProxy.balanceOf(address(1)), mintAmount, "Incorrect balance 1"
-        );
+        assertEq(xwellProxy.delegates(address(this)), address(this), "Incorrect delegate");
+        assertEq(xwellProxy.balanceOf(address(this)), 0, "Incorrect balance this");
+        assertEq(xwellProxy.balanceOf(address(1)), mintAmount, "Incorrect balance 1");
     }
 
     function testSelfDelegatesSuccess() public {
@@ -77,19 +57,13 @@ contract xWELLVoteUnitTest is BaseTest {
         _lockboxCanMint(mintAmount);
 
         assertEq(
-            xwellProxy.getPastVotes(address(this), block.timestamp - 1),
-            0,
-            "Incorrect vote count before delegation"
+            xwellProxy.getPastVotes(address(this), block.timestamp - 1), 0, "Incorrect vote count before delegation"
         );
 
         uint256 delegateTime = block.timestamp;
         xwellProxy.delegate(address(this));
 
-        assertEq(
-            xwellProxy.delegates(address(this)),
-            address(this),
-            "Incorrect delegate"
-        );
+        assertEq(xwellProxy.delegates(address(this)), address(this), "Incorrect delegate");
 
         vm.warp(block.timestamp + 1);
 
@@ -100,18 +74,10 @@ contract xWELLVoteUnitTest is BaseTest {
             0,
             "Incorrect vote count after delegation at delegate time - 1"
         );
-        assertEq(
-            xwellProxy.getPastVotes(address(this), delegateTime),
-            mintAmount,
-            "Incorrect past votes"
-        );
+        assertEq(xwellProxy.getPastVotes(address(this), delegateTime), mintAmount, "Incorrect past votes");
 
         vm.warp(block.timestamp + 1000000);
-        assertEq(
-            xwellProxy.getPastVotes(address(this), delegateTime + 1),
-            mintAmount,
-            "Incorrect past votes"
-        );
+        assertEq(xwellProxy.getPastVotes(address(this), delegateTime + 1), mintAmount, "Incorrect past votes");
     }
 
     function testDelegateReceivesAdditionalVotesAfterMint() public {
@@ -126,26 +92,14 @@ contract xWELLVoteUnitTest is BaseTest {
 
         /// avoid future lookup error
 
-        assertEq(
-            xwellProxy.getPastVotes(address(this), delegateTime),
-            quorum,
-            "Incorrect past votes"
-        );
-        assertEq(
-            xwellProxy.getVotes(address(this)),
-            quorum,
-            "Incorrect current votes"
-        );
+        assertEq(xwellProxy.getPastVotes(address(this), delegateTime), quorum, "Incorrect past votes");
+        assertEq(xwellProxy.getVotes(address(this)), quorum, "Incorrect current votes");
 
         uint256 additionalMint = 100_000 * 1e18;
 
         _lockboxCanMint(uint112(additionalMint));
 
-        assertEq(
-            xwellProxy.getVotes(address(this)),
-            xwellProxy.balanceOf(address(this)),
-            "Incorrect current votes"
-        );
+        assertEq(xwellProxy.getVotes(address(this)), xwellProxy.balanceOf(address(this)), "Incorrect current votes");
 
         vm.warp(block.timestamp + 1);
 
@@ -153,11 +107,7 @@ contract xWELLVoteUnitTest is BaseTest {
 
         delegateTime++;
 
-        assertEq(
-            xwellProxy.getPastVotes(address(this), delegateTime),
-            quorum + additionalMint,
-            "Incorrect past votes"
-        );
+        assertEq(xwellProxy.getPastVotes(address(this), delegateTime), quorum + additionalMint, "Incorrect past votes");
         assertEq(
             xwellProxy.getPastVotes(address(this), delegateTime),
             xwellProxy.balanceOf(address(this)),

@@ -5,8 +5,7 @@ import "@forge-std/Test.sol";
 import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
-} from
-    "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
@@ -21,10 +20,8 @@ import {Comptroller} from "@protocol/Comptroller.sol";
 import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
-import {WhitePaperInterestRateModel} from
-    "@protocol/irm/WhitePaperInterestRateModel.sol";
-import {MultiRewardDistributor} from
-    "@protocol/rewards/MultiRewardDistributor.sol";
+import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {SigUtils} from "@test/helper/SigUtils.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
 import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
@@ -61,12 +58,10 @@ contract WETHRouterUnitTest is Test {
         );
 
         distributor = new MultiRewardDistributor();
-        bytes memory initdata = abi.encodeWithSignature(
-            "initialize(address,address)", address(comptroller), address(this)
-        );
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(distributor), address(this), initdata
-        );
+        bytes memory initdata =
+            abi.encodeWithSignature("initialize(address,address)", address(comptroller), address(this));
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(address(distributor), address(this), initdata);
         /// wire proxy up
         distributor = MultiRewardDistributor(address(proxy));
 
@@ -116,21 +111,9 @@ contract WETHRouterUnitTest is Test {
         router.repayBorrowBehalf{value: 1 ether}(address(this));
 
         assertEq(address(this).balance, 0, "this contract balance should be 0");
-        assertEq(
-            weth.balanceOf(address(router)),
-            0,
-            "router weth balance should be 0"
-        );
-        assertEq(
-            weth.balanceOf(address(cToken)),
-            1 ether,
-            "mToken weth balance should be 1 ether"
-        );
-        assertEq(
-            cToken.borrowBalanceRepaid(address(this)),
-            1 ether,
-            "borrow balance repaid should be 1 ether"
-        );
+        assertEq(weth.balanceOf(address(router)), 0, "router weth balance should be 0");
+        assertEq(weth.balanceOf(address(cToken)), 1 ether, "mToken weth balance should be 1 ether");
+        assertEq(cToken.borrowBalanceRepaid(address(this)), 1 ether, "borrow balance repaid should be 1 ether");
     }
 
     function testRepayBorrowBehalfTooMuchEthSucceeds() public {
@@ -142,24 +125,10 @@ contract WETHRouterUnitTest is Test {
 
         router.repayBorrowBehalf{value: 10 ether}(address(this));
 
-        assertEq(
-            address(this).balance, 9 ether, "this contract balance should be 9"
-        );
-        assertEq(
-            weth.balanceOf(address(router)),
-            0,
-            "router weth balance should be 0"
-        );
-        assertEq(
-            weth.balanceOf(address(cToken)),
-            1 ether,
-            "mToken weth balance should be 1 ether"
-        );
-        assertEq(
-            cToken.borrowBalanceRepaid(address(this)),
-            1 ether,
-            "borrow balance repaid should be 1 ether"
-        );
+        assertEq(address(this).balance, 9 ether, "this contract balance should be 9");
+        assertEq(weth.balanceOf(address(router)), 0, "router weth balance should be 0");
+        assertEq(weth.balanceOf(address(cToken)), 1 ether, "mToken weth balance should be 1 ether");
+        assertEq(cToken.borrowBalanceRepaid(address(this)), 1 ether, "borrow balance repaid should be 1 ether");
     }
 
     function testRepayBorrowBehalfTooMuchEthSucceedsRepayFails() public {
@@ -173,11 +142,7 @@ contract WETHRouterUnitTest is Test {
         vm.expectRevert("WETHRouter: repay borrow behalf failed");
         router.repayBorrowBehalf{value: 10 ether}(address(this));
 
-        assertEq(
-            address(this).balance,
-            10 ether,
-            "this contract balance should be 10"
-        );
+        assertEq(address(this).balance, 10 ether, "this contract balance should be 10");
     }
 
     function testRepayBorrowBehalfTooMuchEthRepayFails() public {
@@ -189,11 +154,7 @@ contract WETHRouterUnitTest is Test {
         vm.expectRevert("WETHRouter: ETH transfer failed");
         router.repayBorrowBehalf{value: 10 ether}(address(this));
 
-        assertEq(
-            address(this).balance,
-            10 ether,
-            "this contract balance should be 10"
-        );
+        assertEq(address(this).balance, 10 ether, "this contract balance should be 10");
     }
 
     function testRepayBorrowBehalfFails() public {
@@ -215,9 +176,7 @@ contract WETHRouterUnitTest is Test {
         success;
         /// shhhhh apparently this call succeeds but reverts? go figure
 
-        assertEq(
-            address(this).balance, 1 ether, "incorrect test contract eth value"
-        );
+        assertEq(address(this).balance, 1 ether, "incorrect test contract eth value");
         assertEq(address(router).balance, 0, "incorrect router eth value");
     }
 

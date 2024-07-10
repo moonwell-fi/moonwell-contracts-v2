@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Initializable} from
-    "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import {Test} from "@forge-std/Test.sol";
 import {console} from "@forge-std/console.sol";
@@ -76,9 +75,7 @@ contract TestMultichainProposals is Test, Initializable {
         bool validate
     ) public {
         if (debug) {
-            console.log(
-                "TestProposals: running", proposals.length, "proposals."
-            );
+            console.log("TestProposals: running", proposals.length, "proposals.");
         }
 
         for (uint256 i = 0; i < proposals.length; i++) {
@@ -101,20 +98,13 @@ contract TestMultichainProposals is Test, Initializable {
 
                 /// mip itself is the deployer
                 if (debug) {
-                    (
-                        string[] memory recordedNames,
-                        uint256[] memory chainIds,
-                        address[] memory recordedAddresses
-                    ) = addresses.getRecordedAddresses();
+                    (string[] memory recordedNames, uint256[] memory chainIds, address[] memory recordedAddresses) =
+                        addresses.getRecordedAddresses();
                     for (uint256 j = 0; j < recordedNames.length; j++) {
-                        console.log(
-                            "{\n        'addr': '%s', ", recordedAddresses[j]
-                        );
+                        console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
                         console.log("        'chainId': %d,", chainIds[j]);
                         console.log(
-                            "        'name': '%s'\n}%s",
-                            recordedNames[j],
-                            j < recordedNames.length - 1 ? "," : ""
+                            "        'name': '%s'\n}%s", recordedNames[j], j < recordedNames.length - 1 ? "," : ""
                         );
                     }
                 }
@@ -122,25 +112,33 @@ contract TestMultichainProposals is Test, Initializable {
 
             // After-deploy step
             if (afterDeploy) {
-                if (debug) console.log("Proposal", name, "afterDeploy()");
+                if (debug) {
+                    console.log("Proposal", name, "afterDeploy()");
+                }
                 proposals[i].afterDeploy(addresses, address(proposals[i]));
             }
 
             // After-deploy-setup step
             if (preBuildMock) {
-                if (debug) console.log("Proposal", name, "preBuildMock()");
+                if (debug) {
+                    console.log("Proposal", name, "preBuildMock()");
+                }
                 proposals[i].preBuildMock(addresses);
             }
 
             // Build step
             if (build) {
-                if (debug) console.log("Proposal", name, "build()");
+                if (debug) {
+                    console.log("Proposal", name, "build()");
+                }
                 proposals[i].build(addresses);
             }
 
             // Run step
             if (run) {
-                if (debug) console.log("Proposal", name, "run()");
+                if (debug) {
+                    console.log("Proposal", name, "run()");
+                }
                 proposals[i].run(addresses, address(proposals[i]));
             }
 
@@ -149,30 +147,27 @@ contract TestMultichainProposals is Test, Initializable {
 
             // Teardown step
             if (teardown) {
-                if (debug) console.log("Proposal", name, "teardown()");
+                if (debug) {
+                    console.log("Proposal", name, "teardown()");
+                }
                 proposals[i].teardown(addresses, address(proposals[i]));
             }
 
             // Validate step
             if (validate) {
-                if (debug) console.log("Proposal", name, "validate()");
+                if (debug) {
+                    console.log("Proposal", name, "validate()");
+                }
                 proposals[i].validate(addresses, address(proposals[i]));
             }
 
-            if (debug) console.log("Proposal", name, "done.");
+            if (debug) {
+                console.log("Proposal", name, "done.");
+            }
         }
     }
 
     function runProposals() public {
-        runProposals(
-            DEBUG,
-            DO_DEPLOY,
-            DO_AFTER_DEPLOY,
-            DO_PRE_BUILD_MOCK,
-            DO_BUILD,
-            DO_RUN,
-            DO_TEARDOWN,
-            DO_VALIDATE
-        );
+        runProposals(DEBUG, DO_DEPLOY, DO_AFTER_DEPLOY, DO_PRE_BUILD_MOCK, DO_BUILD, DO_RUN, DO_TEARDOWN, DO_VALIDATE);
     }
 }

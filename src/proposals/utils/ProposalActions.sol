@@ -1,17 +1,11 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {
-    ActionType, ProposalAction
-} from "@proposals/proposalTypes/IProposal.sol";
+import {ActionType, ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 
 library ProposalActions {
     /// @notice returns true if a proposal has a specific action type
-    function hasType(ProposalAction[] storage actions, ActionType proposalType)
-        internal
-        view
-        returns (bool)
-    {
+    function hasType(ProposalAction[] storage actions, ActionType proposalType) internal view returns (bool) {
         for (uint256 i = 0; i < actions.length; i++) {
             if (actions[i].actionType == proposalType) {
                 return true;
@@ -21,13 +15,11 @@ library ProposalActions {
     }
 
     /// @notice filters the proposal actions by specified action type
-    function filter(ProposalAction[] storage actions, ActionType proposalType)
-        internal
-        view
-        returns (ProposalAction[] memory filteredActions)
-    {
-        filteredActions =
-            new ProposalAction[](proposalActionTypeCount(actions, proposalType));
+    function filter(
+        ProposalAction[] storage actions,
+        ActionType proposalType
+    ) internal view returns (ProposalAction[] memory filteredActions) {
+        filteredActions = new ProposalAction[](proposalActionTypeCount(actions, proposalType));
         uint256 index = 0;
 
         for (uint256 i = 0; i < actions.length; i++) {

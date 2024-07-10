@@ -32,11 +32,7 @@ contract Messages is Getters {
      *  - it aims to verify the signatures provided against the guardianSet
      *  - it aims to verify the hash field provided against the contents of the vm
      */
-    function verifyVM(Structs.VM memory vm)
-        public
-        view
-        returns (bool valid, string memory reason)
-    {
+    function verifyVM(Structs.VM memory vm) public view returns (bool valid, string memory reason) {
         (valid, reason) = verifyVMInternal(vm, true);
     }
 
@@ -46,14 +42,12 @@ contract Messages is Getters {
      * in the case that the vm is securely parsed and the hash field can be trusted, checkHash can be set to false
      * as the check would be redundant
      */
-    function verifyVMInternal(Structs.VM memory vm, bool checkHash)
-        internal
-        view
-        returns (bool valid, string memory reason)
-    {
+    function verifyVMInternal(
+        Structs.VM memory vm,
+        bool checkHash
+    ) internal view returns (bool valid, string memory reason) {
         /// @dev Obtain the current guardianSet for the guardianSetIndex provided
-        Structs.GuardianSet memory guardianSet =
-            getGuardianSet(vm.guardianSetIndex);
+        Structs.GuardianSet memory guardianSet = getGuardianSet(vm.guardianSetIndex);
 
         /**
          * Verify that the hash field in the vm matches with the hash of the contents of the vm if checkHash is set
@@ -91,10 +85,7 @@ contract Messages is Getters {
         }
 
         /// @dev Checks if VM guardian set index matches the current index (unless the current set is expired).
-        if (
-            vm.guardianSetIndex != getCurrentGuardianSetIndex()
-                && guardianSet.expirationTime < block.timestamp
-        ) {
+        if (vm.guardianSetIndex != getCurrentGuardianSetIndex() && guardianSet.expirationTime < block.timestamp) {
             return (false, "guardian set has expired");
         }
 
@@ -109,8 +100,7 @@ contract Messages is Getters {
         }
 
         /// @dev Verify the proposed vm.signatures against the guardianSet
-        (bool signaturesValid, string memory invalidReason) =
-            verifySignatures(vm.hash, vm.signatures, guardianSet);
+        (bool signaturesValid, string memory invalidReason) = verifySignatures(vm.hash, vm.signatures, guardianSet);
         if (!signaturesValid) {
             return (false, invalidReason);
         }
@@ -140,10 +130,7 @@ contract Messages is Getters {
             require(signatory != address(0), "ecrecover failed with signature");
 
             /// Ensure that provided signature indices are ascending only
-            require(
-                i == 0 || sig.guardianIndex > lastIndex,
-                "signature indices must be ascending"
-            );
+            require(i == 0 || sig.guardianIndex > lastIndex, "signature indices must be ascending");
             lastIndex = sig.guardianIndex;
 
             /// @dev Ensure that the provided signature index is within the
@@ -152,10 +139,7 @@ contract Messages is Getters {
             /// However, reverting explicitly here ensures that a bug is not
             /// introduced accidentally later due to the nontrivial storage
             /// semantics of solidity.
-            require(
-                sig.guardianIndex < guardianCount,
-                "guardian index out of bounds"
-            );
+            require(sig.guardianIndex < guardianCount, "guardian index out of bounds");
 
             /// Check to see if the signer of the signature does not match a specific Guardian key at the provided index
             if (signatory != guardianSet.keys[sig.guardianIndex]) {
@@ -172,12 +156,7 @@ contract Messages is Getters {
      *  - it intentionally performs no validation functions, it simply parses raw into a struct
      * This function is modified to not validate signers. Do not use in production.
      */
-    function parseVM(bytes memory encodedVM)
-        public
-        pure
-        virtual
-        returns (Structs.VM memory vm)
-    {
+    function parseVM(bytes memory encodedVM) public pure virtual returns (Structs.VM memory vm) {
         uint256 index = 0;
 
         vm.version = encodedVM.toUint8(index);
@@ -224,12 +203,7 @@ contract Messages is Getters {
     /**
      * @dev quorum serves solely to determine the number of signatures required to acheive quorum
      */
-    function quorum(uint256 numGuardians)
-        public
-        pure
-        virtual
-        returns (uint256 numSignaturesRequiredForQuorum)
-    {
+    function quorum(uint256 numGuardians) public pure virtual returns (uint256 numSignaturesRequiredForQuorum) {
         // The max number of guardians is 255
         require(numGuardians < 256, "too many guardians");
         return ((numGuardians * 2) / 3) + 1;

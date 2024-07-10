@@ -12,10 +12,7 @@ contract xWELLUnitTest is BaseTest {
     }
 
     function testSetup() public view {
-        assertTrue(
-            xwellProxy.DOMAIN_SEPARATOR() != bytes32(0),
-            "domain separator not set"
-        );
+        assertTrue(xwellProxy.DOMAIN_SEPARATOR() != bytes32(0), "domain separator not set");
         (
             bytes1 fields,
             string memory name,
@@ -28,33 +25,17 @@ contract xWELLUnitTest is BaseTest {
         assertEq(version, "1", "incorrect version");
         assertEq(chainId, block.chainid, "incorrect chain id");
         assertEq(salt, bytes32(0), "incorrect salt");
-        assertEq(
-            verifyingContract,
-            address(xwellProxy),
-            "incorrect verifying contract"
-        );
+        assertEq(verifyingContract, address(xwellProxy), "incorrect verifying contract");
         assertEq(name, xwellName, "incorrect name from eip712Domain()");
         assertEq(xwellProxy.name(), xwellName, "incorrect name");
         assertEq(xwellProxy.symbol(), xwellSymbol, "incorrect symbol");
         assertEq(xwellProxy.totalSupply(), 0, "incorrect total supply");
         assertEq(xwellProxy.owner(), address(this), "incorrect owner");
-        assertEq(
-            xwellProxy.pendingOwner(), address(0), "incorrect pending owner"
-        );
-        assertEq(
-            xwellProxy.CLOCK_MODE(), "mode=timestamp", "incorrect clock mode"
-        );
+        assertEq(xwellProxy.pendingOwner(), address(0), "incorrect pending owner");
+        assertEq(xwellProxy.CLOCK_MODE(), "mode=timestamp", "incorrect clock mode");
         assertEq(xwellProxy.clock(), block.timestamp, "incorrect timestamp");
-        assertEq(
-            xwellProxy.MAX_SUPPLY(),
-            5_000_000_000 * 1e18,
-            "incorrect max supply"
-        );
-        assertEq(
-            xwellProxy.bufferCap(address(xerc20Lockbox)),
-            type(uint112).max,
-            "incorrect lockbox buffer cap"
-        );
+        assertEq(xwellProxy.MAX_SUPPLY(), 5_000_000_000 * 1e18, "incorrect max supply");
+        assertEq(xwellProxy.bufferCap(address(xerc20Lockbox)), type(uint112).max, "incorrect lockbox buffer cap");
         assertEq(
             xwellProxy.bufferCap(address(xerc20Lockbox)),
             xwellProxy.mintingMaxLimitOf(address(xerc20Lockbox)),
@@ -65,56 +46,33 @@ contract xWELLUnitTest is BaseTest {
             xwellProxy.burningMaxLimitOf(address(xerc20Lockbox)),
             "incorrect lockbox burningMaxLimitOf"
         );
-        assertEq(
-            xwellProxy.buffer(address(xerc20Lockbox)),
-            type(uint112).max / 2,
-            "incorrect lockbox buffer"
-        );
+        assertEq(xwellProxy.buffer(address(xerc20Lockbox)), type(uint112).max / 2, "incorrect lockbox buffer");
         assertEq(
             xwellProxy.buffer(address(xerc20Lockbox)),
             xwellProxy.mintingCurrentLimitOf(address(xerc20Lockbox)),
             "incorrect lockbox mintingCurrentLimitOf"
         );
         assertEq(
-            xwellProxy.bufferCap(address(xerc20Lockbox))
-                - xwellProxy.buffer(address(xerc20Lockbox)),
+            xwellProxy.bufferCap(address(xerc20Lockbox)) - xwellProxy.buffer(address(xerc20Lockbox)),
             xwellProxy.burningCurrentLimitOf(address(xerc20Lockbox)),
             "incorrect lockbox burningCurrentLimitOf"
         );
-        assertEq(
-            xwellProxy.rateLimitPerSecond(address(xerc20Lockbox)),
-            0,
-            "incorrect lockbox rate limit per second"
-        );
-        assertEq(
-            xwellProxy.maxPauseDuration(),
-            xwellProxy.MAX_PAUSE_DURATION(),
-            "incorrect max pause duration"
-        );
+        assertEq(xwellProxy.rateLimitPerSecond(address(xerc20Lockbox)), 0, "incorrect lockbox rate limit per second");
+        assertEq(xwellProxy.maxPauseDuration(), xwellProxy.MAX_PAUSE_DURATION(), "incorrect max pause duration");
 
         /// PROXY OWNERSHIP
 
         /// proxy admin starts off as this address
         assertEq(
-            proxyAdmin.getProxyAdmin(
-                ITransparentUpgradeableProxy(address(xwellProxy))
-            ),
+            proxyAdmin.getProxyAdmin(ITransparentUpgradeableProxy(address(xwellProxy))),
             address(proxyAdmin),
             "incorrect proxy admin"
         );
 
         /// PAUSING
-        assertEq(
-            xwellProxy.pauseGuardian(),
-            pauseGuardian,
-            "incorrect pause guardian"
-        );
+        assertEq(xwellProxy.pauseGuardian(), pauseGuardian, "incorrect pause guardian");
         assertEq(xwellProxy.pauseStartTime(), 0, "incorrect pause start time");
-        assertEq(
-            xwellProxy.pauseDuration(),
-            pauseDuration,
-            "incorrect pause duration"
-        );
+        assertEq(xwellProxy.pauseDuration(), pauseDuration, "incorrect pause duration");
         assertFalse(xwellProxy.paused(), "incorrectly paused");
         assertFalse(xwellProxy.pauseUsed(), "pause should not be used");
     }
@@ -134,9 +92,7 @@ contract xWELLUnitTest is BaseTest {
         );
 
         vm.expectRevert("xWELL: pause duration too long");
-        new TransparentUpgradeableProxy(
-            address(xwellLogic), address(proxyAdmin), initData
-        );
+        new TransparentUpgradeableProxy(address(xwellLogic), address(proxyAdmin), initData);
     }
 
     function testPendingOwnerAccepts() public {
@@ -146,9 +102,7 @@ contract xWELLUnitTest is BaseTest {
         xwellProxy.acceptOwnership();
 
         assertEq(xwellProxy.owner(), owner, "incorrect owner");
-        assertEq(
-            xwellProxy.pendingOwner(), address(0), "incorrect pending owner"
-        );
+        assertEq(xwellProxy.pendingOwner(), address(0), "incorrect pending owner");
     }
 
     function testInitializeLogicContractFails() public {
@@ -187,9 +141,7 @@ contract xWELLUnitTest is BaseTest {
 
     function testLockboxCanMintTo(address to, uint112 mintAmount) public {
         /// cannot transfer to the proxy contract
-        to = to == address(xwellProxy)
-            ? address(this)
-            : address(103131212121482329);
+        to = to == address(xwellProxy) ? address(this) : address(103131212121482329);
 
         mintAmount = uint112(_bound(mintAmount, 1, xwellProxy.MAX_SUPPLY()));
 
@@ -251,11 +203,7 @@ contract xWELLUnitTest is BaseTest {
         testPendingOwnerAccepts();
         vm.expectRevert("Ownable: caller is not the owner");
         xwellProxy.addBridge(
-            MintLimits.RateLimitMidPointInfo({
-                bridge: address(0),
-                rateLimitPerSecond: 0,
-                bufferCap: 0
-            })
+            MintLimits.RateLimitMidPointInfo({bridge: address(0), rateLimitPerSecond: 0, bufferCap: 0})
         );
     }
 
@@ -279,11 +227,7 @@ contract xWELLUnitTest is BaseTest {
 
     function testGrantGuardianOwnerSucceeds(address newPauseGuardian) public {
         xwellProxy.grantPauseGuardian(newPauseGuardian);
-        assertEq(
-            xwellProxy.pauseGuardian(),
-            newPauseGuardian,
-            "incorrect pause guardian"
-        );
+        assertEq(xwellProxy.pauseGuardian(), newPauseGuardian, "incorrect pause guardian");
     }
 
     function testGrantPauseGuardianWhilePausedFails() public {
@@ -300,9 +244,7 @@ contract xWELLUnitTest is BaseTest {
     function testUpdatePauseDurationSucceeds() public {
         uint128 newDuration = 8 days;
         xwellProxy.setPauseDuration(newDuration);
-        assertEq(
-            xwellProxy.pauseDuration(), newDuration, "incorrect pause duration"
-        );
+        assertEq(xwellProxy.pauseDuration(), newDuration, "incorrect pause duration");
     }
 
     function testUpdatePauseDurationGtMaxPauseDurationFails() public {
@@ -313,18 +255,10 @@ contract xWELLUnitTest is BaseTest {
     }
 
     function testSetBufferCapOwnerSucceeds(uint112 bufferCap) public {
-        bufferCap = uint112(
-            _bound(
-                bufferCap, xwellProxy.MIN_BUFFER_CAP() + 1, type(uint112).max
-            )
-        );
+        bufferCap = uint112(_bound(bufferCap, xwellProxy.MIN_BUFFER_CAP() + 1, type(uint112).max));
 
         xwellProxy.setBufferCap(address(xerc20Lockbox), bufferCap);
-        assertEq(
-            xwellProxy.bufferCap(address(xerc20Lockbox)),
-            bufferCap,
-            "incorrect buffer cap"
-        );
+        assertEq(xwellProxy.bufferCap(address(xerc20Lockbox)), bufferCap, "incorrect buffer cap");
     }
 
     function testSetBufferCapZeroFails() public {
@@ -334,17 +268,9 @@ contract xWELLUnitTest is BaseTest {
         xwellProxy.setBufferCap(address(xerc20Lockbox), bufferCap);
     }
 
-    function testSetRateLimitPerSecondOwnerSucceeds(
-        uint128 newRateLimitPerSecond
-    ) public {
-        newRateLimitPerSecond = uint128(
-            _bound(
-                newRateLimitPerSecond, 1, xwellProxy.MAX_RATE_LIMIT_PER_SECOND()
-            )
-        );
-        xwellProxy.setRateLimitPerSecond(
-            address(xerc20Lockbox), newRateLimitPerSecond
-        );
+    function testSetRateLimitPerSecondOwnerSucceeds(uint128 newRateLimitPerSecond) public {
+        newRateLimitPerSecond = uint128(_bound(newRateLimitPerSecond, 1, xwellProxy.MAX_RATE_LIMIT_PER_SECOND()));
+        xwellProxy.setRateLimitPerSecond(address(xerc20Lockbox), newRateLimitPerSecond);
 
         assertEq(
             xwellProxy.rateLimitPerSecond(address(xerc20Lockbox)),
@@ -366,23 +292,12 @@ contract xWELLUnitTest is BaseTest {
         }
 
         /// bound input so bridge is not zero address
-        bridge = address(
-            uint160(_bound(uint256(uint160(bridge)), 1, type(uint160).max))
-        );
+        bridge = address(uint160(_bound(uint256(uint160(bridge)), 1, type(uint160).max)));
 
-        newRateLimitPerSecond = uint128(
-            _bound(
-                newRateLimitPerSecond, 1, xwellProxy.MAX_RATE_LIMIT_PER_SECOND()
-            )
-        );
-        newBufferCap = uint112(
-            _bound(
-                newBufferCap, xwellProxy.MIN_BUFFER_CAP() + 1, type(uint112).max
-            )
-        );
+        newRateLimitPerSecond = uint128(_bound(newRateLimitPerSecond, 1, xwellProxy.MAX_RATE_LIMIT_PER_SECOND()));
+        newBufferCap = uint112(_bound(newBufferCap, xwellProxy.MIN_BUFFER_CAP() + 1, type(uint112).max));
 
-        MintLimits.RateLimitMidPointInfo memory newBridge = MintLimits
-            .RateLimitMidPointInfo({
+        MintLimits.RateLimitMidPointInfo memory newBridge = MintLimits.RateLimitMidPointInfo({
             bridge: bridge,
             bufferCap: newBufferCap,
             rateLimitPerSecond: newRateLimitPerSecond
@@ -390,15 +305,9 @@ contract xWELLUnitTest is BaseTest {
 
         xwellProxy.addBridge(newBridge);
 
-        assertEq(
-            xwellProxy.rateLimitPerSecond(bridge),
-            newRateLimitPerSecond,
-            "incorrect rate limit per second"
-        );
+        assertEq(xwellProxy.rateLimitPerSecond(bridge), newRateLimitPerSecond, "incorrect rate limit per second");
 
-        assertEq(
-            xwellProxy.bufferCap(bridge), newBufferCap, "incorrect buffer cap"
-        );
+        assertEq(xwellProxy.bufferCap(bridge), newBufferCap, "incorrect buffer cap");
     }
 
     /// add a new bridge and rate limit
@@ -410,22 +319,11 @@ contract xWELLUnitTest is BaseTest {
         xwellProxy.removeBridge(address(xerc20Lockbox));
         xwellProxy.removeBridge(address(wormholeBridgeAdapterProxy));
 
-        bridge = address(
-            uint160(_bound(uint256(uint160(bridge)), 1, type(uint160).max))
-        );
-        newRateLimitPerSecond = uint128(
-            _bound(
-                newRateLimitPerSecond, 1, xwellProxy.MAX_RATE_LIMIT_PER_SECOND()
-            )
-        );
-        newBufferCap = uint112(
-            _bound(
-                newBufferCap, xwellProxy.MIN_BUFFER_CAP() + 1, type(uint112).max
-            )
-        );
+        bridge = address(uint160(_bound(uint256(uint160(bridge)), 1, type(uint160).max)));
+        newRateLimitPerSecond = uint128(_bound(newRateLimitPerSecond, 1, xwellProxy.MAX_RATE_LIMIT_PER_SECOND()));
+        newBufferCap = uint112(_bound(newBufferCap, xwellProxy.MIN_BUFFER_CAP() + 1, type(uint112).max));
 
-        MintLimits.RateLimitMidPointInfo[] memory newBridge =
-            new MintLimits.RateLimitMidPointInfo[](1);
+        MintLimits.RateLimitMidPointInfo[] memory newBridge = new MintLimits.RateLimitMidPointInfo[](1);
 
         newBridge[0].bridge = bridge;
         newBridge[0].bufferCap = newBufferCap;
@@ -433,27 +331,19 @@ contract xWELLUnitTest is BaseTest {
 
         xwellProxy.addBridges(newBridge);
 
-        assertEq(
-            xwellProxy.rateLimitPerSecond(bridge),
-            newRateLimitPerSecond,
-            "incorrect rate limit per second"
-        );
+        assertEq(xwellProxy.rateLimitPerSecond(bridge), newRateLimitPerSecond, "incorrect rate limit per second");
 
-        assertEq(
-            xwellProxy.bufferCap(bridge), newBufferCap, "incorrect buffer cap"
-        );
+        assertEq(xwellProxy.bufferCap(bridge), newBufferCap, "incorrect buffer cap");
     }
 
     function testAddNewBridgeWithExistingLimitFails() public {
         address newBridge = address(0x1111777777);
-        uint128 rateLimitPerSecond =
-            uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
+        uint128 rateLimitPerSecond = uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
         uint112 bufferCap = 20_000_000 * 1e18;
 
         testAddNewBridgeOwnerSucceeds(newBridge, rateLimitPerSecond, bufferCap);
 
-        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits
-            .RateLimitMidPointInfo({
+        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits.RateLimitMidPointInfo({
             bridge: newBridge,
             bufferCap: bufferCap,
             rateLimitPerSecond: rateLimitPerSecond
@@ -465,12 +355,10 @@ contract xWELLUnitTest is BaseTest {
 
     function testAddNewBridgeWithBufferBelowMinFails() public {
         address newBridge = address(0x1111777777);
-        uint128 rateLimitPerSecond =
-            uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
+        uint128 rateLimitPerSecond = uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
         uint112 bufferCap = xwellProxy.MIN_BUFFER_CAP();
 
-        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits
-            .RateLimitMidPointInfo({
+        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits.RateLimitMidPointInfo({
             bridge: newBridge,
             bufferCap: bufferCap,
             rateLimitPerSecond: rateLimitPerSecond
@@ -482,12 +370,9 @@ contract xWELLUnitTest is BaseTest {
 
     function testSetBridgeBufferBelowMinFails() public {
         address newBridge = address(0x1111777777);
-        uint128 rateLimitPerSecond =
-            uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
+        uint128 rateLimitPerSecond = uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
         uint112 bufferCap = xwellProxy.MIN_BUFFER_CAP();
-        testAddNewBridgeOwnerSucceeds(
-            newBridge, rateLimitPerSecond, bufferCap + 1
-        );
+        testAddNewBridgeOwnerSucceeds(newBridge, rateLimitPerSecond, bufferCap + 1);
 
         vm.expectRevert("MintLimits: buffer cap below min");
         xwellProxy.setBufferCap(newBridge, bufferCap);
@@ -497,8 +382,7 @@ contract xWELLUnitTest is BaseTest {
         address newBridge = address(0x1111777777);
         uint112 bufferCap = 20_000_000 * 1e18;
 
-        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits
-            .RateLimitMidPointInfo({
+        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits.RateLimitMidPointInfo({
             bridge: newBridge,
             bufferCap: bufferCap,
             rateLimitPerSecond: uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND() + 1)
@@ -509,23 +393,18 @@ contract xWELLUnitTest is BaseTest {
     }
 
     function testSetExistingBridgeOverMaxRateLimitPerSecondFails() public {
-        uint128 maxRateLimitPerSecond =
-            uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
+        uint128 maxRateLimitPerSecond = uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
 
         vm.expectRevert("MintLimits: rateLimitPerSecond too high");
-        xwellProxy.setRateLimitPerSecond(
-            address(xerc20Lockbox), maxRateLimitPerSecond + 1
-        );
+        xwellProxy.setRateLimitPerSecond(address(xerc20Lockbox), maxRateLimitPerSecond + 1);
     }
 
     function testAddNewBridgeInvalidAddressFails() public {
         address newBridge = address(0);
-        uint128 rateLimitPerSecond =
-            uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
+        uint128 rateLimitPerSecond = uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
         uint112 bufferCap = 20_000_000 * 1e18;
 
-        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits
-            .RateLimitMidPointInfo({
+        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits.RateLimitMidPointInfo({
             bridge: newBridge,
             bufferCap: bufferCap,
             rateLimitPerSecond: rateLimitPerSecond
@@ -540,8 +419,7 @@ contract xWELLUnitTest is BaseTest {
         address newBridge = address(100);
         uint128 rateLimitPerSecond = 1_000 * 1e18;
 
-        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits
-            .RateLimitMidPointInfo({
+        MintLimits.RateLimitMidPointInfo memory bridge = MintLimits.RateLimitMidPointInfo({
             bridge: newBridge,
             bufferCap: bufferCap,
             rateLimitPerSecond: rateLimitPerSecond
@@ -551,22 +429,14 @@ contract xWELLUnitTest is BaseTest {
         xwellProxy.addBridge(bridge);
     }
 
-    function testSetRateLimitOnNonExistentBridgeFails(
-        uint128 newRateLimitPerSecond
-    ) public {
-        newRateLimitPerSecond = uint128(
-            _bound(
-                newRateLimitPerSecond, 1, xwellProxy.MAX_RATE_LIMIT_PER_SECOND()
-            )
-        );
+    function testSetRateLimitOnNonExistentBridgeFails(uint128 newRateLimitPerSecond) public {
+        newRateLimitPerSecond = uint128(_bound(newRateLimitPerSecond, 1, xwellProxy.MAX_RATE_LIMIT_PER_SECOND()));
 
         vm.expectRevert("MintLimits: non-existent rate limit");
         xwellProxy.setRateLimitPerSecond(address(0), newRateLimitPerSecond);
     }
 
-    function testSetBufferCapOnNonExistentBridgeFails(uint112 newBufferCap)
-        public
-    {
+    function testSetBufferCapOnNonExistentBridgeFails(uint112 newBufferCap) public {
         newBufferCap = uint112(_bound(newBufferCap, 1, type(uint112).max));
         vm.expectRevert("MintLimits: non-existent rate limit");
         xwellProxy.setBufferCap(address(0), newBufferCap);
@@ -575,19 +445,9 @@ contract xWELLUnitTest is BaseTest {
     function testRemoveBridgeOwnerSucceeds() public {
         xwellProxy.removeBridge(address(xerc20Lockbox));
 
-        assertEq(
-            xwellProxy.bufferCap(address(xerc20Lockbox)),
-            0,
-            "incorrect buffer cap"
-        );
-        assertEq(
-            xwellProxy.rateLimitPerSecond(address(xerc20Lockbox)),
-            0,
-            "incorrect rate limit per second"
-        );
-        assertEq(
-            xwellProxy.buffer(address(xerc20Lockbox)), 0, "incorrect buffer"
-        );
+        assertEq(xwellProxy.bufferCap(address(xerc20Lockbox)), 0, "incorrect buffer cap");
+        assertEq(xwellProxy.rateLimitPerSecond(address(xerc20Lockbox)), 0, "incorrect rate limit per second");
+        assertEq(xwellProxy.buffer(address(xerc20Lockbox)), 0, "incorrect buffer");
     }
 
     function testCannotRemoveNonExistentBridge() public {
@@ -606,8 +466,7 @@ contract xWELLUnitTest is BaseTest {
         bridges[1] = address(10001);
 
         {
-            MintLimits.RateLimitMidPointInfo memory newBridge = MintLimits
-                .RateLimitMidPointInfo({
+            MintLimits.RateLimitMidPointInfo memory newBridge = MintLimits.RateLimitMidPointInfo({
                 bridge: bridges[0],
                 bufferCap: 10_000e18,
                 rateLimitPerSecond: xwellProxy.minBufferCap() + 1
@@ -615,11 +474,7 @@ contract xWELLUnitTest is BaseTest {
 
             xwellProxy.addBridge(newBridge);
 
-            assertEq(
-                xwellProxy.bufferCap(bridges[0]),
-                10_000e18,
-                "incorrect buffer cap"
-            );
+            assertEq(xwellProxy.bufferCap(bridges[0]), 10_000e18, "incorrect buffer cap");
             assertEq(
                 xwellProxy.rateLimitPerSecond(bridges[0]),
                 xwellProxy.minBufferCap() + 1,
@@ -627,8 +482,7 @@ contract xWELLUnitTest is BaseTest {
             );
         }
         {
-            MintLimits.RateLimitMidPointInfo memory newBridge = MintLimits
-                .RateLimitMidPointInfo({
+            MintLimits.RateLimitMidPointInfo memory newBridge = MintLimits.RateLimitMidPointInfo({
                 bridge: bridges[1],
                 bufferCap: 10_000e18,
                 rateLimitPerSecond: xwellProxy.minBufferCap() + 1
@@ -636,11 +490,7 @@ contract xWELLUnitTest is BaseTest {
 
             xwellProxy.addBridge(newBridge);
 
-            assertEq(
-                xwellProxy.bufferCap(bridges[1]),
-                10_000e18,
-                "incorrect buffer cap"
-            );
+            assertEq(xwellProxy.bufferCap(bridges[1]), 10_000e18, "incorrect buffer cap");
             assertEq(
                 xwellProxy.rateLimitPerSecond(bridges[1]),
                 xwellProxy.minBufferCap() + 1,
@@ -651,22 +501,15 @@ contract xWELLUnitTest is BaseTest {
         xwellProxy.removeBridges(bridges);
 
         for (uint256 i = 0; i < bridges.length; i++) {
-            assertEq(
-                xwellProxy.bufferCap(bridges[i]), 0, "incorrect buffer cap"
-            );
-            assertEq(
-                xwellProxy.rateLimitPerSecond(bridges[i]),
-                0,
-                "incorrect rate limit per second"
-            );
+            assertEq(xwellProxy.bufferCap(bridges[i]), 0, "incorrect buffer cap");
+            assertEq(xwellProxy.rateLimitPerSecond(bridges[i]), 0, "incorrect rate limit per second");
             assertEq(xwellProxy.buffer(bridges[i]), 0, "incorrect buffer");
         }
     }
 
     function testDepleteBufferBridgeSucceeds() public {
         address bridge = address(0xeeeee);
-        uint128 rateLimitPerSecond =
-            uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
+        uint128 rateLimitPerSecond = uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
         uint112 bufferCap = 20_000_000 * 1e18;
 
         testAddNewBridgeOwnerSucceeds(bridge, rateLimitPerSecond, bufferCap);
@@ -685,32 +528,15 @@ contract xWELLUnitTest is BaseTest {
         vm.prank(bridge);
         xwellProxy.burn(address(this), amount);
 
-        assertEq(
-            xwellProxy.buffer(bridge),
-            buffer + amount,
-            "incorrect buffer amount"
-        );
-        assertEq(
-            xwellProxy.balanceOf(address(this)),
-            userStartingBalance - amount,
-            "incorrect user balance"
-        );
-        assertEq(
-            xwellProxy.allowance(address(this), bridge),
-            0,
-            "incorrect allowance"
-        );
-        assertEq(
-            startingTotalSupply - xwellProxy.totalSupply(),
-            amount,
-            "incorrect total supply"
-        );
+        assertEq(xwellProxy.buffer(bridge), buffer + amount, "incorrect buffer amount");
+        assertEq(xwellProxy.balanceOf(address(this)), userStartingBalance - amount, "incorrect user balance");
+        assertEq(xwellProxy.allowance(address(this), bridge), 0, "incorrect allowance");
+        assertEq(startingTotalSupply - xwellProxy.totalSupply(), amount, "incorrect total supply");
     }
 
     function testReplenishBufferBridgeSucceeds() public {
         address bridge = address(0xeeeee);
-        uint128 rateLimitPerSecond =
-            uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
+        uint128 rateLimitPerSecond = uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
         uint112 bufferCap = 20_000_000 * 1e18;
 
         testAddNewBridgeOwnerSucceeds(bridge, rateLimitPerSecond, bufferCap);
@@ -724,27 +550,14 @@ contract xWELLUnitTest is BaseTest {
         vm.prank(bridge);
         xwellProxy.mint(address(this), amount);
 
-        assertEq(
-            xwellProxy.buffer(bridge),
-            buffer - amount,
-            "incorrect buffer amount"
-        );
-        assertEq(
-            xwellProxy.totalSupply() - startingTotalSupply,
-            amount,
-            "incorrect total supply"
-        );
-        assertEq(
-            xwellProxy.balanceOf(address(this)) - userStartingBalance,
-            amount,
-            "incorrect user balance"
-        );
+        assertEq(xwellProxy.buffer(bridge), buffer - amount, "incorrect buffer amount");
+        assertEq(xwellProxy.totalSupply() - startingTotalSupply, amount, "incorrect total supply");
+        assertEq(xwellProxy.balanceOf(address(this)) - userStartingBalance, amount, "incorrect user balance");
     }
 
     function testReplenishBufferBridgeByZeroFails() public {
         address bridge = address(0xeeeee);
-        uint128 rateLimitPerSecond =
-            uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
+        uint128 rateLimitPerSecond = uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
         uint112 bufferCap = 20_000_000 * 1e18;
 
         testAddNewBridgeOwnerSucceeds(bridge, rateLimitPerSecond, bufferCap);
@@ -756,8 +569,7 @@ contract xWELLUnitTest is BaseTest {
 
     function testDepleteBufferBridgeByZeroFails() public {
         address bridge = address(0xeeeee);
-        uint128 rateLimitPerSecond =
-            uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
+        uint128 rateLimitPerSecond = uint128(xwellProxy.MAX_RATE_LIMIT_PER_SECOND());
         uint112 bufferCap = 20_000_000 * 1e18;
 
         testAddNewBridgeOwnerSucceeds(bridge, rateLimitPerSecond, bufferCap);
@@ -801,11 +613,7 @@ contract xWELLUnitTest is BaseTest {
         xwellProxy.ownerUnpause();
         assertFalse(xwellProxy.paused(), "contract not unpaused");
         assertEq(xwellProxy.pauseStartTime(), 0, "contract not unpaused");
-        assertEq(
-            xwellProxy.pauseGuardian(),
-            address(0),
-            "guardian not kicked after owner unpause"
-        );
+        assertEq(xwellProxy.pauseGuardian(), address(0), "guardian not kicked after owner unpause");
     }
 
     function testOwnerUnpauseFailsNotPaused() public {
@@ -852,8 +660,7 @@ contract xWELLUnitTest is BaseTest {
     }
 
     function testIncreaseAllowance(uint256 amount) public {
-        uint256 startingAllowance =
-            xwellProxy.allowance(address(this), address(xerc20Lockbox));
+        uint256 startingAllowance = xwellProxy.allowance(address(this), address(xerc20Lockbox));
 
         xwellProxy.increaseAllowance(address(xerc20Lockbox), amount);
 
@@ -869,8 +676,7 @@ contract xWELLUnitTest is BaseTest {
 
         amount /= 2;
 
-        uint256 startingAllowance =
-            xwellProxy.allowance(address(this), address(xerc20Lockbox));
+        uint256 startingAllowance = xwellProxy.allowance(address(this), address(xerc20Lockbox));
 
         xwellProxy.decreaseAllowance(address(xerc20Lockbox), amount);
 
@@ -887,13 +693,8 @@ contract xWELLUnitTest is BaseTest {
         uint256 ownerPrivateKey = 0xA11CE;
         address owner = vm.addr(ownerPrivateKey);
 
-        SigUtils.Permit memory permit = SigUtils.Permit({
-            owner: owner,
-            spender: spender,
-            value: amount,
-            nonce: 0,
-            deadline: deadline
-        });
+        SigUtils.Permit memory permit =
+            SigUtils.Permit({owner: owner, spender: spender, value: amount, nonce: 0, deadline: deadline});
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
 
@@ -901,9 +702,7 @@ contract xWELLUnitTest is BaseTest {
 
         xwellProxy.permit(owner, spender, amount, deadline, v, r, s);
 
-        assertEq(
-            xwellProxy.allowance(owner, spender), amount, "incorrect allowance"
-        );
+        assertEq(xwellProxy.allowance(owner, spender), amount, "incorrect allowance");
         assertEq(xwellProxy.nonces(owner), 1, "incorrect nonce");
     }
 }

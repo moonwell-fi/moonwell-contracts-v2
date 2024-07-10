@@ -21,17 +21,11 @@ contract EcosystemReserveController is Ownable {
         ECOSYSTEM_RESERVE = IEcosystemReserve(ecosystemReserve);
     }
 
-    function approve(IERC20 token, address recipient, uint256 amount)
-        external
-        onlyOwner
-    {
+    function approve(IERC20 token, address recipient, uint256 amount) external onlyOwner {
         ECOSYSTEM_RESERVE.approve(token, recipient, amount);
     }
 
-    function transfer(IERC20 token, address recipient, uint256 amount)
-        external
-        onlyOwner
-    {
+    function transfer(IERC20 token, address recipient, uint256 amount) external onlyOwner {
         ECOSYSTEM_RESERVE.transfer(token, recipient, amount);
     }
 

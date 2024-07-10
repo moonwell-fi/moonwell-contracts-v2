@@ -17,9 +17,7 @@ contract mipb18 is HybridProposal, Configs, ParameterValidation {
     uint256 public constant AERO_NEW_CF = 0.65e18;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b18/MIP-B18.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-b18/MIP-B18.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 12;
@@ -41,9 +39,7 @@ contract mipb18 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_AERO"),
-                AERO_NEW_CF
+                "_setCollateralFactor(address,uint256)", addresses.getAddress("MOONWELL_AERO"), AERO_NEW_CF
             ),
             "Set collateral factor for Moonwell AERO to updated collateral factor"
         );
@@ -51,8 +47,7 @@ contract mipb18 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_cbETH"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B18")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_CBETH_MIP_B18")
             ),
             "Set interest rate model for Moonwell cbETH to updated rate model"
         );
@@ -60,8 +55,7 @@ contract mipb18 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_wstETH"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WSTETH_MIP_B18")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WSTETH_MIP_B18")
             ),
             "Set interest rate model for Moonwell wstETH to updated rate model"
         );
@@ -69,8 +63,7 @@ contract mipb18 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_rETH"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_RETH_MIP_B18")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_RETH_MIP_B18")
             ),
             "Set interest rate model for Moonwell rETH to updated rate model"
         );
@@ -114,8 +107,6 @@ contract mipb18 is HybridProposal, Configs, ParameterValidation {
             })
         );
 
-        _validateCF(
-            addresses, addresses.getAddress("MOONWELL_AERO"), AERO_NEW_CF
-        );
+        _validateCF(addresses, addresses.getAddress("MOONWELL_AERO"), AERO_NEW_CF);
     }
 }

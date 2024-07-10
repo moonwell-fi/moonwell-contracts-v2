@@ -36,13 +36,7 @@ contract MErc20Immutable is MErc20 {
 
         // Initialize the market
         initialize(
-            underlying_,
-            comptroller_,
-            interestRateModel_,
-            initialExchangeRateMantissa_,
-            name_,
-            symbol_,
-            decimals_
+            underlying_, comptroller_, interestRateModel_, initialExchangeRateMantissa_, name_, symbol_, decimals_
         );
 
         // Set the proper admin now that initialization is done

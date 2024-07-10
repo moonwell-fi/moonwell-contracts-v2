@@ -5,10 +5,7 @@ import "@forge-std/Test.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {
-    ActionType,
-    HybridProposal
-} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ActionType, HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
@@ -26,9 +23,8 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
     uint256 public constant collateralFactor = 0.6e18;
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            "Set collateral factor to 0.6e18 for MOONWELL_WETH on Moonbeam."
-        );
+        bytes memory proposalDescription =
+            abi.encodePacked("Set collateral factor to 0.6e18 for MOONWELL_WETH on Moonbeam.");
         _setProposalDescription(proposalDescription);
     }
 
@@ -42,9 +38,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
             addresses.getAddress("UNITROLLER", block.chainid.toBaseChainId()),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
-                addresses.getAddress(
-                    "MOONWELL_WETH", block.chainid.toBaseChainId()
-                ),
+                addresses.getAddress("MOONWELL_WETH", block.chainid.toBaseChainId()),
                 collateralFactor
             ),
             "Set collateral factor",
@@ -56,14 +50,8 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
         vm.selectFork(BASE_FORK_ID);
         _runExtChain(addresses, actions.filter(ActionType.Base));
 
-        require(
-            actions.proposalActionTypeCount(ActionType.Base) == 1,
-            "invalid base proposal length"
-        );
-        require(
-            actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
-            "invalid moonbeam proposal length"
-        );
+        require(actions.proposalActionTypeCount(ActionType.Base) == 1, "invalid base proposal length");
+        require(actions.proposalActionTypeCount(ActionType.Moonbeam) == 1, "invalid moonbeam proposal length");
 
         vm.selectFork(primaryForkId());
     }
@@ -73,8 +61,7 @@ contract TemporalGovernorProposalIntegrationTest is Configs, HybridProposal {
 
         Comptroller unitroller = Comptroller(addresses.getAddress("UNITROLLER"));
 
-        (, uint256 collateralFactorMantissa) =
-            unitroller.markets(addresses.getAddress("MOONWELL_WETH"));
+        (, uint256 collateralFactorMantissa) = unitroller.markets(addresses.getAddress("MOONWELL_WETH"));
         assertEq(collateralFactorMantissa, collateralFactor);
 
         vm.selectFork(primaryForkId());

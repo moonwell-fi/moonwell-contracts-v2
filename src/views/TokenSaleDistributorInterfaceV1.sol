@@ -2,15 +2,9 @@
 pragma solidity 0.8.19;
 
 interface TokenSaleDistributorInterfaceV1 {
-    function getPriorVotes(address account, uint256 blockNumber)
-        external
-        view
-        returns (uint256);
+    function getPriorVotes(address account, uint256 blockNumber) external view returns (uint256);
 
-    function totalAllocated(address recipient)
-        external
-        view
-        returns (uint256);
+    function totalAllocated(address recipient) external view returns (uint256);
 
     function totalClaimed(address recipient) external view returns (uint256);
 

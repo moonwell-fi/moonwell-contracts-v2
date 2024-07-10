@@ -13,9 +13,7 @@ contract mipb19 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B19";
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b19/MIP-B19.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-b19/MIP-B19.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 16;
@@ -35,8 +33,7 @@ contract mipb19 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC")
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );
@@ -44,8 +41,7 @@ contract mipb19 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_WETH"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B19")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_WETH_MIP_B19")
             ),
             "Set interest rate model for Moonwell WETH to updated rate model"
         );
@@ -53,8 +49,7 @@ contract mipb19 is HybridProposal, Configs, ParameterValidation {
         _pushAction(
             addresses.getAddress("MOONWELL_AERO"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_AERO_MIP_B19")
+                "_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_MOONWELL_AERO_MIP_B19")
             ),
             "Set interest rate model for Moonwell AERO to updated rate model"
         );

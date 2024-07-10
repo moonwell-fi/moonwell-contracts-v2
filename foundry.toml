@@ -13,7 +13,7 @@ ignored_warnings_from = ["src/MErc20Delegator.sol", "src/tokensale/TokenSaleDist
 
 [fmt]
 # Maximum line length where formatter will try to wrap the line
-line_length = 80
+line_length = 120
 # Number of spaces per indentation level
 tab_width = 4
 # Print spaces between brackets
@@ -21,13 +21,17 @@ bracket_spacing = false
 # Style of uint/int256 types
 int_types = "long"
 # If function parameters are multiline then always put the function attributes on separate lines
-func_attrs_with_params_multiline = true
+func_attrs_with_params_multiline = false
 # Style of quotation marks
 quote_style = "double"
 # Style of underscores in number literals
 number_underscore = "preserve"
 # Sort imports
 sort_imports = true
+# Style of statement blocks independently of the line length
+single_line_statement_blocks = "multi"
+# Formatting of long function headers.
+multiline_func_header = "params_first"
 
 [fuzz]
 runs = 1

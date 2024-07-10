@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {AggregatorV3Interface} from
-    "@protocol/oracles/AggregatorV3Interface.sol";
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 
 contract MockChainlinkOracle is AggregatorV3Interface {
     // fixed value
@@ -36,13 +35,7 @@ contract MockChainlinkOracle is AggregatorV3Interface {
         external
         view
         override
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
         return (_getRoundId, _value, 1620651856, 1620651856, _getRoundId);
     }
@@ -51,17 +44,9 @@ contract MockChainlinkOracle is AggregatorV3Interface {
         external
         view
         override
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
-        return (
-            _roundId, _value, block.timestamp, block.timestamp, _answeredInRound
-        );
+        return (_roundId, _value, block.timestamp, block.timestamp, _answeredInRound);
     }
 
     function set(

@@ -4,10 +4,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {
-    ActionType,
-    HybridProposal
-} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ActionType, HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
@@ -21,9 +18,7 @@ contract mipm33 is HybridProposal, ParameterValidation {
     string public constant override name = "MIP-M33";
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m33/MIP-M33.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-m33/MIP-M33.md"));
         _setProposalDescription(proposalDescription);
     }
 
@@ -40,10 +35,7 @@ contract mipm33 is HybridProposal, ParameterValidation {
         /// Moonbeam actions
         _pushAction(
             addresses.getAddress("MOONWELL_mWBTC"),
-            abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_mWBTCwh")
-            ),
+            abi.encodeWithSignature("_setInterestRateModel(address)", addresses.getAddress("JUMP_RATE_IRM_mWBTCwh")),
             "Set interest rate model for mWBTCwh to updated rate model",
             ActionType.Moonbeam
         );
@@ -51,15 +43,9 @@ contract mipm33 is HybridProposal, ParameterValidation {
 
     function run(Addresses addresses, address) public override {
         /// safety check to ensure no base actions are run
-        require(
-            actions.proposalActionTypeCount(ActionType.Base) == 0,
-            "MIP-M33: should have no base actions"
-        );
+        require(actions.proposalActionTypeCount(ActionType.Base) == 0, "MIP-M33: should have no base actions");
 
-        require(
-            actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
-            "MIP-M33: should have moonbeam actions"
-        );
+        require(actions.proposalActionTypeCount(ActionType.Moonbeam) == 1, "MIP-M33: should have moonbeam actions");
 
         /// only run actions on moonbeam
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));

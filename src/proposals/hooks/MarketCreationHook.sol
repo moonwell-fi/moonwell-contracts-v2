@@ -16,12 +16,8 @@ contract MarketCreationHook {
     /// 2. acceptAdmin on mToken
     /// 3. approve underlying on ERC20
     /// 4. mint mToken
-    bytes4[4] public orderedActions = [
-        detector,
-        MToken._acceptAdmin.selector,
-        IERC20.approve.selector,
-        MErc20.mint.selector
-    ];
+    bytes4[4] public orderedActions =
+        [detector, MToken._acceptAdmin.selector, IERC20.approve.selector, MErc20.mint.selector];
 
     /// @notice array of created mTokens in proposal
     address[] private createdMTokens;
@@ -60,18 +56,9 @@ contract MarketCreationHook {
 
                 /// --------------- FUNCTION SIGNATURE VERIFICATION ---------------
 
-                require(
-                    bytesToBytes4(datas[i + 1]) == orderedActions[1],
-                    "action 1 must accept admin"
-                );
-                require(
-                    bytesToBytes4(datas[i + 2]) == orderedActions[2],
-                    "action 2 must approve underlying"
-                );
-                require(
-                    bytesToBytes4(datas[i + 3]) == orderedActions[3],
-                    "action 3 must mint mtoken"
-                );
+                require(bytesToBytes4(datas[i + 1]) == orderedActions[1], "action 1 must accept admin");
+                require(bytesToBytes4(datas[i + 2]) == orderedActions[2], "action 2 must approve underlying");
+                require(bytesToBytes4(datas[i + 3]) == orderedActions[3], "action 3 must mint mtoken");
 
                 /// --------------- ARGUMENT VERIFICATION ---------------
 
@@ -86,18 +73,9 @@ contract MarketCreationHook {
                 uint256 mintAmount = getMintAmount(datas[i + 3]);
 
                 require(mintAmount != 0, "mint amount must be greater than 0");
-                require(
-                    tokenAmount != 0,
-                    "token approve amount must be greater than 0"
-                );
-                require(
-                    mtoken == secondMToken,
-                    "mtoken supported and minted must be the same"
-                );
-                require(
-                    mtoken == approvalMToken,
-                    "must approve mtoken to spend tokens"
-                );
+                require(tokenAmount != 0, "token approve amount must be greater than 0");
+                require(mtoken == secondMToken, "mtoken supported and minted must be the same");
+                require(mtoken == approvalMToken, "must approve mtoken to spend tokens");
 
                 createdMTokens.push(mtoken);
 
@@ -122,14 +100,10 @@ contract MarketCreationHook {
         /// and that they have been minted and sent to the burn address
         for (uint256 i = 0; i < createdMTokens.length; i++) {
             require(
-                MToken(createdMTokens[i]).admin()
-                    == Comptroller(comptroller).admin(),
+                MToken(createdMTokens[i]).admin() == Comptroller(comptroller).admin(),
                 "mToken admin must be the same as comptroller admin"
             );
-            require(
-                MToken(createdMTokens[i]).balanceOf(address(0)) >= 1,
-                "mToken not minted and burned"
-            );
+            require(MToken(createdMTokens[i]).balanceOf(address(0)) >= 1, "mToken not minted and burned");
         }
 
         MToken[] memory markets = Comptroller(comptroller).getAllMarkets();
@@ -143,11 +117,7 @@ contract MarketCreationHook {
         comptroller = address(0);
     }
 
-    function getTokenAmount(bytes memory input)
-        public
-        pure
-        returns (uint256 result)
-    {
+    function getTokenAmount(bytes memory input) public pure returns (uint256 result) {
         require(input.length == 68, "invalid length, input must be 68 bytes");
 
         /// first 32 bytes of a dynamic byte array is just the length of the array
@@ -162,11 +132,7 @@ contract MarketCreationHook {
         result = uint256(rawBytes);
     }
 
-    function getMintAmount(bytes memory input)
-        public
-        pure
-        returns (uint256 result)
-    {
+    function getMintAmount(bytes memory input) public pure returns (uint256 result) {
         require(input.length == 36, "invalid length, input must be 36 bytes");
 
         /// first 32 bytes of a dynamic byte array is just the length of the array
@@ -181,11 +147,7 @@ contract MarketCreationHook {
         result = uint256(rawBytes);
     }
 
-    function extractAddress(bytes memory input)
-        public
-        pure
-        returns (address result)
-    {
+    function extractAddress(bytes memory input) public pure returns (address result) {
         /// first 32 bytes of a dynamic byte array is just the length of the array
         bytes32 rawBytes;
         assembly {
@@ -197,11 +159,7 @@ contract MarketCreationHook {
     }
 
     /// @notice function to grab the first 4 bytes of calldata payload
-    function bytesToBytes4(bytes memory toSlice)
-        public
-        pure
-        returns (bytes4 functionSignature)
-    {
+    function bytesToBytes4(bytes memory toSlice) public pure returns (bytes4 functionSignature) {
         if (toSlice.length < 4) {
             return bytes4(0);
         }

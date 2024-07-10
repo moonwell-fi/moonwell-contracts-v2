@@ -5,10 +5,7 @@ pragma solidity 0.8.10;
 import "./ReentrancyGuard.sol";
 import "./TokenSaleDistributorProxyStorage.sol";
 
-contract TokenSaleDistributorProxy is
-    ReentrancyGuard,
-    TokenSaleDistributorProxyStorage
-{
+contract TokenSaleDistributorProxy is ReentrancyGuard, TokenSaleDistributorProxyStorage {
     /**
      * The admin was changed
      */
@@ -37,10 +34,7 @@ contract TokenSaleDistributorProxy is
      * Accept admin transfer from the current admin to the new.
      */
     function acceptPendingAdmin() public {
-        require(
-            msg.sender == pendingAdmin && pendingAdmin != address(0),
-            "Caller must be the pending admin"
-        );
+        require(msg.sender == pendingAdmin && pendingAdmin != address(0), "Caller must be the pending admin");
 
         admin = pendingAdmin;
         pendingAdmin = address(0);
@@ -53,10 +47,7 @@ contract TokenSaleDistributorProxy is
      *
      * @param newImplementation New contract implementation contract address
      */
-    function setPendingImplementation(address newImplementation)
-        public
-        adminOnly
-    {
+    function setPendingImplementation(address newImplementation) public adminOnly {
         require(newImplementation != address(0), "Cannot set to zero address");
         pendingImplementation = newImplementation;
     }
@@ -66,8 +57,7 @@ contract TokenSaleDistributorProxy is
      */
     function acceptPendingImplementation() public {
         require(
-            msg.sender == pendingImplementation
-                && pendingImplementation != address(0),
+            msg.sender == pendingImplementation && pendingImplementation != address(0),
             "Only the pending implementation contract can call this"
         );
 

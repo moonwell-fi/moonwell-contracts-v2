@@ -10,10 +10,7 @@ import "@forge-std/Test.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
 
-import {
-    deployFactory,
-    deployFactoryEth
-} from "@protocol/4626/4626FactoryDeploy.sol";
+import {deployFactory, deployFactoryEth} from "@protocol/4626/4626FactoryDeploy.sol";
 import {Factory4626} from "@protocol/4626/Factory4626.sol";
 import {Factory4626Eth} from "@protocol/4626/Factory4626Eth.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
@@ -47,10 +44,7 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
     /// @param rewardRecipient the address to receive rewards
     /// @param deployed the address of the deployed contract
     event DeployedMoonwellERC4626(
-        address indexed asset,
-        address indexed mToken,
-        address indexed rewardRecipient,
-        address deployed
+        address indexed asset, address indexed mToken, address indexed rewardRecipient, address deployed
     );
 
     function setUp() public {
@@ -65,26 +59,10 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
     }
 
     function testSetup() public view {
-        assertEq(
-            factory.weth(),
-            addresses.getAddress("WETH"),
-            "incorrect WETH address"
-        );
-        assertEq(
-            address(factory.moontroller()),
-            addresses.getAddress("UNITROLLER"),
-            "incorrect moontroller address"
-        );
-        assertEq(
-            ethFactory.weth(),
-            addresses.getAddress("WETH"),
-            "incorrect WETH address"
-        );
-        assertEq(
-            address(ethFactory.moontroller()),
-            addresses.getAddress("UNITROLLER"),
-            "incorrect moontroller address"
-        );
+        assertEq(factory.weth(), addresses.getAddress("WETH"), "incorrect WETH address");
+        assertEq(address(factory.moontroller()), addresses.getAddress("UNITROLLER"), "incorrect moontroller address");
+        assertEq(ethFactory.weth(), addresses.getAddress("WETH"), "incorrect WETH address");
+        assertEq(address(ethFactory.moontroller()), addresses.getAddress("UNITROLLER"), "incorrect moontroller address");
     }
 
     /// Sad Paths
@@ -152,24 +130,10 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
             addresses.getAddress("cbETH"),
             "incorrect asset address, should be cbEth"
         );
-        assertEq(
-            address(MoonwellERC4626(vault).mToken()),
-            mcbEth,
-            "incorrect mToken address"
-        );
-        assertEq(
-            MoonwellERC4626(vault).rewardRecipient(),
-            rewardRecipient,
-            "incorrect rewardRecipient address"
-        );
-        assertEq(
-            address(MoonwellERC4626(vault).comptroller()),
-            address(comptroller),
-            "incorrect moontroller address"
-        );
-        assertTrue(
-            MoonwellERC4626(vault).totalSupply() > 0, "incorrect totalSupply"
-        );
+        assertEq(address(MoonwellERC4626(vault).mToken()), mcbEth, "incorrect mToken address");
+        assertEq(MoonwellERC4626(vault).rewardRecipient(), rewardRecipient, "incorrect rewardRecipient address");
+        assertEq(address(MoonwellERC4626(vault).comptroller()), address(comptroller), "incorrect moontroller address");
+        assertTrue(MoonwellERC4626(vault).totalSupply() > 0, "incorrect totalSupply");
         assertEq(
             MoonwellERC4626(vault).totalSupply(),
             MoonwellERC4626(vault).balanceOf(address(0)),
@@ -187,41 +151,20 @@ contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
         /// take a snapshot of the current state
         uint256 snapshotId = vm.snapshot();
         /// get the address of the deployed contract
-        address vault =
-            ethFactory.deployMoonwellERC4626Eth(mwEth, rewardRecipient);
+        address vault = ethFactory.deployMoonwellERC4626Eth(mwEth, rewardRecipient);
         /// now roll back snapshot to check the emitted event
         assertTrue(vm.revertTo(snapshotId), "rollback failed");
 
         vm.expectEmit(true, true, true, true, address(ethFactory));
-        emit DeployedMoonwellERC4626(
-            address(weth), mwEth, rewardRecipient, vault
-        );
+        emit DeployedMoonwellERC4626(address(weth), mwEth, rewardRecipient, vault);
 
         vault = ethFactory.deployMoonwellERC4626Eth(mwEth, rewardRecipient);
 
-        assertEq(
-            address(MoonwellERC4626(vault).asset()),
-            address(weth),
-            "incorrect asset address, should be weth"
-        );
-        assertEq(
-            address(MoonwellERC4626(vault).mToken()),
-            mwEth,
-            "incorrect mToken address"
-        );
-        assertEq(
-            MoonwellERC4626(vault).rewardRecipient(),
-            rewardRecipient,
-            "incorrect rewardRecipient address"
-        );
-        assertEq(
-            address(MoonwellERC4626(vault).comptroller()),
-            address(comptroller),
-            "incorrect moontroller address"
-        );
-        assertTrue(
-            MoonwellERC4626(vault).totalSupply() > 0, "incorrect totalSupply"
-        );
+        assertEq(address(MoonwellERC4626(vault).asset()), address(weth), "incorrect asset address, should be weth");
+        assertEq(address(MoonwellERC4626(vault).mToken()), mwEth, "incorrect mToken address");
+        assertEq(MoonwellERC4626(vault).rewardRecipient(), rewardRecipient, "incorrect rewardRecipient address");
+        assertEq(address(MoonwellERC4626(vault).comptroller()), address(comptroller), "incorrect moontroller address");
+        assertTrue(MoonwellERC4626(vault).totalSupply() > 0, "incorrect totalSupply");
         assertEq(
             MoonwellERC4626(vault).totalSupply(),
             MoonwellERC4626(vault).balanceOf(address(0)),

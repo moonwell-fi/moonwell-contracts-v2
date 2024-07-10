@@ -28,10 +28,7 @@ contract Factory4626Eth {
     /// @param rewardRecipient the address to receive rewards
     /// @param deployed the address of the deployed contract
     event DeployedMoonwellERC4626(
-        address indexed asset,
-        address indexed mToken,
-        address indexed rewardRecipient,
-        address deployed
+        address indexed asset, address indexed mToken, address indexed rewardRecipient, address deployed
     );
 
     /// @param _moontroller The Moonwell comptroller contract
@@ -45,41 +42,22 @@ contract Factory4626Eth {
     /// @param mToken The corresponding Moonwell mToken,
     /// should be MOONWELL_WETH
     /// @param rewardRecipient The address to receive rewards
-    function deployMoonwellERC4626Eth(address mToken, address rewardRecipient)
-        external
-        returns (address vault)
-    {
+    function deployMoonwellERC4626Eth(address mToken, address rewardRecipient) external returns (address vault) {
         /// parameter checks
         require(rewardRecipient != address(0), "INVALID_RECIPIENT");
         require(MErc20(mToken).underlying() == weth, "INVALID_ASSET");
 
         /// create the vault contract
-        vault = address(
-            new MoonwellERC4626Eth(
-                ERC20(weth), MErc20(mToken), rewardRecipient, moontroller
-            )
-        );
+        vault = address(new MoonwellERC4626Eth(ERC20(weth), MErc20(mToken), rewardRecipient, moontroller));
 
         /// handle initial mints to the vault to prevent front-running
         /// and share price manipulation
 
-        require(
-            ERC20(weth).transferFrom(
-                msg.sender, address(this), INITIAL_MINT_AMOUNT
-            ),
-            "transferFrom failed"
-        );
+        require(ERC20(weth).transferFrom(msg.sender, address(this), INITIAL_MINT_AMOUNT), "transferFrom failed");
 
-        require(
-            ERC20(weth).approve(vault, INITIAL_MINT_AMOUNT), "approve failed"
-        );
+        require(ERC20(weth).approve(vault, INITIAL_MINT_AMOUNT), "approve failed");
 
-        require(
-            MoonwellERC4626Eth(payable(vault)).deposit(
-                INITIAL_MINT_AMOUNT, address(0)
-            ) > 0,
-            "deposit failed"
-        );
+        require(MoonwellERC4626Eth(payable(vault)).deposit(INITIAL_MINT_AMOUNT, address(0)) > 0, "deposit failed");
 
         emit DeployedMoonwellERC4626(weth, mToken, rewardRecipient, vault);
     }

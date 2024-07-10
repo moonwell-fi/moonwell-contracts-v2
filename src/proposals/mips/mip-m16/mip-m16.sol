@@ -4,8 +4,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {GovernanceProposal} from
-    "@proposals/proposalTypes/GovernanceProposal.sol";
+import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
@@ -13,9 +12,7 @@ contract mipm16 is GovernanceProposal {
     string public constant override name = "MIP-M16";
 
     constructor() {
-        bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m16/MIP-M16.md")
-        );
+        bytes memory proposalDescription = abi.encodePacked(vm.readFile("./src/proposals/mips/mip-m16/MIP-M16.md"));
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 70;
@@ -77,40 +74,27 @@ contract mipm16 is GovernanceProposal {
         );
 
         /// @dev Nomad reallocation multisig
-        address nomadReallocationMultisig =
-            addresses.getAddress("NOMAD_REALLOCATION_MULTISIG");
+        address nomadReallocationMultisig = addresses.getAddress("NOMAD_REALLOCATION_MULTISIG");
 
         /// @dev transfer USDC from the timelock to the multisig
         _pushGovernanceAction(
             addresses.getAddress("madUSDC"),
             "Transfer madUSDC from the Timelock to the multisig",
-            abi.encodeWithSignature(
-                "transfer(address,uint256)",
-                nomadReallocationMultisig,
-                mUSDCReserves
-            )
+            abi.encodeWithSignature("transfer(address,uint256)", nomadReallocationMultisig, mUSDCReserves)
         );
 
         /// @dev transfer WETH from the timelock to the multisig
         _pushGovernanceAction(
             addresses.getAddress("madWETH"),
             "Transfer madETH from the Timelock to the multisig",
-            abi.encodeWithSignature(
-                "transfer(address,uint256)",
-                nomadReallocationMultisig,
-                mETHReserves
-            )
+            abi.encodeWithSignature("transfer(address,uint256)", nomadReallocationMultisig, mETHReserves)
         );
 
         /// @dev transfer WBTC from the timelock to the multisig
         _pushGovernanceAction(
             addresses.getAddress("madWBTC"),
             "Transfer madWBTC from the Timelock to the multisig",
-            abi.encodeWithSignature(
-                "transfer(address,uint256)",
-                nomadReallocationMultisig,
-                mwBTCReserves
-            )
+            abi.encodeWithSignature("transfer(address,uint256)", nomadReallocationMultisig, mwBTCReserves)
         );
     }
 
@@ -123,9 +107,7 @@ contract mipm16 is GovernanceProposal {
         setDebug(true);
 
         _simulateGovernanceActions(
-            addresses.getAddress("MOONBEAM_TIMELOCK"),
-            addresses.getAddress("ARTEMIS_GOVERNOR"),
-            address(this)
+            addresses.getAddress("MOONBEAM_TIMELOCK"), addresses.getAddress("ARTEMIS_GOVERNOR"), address(this)
         );
     }
 }
