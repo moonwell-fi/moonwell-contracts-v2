@@ -1,0 +1,60 @@
+{
+    "1287": {
+        "addRewardInfo": {
+            "amount": 4000e18,
+            "endTimestamp": 1723174200,
+            "pid": 15,
+            "rewardPerSec": 0.5e18,
+            "target": "STELLASWAP_REWARDER"
+        },
+        "bridgeToRecipient": [
+            {
+                "amount": 5000e18,
+                "network": 30,
+                "target": "TEMPORAL_GOVERNOR"
+            },
+            {
+                "amount": 6000e18,
+                "network": 24,
+                "target": "TEMPORAL_GOVERNOR"
+            }
+        ],
+        "setRewardSpeed": [
+            {
+                "market": "mxcDOT",
+                "newSupplySpeed": 0.54e18,
+                "newBorrowSpeed": 1,
+                "rewardType": 0,
+                "target": "UNITROLLER"
+            },
+            {
+                "market": "mxcDOT",
+                "newSupplySpeed": 0.23e18,
+                "newBorrowSpeed": 1,
+                "rewardType": 1,
+                "target": "UNITROLLER"
+            }
+        ],
+        "stkWellEmissionsPerSecond": 0.65e18,
+        "transferFrom": [
+            {
+                "amount": 1000e18,
+                "from": "MGLIMMER_MULTISIG",
+                "to": "MULTICHAIN_GOVERNOR_PROXY",
+                "token": "WELL"
+            },
+            {
+                "amount": 2000e18,
+                "from": "MGLIMMER_MULTISIG",
+                "to": "UNITROLLER",
+                "token": "WELL"
+            },
+            {
+                "amount": 3000e18,
+                "from": "MGLIMMER_MULTISIG",
+                "to": "ECOSYSTEM_RESERVE_PROXY",
+                "token": "WELL"
+            }
+        ]
+    }
+}
