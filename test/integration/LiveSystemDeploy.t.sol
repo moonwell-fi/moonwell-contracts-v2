@@ -14,6 +14,7 @@ import {ChainIds} from "@utils/ChainIds.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {Unitroller} from "@protocol/Unitroller.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
@@ -39,20 +40,26 @@ contract LiveSystemDeploy is Test {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        // TODO verify wheter the system has already been deployed and
-        // initialized on chain and skip
-        // proposal execution in case
         proposal = new mip00();
         proposal.primaryForkId().createForksAndSelect();
 
-        proposal.deploy(addresses, address(proposal));
-        proposal.afterDeploy(addresses, address(proposal));
+        if (!addresses.isAddressSet("UNITROLLER")) {
+            proposal.deploy(addresses, address(proposal));
+            proposal.afterDeploy(addresses, address(proposal));
+        }
 
-        proposal.preBuildMock(addresses);
-        proposal.build(addresses);
+        address unitroller = addresses.getAddress("UNITROLLER");
+        // this mean the calldata has not been executed yet
+        if (
+            Unitroller(unitroller).admin() !=
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        ) {
+            proposal.preBuildMock(addresses);
+            proposal.build(addresses);
 
-        proposal.run(addresses, address(proposal));
-        proposal.validate(addresses, address(proposal));
+            proposal.run(addresses, address(proposal));
+            proposal.validate(addresses, address(proposal));
+        }
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
