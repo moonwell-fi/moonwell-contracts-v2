@@ -327,7 +327,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
             validateProxy(
                 vm,
                 addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("NEW_XWELL_IMPL"),
+                addresses.getAddress("xWELL_LOGIC"),
                 addresses.getAddress("MRD_PROXY_ADMIN"),
                 "xWELL_PROXY validation"
             );

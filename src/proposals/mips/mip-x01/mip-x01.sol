@@ -24,17 +24,14 @@ contract mipx01 is HybridProposal, Configs {
 
     /// Moonbeam logic contract deployment
     function deploy(Addresses addresses, address) public override {
-        if (!addresses.isAddressSet("NEW_MULTICHAIN_GOVERNOR_IMPL")) {
+        if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_IMPL")) {
             MultichainGovernor newImpl = new MultichainGovernor();
-            addresses.addAddress(
-                "NEW_MULTICHAIN_GOVERNOR_IMPL",
-                address(newImpl)
-            );
+            addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", address(newImpl));
         }
 
-        if (!addresses.isAddressSet("NEW_XWELL_IMPL")) {
+        if (!addresses.isAddressSet("xWELL_LOGIC")) {
             xWELL newImpl = new xWELL();
-            addresses.addAddress("NEW_XWELL_IMPL", address(newImpl));
+            addresses.addAddress("xWELL_LOGIC", address(newImpl));
         }
     }
 
@@ -47,7 +44,7 @@ contract mipx01 is HybridProposal, Configs {
             abi.encodeWithSignature(
                 "upgrade(address,address)",
                 addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
-                addresses.getAddress("NEW_MULTICHAIN_GOVERNOR_IMPL")
+                addresses.getAddress("MULTICHAIN_GOVERNOR_IMPL")
             ),
             "Upgrade the Multichain Governor implementation on Moonbeam",
             ActionType.Moonbeam
@@ -59,7 +56,7 @@ contract mipx01 is HybridProposal, Configs {
             abi.encodeWithSignature(
                 "upgrade(address,address)",
                 addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("NEW_XWELL_IMPL")
+                addresses.getAddress("xWELL_LOGIC")
             ),
             "Upgrade the xWELL implementation on Moonbeam",
             ActionType.Moonbeam
@@ -71,7 +68,7 @@ contract mipx01 is HybridProposal, Configs {
             abi.encodeWithSignature(
                 "upgrade(address,address)",
                 addresses.getAddress("xWELL_PROXY", baseChainId),
-                addresses.getAddress("NEW_XWELL_IMPL", baseChainId)
+                addresses.getAddress("xWELL_LOGIC", baseChainId)
             ),
             "Upgrade the xWELL implementation on Base",
             ActionType.Base
@@ -97,7 +94,7 @@ contract mipx01 is HybridProposal, Configs {
         validateProxy(
             vm,
             addresses.getAddress("xWELL_PROXY"),
-            addresses.getAddress("NEW_XWELL_IMPL"),
+            addresses.getAddress("xWELL_LOGIC"),
             addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
             "Moonbeam xWELL_PROXY validation"
         );
@@ -115,7 +112,7 @@ contract mipx01 is HybridProposal, Configs {
         validateProxy(
             vm,
             addresses.getAddress("xWELL_PROXY"),
-            addresses.getAddress("NEW_XWELL_IMPL"),
+            addresses.getAddress("xWELL_LOGIC"),
             addresses.getAddress("MRD_PROXY_ADMIN"),
             "Base xWELL_PROXY validation"
         );

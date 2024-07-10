@@ -30,7 +30,7 @@ contract DeployXWell is Script {
         vm.stopBroadcast();
 
         Addresses addresses = new Addresses();
-        addresses.addAddress("NEW_XWELL_IMPL", address(well));
+        addresses.addAddress("xWELL_LOGIC", address(well));
 
         addresses.printAddresses();
     }
