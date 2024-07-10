@@ -94,7 +94,7 @@ contract mip00 is HybridProposal, Configs {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile(string(vm.envString("DESCRIPTION_PATH")))
+            vm.readFile(vm.envString("DESCRIPTION_PATH"))
         );
 
         _setProposalDescription(proposalDescription);
