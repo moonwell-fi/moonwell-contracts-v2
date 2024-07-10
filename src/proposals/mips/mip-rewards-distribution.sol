@@ -5,6 +5,7 @@ import "@forge-std/Test.sol";
 import "@forge-std/StdJson.sol";
 import "@protocol/utils/ChainIds.sol";
 
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 
 contract mipRewardsDistribution is Test, HybridProposal {
