@@ -125,7 +125,7 @@ contract mip00 is HybridProposal, Configs {
                 emissions[block.chainid].length,
             "emissions length not equal to cTokenConfigurations length"
         );
-        addresses.addRestriction(OPTIMISM_CHAIN_ID);
+        addresses.addRestriction(primaryForkId());
 
         /// ------- TemporalGovernor -------
 
@@ -487,7 +487,7 @@ contract mip00 is HybridProposal, Configs {
                 approvedCalldata[0],
                 true
             ),
-            "Whitelist break glass calldata to add the Artemis Timelock as a trusted sender in the Temporal Governor on Optimism",
+            "Whitelist break glass calldata to add the Artemis Timelock as a trusted sender in the Temporal Governor",
             ActionType.Moonbeam
         );
 
@@ -508,9 +508,7 @@ contract mip00 is HybridProposal, Configs {
 
         if (cTokenConfigs.length == 0) {
             /// MToken/Emission configurations
-            _setMTokenConfiguration(
-                "./src/proposals/mips/mip-o00/optimismMTokens.json"
-            );
+            _setMTokenConfiguration(vm.envString("MTOKENS_PATH"));
         }
 
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
