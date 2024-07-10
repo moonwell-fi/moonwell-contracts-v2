@@ -116,12 +116,17 @@
     },
     {
         "addr": "0x355F7b5edbfbfb5cCc7a3C67Dab2f99A72FDDa09",
-        "name": "OPTIMISM_SECURITY_COUNCIL",
+        "name": "SECURITY_COUNCIL",
         "isContract": true
     },
     {
         "addr": "0xf9564270C1a08b386E77397d38E90bde96f900e2",
-        "name": "OPTIMISM_CAP_GUARDIAN",
+        "name": "CAP_GUARDIAN",
+        "isContract": true
+    },
+    {
+        "addr": "0x355F7b5edbfbfb5cCc7a3C67Dab2f99A72FDDa09",
+        "name": "PAUSE_GUARDIAN",
         "isContract": true
     },
     {

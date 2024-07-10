@@ -11,8 +11,6 @@ optimizer_runs = 1
 rpc_storage_caching = { chains = "all", endpoints = "all" }
 ignored_warnings_from = ["src/MErc20Delegator.sol", "src/tokensale/TokenSaleDistributorProxy.sol"]
 
-[fuzz]
-runs = 1
 
 [rpc_endpoints]
 localhost = "http://127.0.0.1:8545"
