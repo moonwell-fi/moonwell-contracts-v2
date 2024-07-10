@@ -576,14 +576,9 @@ contract mip00 is HybridProposal, Configs {
     }
 
     function run(Addresses addresses, address) public override {
-        /// safety check to ensure no base actions are run
         require(
-            actions.proposalActionTypeCount(ActionType.Base) == 0,
-            "MIP-00: should have no base actions"
-        );
-        require(
-            actions.proposalActionTypeCount(ActionType.Optimism) > 0,
-            "MIP-00: should have optimism actions"
+            actions.proposalActionTypeCount(primaryForkId()) > 0,
+            "MIP-00: should have actions on the chain being deployed to"
         );
 
         require(
@@ -1032,11 +1027,8 @@ contract mip00 is HybridProposal, Configs {
         );
         addresses.removeRestriction();
 
-        /// get temporal governor on Optimism
-        address temporalGovernor = addresses.getAddress(
-            "TEMPORAL_GOVERNOR",
-            block.chainid.toOptimismChainId()
-        );
+        /// get temporal governor
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
         temporalGovernanceTargets.push(temporalGovernor);
 
