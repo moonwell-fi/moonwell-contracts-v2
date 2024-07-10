@@ -76,7 +76,7 @@
     },
     {
         "addr": "0x599D4a1538d686814eE11b331EACBBa166D7C41a",
-        "name": "MULTICHAIN_GOVERNOR_IMPL",
+        "name": "DEPRECATED_MULTICHAIN_GOVERNOR_IMPL",
         "isContract": true
     },
     {
