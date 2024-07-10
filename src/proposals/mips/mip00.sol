@@ -32,7 +32,7 @@ import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistrib
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {ChainIds, OPTIMISM_CHAIN_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
+import {ChainIds, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 
 /*
 to deploy:
@@ -197,7 +197,7 @@ contract mip00 is HybridProposal, Configs {
             bytes memory initData = abi.encodeWithSignature(
                 "initialize(address,address)",
                 addresses.getAddress("UNITROLLER"),
-                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
+                addresses.getAddress("SECURITY_COUNCIL")
             );
             TransparentUpgradeableProxy mrdProxy = new TransparentUpgradeableProxy(
                     addresses.getAddress("MULTI_REWARD_DISTRIBUTOR"),
@@ -334,7 +334,7 @@ contract mip00 is HybridProposal, Configs {
             proxyAdmin.transferOwnership(governor);
 
             TemporalGovernor(payable(governor)).transferOwnership(
-                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
+                addresses.getAddress("SECURITY_COUNCIL")
             );
 
             /// set chainlink oracle on the comptroller implementation contract
@@ -409,13 +409,13 @@ contract mip00 is HybridProposal, Configs {
             /// ------------ SET GUARDIANS ------------
 
             Comptroller(address(unitroller))._setBorrowCapGuardian(
-                addresses.getAddress("OPTIMISM_CAP_GUARDIAN")
+                addresses.getAddress("CAP_GUARDIAN")
             );
             Comptroller(address(unitroller))._setSupplyCapGuardian(
-                addresses.getAddress("OPTIMISM_CAP_GUARDIAN")
+                addresses.getAddress("CAP_GUARDIAN")
             );
             Comptroller(address(unitroller))._setPauseGuardian(
-                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
+                addresses.getAddress("SECURITY_COUNCIL")
             );
 
             /// set temporal governor as the pending admin
@@ -601,19 +601,8 @@ contract mip00 is HybridProposal, Configs {
             payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
-        assertEq(
-            governor.owner(),
-            addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
-        );
+        assertEq(governor.owner(), addresses.getAddress("SECURITY_COUNCIL"));
         assertEq(temporalGovDelay[block.chainid], governor.proposalDelay());
-
-        if (block.chainid == OPTIMISM_CHAIN_ID) {
-            assertEq(
-                governor.proposalDelay(),
-                1 days,
-                "proposal delay is not 1 day"
-            );
-        }
 
         /// assert comptroller and unitroller are wired together properly
         {
@@ -641,15 +630,15 @@ contract mip00 is HybridProposal, Configs {
             );
             assertEq(
                 Comptroller(address(unitroller)).pauseGuardian(),
-                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
+                addresses.getAddress("SECURITY_COUNCIL")
             );
             assertEq(
                 Comptroller(address(unitroller)).supplyCapGuardian(),
-                addresses.getAddress("OPTIMISM_CAP_GUARDIAN")
+                addresses.getAddress("CAP_GUARDIAN")
             );
             assertEq(
                 Comptroller(address(unitroller)).borrowCapGuardian(),
-                addresses.getAddress("OPTIMISM_CAP_GUARDIAN")
+                addresses.getAddress("CAP_GUARDIAN")
             );
             assertEq(
                 address(Comptroller(address(unitroller)).rewardDistributor()),
@@ -721,7 +710,7 @@ contract mip00 is HybridProposal, Configs {
             );
             assertEq(
                 address(distributor.pauseGuardian()),
-                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
+                addresses.getAddress("SECURITY_COUNCIL")
             );
             assertEq(distributor.emissionCap(), 100e18);
             assertEq(distributor.initialIndexConstant(), 1e36);
@@ -757,7 +746,7 @@ contract mip00 is HybridProposal, Configs {
 
         assertEq(
             address(governor.wormholeBridge()),
-            addresses.getAddress("WORMHOLE_CORE", OPTIMISM_CHAIN_ID),
+            addresses.getAddress("WORMHOLE_CORE"),
             "temporal governor wormhole core set incorrectly"
         );
 
