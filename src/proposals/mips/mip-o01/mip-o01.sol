@@ -132,11 +132,6 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
             addresses.addAddress("VOTE_COLLECTION_PROXY", collectionProxy);
             addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl);
         }
-
-        if (!addresses.isAddressSet("NEW_XWELL_IMPL")) {
-            xWELL newImpl = new xWELL();
-            addresses.addAddress("NEW_XWELL_IMPL", address(newImpl));
-        }
     }
 
     function afterDeploy(
@@ -216,35 +211,6 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                 ActionType.Moonbeam
             );
         }
-
-        /// update xWELL implementation across both Moonbeam and Base
-        _pushAction(
-            addresses.getAddress(
-                "MOONBEAM_PROXY_ADMIN",
-                block.chainid.toMoonbeamChainId()
-            ),
-            abi.encodeWithSignature(
-                "upgrade(address,address)",
-                addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("NEW_XWELL_IMPL")
-            ),
-            "Upgrade the xWELL implementation on Moonbeam",
-            ActionType.Moonbeam
-        );
-
-        _pushAction(
-            addresses.getAddress(
-                "MRD_PROXY_ADMIN",
-                block.chainid.toBaseChainId()
-            ),
-            abi.encodeWithSignature(
-                "upgrade(address,address)",
-                addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("NEW_XWELL_IMPL")
-            ),
-            "Upgrade the xWELL implementation on Base",
-            ActionType.Base
-        );
 
         /// open up rate limits to move tokens across all chains
 
