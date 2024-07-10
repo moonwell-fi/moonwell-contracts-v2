@@ -4,20 +4,14 @@ pragma solidity 0.8.19;
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
-import {printAddresses} from "@proposals/utils/ProposalPrinting.sol";
 import {ITokenSaleDistributor} from "../src/tokensale/ITokenSaleDistributor.sol";
 import {ITokenSaleDistributorProxy} from "../src/tokensale/ITokenSaleDistributorProxy.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract DeployTokenSale is Script {
-    /// @notice addresses contract
-    Addresses addresses;
-
-    constructor() {
-        addresses = new Addresses();
-    }
-
     function run() public {
+        Addresses addresses = new Addresses();
+
         vm.startBroadcast();
 
         address implementation = deployCode(
@@ -42,6 +36,6 @@ contract DeployTokenSale is Script {
             address(implementation)
         );
 
-        printAddresses(addresses);
+        addresses.printAddresses();
     }
 }

@@ -772,7 +772,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.castVote(0, 0);
     }
 
-    function testSendEthToGovernorFails() public {
+    function testSendEthToGovernorSucceeds() public {
         uint256 sendAmount = 1 ether;
         vm.deal(address(this), sendAmount);
 

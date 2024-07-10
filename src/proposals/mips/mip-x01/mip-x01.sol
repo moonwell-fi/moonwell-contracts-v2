@@ -1,37 +1,17 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {TransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
-import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-
 import "@forge-std/Test.sol";
 
 import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {WETH9} from "@protocol/router/IWETH.sol";
-import {MErc20} from "@protocol/MErc20.sol";
-import {MToken} from "@protocol/MToken.sol";
 import {Address} from "@utils/Address.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Unitroller} from "@protocol/Unitroller.sol";
-import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
-import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
-import {MWethDelegate} from "@protocol/MWethDelegate.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
-import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
-import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
-import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
 contract mipx01 is HybridProposal, Configs {
     using ChainIds for uint256;

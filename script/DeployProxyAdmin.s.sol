@@ -5,7 +5,6 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
-import {printAddresses} from "@proposals/utils/ProposalPrinting.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
@@ -30,6 +29,6 @@ contract DeployProxyAdminScript is Script {
 
         addresses.addAddress("MRD_PROXY_ADMIN", proxyAdmin);
 
-        printAddresses(addresses);
+        addresses.printAddresses();
     }
 }

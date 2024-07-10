@@ -7,7 +7,6 @@ import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
 import {Well} from "@protocol/governance/Well.sol";
-import {printAddresses} from "@proposals/utils/ProposalPrinting.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
@@ -31,6 +30,6 @@ contract DeployWell is Script {
 
         addresses.addAddress("WELL", address(well));
 
-        printAddresses(addresses);
+        addresses.printAddresses();
     }
 }

@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
 
-import {printAddresses} from "@proposals/utils/ProposalPrinting.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
@@ -55,6 +54,6 @@ contract DeployStkWell is Script, MultichainGovernorDeploy {
             address(ecosystemReserveController)
         );
 
-        printAddresses(addresses);
+        addresses.printAddresses();
     }
 }
