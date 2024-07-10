@@ -37,6 +37,7 @@ contract LiveSystemDeploy is Test {
     function setUp() public {
         // TODO restrict chain ids passing the json here
         addresses = new Addresses();
+        vm.makePersistent(address(addresses));
 
         // TODO verify wheter the system has already been deployed and
         // initialized on chain and skip
@@ -49,6 +50,7 @@ contract LiveSystemDeploy is Test {
 
         proposal.preBuildMock(addresses);
         proposal.build(addresses);
+
         proposal.run(addresses, address(proposal));
         proposal.validate(addresses, address(proposal));
 
