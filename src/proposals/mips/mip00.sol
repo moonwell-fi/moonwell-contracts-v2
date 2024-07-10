@@ -579,16 +579,16 @@ contract mip00 is HybridProposal, Configs {
         /// safety check to ensure no base actions are run
         require(
             actions.proposalActionTypeCount(ActionType.Base) == 0,
-            "MIP-O00: should have no base actions"
+            "MIP-00: should have no base actions"
         );
         require(
             actions.proposalActionTypeCount(ActionType.Optimism) > 0,
-            "MIP-O00: should have optimism actions"
+            "MIP-00: should have optimism actions"
         );
 
         require(
             actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
-            "MIP-O00: should have 1 moonbeam actions"
+            "MIP-00: should have 1 moonbeam actions"
         );
 
         super.run(addresses, address(0));
