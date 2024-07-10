@@ -38,14 +38,15 @@ import {ChainIds, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 to deploy:
 
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
-DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 \
- -vvv --etherscan-api-key $OPSCAN_API_KEY --broadcast --keystore ~/.foundry/keystores/<your-key-store>
+DO_RUN=true DO_VALIDATE=true forge script \
+src/proposals/mips/mip-00/mip-00.sol:mip00 -vvv --broadcast --account <your-keystore-account-name>
 
 to dry-run:
 
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
-DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 \
- -vvv --keystore ~/.foundry/keystores/<your-key-store>
+DO_RUN=true DO_VALIDATE=true forge script \
+src/proposals/mips/mip-00/mip-00.sol:mip00 -vvv --account \
+<your-keystore-account-name>
 
 */
 
