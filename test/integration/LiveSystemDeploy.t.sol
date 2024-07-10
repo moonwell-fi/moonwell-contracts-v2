@@ -62,6 +62,7 @@ contract LiveSystemDeploy is Test {
 
         for (uint256 i = 0; i < emissionConfigs.length; i++) {
             address mToken = addresses.getAddress(emissionConfigs[i].mToken);
+            vm.warp(MToken(mToken).accrualBlockTimestamp());
             emissionsConfig[mToken].push(emissionConfigs[i]);
         }
     }
@@ -94,6 +95,7 @@ contract LiveSystemDeploy is Test {
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
+        vm.warp(MToken(mToken).accrualBlockTimestamp());
         for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
             mrd._updateOwner(
                 MToken(mToken),
@@ -119,6 +121,7 @@ contract LiveSystemDeploy is Test {
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
+        vm.warp(MToken(mToken).accrualBlockTimestamp());
         for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
             mrd._updateBorrowSpeed(
                 MToken(mToken),
@@ -139,6 +142,7 @@ contract LiveSystemDeploy is Test {
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
+        vm.warp(MToken(mToken).accrualBlockTimestamp());
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
         for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
@@ -174,6 +178,7 @@ contract LiveSystemDeploy is Test {
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
+        vm.warp(MToken(mToken).accrualBlockTimestamp());
         for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
             vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
             mrd._updateSupplySpeed(
@@ -207,6 +212,7 @@ contract LiveSystemDeploy is Test {
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
+        vm.warp(MToken(mToken).accrualBlockTimestamp());
         for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
             vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
             mrd._updateBorrowSpeed(
@@ -306,6 +312,9 @@ contract LiveSystemDeploy is Test {
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
+
+        vm.warp(MToken(mToken).accrualBlockTimestamp());
+
         _mintMToken(mToken, borrowAmount * 3);
 
         uint256 expectedCollateralFactor = 0.5e18;
@@ -374,6 +383,8 @@ contract LiveSystemDeploy is Test {
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
+
+        vm.warp(MToken(mToken).accrualBlockTimestamp());
 
         _mintMToken(mToken, supplyAmount);
 
@@ -512,6 +523,8 @@ contract LiveSystemDeploy is Test {
             mTokensConfig[mTokenIndex].addressesString
         );
 
+        vm.warp(MToken(mToken).accrualBlockTimestamp());
+
         _mintMToken(mToken, supplyAmount);
 
         uint256 expectedCollateralFactor = 0.5e18;
@@ -604,6 +617,8 @@ contract LiveSystemDeploy is Test {
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
+
+        vm.warp(MToken(mToken).accrualBlockTimestamp());
 
         address token = addresses.getAddress(
             mTokensConfig[mTokenIndex].tokenAddressName

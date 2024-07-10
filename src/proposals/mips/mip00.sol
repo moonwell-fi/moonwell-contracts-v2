@@ -1033,7 +1033,7 @@ contract mip00 is HybridProposal, Configs {
             "multichain governor should have whitelisted break glass guardian calldata"
         );
 
-        vm.selectFork(OPTIMISM_FORK_ID);
+        vm.selectFork(primaryForkId());
     }
 
     function _buildCalldata(Addresses addresses) internal {
