@@ -6,7 +6,6 @@ import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Address} from "@utils/Address.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
