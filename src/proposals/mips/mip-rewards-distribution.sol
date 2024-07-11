@@ -4,12 +4,15 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 import "@forge-std/StdJson.sol";
 import "@protocol/utils/ChainIds.sol";
+import "@protocol/utils/String.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 
 contract mipRewardsDistribution is Test, HybridProposal {
+    using String for string;
     using stdJson for string;
+    using ChainIds for uint256;
 
     struct BridgeWell {
         uint256 amount;
@@ -34,8 +37,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
     struct SetRewardSpeed {
         string market;
-        uint256 newSupplySpeed;
         uint256 newBorrowSpeed;
+        uint256 newSupplySpeed;
         uint256 rewardType;
         string target;
     }
@@ -48,20 +51,15 @@ contract mipRewardsDistribution is Test, HybridProposal {
         TransferFrom[] transferFroms;
     }
 
-    constructor() {
+    mapping(uint256 chainId => JsonSpec) public chainSpecs;
+
+    function build(Addresses addresses) public override {
         string memory data = vm.readFile(vm.envString("MIP_REWARDS_PATH"));
 
-        string[] memory chains = new string[](1);
-        chains[0] = ".8453";
-
-        for (uint i = 0; i < chains.length; i++) {
-            bytes memory parsedJson = vm.parseJson(data, chains[i]);
-
-            JsonSpec memory spec = abi.decode(parsedJson, (JsonSpec));
-        }
+        buildMoonbeamActions(addresses, data);
     }
 
-    function name() external view override returns (string memory) {
+    function name() external pure override returns (string memory) {
         return "MIP Rewards Distribution";
     }
 
@@ -70,4 +68,55 @@ contract mipRewardsDistribution is Test, HybridProposal {
     }
 
     function validate(Addresses, address) public override {}
+
+    function buildMoonbeamActions(
+        Addresses addresses,
+        string memory data
+    ) private {
+        string memory chain = ".1284";
+
+        bytes memory parsedJson = vm.parseJson(data, chain);
+
+        JsonSpec memory spec = abi.decode(parsedJson, (JsonSpec));
+
+        // First actions must be the transferFrom calls
+        for (uint256 i = 0; i < spec.transferFroms.length; i++) {
+            TransferFrom memory transferFrom = spec.transferFroms[i];
+
+            address token = addresses.getAddress(transferFrom.token);
+            address from = addresses.getAddress(transferFrom.from);
+            address to = addresses.getAddress(transferFrom.to);
+
+            _pushAction(
+                token,
+                abi.encodeWithSignature(
+                    "transferFrom(address,address,uint256)",
+                    from,
+                    to,
+                    transferFrom.amount
+                ),
+                string(
+                    abi.encode(
+                        "Transfer token %s from %s to %s",
+                        token,
+                        from,
+                        to
+                    )
+                ),
+                ActionType.Moonbeam
+            );
+        }
+
+        // Next actions must be the bridge well calls
+        for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
+            BridgeWell memory bridgeWell = spec.bridgeWells[i];
+
+            address target = addresses.getAddress(
+                bridgeWell.target,
+                bridgeWell.network
+            );
+
+            address router = addresses.getAddress("xWELL_ROUTER");
+        }
+    }
 }

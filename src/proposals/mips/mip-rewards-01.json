@@ -1,5 +1,5 @@
 {
-    "1287": {
+    "1284": {
         "addRewardInfo": {
             "amount": 4000e18,
             "endTimestamp": 1723174200,
@@ -10,27 +10,27 @@
         "bridgeToRecipient": [
             {
                 "amount": 5000e18,
-                "network": 30,
+                "network": 8453,
                 "target": "TEMPORAL_GOVERNOR"
             },
             {
                 "amount": 6000e18,
-                "network": 24,
+                "network": 10,
                 "target": "TEMPORAL_GOVERNOR"
             }
         ],
         "setRewardSpeed": [
             {
                 "market": "mxcDOT",
-                "newSupplySpeed": 0.54e18,
                 "newBorrowSpeed": 1,
+                "newSupplySpeed": 0.54e18
                 "rewardType": 0,
                 "target": "UNITROLLER"
             },
             {
                 "market": "mxcDOT",
-                "newSupplySpeed": 0.23e18,
                 "newBorrowSpeed": 1,
+                "newSupplySpeed": 0.23e18,
                 "rewardType": 1,
                 "target": "UNITROLLER"
             }
