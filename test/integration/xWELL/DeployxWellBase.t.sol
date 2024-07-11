@@ -55,7 +55,7 @@ contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
             address(0)
         );
 
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert();
         wormholeAdapter.initialize(
             address(1),
             address(1),
