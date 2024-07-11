@@ -60,18 +60,18 @@
     "8453": {
         "setMRDSpeeds": [
             {
-                "market": "MOONWELL_USDC",
                 "emissionToken": "xWELL_PROXY",
-                "newSupplySpeed": 0.54e18,
+                "market": "MOONWELL_USDC",
                 "newBorrowSpeed": 1,
-                "newEndTime": 1723174200
+                "newEndTime": 1723174200,
+                "newSupplySpeed": 0.54e18
             },
             {
-                "market": "MOONWELL_AERO",
                 "emissionToken": "xWELL_PROXY",
-                "newSupplySpeed": 0.54e18,
+                "market": "MOONWELL_AERO",
                 "newBorrowSpeed": 1,
-                "newEndTime": 1723174200
+                "newEndTime": 1723174200,
+                "newSupplySpeed": 0.54e18
             }
         ],
         "stkWellEmissionsPerSecond": 0.65e18,
@@ -80,7 +80,7 @@
                 "amount": 5000e18,
                 "from": "TEMPORAL_GOVERNOR",
                 "to": "MULTI_REWARD_DISTRIBUTOR",
-                "token": "WELL"
+                "token": "xWELL_PROXY"
             },
             {
                 "amount": 6000e18,

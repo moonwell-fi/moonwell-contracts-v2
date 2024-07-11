@@ -43,6 +43,14 @@ contract mipRewardsDistribution is Test, HybridProposal {
         string target;
     }
 
+    struct SetMRDRewardSpeed {
+        string emissionToken;
+        string market;
+        uint256 newBorrowSpeed;
+        uint256 newEndTime;
+        uint256 newSupplySpeed;
+    }
+
     struct JsonSpecMoonbeam {
         AddRewardInfo addRewardInfo;
         BridgeWell[] bridgeWells;
@@ -52,10 +60,12 @@ contract mipRewardsDistribution is Test, HybridProposal {
     }
 
     struct JsonSpecBase {
-        SetRewardSpeed[] setRewardSpeed;
+        SetMRDRewardSpeed[] setRewardSpeed;
         uint256 stkWellEmissionsPerSecond;
         TransferFrom[] transferFroms;
     }
+
+    string public encodedJson;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -63,12 +73,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
         );
 
         _setProposalDescription(proposalDescription);
-    }
 
-    function build(Addresses addresses) public override {
-        string memory data = vm.readFile(vm.envString("MIP_REWARDS_PATH"));
-
-        buildMoonbeamActions(addresses, data);
+        encodedJson = vm.readFile(vm.envString("MIP_REWARDS_PATH"));
     }
 
     function name() external pure override returns (string memory) {
@@ -77,6 +83,12 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
     function primaryForkId() public pure override returns (uint256) {
         return MOONBEAM_FORK_ID;
+    }
+
+    function build(Addresses addresses) public override {
+        buildMoonbeamActions(addresses, encodedJson);
+
+        buildBaseAction(addresses, encodedJson);
     }
 
     function validate(Addresses, address) public override {}
@@ -155,7 +167,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
     }
 
     function buildBaseAction(Addresses addresses, string memory data) private {
-        string memory chain = ".1284";
+        vm.selectFork(BASE_FORK_ID);
+        string memory chain = ".8453";
 
         bytes memory parsedJson = vm.parseJson(data, chain);
 
@@ -163,23 +176,23 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         buildTransferFroms(addresses, spec.transferFroms);
 
-        for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
-            SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
+        //     for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
+        //         SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
 
-            address market = addresses.getAddress(setRewardSpeed.market);
+        //         address market = addresses.getAddress(setRewardSpeed.market);
 
-            _pushAction(
-                market,
-                abi.encodeWithSignature(
-                    "setRewardSpeed(uint256,uint256,uint256)",
-                    setRewardSpeed.newBorrowSpeed,
-                    setRewardSpeed.newSupplySpeed,
-                    setRewardSpeed.rewardType
-                ),
-                "Set reward speed for the Safety Module on Base",
-                ActionType.Base
-            );
-        }
+        //         _pushAction(
+        //             market,
+        //             abi.encodeWithSignature(
+        //                 "setRewardSpeed(uint256,uint256,uint256)",
+        //                 setRewardSpeed.newBorrowSpeed,
+        //                 setRewardSpeed.newSupplySpeed,
+        //                 setRewardSpeed.rewardType
+        //             ),
+        //             "Set reward speed for the Safety Module on Base",
+        //             ActionType.Base
+        //         );
+        //     }
 
         _pushAction(
             addresses.getAddress("STK_GOVTOKEN"),
