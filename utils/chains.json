@@ -1,0 +1,17 @@
+[
+    {
+        "name": "OPTIMISM",
+        "chainId": 10,
+        "wormholeChainId": 24
+    },
+    {
+        "name": "BASE",
+        "chainId": 8453,
+        "wormholeChainId": 30
+    },
+    {
+        "name": "MOONBEAM",
+        "chainId": 1287,
+        "wormholeChainId": 16
+    }
+]
