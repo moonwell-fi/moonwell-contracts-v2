@@ -3,14 +3,13 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import "@protocol/utils/ChainIds.sol";
-
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract mipx01 is HybridProposal, Configs {
     using ChainIds for uint256;
@@ -36,8 +35,6 @@ contract mipx01 is HybridProposal, Configs {
     }
 
     function build(Addresses addresses) public override {
-        vm.selectFork(primaryForkId());
-
         /// upgrade the multichain governor on Moonbeam
         _pushAction(
             addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
