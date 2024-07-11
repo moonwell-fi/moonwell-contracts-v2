@@ -23,7 +23,7 @@
             {
                 "market": "mxcDOT",
                 "newBorrowSpeed": 1,
-                "newSupplySpeed": 0.54e18
+                "newSupplySpeed": 0.54e18,
                 "rewardType": 0,
                 "target": "UNITROLLER"
             },
@@ -54,6 +54,45 @@
                 "from": "MGLIMMER_MULTISIG",
                 "to": "ECOSYSTEM_RESERVE_PROXY",
                 "token": "WELL"
+            }
+        ]
+    },
+    "8453": {
+        "setMRDSpeeds": [
+            {
+                "market": "MOONWELL_USDC",
+                "emissionToken": "xWELL_PROXY",
+                "newSupplySpeed": 0.54e18,
+                "newBorrowSpeed": 1,
+                "newEndTime": 1723174200
+            },
+            {
+                "market": "MOONWELL_AERO",
+                "emissionToken": "xWELL_PROXY",
+                "newSupplySpeed": 0.54e18,
+                "newBorrowSpeed": 1,
+                "newEndTime": 1723174200
+            }
+        ],
+        "stkWellEmissionsPerSecond": 0.65e18,
+        "transferFrom": [
+            {
+                "amount": 5000e18,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "MULTI_REWARD_DISTRIBUTOR",
+                "token": "WELL"
+            },
+            {
+                "amount": 6000e18,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "UNITROLLER",
+                "token": "xWELL_PROXY"
+            },
+            {
+                "amount": 7000e18,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "AERODROME_RELAYER",
+                "token": "xWELL_PROXY"
             }
         ]
     }

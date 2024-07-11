@@ -43,7 +43,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
         string target;
     }
 
-    struct JsonSpec {
+    struct JsonSpecMoonbeam {
         AddRewardInfo addRewardInfo;
         BridgeWell[] bridgeWells;
         SetRewardSpeed[] setRewardSpeed;
@@ -51,7 +51,19 @@ contract mipRewardsDistribution is Test, HybridProposal {
         TransferFrom[] transferFroms;
     }
 
-    mapping(uint256 chainId => JsonSpec) public chainSpecs;
+    struct JsonSpecBase {
+        SetRewardSpeed[] setRewardSpeed;
+        uint256 stkWellEmissionsPerSecond;
+        TransferFrom[] transferFroms;
+    }
+
+    constructor() {
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile(vm.envString("DESCRIPTION_PATH"))
+        );
+
+        _setProposalDescription(proposalDescription);
+    }
 
     function build(Addresses addresses) public override {
         string memory data = vm.readFile(vm.envString("MIP_REWARDS_PATH"));
@@ -77,11 +89,116 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         bytes memory parsedJson = vm.parseJson(data, chain);
 
-        JsonSpec memory spec = abi.decode(parsedJson, (JsonSpec));
+        JsonSpecMoonbeam memory spec = abi.decode(
+            parsedJson,
+            (JsonSpecMoonbeam)
+        );
 
-        // First actions must be the transferFrom calls
-        for (uint256 i = 0; i < spec.transferFroms.length; i++) {
-            TransferFrom memory transferFrom = spec.transferFroms[i];
+        buildTransferFroms(addresses, spec.transferFroms);
+
+        // Next actions must be the bridge well calls
+        //  for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
+        //      BridgeWell memory bridgeWell = spec.bridgeWells[i];
+
+        //      address target = addresses.getAddress(
+        //          bridgeWell.target,
+        //          bridgeWell.network
+        //      );
+
+        //      address router = addresses.getAddress("xWELL_ROUTER");
+        //  }
+
+        _pushAction(
+            addresses.getAddress("STK_GOVTOKEN"),
+            abi.encodeWithSignature(
+                "configureAsset(uint128,address)",
+                spec.stkWellEmissionsPerSecond,
+                addresses.getAddress("STK_GOVTOKEN")
+            ),
+            "Set reward speed for the Safety Module on Moonbeam",
+            ActionType.Moonbeam
+        );
+
+        // set reward speed
+        for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
+            SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
+
+            address market = addresses.getAddress(setRewardSpeed.market);
+
+            _pushAction(
+                market,
+                abi.encodeWithSignature(
+                    "_setRewardSpeed(uint8, address, uint256,uint256)",
+                    uint8(setRewardSpeed.rewardType),
+                    addresses.getAddress(setRewardSpeed.market),
+                    setRewardSpeed.newBorrowSpeed,
+                    setRewardSpeed.newSupplySpeed
+                ),
+                "Set reward speed for the Moonwell Markets on Moonbeam",
+                ActionType.Moonbeam
+            );
+        }
+
+        AddRewardInfo memory addRewardInfo = spec.addRewardInfo;
+
+        _pushAction(
+            addresses.getAddress(addRewardInfo.target),
+            abi.encodeWithSignature(
+                "addRewardInfo(uint256,,uint256,uint256)",
+                addRewardInfo.pid,
+                addRewardInfo.endTimestamp,
+                addRewardInfo.rewardPerSec
+            ),
+            "Add reward info for the Moonwell Markets on Moonbeam",
+            ActionType.Moonbeam
+        );
+    }
+
+    function buildBaseAction(Addresses addresses, string memory data) private {
+        string memory chain = ".1284";
+
+        bytes memory parsedJson = vm.parseJson(data, chain);
+
+        JsonSpecBase memory spec = abi.decode(parsedJson, (JsonSpecBase));
+
+        buildTransferFroms(addresses, spec.transferFroms);
+
+        for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
+            SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
+
+            address market = addresses.getAddress(setRewardSpeed.market);
+
+            _pushAction(
+                market,
+                abi.encodeWithSignature(
+                    "setRewardSpeed(uint256,uint256,uint256)",
+                    setRewardSpeed.newBorrowSpeed,
+                    setRewardSpeed.newSupplySpeed,
+                    setRewardSpeed.rewardType
+                ),
+                "Set reward speed for the Safety Module on Base",
+                ActionType.Base
+            );
+        }
+
+        _pushAction(
+            addresses.getAddress("STK_GOVTOKEN"),
+            abi.encodeWithSignature(
+                "configureAsset(uint128,address)",
+                spec.stkWellEmissionsPerSecond,
+                addresses.getAddress("STK_GOVTOKEN")
+            ),
+            "Set reward speed for the Safety Module on Base",
+            ActionType.Base
+        );
+    }
+
+    function buildTransferFroms(
+        Addresses addresses,
+        TransferFrom[] memory transferFroms
+    ) private {
+        for (uint256 i = 0; i < transferFroms.length; i++) {
+            TransferFrom memory transferFrom = transferFroms[i];
 
             address token = addresses.getAddress(transferFrom.token);
             address from = addresses.getAddress(transferFrom.from);
@@ -102,21 +219,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
                         from,
                         to
                     )
-                ),
-                ActionType.Moonbeam
+                )
             );
-        }
-
-        // Next actions must be the bridge well calls
-        for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
-            BridgeWell memory bridgeWell = spec.bridgeWells[i];
-
-            address target = addresses.getAddress(
-                bridgeWell.target,
-                bridgeWell.network
-            );
-
-            address router = addresses.getAddress("xWELL_ROUTER");
         }
     }
 }
