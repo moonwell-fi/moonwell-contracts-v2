@@ -27,12 +27,12 @@ import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {ChainIds, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {ChainIds, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 
 /*
 to deploy:
@@ -46,6 +46,16 @@ to dry-run:
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
   DO_RUN=true DO_VALIDATE=true forge script \
   src/proposals/mips/mip00.sol:mip00 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
+
+MIP-O00 deployment environment variables:
+
+```
+export DESCRIPTION_PATH=src/proposals/mips/mip-o00/MIP-O00.md
+export PRIMARY_FORK_ID=2
+export EMISSIONS_PATH=src/proposals/mips/mip-o00/emissionConfig.json
+export MTOKENS_PATH=src/proposals/mips/mip-o00/mTokens.json
+```
+
 
 */
 
@@ -91,12 +101,20 @@ contract mip00 is HybridProposal, Configs {
     /// @notice trusted senders for the temporal governor
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
-    constructor() {
+    function initProposal() public override {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(vm.envString("DESCRIPTION_PATH"))
         );
 
         _setProposalDescription(proposalDescription);
+
+        /// MToken/Emission configurations
+        _setMTokenConfiguration(vm.envString("MTOKENS_PATH"));
+
+        /// If deploying to mainnet again these values must be adjusted
+        /// - endTimestamp must be in the future
+        /// - removed mock values that were set in initEmissions function for test execution
+        _setEmissionConfiguration(vm.envString("EMISSIONS_PATH"));
     }
 
     /// @dev change this if wanting to deploy to a different chain
@@ -111,14 +129,6 @@ contract mip00 is HybridProposal, Configs {
     /// listed to be able to deploy on base. This allows the deployer to be able to initialize the
     /// markets with a balance to avoid exploits
     function deploy(Addresses addresses, address deployer) public override {
-        /// MToken/Emission configurations
-        _setMTokenConfiguration(vm.envString("MTOKENS_PATH"));
-
-        /// If deploying to mainnet again these values must be adjusted
-        /// - endTimestamp must be in the future
-        /// - removed mock values that were set in initEmissions function for test execution
-        _setEmissionConfiguration(vm.envString("EMISSIONS_PATH"));
-
         /// emission config sanity check
         require(
             cTokenConfigurations[block.chainid].length ==
@@ -505,11 +515,6 @@ contract mip00 is HybridProposal, Configs {
 
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
-
-        if (cTokenConfigs.length == 0) {
-            /// MToken/Emission configurations
-            _setMTokenConfiguration(vm.envString("MTOKENS_PATH"));
-        }
 
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
 

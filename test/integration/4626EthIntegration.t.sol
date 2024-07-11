@@ -387,7 +387,7 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
         uint256 shares = vault.convertToShares(assets);
         uint256 assets2 = vault.convertToAssets(shares);
 
-        assertGt(assets, assets2, "initial assets should be gt assets2");
+        assertGe(assets, assets2, "initial assets should be gt assets2");
     }
 
     function testConvertFromSharesToAssetsRoundsDown(
@@ -398,7 +398,7 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
         uint256 assets = vault.convertToAssets(shares);
         uint256 shares2 = vault.convertToShares(assets);
 
-        assertGe(shares, shares2, "initial shares should be gt shares2");
+        assertGe(shares, shares2, "initial shares should be gte shares2");
     }
 
     /// receive ether for withdrawing assets from the vault

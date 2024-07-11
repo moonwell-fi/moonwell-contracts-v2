@@ -42,6 +42,7 @@ contract LiveSystemDeploy is Test {
 
         proposal = new mip00();
         proposal.primaryForkId().createForksAndSelect();
+        proposal.initProposal();
 
         if (!addresses.isAddressSet("UNITROLLER")) {
             proposal.deploy(addresses, address(proposal));

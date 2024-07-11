@@ -59,7 +59,6 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
             (
                 address xwellLogic,
                 address xwellProxy,
-                ,
                 address wormholeAdapterLogic,
                 address wormholeAdapter
             ) = deployWellSystem(existingProxyAdmin);

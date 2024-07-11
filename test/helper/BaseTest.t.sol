@@ -81,6 +81,7 @@ contract BaseTest is xWELLDeploy, Test {
         }
 
         {
+            proxyAdmin = new ProxyAdmin();
             (
                 address xwellLogicAddress,
                 address xwellProxyAddress,
@@ -88,11 +89,10 @@ contract BaseTest is xWELLDeploy, Test {
                 address wormholeAdapterLogic,
                 address wormholeAdapterProxy,
                 address lockboxAddress
-            ) = deployMoonbeamSystem(address(well), address(0));
+            ) = deployMoonbeamSystem(address(well), address(proxyAdmin));
 
             xwellProxy = xWELL(xwellProxyAddress);
             xwellLogic = xWELL(xwellLogicAddress);
-            proxyAdmin = ProxyAdmin(proxyAdminAddress);
             xerc20Lockbox = XERC20Lockbox(lockboxAddress);
             wormholeBridgeAdapter = WormholeBridgeAdapter(wormholeAdapterLogic);
             wormholeBridgeAdapterProxy = WormholeBridgeAdapter(

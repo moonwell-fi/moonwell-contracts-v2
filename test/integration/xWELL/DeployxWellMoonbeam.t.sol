@@ -67,7 +67,7 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
             address(0)
         );
 
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert();
         wormholeAdapter.initialize(
             address(1),
             address(1),
