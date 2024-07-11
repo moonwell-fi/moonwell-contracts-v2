@@ -1,5 +1,7 @@
 pragma solidity 0.8.19;
 
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+
 import "@forge-std/Test.sol";
 
 import "@test/helper/BaseTest.t.sol";
@@ -320,9 +322,10 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
 
     /// initialization
     function testInitializeFailsArrayLengthMismatch() public {
+        ProxyAdmin admin = new ProxyAdmin();
         (, , , , address wormholeAdapterProxy, ) = deployMoonbeamSystem(
             address(well),
-            address(0)
+            address(admin)
         );
         wormholeBridgeAdapterProxy = WormholeBridgeAdapter(
             wormholeAdapterProxy
