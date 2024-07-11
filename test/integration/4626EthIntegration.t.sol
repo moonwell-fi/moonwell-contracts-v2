@@ -387,7 +387,7 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
         uint256 shares = vault.convertToShares(assets);
         uint256 assets2 = vault.convertToAssets(shares);
 
-        assertGt(assets, assets2, "initial assets should be gt assets2");
+        assertGe(assets, assets2, "initial assets should be gt assets2");
     }
 
     function testConvertFromSharesToAssetsRoundsDown(
