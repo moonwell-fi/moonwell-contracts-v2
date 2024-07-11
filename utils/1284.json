@@ -35,6 +35,11 @@
         "name": "MULTICHAIN_GOVERNOR_PROXY"
     },
     {
+        "addr": "0xc9AC406CDa5d9DCBcB49A25e3CA9073951236b5d",
+        "isContract": true,
+        "name": "MULTICHAIN_GOVERNOR_IMPL"
+    },
+    {
         "addr": "0xE907f95c46659c6eF24d84cFDb9f8FF9Cf57c723",
         "isContract": true,
         "name": "STELLASWAP_REWARDER"
