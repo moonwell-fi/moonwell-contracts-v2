@@ -293,5 +293,25 @@
         "addr": "0xc4Ab8C031717d7ecCCD653BE898e0f92410E11dC",
         "isContract": true,
         "name": "WETH_ROUTER"
+    },
+    {
+        "addr": "0x734AbBCe07679C9A6B4Fe3bC16325e028fA6DbB7",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY"
+    },
+    {
+        "addr": "0xEF68C8f8BDeEF8e938F519ee818DeC80e320CE6b",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
+    },
+    {
+        "addr": "0x3b1BDDC0998058dD266e2a0aC855D0d750700a7f",
+        "isContract": true,
+        "name": "xWELL_LOGIC"
+    },
+    {
+        "addr": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "isContract": true,
+        "name": "xWELL_PROXY"
     }
 ]

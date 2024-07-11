@@ -90,20 +90,11 @@ contract DeployXWell is Script, xWELLDeploy, Networks {
 
             /// xWELL
             assertEq(
-                xwellLogic,
-                addresses.getAddress("xWELL_LOGIC", BASE_CHAIN_ID),
-                "xWELL_LOGIC address is incorrect"
-            );
-            assertEq(
                 xwellProxy,
                 addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID),
                 "xWELL_PROXY address is incorrect"
             );
-            assertEq(
-                xwellLogic,
-                addresses.getAddress("xWELL_LOGIC", MOONBEAM_CHAIN_ID),
-                "xWELL_LOGIC address is incorrect"
-            );
+
             assertEq(
                 xwellProxy,
                 addresses.getAddress("xWELL_PROXY", MOONBEAM_CHAIN_ID),
