@@ -223,7 +223,7 @@ contract DeployXWell is Script, xWELLDeploy, Networks {
         }
 
         {
-            address basexWellProxy = addresses.getAddress("xWELL_PROXY");
+            address xWellProxy = addresses.getAddress("xWELL_PROXY");
             address wormholeAdapter = addresses.getAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_PROXY"
             );
@@ -249,70 +249,66 @@ contract DeployXWell is Script, xWELLDeploy, Networks {
                 "wormhole bridge adapter gas limit is incorrect"
             );
             assertEq(
-                xWELL(basexWellProxy).owner(),
+                xWELL(xWellProxy).owner(),
                 temporalGov,
                 "temporal gov address is incorrect"
             );
             assertEq(
-                xWELL(basexWellProxy).pendingOwner(),
+                xWELL(xWellProxy).pendingOwner(),
                 address(0),
                 "pending owner address is incorrect"
             );
 
             /// ensure correct pause guardian
             assertEq(
-                xWELL(basexWellProxy).pauseGuardian(),
+                xWELL(xWellProxy).pauseGuardian(),
                 pauseGuardian,
                 "pause guardian address is incorrect"
             );
             /// ensure correct pause duration
             assertEq(
-                xWELL(basexWellProxy).pauseDuration(),
+                xWELL(xWellProxy).pauseDuration(),
                 pauseDuration,
                 "pause duration is incorrect"
             );
             /// ensure correct rate limits
             assertEq(
-                xWELL(basexWellProxy).rateLimitPerSecond(wormholeAdapter),
+                xWELL(xWellProxy).rateLimitPerSecond(wormholeAdapter),
                 rateLimitPerSecond,
                 "rateLimitPerSecond is incorrect"
             );
             /// ensure correct buffer cap
             assertEq(
-                xWELL(basexWellProxy).bufferCap(wormholeAdapter),
+                xWELL(xWellProxy).bufferCap(wormholeAdapter),
                 bufferCap,
                 "bufferCap is incorrect"
             );
 
-            assertEq(
-                WormholeBridgeAdapter(wormholeAdapter).targetAddress(
-                    block.chainid.toMoonbeamWormholeChainId()
-                ),
-                wormholeAdapter,
-                "moonbeam target address incorrect"
-            );
-            assertEq(
-                WormholeBridgeAdapter(wormholeAdapter).targetAddress(
-                    block.chainid.toBaseWormholeChainId()
-                ),
-                wormholeAdapter,
-                "base target address incorrect"
-            );
+            for (uint256 i = 0; i < networks.length; i++) {
+                /// skip the network we are on
+                if (networks[i].chainId == block.chainid) {
+                    continue;
+                }
 
-            assertTrue(
-                WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
-                    block.chainid.toMoonbeamWormholeChainId(),
-                    wormholeAdapter
-                ),
-                "trusted sender not trusted"
-            );
-            assertTrue(
-                WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
-                    block.chainid.toBaseWormholeChainId(),
-                    wormholeAdapter
-                ),
-                "trusted sender not trusted"
-            );
+                assertEq(
+                    addresses.getAddress(
+                        "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                        networks[i].chainId
+                    ),
+                    WormholeBridgeAdapter(wormholeAdapter).targetAddress(
+                        networks[i].wormholeChainId
+                    ),
+                    "target address incorrect"
+                );
+
+                assertTrue(
+                    WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
+                        networks[i].wormholeChainId,
+                        wormholeAdapter
+                    ),
+                    "trusted sender not trusted"
+                );
+            }
 
             assertEq(
                 WormholeBridgeAdapter(wormholeAdapter).owner(),
