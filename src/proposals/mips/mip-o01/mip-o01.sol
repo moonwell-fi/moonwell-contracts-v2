@@ -10,7 +10,9 @@ import {Configs} from "@proposals/Configs.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
@@ -58,6 +60,9 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
     /// @notice approval amount for ecosystem reserve to give stkWELL in xWELL xD
     uint256 public constant approvalAmount = 5_000_000_000 * 1e18;
 
+    /// @notice end of distribution period for stkWELL
+    uint256 public constant DISTRIBUTION_END = 4874349773;
+
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile("./src/proposals/mips/mip-o01/MIP-O01.md")
@@ -71,7 +76,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
     }
 
     function deploy(Addresses addresses, address) public override {
-        if (!addresses.isAddressSet("STK_GOVTOKEN", block.chainid)) {
+        if (!addresses.isAddressSet("STK_GOVTOKEN")) {
             address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
             /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
@@ -110,27 +115,6 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                 addresses.addAddress("STK_GOVTOKEN", stkWellProxy);
                 addresses.addAddress("STK_GOVTOKEN_IMPL", stkWellImpl);
             }
-        }
-
-        if (!addresses.isAddressSet("VOTE_COLLECTION_PROXY")) {
-            (
-                address collectionProxy,
-                address collectionImpl
-            ) = deployVoteCollection(
-                    addresses.getAddress("xWELL_PROXY"),
-                    addresses.getAddress("STK_GOVTOKEN"),
-                    addresses.getAddress(
-                        "MULTICHAIN_GOVERNOR_PROXY",
-                        block.chainid.toMoonbeamChainId()
-                    ),
-                    addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                    block.chainid.toMoonbeamWormholeChainId(),
-                    addresses.getAddress("MRD_PROXY_ADMIN"),
-                    addresses.getAddress("TEMPORAL_GOVERNOR")
-                );
-
-            addresses.addAddress("VOTE_COLLECTION_PROXY", collectionProxy);
-            addresses.addAddress("VOTE_COLLECTION_IMPL", collectionImpl);
         }
     }
 
@@ -185,6 +169,16 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
     function teardown(Addresses, address) public override {}
 
     /// run this action through the Artemis Governor
+    /// actions:
+    ///
+    /// - Multichain Governor - add Optimism Multichain Vote Collection as a
+    /// trusted sender
+    ///
+    /// - xWELL - set target address and trusted sender to Optimism on Base and
+    /// Moonbeam on the WormholeBridgeAdapter
+    ///
+    /// - stkWELL - no governance actions needed
+    ///
     function build(Addresses addresses) public override {
         {
             WormholeTrustedSender.TrustedSender[]
@@ -197,7 +191,8 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                     addresses.getAddress("VOTE_COLLECTION_PROXY")
                 );
 
-            /// Add OP vote collection to the MultichainGovernor
+            /// Add Optimism Vote Collection contract to the MultichainGovernor
+            /// as a trusted sender
             _pushAction(
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
@@ -207,7 +202,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                     "addExternalChainConfigs((uint16,address)[])",
                     voteCollectionTrustedSender
                 ),
-                "Add Vote Collection on Optimism to Target Addresses",
+                "Add Vote Collection on Optimism to Target Address in Multichain Governor",
                 ActionType.Moonbeam
             );
         }
@@ -232,10 +227,22 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                     block.chainid.toMoonbeamChainId()
                 ),
                 abi.encodeWithSignature(
-                    "addExternalChainConfigs((uint16,address)[])",
+                    "addTrustedSenders((uint16,address)[])",
                     moonbeamWormholeBridgeAdapter
                 ),
-                "Add xWELL route from Moonbeam to Optimism",
+                "Add xWELL route from Moonbeam to Optimism in trusted sender mapping",
+                ActionType.Moonbeam
+            );
+            _pushAction(
+                addresses.getAddress(
+                    "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                    block.chainid.toMoonbeamChainId()
+                ),
+                abi.encodeWithSignature(
+                    "setTargetAddresses((uint16,address)[])",
+                    moonbeamWormholeBridgeAdapter
+                ),
+                "Add xWELL route from Moonbeam to Optimism in target address mapping",
                 ActionType.Moonbeam
             );
 
@@ -245,48 +252,34 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                     block.chainid.toBaseChainId()
                 ),
                 abi.encodeWithSignature(
-                    "addExternalChainConfigs((uint16,address)[])",
+                    "addTrustedSenders((uint16,address)[])",
                     moonbeamWormholeBridgeAdapter
                 ),
-                "Add xWELL route from Base to Optimism",
+                "Add xWELL route from Base to Optimism in trusted sender mapping",
                 ActionType.Base
             );
-        }
-
-        /// TODO deployment script should open
-        /// Optimism -> Moonbeam + Optimism -> Base
-        /// route in the constructor
-        {
-            WormholeTrustedSender.TrustedSender[]
-                memory optimismWormholeBridgeAdapter = new WormholeTrustedSender.TrustedSender[](
-                    1
-                );
-
-            optimismWormholeBridgeAdapter[0] = WormholeTrustedSender
-                .TrustedSender(
-                    BASE_WORMHOLE_CHAIN_ID,
-                    addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-                );
             _pushAction(
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-                abi.encodeWithSignature(
-                    "addExternalChainConfigs((uint16,address)[])",
-                    optimismWormholeBridgeAdapter
+                addresses.getAddress(
+                    "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                    block.chainid.toBaseChainId()
                 ),
-                "Add xWELL route from Optimism to Base",
-                ActionType.Optimism
+                abi.encodeWithSignature(
+                    "setTargetAddresses((uint16,address)[])",
+                    moonbeamWormholeBridgeAdapter
+                ),
+                "Add xWELL route from Base to Optimism in target address mapping",
+                ActionType.Base
             );
         }
     }
 
     function run(Addresses addresses, address) public override {
-        /// TODO update numbers once proposal changes
         require(
-            actions.proposalActionTypeCount(ActionType.Base) == 0,
+            actions.proposalActionTypeCount(ActionType.Base) == 2,
             "MIP-O01: should have X base actions"
         );
         require(
-            actions.proposalActionTypeCount(ActionType.Moonbeam) == 0,
+            actions.proposalActionTypeCount(ActionType.Moonbeam) == 3,
             "MIP-O01: should have X moonbeam actions"
         );
         require(
@@ -297,7 +290,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
         super.run(addresses, address(0));
     }
 
-    function validate(Addresses addresses, address) public view override {
+    function validate(Addresses addresses, address) public override {
         /// proxy validation
         {
             validateProxy(
@@ -391,6 +384,17 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                 addresses.getAddress("STK_GOVTOKEN")
             );
 
+            {
+                (
+                    uint128 emissionsPerSecond,
+                    uint128 lastUpdateTimestamp,
+
+                ) = stkWell.assets(address(stkWell));
+
+                assertEq(emissionsPerSecond, 0, "emissionsPerSecond incorrect");
+                assertEq(lastUpdateTimestamp, 0, "lastUpdateTimestamp set");
+            }
+
             /// stake and reward token are the same
             assertEq(
                 stkWell.STAKED_TOKEN(),
@@ -420,7 +424,7 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
             );
             assertEq(
                 stkWell.DISTRIBUTION_END(),
-                block.timestamp + distributionDuration,
+                DISTRIBUTION_END,
                 "incorrect distribution duration"
             );
             assertEq(
@@ -508,6 +512,157 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                     )
                 ),
                 "multichain governor not trusted sender in vote collection"
+            );
+        }
+
+        /// validate multichain governor contract
+        {
+            vm.selectFork(MOONBEAM_FORK_ID);
+
+            MultichainGovernor governor = MultichainGovernor(
+                payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
+            );
+
+            assertEq(
+                governor.targetAddress(
+                    block.chainid.toOptimismChainId().toWormholeChainId()
+                ),
+                addresses.getAddress(
+                    "VOTE_COLLECTION_PROXY",
+                    block.chainid.toOptimismChainId()
+                ),
+                "Multichain governor on Moonbeam should trust vote collection on optimism"
+            );
+
+            uint16[] memory chains = governor.getAllTargetChains();
+            bool found = false;
+            for (uint256 i = 0; i < chains.length; i++) {
+                if (
+                    chains[i] ==
+                    block.chainid.toOptimismChainId().toWormholeChainId()
+                ) {
+                    found = true;
+                    break;
+                }
+            }
+
+            assertEq(
+                governor.getAllTargetChainsLength(),
+                2,
+                "incorrect number of target chains"
+            );
+            assertEq(chains.length, 2, "incorrect number of target chains");
+            assertTrue(
+                found,
+                "optimism wormhole chain not found in target chains"
+            );
+            assertEq(
+                governor.targetAddress(
+                    block.chainid.toOptimismChainId().toWormholeChainId()
+                ),
+                addresses.getAddress(
+                    "VOTE_COLLECTION_PROXY",
+                    block.chainid.toOptimismChainId()
+                ),
+                "incorrect target address for optimism wormhole chain"
+            );
+        }
+        {
+            /// validate xWELL routes on Moonbeam
+
+            vm.selectFork(MOONBEAM_FORK_ID);
+
+            WormholeBridgeAdapter adapter = WormholeBridgeAdapter(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            );
+
+            /// validate that Moonbeam bridges to Optimism
+            assertEq(
+                adapter.targetAddress(
+                    block.chainid.toOptimismChainId().toWormholeChainId()
+                ),
+                addresses.getAddress(
+                    "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                    block.chainid.toOptimismChainId()
+                ),
+                "incorrect target address for bridge adapter on moonbeam to Optimism"
+            );
+
+            assertEq(
+                adapter
+                    .allTrustedSenders(
+                        block.chainid.toOptimismChainId().toWormholeChainId()
+                    )
+                    .length,
+                1,
+                "incorrect number of Optimism trusted senders"
+            );
+            assertEq(
+                adapter
+                    .allTrustedSenders(block.chainid.toBaseWormholeChainId())
+                    .length,
+                1,
+                "incorrect number of Base trusted senders"
+            );
+
+            assertTrue(
+                adapter.isTrustedSender(
+                    block.chainid.toOptimismChainId().toWormholeChainId(),
+                    addresses.getAddress(
+                        "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                        block.chainid.toOptimismChainId()
+                    )
+                ),
+                "Optimism vote collection not a trusted sender on Moonbeam"
+            );
+
+            vm.selectFork(BASE_FORK_ID);
+
+            adapter = WormholeBridgeAdapter(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            );
+
+            /// validate that Base bridges to Optimism
+            assertEq(
+                adapter.targetAddress(
+                    block.chainid.toOptimismChainId().toWormholeChainId()
+                ),
+                addresses.getAddress(
+                    "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                    block.chainid.toOptimismChainId()
+                ),
+                "incorrect target address for bridge adapter on Base to Optimism"
+            );
+
+            assertEq(
+                adapter
+                    .allTrustedSenders(
+                        block.chainid.toMoonbeamWormholeChainId()
+                    )
+                    .length,
+                1,
+                "incorrect number of moonbeam trusted senders"
+            );
+
+            assertEq(
+                adapter
+                    .allTrustedSenders(
+                        block.chainid.toOptimismChainId().toWormholeChainId()
+                    )
+                    .length,
+                1,
+                "incorrect number of optimism trusted senders"
+            );
+
+            assertTrue(
+                adapter.isTrustedSender(
+                    block.chainid.toOptimismChainId().toWormholeChainId(),
+                    addresses.getAddress(
+                        "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                        block.chainid.toOptimismChainId()
+                    )
+                ),
+                "Optimism vote collection not a trusted sender on Base"
             );
         }
     }
