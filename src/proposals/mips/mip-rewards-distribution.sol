@@ -313,6 +313,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
             address mrd = addresses.getAddress("MRD_PROXY");
 
+            // todo verify current speeds and only update if different
             _pushAction(
                 mrd,
                 abi.encodeWithSignature(

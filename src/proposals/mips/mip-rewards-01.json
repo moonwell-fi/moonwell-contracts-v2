@@ -57,15 +57,15 @@
             {
                 "emissionToken": "xWELL_PROXY",
                 "market": "MOONWELL_USDC",
-                "newBorrowSpeed": 1,
-                "newEndTime": 1723174200,
+                "newBorrowSpeed": 2,
+                "newEndTime": 1728751851,
                 "newSupplySpeed": 0.54e18
             },
             {
                 "emissionToken": "xWELL_PROXY",
                 "market": "MOONWELL_AERO",
-                "newBorrowSpeed": 1,
-                "newEndTime": 1723174200,
+                "newBorrowSpeed": 2,
+                "newEndTime": 1728751851,
                 "newSupplySpeed": 0.54e18
             }
         ],
