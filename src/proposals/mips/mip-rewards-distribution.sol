@@ -131,7 +131,6 @@ contract mipRewardsDistribution is Test, HybridProposal {
             ActionType.Moonbeam
         );
 
-        // set reward speed
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
 
@@ -152,6 +151,18 @@ contract mipRewardsDistribution is Test, HybridProposal {
         }
 
         AddRewardInfo memory addRewardInfo = spec.addRewardInfo;
+
+        // first approve amount
+        _pushAction(
+            addresses.getAddress(addRewardInfo.target),
+            abi.encodeWithSignature(
+                "approve(address,uint256)",
+                addresses.getAddress("GOVTOKEN"),
+                addRewardInfo.amount
+            ),
+            "Approve StellaSwap spend the amount of WELL",
+            ActionType.Moonbeam
+        );
 
         _pushAction(
             addresses.getAddress(addRewardInfo.target),
@@ -176,23 +187,55 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         buildTransferFroms(addresses, spec.transferFroms);
 
-        //     for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
-        //         SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
+        for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
+            SetMRDRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
 
-        //         address market = addresses.getAddress(setRewardSpeed.market);
+            address market = addresses.getAddress(setRewardSpeed.market);
 
-        //         _pushAction(
-        //             market,
-        //             abi.encodeWithSignature(
-        //                 "setRewardSpeed(uint256,uint256,uint256)",
-        //                 setRewardSpeed.newBorrowSpeed,
-        //                 setRewardSpeed.newSupplySpeed,
-        //                 setRewardSpeed.rewardType
-        //             ),
-        //             "Set reward speed for the Safety Module on Base",
-        //             ActionType.Base
-        //         );
-        //     }
+            address mrd = addresses.getAddress("MRD_PROXY");
+
+            _pushAction(
+                mrd,
+                abi.encodeWithSignature(
+                    "_updateSupplySpeed(address,address,uint256)",
+                    addresses.getAddress(setRewardSpeed.market),
+                    addresses.getAddress(setRewardSpeed.emissionToken),
+                    setRewardSpeed.newSupplySpeed
+                ),
+                string(
+                    abi.encode("Set reward supply speed for %s on Base", market)
+                ),
+                ActionType.Base
+            );
+
+            _pushAction(
+                mrd,
+                abi.encodeWithSignature(
+                    "_updateBorrowSpeed(address,address,uint256)",
+                    addresses.getAddress(setRewardSpeed.market),
+                    addresses.getAddress(setRewardSpeed.emissionToken),
+                    setRewardSpeed.newBorrowSpeed
+                ),
+                string(
+                    abi.encode("Set reward borrow speed for %s on Base", market)
+                ),
+                ActionType.Base
+            );
+
+            _pushAction(
+                mrd,
+                abi.encodeWithSignature(
+                    "_updateEndTime(address,address,uint256)",
+                    addresses.getAddress(setRewardSpeed.market),
+                    addresses.getAddress(setRewardSpeed.emissionToken),
+                    setRewardSpeed.newEndTime
+                ),
+                string(
+                    abi.encode("Set reward end time for %s on Base", market)
+                ),
+                ActionType.Base
+            );
+        }
 
         _pushAction(
             addresses.getAddress("STK_GOVTOKEN"),
