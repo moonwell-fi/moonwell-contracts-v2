@@ -6,6 +6,10 @@ import "@forge-std/StdJson.sol";
 import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
 
+import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IStakedWell} from "@protocol/IStakedWell.sol";
+import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 
@@ -77,6 +81,20 @@ contract mipRewardsDistribution is Test, HybridProposal {
         encodedJson = vm.readFile(vm.envString("MIP_REWARDS_PATH"));
     }
 
+    function initProposal(Addresses addresses) public override {
+        etch(vm, addresses);
+
+        // TODO remove this once new router is deployed
+        xWELLRouter router = new xWELLRouter(
+            addresses.getAddress("xWELL_PROXY"),
+            addresses.getAddress("GOVTOKEN"),
+            addresses.getAddress("xWELL_LOCKBOX"),
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+
+        addresses.changeAddress("xWELL_ROUTER", address(router), true);
+    }
+
     function name() external pure override returns (string memory) {
         return "MIP Rewards Distribution";
     }
@@ -91,7 +109,9 @@ contract mipRewardsDistribution is Test, HybridProposal {
         buildBaseAction(addresses, encodedJson);
     }
 
-    function validate(Addresses, address) public override {}
+    function validate(Addresses addresses, address) public override {
+        validateMoonbeam(addresses);
+    }
 
     function buildMoonbeamActions(
         Addresses addresses,
@@ -108,17 +128,54 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         buildTransferFroms(addresses, spec.transferFroms);
 
-        // Next actions must be the bridge well calls
-        //  for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
-        //      BridgeWell memory bridgeWell = spec.bridgeWells[i];
+        for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
+            BridgeWell memory bridgeWell = spec.bridgeWells[i];
 
-        //      address target = addresses.getAddress(
-        //          bridgeWell.target,
-        //          bridgeWell.network
-        //      );
+            address target = addresses.getAddress(
+                bridgeWell.target,
+                bridgeWell.network
+            );
 
-        //      address router = addresses.getAddress("xWELL_ROUTER");
-        //  }
+            address router = addresses.getAddress("xWELL_ROUTER");
+
+            // first approve
+            _pushAction(
+                addresses.getAddress("WELL"),
+                abi.encodeWithSignature(
+                    "approve(address,uint256)",
+                    router,
+                    bridgeWell.amount
+                ),
+                "Approve xWELL Router to spend WELL",
+                ActionType.Moonbeam
+            );
+
+            uint16 wormholeChainId = bridgeWell.network.toWormholeChainId();
+
+            uint256 bridgeCost = xWELLRouter(router).bridgeCost(
+                wormholeChainId
+            );
+
+            _pushAction(
+                router,
+                bridgeCost,
+                abi.encodeWithSignature(
+                    "bridgeToRecipient(address,uint256,uint16)",
+                    target,
+                    bridgeWell.amount,
+                    wormholeChainId
+                ),
+                string(
+                    abi.encode(
+                        "Bridge %s WELL to %s on chain %s",
+                        bridgeWell.amount,
+                        target,
+                        bridgeWell.network
+                    )
+                ),
+                ActionType.Moonbeam
+            );
+        }
 
         _pushAction(
             addresses.getAddress("STK_GOVTOKEN"),
@@ -134,10 +191,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
 
-            address market = addresses.getAddress(setRewardSpeed.market);
-
             _pushAction(
-                market,
+                addresses.getAddress(setRewardSpeed.target),
                 abi.encodeWithSignature(
                     "_setRewardSpeed(uint8, address, uint256,uint256)",
                     uint8(setRewardSpeed.rewardType),
@@ -154,10 +209,10 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         // first approve amount
         _pushAction(
-            addresses.getAddress(addRewardInfo.target),
+            addresses.getAddress("GOVTOKEN"),
             abi.encodeWithSignature(
                 "approve(address,uint256)",
-                addresses.getAddress("GOVTOKEN"),
+                addresses.getAddress(addRewardInfo.target),
                 addRewardInfo.amount
             ),
             "Approve StellaSwap spend the amount of WELL",
@@ -167,7 +222,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
         _pushAction(
             addresses.getAddress(addRewardInfo.target),
             abi.encodeWithSignature(
-                "addRewardInfo(uint256,,uint256,uint256)",
+                "addRewardInfo(uint256,uint256,uint256)",
                 addRewardInfo.pid,
                 addRewardInfo.endTimestamp,
                 addRewardInfo.rewardPerSec
@@ -185,7 +240,30 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         JsonSpecBase memory spec = abi.decode(parsedJson, (JsonSpecBase));
 
-        buildTransferFroms(addresses, spec.transferFroms);
+        for (uint256 i = 0; i < spec.transferFroms.length; i++) {
+            TransferFrom memory transferFrom = spec.transferFroms[i];
+
+            address token = addresses.getAddress(transferFrom.token);
+            address from = addresses.getAddress(transferFrom.from);
+            address to = addresses.getAddress(transferFrom.to);
+
+            _pushAction(
+                token,
+                abi.encodeWithSignature(
+                    "transfer(address,uint256)",
+                    to,
+                    transferFrom.amount
+                ),
+                string(
+                    abi.encode(
+                        "Transfer token %s from %s to %s",
+                        token,
+                        from,
+                        to
+                    )
+                )
+            );
+        }
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetMRDRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
@@ -277,6 +355,42 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     )
                 )
             );
+        }
+    }
+
+    function validateMoonbeam(Addresses addresses) private view {
+        // assert transferFrom calls
+        string memory chain = ".1284";
+
+        bytes memory parsedJson = vm.parseJson(encodedJson, chain);
+
+        JsonSpecMoonbeam memory spec = abi.decode(
+            parsedJson,
+            (JsonSpecMoonbeam)
+        );
+
+        IERC20 well = IERC20(addresses.getAddress("WELL"));
+        for (uint256 i = 0; i < spec.transferFroms.length; i++) {
+            TransferFrom memory transferFrom = spec.transferFroms[i];
+
+            assertEq(
+                well.balanceOf(addresses.getAddress(transferFrom.to)),
+                transferFrom.amount
+            );
+        }
+
+        address stkGovToken = addresses.getAddress("STK_GOVTOKEN");
+
+        // assert safety module reward speed
+        IStakedWell stkWell = IStakedWell(stkGovToken);
+        (uint256 emissionsPerSecond, , ) = stkWell.assets(stkGovToken);
+        assertEq(emissionsPerSecond, spec.stkWellEmissionsPerSecond);
+
+        // validate setRewardSpeed calls
+        for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
+            SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
+
+            address market = addresses.getAddress(setRewardSpeed.market);
         }
     }
 }

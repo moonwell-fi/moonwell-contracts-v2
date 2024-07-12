@@ -45,7 +45,7 @@ abstract contract Proposal is Script, Test {
 
         vm.selectFork(primaryForkId());
 
-        initProposal();
+        initProposal(addresses);
 
         vm.startBroadcast();
 
@@ -104,7 +104,7 @@ abstract contract Proposal is Script, Test {
 
     /// @notice initialize the proposal after the proposal is created and the
     /// live fork is selected
-    function initProposal() public virtual {}
+    function initProposal(Addresses addresses) public virtual {}
 
     /// @dev Print recorded addresses
     function _printAddressesChanges(Addresses addresses) private view {

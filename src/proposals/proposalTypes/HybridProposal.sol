@@ -754,7 +754,7 @@ abstract contract HybridProposal is
             uint256 gasStart = gasleft();
 
             /// Execute the proposal
-            governor.execute(proposalId);
+            governor.execute{value: actions.sumTotalValue()}(proposalId);
 
             require(
                 gasStart - gasleft() <= 13_000_000,

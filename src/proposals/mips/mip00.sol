@@ -101,7 +101,7 @@ contract mip00 is HybridProposal, Configs {
     /// @notice trusted senders for the temporal governor
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
-    function initProposal() public override {
+    function initProposal(Addresses) public override {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(vm.envString("DESCRIPTION_PATH"))
         );

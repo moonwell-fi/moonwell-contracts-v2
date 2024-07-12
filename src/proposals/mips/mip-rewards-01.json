@@ -1,21 +1,16 @@
 {
     "1284": {
         "addRewardInfo": {
-            "amount": 4000e18,
-            "endTimestamp": 1723174200,
+            "amount": 2800000e18,
+            "endTimestamp": 1728751851,
             "pid": 15,
             "rewardPerSec": 0.5e18,
             "target": "STELLASWAP_REWARDER"
         },
         "bridgeToRecipient": [
             {
-                "amount": 5000e18,
+                "amount": 12000e18,
                 "network": 8453,
-                "target": "TEMPORAL_GOVERNOR"
-            },
-            {
-                "amount": 6000e18,
-                "network": 10,
                 "target": "TEMPORAL_GOVERNOR"
             }
         ],
