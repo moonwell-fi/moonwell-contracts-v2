@@ -235,9 +235,9 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
                 address(stkWellBase)
             );
 
-        governor = MockMultichainGovernor(addresses.governorProxy);
+        governor = MockMultichainGovernor(payable(addresses.governorProxy));
         governorLogic = MockMultichainGovernor(
-            addresses.governorImplementation
+            payable(addresses.governorImplementation)
         );
         xwell = xWELL(xwellProxy);
         wormholeRelayerAdapter = WormholeRelayerAdapter(

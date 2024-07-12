@@ -472,7 +472,7 @@ abstract contract HybridProposal is
 
         uint256 proposalCount = onchainProposalId != 0
             ? onchainProposalId
-            : MultichainGovernor(governor).proposalCount();
+            : MultichainGovernor(payable(governor)).proposalCount();
         bytes memory proposalCalldata = getCalldata(addresses);
 
         // Loop through all proposals to find the one that matches
@@ -482,7 +482,9 @@ abstract contract HybridProposal is
                 address[] memory targets,
                 uint256[] memory values,
                 bytes[] memory calldatas
-            ) = MultichainGovernor(governor).getProposalData(proposalCount);
+            ) = MultichainGovernor(payable(governor)).getProposalData(
+                    proposalCount
+                );
 
             bytes memory onchainCalldata = abi.encodeWithSignature(
                 "propose(address[],uint256[],bytes[],string)",
@@ -515,8 +517,8 @@ abstract contract HybridProposal is
         addresses.addRestriction(block.chainid);
 
         address governanceToken = addresses.getAddress("GOVTOKEN");
-        address governorAddress = addresses.getAddress(
-            "MULTICHAIN_GOVERNOR_PROXY"
+        address payable governorAddress = payable(
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
         );
         MultichainGovernor governor = MultichainGovernor(governorAddress);
 

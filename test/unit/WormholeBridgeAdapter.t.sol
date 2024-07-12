@@ -1,11 +1,13 @@
 pragma solidity 0.8.19;
 
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+
 import "@forge-std/Test.sol";
 
 import "@test/helper/BaseTest.t.sol";
-import {MockWormholeReceiver} from "@test/mock/MockWormholeReceiver.sol";
 
 import {Address} from "@utils/Address.sol";
+import {MockWormholeReceiver} from "@test/mock/MockWormholeReceiver.sol";
 
 contract WormholeBridgeAdapterUnitTest is BaseTest {
     using Address for address;
@@ -166,7 +168,8 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             address(xwellProxy),
             owner,
             address(wormholeBridgeAdapterProxy),
-            chainId
+            new uint16[](0),
+            new address[](0)
         );
     }
 
@@ -314,6 +317,27 @@ contract WormholeBridgeAdapterUnitTest is BaseTest {
             wormholeBridgeAdapterProxy.targetAddress(newChainId),
             addr,
             "target address not set correctly"
+        );
+    }
+
+    /// initialization
+    function testInitializeFailsArrayLengthMismatch() public {
+        ProxyAdmin admin = new ProxyAdmin();
+        (, , , , address wormholeAdapterProxy, ) = deployMoonbeamSystem(
+            address(well),
+            address(admin)
+        );
+        wormholeBridgeAdapterProxy = WormholeBridgeAdapter(
+            wormholeAdapterProxy
+        );
+
+        vm.expectRevert("WormholeBridge: array length mismatch");
+        wormholeBridgeAdapterProxy.initialize(
+            address(xwellProxy),
+            owner,
+            address(wormholeBridgeAdapterProxy),
+            new uint16[](1),
+            new address[](0)
         );
     }
 

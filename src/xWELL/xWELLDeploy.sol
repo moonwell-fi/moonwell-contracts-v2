@@ -127,15 +127,14 @@ contract xWELLDeploy {
     /// this includes the xWELL token, the proxy, the proxy admin, and the wormhole adapter
     /// but does not include the xWELL lockbox as there is no native WELL token
     /// on secondary chain
-    /// @param existingProxyAdmin The proxy admin to use, if any
+    /// @param proxyAdmin The proxy admin to use
     function deployWellSystem(
-        address existingProxyAdmin
+        address proxyAdmin
     )
         public
         returns (
             address xwellLogic,
             address xwellProxy,
-            address proxyAdmin,
             address wormholeAdapterLogic,
             address wormholeAdapter
         )
@@ -144,12 +143,6 @@ contract xWELLDeploy {
         xwellLogic = address(new xWELL());
 
         wormholeAdapterLogic = address(new WormholeBridgeAdapter());
-
-        if (existingProxyAdmin == address(0)) {
-            proxyAdmin = address(new ProxyAdmin());
-        } else {
-            proxyAdmin = existingProxyAdmin;
-        }
 
         /// do not initialize the proxy, that is the final step
         xwellProxy = address(
@@ -183,7 +176,6 @@ contract xWELLDeploy {
         (
             xwellLogic,
             xwellProxy,
-            proxyAdmin,
             wormholeAdapterLogic,
             wormholeAdapter
         ) = deployWellSystem(existingProxyAdmin);
@@ -192,6 +184,7 @@ contract xWELLDeploy {
             xwellProxy, /// proxy is actually the xWELL token contract
             wellAddress
         );
+        proxyAdmin = existingProxyAdmin;
     }
 
     function initializeXWell(
@@ -218,13 +211,15 @@ contract xWELLDeploy {
         address xwellProxy,
         address tokenOwner,
         address wormholeRelayerAddress,
-        uint16 chainId
+        uint16[] memory chainIds,
+        address[] memory trustedSenders
     ) public {
         WormholeBridgeAdapter(wormholeAdapter).initialize(
             xwellProxy,
             tokenOwner,
             wormholeRelayerAddress,
-            chainId
+            chainIds,
+            trustedSenders
         );
     }
 

@@ -32,7 +32,7 @@ contract PostProposalCheck is Test {
         proposals = new Proposal[](2);
 
         governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         );
 
         // get the latest moonbeam proposal

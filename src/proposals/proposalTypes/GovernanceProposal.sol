@@ -100,11 +100,11 @@ abstract contract GovernanceProposal is Proposal {
         vm.selectFork(MOONBEAM_FORK_ID);
 
         MoonwellArtemisGovernor governorContract = MoonwellArtemisGovernor(
-            governor
+            payable(governor)
         );
         uint256 proposalCount = onchainProposalId != 0
             ? onchainProposalId
-            : MultichainGovernor(governor).proposalCount();
+            : MultichainGovernor(payable(governor)).proposalCount();
 
         (
             address[] memory proposalTargets,
