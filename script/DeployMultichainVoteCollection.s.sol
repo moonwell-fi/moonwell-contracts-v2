@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import {Script} from "@forge-std/Script.sol";
 
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
  Utility to deploy xWELL contract on any network
@@ -17,15 +16,13 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
     --rpc-url $chainAlias --broadcast --etherscan-api-key $chainAlias --verify
 */
 contract DeployMultichainVoteCollection is Script {
-    function run() public {
+    function run() public returns (MultichainVoteCollection) {
         vm.startBroadcast();
 
         MultichainVoteCollection impl = new MultichainVoteCollection();
 
         vm.stopBroadcast();
 
-        Addresses addresses = new Addresses();
-        addresses.addAddress("NEW_VOTE_COLLECTION_IMPL", address(impl));
-        addresses.printAddresses();
+        return impl;
     }
 }
