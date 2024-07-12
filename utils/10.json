@@ -313,5 +313,40 @@
         "addr": "0xA88594D404727625A9437C3f886C7643872296AE",
         "isContract": true,
         "name": "xWELL_PROXY"
+    },
+    {
+        "addr": "0x966450Ee0757846963F17f7978a8A906e078EF4b",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_PROXY"
+    },
+    {
+        "addr": "0x0CADa1745973f63AB2aad29f67D1f1183Bba2A10",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_IMPL"
+    },
+    {
+        "addr": "0x1D776f9dc5fb96a2B60862973d90418d684dEE1e",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_CONTROLLER"
+    },
+    {
+        "addr": "0xfB26A4947A38cb53e2D083c6490060CCCE7438c5",
+        "isContract": true,
+        "name": "STK_GOVTOKEN"
+    },
+    {
+        "addr": "0xAbd65097F869f36f56Be9eC60DfB4A441a00c47C",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_IMPL"
+    },
+    {
+        "addr": "0x3C968481BE3ba1a99fed5f73dB2Ff51151037738",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_PROXY"
+    },
+    {
+        "addr": "0xf4aEF04Bc95e822491053aCF2aa8C3c9854aB544",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_IMPL"
     }
 ]
