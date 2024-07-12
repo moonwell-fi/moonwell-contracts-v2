@@ -133,7 +133,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
             // we are running in a fork and wormhole will not
             // pick up the payload
             address well = addresses.getAddress("xWELL_PROXY");
-            deal(well, addresses.getAddress("TEMPORAL_GOVERNOR"), 12000e18);
+            // TODO get real value here
+            deal(well, addresses.getAddress("TEMPORAL_GOVERNOR"), 18000e18);
 
             _runExtChain(addresses, actions.filter(ActionType.Base));
         }
@@ -144,7 +145,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
             // we are running in a fork and wormhole will not
             // pick up the payload
             address well = addresses.getAddress("xWELL_PROXY");
-            deal(well, addresses.getAddress("TEMPORAL_GOVERNOR"), 12000e18);
+            // TODO get real value here
+            deal(well, addresses.getAddress("TEMPORAL_GOVERNOR"), 18000e18);
 
             _runExtChain(addresses, actions.filter(ActionType.Optimism));
         }
