@@ -71,8 +71,6 @@ contract mipRewardsDistribution is Test, HybridProposal {
         TransferFrom[] transferFroms;
     }
 
-    string public encodedJson;
-
     JsonSpecMoonbeam moonbeamActions;
 
     mapping(uint256 chainid => JsonSpecExternalChain) externalChainActions;
@@ -84,7 +82,9 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         _setProposalDescription(proposalDescription);
 
-        encodedJson = vm.readFile(vm.envString("MIP_REWARDS_PATH"));
+        string memory encodedJson = vm.readFile(
+            vm.envString("MIP_REWARDS_PATH")
+        );
 
         saveMoonbeamActions(encodedJson);
 
@@ -114,9 +114,9 @@ contract mipRewardsDistribution is Test, HybridProposal {
     }
 
     function build(Addresses addresses) public override {
-        buildMoonbeamActions(addresses, encodedJson);
+        buildMoonbeamActions(addresses);
 
-        buildBaseAction(addresses, encodedJson);
+        buildExternalChainActions(addresses, BASE_CHAIN_ID);
     }
 
     function validate(Addresses addresses, address) public view override {
@@ -137,11 +137,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
         if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
             vm.selectFork(BASE_FORK_ID);
 
-            // need to mock well temporal governor balance as
-            // we are running in a fork and wormhole will not
-            // pick up the payload
+            // TODO replace for wormhole mock
             address well = addresses.getAddress("xWELL_PROXY");
-            // TODO get real value here
             deal(well, addresses.getAddress("TEMPORAL_GOVERNOR"), 18000e18);
 
             _runExtChain(addresses, actions.filter(ActionType.Base));
@@ -149,11 +146,9 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
             vm.selectFork(OPTIMISM_FORK_ID);
-            // need to mock well temporal governor balance as
-            // we are running in a fork and wormhole will not
-            // pick up the payload
+
+            // TODO replace for wormhole mock
             address well = addresses.getAddress("xWELL_PROXY");
-            // TODO get real value here
             deal(well, addresses.getAddress("TEMPORAL_GOVERNOR"), 18000e18);
 
             _runExtChain(addresses, actions.filter(ActionType.Optimism));
@@ -218,10 +213,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
         }
     }
 
-    function buildMoonbeamActions(
-        Addresses addresses,
-        string memory data
-    ) private {
+    function buildMoonbeamActions(Addresses addresses) private {
         JsonSpecMoonbeam memory spec = moonbeamActions;
         buildTransferFroms(addresses, spec.transferFroms);
 
@@ -329,10 +321,13 @@ contract mipRewardsDistribution is Test, HybridProposal {
         );
     }
 
-    function buildBaseAction(Addresses addresses, string memory data) private {
-        vm.selectFork(BASE_FORK_ID);
+    function buildExternalChainActions(
+        Addresses addresses,
+        uint256 chain
+    ) private {
+        vm.selectFork(chain.toForkId());
 
-        JsonSpecExternalChain memory spec = externalChainActions[BASE_CHAIN_ID];
+        JsonSpecExternalChain memory spec = externalChainActions[chain];
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             TransferFrom memory transferFrom = spec.transferFroms[i];
@@ -350,10 +345,11 @@ contract mipRewardsDistribution is Test, HybridProposal {
                 ),
                 string(
                     abi.encode(
-                        "Transfer token %s from %s to %s",
+                        "Transfer token %s from %s to %s on %s",
                         token,
                         from,
-                        to
+                        to,
+                        chain
                     )
                 )
             );
@@ -376,9 +372,12 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     setRewardSpeed.newSupplySpeed
                 ),
                 string(
-                    abi.encode("Set reward supply speed for %s on Base", market)
-                ),
-                ActionType.Base
+                    abi.encode(
+                        "Set reward supply speed for %s on %s",
+                        market,
+                        chain
+                    )
+                )
             );
 
             _pushAction(
@@ -390,9 +389,12 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     setRewardSpeed.newBorrowSpeed
                 ),
                 string(
-                    abi.encode("Set reward borrow speed for %s on Base", market)
-                ),
-                ActionType.Base
+                    abi.encode(
+                        "Set reward borrow speed for %s on %s",
+                        market,
+                        chain
+                    )
+                )
             );
 
             _pushAction(
@@ -404,9 +406,12 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     setRewardSpeed.newEndTime
                 ),
                 string(
-                    abi.encode("Set reward end time for %s on Base", market)
-                ),
-                ActionType.Base
+                    abi.encode(
+                        "Set reward end time for %s on %s",
+                        market,
+                        chain
+                    )
+                )
             );
         }
 
@@ -417,8 +422,12 @@ contract mipRewardsDistribution is Test, HybridProposal {
                 spec.stkWellEmissionsPerSecond,
                 addresses.getAddress("STK_GOVTOKEN")
             ),
-            "Set reward speed for the Safety Module on Base",
-            ActionType.Base
+            string(
+                abi.encode(
+                    "Set reward speed for the Safety Module on %s",
+                    chain
+                )
+            )
         );
     }
 
@@ -454,15 +463,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
     }
 
     function validateMoonbeam(Addresses addresses) private view {
-        // assert transferFrom calls
-        string memory chain = ".1284";
-
-        bytes memory parsedJson = vm.parseJson(encodedJson, chain);
-
-        JsonSpecMoonbeam memory spec = abi.decode(
-            parsedJson,
-            (JsonSpecMoonbeam)
-        );
+        JsonSpecMoonbeam memory spec = moonbeamActions;
 
         IERC20 well = IERC20(addresses.getAddress("WELL"));
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
