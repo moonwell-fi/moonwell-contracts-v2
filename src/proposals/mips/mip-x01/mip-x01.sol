@@ -17,22 +17,20 @@ contract mipx01 is HybridProposal, Configs {
     string public constant override name =
         "MIP-X01: xWELL and Multichain Governor Upgrade";
 
+    constructor() {
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile("./src/proposals/mips/mip-x01/MIP-X01.md")
+        );
+
+        _setProposalDescription(proposalDescription);
+    }
+
     function primaryForkId() public pure override returns (uint256) {
         return MOONBEAM_FORK_ID;
     }
 
     /// Moonbeam logic contract deployment
-    function deploy(Addresses addresses, address) public override {
-        if (!addresses.isAddressSet("MULTICHAIN_GOVERNOR_IMPL")) {
-            MultichainGovernor newImpl = new MultichainGovernor();
-            addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", address(newImpl));
-        }
-
-        if (!addresses.isAddressSet("xWELL_LOGIC")) {
-            xWELL newImpl = new xWELL();
-            addresses.addAddress("xWELL_LOGIC", address(newImpl));
-        }
-    }
+    function deploy(Addresses, address) public override {}
 
     function build(Addresses addresses) public override {
         /// upgrade the multichain governor on Moonbeam
@@ -77,7 +75,7 @@ contract mipx01 is HybridProposal, Configs {
             abi.encodeWithSignature(
                 "upgrade(address,address)",
                 addresses.getAddress("VOTE_COLLECTION_PROXY", baseChainId),
-                addresses.getAddress("NEW_VOTE_COLLECTION_IMPL", baseChainId)
+                addresses.getAddress("VOTE_COLLECTION_IMPL", baseChainId)
             ),
             "Upgrade the Multichain Vote Collection implementation on Base",
             ActionType.Base
@@ -99,7 +97,7 @@ contract mipx01 is HybridProposal, Configs {
         validateProxy(
             vm,
             addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
-            addresses.getAddress("NEW_MULTICHAIN_GOVERNOR_IMPL"),
+            addresses.getAddress("MULTICHAIN_GOVERNOR_IMPL"),
             addresses.getAddress("MOONBEAM_PROXY_ADMIN"),
             "Moonbeam MULTICHAIN_GOVERNOR_IMPL validation"
         );
@@ -117,7 +115,7 @@ contract mipx01 is HybridProposal, Configs {
         validateProxy(
             vm,
             addresses.getAddress("VOTE_COLLECTION_PROXY"),
-            addresses.getAddress("NEW_VOTE_COLLECTION_IMPL"),
+            addresses.getAddress("VOTE_COLLECTION_IMPL"),
             addresses.getAddress("MRD_PROXY_ADMIN"),
             "Base VOTE_COLLECTION_PROXY validation"
         );
