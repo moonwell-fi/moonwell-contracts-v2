@@ -43,7 +43,7 @@ contract MultichainGovernorDeploy is Test {
         WormholeTrustedSender.TrustedSender[] memory trustedSenders,
         bytes[] memory whitelistedCalldata
     ) public {
-        MultichainGovernor(governorProxy).initialize(
+        MultichainGovernor(payable(governorProxy)).initialize(
             initializeData,
             trustedSenders,
             whitelistedCalldata

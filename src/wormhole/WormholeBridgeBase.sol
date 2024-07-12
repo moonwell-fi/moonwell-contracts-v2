@@ -277,13 +277,13 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
     /// @param payload Payload to send to the external chain
     function _bridgeOutAll(bytes memory payload) internal {
         require(
-            bridgeCostAll() == msg.value,
+            msg.value >= bridgeCostAll(),
             "WormholeBridge: total cost not equal to quote"
         );
 
         uint256 chainsLength = _targetChains.length();
 
-        uint256 totalRefundAmount = 0;
+        uint256 totalRefundAmount = msg.value;
 
         for (uint256 i = 0; i < chainsLength; ) {
             uint16 targetChain = uint16(_targetChains.at(i));
@@ -299,6 +299,7 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
                     gasLimit
                 )
             {
+                totalRefundAmount -= cost;
                 emit BridgeOutSuccess(
                     targetChain,
                     cost,
@@ -306,7 +307,6 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
                     payload
                 );
             } catch {
-                totalRefundAmount += cost;
                 emit BridgeOutFailed(targetChain, payload, cost);
             }
 
@@ -315,8 +315,8 @@ abstract contract WormholeBridgeBase is IWormholeReceiver {
             }
         }
 
-        if (totalRefundAmount > 0) {
-            // send bridge funds back to sender using call
+        if (totalRefundAmount != 0) {
+            /// send bridge funds back to sender using call
             (bool success, ) = msg.sender.call{value: totalRefundAmount}("");
             require(success, "WormholeBridge: refund failed");
         }

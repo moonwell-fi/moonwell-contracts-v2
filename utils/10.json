@@ -1,142 +1,352 @@
 [
     {
         "addr": "0x4200000000000000000000000000000000000006",
-        "name": "WETH",
-        "isContract": true
+        "isContract": true,
+        "name": "WETH"
     },
     {
         "addr": "0x13e3Ee699D1909E989722E753853AE30b17e08c5",
-        "name": "CHAINLINK_ETH_USD",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_ETH_USD"
     },
     {
         "addr": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
-        "name": "USDC",
-        "isContract": true
+        "isContract": true,
+        "name": "USDC"
     },
     {
         "addr": "0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3",
-        "name": "CHAINLINK_USDC_USD",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_USDC_USD"
     },
     {
         "addr": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
-        "name": "DAI",
-        "isContract": true
+        "isContract": true,
+        "name": "DAI"
     },
     {
         "addr": "0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6",
-        "name": "CHAINLINK_DAI_USD",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_DAI_USD"
     },
     {
         "addr": "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
-        "name": "USDT",
-        "isContract": true
+        "isContract": true,
+        "name": "USDT"
     },
     {
         "addr": "0xECef79E109e997bCA29c1c0897ec9d7b03647F5E",
-        "name": "CHAINLINK_USDT_USD",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_USDT_USD"
     },
     {
         "addr": "0x68f180fcCe6836688e9084f035309E29Bf0A2095",
-        "name": "WBTC",
-        "isContract": true
+        "isContract": true,
+        "name": "WBTC"
     },
     {
         "addr": "0x718A5788b89454aAE3A028AE9c111A29Be6c2a6F",
-        "name": "CHAINLINK_WBTC_USD",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_WBTC_USD"
     },
     {
         "addr": "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb",
-        "name": "wstETH",
-        "isContract": true
+        "isContract": true,
+        "name": "wstETH"
     },
     {
         "addr": "0x524299Ab0987a7c4B3c8022a35669DdcdC715a10",
-        "name": "CHAINLINK_WSTETH_ETH",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_WSTETH_ETH"
     },
     {
         "addr": "0xe770BD40b6976Efbbb095174395DD2cb794c938a",
-        "name": "CHAINLINK_WSTETH_USD_COMPOSITE_ORACLE",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_WSTETH_USD_COMPOSITE_ORACLE"
     },
     {
         "addr": "0xadDb6A0412DE1BA0F936DCaeb8Aaa24578dcF3B2",
-        "name": "cbETH",
-        "isContract": true
+        "isContract": true,
+        "name": "cbETH"
     },
     {
         "addr": "0x138b809B8472fF09Cd3E075E6EcbB2e42D41d870",
-        "name": "CHAINLINK_cbETH_ETH",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_cbETH_ETH"
     },
     {
         "addr": "0x6250e204bA6f722c7d498f659f8d3C5550Ec811E",
-        "name": "CHAINLINK_cbETH_USD_COMPOSITE_ORACLE",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_cbETH_USD_COMPOSITE_ORACLE"
     },
     {
         "addr": "0x9Bcef72be871e61ED4fBbc7630889beE758eb81D",
-        "name": "rETH",
-        "isContract": true
+        "isContract": true,
+        "name": "rETH"
     },
     {
         "addr": "0xb429DE60943a8e6DeD356dca2F93Cd31201D9ed0",
-        "name": "CHAINLINK_RETH_ETH",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_RETH_ETH"
     },
     {
         "addr": "0xc095cb1A6B41A5Cd7dAaF993a904afDD74758D71",
-        "name": "CHAINLINK_RETH_USD_COMPOSITE_ORACLE",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_RETH_USD_COMPOSITE_ORACLE"
     },
     {
         "addr": "0x4200000000000000000000000000000000000042",
-        "name": "OP",
-        "isContract": true
+        "isContract": true,
+        "name": "OP"
     },
     {
         "addr": "0x0D276FC14719f9292D5C1eA2198673d1f4269246",
-        "name": "CHAINLINK_OP_USD",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_OP_USD"
     },
     {
         "addr": "0x3c8B650257cFb5f272f799F5e2b4e65093a11a05",
-        "name": "VELO",
-        "isContract": true
+        "isContract": true,
+        "name": "VELO"
     },
     {
         "addr": "0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120",
-        "name": "CHAINLINK_VELO_USD",
-        "isContract": true
+        "isContract": true,
+        "name": "CHAINLINK_VELO_USD"
     },
     {
         "addr": "0x355F7b5edbfbfb5cCc7a3C67Dab2f99A72FDDa09",
-        "name": "SECURITY_COUNCIL",
-        "isContract": true
+        "isContract": true,
+        "name": "SECURITY_COUNCIL"
     },
     {
         "addr": "0xf9564270C1a08b386E77397d38E90bde96f900e2",
-        "name": "CAP_GUARDIAN",
-        "isContract": true
+        "isContract": true,
+        "name": "CAP_GUARDIAN"
     },
     {
         "addr": "0x355F7b5edbfbfb5cCc7a3C67Dab2f99A72FDDa09",
-        "name": "PAUSE_GUARDIAN",
-        "isContract": true
+        "isContract": true,
+        "name": "PAUSE_GUARDIAN"
     },
     {
         "addr": "0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722",
-        "name": "WORMHOLE_CORE",
-        "isContract": true
+        "isContract": true,
+        "name": "WORMHOLE_CORE"
     },
     {
         "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
-        "name": "WORMHOLE_BRIDGE_RELAYER",
-        "isContract": true
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_RELAYER"
+    },
+    {
+        "addr": "0x17C9ba3fDa7EC71CcfD75f978Ef31E21927aFF3d",
+        "isContract": true,
+        "name": "TEMPORAL_GOVERNOR"
+    },
+    {
+        "addr": "0xFf0731337F615aC5403cb243623283BC04cDe121",
+        "isContract": true,
+        "name": "MULTI_REWARD_DISTRIBUTOR"
+    },
+    {
+        "addr": "0x8dFBb21dbD61af533092d54B293660CF77A30Ce2",
+        "isContract": true,
+        "name": "COMPTROLLER"
+    },
+    {
+        "addr": "0xCa889f40aae37FFf165BccF69aeF1E82b5C511B9",
+        "isContract": true,
+        "name": "UNITROLLER"
+    },
+    {
+        "addr": "0x8568A675384d761f36eC269D695d6Ce4423cfaB1",
+        "isContract": true,
+        "name": "MRD_PROXY_ADMIN"
+    },
+    {
+        "addr": "0xF9524bfa18C19C3E605FbfE8DFd05C6e967574Aa",
+        "isContract": true,
+        "name": "MRD_PROXY"
+    },
+    {
+        "addr": "0xA9CE0A4DE55791c5792B50531b18Befc30B09dcC",
+        "isContract": true,
+        "name": "MTOKEN_IMPLEMENTATION"
+    },
+    {
+        "addr": "0xa962F2974A846b30366251f4634384C1e42aeF16",
+        "isContract": true,
+        "name": "WETH_UNWRAPPER"
+    },
+    {
+        "addr": "0x66Fb793e75053A07301c7c21A3cF77616123227b",
+        "isContract": true,
+        "name": "MWETH_IMPLEMENTATION"
+    },
+    {
+        "addr": "0xBD2FcfB778fef7a1650E19a6E0754E982F0fAae2",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC"
+    },
+    {
+        "addr": "0x8E08617b0d66359D73Aa11E11017834C29155525",
+        "isContract": true,
+        "name": "MOONWELL_USDC"
+    },
+    {
+        "addr": "0xdAdA7DB2cC9a5D3d3C12509B71964E82d4AE76D6",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDT"
+    },
+    {
+        "addr": "0xa3A53899EE8f9f6E963437C5B3f805FEc538BF84",
+        "isContract": true,
+        "name": "MOONWELL_USDT"
+    },
+    {
+        "addr": "0x04e6322D196E0E4cCBb2610dd8B8f2871E160bd7",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_DAI"
+    },
+    {
+        "addr": "0x3FE782C2Fe7668C2F1Eb313ACf3022a31feaD6B2",
+        "isContract": true,
+        "name": "MOONWELL_DAI"
+    },
+    {
+        "addr": "0xf5E4b63B8447879E8F44A988128ab1836F21f12A",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_WBTC"
+    },
+    {
+        "addr": "0x6e6CA598A06E609c913551B729a228B023f06fDB",
+        "isContract": true,
+        "name": "MOONWELL_WBTC"
+    },
+    {
+        "addr": "0x2a55ba986a8c6EE17979f6233985414A865a280f",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_WETH"
+    },
+    {
+        "addr": "0xb4104C02BBf4E9be85AAa41a62974E4e28D59A33",
+        "isContract": true,
+        "name": "MOONWELL_WETH"
+    },
+    {
+        "addr": "0xEa952aCFa68ED588313134D81Ed9B19411E99B80",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_wstETH"
+    },
+    {
+        "addr": "0xbb3b1aB66eFB43B10923b87460c0106643B83f9d",
+        "isContract": true,
+        "name": "MOONWELL_wstETH"
+    },
+    {
+        "addr": "0x7c94e5bddFDDB4a22C0432873844224036dFb4c1",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbETH"
+    },
+    {
+        "addr": "0x95C84F369bd0251ca903052600A3C96838D78bA1",
+        "isContract": true,
+        "name": "MOONWELL_cbETH"
+    },
+    {
+        "addr": "0x612e737586Ae0cCF4a55DF3FCAF19993C16Db9E9",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_rETH"
+    },
+    {
+        "addr": "0x4c2E35E3eC4A0C82849637BC04A4609Dbe53d321",
+        "isContract": true,
+        "name": "MOONWELL_rETH"
+    },
+    {
+        "addr": "0x7b2FaBffa53F59203aE5db1dd8E0e9A4D50c744e",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_VELO"
+    },
+    {
+        "addr": "0x21d851585840942B0eF9f20d842C00C5f3735eaF",
+        "isContract": true,
+        "name": "MOONWELL_VELO"
+    },
+    {
+        "addr": "0x69ff8B55d6f08e2266FEB10092AcE88217e0668e",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_OP"
+    },
+    {
+        "addr": "0x9fc345a20541Bf8773988515c5950eD69aF01847",
+        "isContract": true,
+        "name": "MOONWELL_OP"
+    },
+    {
+        "addr": "0x2f1490bD6aD10C9CE42a2829afa13EAc0b746dcf",
+        "isContract": true,
+        "name": "CHAINLINK_ORACLE"
+    },
+    {
+        "addr": "0xc4Ab8C031717d7ecCCD653BE898e0f92410E11dC",
+        "isContract": true,
+        "name": "WETH_ROUTER"
+    },
+    {
+        "addr": "0x734AbBCe07679C9A6B4Fe3bC16325e028fA6DbB7",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY"
+    },
+    {
+        "addr": "0xEF68C8f8BDeEF8e938F519ee818DeC80e320CE6b",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC"
+    },
+    {
+        "addr": "0x3b1BDDC0998058dD266e2a0aC855D0d750700a7f",
+        "isContract": true,
+        "name": "xWELL_LOGIC"
+    },
+    {
+        "addr": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "isContract": true,
+        "name": "xWELL_PROXY"
+    },
+    {
+        "addr": "0x966450Ee0757846963F17f7978a8A906e078EF4b",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_PROXY"
+    },
+    {
+        "addr": "0x0CADa1745973f63AB2aad29f67D1f1183Bba2A10",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_IMPL"
+    },
+    {
+        "addr": "0x1D776f9dc5fb96a2B60862973d90418d684dEE1e",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_CONTROLLER"
+    },
+    {
+        "addr": "0xfB26A4947A38cb53e2D083c6490060CCCE7438c5",
+        "isContract": true,
+        "name": "STK_GOVTOKEN"
+    },
+    {
+        "addr": "0xAbd65097F869f36f56Be9eC60DfB4A441a00c47C",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_IMPL"
+    },
+    {
+        "addr": "0x3C968481BE3ba1a99fed5f73dB2Ff51151037738",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_PROXY"
+    },
+    {
+        "addr": "0xf4aEF04Bc95e822491053aCF2aa8C3c9854aB544",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_IMPL"
     }
 ]

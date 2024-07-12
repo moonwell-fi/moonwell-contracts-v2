@@ -24,6 +24,7 @@ uint256 constant OPTIMISM_SEPOLIA_CHAIN_ID = 11155420;
 uint16 constant MOONBEAM_WORMHOLE_CHAIN_ID = 16;
 uint16 constant BASE_WORMHOLE_CHAIN_ID = 30;
 uint16 constant OPTIMISM_WORMHOLE_CHAIN_ID = 24;
+uint16 constant ETHEREUM_WORMHOLE_CHAIN_ID = 2;
 
 // Wormhole Testnet Chain Ids
 uint16 constant MOONBASE_WORMHOLE_CHAIN_ID = 16;
@@ -220,10 +221,16 @@ library ChainIds {
     function toBaseWormholeChainId(
         uint256 chainId
     ) internal pure returns (uint16) {
-        if (chainId == MOONBEAM_CHAIN_ID || chainId == BASE_CHAIN_ID) {
+        if (
+            chainId == MOONBEAM_CHAIN_ID ||
+            chainId == BASE_CHAIN_ID ||
+            chainId == OPTIMISM_CHAIN_ID
+        ) {
             return BASE_WORMHOLE_CHAIN_ID;
         } else if (
-            chainId == MOONBASE_CHAIN_ID || chainId == BASE_SEPOLIA_CHAIN_ID
+            chainId == MOONBASE_CHAIN_ID ||
+            chainId == BASE_SEPOLIA_CHAIN_ID ||
+            chainId == OPTIMISM_SEPOLIA_CHAIN_ID
         ) {
             return BASE_WORMHOLE_SEPOLIA_CHAIN_ID;
         } else {

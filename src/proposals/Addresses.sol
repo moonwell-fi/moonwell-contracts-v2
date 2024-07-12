@@ -5,6 +5,7 @@ import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/Enu
 import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import {Test} from "@forge-std/Test.sol";
+import {console} from "@forge-std/console.sol";
 
 import {IAddresses} from "./IAddresses.sol";
 
@@ -316,7 +317,7 @@ contract Addresses is IAddresses, Test {
 
     /// @notice get recorded addresses from a proposal's deployment
     function getRecordedAddresses()
-        external
+        public
         view
         returns (
             string[] memory names,
@@ -499,6 +500,24 @@ contract Addresses is IAddresses, Test {
                     )
                 );
             }
+        }
+    }
+
+    /// @notice prints out addresses that were added in JSON format
+    function printAddresses() external view {
+        (
+            string[] memory recordedNames,
+            uint256[] memory chainIds,
+            address[] memory newlyRecordedAddresses
+        ) = getRecordedAddresses();
+        for (uint256 j = 0; j < recordedNames.length; j++) {
+            console.log("{\n        'addr': '%s', ", newlyRecordedAddresses[j]);
+            console.log("        'chainId': %d,", chainIds[j]);
+            console.log(
+                "        'name': '%s'\n}%s",
+                recordedNames[j],
+                j < recordedNames.length - 1 ? "," : ""
+            );
         }
     }
 }

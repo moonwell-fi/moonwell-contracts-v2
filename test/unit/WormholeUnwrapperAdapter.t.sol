@@ -204,7 +204,8 @@ contract WormholeUnwrapperAdapterUnitTest is BaseTest {
             address(xwellProxy),
             owner,
             address(wormholeBridgeAdapterProxy),
-            chainId
+            new uint16[](0),
+            new address[](0)
         );
     }
 

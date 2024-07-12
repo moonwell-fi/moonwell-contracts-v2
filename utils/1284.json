@@ -35,6 +35,11 @@
         "name": "MULTICHAIN_GOVERNOR_PROXY"
     },
     {
+        "addr": "0xc9AC406CDa5d9DCBcB49A25e3CA9073951236b5d",
+        "isContract": true,
+        "name": "MULTICHAIN_GOVERNOR_IMPL"
+    },
+    {
         "addr": "0xE907f95c46659c6eF24d84cFDb9f8FF9Cf57c723",
         "isContract": true,
         "name": "STELLASWAP_REWARDER"
@@ -42,7 +47,7 @@
     {
         "addr": "0x14eBB684bBa5FFd7881590c7540bC3b85B550023",
         "isContract": true,
-        "name": "MULTICHAIN_GOVERNOR_IMPL"
+        "name": "DEPRECATED_MULTICHAIN_GOVERNOR_IMPL"
     },
     {
         "addr": "0xc17bC2ea705C9C4b66c492958C954539C0B3ef71",
@@ -155,7 +160,7 @@
         "name": "WORMHOLE_UNWRAPPER_ADAPTER"
     },
     {
-        "addr": "0x3b1BDDC0998058dD266e2a0aC855D0d750700a7f",
+        "addr": "0x3C968481BE3ba1a99fed5f73dB2Ff51151037738",
         "name": "xWELL_LOGIC",
         "isContract": true
     },
