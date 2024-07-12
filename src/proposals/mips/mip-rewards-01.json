@@ -1,7 +1,7 @@
 {
     "1284": {
         "addRewardInfo": {
-            "amount": 2800000e18,
+            "amount": 2788825500000000000000000,
             "endTimestamp": 1728751851,
             "pid": 15,
             "rewardPerSec": 0.5e18,
@@ -33,7 +33,7 @@
         "stkWellEmissionsPerSecond": 0.65e18,
         "transferFrom": [
             {
-                "amount": 1000e18,
+                "amount": 2788825500000000000000000,
                 "from": "MGLIMMER_MULTISIG",
                 "to": "MULTICHAIN_GOVERNOR_PROXY",
                 "token": "WELL"

@@ -65,13 +65,17 @@ contract mipRewardsDistribution is Test, HybridProposal {
         TransferFrom[] transferFroms;
     }
 
-    struct JsonSpecBase {
+    struct JsonSpecExternalChain {
         SetMRDRewardSpeed[] setRewardSpeed;
         uint256 stkWellEmissionsPerSecond;
         TransferFrom[] transferFroms;
     }
 
     string public encodedJson;
+
+    JsonSpecMoonbeam moonbeamActions;
+
+    mapping(uint256 chainid => JsonSpecExternalChain) externalChainActions;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -81,6 +85,10 @@ contract mipRewardsDistribution is Test, HybridProposal {
         _setProposalDescription(proposalDescription);
 
         encodedJson = vm.readFile(vm.envString("MIP_REWARDS_PATH"));
+
+        saveMoonbeamActions(encodedJson);
+
+        saveExternalChainActions(encodedJson, BASE_CHAIN_ID);
     }
 
     function initProposal(Addresses addresses) public override {
@@ -111,7 +119,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
         buildBaseAction(addresses, encodedJson);
     }
 
-    function validate(Addresses addresses, address) public override {
+    function validate(Addresses addresses, address) public view override {
         validateMoonbeam(addresses);
     }
 
@@ -154,10 +162,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
         vm.selectFork(uint256(primaryForkId()));
     }
 
-    function buildMoonbeamActions(
-        Addresses addresses,
-        string memory data
-    ) private {
+    function saveMoonbeamActions(string memory data) public {
         string memory chain = ".1284";
 
         bytes memory parsedJson = vm.parseJson(data, chain);
@@ -167,6 +172,57 @@ contract mipRewardsDistribution is Test, HybridProposal {
             (JsonSpecMoonbeam)
         );
 
+        moonbeamActions.addRewardInfo = spec.addRewardInfo;
+        moonbeamActions.stkWellEmissionsPerSecond = spec
+            .stkWellEmissionsPerSecond;
+
+        for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
+            moonbeamActions.bridgeWells.push(spec.bridgeWells[i]);
+        }
+
+        for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
+            moonbeamActions.setRewardSpeed.push(spec.setRewardSpeed[i]);
+        }
+
+        for (uint256 i = 0; i < spec.transferFroms.length; i++) {
+            moonbeamActions.transferFroms.push(spec.transferFroms[i]);
+        }
+    }
+
+    function saveExternalChainActions(
+        string memory data,
+        uint256 chainId
+    ) private {
+        string memory chain = string.concat(".", vm.toString(chainId));
+
+        bytes memory parsedJson = vm.parseJson(data, chain);
+
+        JsonSpecExternalChain memory spec = abi.decode(
+            parsedJson,
+            (JsonSpecExternalChain)
+        );
+
+        externalChainActions[chainId].stkWellEmissionsPerSecond = spec
+            .stkWellEmissionsPerSecond;
+
+        for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
+            externalChainActions[chainId].setRewardSpeed.push(
+                spec.setRewardSpeed[i]
+            );
+        }
+
+        for (uint256 i = 0; i < spec.transferFroms.length; i++) {
+            externalChainActions[chainId].transferFroms.push(
+                spec.transferFroms[i]
+            );
+        }
+    }
+
+    function buildMoonbeamActions(
+        Addresses addresses,
+        string memory data
+    ) private {
+        JsonSpecMoonbeam memory spec = moonbeamActions;
         buildTransferFroms(addresses, spec.transferFroms);
 
         for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
@@ -275,11 +331,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
     function buildBaseAction(Addresses addresses, string memory data) private {
         vm.selectFork(BASE_FORK_ID);
-        string memory chain = ".8453";
 
-        bytes memory parsedJson = vm.parseJson(data, chain);
-
-        JsonSpecBase memory spec = abi.decode(parsedJson, (JsonSpecBase));
+        JsonSpecExternalChain memory spec = externalChainActions[BASE_CHAIN_ID];
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             TransferFrom memory transferFrom = spec.transferFroms[i];
