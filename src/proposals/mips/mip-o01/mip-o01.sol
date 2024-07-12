@@ -126,6 +126,11 @@ contract mipo01 is Configs, HybridProposal, MultichainGovernorDeploy {
                 addresses.getAddress("ECOSYSTEM_RESERVE_CONTROLLER")
             );
 
+        /// skip afterDeploySetup if this step has already been completed
+        if (ecosystemReserveController.owner() != deployer) {
+            return;
+        }
+
         assertEq(
             ecosystemReserveController.owner(),
             deployer,
