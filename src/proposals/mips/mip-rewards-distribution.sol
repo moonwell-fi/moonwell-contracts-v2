@@ -12,11 +12,13 @@ import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 
 contract mipRewardsDistribution is Test, HybridProposal {
     using String for string;
     using stdJson for string;
     using ChainIds for uint256;
+    using ProposalActions for *;
 
     struct BridgeWell {
         uint256 amount;
@@ -111,6 +113,43 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
     function validate(Addresses addresses, address) public override {
         validateMoonbeam(addresses);
+    }
+
+    function run(Addresses addresses, address) public override {
+        require(actions.length != 0, "no governance proposal actions to run");
+
+        vm.selectFork(MOONBEAM_FORK_ID);
+        addresses.addRestriction(block.chainid.toMoonbeamChainId());
+        _runMoonbeamMultichainGovernor(
+            addresses,
+            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+        );
+        addresses.removeRestriction();
+
+        if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
+            vm.selectFork(BASE_FORK_ID);
+
+            // need to mock well temporal governor balance as
+            // we are running in a fork and wormhole will not
+            // pick up the payload
+            address well = addresses.getAddress("xWELL_PROXY");
+            deal(well, addresses.getAddress("TEMPORAL_GOVERNOR"), 12000e18);
+
+            _runExtChain(addresses, actions.filter(ActionType.Base));
+        }
+
+        if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
+            vm.selectFork(OPTIMISM_FORK_ID);
+            // need to mock well temporal governor balance as
+            // we are running in a fork and wormhole will not
+            // pick up the payload
+            address well = addresses.getAddress("xWELL_PROXY");
+            deal(well, addresses.getAddress("TEMPORAL_GOVERNOR"), 12000e18);
+
+            _runExtChain(addresses, actions.filter(ActionType.Optimism));
+        }
+
+        vm.selectFork(uint256(primaryForkId()));
     }
 
     function buildMoonbeamActions(

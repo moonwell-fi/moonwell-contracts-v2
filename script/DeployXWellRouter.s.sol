@@ -37,6 +37,6 @@ contract DeployXWellRouter is Script, Test {
 
         vm.stopBroadcast();
 
-        printAddresses();
+        addresses.printAddresses();
     }
 }
