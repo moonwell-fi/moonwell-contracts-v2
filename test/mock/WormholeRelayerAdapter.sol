@@ -1,15 +1,24 @@
 pragma solidity 0.8.19;
 
+import "@protocol/utils/ChainIds.sol";
+import {console} from "@forge-std/console.sol";
+import {Vm} from "@forge-std/Vm.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
-import {console} from "@forge-std/console.sol";
 
 /// @notice Wormhole Token Relayer Adapter
 contract WormholeRelayerAdapter {
+    using ChainIds for *;
+
+    Vm private constant vm =
+        Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
     uint256 public nonce;
 
     uint16 public senderChainId;
+
+    bool public isMultichainTest;
 
     uint256 public nativePriceQuote = 0.01 ether;
 
@@ -42,6 +51,10 @@ contract WormholeRelayerAdapter {
         senderChainId = _senderChainId;
     }
 
+    function setIsMultichainTest(bool _isMultichainTest) external {
+        isMultichainTest = _isMultichainTest;
+    }
+
     /// @notice Publishes an instruction for the default delivery provider
     /// to relay a payload to the address `targetAddress`
     /// `targetAddress` must implement the IWormholeReceiver interface
@@ -62,6 +75,10 @@ contract WormholeRelayerAdapter {
 
         require(msg.value == nativePriceQuote, "incorrect value");
 
+        uint256 initialFork = vm.activeFork();
+
+        if (isMultichainTest) vm.selectFork(chainId.toChainId().toForkId());
+
         if (senderChainId != 0) {
             /// immediately call the target
             IWormholeReceiver(targetAddress).receiveWormholeMessages(
@@ -81,6 +98,10 @@ contract WormholeRelayerAdapter {
                 // chain not the target chain
                 bytes32(++nonce)
             );
+        }
+
+        if (isMultichainTest) {
+            vm.selectFork(initialFork);
         }
 
         return uint64(nonce);

@@ -13,6 +13,7 @@ import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 
 contract mipRewardsDistribution is Test, HybridProposal {
     using String for string;
@@ -94,6 +95,16 @@ contract mipRewardsDistribution is Test, HybridProposal {
     function initProposal(Addresses addresses) public override {
         etch(vm, addresses);
 
+        // mock relayer so we can simulate bridging well
+        WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
+
+        address wormholeAddress = addresses.getAddress(
+            "WORMHOLE_BRIDGE_RELAYER"
+        );
+        vm.etch(wormholeAddress, address(wormholeRelayer).code);
+        vm.makePersistent(wormholeAddress);
+        vm.allowCheatcodes(wormholeAddress);
+
         // TODO remove this once new router is deployed
         xWELLRouter router = new xWELLRouter(
             addresses.getAddress("xWELL_PROXY"),
@@ -127,6 +138,13 @@ contract mipRewardsDistribution is Test, HybridProposal {
         require(actions.length != 0, "no governance proposal actions to run");
 
         vm.selectFork(MOONBEAM_FORK_ID);
+
+        WormholeRelayerAdapter wormholeRelayer = WormholeRelayerAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
+        );
+
+        wormholeRelayer.setIsMultichainTest(true);
+
         addresses.addRestriction(block.chainid.toMoonbeamChainId());
         _runMoonbeamMultichainGovernor(
             addresses,
@@ -138,8 +156,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
             vm.selectFork(BASE_FORK_ID);
 
             // TODO replace for wormhole mock
-            address well = addresses.getAddress("xWELL_PROXY");
-            deal(well, addresses.getAddress("TEMPORAL_GOVERNOR"), 18000e18);
+            //            address well = addresses.getAddress("xWELL_PROXY");
+            //            deal(well, addresses.getAddress("TEMPORAL_GOVERNOR"), 18000e18);
 
             _runExtChain(addresses, actions.filter(ActionType.Base));
         }
