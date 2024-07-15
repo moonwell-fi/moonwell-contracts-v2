@@ -3,12 +3,12 @@ source .env
 
 output_title() {
   local text="# $1"
-  echo "$text" > test/mutation/resultVoteCollection.md
+  echo "$text" > test/mutation/MultichainResult_VoteCollection.md
 }
 
 output_heading() {
   local text="\n## $1"
-  echo "$text" >> test/mutation/resultVoteCollection.md
+  echo "$text" >> test/mutation/MultichainResult_VoteCollection.md
 }
 
 output_results() {
@@ -18,7 +18,7 @@ output_results() {
 <summary>$heading</summary>\n
 \`\`\`\n$result\n\`\`\`
 </details>"
-  echo "$content" >> test/mutation/resultVoteCollection.md
+  echo "$content" >> test/mutation/MultichainResult_VoteCollection.md
 }
 
 # Function to extract the last line from a file
@@ -46,7 +46,7 @@ process_test_output() {
   local test_type="$1"
   local output="$2"
 
-  echo "\n### $test_type:" >> test/mutation/resultVoteCollection.md
+  echo "\n### $test_type:" >> test/mutation/MultichainResult_VoteCollection.md
 
   # Check if output contains "Failing tests: "
   if grep -q "Failing tests:" "$output"; then
@@ -65,7 +65,7 @@ process_test_output() {
     is_current_mutation_failed=1
 
     # Append to last_lines.txt with desired format
-    echo "Failed $test_type: $failed_tests, Passed Tests: $passed_tests" >> test/mutation/resultVoteCollection.md
+    echo "Failed $test_type: $failed_tests, Passed Tests: $passed_tests" >> test/mutation/MultichainResult_VoteCollection.md
 
     content_after_pattern=$(get_content_after_pattern "$output" "Failing tests:")
     output_results "$content_after_pattern" "View Failing tests"
@@ -80,11 +80,11 @@ process_test_output() {
     passed_tests=$(echo "$clean_line" | awk '{print $7}')
 
     # Append to last_lines.txt with desired format
-    echo "Failed $test_type: 0, Passed Tests: $passed_tests" >> test/mutation/resultVoteCollection.md
+    echo "Failed $test_type: 0, Passed Tests: $passed_tests" >> test/mutation/MultichainResult_MultichainVoteCollection.md
   fi
 }
 
-target_file="src/Governance/MultichainGovernor/MultichainVoteCollection.sol"
+target_file="src/Governance/MultichainGovernor/MultichainMultichainVoteCollection.sol"
 target_dir="MutationTestOutput"
 num_files=136
 
@@ -96,13 +96,13 @@ failed_mutation=0
 
 is_current_mutation_failed=0 # Intialized as false
 
-# Append Mutation Result to Result_MultichainVoteCollection.md with desired format
+# Append Mutation Result to Result_MultichainMultichainVoteCollection.md with desired format
 output_title "Mutation Results\n"
 
 # Loop through the number of files
 for (( i=1; i <= num_files; i++ )); do
   # Construct dynamic file path using iterator
-  file_path="gambit_out_MultichainVoteCollection/mutants/$i/src/Governance/MultichainGovernor/MultichainVoteCollection.sol"
+  file_path="gambit_out_MultichainMultichainVoteCollection/mutants/$i/src/Governance/MultichainGovernor/MultichainMultichainVoteCollection.sol"
 
   # Check if file exists before copying
   if [[ -f "$file_path" ]]; then
@@ -113,7 +113,7 @@ for (( i=1; i <= num_files; i++ )); do
 
     output_heading "Mutation $i"
 
-    mutation_diff=$(gambit summary --mids $i --mutation-directory gambit_out_MultichainVoteCollection)
+    mutation_diff=$(gambit summary --mids $i --mutation-directory gambit_out_MultichainMultichainVoteCollection)
     clean_mutation_diff=$(echo "$mutation_diff" | sed 's/\x1B\[[0-9;]*m//g')
     output_results "$clean_mutation_diff" "View mutation diff"
 
@@ -144,7 +144,7 @@ for (( i=1; i <= num_files; i++ )); do
 
     output_heading "Certora Mutation Results: \n"
 
-    certora_run_output=$(certoraRun certora/confs/MultichainVoteCollection.conf --wait_for_results)
+    certora_run_output=$(certoraRun certora/confs/MultichainMultichainVoteCollection.conf --wait_for_results)
     echo "$certora_run_output" > "$temp_output_file"
 
     ## Extract content after the pattern
@@ -165,4 +165,4 @@ for (( i=1; i <= num_files; i++ )); do
 done
 
 output_heading "Mutation Testing Result"
-echo "$failed_mutation failed out of total $num_files through integration tests" >> test/mutation/resultVoteCollection.md
+echo "$failed_mutation failed out of total $num_files through integration tests" >> test/mutation/MultichainResult_MultichainVoteCollection.md

@@ -3,12 +3,12 @@ source .env
 
 output_title() {
   local text="# $1"
-  echo "$text" > test/mutation/resultGovernor.md
+  echo "$text" > test/mutation/MultichainResult_MultichainGovernor.md.md
 }
 
 output_heading() {
   local text="\n## $1"
-  echo "$text" >> test/mutation/resultGovernor.md
+  echo "$text" >> test/mutation/MultichainResult_MultichainGovernor.md.md
 }
 
 output_results() {
@@ -18,7 +18,7 @@ output_results() {
 <summary>$heading</summary>\n
 \`\`\`\n$result\n\`\`\`
 </details>"
-  echo "$content" >> test/mutation/resultGovernor.md
+  echo "$content" >> test/mutation/MultichainResult_MultichainGovernor.md.md
 }
 
 # Function to extract the last line from a file
@@ -46,7 +46,7 @@ process_test_output() {
   local test_type="$1"
   local output="$2"
 
-  echo "\n### $test_type:" >> test/mutation/resultGovernor.md
+  echo "\n### $test_type:" >> test/mutation/MultichainResult_MultichainGovernor.md.md
 
   # Check if output contains "Failing tests: "
   if grep -q "Failing tests:" "$output"; then
@@ -65,7 +65,7 @@ process_test_output() {
     is_current_mutation_failed=1
 
     # Append to last_lines.txt with desired format
-    echo "Failed $test_type: $failed_tests, Passed Tests: $passed_tests" >> test/mutation/resultGovernor.md
+    echo "Failed $test_type: $failed_tests, Passed Tests: $passed_tests" >> test/mutation/MultichainResult_MultichainGovernor.md.md
 
     content_after_pattern=$(get_content_after_pattern "$output" "Failing tests:")
     output_results "$content_after_pattern" "View Failing tests"
@@ -80,7 +80,7 @@ process_test_output() {
     passed_tests=$(echo "$clean_line" | awk '{print $7}')
 
     # Append to last_lines.txt with desired format
-    echo "Failed $test_type: 0, Passed Tests: $passed_tests" >> test/mutation/resultGovernor.md
+    echo "Failed $test_type: 0, Passed Tests: $passed_tests" >> test/mutation/MultichainResult_MultichainGovernor.md.md
   fi
 }
 
@@ -155,4 +155,4 @@ for (( i=1; i <= num_files; i++ )); do
 done
 
 output_heading "Mutation Testing Result"
-echo "$failed_mutation failed out of total $num_files through integration tests" >> test/mutation/resultGovernor.md
+echo "$failed_mutation failed out of total $num_files through integration tests" >> test/mutation/MultichainResult_MultichainGovernor.md.md
