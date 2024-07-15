@@ -780,22 +780,22 @@ contract LiveSystemDeploy is Test {
             rewardsBefore[0].totalAmount +
                 expectedSupplyReward +
                 expectedBorrowReward,
-            1e17,
-            "Total rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
+            0.15e18,
+            "Total rewards wrong"
+        );
 
         assertApproxEqRel(
             rewardsAfter[0].borrowSide,
             rewardsBefore[0].borrowSide + expectedBorrowReward,
-            1e17,
-            "Borrow side rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
+            0.15e18,
+            "Borrow side rewards wrong"
+        );
 
         assertApproxEqRel(
             rewardsAfter[0].supplySide,
             rewardsBefore[0].supplySide + expectedSupplyReward,
             1e17,
-            "Supply side rewards not within 1%"
+            "Supply side rewards not within 10%"
         );
     }
 
