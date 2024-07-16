@@ -533,7 +533,7 @@ contract LiveSystemDeploy is Test {
             uint256 updateIndex = globalTokenAccrued / totalBorrowed;
 
             uint256 expectedReward = (updateIndex *
-                MErc20(mToken).borrowBalanceStored(sender)) / 1e18;
+                MErc20(mToken).borrowBalanceStored(sender));
 
             //            uint256 expectedReward = ((toWarp * config.borrowEmissionsPerSec) *
             //                MErc20(mToken).borrowBalanceStored(sender)) /

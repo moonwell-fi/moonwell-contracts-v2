@@ -962,7 +962,7 @@ contract MultiRewardDistributor is
         // Short circuit to update the timestamp but *not* the index if there's nothing
         // to calculate
         if (deltaTimestamps == 0 || _emissionsPerSecond == 0) {
-            /getConfigForMarket/ return
+            return
                 IndexUpdate({
                     newIndex: _currentIndex,
                     newTimestamp: blockTimestamp
