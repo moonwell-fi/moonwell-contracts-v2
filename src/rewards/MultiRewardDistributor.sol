@@ -53,6 +53,22 @@ contract MultiRewardDistributor is
     //          of market configs
     mapping(address => MarketEmissionConfig[]) public marketConfigs;
 
+    function getUserConfig(
+        address mToken,
+        address user,
+        address emissionToken
+    ) public returns (uint256 borrowerIndice, uint256 rewardsAccrued) {
+        MarketEmissionConfig
+            storage emissionConfig = fetchConfigByEmissionToken(
+                MToken(mToken),
+                emissionToken
+            );
+
+        // borrower indice
+        borrowerIndice = emissionConfig.borrowerIndices[emissionToken];
+        rewardsAccrued = emissionConfig.borrowerRewardsAccrued[emissionToken];
+    }
+
     /// @notice Comptroller this distributor is bound to
     Comptroller public comptroller; /// we can't make this immutable because we are using proxies
 
@@ -946,7 +962,7 @@ contract MultiRewardDistributor is
         // Short circuit to update the timestamp but *not* the index if there's nothing
         // to calculate
         if (deltaTimestamps == 0 || _emissionsPerSecond == 0) {
-            return
+            /getConfigForMarket/ return
                 IndexUpdate({
                     newIndex: _currentIndex,
                     newTimestamp: blockTimestamp

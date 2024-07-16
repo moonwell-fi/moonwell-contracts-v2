@@ -70,9 +70,19 @@ contract LiveSystemDeploy is Test {
 
         for (uint256 i = 0; i < emissionConfigs.length; i++) {
             address mToken = addresses.getAddress(emissionConfigs[i].mToken);
+
             vm.warp(MToken(mToken).accrualBlockTimestamp());
+            MToken(mToken).accrueInterest();
+
             emissionsConfig[mToken].push(emissionConfigs[i]);
         }
+
+        address mrdProxy = addresses.getAddress("MRD_PROXY");
+
+        MultiRewardDistributor mrd = new MultiRewardDistributor();
+
+        vm.prank(addresses.getAddress("MRD_PROXY_ADMIN"));
+        ITransparentUpgradeableProxy(mrdProxy).upgradeTo(address(mrd));
     }
 
     function testGuardianCanPauseTemporalGovernor() public {
@@ -458,13 +468,22 @@ contract LiveSystemDeploy is Test {
 
         address sender = address(this);
 
-        address[] memory mTokens = new address[](1);
-        mTokens[0] = mToken;
+        {
+            address[] memory mTokens = new address[](1);
+            mTokens[0] = mToken;
 
-        comptroller.enterMarkets(mTokens);
+            comptroller.enterMarkets(mTokens);
+        }
+
         assertTrue(
             comptroller.checkMembership(sender, MToken(mToken)),
             "Membership check failed"
+        );
+
+        assertEq(
+            comptroller.borrowAllowed(mToken, sender, borrowAmount),
+            0,
+            "Borrow allowed"
         );
 
         assertEq(
@@ -473,7 +492,25 @@ contract LiveSystemDeploy is Test {
             "Borrow failed"
         );
 
+        uint256 timestampBefore = vm.getBlockTimestamp();
+
+        MultiRewardDistributorCommon.MarketConfig memory config = mrd
+            .getConfigForMarket(MToken(mToken), addresses.getAddress("OP"));
+
+        console.log("global borrow timestamp ", config.borrowGlobalTimestamp);
+        console.log("global borrow index ", config.borrowGlobalIndex);
+
+        {
+            (uint256 borrowerIndice, uint256 rewardsAccrued) = mrd
+                .getUserConfig(mToken, sender, addresses.getAddress("OP"));
+
+            console.log("borrowerIndice", borrowerIndice);
+            console.log("rewardsAccrued", rewardsAccrued);
+        }
+
         vm.warp(vm.getBlockTimestamp() + toWarp);
+
+        console.log("time delta", vm.getBlockTimestamp() - timestampBefore);
 
         Configs.EmissionConfig[] memory emissionConfig = emissionsConfig[
             mToken
@@ -486,16 +523,28 @@ contract LiveSystemDeploy is Test {
                     emissionConfig[i].emissionToken
                 );
 
-            uint256 expectedReward = ((toWarp * config.borrowEmissionsPerSec) *
-                MErc20(mToken).borrowBalanceStored(sender)) /
-                MErc20(mToken).totalBorrows();
+            MToken(mToken).accrueInterest();
+
+            uint256 globalTokenAccrued = ((vm.getBlockTimestamp() -
+                config.borrowGlobalTimestamp) * config.borrowEmissionsPerSec);
+            uint256 totalBorrowed = MErc20(mToken).totalBorrows() /
+                MToken(mToken).borrowIndex();
+
+            uint256 updateIndex = globalTokenAccrued / totalBorrowed;
+
+            uint256 expectedReward = (updateIndex *
+                MErc20(mToken).borrowBalanceStored(sender)) / 1e18;
+
+            //            uint256 expectedReward = ((toWarp * config.borrowEmissionsPerSec) *
+            //                MErc20(mToken).borrowBalanceStored(sender)) /
+            //                MErc20(mToken).totalBorrows();
 
             assertApproxEqRel(
                 mrd
                 .getOutstandingRewardsForUser(MToken(mToken), sender)[0]
                     .totalAmount,
                 expectedReward,
-                0.15e18,
+                0.1e18,
                 "Total rewards not correct"
             );
 
@@ -504,7 +553,7 @@ contract LiveSystemDeploy is Test {
                 .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
                     .borrowSide,
                 expectedReward,
-                0.15e18,
+                0.1e18,
                 "Borrow rewards not correct"
             );
         }
