@@ -116,6 +116,11 @@ contract TestProposalCalldataGeneration is Test {
                 }
 
                 assertEq(hash, onchainHash, "Hashes do not match");
+
+                console.log(
+                    "Found onchain calldata for proposal: ",
+                    proposalContract.name()
+                );
             }
         }
 
