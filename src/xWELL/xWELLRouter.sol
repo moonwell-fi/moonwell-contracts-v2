@@ -28,11 +28,15 @@ contract xWELLRouter {
     /// @notice wormhole bridge adapter proxy
     WormholeBridgeAdapter public wormholeBridge;
 
-    /// @notice the chain id of the base chain
-    uint16 public constant BASE_WORMHOLE_CHAIN_ID = 30;
-
     /// @notice event emitted when WELL is bridged to xWELL via the base chain
-    event BridgeOutSuccess(address indexed to, uint256 amount);
+    /// @param to address that receives the xWELL
+    /// @param destWormholeChainId chain id to send xWELL to
+    /// @param amount amount of xWELL bridged
+    event BridgeOutSuccess(
+        address indexed to,
+        uint16 indexed destWormholeChainId,
+        uint256 amount
+    );
 
     /// @notice initialize the xWELL router
     /// @param _xwell the xWELL token
@@ -52,31 +56,46 @@ contract xWELLRouter {
     }
 
     /// @notice returns the cost to mint tokens on the base chain in GLMR
-    function bridgeCost() external view returns (uint256) {
-        return wormholeBridge.bridgeCost(BASE_WORMHOLE_CHAIN_ID);
+    /// @param wormholeChainId chain id to send xWELL to
+    function bridgeCost(
+        uint16 wormholeChainId
+    ) external view returns (uint256) {
+        return wormholeBridge.bridgeCost(wormholeChainId);
     }
 
-    /// @notice bridge WELL to xWELL on the base chain
+    /// @notice bridge WELL to xWELL on the specified chain
     /// receiver address to receive the xWELL is msg.sender
     /// @param amount amount of WELL to bridge
-    function bridgeToBase(uint256 amount) external payable {
-        _bridgeToBase(msg.sender, amount);
+    /// @param wormholeChainId chain id to send xWELL to
+    function bridgeToSender(
+        uint256 amount,
+        uint16 wormholeChainId
+    ) external payable {
+        _bridgeToChain(msg.sender, amount, wormholeChainId);
     }
 
-    /// @notice bridge WELL to xWELL on the base chain
+    /// @notice bridge WELL to xWELL on the specified chain
     /// @param to address to receive the xWELL
     /// @param amount amount of WELL to bridge
-    function bridgeToBase(address to, uint256 amount) external payable {
-        _bridgeToBase(to, amount);
+    /// @param wormholeChainId chain id to send xWELL to
+    function bridgeToRecipient(
+        address to,
+        uint256 amount,
+        uint16 wormholeChainId
+    ) external payable {
+        _bridgeToChain(to, amount, wormholeChainId);
     }
 
-    /// @notice helper function to bridge WELL to xWELL on the base chain
+    /// @notice helper function to bridge WELL to xWELL on the specified chain
     /// @param to address to receive the xWELL
     /// @param amount amount of WELL to bridge
-    function _bridgeToBase(address to, uint256 amount) private {
-        uint256 bridgeCostGlmr = wormholeBridge.bridgeCost(
-            BASE_WORMHOLE_CHAIN_ID
-        );
+    /// @param wormholeChainId chain id to send xWELL to
+    function _bridgeToChain(
+        address to,
+        uint256 amount,
+        uint16 wormholeChainId
+    ) private {
+        uint256 bridgeCostGlmr = wormholeBridge.bridgeCost(wormholeChainId);
 
         require(
             bridgeCostGlmr <= msg.value,
@@ -100,7 +119,7 @@ contract xWELLRouter {
 
         /// bridge the xWELL to the base chain
         wormholeBridge.bridge{value: bridgeCostGlmr}(
-            BASE_WORMHOLE_CHAIN_ID,
+            wormholeChainId,
             xwellAmount,
             to
         );
@@ -112,6 +131,6 @@ contract xWELLRouter {
             require(success, "xWELLRouter: failed to refund excess GLMR");
         }
 
-        emit BridgeOutSuccess(to, amount);
+        emit BridgeOutSuccess(to, wormholeChainId, amount);
     }
 }

@@ -27,34 +27,44 @@ import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {ChainIds, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
-import {ChainIds, OPTIMISM_CHAIN_ID, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 
 /*
 to deploy:
 
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
-DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 \
- -vvv --etherscan-api-key $OPSCAN_API_KEY --broadcast --keystore ~/.foundry/keystores/<your-key-store>
+DO_RUN=true DO_VALIDATE=true forge script \
+src/proposals/mips/mip00.sol:mip00 -vvv --broadcast --account ~/.foundry/keystores/<your-account-keystore-name>
 
 to dry-run:
 
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
-DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-o00/mip-o00.sol:mipo00 \
- -vvv --keystore ~/.foundry/keystores/<your-key-store>
+  DO_RUN=true DO_VALIDATE=true forge script \
+  src/proposals/mips/mip00.sol:mip00 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
+
+MIP-O00 deployment environment variables:
+
+```
+export DESCRIPTION_PATH=src/proposals/mips/mip-o00/MIP-O00.md
+export PRIMARY_FORK_ID=2
+export EMISSIONS_PATH=src/proposals/mips/mip-o00/emissionConfig.json
+export MTOKENS_PATH=src/proposals/mips/mip-o00/mTokens.json
+```
+
 
 */
 
-contract mipo00 is HybridProposal, Configs {
+contract mip00 is HybridProposal, Configs {
     using Address for address;
     using ChainIds for uint256;
     using ProposalActions for *;
 
-    string public constant override name = "MIP-O00";
+    string public constant override name = "MIP-00: System Deploy";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
     uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
@@ -91,50 +101,41 @@ contract mipo00 is HybridProposal, Configs {
     /// @notice trusted senders for the temporal governor
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
-    constructor() {
+    function initProposal() public override {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile(
-                string(
-                    abi.encodePacked(
-                        vm.projectRoot(),
-                        "/src/proposals/mips/mip-o00/MIP-O00.md"
-                    )
-                )
-            )
+            vm.readFile(vm.envString("DESCRIPTION_PATH"))
         );
 
         _setProposalDescription(proposalDescription);
+
+        /// MToken/Emission configurations
+        _setMTokenConfiguration(vm.envString("MTOKENS_PATH"));
+
+        /// If deploying to mainnet again these values must be adjusted
+        /// - endTimestamp must be in the future
+        /// - removed mock values that were set in initEmissions function for test execution
+        _setEmissionConfiguration(vm.envString("EMISSIONS_PATH"));
     }
 
     /// @dev change this if wanting to deploy to a different chain
     /// double check addresses and change the WORMHOLE_CORE to the correct chain
-    function primaryForkId() public pure override returns (uint256) {
-        return OPTIMISM_FORK_ID;
+    function primaryForkId() public view override returns (uint256 forkId) {
+        forkId = vm.envUint("PRIMARY_FORK_ID");
+
+        require(forkId <= OPTIMISM_FORK_ID, "invalid primary fork id");
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
     /// listed to be able to deploy on base. This allows the deployer to be able to initialize the
     /// markets with a balance to avoid exploits
     function deploy(Addresses addresses, address deployer) public override {
-        /// MToken/Emission configurations
-        _setMTokenConfiguration(
-            "./src/proposals/mips/mip-o00/optimismMTokens.json"
-        );
-
-        /// If deploying to mainnet again these values must be adjusted
-        /// - endTimestamp must be in the future
-        /// - removed mock values that were set in initEmissions function for test execution
-        _setEmissionConfiguration(
-            "./src/proposals/mips/mip-o00/RewardStreams.json"
-        );
-
         /// emission config sanity check
         require(
             cTokenConfigurations[block.chainid].length ==
                 emissions[block.chainid].length,
             "emissions length not equal to cTokenConfigurations length"
         );
-        addresses.addRestriction(OPTIMISM_CHAIN_ID);
+        addresses.addRestriction(block.chainid);
 
         /// ------- TemporalGovernor -------
 
@@ -206,7 +207,7 @@ contract mipo00 is HybridProposal, Configs {
             bytes memory initData = abi.encodeWithSignature(
                 "initialize(address,address)",
                 addresses.getAddress("UNITROLLER"),
-                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
+                addresses.getAddress("SECURITY_COUNCIL")
             );
             TransparentUpgradeableProxy mrdProxy = new TransparentUpgradeableProxy(
                     addresses.getAddress("MULTI_REWARD_DISTRIBUTOR"),
@@ -343,7 +344,7 @@ contract mipo00 is HybridProposal, Configs {
             proxyAdmin.transferOwnership(governor);
 
             TemporalGovernor(payable(governor)).transferOwnership(
-                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
+                addresses.getAddress("SECURITY_COUNCIL")
             );
 
             /// set chainlink oracle on the comptroller implementation contract
@@ -390,8 +391,7 @@ contract mipo00 is HybridProposal, Configs {
 
                     mTokens[i]._setReserveFactor(config.reserveFactor);
                     mTokens[i]._setProtocolSeizeShare(config.seizeShare);
-                    /// Set Temporal Governor as pending admin of the mToken
-                    mTokens[i]._setPendingAdmin(payable(governor));
+                    mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
 
                     Comptroller(address(unitroller))._setCollateralFactor(
                         mTokens[i],
@@ -419,13 +419,13 @@ contract mipo00 is HybridProposal, Configs {
             /// ------------ SET GUARDIANS ------------
 
             Comptroller(address(unitroller))._setBorrowCapGuardian(
-                addresses.getAddress("OPTIMISM_CAP_GUARDIAN")
+                addresses.getAddress("CAP_GUARDIAN")
             );
             Comptroller(address(unitroller))._setSupplyCapGuardian(
-                addresses.getAddress("OPTIMISM_CAP_GUARDIAN")
+                addresses.getAddress("CAP_GUARDIAN")
             );
             Comptroller(address(unitroller))._setPauseGuardian(
-                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
+                addresses.getAddress("SECURITY_COUNCIL")
             );
 
             /// set temporal governor as the pending admin
@@ -434,7 +434,6 @@ contract mipo00 is HybridProposal, Configs {
             /// set temporal governor as the admin of the chainlink feed
             oracle.setAdmin(governor);
         }
-
         /// -------------- EMISSION CONFIGURATION --------------
 
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
@@ -498,7 +497,7 @@ contract mipo00 is HybridProposal, Configs {
                 approvedCalldata[0],
                 true
             ),
-            "Whitelist break glass calldata to add the Artemis Timelock as a trusted sender in the Temporal Governor on Optimism",
+            "Whitelist break glass calldata to add the Artemis Timelock as a trusted sender in the Temporal Governor",
             ActionType.Moonbeam
         );
 
@@ -516,13 +515,6 @@ contract mipo00 is HybridProposal, Configs {
 
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
-
-        if (cTokenConfigs.length == 0) {
-            /// MToken/Emission configurations
-            _setMTokenConfiguration(
-                "./src/proposals/mips/mip-o00/optimismMTokens.json"
-            );
-        }
 
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
 
@@ -589,19 +581,14 @@ contract mipo00 is HybridProposal, Configs {
     }
 
     function run(Addresses addresses, address) public override {
-        /// safety check to ensure no base actions are run
         require(
-            actions.proposalActionTypeCount(ActionType.Base) == 0,
-            "MIP-O00: should have no base actions"
-        );
-        require(
-            actions.proposalActionTypeCount(ActionType.Optimism) > 0,
-            "MIP-O00: should have optimism actions"
+            actions.proposalActionTypeCount(ActionType(primaryForkId())) > 0,
+            "MIP-00: should have actions on the chain being deployed to"
         );
 
         require(
             actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
-            "MIP-O00: should have 1 moonbeam actions"
+            "MIP-00: should have 1 moonbeam actions"
         );
 
         super.run(addresses, address(0));
@@ -614,19 +601,8 @@ contract mipo00 is HybridProposal, Configs {
             payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
-        assertEq(
-            governor.owner(),
-            addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
-        );
+        assertEq(governor.owner(), addresses.getAddress("SECURITY_COUNCIL"));
         assertEq(temporalGovDelay[block.chainid], governor.proposalDelay());
-
-        if (block.chainid == OPTIMISM_CHAIN_ID) {
-            assertEq(
-                governor.proposalDelay(),
-                1 days,
-                "proposal delay is not 1 day"
-            );
-        }
 
         /// assert comptroller and unitroller are wired together properly
         {
@@ -654,15 +630,15 @@ contract mipo00 is HybridProposal, Configs {
             );
             assertEq(
                 Comptroller(address(unitroller)).pauseGuardian(),
-                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
+                addresses.getAddress("SECURITY_COUNCIL")
             );
             assertEq(
                 Comptroller(address(unitroller)).supplyCapGuardian(),
-                addresses.getAddress("OPTIMISM_CAP_GUARDIAN")
+                addresses.getAddress("CAP_GUARDIAN")
             );
             assertEq(
                 Comptroller(address(unitroller)).borrowCapGuardian(),
-                addresses.getAddress("OPTIMISM_CAP_GUARDIAN")
+                addresses.getAddress("CAP_GUARDIAN")
             );
             assertEq(
                 address(Comptroller(address(unitroller)).rewardDistributor()),
@@ -734,7 +710,7 @@ contract mipo00 is HybridProposal, Configs {
             );
             assertEq(
                 address(distributor.pauseGuardian()),
-                addresses.getAddress("OPTIMISM_SECURITY_COUNCIL")
+                addresses.getAddress("SECURITY_COUNCIL")
             );
             assertEq(distributor.emissionCap(), 100e18);
             assertEq(distributor.initialIndexConstant(), 1e36);
@@ -770,7 +746,7 @@ contract mipo00 is HybridProposal, Configs {
 
         assertEq(
             address(governor.wormholeBridge()),
-            addresses.getAddress("WORMHOLE_CORE", OPTIMISM_CHAIN_ID),
+            addresses.getAddress("WORMHOLE_CORE"),
             "temporal governor wormhole core set incorrectly"
         );
 
@@ -1030,10 +1006,13 @@ contract mipo00 is HybridProposal, Configs {
 
         vm.selectFork(MOONBEAM_FORK_ID);
         addresses.addRestriction(block.chainid.toMoonbeamChainId());
+
         MultichainGovernor multiChainGovernor = MultichainGovernor(
-            addresses.getAddress(
-                "MULTICHAIN_GOVERNOR_PROXY",
-                block.chainid.toMoonbeamChainId()
+            payable(
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    block.chainid.toMoonbeamChainId()
+                )
             )
         );
         /// remove the moonbeam restriction from addresses
@@ -1044,7 +1023,7 @@ contract mipo00 is HybridProposal, Configs {
             "multichain governor should have whitelisted break glass guardian calldata"
         );
 
-        vm.selectFork(OPTIMISM_FORK_ID);
+        vm.selectFork(primaryForkId());
     }
 
     function _buildCalldata(Addresses addresses) internal {
@@ -1056,11 +1035,8 @@ contract mipo00 is HybridProposal, Configs {
         );
         addresses.removeRestriction();
 
-        /// get temporal governor on Optimism
-        address temporalGovernor = addresses.getAddress(
-            "TEMPORAL_GOVERNOR",
-            block.chainid.toOptimismChainId()
-        );
+        /// get temporal governor
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
         temporalGovernanceTargets.push(temporalGovernor);
 

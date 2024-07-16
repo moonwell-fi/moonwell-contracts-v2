@@ -101,6 +101,9 @@ interface IMultichainGovernor {
     /// @notice event emitted when the new staked well is set
     event NewStakedWellSet(address newStakedWell, bool toUseTimestamps);
 
+    /// @notice event emitted when the fallback function is called
+    event FallbackReceived(address sender, uint256 value);
+
     //// ---------------------------------------------- ////
     //// ---------------------------------------------- ////
     //// --------------- Data Structures -------------- ////

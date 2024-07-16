@@ -32,7 +32,7 @@ contract TestProposalCalldataGeneration is Test {
         vm.selectFork(MOONBEAM_FORK_ID);
 
         governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         );
 
         artemisGovernor = MoonwellArtemisGovernor(

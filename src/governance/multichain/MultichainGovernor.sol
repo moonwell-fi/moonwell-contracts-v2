@@ -1319,4 +1319,11 @@ contract MultichainGovernor is
             abstainVotes
         );
     }
+
+    /// @notice payable fallback function to receive funds specifically
+    /// included for the xWELLRouter to allow tokens to be bridged to other
+    /// chains
+    receive() external payable {
+        emit FallbackReceived(msg.sender, msg.value);
+    }
 }

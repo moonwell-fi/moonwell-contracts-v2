@@ -21,14 +21,14 @@ import {ChainIds, MOONBEAM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, BASE_FORK_
 contract LiveProposalsIntegrationTest is Test, ProposalChecker {
     using String for string;
     using Bytes for bytes;
-    using Address for address;
+    using Address for *;
     using ChainIds for uint256;
 
     /// @notice addresses contract
     Addresses addresses;
 
     /// @notice Multichain Governor address
-    address governor;
+    address payable governor;
 
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
@@ -45,7 +45,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        governor = payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"));
     }
 
     function testActiveProposals() public {

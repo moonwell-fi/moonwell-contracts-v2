@@ -1,21 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Script} from "@forge-std/Script.sol";
 import {console} from "@forge-std/console.sol";
+
 import {ITokenSaleDistributor} from "../src/tokensale/ITokenSaleDistributor.sol";
 import {ITokenSaleDistributorProxy} from "../src/tokensale/ITokenSaleDistributorProxy.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract DeployTokenSale is Script {
-    /// @notice addresses contract
-    Addresses addresses;
-
-    constructor() {
-        addresses = new Addresses();
-    }
-
     function run() public {
+        Addresses addresses = new Addresses();
+
         vm.startBroadcast();
 
         address implementation = deployCode(
@@ -40,23 +36,6 @@ contract DeployTokenSale is Script {
             address(implementation)
         );
 
-        printAddresses();
-    }
-
-    function printAddresses() private view {
-        (
-            string[] memory recordedNames,
-            ,
-            address[] memory recordedAddresses
-        ) = addresses.getRecordedAddresses();
-        for (uint256 j = 0; j < recordedNames.length; j++) {
-            console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
-            console.log("        'chainId': %d,", block.chainid);
-            console.log(
-                "        'name': '%s'\n}%s",
-                recordedNames[j],
-                j < recordedNames.length - 1 ? "," : ""
-            );
-        }
+        addresses.printAddresses();
     }
 }

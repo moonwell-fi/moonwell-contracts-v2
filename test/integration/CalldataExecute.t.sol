@@ -32,7 +32,9 @@ contract CalldataExecute is Test, Configs {
         address governorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );
-        MultichainGovernor governor = MultichainGovernor(governorAddress);
+        MultichainGovernor governor = MultichainGovernor(
+            payable(governorAddress)
+        );
 
         governor.execute(9);
     }
@@ -44,7 +46,9 @@ contract CalldataExecute is Test, Configs {
         address governorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );
-        MultichainGovernor governor = MultichainGovernor(governorAddress);
+        MultichainGovernor governor = MultichainGovernor(
+            payable(governorAddress)
+        );
         uint256 proposalId = 14;
 
         {
@@ -102,7 +106,9 @@ contract CalldataExecute is Test, Configs {
         address governorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );
-        MultichainGovernor governor = MultichainGovernor(governorAddress);
+        MultichainGovernor governor = MultichainGovernor(
+            payable(governorAddress)
+        );
 
         vm.prank(addresses.getAddress("MGLIMMER_MULTISIG"));
         ERC20Votes(governanceToken).approve(governorAddress, type(uint256).max);
@@ -123,7 +129,7 @@ contract CalldataExecute is Test, Configs {
         }
 
         uint256 cost = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         ).bridgeCostAll();
 
         vm.deal(address(this), cost);

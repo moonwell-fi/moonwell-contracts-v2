@@ -32,12 +32,12 @@
     {
         "addr": "0x354804005a80e5f87cf43beD9Bd4fCc6512Be98c",
         "isContract": false,
-        "name": "OPTIMISM_SECURITY_COUNCIL"
+        "name": "SECURITY_COUNCIL"
     },
     {
         "addr": "0x354804005a80e5f87cf43beD9Bd4fCc6512Be98c",
         "isContract": false,
-        "name": "OPTIMISM_CAP_GUARDIAN"
+        "name": "CAP_GUARDIAN"
     },
     {
         "addr": "0xBeD75989b06a286e6E81c7aB1129003Fe49813eD",

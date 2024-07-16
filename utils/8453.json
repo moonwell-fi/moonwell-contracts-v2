@@ -375,7 +375,7 @@
         "isContract": true
     },
     {
-        "addr": "0x3b1BDDC0998058dD266e2a0aC855D0d750700a7f",
+        "addr": "0xBe08A91ADe130aD61193bE2321ea06c4c39E124A",
         "name": "xWELL_LOGIC",
         "isContract": true
     },
@@ -415,7 +415,7 @@
         "name": "VOTE_COLLECTION_PROXY"
     },
     {
-        "addr": "0xD5D971dE427b14E4329C6032c9c4cE54d6FDB5C3",
+        "addr": "0x98E708bbce1f158C1bde25f206afA7562fd0157f",
         "isContract": true,
         "name": "VOTE_COLLECTION_IMPL"
     },
