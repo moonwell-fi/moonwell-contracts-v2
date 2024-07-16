@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
+import {console} from "@forge-std/console.sol";
 import {ReentrancyGuard} from "@openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import {Initializable} from "@openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -317,6 +318,8 @@ contract MultiRewardDistributor is
                     calcData.marketData.marketBorrowIndex
                 )
             );
+
+            console.log("MRD new borrow index %s", borrowUpdate.newIndex);
 
             // Calculate outstanding supplier side rewards
             uint256 supplierRewardsAccrued = calculateSupplyRewardsForUser(
@@ -894,18 +897,29 @@ contract MultiRewardDistributor is
             userBorrowIndex = initialIndexConstant; //userBorrowIndex = _globalBorrowIndex;
         }
 
+        console.log("MRD userBorrowIndex %s", userBorrowIndex);
         // Calculate change in the cumulative sum of the reward per cToken accrued
         Double memory deltaIndex = Double({
             mantissa: sub_(_globalBorrowIndex, userBorrowIndex)
         });
+
+        console.log("MRD deltaIndex %s", deltaIndex.mantissa);
 
         uint borrowerAmount = div_(
             _mTokenData.borrowBalanceStored,
             _marketBorrowIndex
         );
 
+        console.log("MRD borrowerAmount %s", borrowerAmount);
+
         // Calculate reward accrued: mTokenAmount * accruedPerMToken
         uint borrowerDelta = mul_(borrowerAmount, deltaIndex);
+
+        console.log("MRD borrowerDelta %s", borrowerDelta);
+        console.log(
+            "MRD accrued %s",
+            _emissionConfig.borrowerRewardsAccrued[_borrower]
+        );
 
         return
             add_(
@@ -941,6 +955,8 @@ contract MultiRewardDistributor is
             uint256(_currentTimestamp)
         );
 
+        console.log("MRD calculateNewIndex: delta timestamp", deltaTimestamps);
+
         // If our current block timestamp is newer than our emission end time, we need to halt
         // reward emissions by stinting the growth of the global index, but importantly not
         // the global timestamp. Should not be gte because the equivalent case makes a
@@ -971,14 +987,26 @@ contract MultiRewardDistributor is
 
         // At this point we know we have to calculate a new index, so do so
         uint256 tokenAccrued = mul_(deltaTimestamps, _emissionsPerSecond);
+
+        console.log(
+            "MRD calculateNewIndex: emisisonsPerSecond",
+            _emissionsPerSecond
+        );
+        console.log("MRD calculateNewIndex tokenAccrued", tokenAccrued);
         Double memory ratio = _denominator > 0
             ? fraction(tokenAccrued, _denominator)
             : Double({mantissa: 0});
+
+        console.log("MRD calculateNewIndex ratio", ratio.mantissa);
 
         uint224 newIndex = safe224(
             add_(Double({mantissa: _currentIndex}), ratio).mantissa,
             "new index exceeds 224 bits"
         );
+
+        console.log("current index", _currentIndex);
+
+        console.log("MRD calculateNewIndex: new index", newIndex);
 
         return IndexUpdate({newIndex: newIndex, newTimestamp: blockTimestamp});
     }

@@ -19,13 +19,14 @@ import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
 
 // Example:
 // export DESCRIPTION_PATH=src/proposals/mips/mip-o00/MIP-O00.md && export
 // export PRIMARY_FORK_ID=2 && export
 // EMISSIONS_PATH=src/proposals/mips/mip-o00/emissionConfig.json && export
 // MTOKENS_PATH="src/proposals/mips/mip-o00/mTokens.json"
-contract LiveSystemDeploy is Test {
+contract LiveSystemDeploy is Test, ExponentialNoError {
     using ChainIds for uint256;
 
     MultiRewardDistributor mrd;
@@ -75,6 +76,22 @@ contract LiveSystemDeploy is Test {
             MToken(mToken).accrueInterest();
 
             emissionsConfig[mToken].push(emissionConfigs[i]);
+
+            // update emission conf
+            MultiRewardDistributorCommon.MarketConfig memory config = mrd
+                .getConfigForMarket(
+                    MToken(mToken),
+                    emissionConfigs[i].emissionToken
+                );
+
+            if (config.borrowEmissionsPerSec == 1) {
+                vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+                mrd._updateBorrowSpeed(
+                    MToken(mToken),
+                    emissionConfigs[i].emissionToken,
+                    1e18
+                );
+            }
         }
 
         address mrdProxy = addresses.getAddress("MRD_PROXY");
@@ -492,8 +509,6 @@ contract LiveSystemDeploy is Test {
             "Borrow failed"
         );
 
-        uint256 timestampBefore = vm.getBlockTimestamp();
-
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(MToken(mToken), addresses.getAddress("OP"));
 
@@ -508,9 +523,9 @@ contract LiveSystemDeploy is Test {
             console.log("rewardsAccrued", rewardsAccrued);
         }
 
+        console.log("timestampBefore", vm.getBlockTimestamp());
         vm.warp(vm.getBlockTimestamp() + toWarp);
-
-        console.log("time delta", vm.getBlockTimestamp() - timestampBefore);
+        console.log("timestampAfter", vm.getBlockTimestamp());
 
         Configs.EmissionConfig[] memory emissionConfig = emissionsConfig[
             mToken
@@ -524,20 +539,38 @@ contract LiveSystemDeploy is Test {
                 );
 
             MToken(mToken).accrueInterest();
+            uint256 expectedReward;
 
-            uint256 globalTokenAccrued = ((vm.getBlockTimestamp() -
-                config.borrowGlobalTimestamp) * config.borrowEmissionsPerSec);
-            uint256 totalBorrowed = MErc20(mToken).totalBorrows() /
-                MToken(mToken).borrowIndex();
+            {
+                uint256 globalTokenAccrued = ((vm.getBlockTimestamp() -
+                    config.borrowGlobalTimestamp) *
+                    config.borrowEmissionsPerSec);
+                console.log("globalTokenAccrued", globalTokenAccrued);
 
-            uint256 updateIndex = globalTokenAccrued / totalBorrowed;
+                uint256 totalBorrowed = MErc20(mToken).totalBorrows() /
+                    MToken(mToken).borrowIndex();
+                console.log("totalBorrowed", totalBorrowed);
 
-            uint256 expectedReward = (updateIndex *
-                MErc20(mToken).borrowBalanceStored(sender));
+                uint256 updateIndex = fraction(
+                    globalTokenAccrued,
+                    totalBorrowed
+                ).mantissa;
 
-            //            uint256 expectedReward = ((toWarp * config.borrowEmissionsPerSec) *
-            //                MErc20(mToken).borrowBalanceStored(sender)) /
-            //                MErc20(mToken).totalBorrows();
+                console.log("Test updatedIndex", updateIndex);
+                uint256 userIndex = 1e36;
+
+                uint256 borrowerDelta = updateIndex - userIndex;
+
+                console.log("Test borrowerDelta", borrowerDelta);
+
+                uint256 userBorrow = MErc20(mToken).borrowBalanceStored(
+                    sender
+                ) / MToken(mToken).borrowIndex();
+
+                console.log("Test borrowerAmount", borrowerAmount);
+
+                expectedReward = borrowerDelta * userBorrow;
+            }
 
             assertApproxEqRel(
                 mrd
