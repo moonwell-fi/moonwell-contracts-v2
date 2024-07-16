@@ -38,10 +38,10 @@ contract mipb14 is HybridProposal, Configs, ParameterValidation {
 
     function build(Addresses addresses) public override {
         _pushAction(
-            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI_MIP_B14"),
+            addresses.getAddress("MOONWELL_DAI"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI_MIP_B14")
             ),
             "Set interest rate model for Moonwell DAI to updated rate model"
         );
