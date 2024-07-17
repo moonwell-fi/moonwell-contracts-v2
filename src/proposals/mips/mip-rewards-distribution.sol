@@ -11,6 +11,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
@@ -20,6 +21,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
     using stdJson for string;
     using ChainIds for uint256;
     using ProposalActions for *;
+    using stdStorage for StdStorage;
 
     struct BridgeWell {
         uint256 amount;
@@ -98,12 +100,15 @@ contract mipRewardsDistribution is Test, HybridProposal {
         // mock relayer so we can simulate bridging well
         WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
 
-        address wormholeAddress = addresses.getAddress(
-            "WORMHOLE_BRIDGE_RELAYER"
+        address wormholeAdapter = addresses.getAddress(
+            "WORMHOLE_BRIDGE_ADAPTER_PROXY"
         );
-        vm.etch(wormholeAddress, address(wormholeRelayer).code);
-        vm.makePersistent(wormholeAddress);
-        vm.allowCheatcodes(wormholeAddress);
+
+        stdstore.target(wormholeAdapter).sig("wormholeRelayer()").checked_write(
+            address(wormholeRelayer)
+        );
+        vm.makePersistent(address(wormholeRelayer));
+        vm.allowCheatcodes(address(wormholeRelayer));
 
         // TODO remove this once new router is deployed
         xWELLRouter router = new xWELLRouter(
