@@ -99,16 +99,27 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         // mock relayer so we can simulate bridging well
         WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
+        vm.label(address(wormholeRelayer), "MockWormholeRelayer");
+        wormholeRelayer.setIsMultichainTest(true);
 
-        address wormholeAdapter = addresses.getAddress(
-            "WORMHOLE_BRIDGE_ADAPTER_PROXY"
+        // set mock as the wormholeRelayer address on bridge adapter
+        WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
 
-        stdstore.target(wormholeAdapter).sig("wormholeRelayer()").checked_write(
-            address(wormholeRelayer)
+        uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
+        // encode gasLimit and relayer address since is stored in a single slot
+        // relayer is first due to how evm pack values into a single storage
+        bytes32 encodedData = bytes32(
+            (uint256(uint160(address(wormholeRelayer))) << 96) |
+                uint256(gasLimit)
         );
-        vm.makePersistent(address(wormholeRelayer));
-        vm.allowCheatcodes(address(wormholeRelayer));
+
+        vm.store(
+            address(wormholeBridgeAdapter),
+            bytes32(uint256(153)),
+            encodedData
+        );
 
         // TODO remove this once new router is deployed
         xWELLRouter router = new xWELLRouter(
@@ -119,6 +130,16 @@ contract mipRewardsDistribution is Test, HybridProposal {
         );
 
         addresses.changeAddress("xWELL_ROUTER", address(router), true);
+
+        vm.selectFork(BASE_FORK_ID);
+
+        vm.store(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+            bytes32(uint256(153)),
+            encodedData
+        );
+
+        vm.selectFork(primaryForkId());
     }
 
     function name() external pure override returns (string memory) {
@@ -144,12 +165,6 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        WormholeRelayerAdapter wormholeRelayer = WormholeRelayerAdapter(
-            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
-        );
-
-        wormholeRelayer.setIsMultichainTest(true);
-
         addresses.addRestriction(block.chainid.toMoonbeamChainId());
         _runMoonbeamMultichainGovernor(
             addresses,
@@ -160,19 +175,11 @@ contract mipRewardsDistribution is Test, HybridProposal {
         if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
             vm.selectFork(BASE_FORK_ID);
 
-            // TODO replace for wormhole mock
-            //            address well = addresses.getAddress("xWELL_PROXY");
-            //            deal(well, addresses.getAddress("TEMPORAL_GOVERNOR"), 18000e18);
-
             _runExtChain(addresses, actions.filter(ActionType.Base));
         }
 
         if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
             vm.selectFork(OPTIMISM_FORK_ID);
-
-            // TODO replace for wormhole mock
-            address well = addresses.getAddress("xWELL_PROXY");
-            deal(well, addresses.getAddress("TEMPORAL_GOVERNOR"), 18000e18);
 
             _runExtChain(addresses, actions.filter(ActionType.Optimism));
         }

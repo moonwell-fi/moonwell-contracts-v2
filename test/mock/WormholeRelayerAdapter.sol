@@ -78,6 +78,8 @@ contract WormholeRelayerAdapter {
         uint256 initialFork = vm.activeFork();
 
         if (isMultichainTest) vm.selectFork(chainId.toChainId().toForkId());
+        console.log("sendPayloadToEvm: chainId=%d", chainId);
+        console.log("isMultichainTest=%s", isMultichainTest ? "true" : "false");
 
         if (senderChainId != 0) {
             /// immediately call the target
