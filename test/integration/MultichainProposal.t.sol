@@ -16,6 +16,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {mipx01} from "@proposals/mips/mip-x01/mip-x01.sol";
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
+import {Networks} from "@proposals/utils/Networks.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
@@ -52,7 +53,7 @@ export DO_TEARDOWN=true
 export DO_VALIDATE=true
 
 */
-contract MultichainProposalTest is Test, TestMultichainProposals {
+contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
     using ChainIds for uint256;
 
     MultichainVoteCollection public voteCollection;
@@ -142,8 +143,14 @@ contract MultichainProposalTest is Test, TestMultichainProposals {
 
         /// load proposals up into the TestMultichainProposal contract
 
-        address[] memory proposal = new address[](1);
-        proposal[0] = address(new mipx01());
+        address[] memory proposal = new address[](0);
+
+        mipx01 x01 = new mipx01();
+
+        if (x01.onchainProposalId() == 0) {
+            proposal = new address[](1);
+            proposal[0] = address(x01);
+        }
 
         _initialize(proposal);
 
