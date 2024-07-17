@@ -96,7 +96,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
     function _calculateBorrowRewards(
         MToken mToken,
         address emissionToken,
-        uint256 toWarp,
         address sender
     ) private view returns (uint256 expectedRewards) {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
@@ -136,10 +135,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             marketBorrowIndex
         );
 
-        Double memory deltaIndex = Double({
-            mantissa: sub_(newGlobalIndex, 1e36)
-        });
-
+        // 1e36 is the initial default index
         uint256 deltaUser = sub_(newGlobalIndex, 1e36);
 
         expectedRewards = mul_(deltaUser, userBorrow) / 1e36;
@@ -546,7 +542,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             uint256 expectedReward = _calculateBorrowRewards(
                 MToken(mToken),
                 emissionConfig[i].emissionToken,
-                toWarp,
                 sender
             );
 
@@ -652,7 +647,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             uint256 expectedBorrowReward = _calculateBorrowRewards(
                 MToken(mToken),
                 emissionConfig[i].emissionToken,
-                toWarp,
                 sender
             );
 
@@ -770,7 +764,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
         uint256 expectedBorrowReward = _calculateBorrowRewards(
             MToken(mToken),
             emissionsConfig[mToken][0].emissionToken,
-            toWarp,
             address(this)
         );
 
