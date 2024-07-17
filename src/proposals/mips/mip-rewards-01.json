@@ -9,7 +9,7 @@
         },
         "bridgeToRecipient": [
             {
-                "amount": 12000e18,
+                "amount": 18000e18,
                 "network": 8453,
                 "target": "TEMPORAL_GOVERNOR"
             }

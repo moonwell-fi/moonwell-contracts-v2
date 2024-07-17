@@ -78,6 +78,9 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
     mapping(uint256 chainid => JsonSpecExternalChain) externalChainActions;
 
+    /// we need to save this value to check if the DEX rewards amount was successfully transferred
+    uint256 governorWellBalanceBefore;
+
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(vm.envString("DESCRIPTION_PATH"))
@@ -115,6 +118,16 @@ contract mipRewardsDistribution is Test, HybridProposal {
                 uint256(gasLimit)
         );
 
+        vm.selectFork(BASE_FORK_ID);
+
+        vm.store(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+            bytes32(uint256(153)),
+            encodedData
+        );
+
+        vm.selectFork(primaryForkId());
+
         vm.store(
             address(wormholeBridgeAdapter),
             bytes32(uint256(153)),
@@ -131,15 +144,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         addresses.changeAddress("xWELL_ROUTER", address(router), true);
 
-        vm.selectFork(BASE_FORK_ID);
-
-        vm.store(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-            bytes32(uint256(153)),
-            encodedData
-        );
-
-        vm.selectFork(primaryForkId());
+        governorWellBalanceBefore = IERC20(addresses.getAddress("GOVTOKEN"))
+            .balanceOf(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"));
     }
 
     function name() external pure override returns (string memory) {
@@ -245,8 +251,31 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
     function buildMoonbeamActions(Addresses addresses) private {
         JsonSpecMoonbeam memory spec = moonbeamActions;
-        buildTransferFroms(addresses, spec.transferFroms);
+        for (uint256 i = 0; i < spec.transferFroms.length; i++) {
+            TransferFrom memory transferFrom = spec.transferFroms[i];
 
+            address token = addresses.getAddress(transferFrom.token);
+            address from = addresses.getAddress(transferFrom.from);
+            address to = addresses.getAddress(transferFrom.to);
+
+            _pushAction(
+                token,
+                abi.encodeWithSignature(
+                    "transferFrom(address,address,uint256)",
+                    from,
+                    to,
+                    transferFrom.amount
+                ),
+                string(
+                    abi.encode(
+                        "Transfer token %s from %s to %s",
+                        token,
+                        from,
+                        to
+                    )
+                )
+            );
+        }
         for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
             BridgeWell memory bridgeWell = spec.bridgeWells[i];
 
@@ -461,37 +490,6 @@ contract mipRewardsDistribution is Test, HybridProposal {
         );
     }
 
-    function buildTransferFroms(
-        Addresses addresses,
-        TransferFrom[] memory transferFroms
-    ) private {
-        for (uint256 i = 0; i < transferFroms.length; i++) {
-            TransferFrom memory transferFrom = transferFroms[i];
-
-            address token = addresses.getAddress(transferFrom.token);
-            address from = addresses.getAddress(transferFrom.from);
-            address to = addresses.getAddress(transferFrom.to);
-
-            _pushAction(
-                token,
-                abi.encodeWithSignature(
-                    "transferFrom(address,address,uint256)",
-                    from,
-                    to,
-                    transferFrom.amount
-                ),
-                string(
-                    abi.encode(
-                        "Transfer token %s from %s to %s",
-                        token,
-                        from,
-                        to
-                    )
-                )
-            );
-        }
-    }
-
     function validateMoonbeam(Addresses addresses) private view {
         JsonSpecMoonbeam memory spec = moonbeamActions;
 
@@ -499,10 +497,13 @@ contract mipRewardsDistribution is Test, HybridProposal {
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             TransferFrom memory transferFrom = spec.transferFroms[i];
 
-            assertEq(
-                well.balanceOf(addresses.getAddress(transferFrom.to)),
-                transferFrom.amount
-            );
+            address to = addresses.getAddress(transferFrom.to);
+            if (to == addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")) {
+                //  amount must be transferred as part of the DEX rewards call
+                assertEq(well.balanceOf(to), governorWellBalanceBefore);
+            } else {
+                assertEq(well.balanceOf(to), transferFrom.amount);
+            }
         }
 
         address stkGovToken = addresses.getAddress("STK_GOVTOKEN");
