@@ -441,10 +441,7 @@ abstract contract HybridProposal is
 
         vm.selectFork(MOONBEAM_FORK_ID);
         addresses.addRestriction(block.chainid.toMoonbeamChainId());
-        _runMoonbeamMultichainGovernor(
-            addresses,
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        );
+        _runMoonbeamMultichainGovernor(addresses, address(3));
         addresses.removeRestriction();
 
         if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
