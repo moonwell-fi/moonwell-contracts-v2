@@ -73,25 +73,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             address mToken = addresses.getAddress(emissionConfigs[i].mToken);
 
             vm.warp(MToken(mToken).accrualBlockTimestamp());
-            MToken(mToken).accrueInterest();
 
             emissionsConfig[mToken].push(emissionConfigs[i]);
-
-            // update emission conf
-            MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(
-                    MToken(mToken),
-                    emissionConfigs[i].emissionToken
-                );
-
-            if (config.borrowEmissionsPerSec == 1) {
-                vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-                mrd._updateBorrowSpeed(
-                    MToken(mToken),
-                    emissionConfigs[i].emissionToken,
-                    1e18
-                );
-            }
         }
 
         address mrdProxy = addresses.getAddress("MRD_PROXY");
@@ -100,6 +83,76 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
 
         vm.prank(addresses.getAddress("MRD_PROXY_ADMIN"));
         ITransparentUpgradeableProxy(mrdProxy).upgradeTo(address(mrd));
+    }
+
+    function _mintMToken(address mToken, uint256 amount) internal {
+        address underlying = MErc20(mToken).underlying();
+
+        if (underlying == addresses.getAddress("WETH")) {
+            vm.deal(addresses.getAddress("WETH"), amount);
+        }
+        deal(underlying, address(this), amount);
+        IERC20(underlying).approve(mToken, amount);
+
+        assertEq(
+            MErc20Delegator(payable(mToken)).mint(amount),
+            0,
+            "Mint failed"
+        );
+    }
+
+    function _calculateBorrowRewards(
+        MToken mToken,
+        address emissionToken,
+        uint256 toWarp,
+        address sender
+    ) private returns (uint256 expectedRewards) {
+        MultiRewardDistributorCommon.MarketConfig memory config = mrd
+            .getConfigForMarket(mToken, emissionToken);
+
+        uint256 deltaTimestamp;
+        if (vm.getBlockTimestamp() > config.endTime) {
+            deltaTimestamp = config.endTime - config.borrowGlobalTimestamp;
+        } else {
+            deltaTimestamp =
+                vm.getBlockTimestamp() -
+                config.borrowGlobalTimestamp;
+        }
+
+        Exp memory marketBorrowIndex = Exp({mantissa: mToken.borrowIndex()});
+
+        uint256 totalBorrowed = div_(mToken.totalBorrows(), marketBorrowIndex);
+
+        uint256 totalAccrued = mul_(
+            deltaTimestamp,
+            config.borrowEmissionsPerSec
+        );
+
+        Double memory updateIndex = totalBorrowed > 0
+            ? fraction(totalAccrued, totalBorrowed)
+            : Double({mantissa: 0});
+
+        uint224 newGlobalIndex = safe224(
+            add_(Double({mantissa: config.borrowGlobalIndex}), updateIndex)
+                .mantissa,
+            "new index exceeds 224 bits"
+        );
+
+        // User borrow
+
+        uint256 userBorrow = div_(
+            mToken.borrowBalanceStored(sender),
+            marketBorrowIndex
+        );
+
+        // Calculate change in the cumulative sum of the reward per cToken accrued
+        Double memory deltaIndex = Double({
+            mantissa: sub_(newGlobalIndex, 1e36)
+        });
+
+        uint256 deltaUser = sub_(newGlobalIndex, 1e36);
+
+        expectedRewards = mul_(deltaUser, userBorrow) / 1e36;
     }
 
     function testGuardianCanPauseTemporalGovernor() public {
@@ -268,22 +321,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
                 "Borrow emissions incorrect"
             );
         }
-    }
-
-    function _mintMToken(address mToken, uint256 amount) internal {
-        address underlying = MErc20(mToken).underlying();
-
-        if (underlying == addresses.getAddress("WETH")) {
-            vm.deal(addresses.getAddress("WETH"), amount);
-        }
-        deal(underlying, address(this), amount);
-        IERC20(underlying).approve(mToken, amount);
-
-        assertEq(
-            MErc20Delegator(payable(mToken)).mint(amount),
-            0,
-            "Mint failed"
-        );
     }
 
     function testFuzz_MintMTokenSucceeds(
@@ -509,105 +546,19 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             "Borrow failed"
         );
 
-        {
-            MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(MToken(mToken), addresses.getAddress("OP"));
-
-            console.log(
-                "global borrow timestamp ",
-                config.borrowGlobalTimestamp
-            );
-            console.log("global borrow index ", config.borrowGlobalIndex);
-        }
-
-        {
-            (uint256 borrowerIndice, uint256 rewardsAccrued) = mrd
-                .getUserConfig(mToken, sender, addresses.getAddress("OP"));
-
-            console.log("borrowerIndice", borrowerIndice);
-            console.log("rewardsAccrued", rewardsAccrued);
-        }
-
-        console.log("timestampBefore", vm.getBlockTimestamp());
         vm.warp(vm.getBlockTimestamp() + toWarp);
-        console.log("timestampAfter", vm.getBlockTimestamp());
 
         Configs.EmissionConfig[] memory emissionConfig = emissionsConfig[
             mToken
         ];
 
         for (uint256 i = 0; i < emissionConfig.length; i++) {
-            MultiRewardDistributorCommon.MarketConfig memory config = mrd
-                .getConfigForMarket(
-                    MToken(mToken),
-                    emissionConfig[i].emissionToken
-                );
-
-            MToken(mToken).accrueInterest();
-            uint256 expectedReward;
-
-            {
-                uint256 deltaTimestamp;
-                if (vm.getBlockTimestamp() > config.endTime) {
-                    deltaTimestamp =
-                        config.endTime -
-                        config.borrowGlobalTimestamp;
-                } else {
-                    deltaTimestamp =
-                        vm.getBlockTimestamp() -
-                        config.borrowGlobalTimestamp;
-                }
-
-                Exp memory marketBorrowIndex = Exp({
-                    mantissa: MToken(mToken).borrowIndex()
-                });
-
-                uint256 totalBorrowed = div_(
-                    MErc20(mToken).totalBorrows(),
-                    marketBorrowIndex
-                );
-
-                console.log("Test totalBorrowed", totalBorrowed);
-
-                uint256 totalAccrued = mul_(
-                    deltaTimestamp,
-                    config.borrowEmissionsPerSec
-                );
-
-                Double memory updateIndex = totalBorrowed > 0
-                    ? fraction(totalAccrued, totalBorrowed)
-                    : Double({mantissa: 0});
-
-                console.log("Test updateIndex", updateIndex.mantissa);
-                uint224 newGlobalIndex = safe224(
-                    add_(
-                        Double({mantissa: config.borrowGlobalIndex}),
-                        updateIndex
-                    ).mantissa,
-                    "new index exceeds 224 bits"
-                );
-
-                console.log("Test newIndex", uint256(newGlobalIndex));
-                // User borrow
-
-                uint256 userBorrow = div_(
-                    MErc20(mToken).borrowBalanceStored(sender),
-                    marketBorrowIndex
-                );
-
-                // Calculate change in the cumulative sum of the reward per cToken accrued
-                Double memory deltaIndex = Double({
-                    mantissa: sub_(newGlobalIndex, 1e36)
-                });
-
-                uint256 deltaUser = sub_(newGlobalIndex, 1e36);
-
-                console.log("delta user, ", deltaUser);
-
-                console.log("Test borrowerAmount", userBorrow);
-
-                expectedReward = mul_(deltaUser, userBorrow) / 1e36;
-            }
+            uint256 expectedReward = _calculateBorrowRewards(
+                MToken(mToken),
+                emissionConfig[i].emissionToken,
+                toWarp,
+                sender
+            );
 
             assertApproxEqRel(
                 mrd
@@ -708,10 +659,12 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
                 config.supplyEmissionsPerSec *
                 supplyAmount) / MErc20(mToken).totalSupply();
 
-            uint256 expectedBorrowReward = (toWarp *
-                config.borrowEmissionsPerSec *
-                MErc20(mToken).borrowBalanceCurrent(address(this))) /
-                MErc20(mToken).totalBorrows();
+            uint256 expectedBorrowReward = _calculateBorrowRewards(
+                MToken(mToken),
+                emissionConfig[i].emissionToken,
+                toWarp,
+                sender
+            );
 
             assertApproxEqRel(
                 mrd
@@ -822,17 +775,12 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
                 MToken(mToken).totalSupply();
         }
 
-        uint256 expectedBorrowReward;
-        {
-            uint256 userCurrentBorrow = MToken(mToken).borrowBalanceCurrent(
-                address(this)
-            );
-
-            // calculate expected borrow reward
-            expectedBorrowReward =
-                ((toWarp * config.borrowEmissionsPerSec) * userCurrentBorrow) /
-                MToken(mToken).totalBorrows();
-        }
+        uint256 expectedBorrowReward = _calculateBorrowRewards(
+            MToken(mToken),
+            emissionsConfig[mToken][0].emissionToken,
+            toWarp,
+            address(this)
+        );
 
         vm.warp(block.timestamp + toWarp);
 
