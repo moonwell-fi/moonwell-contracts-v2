@@ -34,7 +34,8 @@ jobs:
           format: "space-delimited"
 
       - name: Set PR_CHANGED_FILES
-        run: echo "PR_CHANGED_FILES=${{ steps.files.outputs.all }}" >> $GITHUB_ENV
+        run: |
+          echo "PR_CHANGED_FILES=${{ steps.files.outputs.added_modified }}" >> $GITHUB_ENV
 
       - name: Set DEBUG flag
         run: echo "DEBUG=true" >> $GITHUB_ENV
