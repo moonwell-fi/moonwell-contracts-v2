@@ -5,15 +5,8 @@ import "@forge-std/Test.sol";
 
 import "@utils/ChainIds.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
-import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
