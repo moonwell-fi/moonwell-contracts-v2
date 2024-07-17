@@ -142,10 +142,10 @@ contract mipx01 is HybridProposal, Configs {
 
         {
             WormholeTrustedSender.TrustedSender[]
-                memory moonbeamWormholeBridgeAdapter = new WormholeTrustedSender.TrustedSender[](
+                memory optimismWormholeBridgeAdapter = new WormholeTrustedSender.TrustedSender[](
                     1
                 );
-            moonbeamWormholeBridgeAdapter[0] = WormholeTrustedSender
+            optimismWormholeBridgeAdapter[0] = WormholeTrustedSender
                 .TrustedSender(
                     OPTIMISM_WORMHOLE_CHAIN_ID,
                     addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
@@ -159,7 +159,7 @@ contract mipx01 is HybridProposal, Configs {
                 ),
                 abi.encodeWithSignature(
                     "addTrustedSenders((uint16,address)[])",
-                    moonbeamWormholeBridgeAdapter
+                    optimismWormholeBridgeAdapter
                 ),
                 "Add xWELL route from Moonbeam to Optimism in trusted sender mapping",
                 ActionType.Moonbeam
@@ -171,7 +171,7 @@ contract mipx01 is HybridProposal, Configs {
                 ),
                 abi.encodeWithSignature(
                     "setTargetAddresses((uint16,address)[])",
-                    moonbeamWormholeBridgeAdapter
+                    optimismWormholeBridgeAdapter
                 ),
                 "Add xWELL route from Moonbeam to Optimism in target address mapping",
                 ActionType.Moonbeam
@@ -184,7 +184,7 @@ contract mipx01 is HybridProposal, Configs {
                 ),
                 abi.encodeWithSignature(
                     "addTrustedSenders((uint16,address)[])",
-                    moonbeamWormholeBridgeAdapter
+                    optimismWormholeBridgeAdapter
                 ),
                 "Add xWELL route from Base to Optimism in trusted sender mapping",
                 ActionType.Base
@@ -196,7 +196,7 @@ contract mipx01 is HybridProposal, Configs {
                 ),
                 abi.encodeWithSignature(
                     "setTargetAddresses((uint16,address)[])",
-                    moonbeamWormholeBridgeAdapter
+                    optimismWormholeBridgeAdapter
                 ),
                 "Add xWELL route from Base to Optimism in target address mapping",
                 ActionType.Base
@@ -247,17 +247,6 @@ contract mipx01 is HybridProposal, Configs {
                 payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
             );
 
-            assertEq(
-                governor.targetAddress(
-                    block.chainid.toOptimismChainId().toWormholeChainId()
-                ),
-                addresses.getAddress(
-                    "VOTE_COLLECTION_PROXY",
-                    block.chainid.toOptimismChainId()
-                ),
-                "Multichain governor on Moonbeam should trust vote collection on optimism"
-            );
-
             uint16[] memory chains = governor.getAllTargetChains();
             bool found = false;
             for (uint256 i = 0; i < chains.length; i++) {
@@ -288,7 +277,7 @@ contract mipx01 is HybridProposal, Configs {
                     "VOTE_COLLECTION_PROXY",
                     block.chainid.toOptimismChainId()
                 ),
-                "incorrect target address for optimism wormhole chain"
+                "Multichain governor on Moonbeam should trust vote collection on optimism"
             );
         }
 
