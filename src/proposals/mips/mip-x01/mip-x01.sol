@@ -369,6 +369,17 @@ contract mipx01 is HybridProposal, Configs {
             ),
             "incorrect target address for bridge adapter on Base to Moonbeam"
         );
+        assertTrue(
+            adapter.isTrustedSender(
+                block.chainid.toMoonbeamWormholeChainId(),
+                addresses.getAddress(
+                    "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+                    block.chainid.toMoonbeamChainId()
+                )
+            ),
+            "Moonbeam wormhole bridge adapter not a trusted sender on Base"
+        );
+
         assertEq(
             adapter
                 .allTrustedSenders(block.chainid.toMoonbeamWormholeChainId())
