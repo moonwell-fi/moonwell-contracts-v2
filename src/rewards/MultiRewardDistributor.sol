@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
 import {ReentrancyGuard} from "@openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import {Initializable} from "@openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import {SafeERC20} from "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -53,22 +52,6 @@ contract MultiRewardDistributor is
     /// @notice The main data storage for this contract, holds a mapping of mToken to array
     //          of market configs
     mapping(address => MarketEmissionConfig[]) public marketConfigs;
-
-    function getUserConfig(
-        address mToken,
-        address user,
-        address emissionToken
-    ) public returns (uint256 borrowerIndice, uint256 rewardsAccrued) {
-        MarketEmissionConfig
-            storage emissionConfig = fetchConfigByEmissionToken(
-                MToken(mToken),
-                emissionToken
-            );
-
-        // borrower indice
-        borrowerIndice = emissionConfig.borrowerIndices[emissionToken];
-        rewardsAccrued = emissionConfig.borrowerRewardsAccrued[emissionToken];
-    }
 
     /// @notice Comptroller this distributor is bound to
     Comptroller public comptroller; /// we can't make this immutable because we are using proxies
@@ -305,15 +288,6 @@ contract MultiRewardDistributor is
                 emissionConfig.config.supplyGlobalIndex,
                 emissionConfig.config.endTime,
                 calcData.marketData.totalMTokens
-            );
-
-            console.log(
-                "MRD total borrow: %s",
-                calcData.marketData.totalBorrows
-            );
-            console.log(
-                "MRD market borrow index: %s",
-                calcData.marketData.marketBorrowIndex.mantissa
             );
 
             // Calculate our new global borrow index
@@ -904,25 +878,18 @@ contract MultiRewardDistributor is
             userBorrowIndex = initialIndexConstant; //userBorrowIndex = _globalBorrowIndex;
         }
 
-        console.log("MRD userBorrowIndex %s", userBorrowIndex);
         // Calculate change in the cumulative sum of the reward per cToken accrued
         Double memory deltaIndex = Double({
             mantissa: sub_(_globalBorrowIndex, userBorrowIndex)
         });
-
-        console.log("MRD deltaIndex %s", deltaIndex.mantissa);
 
         uint borrowerAmount = div_(
             _mTokenData.borrowBalanceStored,
             _marketBorrowIndex
         );
 
-        console.log("MRD borrowerAmount %s", borrowerAmount);
-
         // Calculate reward accrued: mTokenAmount * accruedPerMToken
         uint borrowerDelta = mul_(borrowerAmount, deltaIndex);
-
-        console.log("MRD borrowerDelta %s", borrowerDelta);
 
         return
             add_(
@@ -958,9 +925,6 @@ contract MultiRewardDistributor is
             uint256(_currentTimestamp)
         );
 
-        console.log("blockTimestamp");
-        console.log("rewardEndTime", _rewardEndTime);
-
         // If our current block timestamp is newer than our emission end time, we need to halt
         // reward emissions by stinting the growth of the global index, but importantly not
         // the global timestamp. Should not be gte because the equivalent case makes a
@@ -992,28 +956,14 @@ contract MultiRewardDistributor is
         // At this point we know we have to calculate a new index, so do so
         uint256 tokenAccrued = mul_(deltaTimestamps, _emissionsPerSecond);
 
-        console.log(
-            "MRD calculateNewIndex: emisisonsPerSecond",
-            _emissionsPerSecond
-        );
-        console.log("MRD calculateNewIndex tokenAccrued", tokenAccrued);
-
-        console.log("_denomintaor", _denominator);
         Double memory ratio = _denominator > 0
             ? fraction(tokenAccrued, _denominator)
             : Double({mantissa: 0});
-        console.log("MRD calculateNewIndex totalBorrowed", _denominator);
-
-        console.log("MRD calculateNewIndex updateIndex", ratio.mantissa);
 
         uint224 newIndex = safe224(
             add_(Double({mantissa: _currentIndex}), ratio).mantissa,
             "new index exceeds 224 bits"
         );
-
-        console.log("current index", _currentIndex);
-
-        console.log("MRD calculateNewIndex: new index", newIndex);
 
         return IndexUpdate({newIndex: newIndex, newTimestamp: blockTimestamp});
     }

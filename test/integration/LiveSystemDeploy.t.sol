@@ -37,7 +37,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
         public emissionsConfig;
 
     function setUp() public {
-        // TODO restrict chain ids passing the json here
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
@@ -76,13 +75,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
 
             emissionsConfig[mToken].push(emissionConfigs[i]);
         }
-
-        address mrdProxy = addresses.getAddress("MRD_PROXY");
-
-        MultiRewardDistributor mrd = new MultiRewardDistributor();
-
-        vm.prank(addresses.getAddress("MRD_PROXY_ADMIN"));
-        ITransparentUpgradeableProxy(mrdProxy).upgradeTo(address(mrd));
     }
 
     function _mintMToken(address mToken, uint256 amount) internal {
@@ -106,7 +98,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
         address emissionToken,
         uint256 toWarp,
         address sender
-    ) private returns (uint256 expectedRewards) {
+    ) private view returns (uint256 expectedRewards) {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(mToken, emissionToken);
 
@@ -139,13 +131,11 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
         );
 
         // User borrow
-
         uint256 userBorrow = div_(
             mToken.borrowBalanceStored(sender),
             marketBorrowIndex
         );
 
-        // Calculate change in the cumulative sum of the reward per cToken accrued
         Double memory deltaIndex = Double({
             mantissa: sub_(newGlobalIndex, 1e36)
         });
@@ -671,7 +661,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
                 .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
                     .totalAmount,
                 expectedSupplyReward + expectedBorrowReward,
-                0.15e18,
+                0.1e18,
                 "Total rewards not correct"
             );
 
@@ -680,7 +670,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
                 .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
                     .supplySide,
                 expectedSupplyReward,
-                1e17,
+                0.1e18,
                 "Supply rewards not correct"
             );
 
@@ -689,7 +679,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
                 .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
                     .borrowSide,
                 expectedBorrowReward,
-                0.15e18,
+                0.1e18,
                 "Borrow rewards not correct"
             );
         }
@@ -760,6 +750,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             "Borrow failed"
         );
 
+        vm.warp(vm.getBlockTimestamp() + toWarp);
+
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(mToken),
@@ -781,8 +773,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             toWarp,
             address(this)
         );
-
-        vm.warp(block.timestamp + toWarp);
 
         if (token != addresses.getAddress("WETH")) {
             /// borrower is now underwater on loan
@@ -847,14 +837,14 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             rewardsBefore[0].totalAmount +
                 expectedSupplyReward +
                 expectedBorrowReward,
-            0.15e18,
+            0.1e18,
             "Total rewards wrong"
         );
 
         assertApproxEqRel(
             rewardsAfter[0].borrowSide,
             rewardsBefore[0].borrowSide + expectedBorrowReward,
-            0.15e18,
+            0.1e18,
             "Borrow side rewards wrong"
         );
 
