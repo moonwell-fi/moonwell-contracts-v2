@@ -173,7 +173,7 @@ library ChainIds {
     function createForksAndSelect(uint256 selectFork) internal {
         vmInternal.createFork(vmInternal.envString("MOONBEAM_RPC_URL"));
         vmInternal.createFork(vmInternal.envString("BASE_RPC_URL"));
-        vmInternal.createFork(vmInternal.envString("OP_RPC_URL"));
+        vmInternal.createFork(vmInternal.envString("OP_RPC_URL"), 122788591);
 
         vmInternal.selectFork(selectFork);
 

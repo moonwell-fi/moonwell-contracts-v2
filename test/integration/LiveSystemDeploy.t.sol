@@ -509,11 +509,16 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             "Borrow failed"
         );
 
-        MultiRewardDistributorCommon.MarketConfig memory config = mrd
-            .getConfigForMarket(MToken(mToken), addresses.getAddress("OP"));
+        {
+            MultiRewardDistributorCommon.MarketConfig memory config = mrd
+                .getConfigForMarket(MToken(mToken), addresses.getAddress("OP"));
 
-        console.log("global borrow timestamp ", config.borrowGlobalTimestamp);
-        console.log("global borrow index ", config.borrowGlobalIndex);
+            console.log(
+                "global borrow timestamp ",
+                config.borrowGlobalTimestamp
+            );
+            console.log("global borrow index ", config.borrowGlobalIndex);
+        }
 
         {
             (uint256 borrowerIndice, uint256 rewardsAccrued) = mrd
@@ -542,34 +547,61 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             uint256 expectedReward;
 
             {
-                uint256 globalTokenAccrued = ((vm.getBlockTimestamp() -
-                    config.borrowGlobalTimestamp) *
-                    config.borrowEmissionsPerSec);
-                console.log("globalTokenAccrued", globalTokenAccrued);
+                uint256 deltaTimestamp;
+                if (vm.getBlockTimestamp() > config.endTime) {
+                    deltaTimestamp =
+                        config.endTime -
+                        config.borrowGlobalTimestamp;
+                } else {
+                    deltaTimestamp =
+                        vm.getBlockTimestamp() -
+                        config.borrowGlobalTimestamp;
+                }
 
-                uint256 totalBorrowed = MErc20(mToken).totalBorrows() /
-                    MToken(mToken).borrowIndex();
-                console.log("totalBorrowed", totalBorrowed);
+                console.log("delta timestamp", deltaTimestamp);
+                uint256 totalAccrued = mul_(
+                    deltaTimestamp,
+                    config.borrowEmissionsPerSec
+                );
 
-                uint256 updateIndex = fraction(
-                    globalTokenAccrued,
-                    totalBorrowed
-                ).mantissa;
+                console.log("total accrued", totalAccrued);
+                console.log(MErc20(mToken).totalBorrows());
+                console.log(MToken(mToken).borrowIndex());
 
-                console.log("Test updatedIndex", updateIndex);
-                uint256 userIndex = 1e36;
+                uint256 totalBorrowed = div_(
+                    MErc20(mToken).totalBorrows(),
+                    MToken(mToken).borrowIndex()
+                );
 
-                uint256 borrowerDelta = updateIndex - userIndex;
+                console.log("Test totalBorrowed", totalBorrowed);
 
-                console.log("Test borrowerDelta", borrowerDelta);
+                Double memory updateIndex = totalBorrowed > 0
+                    ? fraction(totalAccrued, totalBorrowed)
+                    : Double({mantissa: 0});
+
+                console.log("Test updateIndex", updateIndex.mantissa);
+                uint224 newGlobalIndex = safe224(
+                    add_(
+                        Double({mantissa: config.borrowGlobalIndex}),
+                        updateIndex
+                    ).mantissa,
+                    "new index exceeds 224 bits"
+                );
+
+                console.log("Test newIndex", uint256(newGlobalIndex));
+                // User borrow
+
+                uint256 userBorrowIndex = 1e36; // initial amount
+
+                console.log("Test userBorrowIndex", userBorrowIndex);
 
                 uint256 userBorrow = MErc20(mToken).borrowBalanceStored(
                     sender
                 ) / MToken(mToken).borrowIndex();
 
-                console.log("Test borrowerAmount", borrowerAmount);
+                console.log("Test borrowerAmount", userBorrow);
 
-                expectedReward = borrowerDelta * userBorrow;
+                expectedReward = (newGlobalIndex * userBorrow) / 1e36;
             }
 
             assertApproxEqRel(

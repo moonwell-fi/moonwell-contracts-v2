@@ -307,6 +307,15 @@ contract MultiRewardDistributor is
                 calcData.marketData.totalMTokens
             );
 
+            console.log(
+                "MRD total borrow: %s",
+                calcData.marketData.totalBorrows
+            );
+            console.log(
+                "MRD market borrow index: %s",
+                calcData.marketData.marketBorrowIndex.mantissa
+            );
+
             // Calculate our new global borrow index
             IndexUpdate memory borrowUpdate = calculateNewIndex(
                 emissionConfig.config.borrowEmissionsPerSec,
@@ -318,8 +327,6 @@ contract MultiRewardDistributor is
                     calcData.marketData.marketBorrowIndex
                 )
             );
-
-            console.log("MRD new borrow index %s", borrowUpdate.newIndex);
 
             // Calculate outstanding supplier side rewards
             uint256 supplierRewardsAccrued = calculateSupplyRewardsForUser(
@@ -955,7 +962,8 @@ contract MultiRewardDistributor is
             uint256(_currentTimestamp)
         );
 
-        console.log("MRD calculateNewIndex: delta timestamp", deltaTimestamps);
+        console.log("blockTimestamp");
+        console.log("rewardEndTime", _rewardEndTime);
 
         // If our current block timestamp is newer than our emission end time, we need to halt
         // reward emissions by stinting the growth of the global index, but importantly not
@@ -993,11 +1001,14 @@ contract MultiRewardDistributor is
             _emissionsPerSecond
         );
         console.log("MRD calculateNewIndex tokenAccrued", tokenAccrued);
+
+        console.log("_denomintaor", _denominator);
         Double memory ratio = _denominator > 0
             ? fraction(tokenAccrued, _denominator)
             : Double({mantissa: 0});
+        console.log("MRD calculateNewIndex totalBorrowed", _denominator);
 
-        console.log("MRD calculateNewIndex ratio", ratio.mantissa);
+        console.log("MRD calculateNewIndex updateIndex", ratio.mantissa);
 
         uint224 newIndex = safe224(
             add_(Double({mantissa: _currentIndex}), ratio).mantissa,
