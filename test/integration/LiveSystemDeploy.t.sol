@@ -558,22 +558,21 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
                         config.borrowGlobalTimestamp;
                 }
 
-                console.log("delta timestamp", deltaTimestamp);
+                Exp memory marketBorrowIndex = Exp({
+                    mantissa: MToken(mToken).borrowIndex()
+                });
+
+                uint256 totalBorrowed = div_(
+                    MErc20(mToken).totalBorrows(),
+                    marketBorrowIndex
+                );
+
+                console.log("Test totalBorrowed", totalBorrowed);
+
                 uint256 totalAccrued = mul_(
                     deltaTimestamp,
                     config.borrowEmissionsPerSec
                 );
-
-                console.log("total accrued", totalAccrued);
-                console.log(MErc20(mToken).totalBorrows());
-                console.log(MToken(mToken).borrowIndex());
-
-                uint256 totalBorrowed = div_(
-                    MErc20(mToken).totalBorrows(),
-                    MToken(mToken).borrowIndex()
-                );
-
-                console.log("Test totalBorrowed", totalBorrowed);
 
                 Double memory updateIndex = totalBorrowed > 0
                     ? fraction(totalAccrued, totalBorrowed)
@@ -591,17 +590,23 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
                 console.log("Test newIndex", uint256(newGlobalIndex));
                 // User borrow
 
-                uint256 userBorrowIndex = 1e36; // initial amount
+                uint256 userBorrow = div_(
+                    MErc20(mToken).borrowBalanceStored(sender),
+                    marketBorrowIndex
+                );
 
-                console.log("Test userBorrowIndex", userBorrowIndex);
+                // Calculate change in the cumulative sum of the reward per cToken accrued
+                Double memory deltaIndex = Double({
+                    mantissa: sub_(newGlobalIndex, 1e36)
+                });
 
-                uint256 userBorrow = MErc20(mToken).borrowBalanceStored(
-                    sender
-                ) / MToken(mToken).borrowIndex();
+                uint256 deltaUser = sub_(newGlobalIndex, 1e36);
+
+                console.log("delta user, ", deltaUser);
 
                 console.log("Test borrowerAmount", userBorrow);
 
-                expectedReward = (newGlobalIndex * userBorrow) / 1e36;
+                expectedReward = mul_(deltaUser, userBorrow) / 1e36;
             }
 
             assertApproxEqRel(

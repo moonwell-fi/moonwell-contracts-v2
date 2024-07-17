@@ -923,10 +923,6 @@ contract MultiRewardDistributor is
         uint borrowerDelta = mul_(borrowerAmount, deltaIndex);
 
         console.log("MRD borrowerDelta %s", borrowerDelta);
-        console.log(
-            "MRD accrued %s",
-            _emissionConfig.borrowerRewardsAccrued[_borrower]
-        );
 
         return
             add_(
