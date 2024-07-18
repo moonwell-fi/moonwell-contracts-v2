@@ -7,6 +7,7 @@ import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
 
 import {mipx01} from "@proposals/mips/mip-x01/mip-x01.sol";
+import {mipo01} from "@proposals/mips/mip-o01/mip-o01.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
@@ -174,6 +175,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             address dexRelayer = addresses.getAddress("DEX_RELAYER");
             wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
         }
+
+        // TODO remove this once o01 gets executed
+        mipo01 o01 = new mipo01();
+        vm.makePersistent(address(o01));
+        vm.selectFork(o01.primaryForkId());
+        o01.build(addresses);
+        o01.run(addresses, address(this));
 
         vm.selectFork(primaryForkId());
 
@@ -485,7 +493,16 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
             address mrd = addresses.getAddress("MRD_PROXY");
 
-            // todo verify current speeds and only update if different
+            // TODO verify current speeds and only update if different
+            IMultiRewardDistributor distributor = IMultiRewardDistributor(
+                addresses.getAddress("MRD_PROXY")
+            );
+
+            IMultiRewardDistributor.MarketConfig[]
+                memory _emissionConfigs = distributor.getAllMarketConfigs(
+                    MToken(addresses.getAddress(setRewardSpeed.market))
+                );
+
             _pushAction(
                 mrd,
                 abi.encodeWithSignature(
