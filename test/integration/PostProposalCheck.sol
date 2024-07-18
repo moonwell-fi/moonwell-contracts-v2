@@ -29,7 +29,7 @@ contract PostProposalCheck is Test {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        proposals = new Proposal[](2);
+        proposals = new Proposal[](3);
 
         governor = MultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
@@ -43,6 +43,11 @@ contract PostProposalCheck is Test {
         // get the latest base proposal
         proposals[1] = checkAndRunLatestProposal(
             "bin/get-latest-base-proposal.sh"
+        );
+
+        // get the latest multichain proposal
+        proposals[2] = checkAndRunLatestProposal(
+            "bin/get-latest-multichain-proposal.sh"
         );
 
         /// only etch out precompile contracts if on the moonbeam chain
