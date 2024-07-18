@@ -12,12 +12,13 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MoonwellViewsV3} from "@protocol/views/MoonwellViewsV3.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
-import {MoonwellViewsV3} from "@protocol/views/MoonwellViewsV3.sol";
+import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
 
 interface StellaSwapRewarder {
     function poolRewardsPerSec(uint256 _pid) external view returns (uint256);
@@ -133,13 +134,16 @@ contract mipRewardsDistribution is Test, HybridProposal {
         vm.selectFork(BASE_FORK_ID);
 
         {
+            // stores the wormhole mock address in the wormholeRelayer variable
             vm.store(
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
                 bytes32(uint256(153)),
                 encodedData
             );
 
+            // save well balances before so we can check if the transferFrom was successful
             IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
+
             address mrd = addresses.getAddress("MRD_PROXY");
             wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
 
@@ -157,6 +161,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
         vm.selectFork(primaryForkId());
 
         {
+            // stores the wormhole mock address in the wormholeRelayer variable
             vm.store(
                 address(wormholeBridgeAdapter),
                 bytes32(uint256(153)),
@@ -173,6 +178,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
             addresses.changeAddress("xWELL_ROUTER", address(router), true);
 
+            // save well balances before so we can check if the transferFrom was successful
             IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
 
             address governor = addresses.getAddress(
@@ -198,7 +204,6 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
     function build(Addresses addresses) public override {
         buildMoonbeamActions(addresses);
-
         buildExternalChainActions(addresses, BASE_CHAIN_ID);
     }
 
@@ -281,11 +286,15 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     transferFrom.amount
                 ),
                 string(
-                    abi.encode(
-                        "Transfer token %s from %s to %s",
-                        token,
-                        from,
-                        to
+                    abi.encodePacked(
+                        "Transfer token ",
+                        vm.toString(token),
+                        "from ",
+                        vm.toString(from),
+                        "to ",
+                        vm.toString(to),
+                        "amount ",
+                        vm.toString(transferFrom.amount)
                     )
                 )
             );
@@ -316,7 +325,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
             uint256 bridgeCost = xWELLRouter(router).bridgeCost(
                 wormholeChainId
-            );
+            ) * 5; // make sure that the proposal does not revert due to bridge
+            // cost changing
 
             _pushAction(
                 router,
@@ -328,11 +338,13 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     wormholeChainId
                 ),
                 string(
-                    abi.encode(
-                        "Bridge %s WELL to %s on chain %s",
-                        bridgeWell.amount,
-                        target,
-                        bridgeWell.network
+                    abi.encodePacked(
+                        "Bridge ",
+                        vm.toString(bridgeWell.amount),
+                        "WELL to ",
+                        vm.toString(target),
+                        "on ",
+                        vm.toString(bridgeWell.network)
                     )
                 ),
                 ActionType.Moonbeam
@@ -362,7 +374,15 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     setRewardSpeed.newSupplySpeed,
                     setRewardSpeed.newBorrowSpeed
                 ),
-                "Set reward speed for the Moonwell Markets on Moonbeam",
+                string(
+                    abi.encodePacked(
+                        "Set reward speed for market ",
+                        vm.toString(
+                            addresses.getAddress(setRewardSpeed.market)
+                        ),
+                        "on Moonbeam"
+                    )
+                ),
                 ActionType.Moonbeam
             );
         }
@@ -417,12 +437,15 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     transferFrom.amount
                 ),
                 string(
-                    abi.encode(
-                        "Transfer token %s from %s to %s on %s",
-                        token,
-                        from,
-                        to,
-                        chainId
+                    abi.encodePacked(
+                        "Transfer token ",
+                        vm.toString(token),
+                        "from ",
+                        vm.toString(from),
+                        "to ",
+                        vm.toString(to),
+                        "amount",
+                        vm.toString(transferFrom.amount)
                     )
                 )
             );
@@ -445,10 +468,11 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     setRewardSpeed.newSupplySpeed
                 ),
                 string(
-                    abi.encode(
-                        "Set reward supply speed for %s on %s",
-                        market,
-                        chainId
+                    abi.encodePacked(
+                        "Set reward supply speed for ",
+                        vm.toString(market),
+                        "on",
+                        vm.toString(chainId)
                     )
                 )
             );
@@ -462,10 +486,11 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     setRewardSpeed.newBorrowSpeed
                 ),
                 string(
-                    abi.encode(
-                        "Set reward borrow speed for %s on %s",
-                        market,
-                        chainId
+                    abi.encodePacked(
+                        "Set reward borrow speed for ",
+                        vm.toString(market),
+                        "on",
+                        vm.toString(chainId)
                     )
                 )
             );
@@ -479,10 +504,11 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     setRewardSpeed.newEndTime
                 ),
                 string(
-                    abi.encode(
-                        "Set reward end time for %s on %s",
-                        market,
-                        chainId
+                    abi.encodePacked(
+                        "Set reward end time for ",
+                        vm.toString(market),
+                        "on ",
+                        vm.toString(chainId)
                     )
                 )
             );
@@ -496,9 +522,9 @@ contract mipRewardsDistribution is Test, HybridProposal {
                 addresses.getAddress("STK_GOVTOKEN")
             ),
             string(
-                abi.encode(
-                    "Set reward speed for the Safety Module on %s",
-                    chainId
+                abi.encodePacked(
+                    "Set reward speed for the Safety Module on ",
+                    vm.toString(chainId)
                 )
             )
         );
@@ -560,8 +586,18 @@ contract mipRewardsDistribution is Test, HybridProposal {
         // validate dex rewards
         AddRewardInfo memory addRewardInfo = spec.addRewardInfo;
 
-        StellaSwapRewarder stellaSwap = StellaSwapRewarder(
-            addresses.getAddress("STELLASWAP_REWARDER")
+        address stellaSwapRewarder = addresses.getAddress(
+            "STELLASWAP_REWARDER"
+        );
+        StellaSwapRewarder stellaSwap = StellaSwapRewarder(stellaSwapRewarder);
+
+        // check allowance
+        assertEq(
+            well.allowance(
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
+                stellaSwapRewarder
+            ),
+            0
         );
 
         uint256 blockTimestamp = block.timestamp;
@@ -617,27 +653,31 @@ contract mipRewardsDistribution is Test, HybridProposal {
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetMRDRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
 
-            address market = addresses.getAddress(setRewardSpeed.market);
-            MoonwellViewsV3 views = MoonwellViewsV3(
-                addresses.getAddress("MOONWELL_VIEWS_PROXY")
+            IMultiRewardDistributor distributor = IMultiRewardDistributor(
+                addresses.getAddress("MRD_PROXY")
             );
 
-            MoonwellViewsV3.MarketIncentives[] memory incentives = views
-                .getMarketIncentives(MToken(market));
+            IMultiRewardDistributor.MarketConfig[]
+                memory _emissionConfigs = distributor.getAllMarketConfigs(
+                    MToken(addresses.getAddress(setRewardSpeed.market))
+                );
 
-            for (uint256 j = 0; j < incentives.length; j++) {
+            for (uint256 j = 0; j < _emissionConfigs.length; j++) {
+                IMultiRewardDistributor.MarketConfig
+                    memory _config = _emissionConfigs[j];
                 if (
-                    incentives[j].token ==
+                    _config.emissionToken ==
                     addresses.getAddress(setRewardSpeed.emissionToken)
                 ) {
                     assertEq(
-                        incentives[j].supplyIncentivesPerSec,
+                        _config.supplyEmissionsPerSec,
                         setRewardSpeed.newSupplySpeed
                     );
                     assertEq(
-                        incentives[j].borrowIncentivesPerSec,
+                        _config.borrowEmissionsPerSec,
                         setRewardSpeed.newBorrowSpeed
                     );
+                    assertEq(_config.endTime, setRewardSpeed.newEndTime);
                 }
             }
         }

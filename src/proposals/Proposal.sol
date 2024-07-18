@@ -104,7 +104,7 @@ abstract contract Proposal is Script, Test {
 
     /// @notice initialize the proposal after the proposal is created and the
     /// live fork is selected
-    function initProposal(Addresses addresses) public virtual {}
+    function initProposal(Addresses) public virtual {}
 
     /// @dev Print recorded addresses
     function _printAddressesChanges(Addresses addresses) private view {
