@@ -15,6 +15,13 @@ import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
+
+interface StellaSwapRewarder {
+    function poolRewardsPerSec(uint256 _pid) external view returns (uint256);
+
+    function currentEndTimestamp(uint256 _pid) external view returns (uint256);
+}
 
 contract mipRewardsDistribution is Test, HybridProposal {
     using String for string;
@@ -323,11 +330,11 @@ contract mipRewardsDistribution is Test, HybridProposal {
             _pushAction(
                 addresses.getAddress(setRewardSpeed.target),
                 abi.encodeWithSignature(
-                    "_setRewardSpeed(uint8, address, uint256,uint256)",
+                    "_setRewardSpeed(uint8,address,uint256,uint256)",
                     uint8(setRewardSpeed.rewardType),
                     addresses.getAddress(setRewardSpeed.market),
-                    setRewardSpeed.newBorrowSpeed,
-                    setRewardSpeed.newSupplySpeed
+                    setRewardSpeed.newSupplySpeed,
+                    setRewardSpeed.newBorrowSpeed
                 ),
                 "Set reward speed for the Moonwell Markets on Moonbeam",
                 ActionType.Moonbeam
@@ -336,7 +343,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         AddRewardInfo memory addRewardInfo = spec.addRewardInfo;
 
-        // first approve amount
+        // first approve
         _pushAction(
             addresses.getAddress("GOVTOKEN"),
             abi.encodeWithSignature(
@@ -363,11 +370,11 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
     function buildExternalChainActions(
         Addresses addresses,
-        uint256 chain
+        uint256 chainId
     ) private {
-        vm.selectFork(chain.toForkId());
+        vm.selectFork(chainId.toForkId());
 
-        JsonSpecExternalChain memory spec = externalChainActions[chain];
+        JsonSpecExternalChain memory spec = externalChainActions[chainId];
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             TransferFrom memory transferFrom = spec.transferFroms[i];
@@ -389,7 +396,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
                         token,
                         from,
                         to,
-                        chain
+                        chainId
                     )
                 )
             );
@@ -415,7 +422,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     abi.encode(
                         "Set reward supply speed for %s on %s",
                         market,
-                        chain
+                        chainId
                     )
                 )
             );
@@ -432,7 +439,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     abi.encode(
                         "Set reward borrow speed for %s on %s",
                         market,
-                        chain
+                        chainId
                     )
                 )
             );
@@ -449,7 +456,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     abi.encode(
                         "Set reward end time for %s on %s",
                         market,
-                        chain
+                        chainId
                     )
                 )
             );
@@ -465,7 +472,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
             string(
                 abi.encode(
                     "Set reward speed for the Safety Module on %s",
-                    chain
+                    chainId
                 )
             )
         );
@@ -480,7 +487,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
             address to = addresses.getAddress(transferFrom.to);
             if (to == addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")) {
-                //  amount must be transferred as part of the DEX rewards call
+                //  amount must be transferred as part of the DEX rewards and
+                //  bridge calls
                 assertEq(well.balanceOf(to), wellBalancesBefore[to]);
             } else {
                 assertEq(
@@ -502,6 +510,50 @@ contract mipRewardsDistribution is Test, HybridProposal {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
 
             address market = addresses.getAddress(setRewardSpeed.market);
+
+            ComptrollerInterfaceV1 comptrollerV1 = ComptrollerInterfaceV1(
+                addresses.getAddress("UNITROLLER")
+            );
+            assertEq(
+                comptrollerV1.supplyRewardSpeeds(
+                    uint8(setRewardSpeed.rewardType),
+                    address(market)
+                ),
+                setRewardSpeed.newSupplySpeed
+            );
+
+            assertEq(
+                comptrollerV1.borrowRewardSpeeds(
+                    uint8(setRewardSpeed.rewardType),
+                    address(market)
+                ),
+                setRewardSpeed.newBorrowSpeed
+            );
         }
+
+        // validate dex rewards
+        AddRewardInfo memory addRewardInfo = spec.addRewardInfo;
+
+        StellaSwapRewarder stellaSwap = StellaSwapRewarder(
+            addresses.getAddress("STELLASWAP_REWARDER")
+        );
+
+        assertEq(
+            stellaSwap.poolRewardsPerSec(addRewardInfo.pid),
+            addRewardInfo.rewardPerSec
+        );
+        assertEq(
+            stellaSwap.currentEndTimestamp(addRewardInfo.pid),
+            addRewardInfo.endTimestamp
+        );
+    }
+
+    function validateExternalChainActions(
+        Addresses addresses,
+        uint256 chainId
+    ) private {
+        vm.selectFork(chainId.toForkId());
+
+        JsonSpecExternalChain memory spec = externalChainActions[chainId];
     }
 }

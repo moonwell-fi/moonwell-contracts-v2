@@ -21,13 +21,6 @@
                 "newSupplySpeed": 0.54e18,
                 "rewardType": 0,
                 "target": "UNITROLLER"
-            },
-            {
-                "market": "mxcDOT",
-                "newBorrowSpeed": 1,
-                "newSupplySpeed": 0.23e18,
-                "rewardType": 1,
-                "target": "UNITROLLER"
             }
         ],
         "stkWellEmissionsPerSecond": 0.65e18,
