@@ -6,8 +6,10 @@ import "@forge-std/StdJson.sol";
 import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
 
+import {mipx01} from "@proposals/mips/mip-x01/mip-x01.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
+import {Networks} from "@proposals/utils/Networks.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
@@ -26,7 +28,7 @@ interface StellaSwapRewarder {
     function currentEndTimestamp(uint256 _pid) external view returns (uint256);
 }
 
-contract mipRewardsDistribution is Test, HybridProposal {
+contract mipRewardsDistribution is HybridProposal, Networks {
     using String for string;
     using stdJson for string;
     using ChainIds for uint256;
@@ -102,9 +104,22 @@ contract mipRewardsDistribution is Test, HybridProposal {
             vm.envString("MIP_REWARDS_PATH")
         );
 
-        saveMoonbeamActions(encodedJson);
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            if (chainId == MOONBEAM_CHAIN_ID) {
+                saveMoonbeamActions(encodedJson);
+            } else {
+                saveExternalChainActions(encodedJson, chainId);
+            }
+        }
+    }
 
-        saveExternalChainActions(encodedJson, BASE_CHAIN_ID);
+    function name() external pure override returns (string memory) {
+        return "MIP Rewards Distribution";
+    }
+
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function initProposal(Addresses addresses) public override {
@@ -131,9 +146,15 @@ contract mipRewardsDistribution is Test, HybridProposal {
                 uint256(gasLimit)
         );
 
-        vm.selectFork(BASE_FORK_ID);
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            // skip moonbeam
+            if (chainId == MOONBEAM_CHAIN_ID) {
+                continue;
+            }
 
-        {
+            vm.selectFork(chainId.toForkId());
+
             // stores the wormhole mock address in the wormholeRelayer variable
             vm.store(
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
@@ -150,12 +171,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
             address unitroller = addresses.getAddress("UNITROLLER");
             wellBalancesBefore[unitroller] = xwell.balanceOf(unitroller);
 
-            address aerodromeRelayer = addresses.getAddress(
-                "AERODROME_RELAYER"
-            );
-            wellBalancesBefore[aerodromeRelayer] = xwell.balanceOf(
-                aerodromeRelayer
-            );
+            address dexRelayer = addresses.getAddress("DEX_RELAYER");
+            wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
         }
 
         vm.selectFork(primaryForkId());
@@ -168,7 +185,11 @@ contract mipRewardsDistribution is Test, HybridProposal {
                 encodedData
             );
 
-            // TODO remove this once new router is deployed
+            // TODO remove this once x01 is executed
+            mipx01 x01 = new mipx01();
+            x01.build(addresses);
+            x01.run(addresses, address(this));
+
             xWELLRouter router = new xWELLRouter(
                 addresses.getAddress("xWELL_PROXY"),
                 addresses.getAddress("GOVTOKEN"),
@@ -194,22 +215,26 @@ contract mipRewardsDistribution is Test, HybridProposal {
         }
     }
 
-    function name() external pure override returns (string memory) {
-        return "MIP Rewards Distribution";
-    }
-
-    function primaryForkId() public pure override returns (uint256) {
-        return MOONBEAM_FORK_ID;
-    }
-
     function build(Addresses addresses) public override {
-        buildMoonbeamActions(addresses);
-        buildExternalChainActions(addresses, BASE_CHAIN_ID);
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            if (chainId == MOONBEAM_CHAIN_ID) {
+                buildMoonbeamActions(addresses);
+            } else {
+                buildExternalChainActions(addresses, chainId);
+            }
+        }
     }
 
     function validate(Addresses addresses, address) public override {
-        validateMoonbeam(addresses);
-        validateExternalChainActions(addresses, BASE_CHAIN_ID);
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            if (chainId == MOONBEAM_CHAIN_ID) {
+                validateMoonbeam(addresses);
+            } else {
+                validateExternalChainActions(addresses, chainId);
+            }
+        }
     }
 
     function saveMoonbeamActions(string memory data) public {
@@ -269,6 +294,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
     }
 
     function buildMoonbeamActions(Addresses addresses) private {
+        vm.selectFork(MOONBEAM_FORK_ID);
+
         JsonSpecMoonbeam memory spec = moonbeamActions;
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             TransferFrom memory transferFrom = spec.transferFroms[i];
@@ -289,9 +316,9 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     abi.encodePacked(
                         "Transfer token ",
                         vm.toString(token),
-                        "from ",
+                        " from ",
                         vm.toString(from),
-                        "to ",
+                        " to ",
                         vm.toString(to),
                         "amount ",
                         vm.toString(transferFrom.amount)
@@ -341,9 +368,9 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     abi.encodePacked(
                         "Bridge ",
                         vm.toString(bridgeWell.amount),
-                        "WELL to ",
+                        " WELL to ",
                         vm.toString(target),
-                        "on ",
+                        " on ",
                         vm.toString(bridgeWell.network)
                     )
                 ),
@@ -380,7 +407,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
                         vm.toString(
                             addresses.getAddress(setRewardSpeed.market)
                         ),
-                        "on Moonbeam"
+                        " on Moonbeam"
                     )
                 ),
                 ActionType.Moonbeam
@@ -440,11 +467,11 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     abi.encodePacked(
                         "Transfer token ",
                         vm.toString(token),
-                        "from ",
+                        " from ",
                         vm.toString(from),
-                        "to ",
+                        " to ",
                         vm.toString(to),
-                        "amount",
+                        " amount",
                         vm.toString(transferFrom.amount)
                     )
                 )
@@ -471,7 +498,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     abi.encodePacked(
                         "Set reward supply speed for ",
                         vm.toString(market),
-                        "on",
+                        " on ",
                         vm.toString(chainId)
                     )
                 )
@@ -489,7 +516,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     abi.encodePacked(
                         "Set reward borrow speed for ",
                         vm.toString(market),
-                        "on",
+                        " on ",
                         vm.toString(chainId)
                     )
                 )
@@ -507,7 +534,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
                     abi.encodePacked(
                         "Set reward end time for ",
                         vm.toString(market),
-                        "on ",
+                        " on ",
                         vm.toString(chainId)
                     )
                 )
@@ -531,6 +558,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
     }
 
     function validateMoonbeam(Addresses addresses) private {
+        vm.selectFork(MOONBEAM_FORK_ID);
+
         JsonSpecMoonbeam memory spec = moonbeamActions;
 
         IERC20 well = IERC20(addresses.getAddress("WELL"));
@@ -549,6 +578,15 @@ contract mipRewardsDistribution is Test, HybridProposal {
                 );
             }
         }
+
+        // assert xwell router allowance
+        assertEq(
+            well.allowance(
+                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
+                addresses.getAddress("xWELL_ROUTER")
+            ),
+            0
+        );
 
         address stkGovToken = addresses.getAddress("STK_GOVTOKEN");
 
@@ -628,7 +666,6 @@ contract mipRewardsDistribution is Test, HybridProposal {
         JsonSpecExternalChain memory spec = externalChainActions[chainId];
 
         // validate transfer calls
-
         IERC20 well = IERC20(addresses.getAddress("xWELL_PROXY"));
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
@@ -640,7 +677,6 @@ contract mipRewardsDistribution is Test, HybridProposal {
         }
 
         // validate emissions per second for the Safety Module
-
         IStakedWell stkWell = IStakedWell(addresses.getAddress("STK_GOVTOKEN"));
 
         (uint256 emissionsPerSecond, , ) = stkWell.assets(
@@ -649,7 +685,6 @@ contract mipRewardsDistribution is Test, HybridProposal {
         assertEq(emissionsPerSecond, spec.stkWellEmissionsPerSecond);
 
         // validate setRewardSpeed calls
-
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetMRDRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
 

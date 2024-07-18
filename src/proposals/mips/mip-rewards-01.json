@@ -12,6 +12,11 @@
                 "amount": 18000e18,
                 "network": 8453,
                 "target": "TEMPORAL_GOVERNOR"
+            },
+            {
+                "amount": 18000e18,
+                "network": 10,
+                "target": "TEMPORAL_GOVERNOR"
             }
         ],
         "setRewardSpeed": [
@@ -79,7 +84,39 @@
             {
                 "amount": 7000e18,
                 "from": "TEMPORAL_GOVERNOR",
-                "to": "AERODROME_RELAYER",
+                "to": "DEX_RELAYER",
+                "token": "xWELL_PROXY"
+            }
+        ]
+    },
+    "10": {
+        "setMRDSpeeds": [
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_USDC",
+                "newBorrowSpeed": 2,
+                "newEndTime": 1728751851,
+                "newSupplySpeed": 0.54e18
+            }
+        ],
+        "stkWellEmissionsPerSecond": 0.65e18,
+        "transferFrom": [
+            {
+                "amount": 5000e18,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "MULTI_REWARD_DISTRIBUTOR",
+                "token": "xWELL_PROXY"
+            },
+            {
+                "amount": 6000e18,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "UNITROLLER",
+                "token": "xWELL_PROXY"
+            },
+            {
+                "amount": 7000e18,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "DEX_RELAYER",
                 "token": "xWELL_PROXY"
             }
         ]

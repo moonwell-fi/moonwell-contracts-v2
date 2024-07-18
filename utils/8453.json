@@ -487,6 +487,6 @@
     {
         "addr": "0xD791292655A1d382FcC1a6Cb9171476cf91F2caa",
         "isContract": false,
-        "name": "AERODROME_RELAYER"
+        "name": "DEX_RELAYER"
     }
 ]
