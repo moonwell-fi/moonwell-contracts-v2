@@ -52,6 +52,8 @@ contract mipx01 is HybridProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 26;
     }
 
     function primaryForkId() public pure override returns (uint256) {
