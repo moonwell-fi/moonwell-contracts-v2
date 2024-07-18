@@ -18,6 +18,8 @@ contract WormholeRelayerAdapter {
 
     uint16 public senderChainId;
 
+    /// @notice we need this flag because there are tests where the target is
+    /// in the same chain and we need to skip the fork selection
     bool public isMultichainTest;
 
     uint256 public nativePriceQuote = 0.01 ether;

@@ -6,6 +6,7 @@ import "@forge-std/StdJson.sol";
 import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
 
+import {MToken} from "@protocol/MToken.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
@@ -16,6 +17,7 @@ import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposa
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
+import {MoonwellViewsV3} from "@protocol/views/MoonwellViewsV3.sol";
 
 interface StellaSwapRewarder {
     function poolRewardsPerSec(uint256 _pid) external view returns (uint256);
@@ -110,6 +112,9 @@ contract mipRewardsDistribution is Test, HybridProposal {
         // mock relayer so we can simulate bridging well
         WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
         vm.label(address(wormholeRelayer), "MockWormholeRelayer");
+
+        // we need to set this so that the relayer mock knows that for the next sendPayloadToEvm
+        // call it must switch forks
         wormholeRelayer.setIsMultichainTest(true);
 
         // set mock as the wormholeRelayer address on bridge adapter
@@ -127,40 +132,60 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         vm.selectFork(BASE_FORK_ID);
 
-        vm.store(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-            bytes32(uint256(153)),
-            encodedData
-        );
+        {
+            vm.store(
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+                bytes32(uint256(153)),
+                encodedData
+            );
+
+            IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
+            address mrd = addresses.getAddress("MRD_PROXY");
+            wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
+
+            address unitroller = addresses.getAddress("UNITROLLER");
+            wellBalancesBefore[unitroller] = xwell.balanceOf(unitroller);
+
+            address aerodromeRelayer = addresses.getAddress(
+                "AERODROME_RELAYER"
+            );
+            wellBalancesBefore[aerodromeRelayer] = xwell.balanceOf(
+                aerodromeRelayer
+            );
+        }
 
         vm.selectFork(primaryForkId());
 
-        vm.store(
-            address(wormholeBridgeAdapter),
-            bytes32(uint256(153)),
-            encodedData
-        );
+        {
+            vm.store(
+                address(wormholeBridgeAdapter),
+                bytes32(uint256(153)),
+                encodedData
+            );
 
-        // TODO remove this once new router is deployed
-        xWELLRouter router = new xWELLRouter(
-            addresses.getAddress("xWELL_PROXY"),
-            addresses.getAddress("GOVTOKEN"),
-            addresses.getAddress("xWELL_LOCKBOX"),
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-        );
+            // TODO remove this once new router is deployed
+            xWELLRouter router = new xWELLRouter(
+                addresses.getAddress("xWELL_PROXY"),
+                addresses.getAddress("GOVTOKEN"),
+                addresses.getAddress("xWELL_LOCKBOX"),
+                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+            );
 
-        addresses.changeAddress("xWELL_ROUTER", address(router), true);
+            addresses.changeAddress("xWELL_ROUTER", address(router), true);
 
-        IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
+            IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
 
-        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
-        wellBalancesBefore[governor] = well.balanceOf(governor);
+            address governor = addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_PROXY"
+            );
+            wellBalancesBefore[governor] = well.balanceOf(governor);
 
-        address unitroller = addresses.getAddress("UNITROLLER");
-        wellBalancesBefore[unitroller] = well.balanceOf(unitroller);
+            address unitroller = addresses.getAddress("UNITROLLER");
+            wellBalancesBefore[unitroller] = well.balanceOf(unitroller);
 
-        address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
-        wellBalancesBefore[reserve] = well.balanceOf(reserve);
+            address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
+            wellBalancesBefore[reserve] = well.balanceOf(reserve);
+        }
     }
 
     function name() external pure override returns (string memory) {
@@ -177,8 +202,9 @@ contract mipRewardsDistribution is Test, HybridProposal {
         buildExternalChainActions(addresses, BASE_CHAIN_ID);
     }
 
-    function validate(Addresses addresses, address) public view override {
+    function validate(Addresses addresses, address) public override {
         validateMoonbeam(addresses);
+        validateExternalChainActions(addresses, BASE_CHAIN_ID);
     }
 
     function saveMoonbeamActions(string memory data) public {
@@ -478,7 +504,7 @@ contract mipRewardsDistribution is Test, HybridProposal {
         );
     }
 
-    function validateMoonbeam(Addresses addresses) private view {
+    function validateMoonbeam(Addresses addresses) private {
         JsonSpecMoonbeam memory spec = moonbeamActions;
 
         IERC20 well = IERC20(addresses.getAddress("WELL"));
@@ -538,6 +564,12 @@ contract mipRewardsDistribution is Test, HybridProposal {
             addresses.getAddress("STELLASWAP_REWARDER")
         );
 
+        uint256 blockTimestamp = block.timestamp;
+
+        // block.timestamp must be in the current reward period to the getter
+        // functions return the correct values
+        vm.warp(addRewardInfo.endTimestamp - 1);
+
         assertEq(
             stellaSwap.poolRewardsPerSec(addRewardInfo.pid),
             addRewardInfo.rewardPerSec
@@ -546,6 +578,9 @@ contract mipRewardsDistribution is Test, HybridProposal {
             stellaSwap.currentEndTimestamp(addRewardInfo.pid),
             addRewardInfo.endTimestamp
         );
+
+        // warp back to current block.timestamp
+        vm.warp(blockTimestamp);
     }
 
     function validateExternalChainActions(
@@ -555,5 +590,56 @@ contract mipRewardsDistribution is Test, HybridProposal {
         vm.selectFork(chainId.toForkId());
 
         JsonSpecExternalChain memory spec = externalChainActions[chainId];
+
+        // validate transfer calls
+
+        IERC20 well = IERC20(addresses.getAddress("xWELL_PROXY"));
+
+        for (uint256 i = 0; i < spec.transferFroms.length; i++) {
+            address to = addresses.getAddress(spec.transferFroms[i].to);
+            assertEq(
+                well.balanceOf(to),
+                wellBalancesBefore[to] + spec.transferFroms[i].amount
+            );
+        }
+
+        // validate emissions per second for the Safety Module
+
+        IStakedWell stkWell = IStakedWell(addresses.getAddress("STK_GOVTOKEN"));
+
+        (uint256 emissionsPerSecond, , ) = stkWell.assets(
+            addresses.getAddress("STK_GOVTOKEN")
+        );
+        assertEq(emissionsPerSecond, spec.stkWellEmissionsPerSecond);
+
+        // validate setRewardSpeed calls
+
+        for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
+            SetMRDRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
+
+            address market = addresses.getAddress(setRewardSpeed.market);
+            MoonwellViewsV3 views = MoonwellViewsV3(
+                addresses.getAddress("MOONWELL_VIEWS_PROXY")
+            );
+
+            MoonwellViewsV3.MarketIncentives[] memory incentives = views
+                .getMarketIncentives(MToken(market));
+
+            for (uint256 j = 0; j < incentives.length; j++) {
+                if (
+                    incentives[j].token ==
+                    addresses.getAddress(setRewardSpeed.emissionToken)
+                ) {
+                    assertEq(
+                        incentives[j].supplyIncentivesPerSec,
+                        setRewardSpeed.newSupplySpeed
+                    );
+                    assertEq(
+                        incentives[j].borrowIncentivesPerSec,
+                        setRewardSpeed.newBorrowSpeed
+                    );
+                }
+            }
+        }
     }
 }
