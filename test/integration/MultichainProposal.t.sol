@@ -22,7 +22,7 @@ import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
 import {MockVoteCollection} from "@test/mock/MockVoteCollection.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
@@ -31,8 +31,9 @@ import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MockMultichainGovernor} from "@test/mock/MockMultichainGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
-import {TestMultichainProposals} from "@protocol/proposals/TestMultichainProposals.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
@@ -53,11 +54,10 @@ export DO_TEARDOWN=true
 export DO_VALIDATE=true
 
 */
-contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
+contract MultichainProposalTest is PostProposalCheck, Networks {
     using ChainIds for uint256;
 
     MultichainVoteCollection public voteCollection;
-    MultichainGovernor public governor;
     IWormhole public wormhole;
     Timelock public timelock;
     ERC20Votes public well;
@@ -113,48 +113,37 @@ contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
     uint128 public constant XWELL_RATE_LIMIT_PER_SECOND = 1158 * 1e18;
 
     function setUp() public override {
+        vm.makePersistent(address(this));
+
         MOONBEAM_FORK_ID.createForksAndSelect();
+        {
+            Addresses tmpAddresses = new Addresses();
+            vm.makePersistent(address(tmpAddresses));
+
+            xwell = xWELL(tmpAddresses.getAddress("xWELL_PROXY"));
+
+            xWELLBalanceLockboxPreProposal = xwell.balanceOf(
+                tmpAddresses.getAddress("xWELL_LOCKBOX")
+            );
+            xWELLTotalSupplyMoonbeamPreProposal = xwell.totalSupply();
+
+            {
+                vm.selectFork(BASE_FORK_ID);
+
+                xWELL baseWell = xWELL(tmpAddresses.getAddress("xWELL_PROXY"));
+                xWELLTotalSupplyBasePreProposal = baseWell.totalSupply();
+                xWELLBalanceMRDPreProposal = baseWell.balanceOf(
+                    tmpAddresses.getAddress("MRD_PROXY")
+                );
+            }
+        }
 
         super.setUp();
 
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
-
-        xWELLBalanceLockboxPreProposal = xwell.balanceOf(
-            addresses.getAddress("xWELL_LOCKBOX")
-        );
-        xWELLTotalSupplyMoonbeamPreProposal = xwell.totalSupply();
-
-        {
-            vm.selectFork(BASE_FORK_ID);
-
-            xWELL baseWell = xWELL(addresses.getAddress("xWELL_PROXY"));
-            xWELLTotalSupplyBasePreProposal = baseWell.totalSupply();
-            xWELLBalanceMRDPreProposal = baseWell.balanceOf(
-                addresses.getAddress("MRD_PROXY")
-            );
-        }
-
-        vm.selectFork(MOONBEAM_FORK_ID);
-
         proposalC = new mipm23c();
         proposalC.buildCalldata(addresses);
-
-        /// load proposals up into the TestMultichainProposal contract
-
-        address[] memory proposal = new address[](0);
-
-        mipx01 x01 = new mipx01();
-
-        if (x01.onchainProposalId() == 0) {
-            proposal = new address[](1);
-            proposal[0] = address(x01);
-        }
-
-        _initialize(proposal);
-
-        runProposals(false, true, true, true, true, true, true, true);
 
         /// switch back to Moonbeam after running proposals
         vm.selectFork(MOONBEAM_FORK_ID);
@@ -669,6 +658,8 @@ contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
+        uint256 startingGovernorBalance = address(governor).balance;
+
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -770,8 +761,8 @@ contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
 
             assertEq(
                 address(governor).balance,
-                0,
-                "incorrect governor balance"
+                startingGovernorBalance,
+                "incorrect governor balance, should not change"
             );
             assertEq(
                 governor.proposalThreshold(),
@@ -850,6 +841,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
         vm.warp(block.timestamp + 1);
 
         uint256 proposalId;
+        uint256 startingGovernorBalance = address(governor).balance;
 
         {
             address[] memory targets = new address[](1);
@@ -886,15 +878,6 @@ contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
                 0,
                 "incorrect proposal state"
             );
-
-            // assertTrue(
-            //     governor.userHasProposal(proposalId, address(this)),
-            //     "user has proposal"
-            // );
-            // assertTrue(
-            //     governor.proposalValid(proposalId),
-            //     "user does not have proposal"
-            // );
         }
 
         {
@@ -991,7 +974,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
 
             assertEq(
                 address(governor).balance,
-                0,
+                startingGovernorBalance,
                 "incorrect governor balance"
             );
             assertEq(
@@ -1034,6 +1017,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
         uint256 bridgeCost = governor.bridgeCostAll();
 
         vm.deal(address(this), bridgeCost);
+        uint256 startingGovernorBalance = address(governor).balance;
 
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
@@ -1139,7 +1123,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
 
             assertEq(
                 address(governor).balance,
-                0,
+                startingGovernorBalance,
                 "incorrect governor balance"
             );
         }
@@ -1637,6 +1621,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
         uint256 startingProposalId = governor.proposalCount();
+        uint256 startingGovernorBalance = address(governor).balance;
 
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
@@ -1707,7 +1692,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
         assertEq(address(this).balance, 0, "balance not 0 after broadcasting");
         assertEq(
             address(governor).balance,
-            0,
+            startingGovernorBalance,
             "balance not 0 after broadcasting"
         );
     }
@@ -2087,6 +2072,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
         uint256 startingProposalId = governor.proposalCount();
+        uint256 startingGovernorBalance = address(governor).balance;
 
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
@@ -2189,7 +2175,7 @@ contract MultichainProposalTest is Test, TestMultichainProposals, Networks {
 
             assertEq(
                 address(governor).balance,
-                0,
+                startingGovernorBalance,
                 "incorrect governor balance"
             );
             assertEq(uint256(governor.state(proposalId)), 5, "not in executed");
