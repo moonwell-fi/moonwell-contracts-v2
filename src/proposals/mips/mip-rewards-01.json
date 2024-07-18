@@ -33,7 +33,7 @@
         "stkWellEmissionsPerSecond": 0.65e18,
         "transferFrom": [
             {
-                "amount": 2788825500000000000000000,
+                "amount": 28068255e17,
                 "from": "MGLIMMER_MULTISIG",
                 "to": "MULTICHAIN_GOVERNOR_PROXY",
                 "token": "WELL"

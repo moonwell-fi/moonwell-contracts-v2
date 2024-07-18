@@ -78,8 +78,8 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
     mapping(uint256 chainid => JsonSpecExternalChain) externalChainActions;
 
-    /// we need to save this value to check if the DEX rewards amount was successfully transferred
-    uint256 governorWellBalanceBefore;
+    /// we need to save this value to check if the transferFrom amount was successfully transferred
+    mapping(address => uint256) public wellBalancesBefore;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -144,8 +144,16 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
         addresses.changeAddress("xWELL_ROUTER", address(router), true);
 
-        governorWellBalanceBefore = IERC20(addresses.getAddress("GOVTOKEN"))
-            .balanceOf(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"));
+        IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
+
+        address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        wellBalancesBefore[governor] = well.balanceOf(governor);
+
+        address unitroller = addresses.getAddress("UNITROLLER");
+        wellBalancesBefore[unitroller] = well.balanceOf(unitroller);
+
+        address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
+        wellBalancesBefore[reserve] = well.balanceOf(reserve);
     }
 
     function name() external pure override returns (string memory) {
@@ -164,33 +172,6 @@ contract mipRewardsDistribution is Test, HybridProposal {
 
     function validate(Addresses addresses, address) public view override {
         validateMoonbeam(addresses);
-    }
-
-    function run(Addresses addresses, address) public override {
-        require(actions.length != 0, "no governance proposal actions to run");
-
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        addresses.addRestriction(block.chainid.toMoonbeamChainId());
-        _runMoonbeamMultichainGovernor(
-            addresses,
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
-        );
-        addresses.removeRestriction();
-
-        if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
-            vm.selectFork(BASE_FORK_ID);
-
-            _runExtChain(addresses, actions.filter(ActionType.Base));
-        }
-
-        if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
-            vm.selectFork(OPTIMISM_FORK_ID);
-
-            _runExtChain(addresses, actions.filter(ActionType.Optimism));
-        }
-
-        vm.selectFork(uint256(primaryForkId()));
     }
 
     function saveMoonbeamActions(string memory data) public {
@@ -500,9 +481,12 @@ contract mipRewardsDistribution is Test, HybridProposal {
             address to = addresses.getAddress(transferFrom.to);
             if (to == addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")) {
                 //  amount must be transferred as part of the DEX rewards call
-                assertEq(well.balanceOf(to), governorWellBalanceBefore);
+                assertEq(well.balanceOf(to), wellBalancesBefore[to]);
             } else {
-                assertEq(well.balanceOf(to), transferFrom.amount);
+                assertEq(
+                    well.balanceOf(to),
+                    wellBalancesBefore[to] + transferFrom.amount
+                );
             }
         }
 
