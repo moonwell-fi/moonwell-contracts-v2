@@ -171,9 +171,18 @@ library ChainIds {
     }
 
     function createForksAndSelect(uint256 selectFork) internal {
-        vmInternal.createFork(vmInternal.envString("MOONBEAM_RPC_URL"));
-        vmInternal.createFork(vmInternal.envString("BASE_RPC_URL"));
-        vmInternal.createFork(vmInternal.envString("OP_RPC_URL"));
+        (bool success, ) = address(vmInternal).call(
+            abi.encodeWithSignature("activeFork()")
+        );
+        (bool successSwitchFork, ) = address(vmInternal).call(
+            abi.encodeWithSignature("switchFork(uint256)", selectFork)
+        );
+
+        if (!success || !successSwitchFork) {
+            vmInternal.createFork(vmInternal.envString("MOONBEAM_RPC_URL"));
+            vmInternal.createFork(vmInternal.envString("BASE_RPC_URL"));
+            vmInternal.createFork(vmInternal.envString("OP_RPC_URL"));
+        }
 
         vmInternal.selectFork(selectFork);
 
