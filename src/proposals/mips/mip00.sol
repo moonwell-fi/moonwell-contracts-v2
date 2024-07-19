@@ -109,7 +109,7 @@ contract mip00 is HybridProposal, Configs {
         _setProposalDescription(proposalDescription);
 
         /// MToken/Emission configurations
-        //_setMTokenConfiguration(vm.envString("MTOKENS_PATH"));
+        _setMTokenConfiguration(vm.envString("MTOKENS_PATH"));
 
         /// If deploying to mainnet again these values must be adjusted
         /// - endTimestamp must be in the future

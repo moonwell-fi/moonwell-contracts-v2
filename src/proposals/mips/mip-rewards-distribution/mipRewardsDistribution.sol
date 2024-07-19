@@ -393,7 +393,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         vm.toString(from),
                         " to ",
                         vm.toString(to),
-                        "amount ",
+                        " amount ",
                         vm.toString(transferFrom.amount)
                     )
                 )
@@ -544,7 +544,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         vm.toString(from),
                         " to ",
                         vm.toString(to),
-                        " amount",
+                        " amount ",
                         vm.toString(transferFrom.amount)
                     )
                 )
