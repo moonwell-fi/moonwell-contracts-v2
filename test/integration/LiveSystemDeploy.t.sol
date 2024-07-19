@@ -19,13 +19,14 @@ import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
 
 // Example:
 // export DESCRIPTION_PATH=src/proposals/mips/mip-o00/MIP-O00.md && export
 // export PRIMARY_FORK_ID=2 && export
 // EMISSIONS_PATH=src/proposals/mips/mip-o00/emissionConfig.json && export
 // MTOKENS_PATH="src/proposals/mips/mip-o00/mTokens.json"
-contract LiveSystemDeploy is Test {
+contract LiveSystemDeploy is Test, ExponentialNoError {
     using ChainIds for uint256;
 
     MultiRewardDistributor mrd;
@@ -36,7 +37,6 @@ contract LiveSystemDeploy is Test {
         public emissionsConfig;
 
     function setUp() public {
-        // TODO restrict chain ids passing the json here
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
@@ -70,9 +70,75 @@ contract LiveSystemDeploy is Test {
 
         for (uint256 i = 0; i < emissionConfigs.length; i++) {
             address mToken = addresses.getAddress(emissionConfigs[i].mToken);
+
             vm.warp(MToken(mToken).accrualBlockTimestamp());
+
             emissionsConfig[mToken].push(emissionConfigs[i]);
         }
+    }
+
+    function _mintMToken(address mToken, uint256 amount) internal {
+        address underlying = MErc20(mToken).underlying();
+
+        if (underlying == addresses.getAddress("WETH")) {
+            vm.deal(addresses.getAddress("WETH"), amount);
+        }
+        deal(underlying, address(this), amount);
+        IERC20(underlying).approve(mToken, amount);
+
+        assertEq(
+            MErc20Delegator(payable(mToken)).mint(amount),
+            0,
+            "Mint failed"
+        );
+    }
+
+    function _calculateBorrowRewards(
+        MToken mToken,
+        address emissionToken,
+        address sender
+    ) private view returns (uint256 expectedRewards) {
+        MultiRewardDistributorCommon.MarketConfig memory config = mrd
+            .getConfigForMarket(mToken, emissionToken);
+
+        uint256 deltaTimestamp;
+        if (vm.getBlockTimestamp() > config.endTime) {
+            deltaTimestamp = config.endTime - config.borrowGlobalTimestamp;
+        } else {
+            deltaTimestamp =
+                vm.getBlockTimestamp() -
+                config.borrowGlobalTimestamp;
+        }
+
+        Exp memory marketBorrowIndex = Exp({mantissa: mToken.borrowIndex()});
+
+        uint256 totalBorrowed = div_(mToken.totalBorrows(), marketBorrowIndex);
+
+        uint256 totalAccrued = mul_(
+            deltaTimestamp,
+            config.borrowEmissionsPerSec
+        );
+
+        Double memory updateIndex = totalBorrowed > 0
+            ? fraction(totalAccrued, totalBorrowed)
+            : Double({mantissa: 0});
+
+        uint224 newGlobalIndex = safe224(
+            add_(Double({mantissa: config.borrowGlobalIndex}), updateIndex)
+                .mantissa,
+            "new index exceeds 224 bits"
+        );
+
+        // User borrow
+        uint256 userBorrow = div_(
+            mToken.borrowBalanceStored(sender),
+            marketBorrowIndex
+        );
+
+        // 1e36 is the initial default index
+        uint256 deltaUser = sub_(newGlobalIndex, 1e36);
+
+        expectedRewards = mul_(deltaUser, userBorrow) / 1e36;
     }
 
     function testGuardianCanPauseTemporalGovernor() public {
@@ -241,22 +307,6 @@ contract LiveSystemDeploy is Test {
                 "Borrow emissions incorrect"
             );
         }
-    }
-
-    function _mintMToken(address mToken, uint256 amount) internal {
-        address underlying = MErc20(mToken).underlying();
-
-        if (underlying == addresses.getAddress("WETH")) {
-            vm.deal(addresses.getAddress("WETH"), amount);
-        }
-        deal(underlying, address(this), amount);
-        IERC20(underlying).approve(mToken, amount);
-
-        assertEq(
-            MErc20Delegator(payable(mToken)).mint(amount),
-            0,
-            "Mint failed"
-        );
     }
 
     function testFuzz_MintMTokenSucceeds(
@@ -458,13 +508,22 @@ contract LiveSystemDeploy is Test {
 
         address sender = address(this);
 
-        address[] memory mTokens = new address[](1);
-        mTokens[0] = mToken;
+        {
+            address[] memory mTokens = new address[](1);
+            mTokens[0] = mToken;
 
-        comptroller.enterMarkets(mTokens);
+            comptroller.enterMarkets(mTokens);
+        }
+
         assertTrue(
             comptroller.checkMembership(sender, MToken(mToken)),
             "Membership check failed"
+        );
+
+        assertEq(
+            comptroller.borrowAllowed(mToken, sender, borrowAmount),
+            0,
+            "Borrow allowed"
         );
 
         assertEq(
@@ -473,24 +532,25 @@ contract LiveSystemDeploy is Test {
             "Borrow failed"
         );
 
-        vm.warp(block.timestamp + toWarp);
+        vm.warp(vm.getBlockTimestamp() + toWarp);
 
         Configs.EmissionConfig[] memory emissionConfig = emissionsConfig[
             mToken
         ];
 
         for (uint256 i = 0; i < emissionConfig.length; i++) {
-            uint256 expectedReward = (toWarp *
-                emissionConfig[i].borrowEmissionsPerSec *
-                MErc20(mToken).borrowBalanceCurrent(address(this))) /
-                MErc20(mToken).totalBorrows();
+            uint256 expectedReward = _calculateBorrowRewards(
+                MToken(mToken),
+                emissionConfig[i].emissionToken,
+                sender
+            );
 
             assertApproxEqRel(
                 mrd
-                .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
+                .getOutstandingRewardsForUser(MToken(mToken), sender)[0]
                     .totalAmount,
                 expectedReward,
-                1e17,
+                0.1e18,
                 "Total rewards not correct"
             );
 
@@ -499,7 +559,7 @@ contract LiveSystemDeploy is Test {
                 .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
                     .borrowSide,
                 expectedReward,
-                1e17,
+                0.1e18,
                 "Borrow rewards not correct"
             );
         }
@@ -557,13 +617,15 @@ contract LiveSystemDeploy is Test {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = supplyAmount / 3;
+        {
+            uint256 borrowAmount = supplyAmount / 3;
 
-        assertEq(
-            MErc20Delegator(payable(mToken)).borrow(borrowAmount),
-            0,
-            "Borrow failed"
-        );
+            assertEq(
+                MErc20Delegator(payable(mToken)).borrow(borrowAmount),
+                0,
+                "Borrow failed"
+            );
+        }
 
         vm.warp(block.timestamp + toWarp);
 
@@ -572,21 +634,28 @@ contract LiveSystemDeploy is Test {
         ];
 
         for (uint256 i = 0; i < emissionConfig.length; i++) {
+            MultiRewardDistributorCommon.MarketConfig memory config = mrd
+                .getConfigForMarket(
+                    MToken(mToken),
+                    emissionConfig[i].emissionToken
+                );
+
             uint256 expectedSupplyReward = (toWarp *
-                emissionConfig[i].supplyEmissionPerSec *
+                config.supplyEmissionsPerSec *
                 supplyAmount) / MErc20(mToken).totalSupply();
 
-            uint256 expectedBorrowReward = (toWarp *
-                emissionConfig[i].borrowEmissionsPerSec *
-                MErc20(mToken).borrowBalanceCurrent(address(this))) /
-                MErc20(mToken).totalBorrows();
+            uint256 expectedBorrowReward = _calculateBorrowRewards(
+                MToken(mToken),
+                emissionConfig[i].emissionToken,
+                sender
+            );
 
             assertApproxEqRel(
                 mrd
                 .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
                     .totalAmount,
                 expectedSupplyReward + expectedBorrowReward,
-                1e17,
+                0.1e18,
                 "Total rewards not correct"
             );
 
@@ -595,7 +664,7 @@ contract LiveSystemDeploy is Test {
                 .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
                     .supplySide,
                 expectedSupplyReward,
-                1e17,
+                0.1e18,
                 "Supply rewards not correct"
             );
 
@@ -604,7 +673,7 @@ contract LiveSystemDeploy is Test {
                 .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
                     .borrowSide,
                 expectedBorrowReward,
-                1e17,
+                0.1e18,
                 "Borrow rewards not correct"
             );
         }
@@ -675,6 +744,8 @@ contract LiveSystemDeploy is Test {
             "Borrow failed"
         );
 
+        vm.warp(vm.getBlockTimestamp() + toWarp);
+
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(
                 MToken(mToken),
@@ -690,19 +761,11 @@ contract LiveSystemDeploy is Test {
                 MToken(mToken).totalSupply();
         }
 
-        uint256 expectedBorrowReward;
-        {
-            uint256 userCurrentBorrow = MToken(mToken).borrowBalanceCurrent(
-                address(this)
-            );
-
-            // calculate expected borrow reward
-            expectedBorrowReward =
-                ((toWarp * config.borrowEmissionsPerSec) * userCurrentBorrow) /
-                MToken(mToken).totalBorrows();
-        }
-
-        vm.warp(block.timestamp + toWarp);
+        uint256 expectedBorrowReward = _calculateBorrowRewards(
+            MToken(mToken),
+            emissionsConfig[mToken][0].emissionToken,
+            address(this)
+        );
 
         if (token != addresses.getAddress("WETH")) {
             /// borrower is now underwater on loan
@@ -767,22 +830,22 @@ contract LiveSystemDeploy is Test {
             rewardsBefore[0].totalAmount +
                 expectedSupplyReward +
                 expectedBorrowReward,
-            1e17,
-            "Total rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
+            0.1e18,
+            "Total rewards wrong"
+        );
 
         assertApproxEqRel(
             rewardsAfter[0].borrowSide,
             rewardsBefore[0].borrowSide + expectedBorrowReward,
-            1e17,
-            "Borrow side rewards not within 1%"
-        ); /// allow 1% error, anything more causes test failure
+            0.1e18,
+            "Borrow side rewards wrong"
+        );
 
         assertApproxEqRel(
             rewardsAfter[0].supplySide,
             rewardsBefore[0].supplySide + expectedSupplyReward,
             1e17,
-            "Supply side rewards not within 1%"
+            "Supply side rewards not within 10%"
         );
     }
 

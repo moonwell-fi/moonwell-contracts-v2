@@ -6,6 +6,7 @@ import {Test} from "@forge-std/Test.sol";
 abstract contract Networks is Test {
     struct Network {
         uint256 chainId;
+        uint256 forkId;
         string name;
         uint16 wormholeChainId;
     }
