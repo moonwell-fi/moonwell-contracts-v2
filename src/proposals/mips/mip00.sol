@@ -583,9 +583,6 @@ contract mip00 is HybridProposal, Configs {
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
             block.chainid
         );
-        MultiRewardDistributor mrd = MultiRewardDistributor(
-            addresses.getAddress("MRD_PROXY")
-        );
 
         unchecked {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
