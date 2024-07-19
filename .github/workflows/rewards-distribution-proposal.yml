@@ -40,7 +40,10 @@ jobs:
               issue_number: issue_number
             });
 
-            const actionComments = comments.data.filter(comment => comment.user.login === 'github-actions[bot]');
+            const actionComments = comments.data.filter(comment => 
+              comment.user.login === 'github-actions[bot]' &&
+              comment.body.includes('Rewards Distribution Proposal')
+            );
 
             if (actionComments.length === 0) {
               return;
@@ -67,7 +70,7 @@ jobs:
                 github.rest.issues.createComment({
                    ...context.repo,
                    issue_number: prNumber,
-                   body: `### Proposal output for ${output.file}:\n\`\`\`\n${output.output}\n\`\`\``
+                   body: `### Rewards Distribution Proposal ${output.file}:\n\`\`\`\n${output.output}\n\`\`\``
                    });
              }
 
