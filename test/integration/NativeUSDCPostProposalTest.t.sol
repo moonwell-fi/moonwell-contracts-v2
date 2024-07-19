@@ -59,12 +59,13 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
     }
 
     function testSupplyingOverSupplyCapFailsUsdc() public {
+        uint256 mintAmount = 100_000_000e18;
         address underlying = address(mUSDC.underlying());
-        deal(underlying, address(this), 50_000_000e6);
+        deal(underlying, address(this), mintAmount);
 
-        IERC20(underlying).approve(address(mUSDC), 50_000_000e6);
+        IERC20(underlying).approve(address(mUSDC), mintAmount);
         vm.expectRevert("market supply cap reached");
-        mUSDC.mint(50_000_000e6);
+        mUSDC.mint(mintAmount);
     }
 
     function testBorrowingOverBorrowCapFailsUsdc() public {

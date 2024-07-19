@@ -19,8 +19,8 @@ if [[ ! -z "$CHANGED_FILES" ]]; then
         if [[ $file == "$FOLDER"/*.sol && ! " ${EXCLUDED_FILES[@]} " =~ " ${file} " ]]; then
             echo "Processing file: $file"
 
-            # Extract the number following 'm', 'b', or 'o' before '.sol' and exclude files with letters after the number
-            if [[ $file =~ [bmo]([0-9]+)\.sol$ ]]; then
+            # Extract the number following 'm', 'b', 'o', or 'x' before '.sol' and exclude files with letters after the number
+            if [[ $file =~ [bmox]([0-9]+)\.sol$ ]]; then
                 number=${BASH_REMATCH[1]}
                 number_int=$(echo "$number" | sed 's/^0*//') # Remove leading zeros
             else
