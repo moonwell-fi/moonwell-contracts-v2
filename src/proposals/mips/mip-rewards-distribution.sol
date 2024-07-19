@@ -316,6 +316,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         externalChainActions[chainId].stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
+        uint256 totalEpochRewards = 0;
+
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             // check for duplications
             for (
@@ -340,12 +342,32 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     "Duplication in setRewardSpeeds"
                 );
             }
+
+            uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
+                (block.timestamp + spec.setRewardSpeed[i].newEndTime);
+
+            uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                (block.timestamp + spec.setRewardSpeed[i].newEndTime);
+
+            totalEpochRewards += supplyAmount + borrowAmount;
+
             externalChainActions[chainId].setRewardSpeed.push(
                 spec.setRewardSpeed[i]
             );
         }
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
+            if (
+                addresses.getAddress(spec.transferFroms[i].to) ==
+                addresses.getAddress("MRD_PROXY")
+            ) {
+                assertApproxEqRel(
+                    spec.transferFroms[i].amount,
+                    totalEpochRewards,
+                    0.1e18,
+                    "Transfer amount must be close to the total rewards for the epoch"
+                );
+            }
             externalChainActions[chainId].transferFroms.push(
                 spec.transferFroms[i]
             );
