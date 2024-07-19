@@ -578,6 +578,34 @@ contract mip00 is HybridProposal, Configs {
                 );
             }
         }
+
+        // TODO remove this after mipo00 deployment
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
+            block.chainid
+        );
+        MultiRewardDistributor mrd = MultiRewardDistributor(
+            addresses.getAddress("MRD_PROXY")
+        );
+
+        unchecked {
+            for (uint256 i = 0; i < emissionConfig.length; i++) {
+                EmissionConfig memory config = emissionConfig[i];
+
+                _pushAction(
+                    addresses.getAddress("MRD_PROXY"),
+                    abi.encodeWithSignature(
+                        "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
+                        addresses.getAddress(config.mToken),
+                        addresses.getAddress(config.owner),
+                        config.emissionToken,
+                        config.supplyEmissionPerSec,
+                        config.borrowEmissionsPerSec,
+                        config.endTime
+                    ),
+                    "Add emission config"
+                );
+            }
+        }
     }
 
     function run(Addresses addresses, address) public override {

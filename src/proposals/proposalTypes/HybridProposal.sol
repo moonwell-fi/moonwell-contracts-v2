@@ -731,7 +731,7 @@ abstract contract HybridProposal is
                 /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
                 emit LogMessagePublished(
                     address(governor),
-                    nextSequence,
+                    nextSequence++,
                     nonce, /// nonce is hardcoded at 0 in HybridProposal.sol
                     temporalGovExecDataBase,
                     consistencyLevel /// consistency level is hardcoded at 200 in HybridProposal.sol
@@ -745,7 +745,7 @@ abstract contract HybridProposal is
                 /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
                 emit LogMessagePublished(
                     address(governor),
-                    ++nextSequence,
+                    nextSequence,
                     nonce, /// nonce is hardcoded at 0 in HybridProposal.sol
                     temporalGovExecDataOptimism,
                     consistencyLevel /// consistency level is hardcoded at 200 in HybridProposal.sol
