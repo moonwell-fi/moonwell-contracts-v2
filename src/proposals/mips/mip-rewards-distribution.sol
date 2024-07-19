@@ -7,7 +7,6 @@ import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
 
 import {mipx01} from "@proposals/mips/mip-x01/mip-x01.sol";
-import {mipo01} from "@proposals/mips/mip-o01/mip-o01.sol";
 import {mip00} from "@proposals/mips/mip00.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
@@ -172,7 +171,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
         }
 
-        // TODO remove this once o00 and x01 gets executed
+        // TODO remove this once o00  gets executed
         mip00 o00 = new mip00();
         vm.makePersistent(address(o00));
         vm.selectFork(o00.primaryForkId());
@@ -180,12 +179,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         o00.preBuildMock(addresses);
         o00.build(addresses);
         o00.run(addresses, address(this));
-
-        mipo01 o01 = new mipo01();
-        vm.makePersistent(address(o01));
-        vm.selectFork(o01.primaryForkId());
-        o01.build(addresses);
-        o01.run(addresses, address(this));
 
         vm.selectFork(primaryForkId());
 
