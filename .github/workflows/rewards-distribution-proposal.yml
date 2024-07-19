@@ -1,4 +1,4 @@
-name: Optimism Integration Tests
+name: Run Rewards Distribution Proposal
 
 on: [pull_request]
 
@@ -14,7 +14,7 @@ env:
 
 jobs:
   run-base-tests:
-    name: optimism-integration-tests
+    name: rewards-distribution-proposal
     runs-on: ubuntu-latest
     if: env.MIP_REWARDS_ID == '0'
 
