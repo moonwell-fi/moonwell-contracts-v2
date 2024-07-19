@@ -7,6 +7,8 @@ env:
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
   DESCRIPTION_PATH: "src/proposals/mips/mip-rewards-distribution/MIP-REWARDS-DISTRIBUTION-EXAMPLE.md"
+  MTOKENS_PATH: "src/proposals/mips/mip-o00/mTokens.json" # TODO remove this
+  # after o00 execution
   EMISSIONS_PATH: "src/proposals/mips/mip-o00/emissionConfigWell.json" # TODO remove
   # this after o00 execution
   PRIMARY_FORK_ID: 0 
