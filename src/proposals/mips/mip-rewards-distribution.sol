@@ -118,14 +118,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             vm.envString("MIP_REWARDS_PATH")
         );
 
-        for (uint256 i = 0; i < networks.length; i++) {
-            uint256 chainId = networks[i].chainId;
-            if (chainId == MOONBEAM_CHAIN_ID) {
-                saveMoonbeamActions(addresses, encodedJson);
-            } else {
-                saveExternalChainActions(addresses, encodedJson, chainId);
-            }
-        }
+        saveMoonbeamActions(addresses, encodedJson);
 
         // mock relayer so we can simulate bridging well
         WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
@@ -156,6 +149,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             }
 
             vm.selectFork(chainId.toForkId());
+
+            saveExternalChainActions(addresses, encodedJson, chainId);
 
             // stores the wormhole mock address in the wormholeRelayer variable
             vm.store(
@@ -287,14 +282,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 SetRewardSpeed memory existingSetRewardSpeed = moonbeamActions
                     .setRewardSpeed[j];
 
-                if (
-                    addresses.getAddress(existingSetRewardSpeed.market) ==
-                    addresses.getAddress(setRewardSpeed.market) &&
-                    existingSetRewardSpeed.rewardType ==
-                    setRewardSpeed.rewardType
-                ) {
-                    revert("Duplication in setRewardSpeed");
-                }
+                require(
+                    addresses.getAddress(existingSetRewardSpeed.market) !=
+                        addresses.getAddress(setRewardSpeed.market) ||
+                        existingSetRewardSpeed.rewardType !=
+                        setRewardSpeed.rewardType,
+                    "Duplication in setRewardSpeeds"
+                );
             }
 
             moonbeamActions.setRewardSpeed.push(setRewardSpeed);
@@ -334,16 +328,17 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         chainId
                     ].setRewardSpeed[j];
 
-                if (
-                    addresses.getAddress(existingSetRewardSpeed.market) ==
-                    addresses.getAddress(spec.setRewardSpeed[i].market) &&
-                    addresses.getAddress(
-                        existingSetRewardSpeed.emissionToken
-                    ) ==
-                    addresses.getAddress(spec.setRewardSpeed[i].emissionToken)
-                ) {
-                    revert("Duplication in setMRDSpeeds");
-                }
+                require(
+                    addresses.getAddress(existingSetRewardSpeed.market) !=
+                        addresses.getAddress(spec.setRewardSpeed[i].market) ||
+                        addresses.getAddress(
+                            existingSetRewardSpeed.emissionToken
+                        ) !=
+                        addresses.getAddress(
+                            spec.setRewardSpeed[i].emissionToken
+                        ),
+                    "Duplication in setRewardSpeeds"
+                );
             }
             externalChainActions[chainId].setRewardSpeed.push(
                 spec.setRewardSpeed[i]
