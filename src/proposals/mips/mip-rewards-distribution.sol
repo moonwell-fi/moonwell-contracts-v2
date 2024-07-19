@@ -101,19 +101,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         );
 
         _setProposalDescription(proposalDescription);
-
-        string memory encodedJson = vm.readFile(
-            vm.envString("MIP_REWARDS_PATH")
-        );
-
-        for (uint256 i = 0; i < networks.length; i++) {
-            uint256 chainId = networks[i].chainId;
-            if (chainId == MOONBEAM_CHAIN_ID) {
-                saveMoonbeamActions(encodedJson);
-            } else {
-                saveExternalChainActions(encodedJson, chainId);
-            }
-        }
     }
 
     function name() external pure override returns (string memory) {
@@ -126,6 +113,19 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
     function initProposal(Addresses addresses) public override {
         etch(vm, addresses);
+
+        string memory encodedJson = vm.readFile(
+            vm.envString("MIP_REWARDS_PATH")
+        );
+
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            if (chainId == MOONBEAM_CHAIN_ID) {
+                saveMoonbeamActions(addresses, encodedJson);
+            } else {
+                saveExternalChainActions(addresses, encodedJson, chainId);
+            }
+        }
 
         // mock relayer so we can simulate bridging well
         WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
@@ -254,7 +254,10 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         }
     }
 
-    function saveMoonbeamActions(string memory data) public {
+    function saveMoonbeamActions(
+        Addresses addresses,
+        string memory data
+    ) public {
         string memory chain = ".1284";
 
         bytes memory parsedJson = vm.parseJson(data, chain);
@@ -273,7 +276,28 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         }
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
-            moonbeamActions.setRewardSpeed.push(spec.setRewardSpeed[i]);
+            SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
+
+            // check for duplications
+            for (
+                uint256 j = 0;
+                j < moonbeamActions.setRewardSpeed.length;
+                j++
+            ) {
+                SetRewardSpeed memory existingSetRewardSpeed = moonbeamActions
+                    .setRewardSpeed[j];
+
+                if (
+                    addresses.getAddress(existingSetRewardSpeed.market) ==
+                    addresses.getAddress(setRewardSpeed.market) &&
+                    existingSetRewardSpeed.rewardType ==
+                    setRewardSpeed.rewardType
+                ) {
+                    revert("Duplication in setRewardSpeed");
+                }
+            }
+
+            moonbeamActions.setRewardSpeed.push(setRewardSpeed);
         }
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
@@ -282,6 +306,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
     }
 
     function saveExternalChainActions(
+        Addresses addresses,
         string memory data,
         uint256 chainId
     ) private {
@@ -298,6 +323,28 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             .stkWellEmissionsPerSecond;
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
+            // check for duplications
+            for (
+                uint256 j = 0;
+                j < externalChainActions[chainId].setRewardSpeed.length;
+                j++
+            ) {
+                SetMRDRewardSpeed
+                    memory existingSetRewardSpeed = externalChainActions[
+                        chainId
+                    ].setRewardSpeed[j];
+
+                if (
+                    addresses.getAddress(existingSetRewardSpeed.market) ==
+                    addresses.getAddress(spec.setRewardSpeed[i].market) &&
+                    addresses.getAddress(
+                        existingSetRewardSpeed.emissionToken
+                    ) ==
+                    addresses.getAddress(spec.setRewardSpeed[i].emissionToken)
+                ) {
+                    revert("Duplication in setMRDSpeeds");
+                }
+            }
             externalChainActions[chainId].setRewardSpeed.push(
                 spec.setRewardSpeed[i]
             );
