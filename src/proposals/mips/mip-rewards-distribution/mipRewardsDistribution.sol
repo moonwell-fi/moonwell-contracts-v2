@@ -194,13 +194,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             x01.build(addresses);
             x01.run(addresses, address(this));
 
-            xWELLRouter router = new xWELLRouter(
-                addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("GOVTOKEN"),
-                addresses.getAddress("xWELL_LOCKBOX"),
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-            );
-
             addresses.changeAddress("xWELL_ROUTER", address(router), true);
 
             // save well balances before so we can check if the transferFrom was successful
