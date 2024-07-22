@@ -116,7 +116,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             vm.envString("MIP_REWARDS_PATH")
         );
 
-        saveMoonbeamActions(addresses, encodedJson);
+        _saveMoonbeamActions(addresses, encodedJson);
 
         // mock relayer so we can simulate bridging well
         WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
@@ -148,7 +148,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
             vm.selectFork(chainId.toForkId());
 
-            saveExternalChainActions(addresses, encodedJson, chainId);
+            _saveExternalChainActions(addresses, encodedJson, chainId);
 
             // stores the wormhole mock address in the wormholeRelayer variable
             vm.store(
@@ -223,9 +223,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             if (chainId == MOONBEAM_CHAIN_ID) {
-                buildMoonbeamActions(addresses);
+                _buildMoonbeamActions(addresses);
             } else {
-                buildExternalChainActions(addresses, chainId);
+                _buildExternalChainActions(addresses, chainId);
             }
         }
     }
@@ -234,17 +234,17 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             if (chainId == MOONBEAM_CHAIN_ID) {
-                validateMoonbeam(addresses);
+                _validateMoonbeam(addresses);
             } else {
-                validateExternalChainActions(addresses, chainId);
+                _validateExternalChainActions(addresses, chainId);
             }
         }
     }
 
-    function saveMoonbeamActions(
+    function _saveMoonbeamActions(
         Addresses addresses,
         string memory data
-    ) public {
+    ) private {
         string memory chain = ".1284";
 
         bytes memory parsedJson = vm.parseJson(data, chain);
@@ -291,7 +291,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         }
     }
 
-    function saveExternalChainActions(
+    function _saveExternalChainActions(
         Addresses addresses,
         string memory data,
         uint256 chainId
@@ -366,7 +366,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         }
     }
 
-    function buildMoonbeamActions(Addresses addresses) private {
+    function _buildMoonbeamActions(Addresses addresses) private {
         vm.selectFork(MOONBEAM_FORK_ID);
 
         JsonSpecMoonbeam memory spec = moonbeamActions;
@@ -514,7 +514,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         );
     }
 
-    function buildExternalChainActions(
+    function _buildExternalChainActions(
         Addresses addresses,
         uint256 chainId
     ) private {
@@ -655,7 +655,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         );
     }
 
-    function validateMoonbeam(Addresses addresses) private {
+    function _validateMoonbeam(Addresses addresses) private {
         vm.selectFork(MOONBEAM_FORK_ID);
 
         JsonSpecMoonbeam memory spec = moonbeamActions;
@@ -755,7 +755,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         vm.warp(blockTimestamp);
     }
 
-    function validateExternalChainActions(
+    function _validateExternalChainActions(
         Addresses addresses,
         uint256 chainId
     ) private {
