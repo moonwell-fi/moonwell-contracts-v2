@@ -3,14 +3,19 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {MockERC20Params} from "@test/mock/MockERC20Params.sol";
+import {etch} from "@proposals/utils/PrecompileEtching.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m27/mip-m27.sol:mipm27
 contract mipm27 is HybridProposal, ParameterValidation {
+    using ChainIds for uint256;
+    using ProposalActions for *;
+
     string public constant override name = "MIP-M27";
 
     uint256 public constant NEW_MXC_USDC_RESERVE_FACTOR = 0.30e18;
@@ -26,138 +31,53 @@ contract mipm27 is HybridProposal, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-m27/MIP-M27.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 13;
     }
 
-    /// @notice proposal's actions happen only on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {
-        /// DO NOT ADD any mock tokens to Addresses object, just use them to etch bytecode
-
-        {
-            MockERC20Params mockUSDT = new MockERC20Params(
-                "Mock xcUSDT",
-                "xcUSDT"
-            );
-            address mockUSDTAddress = address(mockUSDT);
-            uint256 codeSize;
-            assembly {
-                codeSize := extcodesize(mockUSDTAddress)
-            }
-
-            bytes memory runtimeBytecode = new bytes(codeSize);
-
-            assembly {
-                extcodecopy(
-                    mockUSDTAddress,
-                    add(runtimeBytecode, 0x20),
-                    0,
-                    codeSize
-                )
-            }
-
-            vm.etch(addresses.getAddress("xcUSDT"), runtimeBytecode);
-
-            MockERC20Params(addresses.getAddress("xcUSDT")).setSymbol("xcUSDT");
-
-            MockERC20Params(addresses.getAddress("xcUSDT")).symbol();
-        }
-
-        {
-            MockERC20Params mockUSDC = new MockERC20Params(
-                "USD Coin",
-                "xcUSDC"
-            );
-            address mockUSDCAddress = address(mockUSDC);
-            uint256 codeSize;
-            assembly {
-                codeSize := extcodesize(mockUSDCAddress)
-            }
-
-            bytes memory runtimeBytecode = new bytes(codeSize);
-
-            assembly {
-                extcodecopy(
-                    mockUSDCAddress,
-                    add(runtimeBytecode, 0x20),
-                    0,
-                    codeSize
-                )
-            }
-
-            vm.etch(addresses.getAddress("xcUSDC"), runtimeBytecode);
-
-            MockERC20Params(addresses.getAddress("xcUSDC")).setSymbol("xcUSDC");
-
-            MockERC20Params(addresses.getAddress("xcUSDC")).symbol();
-        }
-
-        {
-            MockERC20Params mockDot = new MockERC20Params(
-                "Mock xcDOT",
-                "xcDOT"
-            );
-            address mockDotAddress = address(mockDot);
-            uint256 codeSize;
-            assembly {
-                codeSize := extcodesize(mockDotAddress)
-            }
-
-            bytes memory runtimeBytecode = new bytes(codeSize);
-
-            assembly {
-                extcodecopy(
-                    mockDotAddress,
-                    add(runtimeBytecode, 0x20),
-                    0,
-                    codeSize
-                )
-            }
-
-            vm.etch(addresses.getAddress("xcDOT"), runtimeBytecode);
-            MockERC20Params(addresses.getAddress("xcDOT")).setSymbol("xcDOT");
-
-            MockERC20Params(addresses.getAddress("xcDOT")).symbol();
-        }
+        etch(vm, addresses);
     }
 
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
         /// Moonbeam actions
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_MXC_USDT_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcUSDT to updated reserve factor",
-            true
+            ActionType.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_MXC_USDC_RESERVE_FACTOR
             ),
             "Set reserve factor for mxcUSDC to updated reserve factor",
-            true
+            ActionType.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_USDCWH_RESERVE_FACTOR
             ),
             "Set reserve factor for USDCwh to updated reserve factor",
-            true
+            ActionType.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -165,10 +85,10 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 NEW_M_USDCWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of mUSDCwh",
-            true
+            ActionType.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -176,10 +96,10 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 NEW_M_WBTCWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of MOONWELL_mWBTC",
-            true
+            ActionType.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -187,54 +107,54 @@ contract mipm27 is HybridProposal, ParameterValidation {
                 NEW_M_ETHWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of MOONWELL_mETH",
-            true
+            ActionType.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_mxcUSDC")
+                0x0568a3aeb8E78262dEFf75ee68fAC20ae35ffA91
             ),
             "Set interest rate model for mxcUSDC to updated rate model",
-            true
+            ActionType.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mxcUSDT"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_mxcUSDT")
+                0xfC7b55cc7C5BD3aE89aC679c7250AB30754C5cC5
             ),
             "Set interest rate model for mxcUSDT to updated rate model",
-            true
+            ActionType.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mFRAX"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_mFRAX")
+                0x0f36Dda2b47984434051AeCAa5F9587DEA7f95B7
             ),
             "Set interest rate model for mFRAX to updated rate model",
-            true
+            ActionType.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
                 addresses.getAddress("JUMP_RATE_IRM_mUSDCwh")
             ),
             "Set interest rate model for mUSDCwh to updated rate model",
-            true
+            ActionType.Moonbeam
         );
     }
 
     function run(Addresses addresses, address) public override {
         /// safety check to ensure no base actions are run
         require(
-            baseActions.length == 0,
+            actions.proposalActionTypeCount(ActionType.Base) == 0,
             "MIP-M27: should have no base actions"
         );
 

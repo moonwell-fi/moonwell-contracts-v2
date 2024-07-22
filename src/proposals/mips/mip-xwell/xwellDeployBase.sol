@@ -5,19 +5,23 @@ import {ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/pr
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {ChainIds, BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// how to run locally:
 ///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployBase.sol:xwellDeployBase --fork-url base
 /// @dev do not use MIP as a base to fork off of, it will not work
-contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
+contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
+    using ChainIds for uint256;
+
     /// @notice the name of the proposal
     string public constant override name = "MIP xWELL Token Creation Base";
 
@@ -34,9 +38,8 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {
@@ -56,10 +59,9 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
             (
                 address xwellLogic,
                 address xwellProxy,
-                ,
                 address wormholeAdapterLogic,
                 address wormholeAdapter
-            ) = deployBaseSystem(existingProxyAdmin);
+            ) = deployWellSystem(existingProxyAdmin);
 
             MintLimits.RateLimitMidPointInfo[]
                 memory limits = new MintLimits.RateLimitMidPointInfo[](1);
@@ -78,28 +80,34 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
                 pauseGuardian
             );
 
+            /// trust same address on Moonbeam
+            address[] memory trustedSenders = new address[](1);
+            trustedSenders[0] = wormholeAdapter;
+
+            uint16[] memory trustedChainIds = new uint16[](1);
+            trustedChainIds[0] = block.chainid.toMoonbeamWormholeChainId();
+
             initializeWormholeAdapter(
                 wormholeAdapter,
                 xwellProxy,
                 temporalGov,
                 relayer,
-                uint16(chainIdToWormHoleId[block.chainid])
+                trustedChainIds,
+                trustedSenders
             );
 
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                wormholeAdapter,
-                true
+                wormholeAdapter
             );
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
-                wormholeAdapterLogic,
-                true
+                wormholeAdapterLogic
             );
-            addresses.addAddress("xWELL_LOGIC", xwellLogic, true);
-            addresses.addAddress("xWELL_PROXY", xwellProxy, true);
+            addresses.addAddress("xWELL_LOGIC", xwellLogic);
+            addresses.addAddress("xWELL_PROXY", xwellProxy);
 
-            printAddresses(addresses);
+            _printAddresses(addresses);
             addresses.resetRecordingAddresses();
         }
     }
@@ -114,7 +122,7 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
 
     /// no cross chain actions to run, so remove all code from this function
     /// @dev do not use MIP as a base to fork off of, it will not work
-    function run(Addresses, address) public override(CrossChainProposal) {}
+    function run(Addresses, address) public override(HybridProposal) {}
 
     function teardown(Addresses addresses, address) public pure override {}
 
@@ -191,7 +199,7 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
             );
             assertTrue(
                 WormholeBridgeAdapter(wormholeAdapter).isTrustedSender(
-                    uint16(chainIdToWormHoleId[block.chainid]),
+                    block.chainid.toMoonbeamWormholeChainId(),
                     wormholeAdapter
                 ),
                 "trusted sender not trusted"
@@ -229,7 +237,7 @@ contract xwellDeployBase is CrossChainProposal, Configs, xWELLDeploy {
         }
     }
 
-    function printAddresses(Addresses addresses) private view {
+    function _printAddresses(Addresses addresses) private view {
         (
             string[] memory recordedNames,
             ,

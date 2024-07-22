@@ -5,11 +5,13 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b16/mip-b16.sol:mipb16
@@ -18,7 +20,9 @@ contract mipb16 is
     MultichainGovernorDeploy,
     ParameterValidation
 {
-    string public constant override name = "MIP-B16 Resubmission";
+    using ProposalActions for *;
+
+    string public constant override name = "MIP-B16";
 
     /// @notice this is based on Warden Finance's recommendation for reward speeds
     uint256 public constant REWARD_SPEED = 896275511648961000;
@@ -33,15 +37,16 @@ contract mipb16 is
         );
 
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 5;
     }
 
-    /// @notice proposal's actions happen only on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function teardown(Addresses addresses, address) public override {
-        vm.selectFork(baseForkId);
+        vm.selectFork(primaryForkId());
 
         /// stop errors on unit tests of proposal infrastructure
         if (address(addresses) != address(0)) {
@@ -60,7 +65,7 @@ contract mipb16 is
     function build(Addresses addresses) public override {
         /// Base actions
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("xWELL_PROXY"),
             abi.encodeWithSignature(
                 "transferFrom(address,address,uint256)",
@@ -68,45 +73,42 @@ contract mipb16 is
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY"),
                 WELL_AMOUNT
             ),
-            "Transfer xWELL rewards to Ecosystem Reserve Proxy on Base",
-            false
+            "Transfer xWELL rewards to Ecosystem Reserve Proxy on Base"
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("STK_GOVTOKEN"),
             abi.encodeWithSignature(
                 "configureAsset(uint128,address)",
                 REWARD_SPEED,
                 addresses.getAddress("STK_GOVTOKEN")
             ),
-            "Set reward speed for the Safety Module on Base",
-            false
+            "Set reward speed for the Safety Module on Base"
         );
     }
 
     function run(Addresses addresses, address) public override {
         /// safety check to ensure no moonbeam actions are run
         require(
-            baseActions.length == 2,
+            actions.proposalActionTypeCount(ActionType.Base) == 2,
             "MIP-B16: should have two base actions"
         );
 
         require(
-            moonbeamActions.length == 0,
+            actions.proposalActionTypeCount(ActionType.Moonbeam) == 0,
             "MIP-B16: should have no moonbeam actions"
         );
-        vm.selectFork(moonbeamForkId);
 
+        vm.selectFork(MOONBEAM_FORK_ID);
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
 
-        vm.selectFork(baseForkId);
-
-        _runBase(addresses, addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.selectFork(uint256(primaryForkId()));
+        _runExtChain(addresses, actions.filter(ActionType.Base));
     }
 
     /// @notice validations on Base
     function validate(Addresses addresses, address) public override {
-        vm.selectFork(baseForkId);
+        vm.selectFork(primaryForkId());
 
         address stkWellProxy = addresses.getAddress("STK_GOVTOKEN");
         (

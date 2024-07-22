@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract mipb09 is Proposal, CrossChainProposal, Configs {
+contract mipb09 is HybridProposal, Configs {
     string public constant override name = "MIP-b09";
     uint256 public constant timestampsPerYear = 60 * 60 * 24 * 365;
     uint256 public constant SCALE = 1e18;
@@ -28,11 +28,12 @@ contract mipb09 is Proposal, CrossChainProposal, Configs {
             vm.readFile("./src/proposals/mips/mip-b09/MIP-B09.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 59;
     }
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function _validateCF(
@@ -68,7 +69,7 @@ contract mipb09 is Proposal, CrossChainProposal, Configs {
         // =========== ETH CF Update ============
 
         // Add update action
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -81,7 +82,7 @@ contract mipb09 is Proposal, CrossChainProposal, Configs {
         // =========== USDC CF Update ============
 
         // Add update action
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -94,7 +95,7 @@ contract mipb09 is Proposal, CrossChainProposal, Configs {
         // =========== cbETH CF Update ============
 
         // Add update action
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",

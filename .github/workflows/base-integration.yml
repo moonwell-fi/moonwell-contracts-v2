@@ -4,7 +4,6 @@ on: [pull_request]
 
 env:
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
-  MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
 
 jobs:
   run-base-tests:
@@ -21,6 +20,5 @@ jobs:
         uses: ./.github/actions
 
       - name: Integration Tests Base Mainnet
-        run:
-          time forge test --match-contract LiveSystemBaseTest --fork-url base
+        run: time forge test --match-contract LiveSystemBaseTest --fork-url base
           -vvv --ffi

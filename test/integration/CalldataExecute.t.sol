@@ -6,7 +6,7 @@ import {ERC20Votes} from "@openzeppelin-contracts/contracts/token/ERC20/extensio
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {IArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
@@ -32,7 +32,9 @@ contract CalldataExecute is Test, Configs {
         address governorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );
-        MultichainGovernor governor = MultichainGovernor(governorAddress);
+        MultichainGovernor governor = MultichainGovernor(
+            payable(governorAddress)
+        );
 
         governor.execute(9);
     }
@@ -44,7 +46,9 @@ contract CalldataExecute is Test, Configs {
         address governorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );
-        MultichainGovernor governor = MultichainGovernor(governorAddress);
+        MultichainGovernor governor = MultichainGovernor(
+            payable(governorAddress)
+        );
         uint256 proposalId = 14;
 
         {
@@ -102,7 +106,9 @@ contract CalldataExecute is Test, Configs {
         address governorAddress = addresses.getAddress(
             "MULTICHAIN_GOVERNOR_PROXY"
         );
-        MultichainGovernor governor = MultichainGovernor(governorAddress);
+        MultichainGovernor governor = MultichainGovernor(
+            payable(governorAddress)
+        );
 
         vm.prank(addresses.getAddress("MGLIMMER_MULTISIG"));
         ERC20Votes(governanceToken).approve(governorAddress, type(uint256).max);
@@ -123,7 +129,7 @@ contract CalldataExecute is Test, Configs {
         }
 
         uint256 cost = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")
+            payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         ).bridgeCostAll();
 
         vm.deal(address(this), cost);

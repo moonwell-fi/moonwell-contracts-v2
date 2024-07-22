@@ -1,7 +1,9 @@
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
 import {stdError} from "@forge-std/StdError.sol";
+import "@forge-std/Test.sol";
+
+import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MockWeth} from "@test/mock/MockWeth.sol";
@@ -15,8 +17,11 @@ import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
+    bool private _receivingFunds;
+
     event ProposalCanceled(uint256 proposalId);
 
     event ProposalRebroadcasted(uint256 proposalId, bytes data);
@@ -42,6 +47,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
+        _receivingFunds = false;
     }
 
     function _castVotes(
@@ -114,7 +120,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
         assertTrue(
             governor.isTrustedSender(
-                baseWormholeChainId,
+                BASE_WORMHOLE_CHAIN_ID,
                 address(voteCollection)
             ),
             "voteCollection not whitelisted to send messages in"
@@ -367,7 +373,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         uint256 proposerBalance = proposer.balance;
 
         uint16[] memory shouldRevertAtChain = new uint16[](1);
-        shouldRevertAtChain[0] = baseWormholeChainId;
+        shouldRevertAtChain[0] = BASE_WORMHOLE_CHAIN_ID;
         wormholeRelayerAdapter.setShouldRevertAtChain(
             shouldRevertAtChain,
             true
@@ -382,7 +388,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.roll(block.number + 1);
 
         vm.expectEmit(true, true, true, true, address(governor));
-        emit BridgeOutFailed(baseWormholeChainId, payload, bridgeCost);
+        emit BridgeOutFailed(BASE_WORMHOLE_CHAIN_ID, payload, bridgeCost);
 
         vm.prank(proposer);
         uint256 proposalId = governor.propose{value: bridgeCost}(
@@ -456,7 +462,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         uint256 proposerBalance = proposer.balance;
 
         uint16[] memory shouldRevertAtChain = new uint16[](1);
-        shouldRevertAtChain[0] = baseWormholeChainId;
+        shouldRevertAtChain[0] = BASE_WORMHOLE_CHAIN_ID;
         wormholeRelayerAdapter.setShouldRevertAtChain(
             shouldRevertAtChain,
             true
@@ -471,7 +477,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.roll(block.number + 1);
 
         vm.expectEmit(true, true, true, true, address(governor));
-        emit BridgeOutFailed(baseWormholeChainId, payload, bridgeCost);
+        emit BridgeOutFailed(BASE_WORMHOLE_CHAIN_ID, payload, bridgeCost);
 
         vm.expectRevert("WormholeBridge: refund failed");
         vm.prank(proposer);
@@ -504,15 +510,15 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         _assertGovernanceBalance();
     }
 
-    function testBridgeOutQuoteEVMPriceRevert() public {
+    function testBridgeOutQuoteEVMPriceRevertRefund() public {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
         uint16[] memory chainToRevert = new uint16[](1);
-        chainToRevert[0] = baseWormholeChainId;
+        chainToRevert[0] = BASE_WORMHOLE_CHAIN_ID;
         wormholeRelayerAdapter.setShouldRevertQuoteAtChain(chainToRevert, true);
+        _receivingFunds = true;
 
-        vm.expectRevert("WormholeBridge: total cost not equal to quote");
         governor.propose{value: bridgeCost}(
             new address[](1),
             new uint256[](1),
@@ -520,10 +526,12 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "Proposal MIP-M00 - Update Proposal Threshold"
         );
 
+        assertEq(address(this).balance, bridgeCost, "value not refunded");
+
         uint256 startTimestamp = block.timestamp;
         uint256 endTimestamp = startTimestamp + governor.votingPeriod();
         bytes memory payload = abi.encode(
-            1,
+            2,
             startTimestamp - 1,
             startTimestamp,
             endTimestamp,
@@ -532,7 +540,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         // calling without value should not revert but emit BridgeOutFailed
         vm.expectEmit(true, true, true, true, address(governor));
-        emit BridgeOutFailed(baseWormholeChainId, payload, 0);
+        emit BridgeOutFailed(BASE_WORMHOLE_CHAIN_ID, payload, 0);
         governor.propose(
             new address[](1),
             new uint256[](1),
@@ -606,7 +614,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.deal(caller, cost);
 
         vm.expectEmit(true, true, true, true, address(governor));
-        emit BridgeOutFailed(baseWormholeChainId, payload, cost);
+        emit BridgeOutFailed(BASE_WORMHOLE_CHAIN_ID, payload, cost);
 
         vm.expectEmit(true, true, true, true, address(governor));
         emit ProposalRebroadcasted(proposalId, payload);
@@ -617,7 +625,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.deal(caller, cost);
 
         vm.expectEmit(true, true, true, true, address(governor));
-        emit BridgeOutFailed(baseWormholeChainId, payload, cost);
+        emit BridgeOutFailed(BASE_WORMHOLE_CHAIN_ID, payload, cost);
 
         vm.expectEmit(true, true, true, true, address(governor));
         emit ProposalRebroadcasted(proposalId, payload);
@@ -659,7 +667,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         uint256 proposerBalance = proposer.balance;
 
         uint16[] memory shouldRevertAtChain = new uint16[](1);
-        shouldRevertAtChain[0] = baseWormholeChainId;
+        shouldRevertAtChain[0] = BASE_WORMHOLE_CHAIN_ID;
         wormholeRelayerAdapter.setShouldRevertAtChain(
             shouldRevertAtChain,
             true
@@ -674,7 +682,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.roll(block.number + 1);
 
         vm.expectEmit(true, true, true, true, address(governor));
-        emit BridgeOutFailed(baseWormholeChainId, payload, bridgeCost);
+        emit BridgeOutFailed(BASE_WORMHOLE_CHAIN_ID, payload, bridgeCost);
 
         vm.prank(proposer);
         uint256 proposalId = governor.propose{value: bridgeCost}(
@@ -727,7 +735,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         vm.expectEmit(true, true, true, true, address(governor));
         emit BridgeOutSuccess(
-            baseWormholeChainId,
+            BASE_WORMHOLE_CHAIN_ID,
             uint96(bridgeCost),
             address(voteCollection),
             payload
@@ -843,7 +851,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
 
         vm.expectEmit(true, true, true, true, address(governor));
         emit BridgeOutSuccess(
-            baseWormholeChainId,
+            BASE_WORMHOLE_CHAIN_ID,
             uint96(bridgeCost),
             address(voteCollection),
             payload
@@ -2846,7 +2854,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         vm.prank(address(voteCollection));
         vm.expectRevert("MultichainGovernor: invalid payload length");
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            moonBeamWormholeChainId,
+            MOONBEAM_WORMHOLE_CHAIN_ID,
             address(governor),
             payload,
             0,
@@ -2866,7 +2874,7 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
             "MultichainGovernor: proposal not in cross chain vote collection period"
         );
         wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
-            moonBeamWormholeChainId,
+            MOONBEAM_WORMHOLE_CHAIN_ID,
             address(governor),
             payload,
             0,
@@ -3321,5 +3329,9 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         );
 
         _assertGovernanceBalance();
+    }
+
+    receive() external payable {
+        require(_receivingFunds);
     }
 }

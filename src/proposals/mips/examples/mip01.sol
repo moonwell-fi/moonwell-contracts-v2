@@ -5,22 +5,21 @@ import "@forge-std/Test.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// This MIP sets the reward speeds for different markets in the MultiRewardDistributor
 /// contract. It is intended to be used as a template for future MIPs that need to set reward speeds.
 /// The first step is to open `mainnetRewardStreams.json` and add the reward streams for the
 /// different mTokens. Then generate calldata by adding MIP01 to the TestProposals file.
-contract mipb01 is Proposal, CrossChainProposal, Configs {
+contract mipb01 is HybridProposal, Configs {
     string public constant override name = "MIP01";
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {}
@@ -41,7 +40,9 @@ contract mipb01 is Proposal, CrossChainProposal, Configs {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
 
-                _pushCrossChainAction(
+                /// HybridProposal will infer the correct fork id from the
+                /// current block chainid
+                _pushAction(
                     mrd,
                     abi.encodeWithSignature(
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",

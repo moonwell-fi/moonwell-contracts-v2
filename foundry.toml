@@ -9,9 +9,8 @@ auto_detect_solc = true
 evm_version = 'paris' # lock to paris to prevent use of push0 opcode which is not live on base
 optimizer_runs = 1
 rpc_storage_caching = { chains = "all", endpoints = "all" }
+ignored_warnings_from = ["src/MErc20Delegator.sol", "src/tokensale/TokenSaleDistributorProxy.sol"]
 
-[fuzz]
-runs = 1
 
 [rpc_endpoints]
 localhost = "http://127.0.0.1:8545"
@@ -22,6 +21,8 @@ ethereum = "${ETH_RPC_URL}"
 base = "${BASE_RPC_URL}"
 baseSepolia = "${BASE_SEPOLIA_RPC_URL}"
 arbitrum = "${ARB_RPC_URL}"
+optimism = "${OP_RPC_URL}"
+opSepolia = "${OP_SEPOLIA_RPC_URL}"
 
 # comment out the following lines so that CI passes fast and doesn't throw errors related to connecting to CI
 #[etherscan]
@@ -32,4 +33,4 @@ arbitrum = "${ARB_RPC_URL}"
 #sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
 #base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
 #baseSepolia = { key = "${BASESCAN_API_KEY}", url= "https://sepolia.basescan.org/api" }
-
+#opSepolia = { key = "${OPSCAN_API_KEY}", url= "https://api.optimistic.etherscan.io/api" }

@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
 import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
 
@@ -31,8 +31,8 @@ contract Compound4626Deploy {
             IComptroller(addresses.getAddress("UNITROLLER"))
         );
 
-        addresses.addAddress("USDBC_VAULT", address(usdcVault), true);
-        addresses.addAddress("WETH_VAULT", address(wethVault), true);
-        addresses.addAddress("cbETH_VAULT", address(cbethVault), true);
+        addresses.addAddress("USDBC_VAULT", address(usdcVault));
+        addresses.addAddress("WETH_VAULT", address(wethVault));
+        addresses.addAddress("cbETH_VAULT", address(cbethVault));
     }
 }

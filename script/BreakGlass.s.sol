@@ -5,8 +5,12 @@ import {Script} from "@forge-std/Script.sol";
 import "@forge-std/Test.sol";
 
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
-import {Addresses} from "@proposals/Addresses.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
+import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MOONBEAM_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 
 /// Performs the following actions which hand off direct or pending ownership
 /// of the contracts from the Multichain Governor to the Artemis Timelock contract:
@@ -17,22 +21,40 @@ import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 ///      d. sets the emissions manager for staked well
 ///      e. sets the owner of the moonbeam proxy admin
 ///      f. sets the owner of the xwell token
-contract BreakGlass is Script, mipm23c {
-    /// @notice addresses contract
-    Addresses public addresses;
+contract BreakGlass is Script, HybridProposal {
+    using ChainIds for uint256;
+
+    string public constant override name = "BREAK_GLASS";
 
     struct Calls {
         address target;
         bytes call;
     }
 
-    function run() public override {
-        /// ensure script runs on moonbeam
-        vm.selectFork(moonbeamForkId);
+    /// @notice whitelisted calldata for the break glass guardian
+    bytes[] public approvedCalldata;
 
-        addresses = new Addresses();
+    /// @notice address of the temporal governor
+    address[] public temporalGovernanceTargets;
+
+    /// @notice whitelisted calldata for the temporal governor
+    bytes[] public temporalGovernanceCalldata;
+
+    /// @notice trusted senders for the temporal governor
+    ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
+
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
+    }
+
+    function run() public override {
+        primaryForkId().createForksAndSelect();
+
+        Addresses addresses = new Addresses();
+        vm.makePersistent(address(addresses));
+
         buildCalldata(addresses);
-        bytes memory data = getCalldata();
+        bytes memory data = getCalldata(addresses);
         address governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
 
         console.log("Break Glass Calldata");
@@ -46,8 +68,94 @@ contract BreakGlass is Script, mipm23c {
         require(success, string(errorMessage));
     }
 
-    function getCalldata() public view returns (bytes memory) {
-        Calls[] memory calls = new Calls[](17);
+    function buildCalldata(Addresses addresses) public {
+        address artemisTimelock = addresses.getAddress("MOONBEAM_TIMELOCK");
+        address temporalGovernor = addresses.getAddress(
+            "TEMPORAL_GOVERNOR",
+            block.chainid.toBaseChainId()
+        );
+
+        /// add temporal governor to list
+        temporalGovernanceTargets.push(temporalGovernor);
+
+        temporalGovernanceTrustedSenders.push(
+            ITemporalGovernor.TrustedSender({
+                chainId: MOONBEAM_WORMHOLE_CHAIN_ID, /// this chainId is 16 (MOONBEAM_WORMHOLE_CHAIN_ID) regardless of testnet or mainnet
+                addr: artemisTimelock /// this timelock on this chain
+            })
+        );
+
+        /// new break glass guardian call for adding artemis as an owner of the Temporal Governor
+
+        /// roll back trusted senders to artemis timelock
+        /// in reality this just adds the artemis timelock as a trusted sender
+        /// a second proposal is needed to revoke the Multichain Governor as a trusted sender
+        temporalGovernanceCalldata.push(
+            abi.encodeWithSignature(
+                "setTrustedSenders((uint16,address)[])",
+                temporalGovernanceTrustedSenders
+            )
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "publishMessage(uint32,bytes,uint8)",
+                1000,
+                abi.encode(
+                    /// target is temporal governor, this passes intended recipient check
+                    temporalGovernanceTargets[0],
+                    /// sets temporal governor target to itself
+                    temporalGovernanceTargets,
+                    /// sets values to array filled with 0 values
+                    new uint256[](1),
+                    /// sets calldata to a call to the setTrustedSenders((uint16,address)[])
+                    /// function with artemis timelock as the address and moonbeam wormhole
+                    /// chain id as the chain id
+                    temporalGovernanceCalldata
+                ),
+                200
+            )
+        );
+
+        /// old break glass guardian calls from Artemis Governor
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "_setPendingAdmin(address)",
+                artemisTimelock
+            )
+        );
+
+        /// for chainlink oracle
+        approvedCalldata.push(
+            abi.encodeWithSignature("setAdmin(address)", artemisTimelock)
+        );
+
+        /// for stkWELL
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "setEmissionsManager(address)",
+                artemisTimelock
+            )
+        );
+
+        /// for stkWELL
+        approvedCalldata.push(
+            abi.encodeWithSignature("changeAdmin(address)", artemisTimelock)
+        );
+
+        approvedCalldata.push(
+            abi.encodeWithSignature(
+                "transferOwnership(address)",
+                artemisTimelock
+            )
+        );
+    }
+
+    function getCalldata(
+        Addresses addresses
+    ) public view override returns (bytes memory) {
+        Calls[] memory calls = new Calls[](18);
 
         calls[0] = Calls({
             target: addresses.getAddress("mxcUSDC"),
@@ -154,4 +262,6 @@ contract BreakGlass is Script, mipm23c {
                 callDatas
             );
     }
+
+    function validate(Addresses addresses, address) public view override {}
 }

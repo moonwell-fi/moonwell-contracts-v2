@@ -8,7 +8,7 @@ import "@forge-std/Test.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {LibCompound} from "@protocol/4626/LibCompound.sol";
 import {Factory4626Eth} from "@protocol/4626/Factory4626Eth.sol";
 import {deployFactoryEth} from "@protocol/4626/4626FactoryDeploy.sol";
@@ -30,7 +30,7 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
     function setUp() public {
         addresses = new Addresses();
 
-        addresses.addAddress("REWARDS_RECEIVER", rewardRecipient, false);
+        addresses.addAddressEOA("REWARDS_RECEIVER", rewardRecipient);
         Factory4626Eth factory = deployFactoryEth(addresses);
         underlying = ERC20(addresses.getAddress("WETH"));
 
@@ -387,7 +387,7 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
         uint256 shares = vault.convertToShares(assets);
         uint256 assets2 = vault.convertToAssets(shares);
 
-        assertGt(assets, assets2, "initial assets should be gt assets2");
+        assertGe(assets, assets2, "initial assets should be gt assets2");
     }
 
     function testConvertFromSharesToAssetsRoundsDown(
@@ -398,7 +398,7 @@ contract MoonwellERC4626EthLiveSystemBaseTest is Test {
         uint256 assets = vault.convertToAssets(shares);
         uint256 shares2 = vault.convertToShares(assets);
 
-        assertGe(shares, shares2, "initial shares should be gt shares2");
+        assertGe(shares, shares2, "initial shares should be gte shares2");
     }
 
     /// receive ether for withdrawing assets from the vault

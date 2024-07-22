@@ -6,31 +6,31 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
+import {Address} from "@utils/Address.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {MIPProposal} from "@proposals/MIPProposal.s.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
+import {ChainIds, BASE_FORK_ID, BASE_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol";
 
-import {Address} from "@utils/Address.sol";
-
-contract mipb00 is Proposal, CrossChainProposal, Configs {
+contract mipb00 is HybridProposal, Configs {
     using Address for address;
+    using ChainIds for uint256;
 
     string public constant override name = "MIP-B00";
     uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
@@ -56,7 +56,6 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
     }
 
     constructor() {
-        vm.selectFork(primaryForkId());
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(
                 string(
@@ -68,17 +67,13 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             )
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 39;
+        nonce = 2;
     }
 
-    /// @dev change this if wanting to deploy to a different chain
-    /// double check addresses and change the WORMHOLE_CORE to the correct chain
-    function primaryForkId()
-        public
-        view
-        override(MIPProposal)
-        returns (uint256)
-    {
-        return baseForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     /// @notice the deployer should have both USDBC, WETH and any other assets that will be started as
@@ -90,36 +85,31 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
         {
             TemporalGovernor.TrustedSender[]
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
-            trustedSenders[0].chainId = chainIdToWormHoleId[block.chainid];
+            trustedSenders[0].chainId = block
+                .chainid
+                .toMoonbeamWormholeChainId();
             trustedSenders[0].addr = addresses.getAddress(
                 "MOONBEAM_TIMELOCK",
-                sendingChainIdToReceivingChainId[block.chainid]
+                block.chainid.toMoonbeamChainId()
             );
 
             /// this will be the governor for all the contracts
             TemporalGovernor governor = new TemporalGovernor(
-                block.chainid == baseChainId
-                    ? addresses.getAddress("WORMHOLE_CORE_BASE")
-                    : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE"), /// get wormhole core address for the chain deployment is on
-                chainIdTemporalGovTimelock[block.chainid], /// get timelock period for deployment chain is on
+                addresses.getAddress("WORMHOLE_CORE"), /// get wormhole core address for the chain deployment is on
+                temporalGovDelay[block.chainid], // get timelock period for the chain deployment is on
                 permissionlessUnpauseTime,
                 trustedSenders
             );
-            addresses.addOrChangeAddress(
-                "TEMPORAL_GOVERNOR",
-                address(governor),
-                true
-            );
+            addresses.addAddress("TEMPORAL_GOVERNOR", address(governor));
         }
         deployAndMint(addresses);
         init(addresses);
         /// ------- Reward Distributor -------
         {
             MultiRewardDistributor distributor = new MultiRewardDistributor();
-            addresses.addOrChangeAddress(
+            addresses.addAddress(
                 "MULTI_REWARD_DISTRIBUTOR",
-                address(distributor),
-                true
+                address(distributor)
             );
         }
         {
@@ -128,24 +118,12 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             Comptroller comptroller = new Comptroller();
             unitroller._setPendingImplementation(address(comptroller));
             comptroller._become(unitroller);
-            addresses.addOrChangeAddress(
-                "COMPTROLLER",
-                address(comptroller),
-                true
-            );
-            addresses.addOrChangeAddress(
-                "UNITROLLER",
-                address(unitroller),
-                true
-            );
+            addresses.addAddress("COMPTROLLER", address(comptroller));
+            addresses.addAddress("UNITROLLER", address(unitroller));
             ProxyAdmin proxyAdmin;
-            if (block.chainid != Configs._baseSepoliaChainId) {
+            if (block.chainid != BASE_SEPOLIA_CHAIN_ID) {
                 proxyAdmin = new ProxyAdmin();
-                addresses.addOrChangeAddress(
-                    "MRD_PROXY_ADMIN",
-                    address(proxyAdmin),
-                    true
-                );
+                addresses.addAddress("MRD_PROXY_ADMIN", address(proxyAdmin));
             } else {
                 proxyAdmin = ProxyAdmin(
                     addresses.getAddress("MRD_PROXY_ADMIN")
@@ -161,16 +139,12 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                     address(proxyAdmin),
                     initData
                 );
-            addresses.addOrChangeAddress("MRD_PROXY", address(mrdProxy), true);
+            addresses.addAddress("MRD_PROXY", address(mrdProxy));
         }
         /// ------ MTOKENS -------
         {
             MErc20Delegate mTokenLogic = new MErc20Delegate();
-            addresses.addOrChangeAddress(
-                "MTOKEN_IMPLEMENTATION",
-                address(mTokenLogic),
-                true
-            );
+            addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
         }
 
         _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
@@ -191,15 +165,14 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                             config.jrm.kink
                         )
                     );
-                    addresses.addOrChangeAddress(
+                    addresses.addAddress(
                         string(
                             abi.encodePacked(
                                 "JUMP_RATE_IRM_",
                                 config.addressesString
                             )
                         ),
-                        address(irModel),
-                        true
+                        address(irModel)
                     );
                 }
                 /// stack isn't too deep
@@ -236,11 +209,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                     addr.mTokenImpl,
                     ""
                 );
-                addresses.addOrChangeAddress(
-                    config.addressesString,
-                    address(mToken),
-                    true
-                );
+                addresses.addAddress(config.addressesString, address(mToken));
             }
         }
         // If deploying to mainnet again these values must be adjust
@@ -253,10 +222,10 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             WETH9(addresses.getAddress("WETH")),
             MErc20(addresses.getAddress("MOONWELL_WETH"))
         );
-        addresses.addOrChangeAddress("WETH_ROUTER", address(router), true);
+        addresses.addAddress("WETH_ROUTER", address(router));
         /// deploy oracle, set price oracle
         ChainlinkOracle oracle = new ChainlinkOracle("null_asset");
-        addresses.addOrChangeAddress("CHAINLINK_ORACLE", address(oracle), true);
+        addresses.addAddress("CHAINLINK_ORACLE", address(oracle));
     }
 
     function afterDeploy(Addresses addresses, address) public override {
@@ -313,7 +282,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                     );
 
                     /// set mint unpaused for all MTokens if is on sepolia
-                    if (block.chainid == Configs._baseSepoliaChainId) {
+                    if (block.chainid == BASE_SEPOLIA_CHAIN_ID) {
                         Comptroller(address(unitroller))._setMintPaused(
                             MToken(
                                 addresses.getAddress(config.addressesString)
@@ -426,10 +395,12 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
     }
 
     function build(Addresses addresses) public override {
+        _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
+
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
         /// Unitroller configuration
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Temporal governor accepts admin on Unitroller"
@@ -452,13 +423,13 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 /// ------------ MTOKEN MARKET ACTIVIATION ------------
 
                 /// temporal governor accepts admin of mToken
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature("_acceptAdmin()"),
                     "Temporal governor accepts admin on mToken"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
                         "_setMintPaused(address,bool)",
@@ -469,7 +440,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 );
 
                 /// Approvals
-                _pushCrossChainAction(
+                _pushAction(
                     addresses.getAddress(config.tokenAddressName),
                     abi.encodeWithSignature(
                         "approve(address,uint256)",
@@ -480,7 +451,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                 );
 
                 /// Initialize markets
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
                         "mint(uint256)",
@@ -489,7 +460,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
                     "Initialize token market to prevent exploit"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
                         "transfer(address,uint256)",
@@ -513,10 +484,7 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
             governor.owner(),
             addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN")
         );
-        assertEq(
-            chainIdTemporalGovTimelock[block.chainid],
-            governor.proposalDelay()
-        );
+        assertEq(temporalGovDelay[block.chainid], governor.proposalDelay());
 
         {
             ChainlinkOracle oracle = ChainlinkOracle(
@@ -683,18 +651,16 @@ contract mipb00 is Proposal, CrossChainProposal, Configs {
 
         assertEq(
             address(governor.wormholeBridge()),
-            block.chainid == baseChainId
-                ? addresses.getAddress("WORMHOLE_CORE_BASE")
-                : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE")
+            addresses.getAddress("WORMHOLE_CORE", block.chainid)
         );
 
         assertTrue(
             governor.isTrustedSender(
-                chainIdToWormHoleId[block.chainid],
+                block.chainid.toMoonbeamWormholeChainId(),
                 addresses
                     .getAddress(
                         "MOONBEAM_TIMELOCK",
-                        sendingChainIdToReceivingChainId[block.chainid]
+                        block.chainid.toMoonbeamChainId()
                     )
                     .toBytes()
             )

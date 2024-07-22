@@ -2,20 +2,23 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ChainIds, BASE_CHAIN_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 /// to run locally:
 ///     DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployMoonbeam.sol:xwellDeployMoonbeam --fork-url moonbeam
 /// @dev do not use MIP as a base to fork off of, it will not work
-contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
+contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
+    using ChainIds for uint256;
+
     /// @notice the name of the proposal
     string public constant override name = "MIP xWELL Token Creation Moonbeam";
 
@@ -39,9 +42,8 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
     /// unpause if no action is taken.
     uint128 public constant pauseDuration = 10 days;
 
-    /// @notice proposal's actions all happen on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     // @notice search for a on-chain proposal that matches the proposal calldata
@@ -107,7 +109,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
                 limits[1].rateLimitPerSecond = lockBoxRateLimitPerSecond;
                 limits[1].bufferCap = lockBoxBufferCap;
 
-                addresses.addAddress("xWELL_LOCKBOX", lockbox, true);
+                addresses.addAddress("xWELL_LOCKBOX", lockbox);
             }
 
             initializeXWell(
@@ -120,27 +122,33 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
                 pauseGuardian
             );
 
+            /// trust same address on Base
+            address[] memory trustedSenders = new address[](1);
+            trustedSenders[0] = wormholeAdapter;
+
+            uint16[] memory trustedChainIds = new uint16[](1);
+            trustedChainIds[0] = block.chainid.toBaseWormholeChainId();
+
             initializeWormholeAdapter(
                 wormholeAdapter,
                 xwellProxy,
                 artemisTimelock,
                 relayer,
-                uint16(chainIdToWormHoleId[block.chainid])
+                trustedChainIds,
+                trustedSenders
             );
 
             /// add to moonbeam addresses
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                wormholeAdapter,
-                true
+                wormholeAdapter
             );
             addresses.addAddress(
                 "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
-                wormholeAdapterLogic,
-                true
+                wormholeAdapterLogic
             );
-            addresses.addAddress("xWELL_LOGIC", xwellLogic, true);
-            addresses.addAddress("xWELL_PROXY", xwellProxy, true);
+            addresses.addAddress("xWELL_LOGIC", xwellLogic);
+            addresses.addAddress("xWELL_PROXY", xwellProxy);
 
             printAddresses(addresses);
             addresses.resetRecordingAddresses();
@@ -229,7 +237,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
             assertTrue(
                 WormholeBridgeAdapter(wormholeBridgeAdapterProxy)
                     .isTrustedSender(
-                        uint16(chainIdToWormHoleId[block.chainid]),
+                        block.chainid.toBaseWormholeChainId(),
                         wormholeBridgeAdapterProxy
                     ),
                 "trusted sender not trusted"
@@ -239,7 +247,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_LOGIC"),
                 addresses.getAddress(
                     "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
-                    baseChainId
+                    BASE_CHAIN_ID
                 ),
                 "wormhole bridge adapter logic address is not the same across chains"
             );
@@ -248,19 +256,19 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy, ChainIds {
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
                 addresses.getAddress(
                     "WORMHOLE_BRIDGE_ADAPTER_PROXY",
-                    baseChainId
+                    BASE_CHAIN_ID
                 ),
                 "wormhole bridge adapter proxy address is not the same across chains"
             );
 
             assertEq(
                 addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("xWELL_PROXY", baseChainId),
+                addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID),
                 "xWELL_PROXY address is not the same across chains"
             );
             assertEq(
                 addresses.getAddress("xWELL_LOGIC"),
-                addresses.getAddress("xWELL_LOGIC", baseChainId),
+                addresses.getAddress("xWELL_LOGIC", BASE_CHAIN_ID),
                 "xWELL_LOGIC address is not the same across chains"
             );
 

@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
+contract mipb15 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-b15";
 
     uint256 public constant USDbC_NEW_RF = 0.20e18;
@@ -19,11 +19,12 @@ contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b15/MIP-B15.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 3;
     }
 
-    /// @notice proposal's actions all happen on base
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {}
@@ -33,17 +34,17 @@ contract mipb15 is Proposal, CrossChainProposal, Configs, ParameterValidation {
     function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_USDBC"),
             abi.encodeWithSignature("_setReserveFactor(uint256)", USDbC_NEW_RF),
             "Set reserve factor for Moonwell USDBC to updated reserve factor"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_USDC"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC")
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USD_MIP_B15")
             ),
             "Set interest rate model for Moonwell USDC to updated rate model"
         );

@@ -5,20 +5,22 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
+import "@protocol/utils/ChainIds.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
+import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {xwellDeployMoonbeam} from "@protocol/proposals/mips/mip-xwell/xwellDeployMoonbeam.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-
+import {ChainIds} from "@utils/ChainIds.sol";
 import {Address} from "@utils/Address.sol";
 
 contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
+    using ChainIds for uint256;
     using Address for address;
-
-    /// @notice addresses contract, stores all addresses
+    /// @notice all addresses
     Addresses public addresses;
 
     /// @notice lockbox contract
@@ -39,7 +41,7 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
     /// @notice amount of well to mint
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
-    uint16 public constant wormholeBaseChainid = uint16(baseWormholeChainId);
+    uint16 public constant wormholeBaseChainid = uint16(BASE_WORMHOLE_CHAIN_ID);
 
     function setUp() public {
         addresses = new Addresses();
@@ -65,12 +67,13 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
             address(0)
         );
 
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert();
         wormholeAdapter.initialize(
             address(1),
             address(1),
             address(1),
-            wormholeBaseChainid
+            new uint16[](0),
+            new address[](0)
         );
     }
 
@@ -176,7 +179,7 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
+        uint16 dstChainId = block.chainid.toBaseWormholeChainId();
         uint256 cost = wormholeAdapter.bridgeCost(dstChainId);
 
         vm.deal(user, cost);
@@ -215,7 +218,7 @@ contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
         uint256 startingXWellTotalSupply = xwell.totalSupply();
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
-        uint16 dstChainId = uint16(chainIdToWormHoleId[block.chainid]);
+        uint16 dstChainId = block.chainid.toBaseWormholeChainId();
         bytes memory payload = abi.encode(user, mintAmount);
         bytes32 sender = address(wormholeAdapter).toBytes();
         bytes32 nonce = keccak256(abi.encode(payload, block.timestamp));

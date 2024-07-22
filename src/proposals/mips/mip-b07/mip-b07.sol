@@ -5,27 +5,17 @@ import "@forge-std/Test.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// This MIP sets the reward speeds for different markets in the MultiRewardDistributor
-contract mipb07 is Proposal, CrossChainProposal, Configs {
-    string public constant override name = "MIPB07";
+contract mipb07 is HybridProposal, Configs {
+    string public constant override name = "MIP-B07";
 
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
-    }
-
-    function deploy(Addresses addresses, address) public override {}
-
-    function afterDeploy(Addresses addresses, address) public override {}
-
-    function preBuildMock(Addresses addresses) public override {}
-
-    function build(Addresses addresses) public override {
+    constructor() {
         string memory descriptionPath = vm.envOr(
             "LISTING_PATH",
             string(
@@ -38,15 +28,27 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
 
         _setProposalDescription(proposalDescription);
 
+        onchainProposalId = 55;
+    }
+
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
+    }
+
+    function deploy(Addresses addresses, address) public override {}
+
+    function afterDeploy(Addresses addresses, address) public override {}
+
+    function preBuildMock(Addresses addresses) public override {}
+
+    function build(Addresses addresses) public override {
         delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
         {
             string memory mtokensPath = vm.envOr(
                 "EMISSION_PATH",
-                string(
-                    "./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
-                )
+                string("./src/proposals/mips/mip-b07/RewardStreams.json")
             );
             /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
             string memory fileContents = vm.readFile(mtokensPath);
@@ -72,7 +74,7 @@ contract mipb07 is Proposal, CrossChainProposal, Configs {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
 
-                _pushCrossChainAction(
+                _pushAction(
                     mrd,
                     abi.encodeWithSignature(
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",

@@ -4,7 +4,6 @@ on: [pull_request]
 
 env:
   BASE_RPC_URL: ${{secrets.BASE_SEPOLIA_RPC_URL}}
-  MOONBEAM_RPC_URL: ${{secrets.MOONBASE_RPC_URL}}
 
 jobs:
   run-base-tests:
@@ -21,5 +20,4 @@ jobs:
         uses: ./.github/actions
       
       - name: Integration Tests Base Sepolia
-        run: time forge test --match-contract LiveSystemTest --fork-url
-        base -vvv --ffi
+        run: time forge test --match-contract LiveSystemTest --fork-url base -vvv --ffi

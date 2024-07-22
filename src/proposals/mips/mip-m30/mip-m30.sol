@@ -3,11 +3,12 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
     string public constant override name = "MIP-M30";
@@ -17,11 +18,12 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-m30/MIP-M30.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 80;
     }
 
-    /// @notice proposal's actions happen on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function deploy(Addresses, address) public override {}

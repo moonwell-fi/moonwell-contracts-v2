@@ -955,6 +955,7 @@ contract MultiRewardDistributor is
 
         // At this point we know we have to calculate a new index, so do so
         uint256 tokenAccrued = mul_(deltaTimestamps, _emissionsPerSecond);
+
         Double memory ratio = _denominator > 0
             ? fraction(tokenAccrued, _denominator)
             : Double({mantissa: 0});

@@ -8,13 +8,12 @@ import "@forge-std/Test.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {MIPProposal} from "@proposals/MIPProposal.s.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
@@ -22,9 +21,9 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 /// This is a template of a MIP proposal that can be used to add new mTokens
 /// @dev be sure to include all necessary underlying and price feed addresses
 /// in the Addresses.sol contract for the network the MTokens are being deployed on.
-contract mip0x is Proposal, CrossChainProposal, Configs {
+contract mip03 is HybridProposal, Configs {
     /// @notice the name of the proposal
-    string public constant override name = "MIP Market Creation";
+    string public constant override name = "MIP-B03";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;
@@ -46,12 +45,9 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
 
     constructor() {
         /// for example, should be set to
-        /// LISTING_PATH="./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
         string memory descriptionPath = vm.envOr(
             "LISTING_PATH",
-            string(
-                "./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
-            )
+            string("./src/proposals/mips/mip-b03/mip-b03.md")
         );
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(descriptionPath)
@@ -59,79 +55,12 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
 
         _setProposalDescription(proposalDescription);
 
-        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
-        delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
-
-        {
-            string memory mtokensPath = vm.envOr(
-                "MTOKENS_PATH",
-                string(
-                    "./src/proposals/mips/examples/mip-market-listing/MTokens.json"
-                )
-            );
-            string memory fileContents = vm.readFile(mtokensPath);
-            bytes memory rawJson = vm.parseJson(fileContents);
-
-            CTokenConfiguration[] memory decodedJson = abi.decode(
-                rawJson,
-                (CTokenConfiguration[])
-            );
-
-            for (uint256 i = 0; i < decodedJson.length; i++) {
-                require(
-                    decodedJson[i].collateralFactor <= 0.95e18,
-                    "collateral factor absurdly high, are you sure you want to proceed?"
-                );
-
-                /// possible to set supply caps and not borrow caps,
-                /// but not set borrow caps and not set supply caps
-                if (decodedJson[i].supplyCap != 0) {
-                    require(
-                        decodedJson[i].supplyCap > decodedJson[i].borrowCap,
-                        "borrow cap gte supply cap, are you sure you want to proceed?"
-                    );
-                } else if (decodedJson[i].borrowCap != 0) {
-                    revert("borrow cap must be set with a supply cap");
-                }
-
-                cTokenConfigurations[block.chainid].push(decodedJson[i]);
-            }
-        }
-
-        {
-            string memory mtokensPath = vm.envOr(
-                "EMISSION_PATH",
-                string(
-                    "./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
-                )
-            );
-            /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
-            string memory fileContents = vm.readFile(mtokensPath);
-            bytes memory rawJson = vm.parseJson(fileContents);
-            EmissionConfig[] memory decodedEmissions = abi.decode(
-                rawJson,
-                (EmissionConfig[])
-            );
-
-            for (uint256 i = 0; i < decodedEmissions.length; i++) {
-                emissions[block.chainid].push(decodedEmissions[i]);
-            }
-        }
-
-        console.log("\n\n------------ LOAD STATS ------------");
-        console.log(
-            "Loaded %d MToken configs",
-            cTokenConfigurations[block.chainid].length
-        );
-        console.log(
-            "Loaded %d reward configs",
-            emissions[block.chainid].length
-        );
-        console.log("\n\n");
+        onchainProposalId = 43;
+        nonce = 4;
     }
 
-    function primaryForkId() public view override returns (uint256) {
-        return baseForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return BASE_FORK_ID;
     }
 
     /// @notice no contracts are deployed in this proposal
@@ -164,8 +93,7 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                                 config.addressesString
                             )
                         ),
-                        address(irModel),
-                        true
+                        address(irModel)
                     );
                 }
 
@@ -206,11 +134,7 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                     ""
                 );
 
-                addresses.addAddress(
-                    config.addressesString,
-                    address(mToken),
-                    true
-                );
+                addresses.addAddress(config.addressesString, address(mToken));
             }
         }
     }
@@ -262,14 +186,90 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
 
     function build(Addresses addresses) public override {
+        // workaround to find calldata on TestProposalCalldataGeneration
+        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
+        delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
+
+        {
+            string memory mtokensPath = vm.envOr(
+                "MTOKENS_PATH",
+                string("./src/proposals/mips/mip-b03/MTokens.json")
+            );
+            string memory fileContents = vm.readFile(mtokensPath);
+            bytes memory rawJson = vm.parseJson(fileContents);
+
+            CTokenConfiguration[] memory decodedJson = abi.decode(
+                rawJson,
+                (CTokenConfiguration[])
+            );
+
+            for (uint256 i = 0; i < decodedJson.length; i++) {
+                require(
+                    decodedJson[i].collateralFactor <= 0.95e18,
+                    "collateral factor absurdly high, are you sure you want to proceed?"
+                );
+
+                /// possible to set supply caps and not borrow caps,
+                /// but not set borrow caps and not set supply caps
+                if (decodedJson[i].supplyCap != 0) {
+                    require(
+                        decodedJson[i].supplyCap > decodedJson[i].borrowCap,
+                        "borrow cap gte supply cap, are you sure you want to proceed?"
+                    );
+                } else if (decodedJson[i].borrowCap != 0) {
+                    revert("borrow cap must be set with a supply cap");
+                }
+
+                cTokenConfigurations[block.chainid].push(decodedJson[i]);
+            }
+        }
+
+        {
+            string memory mtokensPath = vm.envOr(
+                "EMISSION_PATH",
+                string("./src/proposals/mips/mip-b03/RewardStreams.json")
+            );
+            string memory fileContents = vm.readFile(mtokensPath);
+            bytes memory rawJson = vm.parseJson(fileContents);
+            EmissionConfig[] memory decodedEmissions = abi.decode(
+                rawJson,
+                (EmissionConfig[])
+            );
+
+            for (uint256 i = 0; i < decodedEmissions.length; i++) {
+                emissions[block.chainid].push(decodedEmissions[i]);
+            }
+        }
+
+        console.log("\n\n------------ LOAD STATS ------------");
+        console.log(
+            "Loaded %d MToken configs",
+            cTokenConfigurations[block.chainid].length
+        );
+        console.log(
+            "Loaded %d reward configs",
+            emissions[block.chainid].length
+        );
+        console.log("\n\n");
+
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
+        for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+            Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+            supplyCaps.push(config.supplyCap);
+            borrowCaps.push(config.borrowCap);
+
+            /// get the mToken
+            mTokens.push(MToken(addresses.getAddress(config.addressesString)));
+        }
+
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         address chainlinkOracleAddress = addresses.getAddress(
             "CHAINLINK_ORACLE"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setMarketSupplyCaps(address[],uint256[])",
@@ -279,7 +279,7 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
             "Set supply caps MToken market"
         );
 
-        _pushCrossChainAction(
+        _pushAction(
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setMarketBorrowCaps(address[],uint256[])",
@@ -297,7 +297,7 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                     config.addressesString
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     chainlinkOracleAddress,
                     abi.encodeWithSignature(
                         "setFeed(string,address)",
@@ -308,7 +308,7 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                     "Set price feed for underlying address in MToken market"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
                         "_supportMarket(address)",
@@ -318,14 +318,14 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                 );
 
                 /// temporal governor accepts admin of mToken
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature("_acceptAdmin()"),
                     "Temporal governor accepts admin on mToken"
                 );
 
                 /// Approvals
-                _pushCrossChainAction(
+                _pushAction(
                     addresses.getAddress(config.tokenAddressName),
                     abi.encodeWithSignature(
                         "approve(address,uint256)",
@@ -336,7 +336,7 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                 );
 
                 /// Initialize markets
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
                         "mint(uint256)",
@@ -345,7 +345,7 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                     "Initialize token market to prevent exploit"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     cTokenAddress,
                     abi.encodeWithSignature(
                         "transfer(address,uint256)",
@@ -355,7 +355,7 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
                     "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
                 );
 
-                _pushCrossChainAction(
+                _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
                         "_setCollateralFactor(address,uint256)",
@@ -380,7 +380,7 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
 
-                _pushCrossChainAction(
+                _pushAction(
                     address(mrd),
                     abi.encodeWithSignature(
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
@@ -397,17 +397,6 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
         }
     }
 
-    function run(
-        Addresses addresses,
-        address
-    ) public override(CrossChainProposal, MIPProposal) {
-        printCalldata(addresses);
-        _simulateCrossChainActions(
-            addresses,
-            addresses.getAddress("TEMPORAL_GOVERNOR")
-        );
-    }
-
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
@@ -422,7 +411,6 @@ contract mip0x is Proposal, CrossChainProposal, Configs {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
-                /// TODO validate borrow cap is always lte 90% of supply cap
                 uint256 borrowCap = comptroller.borrowCaps(
                     addresses.getAddress(config.addressesString)
                 );

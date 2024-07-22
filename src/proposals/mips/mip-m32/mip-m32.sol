@@ -3,18 +3,20 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
-import {Configs} from "@proposals/Configs.sol";
-
-import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {mipm30} from "@proposals/mips/mip-m30/mip-m30.sol";
+import {Configs} from "@proposals/Configs.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
-
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
+import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract mipm32 is Configs, HybridProposal, ParameterValidation {
-    string public constant override name = "MIP-M30";
+    using ProposalActions for *;
+
+    string public constant override name = "MIP-M32";
 
     uint256 public constant NEW_M_WBTCWH_RESERVE_FACTOR = 0.35e18;
     uint256 public constant NEW_M_WBTCWH_COLLATERAL_FACTOR = 0.31e18;
@@ -24,11 +26,12 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-m32/MIP-M32.md")
         );
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 20;
     }
 
-    /// @notice proposal's actions happen on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function deploy(Addresses, address) public override {}
@@ -47,24 +50,24 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
     /// run this action through the Artemis Governor
     function build(Addresses addresses) public override {
         /// accept admin of MOONWELL_mWBTC to the Multichain Governor
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_mWBTC"),
             abi.encodeWithSignature("_acceptAdmin()"),
             "Accept the admin transfer of the new wBTC market to the Multichain Governor",
-            true
+            ActionType.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("MOONWELL_mWBTC"),
             abi.encodeWithSignature(
                 "_setReserveFactor(uint256)",
                 NEW_M_WBTCWH_RESERVE_FACTOR
             ),
             "Set reserve factor for MOONWELL_mWBTC to updated reserve factor",
-            true
+            ActionType.Moonbeam
         );
 
-        _pushHybridAction(
+        _pushAction(
             addresses.getAddress("UNITROLLER"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(address,uint256)",
@@ -72,19 +75,19 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
                 NEW_M_WBTCWH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of MOONWELL_mWBTC",
-            true
+            ActionType.Moonbeam
         );
     }
 
     function run(Addresses addresses, address) public override {
         /// safety check to ensure no base actions are run
         require(
-            baseActions.length == 0,
+            actions.proposalActionTypeCount(ActionType.Base) == 0,
             "MIP-M31: should have no base actions"
         );
 
         require(
-            moonbeamActions.length == 3,
+            actions.proposalActionTypeCount(ActionType.Moonbeam) == 3,
             "MIP-M31: should have 3 moonbeam actions"
         );
 

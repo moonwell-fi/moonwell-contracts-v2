@@ -1,10 +1,10 @@
 pragma solidity 0.8.19;
 
-import {xERC20BridgeAdapter} from "@protocol/xWELL/xERC20BridgeAdapter.sol";
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {IWormholeReceiver} from "@protocol/wormhole/IWormholeReceiver.sol";
+import {xERC20BridgeAdapter} from "@protocol/xWELL/xERC20BridgeAdapter.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 
 /// @notice Wormhole xERC20 Token Bridge adapter
@@ -83,12 +83,15 @@ contract WormholeBridgeAdapter is
     /// @param newxerc20 xERC20 token address
     /// @param newOwner contract owner address
     /// @param wormholeRelayerAddress address of the wormhole relayer
-    /// @param targetChain chain id of the target chain to address for bridging
+    /// @param targetChains chain id of the target chain to address for bridging
+    /// @param targetAddresses addresses of the wormhole bridge adapters to
+    /// bridge to on external chains
     function initialize(
         address newxerc20,
         address newOwner,
         address wormholeRelayerAddress,
-        uint16 targetChain
+        uint16[] memory targetChains,
+        address[] memory targetAddresses
     ) public initializer {
         __Ownable_init();
         _transferOwnership(newOwner);
@@ -98,8 +101,14 @@ contract WormholeBridgeAdapter is
 
         /// initialize contract to trust this exact same address on an external chain
         /// @dev the external chain contracts MUST HAVE THE SAME ADDRESS on the external chain
-        targetAddress[targetChain] = address(this);
-        _addTrustedSender(address(this), targetChain);
+        require(
+            targetChains.length == targetAddresses.length,
+            "WormholeBridge: array length mismatch"
+        );
+        for (uint256 i = 0; i < targetChains.length; i++) {
+            targetAddress[targetChains[i]] = targetAddresses[i];
+            _addTrustedSender(targetAddresses[i], targetChains[i]);
+        }
 
         gasLimit = 300_000; /// @dev default starting gas limit for relayer
     }

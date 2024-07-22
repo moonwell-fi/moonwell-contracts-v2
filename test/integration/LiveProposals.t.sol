@@ -1,38 +1,34 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
-import {console} from "@forge-std/console.sol";
 
-import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {Addresses} from "@proposals/Addresses.sol";
-import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
-import {String} from "@utils/String.sol";
+import "@protocol/utils/ChainIds.sol";
+
 import {Bytes} from "@utils/Bytes.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {String} from "@utils/String.sol";
 import {Address} from "@utils/Address.sol";
-import {MIPProposal as Proposal} from "@proposals/MIPProposal.s.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
+import {Proposal} from "@proposals/Proposal.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
+import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {ChainIds, MOONBEAM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
-contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
+contract LiveProposalsIntegrationTest is Test, ProposalChecker {
     using String for string;
     using Bytes for bytes;
-    using Address for address;
+    using Address for *;
+    using ChainIds for uint256;
 
     /// @notice addresses contract
     Addresses addresses;
 
-    /// @notice fork ID for moonbeam
-    uint256 public moonbeamForkId =
-        vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
-
-    /// @notice fork ID for base
-    uint256 public baseForkId = vm.createFork(vm.envString("BASE_RPC_URL"));
-
     /// @notice Multichain Governor address
-    address governor;
+    address payable governor;
 
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
@@ -44,41 +40,44 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
     );
 
     function setUp() public {
+        MOONBEAM_FORK_ID.createForksAndSelect();
+
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        vm.selectFork(moonbeamForkId);
-        governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        governor = payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"));
     }
 
     function testActiveProposals() public {
-        vm.selectFork(moonbeamForkId);
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         MultichainGovernor governorContract = MultichainGovernor(governor);
 
         uint256[] memory proposalIds = governorContract.liveProposals();
 
         string[] memory inputs = new string[](1);
-        inputs[0] = "./get-latest-proposals.sh";
+        inputs[0] = "bin/get-latest-proposals.sh";
 
         string memory output = string(vm.ffi(inputs));
 
         // create array splitting the output string
         string[] memory proposalsPath = output.split(",");
 
-        for (uint256 i = proposalIds.length; i > 0; i--) {
-            /// always need to select moonbeamForkId before executing a
+        for (uint256 i = 0; i < proposalIds.length; i++) {
+            /// always need to select MOONBEAM_FORK_ID before executing a
             /// proposal as end of loop could switch to base for execution
-            vm.selectFork(moonbeamForkId);
+            vm.selectFork(MOONBEAM_FORK_ID);
 
-            uint256 proposalId = proposalIds[i - 1];
+            uint256 proposalId = proposalIds[i];
             (
                 address[] memory targets,
                 ,
                 bytes[] memory calldatas
             ) = governorContract.getProposalData(proposalId);
 
-            checkMoonbeamActions(targets, addresses);
+            addresses.addRestriction(MOONBEAM_CHAIN_ID);
+
+            checkMoonbeamActions(targets);
             {
                 // Simulate proposals execution
                 (
@@ -94,19 +93,22 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                 ) = governorContract.proposalInformation(proposalId);
 
                 address well = addresses.getAddress("xWELL_PROXY");
+
                 vm.warp(voteSnapshotTimestamp - 1);
+
                 deal(well, address(this), governorContract.quorum());
+
                 xWELL(well).delegate(address(this));
 
                 vm.warp(votingStartTime);
+
                 governorContract.castVote(proposalId, 0);
                 vm.warp(crossChainVoteCollectionEndTimestamp + 1);
             }
 
-            // Check if there is any action on Base
-            address wormholeCore = block.chainid == moonBeamChainId
-                ? addresses.getAddress("WORMHOLE_CORE_MOONBEAM")
-                : addresses.getAddress("WORMHOLE_CORE_MOONBASE");
+            /// Check if there is any action on Base
+            address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
+            addresses.removeRestriction();
 
             uint256 lastIndex = targets.length - 1;
             bytes memory payload;
@@ -147,9 +149,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     Proposal proposal = Proposal(deployCode(proposalsPath[j]));
                     vm.makePersistent(address(proposal));
 
-                    proposal.setForkIds(baseForkId, moonbeamForkId);
-
-                    vm.selectFork(proposal.primaryForkId());
+                    vm.selectFork(uint256(proposal.primaryForkId()));
 
                     // runs pre build mock and build
                     proposal.preBuildMock(addresses);
@@ -160,10 +160,10 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         proposal.getProposalId(addresses, governor) ==
                         proposalId
                     ) {
-                        vm.selectFork(moonbeamForkId);
+                        vm.selectFork(MOONBEAM_FORK_ID);
                         governorContract.execute(proposalId);
 
-                        vm.selectFork(proposal.primaryForkId());
+                        vm.selectFork(uint256(proposal.primaryForkId()));
                         proposal.validate(addresses, address(proposal));
                         break;
                     }
@@ -171,7 +171,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
             }
 
             if (targets[lastIndex] == wormholeCore) {
-                vm.selectFork(baseForkId);
+                vm.selectFork(BASE_FORK_ID);
 
                 address expectedTemporalGov = addresses.getAddress(
                     "TEMPORAL_GOVERNOR"
@@ -194,12 +194,12 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         "Temporal Governor address mismatch"
                     );
 
-                    checkBaseActions(baseTargets, addresses);
+                    checkBaseOptimismActions(baseTargets);
                 }
 
                 bytes memory vaa = generateVAA(
                     uint32(block.timestamp),
-                    uint16(chainIdToWormHoleId[block.chainid]),
+                    block.chainid.toMoonbeamWormholeChainId(),
                     governor.toBytes(),
                     payload
                 );
@@ -212,9 +212,10 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                     // Deploy the modified Wormhole Core implementation contract which
                     // bypass the guardians signature check
                     Implementation core = new Implementation();
-                    address wormhole = block.chainid == baseChainId
-                        ? addresses.getAddress("WORMHOLE_CORE_BASE")
-                        : addresses.getAddress("WORMHOLE_CORE_SEPOLIA_BASE");
+                    address wormhole = addresses.getAddress(
+                        "WORMHOLE_CORE",
+                        block.chainid
+                    );
 
                     /// Set the wormhole core address to have the
                     /// runtime bytecode of the mock core
@@ -238,8 +239,7 @@ contract LiveProposalsIntegrationTest is Test, ChainIds, ProposalChecker {
                         );
                         vm.makePersistent(address(proposal));
 
-                        proposal.setForkIds(baseForkId, moonbeamForkId);
-                        vm.selectFork(proposal.primaryForkId());
+                        vm.selectFork(uint256(proposal.primaryForkId()));
 
                         // runs pre build mock and build
                         proposal.preBuildMock(addresses);

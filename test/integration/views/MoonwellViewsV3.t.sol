@@ -4,7 +4,7 @@ import "@forge-std/Test.sol";
 
 import {MoonwellViewsV3} from "@protocol/views/MoonwellViewsV3.sol";
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
 contract MoonwellViewsV3Test is Test, PostProposalCheck {

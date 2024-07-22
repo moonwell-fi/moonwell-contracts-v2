@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {Addresses} from "@proposals/Addresses.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
-
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
+import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// Proposal to run on Moonbeam to create the Multichain Governor contract
 /// to simulate: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
@@ -22,9 +22,8 @@ contract mipm23a is HybridProposal, MultichainGovernorDeploy {
     /// @notice deployment name
     string public constant override name = "MIP-M23A";
 
-    /// @notice proposal's actions all happen on moonbeam
-    function primaryForkId() public view override returns (uint256) {
-        return moonbeamForkId;
+    function primaryForkId() public pure override returns (uint256) {
+        return MOONBEAM_FORK_ID;
     }
 
     function deploy(Addresses addresses, address) public override {
@@ -41,8 +40,8 @@ contract mipm23a is HybridProposal, MultichainGovernorDeploy {
             address governorImpl
         ) = deployMultichainGovernor(proxyAdmin);
 
-        addresses.addAddress("MULTICHAIN_GOVERNOR_PROXY", governorProxy, true);
-        addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", governorImpl, true);
+        addresses.addAddress("MULTICHAIN_GOVERNOR_PROXY", governorProxy);
+        addresses.addAddress("MULTICHAIN_GOVERNOR_IMPL", governorImpl);
     }
 
     function validate(Addresses addresses, address) public view override {

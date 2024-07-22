@@ -6,13 +6,13 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "@forge-std/Test.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {ChainIds} from "@test/utils/ChainIds.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ETHEREUM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 
-contract xWellRouterTest is Test, ChainIds {
+contract xWellRouterMoonbeamTest is Test {
     /// @notice addresses contract, stores all addresses
     Addresses public addresses;
 
@@ -41,10 +41,17 @@ contract xWellRouterTest is Test, ChainIds {
     uint256 public constant startingWellAmount = 100_000 * 1e18;
 
     uint16 public constant wormholeMoonbeamChainid =
-        uint16(moonBeamWormholeChainId);
+        uint16(MOONBEAM_WORMHOLE_CHAIN_ID);
 
     /// @notice event emitted when WELL is bridged to xWELL via the base chain
-    event BridgeOutSuccess(address indexed to, uint256 amount);
+    /// @param to address that receives the xWELL
+    /// @param destWormholeChainId chain id to send xWELL to
+    /// @param amount amount of xWELL bridged
+    event BridgeOutSuccess(
+        address indexed to,
+        uint16 indexed destWormholeChainId,
+        uint256 amount
+    );
 
     function setUp() public {
         addresses = new Addresses();
@@ -87,31 +94,29 @@ contract xWellRouterTest is Test, ChainIds {
             address(wormholeAdapter),
             "Wormhole bridge address incorrect"
         );
-        assertEq(
-            router.baseWormholeChainId(),
-            baseWormholeChainId,
-            "Base wormhole chain id incorrect"
-        );
     }
 
     function testBridgeOutNoApprovalFails() public {
         uint256 mintAmount = 100_000_000 * 1e18;
 
         deal(address(well), address(this), mintAmount);
-        uint256 bridgeCost = router.bridgeCost();
+        uint256 bridgeCost = router.bridgeCost(BASE_WORMHOLE_CHAIN_ID);
 
         vm.deal(address(this), bridgeCost);
 
         vm.expectRevert(
             "Well::transferFrom: transfer amount exceeds spender allowance"
         );
-        router.bridgeToBase{value: bridgeCost}(mintAmount);
+        router.bridgeToSender{value: bridgeCost}(
+            mintAmount,
+            BASE_WORMHOLE_CHAIN_ID
+        );
     }
 
     function testBridgeOutNoBalanceFails() public {
         uint256 mintAmount = 100_000_000 * 1e18;
 
-        uint256 bridgeCost = router.bridgeCost();
+        uint256 bridgeCost = router.bridgeCost(BASE_WORMHOLE_CHAIN_ID);
 
         vm.deal(address(this), bridgeCost);
         well.approve(address(router), mintAmount);
@@ -119,7 +124,10 @@ contract xWellRouterTest is Test, ChainIds {
         vm.expectRevert(
             "Well::_transferTokens: transfer amount exceeds balance"
         );
-        router.bridgeToBase{value: bridgeCost}(mintAmount);
+        router.bridgeToSender{value: bridgeCost}(
+            mintAmount,
+            BASE_WORMHOLE_CHAIN_ID
+        );
     }
 
     function testBridgeOutSuccess() public {
@@ -130,7 +138,7 @@ contract xWellRouterTest is Test, ChainIds {
         uint256 mintAmount,
         uint256 glmrAmount
     ) public returns (uint256) {
-        uint256 bridgeCost = router.bridgeCost();
+        uint256 bridgeCost = router.bridgeCost(BASE_WORMHOLE_CHAIN_ID);
 
         mintAmount = _bound(
             mintAmount,
@@ -152,9 +160,17 @@ contract xWellRouterTest is Test, ChainIds {
         well.approve(address(router), mintAmount);
 
         vm.expectEmit(true, true, true, true, address(router));
-        emit BridgeOutSuccess(address(this), mintAmount);
+        emit BridgeOutSuccess(
+            address(this),
+            BASE_WORMHOLE_CHAIN_ID,
+            mintAmount
+        );
 
-        router.bridgeToBase{value: bridgeCost}(address(this), mintAmount);
+        router.bridgeToRecipient{value: bridgeCost}(
+            address(this),
+            mintAmount,
+            BASE_WORMHOLE_CHAIN_ID
+        );
 
         assertEq(address(router).balance, 0, "incorrect router balance");
         assertEq(
@@ -203,15 +219,22 @@ contract xWellRouterTest is Test, ChainIds {
         uint256 startingBuffer = xwell.buffer(address(wormholeAdapter));
 
         deal(address(well), address(this), mintAmount);
-        uint256 bridgeCost = router.bridgeCost();
+        uint256 bridgeCost = router.bridgeCost(BASE_WORMHOLE_CHAIN_ID);
         vm.deal(address(this), bridgeCost);
         uint256 startingWellBalance = well.balanceOf(address(this));
         uint256 startingLockboxWellBalance = well.balanceOf(address(lockbox));
 
         well.approve(address(router), mintAmount);
         vm.expectEmit(true, true, true, true, address(router));
-        emit BridgeOutSuccess(address(this), mintAmount);
-        router.bridgeToBase{value: bridgeCost}(mintAmount);
+        emit BridgeOutSuccess(
+            address(this),
+            BASE_WORMHOLE_CHAIN_ID,
+            mintAmount
+        );
+        router.bridgeToSender{value: bridgeCost}(
+            mintAmount,
+            BASE_WORMHOLE_CHAIN_ID
+        );
 
         assertEq(
             xwell.buffer(address(wormholeAdapter)),
@@ -241,32 +264,35 @@ contract xWellRouterTest is Test, ChainIds {
         return mintAmount;
     }
 
-    function testBridgeToBaseFailsInsufficientGlmr() public {
+    function testBridgeToSenderFailsInsufficientGlmr() public {
         vm.expectRevert("xWELLRouter: insufficient GLMR sent");
-        router.bridgeToBase{value: 1}(0);
+        router.bridgeToSender{value: 1}(0, BASE_WORMHOLE_CHAIN_ID);
     }
 
-    function testBridgeToBaseFailsRefund() public {
+    function testBridgeToSenderFailsRefund() public {
         uint256 mintAmount = xwell.buffer(address(wormholeAdapter));
 
         deal(address(well), address(this), mintAmount);
 
-        uint256 bridgeCost = router.bridgeCost() * 2; /// a little extra
+        uint256 bridgeCost = router.bridgeCost(BASE_WORMHOLE_CHAIN_ID) * 2; /// a little extra
         vm.deal(address(this), bridgeCost);
 
         well.approve(address(router), mintAmount);
 
         fallbackReverts = true;
         vm.expectRevert("xWELLRouter: failed to refund excess GLMR");
-        router.bridgeToBase{value: bridgeCost}(mintAmount);
+        router.bridgeToSender{value: bridgeCost}(
+            mintAmount,
+            BASE_WORMHOLE_CHAIN_ID
+        );
     }
 
-    function testBridgeToBaseSucceedsNoRefund() public {
+    function testBridgeToSenderSucceedsNoRefund() public {
         uint256 mintAmount = xwell.buffer(address(wormholeAdapter));
 
         deal(address(well), address(this), mintAmount);
 
-        uint256 bridgeCost = router.bridgeCost(); /// no extra, no refund amount
+        uint256 bridgeCost = router.bridgeCost(BASE_WORMHOLE_CHAIN_ID); /// no extra, no refund amount
         vm.deal(address(this), bridgeCost);
 
         well.approve(address(router), mintAmount);
@@ -274,9 +300,35 @@ contract xWellRouterTest is Test, ChainIds {
         fallbackReverts = true;
 
         vm.expectEmit(true, true, true, true, address(router));
-        emit BridgeOutSuccess(address(this), mintAmount);
-        router.bridgeToBase{value: bridgeCost}(mintAmount);
+        emit BridgeOutSuccess(
+            address(this),
+            BASE_WORMHOLE_CHAIN_ID,
+            mintAmount
+        );
+        router.bridgeToSender{value: bridgeCost}(
+            mintAmount,
+            BASE_WORMHOLE_CHAIN_ID
+        );
         assertEq(address(router).balance, 0, "incorrect router balance");
+    }
+
+    function testBridgeToNonBridgeAdapterWhitelistedWormholeChainIdFails()
+        public
+    {
+        uint256 mintAmount = xwell.buffer(address(wormholeAdapter));
+
+        deal(address(well), address(this), mintAmount);
+
+        uint256 bridgeCost = router.bridgeCost(ETHEREUM_WORMHOLE_CHAIN_ID); /// no extra, no refund amount
+        vm.deal(address(this), bridgeCost);
+
+        well.approve(address(router), mintAmount);
+
+        vm.expectRevert("WormholeBridge: invalid target chain");
+        router.bridgeToSender{value: bridgeCost}(
+            mintAmount,
+            ETHEREUM_WORMHOLE_CHAIN_ID
+        );
     }
 
     receive() external payable {

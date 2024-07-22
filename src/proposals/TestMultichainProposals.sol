@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -5,11 +6,9 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 import {console} from "@forge-std/console.sol";
 import {Test} from "@forge-std/Test.sol";
 
-import {Proposal} from "@proposals/proposalTypes/Proposal.sol";
-import {Addresses} from "@proposals/Addresses.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {IProposal} from "@proposals/proposalTypes/IProposal.sol";
-import {CrossChainProposal} from "@proposals/proposalTypes/CrossChainProposal.sol";
-import {MIPProposal} from "@proposals/MIPProposal.s.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
 How to use:
@@ -59,17 +58,6 @@ contract TestMultichainProposals is Test, Initializable {
         vm.makePersistent(address(this));
     }
 
-    function printCalldata(
-        uint256 index,
-        address temporalGovernor,
-        address wormholeCore
-    ) public {
-        CrossChainProposal(address(proposals[index])).printActions(
-            temporalGovernor,
-            wormholeCore
-        );
-    }
-
     function printProposalActionSteps() public {
         for (uint256 i = 0; i < proposals.length; i++) {
             proposals[i].printProposalActionSteps();
@@ -96,7 +84,7 @@ contract TestMultichainProposals is Test, Initializable {
 
         for (uint256 i = 0; i < proposals.length; i++) {
             string memory name = IProposal(address(proposals[i])).name();
-            uint256 forkId = MIPProposal(address(proposals[i])).primaryForkId();
+            uint256 forkId = uint256(proposals[i].primaryForkId());
 
             vm.selectFork(forkId);
 

@@ -1,6 +1,12 @@
 pragma solidity 0.8.19;
 
-import {Addresses} from "@proposals/Addresses.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+
+enum ActionType {
+    Moonbeam,
+    Base,
+    Optimism
+}
 
 struct ProposalAction {
     /// address to call
@@ -11,6 +17,8 @@ struct ProposalAction {
     bytes data;
     /// for human description
     string description;
+    /// action type
+    ActionType actionType;
 }
 
 interface IProposal {
@@ -65,13 +73,4 @@ interface IProposal {
     /// print out proposal steps one by one
     /// print proposal description
     function printProposalActionSteps() external;
-
-    /// fork ID for base
-    function baseForkId() external view returns (uint256);
-
-    /// fork ID for moonbeam
-    function moonbeamForkId() external view returns (uint256);
-
-    /// set fork ID's for base and moonbeam
-    function setForkIds(uint256 baseForkId, uint256 moonbeamForkId) external;
 }

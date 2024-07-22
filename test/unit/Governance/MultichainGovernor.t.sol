@@ -2,6 +2,8 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import "@utils/ChainIds.sol";
+
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
@@ -96,7 +98,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
 
         assertEq(
-            address(governor.targetAddress(baseWormholeChainId)),
+            address(governor.targetAddress(BASE_WORMHOLE_CHAIN_ID)),
             address(voteCollection),
             "target address on moonbeam incorrect"
         );
@@ -108,11 +110,11 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
         assertEq(
             governor.getAllTargetChains()[0],
-            baseWormholeChainId,
+            BASE_WORMHOLE_CHAIN_ID,
             "getAllTargetChains chainid incorrect"
         );
         assertEq(
-            governor.bridgeCost(moonBaseWormholeChainId),
+            governor.bridgeCost(MOONBASE_WORMHOLE_CHAIN_ID),
             0.01 ether,
             "bridgecost incorrect"
         );
@@ -131,7 +133,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
         assertTrue(
             voteCollection.isTrustedSender(
-                moonBeamWormholeChainId,
+                MOONBEAM_WORMHOLE_CHAIN_ID,
                 address(governor)
             ),
             "governor address not trusted sender"
@@ -152,7 +154,7 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
 
         vm.expectRevert("Initializable: contract is already initialized");
 
-        MultichainGovernor(address(governorLogic)).initialize(
+        MultichainGovernor(payable(governorLogic)).initialize(
             initData,
             trustedSenders,
             new bytes[](0)
@@ -711,6 +713,39 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         );
     }
 
+    function testProposeExcessValueRefunded() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string
+            memory description = "Proposal MIP-M00 - Update Proposal Threshold";
+
+        targets[0] = address(governor);
+        values[0] = 0;
+        calldatas[0] = abi.encodeWithSignature(
+            "updateProposalThreshold(uint256)",
+            100_000_000 * 1e18
+        );
+
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost * 5);
+
+        uint256 proposalId = governor.propose{value: bridgeCost * 5}(
+            targets,
+            values,
+            calldatas,
+            description
+        );
+
+        assertTrue(governor.proposalActive(proposalId), "proposal not active");
+
+        assertEq(
+            address(this).balance,
+            bridgeCost * 4,
+            "excess value not refunded"
+        );
+    }
+
     function testProposeWhenPausedFails() public {
         testPausePauseGuardianSucceeds();
 
@@ -737,6 +772,19 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
         governor.castVote(0, 0);
     }
 
+    function testSendEthToGovernorSucceeds() public {
+        uint256 sendAmount = 1 ether;
+        vm.deal(address(this), sendAmount);
+
+        (bool success, ) = address(governor).call{value: sendAmount}("");
+        assertEq(
+            address(governor).balance,
+            sendAmount,
+            "governor did not accept eth"
+        );
+        assertTrue(success, "eth transfer failed");
+    }
+
     // VIEW FUNCTIONS
 
     function testVoteCollectorIsTrustedSender() public {
@@ -746,4 +794,6 @@ contract MultichainGovernorUnitTest is MultichainBaseTest {
             "vote collector not trusted"
         );
     }
+
+    receive() external payable {}
 }
