@@ -194,8 +194,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             x01.build(addresses);
             x01.run(addresses, address(this));
 
-            addresses.changeAddress("xWELL_ROUTER", address(router), true);
-
             // save well balances before so we can check if the transferFrom was successful
             IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
 
