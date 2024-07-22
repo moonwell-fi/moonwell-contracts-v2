@@ -77,9 +77,12 @@ contract WormholeRelayerAdapter {
 
         require(msg.value == nativePriceQuote, "incorrect value");
 
-        uint256 initialFork = vm.activeFork();
+        uint256 initialFork;
 
-        if (isMultichainTest) vm.selectFork(chainId.toChainId().toForkId());
+        if (isMultichainTest) {
+            initialFork = vm.activeFork();
+            vm.selectFork(chainId.toChainId().toForkId());
+        }
 
         if (senderChainId != 0) {
             /// immediately call the target
