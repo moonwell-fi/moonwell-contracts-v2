@@ -6,7 +6,6 @@ import "@forge-std/StdJson.sol";
 import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
 
-import {mipx01} from "@proposals/mips/mip-x01/mip-x01.sol";
 import {mip00} from "@proposals/mips/mip00.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
@@ -188,11 +187,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 bytes32(uint256(153)),
                 encodedData
             );
-
-            // TODO remove this once x01 is executed
-            mipx01 x01 = new mipx01();
-            x01.build(addresses);
-            x01.run(addresses, address(this));
 
             // save well balances before so we can check if the transferFrom was successful
             IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
