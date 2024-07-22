@@ -9,14 +9,24 @@
         },
         "bridgeToRecipient": [
             {
-                "amount": 18000e18,
+                "amount": 11000e18,
                 "network": 8453,
                 "target": "TEMPORAL_GOVERNOR"
             },
             {
-                "amount": 18000e18,
+                "amount": 11000e18,
                 "network": 10,
                 "target": "TEMPORAL_GOVERNOR"
+            },
+            {
+                "amount": 7000e18,
+                "network": 8453,
+                "target": "DEX_RELAYER"
+            },
+            {
+                "amount": 7000e18,
+                "network": 10,
+                "target": "DEX_RELAYER"
             }
         ],
         "setRewardSpeed": [
@@ -80,12 +90,6 @@
                 "from": "TEMPORAL_GOVERNOR",
                 "to": "UNITROLLER",
                 "token": "xWELL_PROXY"
-            },
-            {
-                "amount": 7000e18,
-                "from": "TEMPORAL_GOVERNOR",
-                "to": "DEX_RELAYER",
-                "token": "xWELL_PROXY"
             }
         ]
     },
@@ -111,12 +115,6 @@
                 "amount": 6000e18,
                 "from": "TEMPORAL_GOVERNOR",
                 "to": "UNITROLLER",
-                "token": "xWELL_PROXY"
-            },
-            {
-                "amount": 7000e18,
-                "from": "TEMPORAL_GOVERNOR",
-                "to": "DEX_RELAYER",
                 "token": "xWELL_PROXY"
             }
         ]
