@@ -283,6 +283,20 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         }
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
+            // check for duplications
+            for (uint256 j = 0; j < moonbeamActions.transferFroms.length; j++) {
+                TransferFrom memory existingTransferFrom = moonbeamActions
+                    .transferFroms[j];
+
+                require(
+                    addresses.getAddress(existingTransferFrom.token) !=
+                        addresses.getAddress(spec.transferFroms[i].token) ||
+                        addresses.getAddress(existingTransferFrom.from) !=
+                        addresses.getAddress(spec.transferFroms[i].from),
+                    "Duplication in transferFroms"
+                );
+            }
+
             moonbeamActions.transferFroms.push(spec.transferFroms[i]);
         }
     }
@@ -362,6 +376,26 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     "Transfer amount must be close to the total rewards for the epoch"
                 );
             }
+
+            // check for duplications
+            for (
+                uint256 j = 0;
+                j < externalChainActions[chainId].transferFroms.length;
+                j++
+            ) {
+                TransferFrom memory existingTransferFrom = externalChainActions[
+                    chainId
+                ].transferFroms[j];
+
+                require(
+                    addresses.getAddress(existingTransferFrom.token) !=
+                        addresses.getAddress(spec.transferFroms[i].token) ||
+                        addresses.getAddress(existingTransferFrom.from) !=
+                        addresses.getAddress(spec.transferFroms[i].from),
+                    "Duplication in transferFroms"
+                );
+            }
+
             externalChainActions[chainId].transferFroms.push(
                 spec.transferFroms[i]
             );
