@@ -119,6 +119,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         // mock relayer so we can simulate bridging well
         WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
+        vm.makePersistent(address(wormholeRelayer));
         vm.label(address(wormholeRelayer), "MockWormholeRelayer");
 
         // we need to set this so that the relayer mock knows that for the next sendPayloadToEvm
@@ -381,7 +382,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         " amount ",
                         vm.toString(
                             transferFrom.amount / IERC20(token).decimals()
-                        )
+                        ),
+                        "on Moonbeam"
                     )
                 )
             );
@@ -548,7 +550,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         " amount ",
                         vm.toString(
                             transferFrom.amount / IERC20(token).decimals()
-                        )
+                        ),
+                        " on ",
+                        vm.toString(chainId.chainIdToName())
                     )
                 )
             );
@@ -586,7 +590,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     ),
                     string(
                         abi.encodePacked(
-                            "Set reward supply speed for ",
+                            "Change reward supply speed to ",
+                            vm.toString(setRewardSpeed.newSupplySpeed),
+                            " for ",
                             vm.getLabel(market),
                             " on ",
                             chainId.chainIdToName()
@@ -609,7 +615,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     ),
                     string(
                         abi.encodePacked(
-                            "Set reward borrow speed for ",
+                            "Set reward borrow speed to ",
+                            vm.toString(setRewardSpeed.newBorrowSpeed),
+                            " for ",
                             vm.getLabel(market),
                             " on ",
                             chainId.chainIdToName()
@@ -620,7 +628,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
             if (emissionConfig.endTime != 0) {
                 // new end time must be greater than the current end time
-                assertGt(setRewardSpeed.newEndTime, emissionConfig.endTime);
+                assertGt(
+                    setRewardSpeed.newEndTime,
+                    emissionConfig.endTime,
+                    "New end time must be greater than the current end time"
+                );
 
                 _pushAction(
                     mrd,
@@ -671,7 +683,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             if (to == addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")) {
                 //  amount must be transferred as part of the DEX rewards and
                 //  bridge calls
-                assertEq(well.balanceOf(to), wellBalancesBefore[to]);
+                assertEq(
+                    well.balanceOf(to),
+                    wellBalancesBefore[to],
+                    "balance changed for MULTICHAIN_GOVERNOR_PROXY"
+                );
             } else {
                 assertEq(
                     well.balanceOf(to),
