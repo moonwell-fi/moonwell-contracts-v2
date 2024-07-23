@@ -726,7 +726,6 @@ abstract contract HybridProposal is
                 /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
                 vm.expectEmit(true, true, true, true, wormholeCoreMoonbeam);
 
-                /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
                 emit LogMessagePublished(
                     address(governor),
                     nextSequence++,
@@ -740,7 +739,6 @@ abstract contract HybridProposal is
                 /// expect emitting of events to Wormhole Core on Moonbeam if Optimism actions exist
                 vm.expectEmit(true, true, true, true, wormholeCoreMoonbeam);
 
-                /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
                 emit LogMessagePublished(
                     address(governor),
                     nextSequence,
