@@ -757,12 +757,11 @@ abstract contract HybridProposal is
             );
         }
 
-        // TODO figure out why this is returning 0 (active)
-        // require(
-        //     governor.state(proposalId) ==
-        //         IMultichainGovernor.ProposalState.Executed,
-        //     "Proposal state not executed"
-        // );
+        require(
+            governor.state(proposalId) ==
+                IMultichainGovernor.ProposalState.Executed,
+            "Proposal state not executed"
+        );
 
         _verifyMTokensPostRun();
 
