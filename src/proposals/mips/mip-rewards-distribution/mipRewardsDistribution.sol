@@ -474,7 +474,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
             uint256 bridgeCost = xWELLRouter(router).bridgeCost(
                 wormholeChainId
-            ) * 5; // make sure that the proposal does not revert due to bridge
+            ) * 20; // make sure that the proposal does not revert due to bridge
             // cost changing
 
             _pushAction(
