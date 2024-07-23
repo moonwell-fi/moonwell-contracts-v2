@@ -281,6 +281,26 @@ library ChainIds {
         }
     }
 
+    function chainIdToName(
+        uint256 chainId
+    ) internal pure returns (string memory) {
+        if (chainId == MOONBEAM_CHAIN_ID) {
+            return "Moonbeam";
+        } else if (chainId == BASE_CHAIN_ID) {
+            return "Base";
+        } else if (chainId == OPTIMISM_CHAIN_ID) {
+            return "Optimism";
+        } else if (chainId == MOONBASE_CHAIN_ID) {
+            return "Moonbase";
+        } else if (chainId == BASE_SEPOLIA_CHAIN_ID) {
+            return "Base Sepolia";
+        } else if (chainId == OPTIMISM_SEPOLIA_CHAIN_ID) {
+            return "Optimism Sepolia";
+        } else {
+            revert("ChainIds: invalid chain id");
+        }
+    }
+
     function nonMoonbeamChainIds(uint256 chainId) internal pure returns (bool) {
         return chainId != MOONBEAM_CHAIN_ID && chainId != MOONBASE_CHAIN_ID;
     }

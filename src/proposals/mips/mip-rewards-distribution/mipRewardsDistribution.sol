@@ -10,7 +10,6 @@ import {mip00} from "@proposals/mips/mip00.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -20,6 +19,7 @@ import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
 import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
+import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 interface StellaSwapRewarder {
     function poolRewardsPerSec(uint256 _pid) external view returns (uint256);
@@ -373,13 +373,15 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 string(
                     abi.encodePacked(
                         "Transfer token ",
-                        vm.toString(token),
+                        vm.getLabel(token),
                         " from ",
-                        vm.toString(from),
+                        vm.getLabel(from),
                         " to ",
-                        vm.toString(to),
+                        vm.getLabel(to),
                         " amount ",
-                        vm.toString(transferFrom.amount)
+                        vm.toString(
+                            transferFrom.amount / IERC20(token).decimals()
+                        )
                     )
                 )
             );
@@ -393,16 +395,24 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             );
 
             address router = addresses.getAddress("xWELL_ROUTER");
+            address well = addresses.getAddress("WELL");
 
             // first approve
             _pushAction(
-                addresses.getAddress("WELL"),
+                well,
                 abi.encodeWithSignature(
                     "approve(address,uint256)",
                     router,
                     bridgeWell.amount
                 ),
-                "Approve xWELL Router to spend WELL",
+                string(
+                    abi.encodePacked(
+                        "Approve xWELL Router to spend",
+                        vm.toString(bridgeWell.amount / 1e18),
+                        " ",
+                        vm.getLabel(well)
+                    )
+                ),
                 ActionType.Moonbeam
             );
 
@@ -425,11 +435,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 string(
                     abi.encodePacked(
                         "Bridge ",
-                        vm.toString(bridgeWell.amount),
+                        vm.toString(bridgeWell.amount / 1e18),
                         " WELL to ",
-                        vm.toString(target),
+                        vm.getLabel(target),
                         " on ",
-                        vm.toString(bridgeWell.network)
+                        bridgeWell.network.chainIdToName()
                     )
                 ),
                 ActionType.Moonbeam
@@ -482,7 +492,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress(addRewardInfo.target),
                 addRewardInfo.amount
             ),
-            "Approve StellaSwap spend the amount of WELL",
+            string(
+                abi.encodePacked(
+                    "Approve StellaSwap spend ",
+                    vm.toString(addRewardInfo.amount / 1e18),
+                    " WELL"
+                )
+            ),
             ActionType.Moonbeam
         );
 
@@ -524,13 +540,15 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 string(
                     abi.encodePacked(
                         "Transfer token ",
-                        vm.toString(token),
+                        vm.getLabel(token),
                         " from ",
-                        vm.toString(from),
+                        vm.getLabel(from),
                         " to ",
-                        vm.toString(to),
+                        vm.getLabel(to),
                         " amount ",
-                        vm.toString(transferFrom.amount)
+                        vm.toString(
+                            transferFrom.amount / IERC20(token).decimals()
+                        )
                     )
                 )
             );
@@ -569,9 +587,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     string(
                         abi.encodePacked(
                             "Set reward supply speed for ",
-                            vm.toString(market),
+                            vm.getLabel(market),
                             " on ",
-                            vm.toString(chainId)
+                            chainId.chainIdToName()
                         )
                     )
                 );
@@ -592,9 +610,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     string(
                         abi.encodePacked(
                             "Set reward borrow speed for ",
-                            vm.toString(market),
+                            vm.getLabel(market),
                             " on ",
-                            vm.toString(chainId)
+                            chainId.chainIdToName()
                         )
                     )
                 );
@@ -615,9 +633,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     string(
                         abi.encodePacked(
                             "Set reward end time for ",
-                            vm.toString(market),
+                            vm.getLabel(market),
                             " on ",
-                            vm.toString(chainId)
+                            chainId.chainIdToName()
                         )
                     )
                 );
@@ -634,7 +652,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             string(
                 abi.encodePacked(
                     "Set reward speed for the Safety Module on ",
-                    vm.toString(chainId)
+                    chainId.chainIdToName()
                 )
             )
         );
