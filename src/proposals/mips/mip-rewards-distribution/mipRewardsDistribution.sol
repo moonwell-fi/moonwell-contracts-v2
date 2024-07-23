@@ -292,7 +292,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     addresses.getAddress(existingTransferFrom.token) !=
                         addresses.getAddress(spec.transferFroms[i].token) ||
                         addresses.getAddress(existingTransferFrom.from) !=
-                        addresses.getAddress(spec.transferFroms[i].from) !=
+                        addresses.getAddress(spec.transferFroms[i].from) ||
                         addresses.getAddress(spec.transferFroms[i].to) !=
                         addresses.getAddress(existingTransferFrom.to),
                     "Duplication in transferFroms"
