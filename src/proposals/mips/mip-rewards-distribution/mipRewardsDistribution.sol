@@ -89,6 +89,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
     mapping(uint256 chainid => JsonSpecExternalChain) externalChainActions;
 
+    uint256 expectedExecutionTime;
+
     /// we need to save this value to check if the transferFrom amount was successfully transferred
     mapping(address => uint256) public wellBalancesBefore;
 
@@ -114,6 +116,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         string memory encodedJson = vm.readFile(
             vm.envString("MIP_REWARDS_PATH")
         );
+
+        string memory filter = ".expectedExecutionTime";
+
+        bytes memory parsedJson = vm.parseJson(encodedJson, filter);
+
+        expectedExecutionTime = abi.decode(parsedJson, (uint256));
 
         _saveMoonbeamActions(addresses, encodedJson);
 
@@ -354,10 +362,10 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             );
 
             uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-                (block.timestamp + spec.setRewardSpeed[i].newEndTime);
+                (spec.setRewardSpeed[i].newEndTime - expectedExecutionTime);
 
             uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-                (block.timestamp + spec.setRewardSpeed[i].newEndTime);
+                (spec.setRewardSpeed[i].newEndTime - expectedExecutionTime);
 
             totalEpochRewards += supplyAmount + borrowAmount;
 
