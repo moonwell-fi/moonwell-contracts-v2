@@ -675,7 +675,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             } else {
                 assertEq(
                     well.balanceOf(to),
-                    wellBalancesBefore[to] + transferFrom.amount
+                    wellBalancesBefore[to] + transferFrom.amount,
+                    string(
+                        abi.encodePacked(
+                            "balance changed for ",
+                            vm.getLabel(to)
+                        )
+                    )
                 );
             }
         }
@@ -686,7 +692,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
                 addresses.getAddress("xWELL_ROUTER")
             ),
-            0
+            0,
+            "xWELL Router should not have an open allowance after execution"
         );
 
         address stkGovToken = addresses.getAddress("STK_GOVTOKEN");
@@ -710,7 +717,14 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     uint8(setRewardSpeed.rewardType),
                     address(market)
                 ),
-                setRewardSpeed.newSupplySpeed
+                setRewardSpeed.newSupplySpeed,
+                string(
+                    abi.encodePacked(
+                        "Supply speed for ",
+                        vm.getLabel(market),
+                        " is incorrect"
+                    )
+                )
             );
 
             assertEq(
@@ -718,7 +732,14 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     uint8(setRewardSpeed.rewardType),
                     address(market)
                 ),
-                setRewardSpeed.newBorrowSpeed
+                setRewardSpeed.newBorrowSpeed,
+                string(
+                    abi.encodePacked(
+                        "Borrow speed for ",
+                        vm.getLabel(market),
+                        " is incorrect"
+                    )
+                )
             );
         }
 
@@ -736,7 +757,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
                 stellaSwapRewarder
             ),
-            0
+            0,
+            "StellaSwap Rewarder should not have an open allowance after execution"
         );
 
         uint256 blockTimestamp = block.timestamp;
@@ -747,11 +769,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         assertEq(
             stellaSwap.poolRewardsPerSec(addRewardInfo.pid),
-            addRewardInfo.rewardPerSec
+            addRewardInfo.rewardPerSec,
+            "Reward per second for StellaSwap is incorrect"
         );
         assertEq(
             stellaSwap.currentEndTimestamp(addRewardInfo.pid),
-            addRewardInfo.endTimestamp
+            addRewardInfo.endTimestamp,
+            "End timestamp for StellaSwap is incorrect"
         );
 
         // warp back to current block.timestamp
@@ -773,7 +797,10 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             address to = addresses.getAddress(spec.transferFroms[i].to);
             assertEq(
                 well.balanceOf(to),
-                wellBalancesBefore[to] + spec.transferFroms[i].amount
+                wellBalancesBefore[to] + spec.transferFroms[i].amount,
+                string(
+                    abi.encodePacked("balance changed for ", vm.getLabel(to))
+                )
             );
         }
 
@@ -783,7 +810,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         (uint256 emissionsPerSecond, , ) = stkWell.assets(
             addresses.getAddress("STK_GOVTOKEN")
         );
-        assertEq(emissionsPerSecond, spec.stkWellEmissionsPerSecond);
+        assertEq(
+            emissionsPerSecond,
+            spec.stkWellEmissionsPerSecond,
+            "Emissions per second for the Safety Module is incorrect"
+        );
 
         // validate setRewardSpeed calls
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
@@ -807,13 +838,37 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 ) {
                     assertEq(
                         _config.supplyEmissionsPerSec,
-                        setRewardSpeed.newSupplySpeed
+                        setRewardSpeed.newSupplySpeed,
+                        string(
+                            abi.encodePacked(
+                                "Supply speed for ",
+                                vm.getLabel(setRewardSpeed.market),
+                                " is incorrect"
+                            )
+                        )
                     );
                     assertEq(
                         _config.borrowEmissionsPerSec,
-                        setRewardSpeed.newBorrowSpeed
+                        setRewardSpeed.newBorrowSpeed,
+                        string(
+                            abi.encodePacked(
+                                "Borrow speed for ",
+                                vm.getLabel(setRewardSpeed.market),
+                                " is incorrect"
+                            )
+                        )
                     );
-                    assertEq(_config.endTime, setRewardSpeed.newEndTime);
+                    assertEq(
+                        _config.endTime,
+                        setRewardSpeed.newEndTime,
+                        string(
+                            abi.encodePacked(
+                                "End time for ",
+                                vm.getLabel(setRewardSpeed.market),
+                                " is incorrect"
+                            )
+                        )
+                    );
                 }
             }
         }
