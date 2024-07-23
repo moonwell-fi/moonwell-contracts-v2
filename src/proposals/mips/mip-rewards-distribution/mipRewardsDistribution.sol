@@ -199,6 +199,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
             address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
             wellBalancesBefore[reserve] = well.balanceOf(reserve);
+
+            address stellaSwapRewarder = addresses.getAddress(
+                "STELLASWAP_REWARDER"
+            );
+            wellBalancesBefore[stellaSwapRewarder] = well.balanceOf(
+                stellaSwapRewarder
+            );
         }
     }
 
@@ -800,6 +807,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             "StellaSwap Rewarder should not have an open allowance after execution"
         );
 
+        // validate that stellaswap receive the correct amount of well
+        assertEq(
+            well.balanceOf(stellaSwapRewarder),
+            wellBalancesBefore[stellaSwapRewarder] + addRewardInfo.amount,
+            "StellaSwap Rewarder should have received the correct amount of WELL"
+        );
+
         uint256 blockTimestamp = block.timestamp;
 
         // block.timestamp must be in the current reward period to the getter
@@ -855,13 +869,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             "Emissions per second for the Safety Module is incorrect"
         );
 
+        IMultiRewardDistributor distributor = IMultiRewardDistributor(
+            addresses.getAddress("MRD_PROXY")
+        );
+
         // validate setRewardSpeed calls
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetMRDRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
-
-            IMultiRewardDistributor distributor = IMultiRewardDistributor(
-                addresses.getAddress("MRD_PROXY")
-            );
 
             IMultiRewardDistributor.MarketConfig[]
                 memory _emissionConfigs = distributor.getAllMarketConfigs(
