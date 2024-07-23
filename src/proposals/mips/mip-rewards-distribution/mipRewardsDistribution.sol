@@ -891,18 +891,21 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             );
         }
 
-        // validate emissions per second for the Safety Module
-        IStakedWell stkWell = IStakedWell(addresses.getAddress("STK_GOVTOKEN"));
+        {
+            // validate emissions per second for the Safety Module
+            IStakedWell stkWell = IStakedWell(
+                addresses.getAddress("STK_GOVTOKEN")
+            );
 
-        (uint256 emissionsPerSecond, , ) = stkWell.assets(
-            addresses.getAddress("STK_GOVTOKEN")
-        );
-        assertEq(
-            emissionsPerSecond,
-            spec.stkWellEmissionsPerSecond,
-            "Emissions per second for the Safety Module is incorrect"
-        );
-
+            (uint256 emissionsPerSecond, , ) = stkWell.assets(
+                addresses.getAddress("STK_GOVTOKEN")
+            );
+            assertEq(
+                emissionsPerSecond,
+                spec.stkWellEmissionsPerSecond,
+                "Emissions per second for the Safety Module is incorrect"
+            );
+        }
         IMultiRewardDistributor distributor = IMultiRewardDistributor(
             addresses.getAddress("MRD_PROXY")
         );
@@ -923,15 +926,16 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     _config.emissionToken ==
                     addresses.getAddress(setRewardSpeed.emissionToken)
                 ) {
+                    address market = addresses.getAddress(
+                        setRewardSpeed.market
+                    );
                     assertEq(
                         _config.supplyEmissionsPerSec,
                         setRewardSpeed.newSupplySpeed,
                         string(
                             abi.encodePacked(
                                 "Supply speed for ",
-                                vm.getLabel(
-                                    addresses.getAddress(setRewardSpeed.market)
-                                ),
+                                vm.getLabel(market),
                                 " is incorrect"
                             )
                         )
@@ -942,9 +946,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         string(
                             abi.encodePacked(
                                 "Borrow speed for ",
-                                vm.getLabel(
-                                    addresses.getAddress(setRewardSpeed.market)
-                                ),
+                                vm.getLabel(market),
                                 " is incorrect"
                             )
                         )
@@ -955,9 +957,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         string(
                             abi.encodePacked(
                                 "End time for ",
-                                vm.getLabel(
-                                    addresses.getAddress(setRewardSpeed.market)
-                                ),
+                                vm.getLabel(market),
                                 " is incorrect"
                             )
                         )
