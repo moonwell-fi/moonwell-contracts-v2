@@ -434,10 +434,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         " to ",
                         vm.getLabel(to),
                         " amount ",
-                        vm.toString(
-                            transferFrom.amount / IERC20(token).decimals()
-                        ),
-                        "on Moonbeam"
+                        vm.toString(transferFrom.amount / 1e18),
+                        " on Moonbeam"
                     )
                 )
             );
@@ -532,7 +530,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             addresses.getAddress(setRewardSpeed.market)
                         ),
                         " on Moonbeam. Supply speed: ",
-                        vm.toString(setRewardSpeed.newSupplySpeed),
+                        vm.toString(setRewardSpeed.newSupplySpeed / 1e18),
                         " Borrow speed: ",
                         vm.toString(setRewardSpeed.newBorrowSpeed)
                     )
@@ -574,7 +572,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     "Add reward info for pool ",
                     vm.toString(addRewardInfo.pid),
                     " on StellaSwap. Reward per second: ",
-                    vm.toString(addRewardInfo.rewardPerSec),
+                    vm.toString(addRewardInfo.rewardPerSec / 1e18),
                     " End timestamp: ",
                     vm.toString(addRewardInfo.endTimestamp)
                 )
@@ -657,7 +655,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     string(
                         abi.encodePacked(
                             "Set reward supply speed to ",
-                            vm.toString(setRewardSpeed.newSupplySpeed),
+                            vm.toString(setRewardSpeed.newSupplySpeed / 1e18),
                             " for ",
                             vm.getLabel(market),
                             " on ",
@@ -731,7 +729,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             ),
             string(
                 abi.encodePacked(
-                    "Set reward speed for the Safety Module on ",
+                    "Set reward speed to",
+                    vm.toString(spec.stkWellEmissionsPerSecond / 1e18),
+                    " for the Safety Module on ",
                     chainId.chainIdToName()
                 )
             )
