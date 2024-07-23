@@ -163,9 +163,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             address mrd = addresses.getAddress("MRD_PROXY");
             wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
 
-            address unitroller = addresses.getAddress("UNITROLLER");
-            wellBalancesBefore[unitroller] = xwell.balanceOf(unitroller);
-
             address dexRelayer = addresses.getAddress("DEX_RELAYER");
             wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
         }
@@ -269,6 +266,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 );
             }
 
+            assertGte(
+                setRewardSpeed.newBorrowSpeed,
+                1,
+                "Borrow speed must be greater or equal to 1"
+            );
+
             moonbeamActions.setRewardSpeed.push(setRewardSpeed);
         }
 
@@ -320,6 +323,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     "Duplication in setRewardSpeeds"
                 );
             }
+
+            assertGte(
+                spec.setRewardSpeed[i].newBorrowSpeed,
+                1,
+                "Borrow speed must be greater or equal to 1"
+            );
 
             uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
                 (block.timestamp + spec.setRewardSpeed[i].newEndTime);
@@ -409,7 +418,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 ),
                 string(
                     abi.encodePacked(
-                        "Approve xWELL Router to spend",
+                        "Approve xWELL Router to spend ",
                         vm.toString(bridgeWell.amount / 1e18),
                         " ",
                         vm.getLabel(well)
@@ -474,10 +483,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 string(
                     abi.encodePacked(
                         "Set reward speed for market ",
-                        vm.toString(
+                        vm.getLabel(
                             addresses.getAddress(setRewardSpeed.market)
                         ),
-                        " on Moonbeam"
+                        " on Moonbeam. Supply speed: ",
+                        vm.toString(setRewardSpeed.newSupplySpeed),
+                        " Borrow speed: ",
+                        vm.toString(setRewardSpeed.newBorrowSpeed)
                     )
                 ),
                 ActionType.Moonbeam
@@ -512,7 +524,16 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addRewardInfo.endTimestamp,
                 addRewardInfo.rewardPerSec
             ),
-            "Add reward info for the Moonwell Markets on Moonbeam",
+            string(
+                abi.encodePacked(
+                    "Add reward info for pool ",
+                    vm.toString(addRewardInfo.pid),
+                    " on StellaSwap. Reward per second: ",
+                    vm.toString(addRewardInfo.rewardPerSec),
+                    " End timestamp: ",
+                    vm.toString(addRewardInfo.endTimestamp)
+                )
+            ),
             ActionType.Moonbeam
         );
     }
@@ -590,7 +611,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     ),
                     string(
                         abi.encodePacked(
-                            "Change reward supply speed to ",
+                            "Set reward supply speed to ",
                             vm.toString(setRewardSpeed.newSupplySpeed),
                             " for ",
                             vm.getLabel(market),
@@ -644,7 +665,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     ),
                     string(
                         abi.encodePacked(
-                            "Set reward end time for ",
+                            "Set reward end time to ",
+                            vm.toString(setRewardSpeed.newEndTime),
+                            " for ",
                             vm.getLabel(market),
                             " on ",
                             chainId.chainIdToName()
