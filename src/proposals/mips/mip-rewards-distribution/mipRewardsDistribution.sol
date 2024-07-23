@@ -273,7 +273,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 );
             }
 
-            assertGte(
+            assertGe(
                 setRewardSpeed.newBorrowSpeed,
                 1,
                 "Borrow speed must be greater or equal to 1"
@@ -345,7 +345,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 );
             }
 
-            assertGte(
+            assertGe(
                 spec.setRewardSpeed[i].newBorrowSpeed,
                 1,
                 "Borrow speed must be greater or equal to 1"
@@ -614,7 +614,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             transferFrom.amount / IERC20(token).decimals()
                         ),
                         " on ",
-                        vm.toString(chainId.chainIdToName())
+                        chainId.chainIdToName()
                     )
                 )
             );
@@ -929,7 +929,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         string(
                             abi.encodePacked(
                                 "Supply speed for ",
-                                vm.getLabel(setRewardSpeed.market),
+                                vm.getLabel(
+                                    addresses.getAddress(setRewardSpeed.market)
+                                ),
                                 " is incorrect"
                             )
                         )
@@ -940,7 +942,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         string(
                             abi.encodePacked(
                                 "Borrow speed for ",
-                                vm.getLabel(setRewardSpeed.market),
+                                vm.getLabel(
+                                    addresses.getAddress(setRewardSpeed.market)
+                                ),
                                 " is incorrect"
                             )
                         )
@@ -951,7 +955,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         string(
                             abi.encodePacked(
                                 "End time for ",
-                                vm.getLabel(setRewardSpeed.market),
+                                vm.getLabel(
+                                    addresses.getAddress(setRewardSpeed.market)
+                                ),
                                 " is incorrect"
                             )
                         )
