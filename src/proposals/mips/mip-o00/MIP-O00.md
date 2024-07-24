@@ -1,4 +1,4 @@
-# MIP-O00: Optimism Activation 
+# MIP-O00: Optimism Activation
 
 I propose that the Moonwell DAO votes to authorize the activation of the
 Moonwell Protocol on [Optimism](https://www.optimism.io/). By leveraging
