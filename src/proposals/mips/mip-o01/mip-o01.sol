@@ -6,6 +6,7 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
 
+import {mip00} from "@proposals/mip00.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Address} from "@utils/Address.sol";
@@ -34,10 +35,7 @@ to dry-run:
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
   DO_RUN=true DO_VALIDATE=true forge script \
   src/proposals/mips/mip-o01/mip-o01.sol:mipo01 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
-
-
 */
-
 contract mipo01 is HybridProposal, Configs {
     using Address for address;
     using ChainIds for uint256;
@@ -67,7 +65,7 @@ contract mipo01 is HybridProposal, Configs {
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
     function initProposal(Addresses) public override {
-        string path = "src/proposals/mips/mip-o01/MIP-O01.md";
+        string memory path = "src/proposals/mips/mip-o01/MIP-O01.md";
 
         bytes memory proposalDescription = abi.encodePacked(vm.readFile(path));
 
