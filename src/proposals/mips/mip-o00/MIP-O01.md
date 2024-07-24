@@ -1,4 +1,4 @@
-# MIP-O00: Optimism Activation - Part 1
+# MIP-O01: Optimism Activation - Part 2
 
 I propose that the Moonwell DAO votes to authorize the activation of the
 Moonwell Protocol on [Optimism](https://www.optimism.io/). By leveraging
@@ -143,6 +143,11 @@ initial lending markets:
 
 ## Implementation
 
-This governance proposal accepts the administrator role as the Temporal Governor
-and creates the initial WELL reward configurations on all markets, enabling WELL
-rewards for both borrowing and lending.
+This is a continuation of MIP-O00, which accepted admin as the Temporal Governor
+and set the WELL emission configs. This governance proposal unpauses and mints a
+small amount of each market's mToken to mitigate against the
+[Hundred Finance](https://rekt.news/hundred-rekt2/) exploit.
+
+MIP-O00 was originally going to be submitted as a single proposal. However, it
+has been split into two activation proposals to work around the transaction gas
+limit on Moonbeam.
