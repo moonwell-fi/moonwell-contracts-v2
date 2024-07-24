@@ -517,6 +517,25 @@ contract mip00 is HybridProposal, Configs {
             "Temporal governor accepts admin on Unitroller"
         );
 
+        unchecked {
+            for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+                Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+
+                address cTokenAddress = addresses.getAddress(
+                    config.addressesString
+                );
+
+                /// ------------ MTOKEN MARKET ACTIVIATION ------------
+
+                /// temporal governor accepts admin of mToken
+                _pushAction(
+                    cTokenAddress,
+                    abi.encodeWithSignature("_acceptAdmin()"),
+                    "Temporal governor accepts admin on mToken"
+                );
+            }
+        }
+
         // TODO remove this after mipo00 deployment
         EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
             block.chainid
