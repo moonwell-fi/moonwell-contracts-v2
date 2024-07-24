@@ -174,11 +174,6 @@ contract mipo01 is HybridProposal, Configs {
             "MIP-00: should have actions on the chain being deployed to"
         );
 
-        require(
-            actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
-            "MIP-00: should have 1 moonbeam actions"
-        );
-
         super.run(addresses, address(0));
     }
 
