@@ -82,6 +82,12 @@ contract mipo01 is HybridProposal, Configs {
     }
 
     function preBuildMock(Addresses addresses) public override {
+        // TODO remove this once mipo00 is executed
+        mip00 mipo00 = new mip00();
+        mipo00.initProposal(addresses);
+        mip00(mipo00).build(addresses);
+        mip00(mipo00).run(addresses, address(0));
+
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 

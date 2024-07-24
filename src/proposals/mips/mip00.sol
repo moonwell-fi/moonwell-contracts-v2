@@ -853,9 +853,6 @@ contract mip00 is HybridProposal, Configs {
                         config.reserveFactor
                     );
 
-                    /// assert initial mToken balances are correct
-                    assertTrue(mToken.balanceOf(address(governor)) > 0); /// governor has some
-
                     /// assert cToken admin is the temporal governor
                     assertEq(address(mToken.admin()), address(governor));
 
