@@ -441,6 +441,7 @@ abstract contract HybridProposal is
 
         vm.selectFork(MOONBEAM_FORK_ID);
         addresses.addRestriction(block.chainid.toMoonbeamChainId());
+
         _runMoonbeamMultichainGovernor(addresses, address(3));
         addresses.removeRestriction();
 
@@ -592,7 +593,7 @@ abstract contract HybridProposal is
             vm.prank(caller);
             (bool success, bytes memory returndata) = address(
                 payable(governorAddress)
-            ).call{value: cost}(proposeCalldata);
+            ).call{value: cost, gas: 14_500_000}(proposeCalldata);
             data = returndata;
 
             require(success, "propose multichain governor failed");
@@ -642,6 +643,7 @@ abstract contract HybridProposal is
                 block.chainid.toMoonbeamChainId()
             );
 
+            bytes memory temporalGovExecDataBase;
             {
                 if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
                     ProposalAction[] memory baseActions = actions.filter(
@@ -666,31 +668,16 @@ abstract contract HybridProposal is
                     );
                     addresses.removeRestriction();
 
-                    bytes memory temporalGovExecData = abi.encode(
+                    temporalGovExecDataBase = abi.encode(
                         temporalGov,
                         targets,
                         values,
                         calldatas
                     );
-
-                    /// increments each time the Multichain Governor publishes a message
-                    uint64 nextSequence = IWormhole(wormholeCoreMoonbeam)
-                        .nextSequence(address(governor));
-
-                    /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
-                    vm.expectEmit(true, true, true, true, wormholeCoreMoonbeam);
-
-                    /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
-                    emit LogMessagePublished(
-                        address(governor),
-                        nextSequence,
-                        nonce, /// nonce is hardcoded at 0 in HybridProposal.sol
-                        temporalGovExecData,
-                        consistencyLevel /// consistency level is hardcoded at 200 in HybridProposal.sol
-                    );
                 }
             }
 
+            bytes memory temporalGovExecDataOptimism;
             {
                 if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
                     ProposalAction[] memory optimismActions = actions.filter(
@@ -719,39 +706,50 @@ abstract contract HybridProposal is
                     );
                     addresses.removeRestriction();
 
-                    bytes memory temporalGovExecData = abi.encode(
+                    temporalGovExecDataOptimism = abi.encode(
                         temporalGov,
                         targets,
                         values,
                         calldatas
-                    );
-
-                    /// increments each time the Multichain Governor publishes a message
-                    uint64 nextSequence = IWormhole(wormholeCoreMoonbeam)
-                        .nextSequence(address(governor));
-
-                    if (actions.proposalActionTypeCount(ActionType.Base) > 0) {
-                        nextSequence++;
-                    }
-
-                    /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
-                    vm.expectEmit(true, true, true, true, wormholeCoreMoonbeam);
-
-                    /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
-                    emit LogMessagePublished(
-                        address(governor),
-                        nextSequence,
-                        nonce, /// nonce is hardcoded at 0 in HybridProposal.sol
-                        temporalGovExecData,
-                        consistencyLevel /// consistency level is hardcoded at 200 in HybridProposal.sol
                     );
                 }
             }
 
             uint256 gasStart = gasleft();
 
+            /// increments each time the Multichain Governor publishes a message
+            uint64 nextSequence = IWormhole(wormholeCoreMoonbeam).nextSequence(
+                address(governor)
+            );
+
+            if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
+                /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
+                vm.expectEmit(true, true, true, true, wormholeCoreMoonbeam);
+
+                emit LogMessagePublished(
+                    address(governor),
+                    nextSequence++,
+                    nonce, /// nonce is hardcoded at 0 in HybridProposal.sol
+                    temporalGovExecDataBase,
+                    consistencyLevel /// consistency level is hardcoded at 200 in HybridProposal.sol
+                );
+            }
+
+            if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
+                /// expect emitting of events to Wormhole Core on Moonbeam if Optimism actions exist
+                vm.expectEmit(true, true, true, true, wormholeCoreMoonbeam);
+
+                emit LogMessagePublished(
+                    address(governor),
+                    nextSequence,
+                    nonce, /// nonce is hardcoded at 0 in HybridProposal.sol
+                    temporalGovExecDataOptimism,
+                    consistencyLevel /// consistency level is hardcoded at 200 in HybridProposal.sol
+                );
+            }
+
             /// Execute the proposal
-            governor.execute(proposalId);
+            governor.execute{value: actions.sumTotalValue()}(proposalId);
 
             require(
                 gasStart - gasleft() <= 13_000_000,

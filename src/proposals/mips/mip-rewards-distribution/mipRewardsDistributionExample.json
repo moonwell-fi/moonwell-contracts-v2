@@ -1,0 +1,123 @@
+{
+    "1284": {
+        "addRewardInfo": {
+            "amount": 2788825500000000000000000,
+            "endTimestamp": 1728751851,
+            "pid": 15,
+            "rewardPerSec": 0.5e18,
+            "target": "STELLASWAP_REWARDER"
+        },
+        "bridgeToRecipient": [
+            {
+                "amount": 11000e18,
+                "network": 8453,
+                "target": "TEMPORAL_GOVERNOR"
+            },
+            {
+                "amount": 11000e18,
+                "network": 10,
+                "target": "TEMPORAL_GOVERNOR"
+            },
+            {
+                "amount": 7000e18,
+                "network": 8453,
+                "target": "DEX_RELAYER"
+            },
+            {
+                "amount": 7000e18,
+                "network": 10,
+                "target": "DEX_RELAYER"
+            }
+        ],
+        "setRewardSpeed": [
+            {
+                "market": "mxcDOT",
+                "newBorrowSpeed": 1,
+                "newSupplySpeed": 0.54e18,
+                "rewardType": 0,
+                "target": "UNITROLLER"
+            }
+        ],
+        "stkWellEmissionsPerSecond": 0.65e18,
+        "transferFrom": [
+            {
+                "amount": 28248255e17,
+                "from": "MGLIMMER_MULTISIG",
+                "to": "MULTICHAIN_GOVERNOR_PROXY",
+                "token": "WELL"
+            },
+            {
+                "amount": 2000e18,
+                "from": "MGLIMMER_MULTISIG",
+                "to": "UNITROLLER",
+                "token": "WELL"
+            },
+            {
+                "amount": 3000e18,
+                "from": "MGLIMMER_MULTISIG",
+                "to": "ECOSYSTEM_RESERVE_PROXY",
+                "token": "WELL"
+            }
+        ]
+    },
+    "8453": {
+        "setMRDSpeeds": [
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_USDC",
+                "newBorrowSpeed": 2,
+                "newEndTime": 1728751851,
+                "newSupplySpeed": 0.54e18
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_AERO",
+                "newBorrowSpeed": 2,
+                "newEndTime": 1728751851,
+                "newSupplySpeed": 0.54e18
+            }
+        ],
+        "stkWellEmissionsPerSecond": 0.65e18,
+        "transferFrom": [
+            {
+                "amount": 5000e18,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "MULTI_REWARD_DISTRIBUTOR",
+                "token": "xWELL_PROXY"
+            },
+            {
+                "amount": 6000e18,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "UNITROLLER",
+                "token": "xWELL_PROXY"
+            }
+        ]
+    },
+    "10": {
+        "setMRDSpeeds": [
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_USDC",
+                "newBorrowSpeed": 2,
+                "newEndTime": 1728751851,
+                "newSupplySpeed": 0.54e18
+            }
+        ],
+        "stkWellEmissionsPerSecond": 0.65e18,
+        "transferFrom": [
+            {
+                "amount": 5000e18,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "MULTI_REWARD_DISTRIBUTOR",
+                "token": "xWELL_PROXY"
+            },
+            {
+                "amount": 6000e18,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "UNITROLLER",
+                "token": "xWELL_PROXY"
+            }
+        ]
+    },
+    "expectedExecutionTime": 1721776071
+}

@@ -52,7 +52,7 @@ MIP-O00 deployment environment variables:
 ```
 export DESCRIPTION_PATH=src/proposals/mips/mip-o00/MIP-O00.md
 export PRIMARY_FORK_ID=2
-export EMISSIONS_PATH=src/proposals/mips/mip-o00/emissionConfig.json
+export EMISSIONS_PATH=src/proposals/mips/mip-o00/emissionConfigWell.json
 export MTOKENS_PATH=src/proposals/mips/mip-o00/mTokens.json
 ```
 
@@ -101,7 +101,7 @@ contract mip00 is HybridProposal, Configs {
     /// @notice trusted senders for the temporal governor
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
-    function initProposal() public override {
+    function initProposal(Addresses) public override {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(vm.envString("DESCRIPTION_PATH"))
         );
@@ -120,7 +120,11 @@ contract mip00 is HybridProposal, Configs {
     /// @dev change this if wanting to deploy to a different chain
     /// double check addresses and change the WORMHOLE_CORE to the correct chain
     function primaryForkId() public view override returns (uint256 forkId) {
-        forkId = vm.envUint("PRIMARY_FORK_ID");
+        //forkId = vm.envUint("PRIMARY_FORK_ID");
+        // TODO undo this after mipo00 execution
+        // we need this because we are calling this proposal inside
+        // mipRewardsDistribution proposal which PRIMARY_FORK_ID=0
+        forkId = OPTIMISM_FORK_ID;
 
         require(forkId <= OPTIMISM_FORK_ID, "invalid primary fork id");
     }
@@ -575,6 +579,31 @@ contract mip00 is HybridProposal, Configs {
                         1
                     ),
                     "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
+                );
+            }
+        }
+
+        // TODO remove this after mipo00 deployment
+        EmissionConfig[] memory emissionConfig = getEmissionConfigurations(
+            block.chainid
+        );
+
+        unchecked {
+            for (uint256 i = 0; i < emissionConfig.length; i++) {
+                EmissionConfig memory config = emissionConfig[i];
+
+                _pushAction(
+                    addresses.getAddress("MRD_PROXY"),
+                    abi.encodeWithSignature(
+                        "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
+                        addresses.getAddress(config.mToken),
+                        addresses.getAddress(config.owner),
+                        config.emissionToken,
+                        config.supplyEmissionPerSec,
+                        config.borrowEmissionsPerSec,
+                        config.endTime
+                    ),
+                    "Add emission config"
                 );
             }
         }

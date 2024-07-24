@@ -493,5 +493,10 @@
         "addr": "0x0f36Dda2b47984434051AeCAa5F9587DEA7f95B7",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_USD_MIP_B15"
+    },
+    {
+        "addr": "0xD791292655A1d382FcC1a6Cb9171476cf91F2caa",
+        "isContract": false,
+        "name": "DEX_RELAYER"
     }
 ]

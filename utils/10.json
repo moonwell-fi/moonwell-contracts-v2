@@ -348,5 +348,10 @@
         "addr": "0xf4aEF04Bc95e822491053aCF2aa8C3c9854aB544",
         "isContract": true,
         "name": "VOTE_COLLECTION_IMPL"
+    },
+    {
+        "addr": "0xD791292655A1d382FcC1a6Cb9171476cf91F2caa",
+        "isContract": false,
+        "name": "DEX_RELAYER"
     }
 ]

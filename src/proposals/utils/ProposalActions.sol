@@ -47,4 +47,12 @@ library ProposalActions {
             }
         }
     }
+
+    function sumTotalValue(
+        ProposalAction[] storage actions
+    ) internal view returns (uint256 totalValue) {
+        for (uint256 i = 0; i < actions.length; i++) {
+            totalValue += actions[i].value;
+        }
+    }
 }

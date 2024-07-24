@@ -9,7 +9,7 @@ env:
   DESCRIPTION_PATH: "src/proposals/mips/mip-o00/MIP-O00.md"
   PRIMARY_FORK_ID: 2 
   MTOKENS_PATH: "src/proposals/mips/mip-o00/mTokens.json"
-  EMISSIONS_PATH: "src/proposals/mips/mip-o00/emissionConfig.json"
+  EMISSIONS_PATH: "src/proposals/mips/mip-o00/emissionConfigWell.json"
 
 jobs:
   run-base-tests:

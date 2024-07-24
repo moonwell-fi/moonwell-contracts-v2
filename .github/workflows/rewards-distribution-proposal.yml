@@ -1,47 +1,35 @@
-name: "Run Latest Proposal"
+name: Run Rewards Distribution Proposal
+
+on: [pull_request]
 
 env:
-  FOUNDRY_PROFILE: "ci"
   OP_RPC_URL: ${{secrets.OP_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
-
-on:
-  workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - "main"
+  DESCRIPTION_PATH: "src/proposals/mips/mip-rewards-distribution/MIP-REWARDS-DISTRIBUTION-EXAMPLE.md"
+  MTOKENS_PATH: "src/proposals/mips/mip-o00/mTokens.json" # TODO remove this
+  # after o00 execution
+  EMISSIONS_PATH: "src/proposals/mips/mip-o00/emissionConfigWell.json" # TODO remove
+  # this after o00 execution
+  PRIMARY_FORK_ID: 0 
+  MIP_REWARDS_PATH: "src/proposals/mips/mip-rewards-distribution/mipRewardsDistributionExample.json"
+  MIP_REWARDS_ID: 0 # should only run if proposal is not on chain yet, if it is
+  # onchain skip this workflow and checks for on chain calldata match
 
 jobs:
-  run-proposal:
-    permissions:
-      pull-requests: write
+  run-base-tests:
+    name: rewards-distribution-proposal
     runs-on: ubuntu-latest
+    if: ${{ vars.MIP_REWARDS_ID == '0' }}
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
-          submodules: "recursive"
+          submodules: recursive
 
       - name: Setup Environment
         uses: ./.github/actions
-
-      - name: Get Changed Files
-        id: files
-        uses: jitterbit/get-changed-files@v1
-        with:
-          format: "space-delimited"
-
-      - name: Set PR_CHANGED_FILES
-        run: |
-          echo "PR_CHANGED_FILES=${{ steps.files.outputs.added_modified }}" >> $GITHUB_ENV
-
-      - name: Set DEBUG flag
-        run: echo "DEBUG=true" >> $GITHUB_ENV
-
-      - name: Set PROPOSALS_FOLDER
-        run: echo "PROPOSALS_FOLDER=src/proposals/mips" >> $GITHUB_ENV
 
       - name: List and Delete Previous Comments
         uses: actions/github-script@v6
@@ -56,7 +44,7 @@ jobs:
 
             const actionComments = comments.data.filter(comment => 
               comment.user.login === 'github-actions[bot]' &&
-              comment.body.includes('Latest Proposal')
+              comment.body.includes('Rewards Distribution Proposal')
             );
 
             if (actionComments.length === 0) {
@@ -70,7 +58,7 @@ jobs:
             }
 
       - name: Run Proposal
-        run: bin/run-proposal.sh
+        run: bin/run-rewards-distribution-proposal.sh
 
       - name: Comment PR with Proposal Output
         uses: actions/github-script@v6
@@ -84,6 +72,9 @@ jobs:
                 github.rest.issues.createComment({
                    ...context.repo,
                    issue_number: prNumber,
-                   body: `### Latest Proposal: ${output.file}\n\`\`\`\n${output.output}\n\`\`\``
+                   body: `### Rewards Distribution Proposal ${output.file}:\n\`\`\`\n${output.output}\n\`\`\``
                    });
              }
+
+
+
