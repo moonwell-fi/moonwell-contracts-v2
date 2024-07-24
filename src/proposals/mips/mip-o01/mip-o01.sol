@@ -1,0 +1,405 @@
+//SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity 0.8.19;
+
+import {TransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+
+import "@forge-std/Test.sol";
+import "@protocol/utils/ChainIds.sol";
+
+import {WETH9} from "@protocol/router/IWETH.sol";
+import {MErc20} from "@protocol/MErc20.sol";
+import {MToken} from "@protocol/MToken.sol";
+import {Address} from "@utils/Address.sol";
+import {Configs} from "@proposals/Configs.sol";
+import {Unitroller} from "@protocol/Unitroller.sol";
+import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
+import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
+import {MWethDelegate} from "@protocol/MWethDelegate.sol";
+import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
+import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
+import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {ChainIds, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
+import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
+
+/*
+to deploy:
+
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_RUN=true DO_VALIDATE=true forge script \
+src/proposals/mips/mip00.sol:mip00 -vvv --broadcast --account ~/.foundry/keystores/<your-account-keystore-name>
+
+to dry-run:
+
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+  DO_RUN=true DO_VALIDATE=true forge script \
+  src/proposals/mips/mip00.sol:mip00 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
+
+MIP-O00 deployment environment variables:
+
+```
+export DESCRIPTION_PATH=src/proposals/mips/mip-o00/MIP-O00.md
+export PRIMARY_FORK_ID=2
+export EMISSIONS_PATH=src/proposals/mips/mip-o00/emissionConfigWell.json
+export MTOKENS_PATH=src/proposals/mips/mip-o00/mTokens.json
+```
+
+
+*/
+
+contract mip01 is HybridProposal, Configs {
+    using Address for address;
+    using ChainIds for uint256;
+    using ProposalActions for *;
+
+    string public constant override name = "MIP-01: Initialize Markets";
+    uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
+    uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
+    uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
+
+    /// @notice time before anyone can unpause the contract after a guardian pause
+    uint256 public constant permissionlessUnpauseTime = 30 days;
+
+    /// -------------------------------------------------------------------------------------------------- ///
+    /// Chain Name	       Wormhole Chain ID   Network ID	Address                                      | ///
+    ///  Ethereum (Goerli)   	  2	                5	    0x706abc4E45D419950511e474C7B9Ed348A4a716c   | ///
+    ///  Ethereum (Sepolia)	  10002          11155111	    0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78   | ///
+    ///  Base	                 30    	        84531	    0xA31aa3FDb7aF7Db93d18DDA4e19F811342EDF780   | ///
+    ///  Moonbeam	             16	             1284 	    0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3   | ///
+    ///  Moonbase alpha          16	             1287	    0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901   | ///
+    /// -------------------------------------------------------------------------------------------------- ///
+
+    struct CTokenAddresses {
+        address mTokenImpl;
+        address irModel;
+        address unitroller;
+    }
+
+    /// ---------------------- BREAK GLASS GUARDIAN CALLDATA ----------------------
+
+    /// @notice whitelisted calldata for the break glass guardian
+    bytes[] public approvedCalldata;
+
+    /// @notice whitelisted calldata for the temporal governor
+    bytes[] public temporalGovernanceCalldata;
+
+    /// @notice address of the temporal governor
+    address[] public temporalGovernanceTargets;
+
+    /// @notice trusted senders for the temporal governor
+    ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
+
+    function initProposal(Addresses) public override {
+        bytes memory proposalDescription = abi.encodePacked(
+            vm.readFile(vm.envString("DESCRIPTION_PATH"))
+        );
+
+        _setProposalDescription(proposalDescription);
+
+        /// MToken/Emission configurations
+        _setMTokenConfiguration(vm.envString("MTOKENS_PATH"));
+
+        /// If deploying to mainnet again these values must be adjusted
+        /// - endTimestamp must be in the future
+        /// - removed mock values that were set in initEmissions function for test execution
+        _setEmissionConfiguration(vm.envString("EMISSIONS_PATH"));
+    }
+
+    /// @dev change this if wanting to deploy to a different chain
+    /// double check addresses and change the WORMHOLE_CORE to the correct chain
+    function primaryForkId() public view override returns (uint256 forkId) {
+        //forkId = vm.envUint("PRIMARY_FORK_ID");
+        // TODO undo this after mipo00 execution
+        // we need this because we are calling this proposal inside
+        // mipRewardsDistribution proposal which PRIMARY_FORK_ID=0
+        forkId = OPTIMISM_FORK_ID;
+
+        require(forkId <= OPTIMISM_FORK_ID, "invalid primary fork id");
+    }
+
+    function preBuildMock(Addresses addresses) public override {
+        Configs.CTokenConfiguration[]
+            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
+        uint256 cTokenConfigsLength = cTokenConfigs.length;
+        unchecked {
+            for (uint256 i = 0; i < cTokenConfigsLength; i++) {
+                Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+                address tokenAddress = addresses.getAddress(
+                    config.tokenAddressName
+                );
+                deal(
+                    tokenAddress,
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    cTokenConfigs[i].initialMintAmount
+                );
+            }
+        }
+    }
+
+    function build(Addresses addresses) public override {
+        Configs.CTokenConfiguration[]
+            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
+        address unitrollerAddress = addresses.getAddress("UNITROLLER");
+
+        /// set mint unpaused for all of the deployed MTokens
+        unchecked {
+            for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+                Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+
+                address cTokenAddress = addresses.getAddress(
+                    config.addressesString
+                );
+
+                /// ------------ MTOKEN MARKET ACTIVIATION ------------
+
+                _pushAction(
+                    unitrollerAddress,
+                    abi.encodeWithSignature(
+                        "_setMintPaused(address,bool)",
+                        cTokenAddress,
+                        false
+                    ),
+                    "Unpause MToken market"
+                );
+
+                /// Approvals
+                _pushAction(
+                    addresses.getAddress(config.tokenAddressName),
+                    abi.encodeWithSignature(
+                        "approve(address,uint256)",
+                        cTokenAddress,
+                        config.initialMintAmount
+                    ),
+                    "Approve underlying token to be spent by market"
+                );
+
+                /// Initialize markets
+                _pushAction(
+                    cTokenAddress,
+                    abi.encodeWithSignature(
+                        "mint(uint256)",
+                        config.initialMintAmount
+                    ),
+                    "Initialize token market to prevent exploit"
+                );
+
+                _pushAction(
+                    cTokenAddress,
+                    abi.encodeWithSignature(
+                        "transfer(address,uint256)",
+                        address(0),
+                        1
+                    ),
+                    "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
+                );
+            }
+        }
+    }
+
+    function run(Addresses addresses, address) public override {
+        require(
+            actions.proposalActionTypeCount(ActionType(primaryForkId())) > 0,
+            "MIP-00: should have actions on the chain being deployed to"
+        );
+
+        require(
+            actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
+            "MIP-00: should have 1 moonbeam actions"
+        );
+
+        super.run(addresses, address(0));
+    }
+
+    function teardown(Addresses addresses, address) public pure override {}
+
+    function validate(Addresses addresses, address) public override {
+        {
+            Configs.CTokenConfiguration[]
+                memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
+            unchecked {
+                for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+                    Configs.CTokenConfiguration memory config = cTokenConfigs[
+                        i
+                    ];
+
+                    /// oracle price feed checks
+                    assertEq(
+                        address(
+                            oracle.getFeed(
+                                ERC20(
+                                    addresses.getAddress(
+                                        config.tokenAddressName
+                                    )
+                                ).symbol()
+                            )
+                        ),
+                        addresses.getAddress(config.priceFeedName)
+                    );
+
+                    /// CToken Assertions
+                    assertFalse(
+                        comptroller.mintGuardianPaused(
+                            addresses.getAddress(config.addressesString)
+                        )
+                    ); /// minting allowed by guardian
+                    assertFalse(
+                        comptroller.borrowGuardianPaused(
+                            addresses.getAddress(config.addressesString)
+                        )
+                    ); /// borrowing allowed by guardian
+                    assertEq(
+                        comptroller.borrowCaps(
+                            addresses.getAddress(config.addressesString)
+                        ),
+                        config.borrowCap
+                    );
+                    assertEq(
+                        comptroller.supplyCaps(
+                            addresses.getAddress(config.addressesString)
+                        ),
+                        config.supplyCap
+                    );
+
+                    /// assert cToken irModel is correct
+                    JumpRateModel jrm = JumpRateModel(
+                        addresses.getAddress(
+                            string(
+                                abi.encodePacked(
+                                    "JUMP_RATE_IRM_",
+                                    config.addressesString
+                                )
+                            )
+                        )
+                    );
+                    assertEq(
+                        address(
+                            MToken(addresses.getAddress(config.addressesString))
+                                .interestRateModel()
+                        ),
+                        address(jrm)
+                    );
+
+                    MErc20 mToken = MErc20(
+                        addresses.getAddress(config.addressesString)
+                    );
+
+                    /// reserve factor and protocol seize share
+                    assertEq(
+                        mToken.protocolSeizeShareMantissa(),
+                        config.seizeShare
+                    );
+                    assertEq(
+                        mToken.reserveFactorMantissa(),
+                        config.reserveFactor
+                    );
+
+                    /// assert initial mToken balances are correct
+                    assertTrue(mToken.balanceOf(address(governor)) > 0); /// governor has some
+                    assertEq(mToken.balanceOf(address(0)), 1); /// address 0 has 1 wei of assets
+
+                    /// assert cToken admin is the temporal governor
+                    assertEq(address(mToken.admin()), address(governor));
+
+                    /// assert mToken comptroller is correct
+                    assertEq(
+                        address(mToken.comptroller()),
+                        addresses.getAddress("UNITROLLER")
+                    );
+
+                    /// assert mToken underlying is correct
+                    assertEq(
+                        address(mToken.underlying()),
+                        addresses.getAddress(config.tokenAddressName)
+                    );
+
+                    if (
+                        address(mToken.underlying()) ==
+                        addresses.getAddress("WETH")
+                    ) {
+                        /// assert mToken delegate for MOONWELL_WETH is mWETH_DELEGATE
+                        assertEq(
+                            address(
+                                MErc20Delegator(payable(address(mToken)))
+                                    .implementation()
+                            ),
+                            addresses.getAddress("MWETH_IMPLEMENTATION"),
+                            "mweth delegate implementation address incorrect"
+                        );
+                    } else {
+                        /// assert mToken delegate is uniform across contracts
+                        assertEq(
+                            address(
+                                MErc20Delegator(payable(address(mToken)))
+                                    .implementation()
+                            ),
+                            addresses.getAddress("MTOKEN_IMPLEMENTATION"),
+                            "mtoken delegate implementation address incorrect"
+                        );
+                    }
+
+                    uint256 initialExchangeRate = (10 **
+                        (8 +
+                            ERC20(addresses.getAddress(config.tokenAddressName))
+                                .decimals())) * 2;
+
+                    /// assert mToken initial exchange rate is correct
+                    assertEq(mToken.exchangeRateCurrent(), initialExchangeRate);
+
+                    /// assert mToken name and symbol are correct
+                    assertEq(mToken.name(), config.name);
+                    assertEq(mToken.symbol(), config.symbol);
+                    assertEq(mToken.decimals(), mTokenDecimals);
+
+                    /// Jump Rate Model Assertions
+                    {
+                        assertEq(
+                            jrm.baseRatePerTimestamp(),
+                            (config.jrm.baseRatePerYear * 1e18) /
+                                jrm.timestampsPerYear() /
+                                1e18
+                        );
+                        assertEq(
+                            jrm.multiplierPerTimestamp(),
+                            (config.jrm.multiplierPerYear * 1e18) /
+                                jrm.timestampsPerYear() /
+                                1e18
+                        );
+                        assertEq(
+                            jrm.jumpMultiplierPerTimestamp(),
+                            (config.jrm.jumpMultiplierPerYear * 1e18) /
+                                jrm.timestampsPerYear() /
+                                1e18
+                        );
+                        assertEq(jrm.kink(), config.jrm.kink);
+                    }
+                }
+            }
+        }
+
+        {
+            /// assert admin of implementation contract is address 0 so it cannot be initialized
+            assertEq(
+                MErc20Delegate(addresses.getAddress("MTOKEN_IMPLEMENTATION"))
+                    .admin(),
+                address(0)
+            );
+        }
+
+        vm.selectFork(primaryForkId());
+    }
+}
