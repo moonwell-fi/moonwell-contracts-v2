@@ -1,51 +1,37 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {TransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
 
-import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Address} from "@utils/Address.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {Unitroller} from "@protocol/Unitroller.sol";
-import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {PriceOracle} from "@protocol/oracles/PriceOracle.sol";
-import {WethUnwrapper} from "@protocol/WethUnwrapper.sol";
-import {MWethDelegate} from "@protocol/MWethDelegate.sol";
-import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {ChainIds, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
-import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 
 /*
 to deploy:
 
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
 DO_RUN=true DO_VALIDATE=true forge script \
-src/proposals/mips/mip00.sol:mip00 -vvv --broadcast --account ~/.foundry/keystores/<your-account-keystore-name>
+src/proposals/mips/mip-o01/mip-o01.sol:mipo01 -vvv --broadcast --account ~/.foundry/keystores/<your-account-keystore-name>
 
 to dry-run:
 
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
   DO_RUN=true DO_VALIDATE=true forge script \
-  src/proposals/mips/mip00.sol:mip00 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
+  src/proposals/mips/mip-o01/mip-o01.sol:mipo01 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
 
 MIP-O00 deployment environment variables:
 
@@ -59,27 +45,13 @@ export MTOKENS_PATH=src/proposals/mips/mip-o00/mTokens.json
 
 */
 
-contract mip01 is HybridProposal, Configs {
+contract mipo01 is HybridProposal, Configs {
     using Address for address;
     using ChainIds for uint256;
     using ProposalActions for *;
 
     string public constant override name = "MIP-01: Initialize Markets";
-    uint256 public constant liquidationIncentive = 1.1e18; /// liquidation incentive is 110%
-    uint256 public constant closeFactor = 0.5e18; /// close factor is 50%, i.e. seize share
     uint8 public constant mTokenDecimals = 8; /// all mTokens have 8 decimals
-
-    /// @notice time before anyone can unpause the contract after a guardian pause
-    uint256 public constant permissionlessUnpauseTime = 30 days;
-
-    /// -------------------------------------------------------------------------------------------------- ///
-    /// Chain Name	       Wormhole Chain ID   Network ID	Address                                      | ///
-    ///  Ethereum (Goerli)   	  2	                5	    0x706abc4E45D419950511e474C7B9Ed348A4a716c   | ///
-    ///  Ethereum (Sepolia)	  10002          11155111	    0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78   | ///
-    ///  Base	                 30    	        84531	    0xA31aa3FDb7aF7Db93d18DDA4e19F811342EDF780   | ///
-    ///  Moonbeam	             16	             1284 	    0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3   | ///
-    ///  Moonbase alpha          16	             1287	    0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901   | ///
-    /// -------------------------------------------------------------------------------------------------- ///
 
     struct CTokenAddresses {
         address mTokenImpl;
@@ -110,23 +82,12 @@ contract mip01 is HybridProposal, Configs {
 
         /// MToken/Emission configurations
         _setMTokenConfiguration(vm.envString("MTOKENS_PATH"));
-
-        /// If deploying to mainnet again these values must be adjusted
-        /// - endTimestamp must be in the future
-        /// - removed mock values that were set in initEmissions function for test execution
-        _setEmissionConfiguration(vm.envString("EMISSIONS_PATH"));
     }
 
     /// @dev change this if wanting to deploy to a different chain
     /// double check addresses and change the WORMHOLE_CORE to the correct chain
     function primaryForkId() public view override returns (uint256 forkId) {
-        //forkId = vm.envUint("PRIMARY_FORK_ID");
-        // TODO undo this after mipo00 execution
-        // we need this because we are calling this proposal inside
-        // mipRewardsDistribution proposal which PRIMARY_FORK_ID=0
         forkId = OPTIMISM_FORK_ID;
-
-        require(forkId <= OPTIMISM_FORK_ID, "invalid primary fork id");
     }
 
     function preBuildMock(Addresses addresses) public override {
