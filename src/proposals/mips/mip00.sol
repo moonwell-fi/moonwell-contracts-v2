@@ -797,7 +797,7 @@ contract mip00 is HybridProposal, Configs {
                     );
 
                     /// CToken Assertions
-                    assertFalse(
+                    assertTrue(
                         comptroller.mintGuardianPaused(
                             addresses.getAddress(config.addressesString)
                         )
