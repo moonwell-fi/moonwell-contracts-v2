@@ -253,6 +253,19 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         );
 
         moonbeamActions.addRewardInfo = spec.addRewardInfo;
+
+        assertGe(
+            spec.stkWellEmissionsPerSecond,
+            0,
+            "stkWellEmissionsPerSecond must be greater than 0"
+        );
+
+        assertLe(
+            spec.stkWellEmissionsPerSecond,
+            5e18,
+            "stkWellEmissionsPerSecond must be less than 1e18"
+        );
+
         moonbeamActions.stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
@@ -325,6 +338,18 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             (JsonSpecExternalChain)
         );
 
+        assertGe(
+            spec.stkWellEmissionsPerSecond,
+            0,
+            "stkWellEmissionsPerSecond must be greater than 0"
+        );
+
+        assertLe(
+            spec.stkWellEmissionsPerSecond,
+            5e18,
+            "stkWellEmissionsPerSecond must be less than 1e18"
+        );
+
         externalChainActions[chainId].stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
@@ -382,7 +407,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 assertApproxEqRel(
                     spec.transferFroms[i].amount,
                     totalEpochRewards,
-                    0.1e18,
+                    0.01e18,
                     "Transfer amount must be close to the total rewards for the epoch"
                 );
             }
