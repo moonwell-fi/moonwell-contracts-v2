@@ -52,7 +52,7 @@ MIP-O00 deployment environment variables:
 ```
 export DESCRIPTION_PATH=src/proposals/mips/mip-o00/MIP-O00.md
 export PRIMARY_FORK_ID=2
-export EMISSIONS_PATH=src/proposals/mips/mip-o00/emissionConfig.json
+export EMISSIONS_PATH=src/proposals/mips/mip-o00/emissionConfigWell.json
 export MTOKENS_PATH=src/proposals/mips/mip-o00/mTokens.json
 ```
 

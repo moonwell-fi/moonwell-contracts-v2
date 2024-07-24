@@ -593,7 +593,7 @@ abstract contract HybridProposal is
             vm.prank(caller);
             (bool success, bytes memory returndata) = address(
                 payable(governorAddress)
-            ).call{value: cost}(proposeCalldata);
+            ).call{value: cost, gas: 14_500_000}(proposeCalldata);
             data = returndata;
 
             require(success, "propose multichain governor failed");
