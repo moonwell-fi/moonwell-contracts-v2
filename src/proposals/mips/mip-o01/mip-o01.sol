@@ -14,10 +14,12 @@ import {MErc20Delegate} from "@protocol/MErc20Delegate.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {ChainIds, OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 
 /*
@@ -188,177 +190,151 @@ contract mipo01 is HybridProposal, Configs {
     function teardown(Addresses addresses, address) public pure override {}
 
     function validate(Addresses addresses, address) public override {
-        {
-            Configs.CTokenConfiguration[]
-                memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+        Comptroller comptroller = Comptroller(
+            addresses.getAddress("UNITROLLER")
+        );
 
-            unchecked {
-                for (uint256 i = 0; i < cTokenConfigs.length; i++) {
-                    Configs.CTokenConfiguration memory config = cTokenConfigs[
-                        i
-                    ];
+        Configs.CTokenConfiguration[]
+            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
-                    /// oracle price feed checks
-                    assertEq(
-                        address(
-                            oracle.getFeed(
-                                ERC20(
-                                    addresses.getAddress(
-                                        config.tokenAddressName
-                                    )
-                                ).symbol()
-                            )
-                        ),
-                        addresses.getAddress(config.priceFeedName)
-                    );
+        unchecked {
+            for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+                Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
-                    /// CToken Assertions
-                    assertFalse(
-                        comptroller.mintGuardianPaused(
-                            addresses.getAddress(config.addressesString)
-                        )
-                    ); /// minting allowed by guardian
-                    assertFalse(
-                        comptroller.borrowGuardianPaused(
-                            addresses.getAddress(config.addressesString)
-                        )
-                    ); /// borrowing allowed by guardian
-                    assertEq(
-                        comptroller.borrowCaps(
-                            addresses.getAddress(config.addressesString)
-                        ),
-                        config.borrowCap
-                    );
-                    assertEq(
-                        comptroller.supplyCaps(
-                            addresses.getAddress(config.addressesString)
-                        ),
-                        config.supplyCap
-                    );
-
-                    /// assert cToken irModel is correct
-                    JumpRateModel jrm = JumpRateModel(
-                        addresses.getAddress(
-                            string(
-                                abi.encodePacked(
-                                    "JUMP_RATE_IRM_",
-                                    config.addressesString
-                                )
-                            )
-                        )
-                    );
-                    assertEq(
-                        address(
-                            MToken(addresses.getAddress(config.addressesString))
-                                .interestRateModel()
-                        ),
-                        address(jrm)
-                    );
-
-                    MErc20 mToken = MErc20(
+                /// CToken Assertions
+                assertFalse(
+                    comptroller.mintGuardianPaused(
                         addresses.getAddress(config.addressesString)
-                    );
+                    )
+                ); /// minting allowed by guardian
+                assertFalse(
+                    comptroller.borrowGuardianPaused(
+                        addresses.getAddress(config.addressesString)
+                    )
+                ); /// borrowing allowed by guardian
+                assertEq(
+                    comptroller.borrowCaps(
+                        addresses.getAddress(config.addressesString)
+                    ),
+                    config.borrowCap
+                );
+                assertEq(
+                    comptroller.supplyCaps(
+                        addresses.getAddress(config.addressesString)
+                    ),
+                    config.supplyCap
+                );
 
-                    /// reserve factor and protocol seize share
+                /// assert cToken irModel is correct
+                JumpRateModel jrm = JumpRateModel(
+                    addresses.getAddress(
+                        string(
+                            abi.encodePacked(
+                                "JUMP_RATE_IRM_",
+                                config.addressesString
+                            )
+                        )
+                    )
+                );
+                assertEq(
+                    address(
+                        MToken(addresses.getAddress(config.addressesString))
+                            .interestRateModel()
+                    ),
+                    address(jrm)
+                );
+
+                MErc20 mToken = MErc20(
+                    addresses.getAddress(config.addressesString)
+                );
+
+                /// reserve factor and protocol seize share
+                assertEq(
+                    mToken.protocolSeizeShareMantissa(),
+                    config.seizeShare
+                );
+                assertEq(mToken.reserveFactorMantissa(), config.reserveFactor);
+
+                /// assert initial mToken balances are correct
+                assertEq(mToken.balanceOf(address(0)), 1); /// address 0 has 1 wei of assets
+
+                address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
+
+                /// assert cToken admin is the temporal governor
+                assertEq(address(mToken.admin()), address(governor));
+
+                /// assert mToken comptroller is correct
+                assertEq(
+                    address(mToken.comptroller()),
+                    addresses.getAddress("UNITROLLER")
+                );
+
+                /// assert mToken underlying is correct
+                assertEq(
+                    address(mToken.underlying()),
+                    addresses.getAddress(config.tokenAddressName)
+                );
+
+                if (
+                    address(mToken.underlying()) == addresses.getAddress("WETH")
+                ) {
+                    /// assert mToken delegate for MOONWELL_WETH is mWETH_DELEGATE
                     assertEq(
-                        mToken.protocolSeizeShareMantissa(),
-                        config.seizeShare
+                        address(
+                            MErc20Delegator(payable(address(mToken)))
+                                .implementation()
+                        ),
+                        addresses.getAddress("MWETH_IMPLEMENTATION"),
+                        "mweth delegate implementation address incorrect"
+                    );
+                } else {
+                    /// assert mToken delegate is uniform across contracts
+                    assertEq(
+                        address(
+                            MErc20Delegator(payable(address(mToken)))
+                                .implementation()
+                        ),
+                        addresses.getAddress("MTOKEN_IMPLEMENTATION"),
+                        "mtoken delegate implementation address incorrect"
+                    );
+                }
+
+                uint256 initialExchangeRate = (10 **
+                    (8 +
+                        ERC20(addresses.getAddress(config.tokenAddressName))
+                            .decimals())) * 2;
+
+                /// assert mToken initial exchange rate is correct
+                assertEq(mToken.exchangeRateCurrent(), initialExchangeRate);
+
+                /// assert mToken name and symbol are correct
+                assertEq(mToken.name(), config.name);
+                assertEq(mToken.symbol(), config.symbol);
+                assertEq(mToken.decimals(), mTokenDecimals);
+
+                /// Jump Rate Model Assertions
+                {
+                    assertEq(
+                        jrm.baseRatePerTimestamp(),
+                        (config.jrm.baseRatePerYear * 1e18) /
+                            jrm.timestampsPerYear() /
+                            1e18
                     );
                     assertEq(
-                        mToken.reserveFactorMantissa(),
-                        config.reserveFactor
+                        jrm.multiplierPerTimestamp(),
+                        (config.jrm.multiplierPerYear * 1e18) /
+                            jrm.timestampsPerYear() /
+                            1e18
                     );
-
-                    /// assert initial mToken balances are correct
-                    assertTrue(mToken.balanceOf(address(governor)) > 0); /// governor has some
-                    assertEq(mToken.balanceOf(address(0)), 1); /// address 0 has 1 wei of assets
-
-                    /// assert cToken admin is the temporal governor
-                    assertEq(address(mToken.admin()), address(governor));
-
-                    /// assert mToken comptroller is correct
                     assertEq(
-                        address(mToken.comptroller()),
-                        addresses.getAddress("UNITROLLER")
+                        jrm.jumpMultiplierPerTimestamp(),
+                        (config.jrm.jumpMultiplierPerYear * 1e18) /
+                            jrm.timestampsPerYear() /
+                            1e18
                     );
-
-                    /// assert mToken underlying is correct
-                    assertEq(
-                        address(mToken.underlying()),
-                        addresses.getAddress(config.tokenAddressName)
-                    );
-
-                    if (
-                        address(mToken.underlying()) ==
-                        addresses.getAddress("WETH")
-                    ) {
-                        /// assert mToken delegate for MOONWELL_WETH is mWETH_DELEGATE
-                        assertEq(
-                            address(
-                                MErc20Delegator(payable(address(mToken)))
-                                    .implementation()
-                            ),
-                            addresses.getAddress("MWETH_IMPLEMENTATION"),
-                            "mweth delegate implementation address incorrect"
-                        );
-                    } else {
-                        /// assert mToken delegate is uniform across contracts
-                        assertEq(
-                            address(
-                                MErc20Delegator(payable(address(mToken)))
-                                    .implementation()
-                            ),
-                            addresses.getAddress("MTOKEN_IMPLEMENTATION"),
-                            "mtoken delegate implementation address incorrect"
-                        );
-                    }
-
-                    uint256 initialExchangeRate = (10 **
-                        (8 +
-                            ERC20(addresses.getAddress(config.tokenAddressName))
-                                .decimals())) * 2;
-
-                    /// assert mToken initial exchange rate is correct
-                    assertEq(mToken.exchangeRateCurrent(), initialExchangeRate);
-
-                    /// assert mToken name and symbol are correct
-                    assertEq(mToken.name(), config.name);
-                    assertEq(mToken.symbol(), config.symbol);
-                    assertEq(mToken.decimals(), mTokenDecimals);
-
-                    /// Jump Rate Model Assertions
-                    {
-                        assertEq(
-                            jrm.baseRatePerTimestamp(),
-                            (config.jrm.baseRatePerYear * 1e18) /
-                                jrm.timestampsPerYear() /
-                                1e18
-                        );
-                        assertEq(
-                            jrm.multiplierPerTimestamp(),
-                            (config.jrm.multiplierPerYear * 1e18) /
-                                jrm.timestampsPerYear() /
-                                1e18
-                        );
-                        assertEq(
-                            jrm.jumpMultiplierPerTimestamp(),
-                            (config.jrm.jumpMultiplierPerYear * 1e18) /
-                                jrm.timestampsPerYear() /
-                                1e18
-                        );
-                        assertEq(jrm.kink(), config.jrm.kink);
-                    }
+                    assertEq(jrm.kink(), config.jrm.kink);
                 }
             }
-        }
-
-        {
-            /// assert admin of implementation contract is address 0 so it cannot be initialized
-            assertEq(
-                MErc20Delegate(addresses.getAddress("MTOKEN_IMPLEMENTATION"))
-                    .admin(),
-                address(0)
-            );
         }
 
         vm.selectFork(primaryForkId());

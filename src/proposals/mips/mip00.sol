@@ -516,6 +516,8 @@ contract mip00 is HybridProposal, Configs {
             abi.encodeWithSignature("_acceptAdmin()"),
             "Temporal governor accepts admin on Unitroller"
         );
+        Configs.CTokenConfiguration[]
+            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
