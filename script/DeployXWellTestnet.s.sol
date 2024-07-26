@@ -165,8 +165,6 @@ contract DeployXWellTestnet is Script, xWELLDeploy, Networks {
 
             /// iterate over all network configs
             for (uint256 i = 0; i < networks.length; i++) {
-                console.log("networks[i].chainId: %d", networks[i].chainId);
-
                 /// skip the network we are on
                 if (networks[i].chainId == block.chainid) {
                     continue;
