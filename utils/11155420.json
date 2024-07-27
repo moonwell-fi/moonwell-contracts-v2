@@ -51,12 +51,12 @@
     },
     {
         "addr": "0x2FC46cd0b3e7ebFb715c4bB64CbDF7DDc86D26D0",
-        "isContract": false,
+        "isContract": true,
         "name": "VOTE_COLLECTION_PROXY"
     },
     {
         "addr": "0xA29a011e862A32BD7463135b2728FF6739962E03",
-        "isContract": false,
+        "isContract": true,
         "name": "VOTE_COLLECTION_IMPL"
     },
     {
