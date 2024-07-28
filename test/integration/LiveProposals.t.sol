@@ -56,13 +56,12 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker, Networks {
 
         uint256[] memory proposalIds = governorContract.liveProposals();
 
-        string[] memory inputs = new string[](1);
-        inputs[0] = "bin/get-latest-proposals.sh";
-
-        string memory output = string(vm.ffi(inputs));
-
-        // create array splitting the output string
-        string[] memory proposalsPath = output.split(",");
+        string[] memory hybridProposalsPath = getProposalsByType(
+            "HybridProposal"
+        );
+        string[] memory artemisProposalsPath = getProposalsByType(
+            "GovernanceProposal"
+        );
 
         for (uint256 i = 0; i < proposalIds.length; i++) {
             /// always need to select MOONBEAM_FORK_ID before executing a
@@ -144,30 +143,43 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker, Networks {
                 console.log("Error executing proposal", proposalId);
                 console.log(string(e));
 
+                bool found = false;
+
                 // find match proposal
-                for (uint256 j = 0; j < proposalsPath.length; j++) {
-                    Proposal proposal = Proposal(deployCode(proposalsPath[j]));
-                    vm.makePersistent(address(proposal));
-
-                    vm.selectFork(uint256(proposal.primaryForkId()));
-
-                    // runs pre build mock and build
-                    proposal.preBuildMock(addresses);
-                    proposal.build(addresses);
-
-                    // if proposal is the one that failed, run the proposal again
-                    if (
-                        proposal.getProposalId(addresses, governor) ==
+                for (uint256 j = 0; j < hybridProposalsPath.length; j++) {
+                    found = runProposal(
+                        hybridProposalsPath[j],
+                        governor,
                         proposalId
-                    ) {
-                        vm.selectFork(MOONBEAM_FORK_ID);
-                        governorContract.execute(proposalId);
+                    );
 
-                        vm.selectFork(uint256(proposal.primaryForkId()));
-                        proposal.validate(addresses, address(proposal));
+                    if (found) {
                         break;
                     }
                 }
+
+                if (!found) {
+                    for (uint256 j = 0; j < artemisProposalsPath.length; j++) {
+                        found = runProposal(
+                            artemisProposalsPath[j],
+                            address(
+                                payable(
+                                    addresses.getAddress("ARTEMIS_GOVERNOR")
+                                )
+                            ),
+                            proposalId
+                        );
+
+                        if (found) {
+                            break;
+                        }
+                    }
+                }
+
+                assertTrue(
+                    found,
+                    string(abi.encodePacked("Proposal not found: ", proposalId))
+                );
             }
 
             // execute the VAA on the correct chain
@@ -190,10 +202,6 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker, Networks {
                         vm.selectFork(networks[j].forkId);
                         // check if address has code
                         if (temporalGovernorAddress.code.length > 0) {
-                            console.log(
-                                "Temporal Governor address found",
-                                temporalGovernorAddress
-                            );
                             break;
                         }
                     }
@@ -245,36 +253,39 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker, Networks {
                     console.log("Error executing proposal", proposalId);
                     console.log(string(e));
 
+                    bool found = false;
                     // find match proposal
-                    for (uint256 j = 0; j < proposalsPath.length; j++) {
-                        Proposal proposal = Proposal(
-                            deployCode(proposalsPath[j])
-                        );
-                        vm.makePersistent(address(proposal));
-
-                        vm.selectFork(uint256(proposal.primaryForkId()));
-
-                        // runs pre build mock and build
-                        proposal.preBuildMock(addresses);
-                        proposal.build(addresses);
-
-                        // if proposal is the one that failed, run the temporal
-                        // governor execution again
-                        if (
-                            proposal.getProposalId(addresses, governor) ==
+                    for (uint256 j = 0; j < hybridProposalsPath.length; j++) {
+                        found = runTemporalGovProposal(
+                            temporalGovernor,
+                            hybridProposalsPath[j],
+                            governor,
+                            vaa,
                             proposalId
+                        );
+
+                        if (found) {
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        for (
+                            uint256 j = 0;
+                            j < artemisProposalsPath.length;
+                            j++
                         ) {
-                            // foundry selectFork resets warp, so we need to warp again
-                            vm.warp(
-                                block.timestamp +
-                                    temporalGovernor.proposalDelay()
+                            found = runTemporalGovProposal(
+                                temporalGovernor,
+                                artemisProposalsPath[j],
+                                addresses.getAddress("ARTEMIS_GOVERNOR"),
+                                vaa,
+                                proposalId
                             );
 
-                            temporalGovernor.executeProposal(vaa);
-
-                            // no need to select fork as we are already on base
-                            proposal.validate(addresses, address(proposal));
-                            break;
+                            if (found) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -314,4 +325,76 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker, Networks {
         override
         returns (address[] memory, uint256[] memory, bytes[] memory)
     {}
+
+    function runProposal(
+        string memory path,
+        address governorAddress,
+        uint256 proposalId
+    ) private returns (bool found) {
+        Proposal proposal = Proposal(deployCode(path));
+        vm.makePersistent(address(proposal));
+
+        vm.selectFork(uint256(proposal.primaryForkId()));
+
+        // runs pre build mock and build
+        proposal.preBuildMock(addresses);
+        proposal.build(addresses);
+
+        // if proposal is the one that failed, run the proposal again
+        if (proposal.getProposalId(addresses, governorAddress) == proposalId) {
+            vm.selectFork(MOONBEAM_FORK_ID);
+            MultichainGovernor governorContract = MultichainGovernor(governor);
+
+            governorContract.execute(proposalId);
+
+            vm.selectFork(uint256(proposal.primaryForkId()));
+            proposal.validate(addresses, address(proposal));
+
+            found = true;
+        }
+    }
+
+    function runTemporalGovProposal(
+        TemporalGovernor temporalGovernor,
+        string memory path,
+        address governorAddress,
+        bytes memory vaa,
+        uint256 proposalId
+    ) private returns (bool found) {
+        Proposal proposal = Proposal(deployCode(path));
+        vm.makePersistent(address(proposal));
+
+        vm.selectFork(uint256(proposal.primaryForkId()));
+
+        // runs pre build mock and build
+        proposal.preBuildMock(addresses);
+        proposal.build(addresses);
+
+        // if proposal is the one that failed, run the temporal
+        // governor execution again
+        if (proposal.getProposalId(addresses, governorAddress) == proposalId) {
+            // foundry selectFork resets warp, so we need to warp again
+            vm.warp(block.timestamp + temporalGovernor.proposalDelay());
+
+            temporalGovernor.executeProposal(vaa);
+
+            // no need to select fork as we are already on base
+            proposal.validate(addresses, address(proposal));
+
+            found = true;
+        }
+    }
+
+    function getProposalsByType(
+        string memory proposalType
+    ) private returns (string[] memory) {
+        string[] memory inputs = new string[](2);
+        inputs[0] = "bin/get-proposals-by-type.sh";
+        inputs[1] = proposalType;
+
+        string memory output = string(vm.ffi(inputs));
+
+        // create array splitting the output string
+        return output.split(",");
+    }
 }

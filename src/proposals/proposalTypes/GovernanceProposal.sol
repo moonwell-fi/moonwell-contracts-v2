@@ -104,7 +104,7 @@ abstract contract GovernanceProposal is Proposal {
         );
         uint256 proposalCount = onchainProposalId != 0
             ? onchainProposalId
-            : MultichainGovernor(payable(governor)).proposalCount();
+            : governorContract.proposalCount();
 
         (
             address[] memory proposalTargets,
