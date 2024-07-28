@@ -10,6 +10,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
 import {Address} from "@utils/Address.sol";
 import {Proposal} from "@proposals/Proposal.sol";
+import {Networks} from "@proposals/utils/Networks.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
@@ -18,7 +19,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {ChainIds, MOONBEAM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
-contract LiveProposalsIntegrationTest is Test, ProposalChecker {
+contract LiveProposalsIntegrationTest is Test, ProposalChecker, Networks {
     using String for string;
     using Bytes for bytes;
     using Address for *;
@@ -65,7 +66,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
         for (uint256 i = 0; i < proposalIds.length; i++) {
             /// always need to select MOONBEAM_FORK_ID before executing a
-            /// proposal as end of loop could switch to base for execution
+            /// proposal as end of loop could switch to other chains for execution
             vm.selectFork(MOONBEAM_FORK_ID);
 
             uint256 proposalId = proposalIds[i];
@@ -106,7 +107,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                 vm.warp(crossChainVoteCollectionEndTimestamp + 1);
             }
 
-            /// Check if there is any action on Base
+            /// Check if there is any action in non-Moonbeam chains
             address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
             addresses.removeRestriction();
 
@@ -130,7 +131,6 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                 /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
                 vm.expectEmit(true, true, true, true, wormholeCore);
 
-                /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
                 emit LogMessagePublished(
                     governor,
                     nextSequence,
@@ -170,13 +170,9 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                 }
             }
 
+            // execute the VAA on the correct chain
             if (targets[lastIndex] == wormholeCore) {
-                vm.selectFork(BASE_FORK_ID);
-
-                address expectedTemporalGov = addresses.getAddress(
-                    "TEMPORAL_GOVERNOR"
-                );
-
+                TemporalGovernor temporalGovernor;
                 {
                     // decode payload
                     (
@@ -189,24 +185,34 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                             (address, address[], uint256[], bytes[])
                         );
 
+                    // figure out to which fork the temporal governor belongs
+                    for (uint256 j = 0; j < networks.length; j++) {
+                        vm.selectFork(networks[j].forkId);
+                        // check if address has code
+                        if (temporalGovernorAddress.code.length > 0) {
+                            console.log(
+                                "Temporal Governor address found",
+                                temporalGovernorAddress
+                            );
+                            break;
+                        }
+                    }
+
+                    address expectedTemporalGov = addresses.getAddress(
+                        "TEMPORAL_GOVERNOR"
+                    );
+
                     require(
                         temporalGovernorAddress == expectedTemporalGov,
                         "Temporal Governor address mismatch"
                     );
 
                     checkBaseOptimismActions(baseTargets);
+
+                    temporalGovernor = TemporalGovernor(
+                        payable(expectedTemporalGov)
+                    );
                 }
-
-                bytes memory vaa = generateVAA(
-                    uint32(block.timestamp),
-                    block.chainid.toMoonbeamWormholeChainId(),
-                    governor.toBytes(),
-                    payload
-                );
-
-                TemporalGovernor temporalGovernor = TemporalGovernor(
-                    payable(expectedTemporalGov)
-                );
 
                 {
                     // Deploy the modified Wormhole Core implementation contract which
@@ -221,6 +227,13 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     /// runtime bytecode of the mock core
                     vm.etch(wormhole, address(core).code);
                 }
+
+                bytes memory vaa = generateVAA(
+                    uint32(block.timestamp),
+                    block.chainid.toMoonbeamWormholeChainId(),
+                    governor.toBytes(),
+                    payload
+                );
 
                 temporalGovernor.queueProposal(vaa);
 
