@@ -395,6 +395,6 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker, Networks {
         string memory output = string(vm.ffi(inputs));
 
         // create array splitting the output string
-        return output.split(",");
+        return output.split("\n");
     }
 }
