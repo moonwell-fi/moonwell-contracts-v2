@@ -90,6 +90,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
     mapping(uint256 chainid => JsonSpecExternalChain) externalChainActions;
 
     uint256 startTimeStamp;
+    uint256 endTimeStamp;
 
     /// we need to save this value to check if the transferFrom amount was successfully transferred
     mapping(address => uint256) public wellBalancesBefore;
@@ -122,6 +123,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         bytes memory parsedJson = vm.parseJson(encodedJson, filter);
 
         startTimeStamp = abi.decode(parsedJson, (uint256));
+
+        filter = ".endTimeStamp";
+
+        parsedJson = vm.parseJson(encodedJson, filter);
+
+        endTimeStamp = abi.decode(parsedJson, (uint256));
 
         _saveMoonbeamActions(addresses, encodedJson);
 
