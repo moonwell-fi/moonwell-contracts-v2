@@ -6,7 +6,6 @@ import "@forge-std/StdJson.sol";
 import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
 
-import {mip00} from "@proposals/mips/mip00.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
@@ -124,7 +123,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         startTimeStamp = abi.decode(parsedJson, (uint256));
 
-        filter = ".endTimeStamp";
+        filter = ".endTimeSTamp";
 
         parsedJson = vm.parseJson(encodedJson, filter);
 
@@ -181,15 +180,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             address dexRelayer = addresses.getAddress("DEX_RELAYER");
             wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
         }
-
-        // TODO remove this once o00  gets executed
-        mip00 o00 = new mip00();
-        vm.makePersistent(address(o00));
-        vm.selectFork(o00.primaryForkId());
-        o00.initProposal(addresses);
-        o00.preBuildMock(addresses);
-        o00.build(addresses);
-        o00.run(addresses, address(this));
 
         vm.selectFork(primaryForkId());
 
