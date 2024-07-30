@@ -59,7 +59,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         uint256 newBorrowSpeed;
         uint256 newSupplySpeed;
         uint256 rewardType;
-        string target;
     }
 
     struct SetMRDRewardSpeed {
@@ -545,7 +544,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
 
             _pushAction(
-                addresses.getAddress(setRewardSpeed.target),
+                addresses.getAddress("UNITROLLER"),
                 abi.encodeWithSignature(
                     "_setRewardSpeed(uint8,address,uint256,uint256)",
                     uint8(setRewardSpeed.rewardType),

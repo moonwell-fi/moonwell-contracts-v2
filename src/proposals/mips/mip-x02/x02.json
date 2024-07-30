@@ -133,19 +133,19 @@
                 "amount": "13012169.710322751823696307e18",
                 "from": "MGLIMMER_MULTISIG",
                 "to": "MULTICHAIN_GOVERNOR_PROXY",
-                "token": "WELL"
+                "token": "GOVTOKEN"
             },
             {
                 "amount": "712878.967415872146375477e18",
                 "from": "MGLIMMER_MULTISIG",
                 "to": "UNITROLLER",
-                "token": "WELL"
+                "token": "GOVTOKEN"
             },
             {
                 "amount": "698027.32226137479301542e18",
                 "from": "MGLIMMER_MULTISIG",
                 "to": "ECOSYSTEM_RESERVE_PROXY",
-                "token": "WELL"
+                "token": "GOVTOKEN"
             }
         ]
     },
@@ -429,13 +429,13 @@
                 "amount": "400441.985207200981676579e18",
                 "from": "TEMPORAL_GOVERNOR",
                 "to": "MULTI_REWARD_DISTRIBUTOR",
-                "token": "WELL"
+                "token": "xWELL_PROXY"
             },
             {
                 "amount": "392099.443848717666696757e18",
                 "from": "TEMPORAL_GOVERNOR",
                 "to": "ECOSYSTEM_RESERVE_PROXY",
-                "token": "WELL"
+                "token": "xWELL_PROXY"
             }
         ]
     },
