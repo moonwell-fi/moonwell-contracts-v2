@@ -9,6 +9,7 @@ env:
   DESCRIPTION_PATH: "src/proposals/mips/mip-m34/m34.md"
   PRIMARY_FORK_ID: 0 
   MIP_REWARDS_PATH: "src/proposals/mips/mip-m34/m34.json"
+  SOL_TEMPLATE_PATH: "src/proposals/mips/mip-rewards-distribution/mipRewardsDistributionMoonbeam.sol"
   MIP_REWARDS_ID: 0 # should only run if proposal is not on chain yet, if it is
   # onchain skip this workflow and checks for on chain calldata match
 
