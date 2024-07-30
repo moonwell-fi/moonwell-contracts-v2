@@ -169,10 +169,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         moonbeamActions.stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
-        for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
-            moonbeamActions.bridgeWells.push(spec.bridgeWells[i]);
-        }
-
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
 
