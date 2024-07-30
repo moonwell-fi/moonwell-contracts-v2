@@ -222,15 +222,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
     function _buildMoonbeamActions(Addresses addresses) private {
         vm.selectFork(MOONBEAM_FORK_ID);
-
         JsonSpecMoonbeam memory spec = moonbeamActions;
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             TransferFrom memory transferFrom = spec.transferFroms[i];
-
             address token = addresses.getAddress(transferFrom.token);
             address from = addresses.getAddress(transferFrom.from);
             address to = addresses.getAddress(transferFrom.to);
-
             _pushAction(
                 token,
                 abi.encodeWithSignature(
@@ -254,7 +251,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 )
             );
         }
-
         _pushAction(
             addresses.getAddress("STK_GOVTOKEN"),
             abi.encodeWithSignature(
@@ -265,10 +261,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             "Set reward speed for the Safety Module on Moonbeam",
             ActionType.Moonbeam
         );
-
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
-
             _pushAction(
                 addresses.getAddress("UNITROLLER"),
                 abi.encodeWithSignature(
@@ -293,27 +287,24 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 ActionType.Moonbeam
             );
         }
-
         AddRewardInfo memory addRewardInfo = spec.addRewardInfo;
-
         // first approve
         _pushAction(
             addresses.getAddress("GOVTOKEN"),
             abi.encodeWithSignature(
                 "approve(address,uint256)",
                 addresses.getAddress(addRewardInfo.target),
-                addRewardInfo.amount
+                uint256(addRewardInfo.amount)
             ),
             string(
                 abi.encodePacked(
                     "Approve StellaSwap spend ",
-                    vm.toString(addRewardInfo.amount / 1e18),
+                    vm.toString(uint256(addRewardInfo.amount) / 1e18),
                     " WELL"
                 )
             ),
             ActionType.Moonbeam
         );
-
         _pushAction(
             addresses.getAddress(addRewardInfo.target),
             abi.encodeWithSignature(
@@ -327,7 +318,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     "Add reward info for pool ",
                     vm.toString(addRewardInfo.pid),
                     " on StellaSwap. Reward per second: ",
-                    vm.toString(addRewardInfo.rewardPerSec),
+                    vm.toString(uint256(addRewardInfo.rewardPerSec)),
                     " End timestamp: ",
                     vm.toString(addRewardInfo.endTimestamp)
                 )
@@ -338,13 +329,10 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
     function _validateMoonbeam(Addresses addresses) private {
         vm.selectFork(MOONBEAM_FORK_ID);
-
         JsonSpecMoonbeam memory spec = moonbeamActions;
-
         IERC20 well = IERC20(addresses.getAddress("WELL"));
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             TransferFrom memory transferFrom = spec.transferFroms[i];
-
             address to = addresses.getAddress(transferFrom.to);
             if (to == addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")) {
                 //  amount must be transferred as part of the DEX rewards and
@@ -367,7 +355,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 );
             }
         }
-
         // assert xwell router allowance
         assertEq(
             well.allowance(
@@ -377,20 +364,15 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             0,
             "xWELL Router should not have an open allowance after execution"
         );
-
         address stkGovToken = addresses.getAddress("STK_GOVTOKEN");
-
         // assert safety module reward speed
         IStakedWell stkWell = IStakedWell(stkGovToken);
         (uint256 emissionsPerSecond, , ) = stkWell.assets(stkGovToken);
         assertEq(emissionsPerSecond, spec.stkWellEmissionsPerSecond);
-
         // validate setRewardSpeed calls
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
-
             address market = addresses.getAddress(setRewardSpeed.market);
-
             ComptrollerInterfaceV1 comptrollerV1 = ComptrollerInterfaceV1(
                 addresses.getAddress("UNITROLLER")
             );
@@ -408,7 +390,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     )
                 )
             );
-
             assertEq(
                 comptrollerV1.borrowRewardSpeeds(
                     uint8(setRewardSpeed.rewardType),
@@ -424,15 +405,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 )
             );
         }
-
         // validate dex rewards
         AddRewardInfo memory addRewardInfo = spec.addRewardInfo;
-
         address stellaSwapRewarder = addresses.getAddress(
             "STELLASWAP_REWARDER"
         );
         StellaSwapRewarder stellaSwap = StellaSwapRewarder(stellaSwapRewarder);
-
         // check allowance
         assertEq(
             well.allowance(
@@ -442,20 +420,16 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             0,
             "StellaSwap Rewarder should not have an open allowance after execution"
         );
-
         // validate that stellaswap receive the correct amount of well
         assertEq(
             well.balanceOf(stellaSwapRewarder),
             wellBalancesBefore[stellaSwapRewarder] + addRewardInfo.amount,
             "StellaSwap Rewarder should have received the correct amount of WELL"
         );
-
         uint256 blockTimestamp = block.timestamp;
-
         // block.timestamp must be in the current reward period to the getter
         // functions return the correct values
         vm.warp(addRewardInfo.endTimestamp - 1);
-
         assertEq(
             stellaSwap.poolRewardsPerSec(addRewardInfo.pid),
             addRewardInfo.rewardPerSec,
@@ -466,7 +440,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             addRewardInfo.endTimestamp,
             "End timestamp for StellaSwap is incorrect"
         );
-
         // warp back to current block.timestamp
         vm.warp(blockTimestamp);
     }
