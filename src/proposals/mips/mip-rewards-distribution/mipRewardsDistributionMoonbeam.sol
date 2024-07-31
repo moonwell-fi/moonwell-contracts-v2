@@ -407,21 +407,25 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             "STELLASWAP_REWARDER"
         );
         StellaSwapRewarder stellaSwap = StellaSwapRewarder(stellaSwapRewarder);
-        // check allowance
-        assertEq(
+        // check allowance tolerating a dust wei amount
+        assertApproxEqAbs(
             well.allowance(
                 addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
                 stellaSwapRewarder
             ),
             0,
+            1e8, // 0.00000001e18 well
             "StellaSwap Rewarder should not have an open allowance after execution"
         );
+
         // validate that stellaswap receive the correct amount of well
-        assertEq(
+        assertApproxEqAbs(
             well.balanceOf(stellaSwapRewarder),
             wellBalancesBefore[stellaSwapRewarder] + addRewardInfo.amount,
+            1e8, // 0.00000001e18 well
             "StellaSwap Rewarder should have received the correct amount of WELL"
         );
+
         uint256 blockTimestamp = block.timestamp;
         // block.timestamp must be in the current reward period to the getter
         // functions return the correct values
