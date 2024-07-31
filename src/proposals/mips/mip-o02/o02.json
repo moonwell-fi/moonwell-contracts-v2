@@ -165,7 +165,7 @@
         ],
         "transferFrom": [
             {
-                "amount": 7.586820699618836e23,
+                "amount": 7.586820699618837e23,
                 "from": "MGLIMMER_MULTISIG",
                 "to": "MULTICHAIN_GOVERNOR_PROXY",
                 "token": "GOVTOKEN"
