@@ -606,7 +606,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 //  amount must be transferred as part of the DEX rewards and
                 //  bridge calls
                 // TODO remove the ApproxEqRel once we get the final values from the worker
-                assertApproxEqRel(
+                assertApproxEqAbs(
                     well.balanceOf(to),
                     wellBalancesBefore[to],
                     0.01e18,
