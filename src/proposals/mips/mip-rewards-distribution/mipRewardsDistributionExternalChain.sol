@@ -149,7 +149,6 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
         // save well balances before so we can check if the transferFrom was successful
         IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
-
         address mrd = addresses.getAddress("MRD_PROXY");
         wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
 
@@ -743,13 +742,20 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             address to = addresses.getAddress(spec.transferFroms[i].to);
-            assertEq(
-                well.balanceOf(to),
-                wellBalancesBefore[to] + spec.transferFroms[i].amount,
-                string(
-                    abi.encodePacked("balance changed for ", vm.getLabel(to))
-                )
-            );
+            address token = addresses.getAddress(spec.transferFroms[i].token);
+
+            if (token == addresses.getAddress("xWELL_PROXY")) {
+                assertEq(
+                    well.balanceOf(to),
+                    wellBalancesBefore[to] + spec.transferFroms[i].amount,
+                    string(
+                        abi.encodePacked(
+                            "balance changed for ",
+                            vm.getLabel(to)
+                        )
+                    )
+                );
+            }
         }
 
         {
