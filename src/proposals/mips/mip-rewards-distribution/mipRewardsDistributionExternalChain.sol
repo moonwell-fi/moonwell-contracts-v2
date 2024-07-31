@@ -14,6 +14,7 @@ import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
@@ -304,8 +305,9 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
             // TODO add USDC assertion in the future
             if (
+                chainId == OPTIMISM_CHAIN_ID &&
                 addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
-                addresses.getAddress("OP")
+                addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
             ) {
                 totalOpEpochRewards +=
                     spec.setRewardSpeed[i].newSupplySpeed *
@@ -336,12 +338,16 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
             // check OP
             if (
+                chainId == OPTIMISM_CHAIN_ID &&
                 addresses.getAddress(spec.transferFroms[i].to) ==
                 addresses.getAddress("MRD_PROXY") &&
                 addresses.getAddress(spec.transferFroms[i].from) ==
-                addresses.getAddress("FOUNDATION_OP_MULTISIG") &&
+                addresses.getAddress(
+                    "FOUNDATION_OP_MULTISIG",
+                    OPTIMISM_CHAIN_ID
+                ) &&
                 addresses.getAddress(spec.transferFroms[i].token) ==
-                addresses.getAddress("OP")
+                addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
             ) {
                 assertApproxEqRel(
                     spec.transferFroms[i].amount,
@@ -518,7 +524,14 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             address from = addresses.getAddress(transferFrom.from);
             address to = addresses.getAddress(transferFrom.to);
 
-            if (from == addresses.getAddress("FOUNDATION_OP_MULTISIG")) {
+            if (
+                chainId == OPTIMISM_CHAIN_ID &&
+                from ==
+                addresses.getAddress(
+                    "FOUNDATION_OP_MULTISIG",
+                    OPTIMISM_CHAIN_ID
+                )
+            ) {
                 _pushAction(
                     token,
                     abi.encodeWithSignature(
