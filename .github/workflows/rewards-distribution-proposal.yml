@@ -6,11 +6,11 @@ env:
   OP_RPC_URL: ${{secrets.OP_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
-  DESCRIPTION_PATH: "src/proposals/mips/mip-o01/o01.md"
+  DESCRIPTION_PATH: "src/proposals/mips/mip-b23/b23.md"
   PRIMARY_FORK_ID: 0 
-  MIP_REWARDS_PATH: "src/proposals/mips/mip-o01/o01.json"
+  MIP_REWARDS_PATH: "src/proposals/mips/mip-b23/b23.json"
   SOL_TEMPLATE_PATH: "src/proposals/mips/mip-rewards-distribution/mipRewardsDistributionExternalChain.sol"
-  CHAIN_ID: 10
+  CHAIN_ID: 8453
   MIP_REWARDS_ID: 0 # should only run if proposal is not on chain yet, if it is
   # onchain skip this workflow and checks for on chain calldata match
 
