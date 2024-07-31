@@ -256,7 +256,8 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         externalChainActions[_chainId].stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
-        uint256 totalEpochRewards = 0;
+        uint256 totalWellEpochRewards = 0;
+        uint256 totalOpEpochRewards = 0;
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             // check for duplications
@@ -289,14 +290,26 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 "Borrow speed must be greater or equal to 1"
             );
 
-            if (spec.setRewardSpeed[i].emissionToken == "xWELL_PROXY") {
+            if (
+                addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
+                addresses.getAddress("xWELL_PROXY")
+            ) {
                 uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
                     (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
                 uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
                     (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
-                totalEpochRewards += supplyAmount + borrowAmount;
+                totalWellEpochRewards += supplyAmount + borrowAmount;
+            }
+
+            if (
+                addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
+                addresses.getAddress("OP")
+            ) {
+                totalOpEpochRewards +=
+                    spec.setRewardSpeed[i].newSupplySpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
             }
 
             externalChainActions[_chainId].setRewardSpeed.push(
@@ -309,11 +322,30 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 addresses.getAddress(spec.transferFroms[i].to) ==
                 addresses.getAddress("MRD_PROXY") &&
                 addresses.getAddress(spec.transferFroms[i].from) ==
-                addresses.getAddress("TEMPORAL_GOVERNOR")
+                addresses.getAddress("TEMPORAL_GOVERNOR") &&
+                addresses.getAddress(spec.transferFroms[i].token) ==
+                addresses.getAddress("xWELL_PROXY")
             ) {
                 assertApproxEqRel(
                     spec.transferFroms[i].amount,
-                    totalEpochRewards,
+                    totalWellEpochRewards,
+                    0.01e18,
+                    "Transfer amount must be close to the total rewards for the epoch"
+                );
+            }
+
+            // check OP
+            if (
+                addresses.getAddress(spec.transferFroms[i].to) ==
+                addresses.getAddress("MRD_PROXY") &&
+                addresses.getAddress(spec.transferFroms[i].from) ==
+                addresses.getAddress("FOUNDATION_OP_MULTISIG") &&
+                addresses.getAddress(spec.transferFroms[i].token) ==
+                addresses.getAddress("OP")
+            ) {
+                assertApproxEqRel(
+                    spec.transferFroms[i].amount,
+                    totalOpEpochRewards,
                     0.01e18,
                     "Transfer amount must be close to the total rewards for the epoch"
                 );
