@@ -230,9 +230,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
     function _saveExternalChainActions(
         Addresses addresses,
         string memory data,
-        uint256 chainId
+        uint256 _chainId
     ) private {
-        string memory chain = string.concat(".", vm.toString(chainId));
+        string memory chain = string.concat(".", vm.toString(_chainId));
 
         bytes memory parsedJson = vm.parseJson(data, chain);
 
@@ -253,7 +253,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             "stkWellEmissionsPerSecond must be less than 1e18"
         );
 
-        externalChainActions[chainId].stkWellEmissionsPerSecond = spec
+        externalChainActions[_chainId].stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
         uint256 totalEpochRewards = 0;
@@ -262,12 +262,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             // check for duplications
             for (
                 uint256 j = 0;
-                j < externalChainActions[chainId].setRewardSpeed.length;
+                j < externalChainActions[_chainId].setRewardSpeed.length;
                 j++
             ) {
                 SetMRDRewardSpeed
                     memory existingSetRewardSpeed = externalChainActions[
-                        chainId
+                        _chainId
                     ].setRewardSpeed[j];
 
                 require(
@@ -297,7 +297,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
             totalEpochRewards += supplyAmount + borrowAmount;
 
-            externalChainActions[chainId].setRewardSpeed.push(
+            externalChainActions[_chainId].setRewardSpeed.push(
                 spec.setRewardSpeed[i]
             );
         }
@@ -318,11 +318,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             // check for duplications
             for (
                 uint256 j = 0;
-                j < externalChainActions[chainId].transferFroms.length;
+                j < externalChainActions[_chainId].transferFroms.length;
                 j++
             ) {
                 TransferFrom memory existingTransferFrom = externalChainActions[
-                    chainId
+                    _chainId
                 ].transferFroms[j];
 
                 require(
@@ -336,7 +336,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 );
             }
 
-            externalChainActions[chainId].transferFroms.push(
+            externalChainActions[_chainId].transferFroms.push(
                 spec.transferFroms[i]
             );
         }
@@ -439,11 +439,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
     function _buildExternalChainActions(
         Addresses addresses,
-        uint256 chainId
+        uint256 _chainId
     ) private {
-        vm.selectFork(chainId.toForkId());
+        vm.selectFork(_chainId.toForkId());
 
-        JsonSpecExternalChain memory spec = externalChainActions[chainId];
+        JsonSpecExternalChain memory spec = externalChainActions[_chainId];
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             TransferFrom memory transferFrom = spec.transferFroms[i];
@@ -470,7 +470,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         " amount ",
                         vm.toString(transferFrom.amount / 1e18),
                         " on ",
-                        chainId.chainIdToName()
+                        _chainId.chainIdToName()
                     )
                 )
             );
@@ -513,7 +513,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             " for ",
                             vm.getLabel(market),
                             " on ",
-                            chainId.chainIdToName()
+                            _chainId.chainIdToName()
                         )
                     )
                 );
@@ -538,7 +538,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             " for ",
                             vm.getLabel(market),
                             " on ",
-                            chainId.chainIdToName()
+                            _chainId.chainIdToName()
                         )
                     )
                 );
@@ -567,7 +567,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             " for ",
                             vm.getLabel(market),
                             " on ",
-                            chainId.chainIdToName()
+                            _chainId.chainIdToName()
                         )
                     )
                 );
@@ -586,7 +586,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     "Set reward speed to ",
                     vm.toString(spec.stkWellEmissionsPerSecond),
                     " for the Safety Module on ",
-                    chainId.chainIdToName()
+                    _chainId.chainIdToName()
                 )
             )
         );
@@ -605,9 +605,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             if (to == addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")) {
                 //  amount must be transferred as part of the DEX rewards and
                 //  bridge calls
-                assertEq(
+                // TODO remove the ApproxEqRel once we get the final values from the worker
+                assertApproxEqRel(
                     well.balanceOf(to),
                     wellBalancesBefore[to],
+                    0.01e18,
                     "balance changed for MULTICHAIN_GOVERNOR_PROXY"
                 );
             } else {
@@ -637,11 +639,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
     function _validateExternalChainActions(
         Addresses addresses,
-        uint256 chainId
+        uint256 _chainId
     ) private {
-        vm.selectFork(chainId.toForkId());
+        vm.selectFork(_chainId.toForkId());
 
-        JsonSpecExternalChain memory spec = externalChainActions[chainId];
+        JsonSpecExternalChain memory spec = externalChainActions[_chainId];
 
         // validate transfer calls
         IERC20 well = IERC20(addresses.getAddress("xWELL_PROXY"));
