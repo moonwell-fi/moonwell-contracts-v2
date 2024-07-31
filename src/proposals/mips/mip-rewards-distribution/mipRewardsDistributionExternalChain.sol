@@ -25,7 +25,7 @@ interface StellaSwapRewarder {
     function currentEndTimestamp(uint256 _pid) external view returns (uint256);
 }
 
-contract mipRewardsDistribution is HybridProposal, Networks {
+contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
     using String for string;
     using stdJson for string;
     using ChainIds for uint256;
@@ -149,7 +149,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         // save well balances before so we can check if the transferFrom was successful
         IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
-
         address mrd = addresses.getAddress("MRD_PROXY");
         wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
 
@@ -256,7 +255,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         externalChainActions[_chainId].stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
-        uint256 totalEpochRewards = 0;
+        uint256 totalWellEpochRewards = 0;
+        uint256 totalOpEpochRewards = 0;
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             // check for duplications
@@ -289,13 +289,28 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 "Borrow speed must be greater or equal to 1"
             );
 
-            uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-                (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+            if (
+                addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
+                addresses.getAddress("xWELL_PROXY")
+            ) {
+                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
-            uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-                (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
-            totalEpochRewards += supplyAmount + borrowAmount;
+                totalWellEpochRewards += supplyAmount + borrowAmount;
+            }
+
+            // TODO add USDC assertion in the future
+            if (
+                addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
+                addresses.getAddress("OP")
+            ) {
+                totalOpEpochRewards +=
+                    spec.setRewardSpeed[i].newSupplySpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+            }
 
             externalChainActions[_chainId].setRewardSpeed.push(
                 spec.setRewardSpeed[i]
@@ -305,11 +320,32 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             if (
                 addresses.getAddress(spec.transferFroms[i].to) ==
-                addresses.getAddress("MRD_PROXY")
+                addresses.getAddress("MRD_PROXY") &&
+                addresses.getAddress(spec.transferFroms[i].from) ==
+                addresses.getAddress("TEMPORAL_GOVERNOR") &&
+                addresses.getAddress(spec.transferFroms[i].token) ==
+                addresses.getAddress("xWELL_PROXY")
             ) {
                 assertApproxEqRel(
                     spec.transferFroms[i].amount,
-                    totalEpochRewards,
+                    totalWellEpochRewards,
+                    0.01e18,
+                    "Transfer amount must be close to the total rewards for the epoch"
+                );
+            }
+
+            // check OP
+            if (
+                addresses.getAddress(spec.transferFroms[i].to) ==
+                addresses.getAddress("MRD_PROXY") &&
+                addresses.getAddress(spec.transferFroms[i].from) ==
+                addresses.getAddress("FOUNDATION_OP_MULTISIG") &&
+                addresses.getAddress(spec.transferFroms[i].token) ==
+                addresses.getAddress("OP")
+            ) {
+                assertApproxEqRel(
+                    spec.transferFroms[i].amount,
+                    totalOpEpochRewards,
                     0.01e18,
                     "Transfer amount must be close to the total rewards for the epoch"
                 );
@@ -333,6 +369,23 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         addresses.getAddress(spec.transferFroms[i].to) !=
                         addresses.getAddress(existingTransferFrom.to),
                     "Duplication in transferFroms"
+                );
+
+                require(
+                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
+                        keccak256("MULTI_REWARD_DISTRIBUTOR"),
+                    "should not transfer funds to MRD logic contract"
+                );
+
+                require(
+                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
+                        keccak256("ECOSYSTEM_RESERVE_IMPL"),
+                    "should not transfer funds to Ecosystem Reserve logic contract"
+                );
+                require(
+                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
+                        keccak256("STK_GOVTOKEN_IMPL"),
+                    "should not transfer funds to Safety Module logic contract"
                 );
             }
 
@@ -465,28 +518,54 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             address from = addresses.getAddress(transferFrom.from);
             address to = addresses.getAddress(transferFrom.to);
 
-            _pushAction(
-                token,
-                abi.encodeWithSignature(
-                    "transfer(address,uint256)",
-                    to,
-                    transferFrom.amount
-                ),
-                string(
-                    abi.encodePacked(
-                        "Transfer token ",
-                        vm.getLabel(token),
-                        " from ",
-                        vm.getLabel(from),
-                        " to ",
-                        vm.getLabel(to),
-                        " amount ",
-                        vm.toString(transferFrom.amount / 1e18),
-                        " on ",
-                        _chainId.chainIdToName()
+            if (from == addresses.getAddress("FOUNDATION_OP_MULTISIG")) {
+                _pushAction(
+                    token,
+                    abi.encodeWithSignature(
+                        "transferFrom(address,address,uint256)",
+                        from,
+                        to,
+                        transferFrom.amount
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Transfer token ",
+                            vm.getLabel(token),
+                            " from ",
+                            vm.getLabel(from),
+                            " to ",
+                            vm.getLabel(to),
+                            " amount ",
+                            vm.toString(transferFrom.amount / 1e18),
+                            " on ",
+                            _chainId.chainIdToName()
+                        )
                     )
-                )
-            );
+                );
+            } else {
+                _pushAction(
+                    token,
+                    abi.encodeWithSignature(
+                        "transfer(address,uint256)",
+                        to,
+                        transferFrom.amount
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Transfer token ",
+                            vm.getLabel(token),
+                            " from ",
+                            vm.getLabel(from),
+                            " to ",
+                            vm.getLabel(to),
+                            " amount ",
+                            vm.toString(transferFrom.amount / 1e18),
+                            " on ",
+                            _chainId.chainIdToName()
+                        )
+                    )
+                );
+            }
         }
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
@@ -660,13 +739,20 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             address to = addresses.getAddress(spec.transferFroms[i].to);
-            assertEq(
-                well.balanceOf(to),
-                wellBalancesBefore[to] + spec.transferFroms[i].amount,
-                string(
-                    abi.encodePacked("balance changed for ", vm.getLabel(to))
-                )
-            );
+            address token = addresses.getAddress(spec.transferFroms[i].token);
+
+            if (token == addresses.getAddress("xWELL_PROXY")) {
+                assertEq(
+                    well.balanceOf(to),
+                    wellBalancesBefore[to] + spec.transferFroms[i].amount,
+                    string(
+                        abi.encodePacked(
+                            "balance changed for ",
+                            vm.getLabel(to)
+                        )
+                    )
+                );
+            }
         }
 
         {

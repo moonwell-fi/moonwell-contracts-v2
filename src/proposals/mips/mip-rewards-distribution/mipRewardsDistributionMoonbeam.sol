@@ -21,7 +21,7 @@ interface StellaSwapRewarder {
     function currentEndTimestamp(uint256 _pid) external view returns (uint256);
 }
 
-contract mipRewardsDistribution is HybridProposal, Networks {
+contract mipRewardsDistributionMoonbeam is HybridProposal, Networks {
     using String for string;
     using stdJson for string;
     using ChainIds for uint256;
@@ -218,6 +218,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         addresses.getAddress(spec.transferFroms[i].to) !=
                         addresses.getAddress(existingTransferFrom.to),
                     "Duplication in transferFroms"
+                );
+
+                require(
+                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
+                        keccak256("COMPTROLLER"),
+                    "should not transfer funds to COMPTROLLER logic contract"
                 );
             }
 
