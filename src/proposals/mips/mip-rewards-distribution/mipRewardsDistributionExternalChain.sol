@@ -289,13 +289,15 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 "Borrow speed must be greater or equal to 1"
             );
 
-            uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-                (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+            if (spec.setRewardSpeed[i].emissionToken == "xWELL_PROXY") {
+                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
-            uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-                (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
-            totalEpochRewards += supplyAmount + borrowAmount;
+                totalEpochRewards += supplyAmount + borrowAmount;
+            }
 
             externalChainActions[_chainId].setRewardSpeed.push(
                 spec.setRewardSpeed[i]
