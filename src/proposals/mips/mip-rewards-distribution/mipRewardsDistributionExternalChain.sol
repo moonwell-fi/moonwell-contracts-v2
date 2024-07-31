@@ -305,7 +305,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             if (
                 addresses.getAddress(spec.transferFroms[i].to) ==
-                addresses.getAddress("MRD_PROXY")
+                addresses.getAddress("MRD_PROXY") &&
+                from == addresses.getAddress("TEMPORAL_GOVERNOR")
             ) {
                 assertApproxEqRel(
                     spec.transferFroms[i].amount,
