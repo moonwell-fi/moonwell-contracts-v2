@@ -25,7 +25,7 @@ interface StellaSwapRewarder {
     function currentEndTimestamp(uint256 _pid) external view returns (uint256);
 }
 
-contract mipRewardsDistribution is HybridProposal, Networks {
+contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
     using String for string;
     using stdJson for string;
     using ChainIds for uint256;
@@ -335,6 +335,23 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         addresses.getAddress(spec.transferFroms[i].to) !=
                         addresses.getAddress(existingTransferFrom.to),
                     "Duplication in transferFroms"
+                );
+
+                require(
+                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
+                        keccak256("MULTI_REWARD_DISTRIBUTOR"),
+                    "should not transfer funds to MRD logic contract"
+                );
+
+                require(
+                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
+                        keccak256("ECOSYSTEM_RESERVE_IMPL"),
+                    "should not transfer funds to Ecosystem Reserve logic contract"
+                );
+                require(
+                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
+                        keccak256("STK_GOVTOKEN_IMPL"),
+                    "should not transfer funds to Safety Module logic contract"
                 );
             }
 
