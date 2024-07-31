@@ -211,6 +211,18 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 );
             }
 
+            if (
+                addresses.getAddress(spec.transferFroms[i].to) ==
+                addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
+            ) {
+                assertEq(
+                    spec.transferFroms[i].amount,
+                    spec.stkWellEmissionsPerSecond *
+                        (endTimeStamp - startTimeStamp),
+                    "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
+                );
+            }
+
             moonbeamActions.transferFroms.push(spec.transferFroms[i]);
         }
     }
