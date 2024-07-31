@@ -253,7 +253,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 spec.stkWellEmissionsPerSecond,
                 addresses.getAddress("STK_GOVTOKEN")
             ),
-            "Set reward speed for the Safety Module on Moonbeam",
+            //"Set reward speed for the Safety Module on Moonbeam",
+            string(
+                abi.encodePacked(
+                    "Set reward speed for the Safety Module on Moonbeam. Emissions per second: ",
+                    vm.toString(spec.stkWellEmissionsPerSecond)
+                )
+            ),
             ActionType.Moonbeam
         );
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
