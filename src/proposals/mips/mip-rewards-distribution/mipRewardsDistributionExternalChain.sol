@@ -156,6 +156,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         address dexRelayer = addresses.getAddress("DEX_RELAYER");
         wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
 
+        address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
+        wellBalancesBefore[reserve] = xwell.balanceOf(reserve);
+
         vm.selectFork(primaryForkId());
 
         {
@@ -173,9 +176,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 "MULTICHAIN_GOVERNOR_PROXY"
             );
             wellBalancesBefore[governor] = well.balanceOf(governor);
-
-            address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
-            wellBalancesBefore[reserve] = well.balanceOf(reserve);
         }
     }
 
@@ -617,10 +617,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     well.balanceOf(to),
                     wellBalancesBefore[to] + transferFrom.amount,
                     string(
-                        abi.encodePacked(
-                            "balance changed for ",
-                            vm.getLabel(to)
-                        )
+                        abi.encodePacked("balance wrong for ", vm.getLabel(to))
                     )
                 );
             }
