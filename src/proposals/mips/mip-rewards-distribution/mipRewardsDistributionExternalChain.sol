@@ -518,6 +518,32 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             address from = addresses.getAddress(transferFrom.from);
             address to = addresses.getAddress(transferFrom.to);
 
+            if (from == addresses.getAddress("FOUNDATION_OP_MULTISIG")) {
+                _pushAction(
+                    token,
+                    abi.encodeWithSignature(
+                        "transferFrom(address,address,uint256)",
+                        from,
+                        to,
+                        transferFrom.amount
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Transfer token ",
+                            vm.getLabel(token),
+                            " from ",
+                            vm.getLabel(from),
+                            " to ",
+                            vm.getLabel(to),
+                            " amount ",
+                            vm.toString(transferFrom.amount / 1e18),
+                            " on ",
+                            _chainId.chainIdToName()
+                        )
+                    )
+                );
+            }
+
             _pushAction(
                 token,
                 abi.encodeWithSignature(
