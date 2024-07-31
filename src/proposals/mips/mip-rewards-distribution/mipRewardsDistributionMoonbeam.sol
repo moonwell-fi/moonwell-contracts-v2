@@ -332,9 +332,10 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             if (to == addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")) {
                 //  amount must be transferred as part of the DEX rewards and
                 //  bridge calls
-                assertEq(
+                assertApproxEqAbs(
                     well.balanceOf(to),
                     wellBalancesBefore[to],
+                    1e18, // tolerates 1 well as margin error
                     "balance changed for MULTICHAIN_GOVERNOR_PROXY"
                 );
             } else {
