@@ -303,6 +303,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 totalWellEpochRewards += supplyAmount + borrowAmount;
             }
 
+            // TODO add USDC assertion in the future
             if (
                 addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
                 addresses.getAddress("OP")

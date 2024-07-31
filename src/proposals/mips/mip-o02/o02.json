@@ -131,7 +131,7 @@
         "stkWellEmissionsPerSecond": 31360865987181040,
         "transferFrom": [
             {
-                "amount": 2.93297e22,
+                "amount": 2.93296e22,
                 "from": "FOUNDATION_OP_MULTISIG",
                 "to": "MRD_PROXY",
                 "token": "OP"
