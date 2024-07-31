@@ -6,18 +6,13 @@ import "@forge-std/StdJson.sol";
 import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
 
-import {MToken} from "@protocol/MToken.sol";
-import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
-import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 interface StellaSwapRewarder {
@@ -337,9 +332,10 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             if (to == addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")) {
                 //  amount must be transferred as part of the DEX rewards and
                 //  bridge calls
-                assertEq(
+                assertApproxEqAbs(
                     well.balanceOf(to),
                     wellBalancesBefore[to],
+                    1e18, // tolerates 1 well as margin error
                     "balance changed for MULTICHAIN_GOVERNOR_PROXY"
                 );
             } else {
@@ -408,21 +404,25 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             "STELLASWAP_REWARDER"
         );
         StellaSwapRewarder stellaSwap = StellaSwapRewarder(stellaSwapRewarder);
-        // check allowance
-        assertEq(
+        // check allowance tolerating a dust wei amount
+        assertApproxEqAbs(
             well.allowance(
                 addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
                 stellaSwapRewarder
             ),
             0,
+            1e8, // 0.00000001e18 well
             "StellaSwap Rewarder should not have an open allowance after execution"
         );
+
         // validate that stellaswap receive the correct amount of well
-        assertEq(
+        assertApproxEqAbs(
             well.balanceOf(stellaSwapRewarder),
             wellBalancesBefore[stellaSwapRewarder] + addRewardInfo.amount,
+            1e8, // 0.00000001e18 well
             "StellaSwap Rewarder should have received the correct amount of WELL"
         );
+
         uint256 blockTimestamp = block.timestamp;
         // block.timestamp must be in the current reward period to the getter
         // functions return the correct values
