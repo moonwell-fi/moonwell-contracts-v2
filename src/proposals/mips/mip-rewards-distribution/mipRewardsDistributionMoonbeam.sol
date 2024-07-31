@@ -164,6 +164,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         moonbeamActions.stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
+        uint256 totalEpochRewards = 0;
+
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
 
@@ -191,6 +193,14 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 "Borrow speed must be greater or equal to 1"
             );
 
+            uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
+                (endTimeStamp - startTimeStamp);
+
+            uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                (endTimeStamp - startTimeStamp);
+
+            totalEpochRewards += supplyAmount + borrowAmount;
+
             moonbeamActions.setRewardSpeed.push(setRewardSpeed);
         }
 
@@ -208,6 +218,18 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         addresses.getAddress(spec.transferFroms[i].to) !=
                         addresses.getAddress(existingTransferFrom.to),
                     "Duplication in transferFroms"
+                );
+            }
+
+            if (
+                addresses.getAddress(spec.transferFroms[i].to) ==
+                addresses.getAddress("UNITROLLER")
+            ) {
+                assertApproxEqRel(
+                    spec.transferFroms[i].amount,
+                    totalEpochRewards,
+                    0.01e18,
+                    "Transfer amount must be close to the total rewards for the epoch"
                 );
             }
 
@@ -266,7 +288,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 spec.stkWellEmissionsPerSecond,
                 addresses.getAddress("STK_GOVTOKEN")
             ),
-            "Set reward speed for the Safety Module on Moonbeam",
+            //"Set reward speed for the Safety Module on Moonbeam",
+            string(
+                abi.encodePacked(
+                    "Set reward speed for the Safety Module on Moonbeam. Emissions per second: ",
+                    vm.toString(spec.stkWellEmissionsPerSecond)
+                )
+            ),
             ActionType.Moonbeam
         );
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
@@ -289,7 +317,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         " on Moonbeam. Supply speed: ",
                         vm.toString(setRewardSpeed.newSupplySpeed),
                         " Borrow speed: ",
-                        vm.toString(setRewardSpeed.newBorrowSpeed)
+                        vm.toString(setRewardSpeed.newBorrowSpeed),
+                        " Reward type: ",
+                        vm.toString(setRewardSpeed.rewardType)
                     )
                 ),
                 ActionType.Moonbeam
