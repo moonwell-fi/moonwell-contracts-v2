@@ -193,13 +193,15 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 "Borrow speed must be greater or equal to 1"
             );
 
-            uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-                (endTimeStamp - startTimeStamp);
+            if (setRewardSpeed.rewardType == 0) {
+                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
+                    (endTimeStamp - startTimeStamp);
 
-            uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-                (endTimeStamp - startTimeStamp);
+                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                    (endTimeStamp - startTimeStamp);
 
-            totalEpochRewards += supplyAmount + borrowAmount;
+                totalEpochRewards += supplyAmount + borrowAmount;
+            }
 
             moonbeamActions.setRewardSpeed.push(setRewardSpeed);
         }
