@@ -70,7 +70,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
     mapping(uint256 chainid => JsonSpecExternalChain) externalChainActions;
 
-    uint256 expectedExecutionTime;
+    uint256 chainId;
+    uint256 startTimeStamp;
+    uint256 endTimeStamp;
 
     /// we need to save this value to check if the transferFrom amount was successfully transferred
     mapping(address => uint256) public wellBalancesBefore;
@@ -81,6 +83,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         );
 
         _setProposalDescription(proposalDescription);
+
+        chainId = uint256(vm.envUint("CHAIN_ID"));
     }
 
     function name() external pure override returns (string memory) {
@@ -98,11 +102,17 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             vm.envString("MIP_REWARDS_PATH")
         );
 
-        string memory filter = ".expectedExecutionTime";
+        string memory filter = ".startTimeStamp";
 
         bytes memory parsedJson = vm.parseJson(encodedJson, filter);
 
-        expectedExecutionTime = abi.decode(parsedJson, (uint256));
+        startTimeStamp = abi.decode(parsedJson, (uint256));
+
+        filter = ".endTimeSTamp";
+
+        parsedJson = vm.parseJson(encodedJson, filter);
+
+        endTimeStamp = abi.decode(parsedJson, (uint256));
 
         _saveMoonbeamActions(addresses, encodedJson);
 
@@ -128,33 +138,25 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 uint256(gasLimit)
         );
 
-        for (uint256 i = 0; i < networks.length; i++) {
-            uint256 chainId = networks[i].chainId;
-            // skip moonbeam
-            if (chainId == MOONBEAM_CHAIN_ID) {
-                continue;
-            }
+        vm.selectFork(chainId.toForkId());
 
-            vm.selectFork(chainId.toForkId());
+        _saveExternalChainActions(addresses, encodedJson, chainId);
 
-            _saveExternalChainActions(addresses, encodedJson, chainId);
+        // stores the wormhole mock address in the wormholeRelayer variable
+        vm.store(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+            bytes32(uint256(153)),
+            encodedData
+        );
 
-            // stores the wormhole mock address in the wormholeRelayer variable
-            vm.store(
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-                bytes32(uint256(153)),
-                encodedData
-            );
+        // save well balances before so we can check if the transferFrom was successful
+        IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
 
-            // save well balances before so we can check if the transferFrom was successful
-            IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
+        address mrd = addresses.getAddress("MRD_PROXY");
+        wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
 
-            address mrd = addresses.getAddress("MRD_PROXY");
-            wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
-
-            address dexRelayer = addresses.getAddress("DEX_RELAYER");
-            wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
-        }
+        address dexRelayer = addresses.getAddress("DEX_RELAYER");
+        wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
 
         vm.selectFork(primaryForkId());
 
@@ -180,25 +182,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
     }
 
     function build(Addresses addresses) public override {
-        for (uint256 i = 0; i < networks.length; i++) {
-            uint256 chainId = networks[i].chainId;
-            if (chainId == MOONBEAM_CHAIN_ID) {
-                _buildMoonbeamActions(addresses);
-            } else {
-                _buildExternalChainActions(addresses, chainId);
-            }
-        }
+        _buildMoonbeamActions(addresses);
+        _buildExternalChainActions(addresses, chainId);
     }
 
     function validate(Addresses addresses, address) public override {
-        for (uint256 i = 0; i < networks.length; i++) {
-            uint256 chainId = networks[i].chainId;
-            if (chainId == MOONBEAM_CHAIN_ID) {
-                _validateMoonbeam(addresses);
-            } else {
-                _validateExternalChainActions(addresses, chainId);
-            }
-        }
+        _validateMoonbeam(addresses);
+        _validateExternalChainActions(addresses, chainId);
     }
 
     function _saveMoonbeamActions(
@@ -302,10 +292,10 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             );
 
             uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-                (spec.setRewardSpeed[i].newEndTime - expectedExecutionTime);
+                (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
             uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-                (spec.setRewardSpeed[i].newEndTime - expectedExecutionTime);
+                (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
             totalEpochRewards += supplyAmount + borrowAmount;
 

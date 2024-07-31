@@ -10,6 +10,7 @@ env:
   PRIMARY_FORK_ID: 0 
   MIP_REWARDS_PATH: "src/proposals/mips/mip-o01/o01.json"
   SOL_TEMPLATE_PATH: "src/proposals/mips/mip-rewards-distribution/mipRewardsDistributionExternalChain.sol"
+  CHAIN_ID: 10
   MIP_REWARDS_ID: 0 # should only run if proposal is not on chain yet, if it is
   # onchain skip this workflow and checks for on chain calldata match
 
