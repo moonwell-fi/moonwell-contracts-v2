@@ -58,13 +58,13 @@
             },
             {
                 "market": "MOONWELL_mWBTC",
-                "newBorrowSpeed": "1",
+                "newBorrowSpeed": 1,
                 "newSupplySpeed": 132662187825817650,
                 "rewardType": 0
             },
             {
                 "market": "MOONWELL_mWBTC",
-                "newBorrowSpeed": "1",
+                "newBorrowSpeed": 1,
                 "newSupplySpeed": 24397367169061470,
                 "rewardType": 1
             },
