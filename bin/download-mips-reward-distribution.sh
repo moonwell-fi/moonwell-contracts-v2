@@ -19,8 +19,8 @@ FILENAMES=(
   "m35.json"
   "b23.md"
   "b23.json"
-  "o01.md"
-  "o01.json"
+  "o02.md"
+  "o02.json"
 )
 
 # Download the files
