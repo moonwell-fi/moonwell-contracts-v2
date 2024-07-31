@@ -282,7 +282,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         " on Moonbeam. Supply speed: ",
                         vm.toString(setRewardSpeed.newSupplySpeed),
                         " Borrow speed: ",
-                        vm.toString(setRewardSpeed.newBorrowSpeed)
+                        vm.toString(setRewardSpeed.newBorrowSpeed),
+                        " Reward type: ",
+                        vm.toString(setRewardSpeed.rewardType)
                     )
                 ),
                 ActionType.Moonbeam
