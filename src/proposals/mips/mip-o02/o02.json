@@ -153,7 +153,7 @@
     "1284": {
         "bridgeToRecipient": [
             {
-                "amount": 7.207479664637894e23,
+                "amount": 7.2074796646378946e23,
                 "network": 10,
                 "target": "TEMPORAL_GOVERNOR"
             },
