@@ -543,30 +543,30 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                         )
                     )
                 );
-            }
-
-            _pushAction(
-                token,
-                abi.encodeWithSignature(
-                    "transfer(address,uint256)",
-                    to,
-                    transferFrom.amount
-                ),
-                string(
-                    abi.encodePacked(
-                        "Transfer token ",
-                        vm.getLabel(token),
-                        " from ",
-                        vm.getLabel(from),
-                        " to ",
-                        vm.getLabel(to),
-                        " amount ",
-                        vm.toString(transferFrom.amount / 1e18),
-                        " on ",
-                        _chainId.chainIdToName()
+            } else {
+                _pushAction(
+                    token,
+                    abi.encodeWithSignature(
+                        "transfer(address,uint256)",
+                        to,
+                        transferFrom.amount
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Transfer token ",
+                            vm.getLabel(token),
+                            " from ",
+                            vm.getLabel(from),
+                            " to ",
+                            vm.getLabel(to),
+                            " amount ",
+                            vm.toString(transferFrom.amount / 1e18),
+                            " on ",
+                            _chainId.chainIdToName()
+                        )
                     )
-                )
-            );
+                );
+            }
         }
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
