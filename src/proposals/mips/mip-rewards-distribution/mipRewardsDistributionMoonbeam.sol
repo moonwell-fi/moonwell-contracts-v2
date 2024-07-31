@@ -164,6 +164,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         moonbeamActions.stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
+        uint256 totalEpochRewards = 0;
+
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
 
@@ -191,6 +193,14 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 "Borrow speed must be greater or equal to 1"
             );
 
+            uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
+                (endTimeStamp - startTimeStamp);
+
+            uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                (endTimeStamp - startTimeStamp);
+
+            totalEpochRewards += supplyAmount + borrowAmount;
+
             moonbeamActions.setRewardSpeed.push(setRewardSpeed);
         }
 
@@ -208,6 +218,31 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         addresses.getAddress(spec.transferFroms[i].to) !=
                         addresses.getAddress(existingTransferFrom.to),
                     "Duplication in transferFroms"
+                );
+            }
+
+            if (
+                addresses.getAddress(spec.transferFroms[i].to) ==
+                addresses.getAddress("UNITROLLER")
+            ) {
+                assertApproxEqRel(
+                    spec.transferFroms[i].amount,
+                    totalEpochRewards,
+                    0.01e18,
+                    "Transfer amount must be close to the total rewards for the epoch"
+                );
+            }
+
+            if (
+                addresses.getAddress(spec.transferFroms[i].to) ==
+                addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
+            ) {
+                assertApproxEqAbs(
+                    spec.transferFroms[i].amount,
+                    spec.stkWellEmissionsPerSecond *
+                        (endTimeStamp - startTimeStamp),
+                    1e9,
+                    "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
                 );
             }
 
