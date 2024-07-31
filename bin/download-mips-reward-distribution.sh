@@ -6,8 +6,8 @@ mkdir -p $OUTPUT_DIR
 
 # Define the URLs and filenames
 URLS=(
-  "https://moonwell-reward-automation.moonwell.workers.dev/?type=markdown&proposal=M35&network=Base"
-  "https://moonwell-reward-automation.moonwell.workers.dev/?type=json&proposal=M35&network=Base"
+  "https://moonwell-reward-automation.moonwell.workers.dev/?type=markdown&proposal=M35&network=Moonbeam"
+  "https://moonwell-reward-automation.moonwell.workers.dev/?type=json&proposal=M35&network=Moonbeam"
   "https://moonwell-reward-automation.moonwell.workers.dev/?type=markdown&proposal=B23&network=Base"
   "https://moonwell-reward-automation.moonwell.workers.dev/?type=json&proposal=B23&network=Base"
   "https://moonwell-reward-automation.moonwell.workers.dev/?type=markdown&proposal=O01&network=Optimism"
