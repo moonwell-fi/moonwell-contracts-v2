@@ -61,7 +61,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_WETH_RESERVE_FACTOR
             ),
             "Set reserve factor for Moonwell WETH to updated reserve factor",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -71,7 +71,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_USDC_RESERVE_FACTOR
             ),
             "Set reserve factor for Moonwell USDC to updated reserve factor",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -81,7 +81,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_USDT_RESERVE_FACTOR
             ),
             "Set reserve factor for Moonwell USDT to updated reserve factor",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -91,7 +91,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_DAI_RESERVE_FACTOR
             ),
             "Set reserve factor for Moonwell DAI to updated reserve factor",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -101,7 +101,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_WBTC_RESERVE_FACTOR
             ),
             "Set reserve factor for Moonwell WBTC to updated reserve factor",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -111,7 +111,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_wstETH_RESERVE_FACTOR
             ),
             "Set reserve factor for Moonwell wstETH to updated reserve factor",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -121,7 +121,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_rETH_RESERVE_FACTOR
             ),
             "Set reserve factor for Moonwell rETH to updated reserve factor",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -131,7 +131,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_cbETH_RESERVE_FACTOR
             ),
             "Set reserve factor for Moonwell cbETH to updated reserve factor",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -141,7 +141,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_OP_RESERVE_FACTOR
             ),
             "Set reserve factor for Moonwell OP to updated reserve factor",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         // _pushAction(
@@ -151,7 +151,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
         //         NEW_VELO_RESERVE_FACTOR
         //     ),
         //     "Set reserve factor for VELO to updated reserve factor",
-        //     ActionType.Base
+        //     ActionType.Optimism
         // );
 
         // Push actions to update Collateral Factors for different assets
@@ -163,7 +163,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_WETH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of Moonwell WETH",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -174,7 +174,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_USDC_COLLATERAL_FACTOR
             ),
             "Set collateral factor of Moonwell USDC",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -185,7 +185,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_USDT_COLLATERAL_FACTOR
             ),
             "Set collateral factor of Moonwell USDT",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -196,7 +196,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_DAI_COLLATERAL_FACTOR
             ),
             "Set collateral factor of Moonwell DAI",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -207,7 +207,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_WBTC_COLLATERAL_FACTOR
             ),
             "Set collateral factor of Moonwell WBTC",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -218,7 +218,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_wstETH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of Moonwell wstETH",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -229,7 +229,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_rETH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of Moonwell rETH",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -240,7 +240,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_cbETH_COLLATERAL_FACTOR
             ),
             "Set collateral factor of Moonwell cbETH",
-            ActionType.Base
+            ActionType.Optimism
         );
 
         _pushAction(
@@ -251,7 +251,7 @@ contract mipO03 is HybridProposal, ParameterValidation {
                 NEW_OP_COLLATERAL_FACTOR
             ),
             "Set collateral factor of Moonwell OP",
-            ActionType.Base
+            ActionType.Optimism
         );
     }
 
