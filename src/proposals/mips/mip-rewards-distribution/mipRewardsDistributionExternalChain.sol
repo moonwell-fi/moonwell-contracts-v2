@@ -12,6 +12,7 @@ import {Networks} from "@proposals/utils/Networks.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
@@ -464,7 +465,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             );
             uint256 bridgeCost = xWELLRouter(router).bridgeCost(
                 wormholeChainId
-            ) * 20; // make sure that the proposal does not revert due to bridge
+            ) * 4; // make sure that the proposal does not revert due to bridge
             // cost changing
 
             console.log("bridge cost", bridgeCost);
@@ -721,6 +722,50 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             0,
             "xWELL Router should not have an open allowance after execution"
         );
+
+        // assert bridgeToRecipient value is correct
+        xWELLRouter router = xWELLRouter(addresses.getAddress("xWELL_ROUTER"));
+
+        WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+
+        uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
+
+        IWormholeRelayer relayer = IWormholeRelayer(
+            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
+        );
+
+        (uint256 quoteEVMDeliveryPrice, ) = relayer.quoteEVMDeliveryPrice(
+            chainId.toWormholeChainId(),
+            0,
+            gasLimit
+        );
+
+        uint256 expectedValue = quoteEVMDeliveryPrice * 5;
+
+        for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
+            BridgeWell memory bridgeWell = spec.bridgeWells[i];
+
+            uint16 wormholeChainId = bridgeWell.network.toWormholeChainId();
+
+            assertEq(
+                router.bridgeCost(wormholeChainId),
+                expectedValue,
+                "Bridge cost is incorrect"
+            );
+        }
+
+        // check that the actions with value has the expectedValue
+        for (uint256 i = 0; i < actions.length; i++) {
+            if (actions[i].value != 0) {
+                assertEq(
+                    actions[i].value,
+                    expectedValue,
+                    "Value is incorrect for action"
+                );
+            }
+        }
     }
 
     function _validateExternalChainActions(
