@@ -22,7 +22,7 @@ contract WormholeRelayerAdapter {
     /// in the same chain and we need to skip the fork selection
     bool public isMultichainTest;
 
-    uint256 public nativePriceQuote = 0.01 ether;
+    uint256 public nativePriceQuote = 1 ether;
 
     uint256 public callCounter;
 

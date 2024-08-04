@@ -113,8 +113,37 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
         endTimeStamp = abi.decode(parsedJson, (uint256));
 
+        vm.selectFork(chainId.toForkId());
+
+        _saveExternalChainActions(addresses, encodedJson, chainId);
+
+        vm.selectFork(primaryForkId());
+
         _saveMoonbeamActions(addresses, encodedJson);
 
+        // save well balances before so we can check if the transferFrom was successful
+        IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
+        address mrd = addresses.getAddress("MRD_PROXY");
+        wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
+
+        address dexRelayer = addresses.getAddress("DEX_RELAYER");
+        wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
+
+        address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
+        wellBalancesBefore[reserve] = xwell.balanceOf(reserve);
+
+        {
+            // save well balances before so we can check if the transferFrom was successful
+            IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
+
+            address governor = addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_PROXY"
+            );
+            wellBalancesBefore[governor] = well.balanceOf(governor);
+        }
+    }
+
+    function run(Addresses addresses, address) public virtual override {
         // mock relayer so we can simulate bridging well
         WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
         vm.makePersistent(address(wormholeRelayer));
@@ -139,8 +168,14 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
         vm.selectFork(chainId.toForkId());
 
-        _saveExternalChainActions(addresses, encodedJson, chainId);
+        // stores the wormhole mock address in the wormholeRelayer variable
+        vm.store(
+            address(wormholeBridgeAdapter),
+            bytes32(uint256(153)),
+            encodedData
+        );
 
+        vm.selectFork(primaryForkId());
         // stores the wormhole mock address in the wormholeRelayer variable
         vm.store(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
@@ -148,35 +183,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             encodedData
         );
 
-        // save well balances before so we can check if the transferFrom was successful
-        IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
-        address mrd = addresses.getAddress("MRD_PROXY");
-        wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
-
-        address dexRelayer = addresses.getAddress("DEX_RELAYER");
-        wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
-
-        address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
-        wellBalancesBefore[reserve] = xwell.balanceOf(reserve);
-
-        vm.selectFork(primaryForkId());
-
-        {
-            // stores the wormhole mock address in the wormholeRelayer variable
-            vm.store(
-                address(wormholeBridgeAdapter),
-                bytes32(uint256(153)),
-                encodedData
-            );
-
-            // save well balances before so we can check if the transferFrom was successful
-            IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
-
-            address governor = addresses.getAddress(
-                "MULTICHAIN_GOVERNOR_PROXY"
-            );
-            wellBalancesBefore[governor] = well.balanceOf(governor);
-        }
+        super.run(addresses, address(0));
     }
 
     function build(Addresses addresses) public override {
@@ -479,11 +486,18 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             );
 
             uint16 wormholeChainId = bridgeWell.network.toWormholeChainId();
+            console.log("wormhole chain id bridge well", wormholeChainId);
 
+            console.log(
+                "xwell router bridge cost",
+                xWELLRouter(router).bridgeCost(wormholeChainId)
+            );
             uint256 bridgeCost = xWELLRouter(router).bridgeCost(
                 wormholeChainId
             ) * 20; // make sure that the proposal does not revert due to bridge
             // cost changing
+
+            console.log("bridge cost", bridgeCost);
 
             _pushAction(
                 router,
