@@ -751,7 +751,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
             assertEq(
                 router.bridgeCost(wormholeChainId),
-                expectedValue,
+                quoteEVMDeliveryPrice,
                 "Bridge cost is incorrect"
             );
         }
