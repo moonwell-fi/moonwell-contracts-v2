@@ -742,7 +742,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             gasLimit
         );
 
-        uint256 expectedValue = quoteEVMDeliveryPrice * 5;
+        uint256 expectedValue = quoteEVMDeliveryPrice * 4;
 
         for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
             BridgeWell memory bridgeWell = spec.bridgeWells[i];
