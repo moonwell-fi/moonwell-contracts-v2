@@ -837,6 +837,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         // we need to set this so that the relayer mock knows that for the next sendPayloadToEvm
         // call it must switch forks
         wormholeRelayer.setIsMultichainTest(true);
+        wormholeRelayer.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
 
         // set mock as the wormholeRelayer address on bridge adapter
         WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
@@ -844,6 +845,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         );
 
         uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
+
         // encode gasLimit and relayer address since is stored in a single slot
         // relayer is first due to how evm pack values into a single storage
         bytes32 encodedData = bytes32(
@@ -861,9 +863,10 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         );
 
         vm.selectFork(primaryForkId());
+
         // stores the wormhole mock address in the wormholeRelayer variable
         vm.store(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+            address(wormholeBridgeAdapter),
             bytes32(uint256(153)),
             encodedData
         );
@@ -875,9 +878,11 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         );
 
         uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
+
         bytes32 encodedData = bytes32(
-            (uint256(uint160(addresses.getAddress("WORMHOLE_RELAYER"))) << 96) |
-                uint256(gasLimit)
+            (uint256(
+                uint160(addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"))
+            ) << 96) | uint256(gasLimit)
         );
 
         vm.selectFork(chainId.toForkId());
@@ -890,7 +895,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         vm.selectFork(primaryForkId());
 
         vm.store(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
+            address(wormholeBridgeAdapter),
             bytes32(uint256(153)),
             encodedData
         );
