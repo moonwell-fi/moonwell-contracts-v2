@@ -870,8 +870,6 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
     }
 
     function _afterSimulationHook(Addresses addresses) private {
-        vm.selectFork(chainId.toForkId());
-
         WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
@@ -882,6 +880,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 uint256(gasLimit)
         );
 
+        vm.selectFork(chainId.toForkId());
         vm.store(
             address(wormholeBridgeAdapter),
             bytes32(uint256(153)),
