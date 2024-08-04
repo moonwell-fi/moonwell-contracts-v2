@@ -117,10 +117,6 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
         _saveExternalChainActions(addresses, encodedJson, chainId);
 
-        vm.selectFork(primaryForkId());
-
-        _saveMoonbeamActions(addresses, encodedJson);
-
         // save well balances before so we can check if the transferFrom was successful
         IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
         address mrd = addresses.getAddress("MRD_PROXY");
@@ -132,6 +128,8 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
         wellBalancesBefore[reserve] = xwell.balanceOf(reserve);
 
+        vm.selectFork(primaryForkId());
+
         {
             // save well balances before so we can check if the transferFrom was successful
             IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
@@ -141,6 +139,8 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             );
             wellBalancesBefore[governor] = well.balanceOf(governor);
         }
+
+        _saveMoonbeamActions(addresses, encodedJson);
     }
 
     function run(Addresses addresses, address) public virtual override {
