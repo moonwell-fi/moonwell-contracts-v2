@@ -33,6 +33,9 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
     Comptroller comptroller;
     Addresses addresses;
     mip00 proposal;
+
+    address deprecatedMoonwellVelo;
+
     mapping(address mToken => Configs.EmissionConfig[] emissionConfig)
         public emissionsConfig;
 
@@ -48,6 +51,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             proposal.deploy(addresses, address(proposal));
             proposal.afterDeploy(addresses, address(proposal));
         }
+
+        deprecatedMoonwellVelo = addresses.getAddress("MOONWELL_VELO");
 
         address unitroller = addresses.getAddress("UNITROLLER");
         // this mean the calldata has not been executed yet
@@ -77,7 +82,14 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
         }
     }
 
-    function _mintMToken(address mToken, uint256 amount) internal {
+    function _mintMToken(
+        address mToken,
+        uint256 amount
+    ) internal returns (bool) {
+        if (mToken == deprecatedMoonwellVelo) {
+            return false;
+        }
+
         address underlying = MErc20(mToken).underlying();
 
         if (underlying == addresses.getAddress("WETH")) {
@@ -91,6 +103,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             0,
             "Mint failed"
         );
+
+        return true;
     }
 
     function _calculateBorrowRewards(
@@ -336,7 +350,13 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
 
         uint256 startingTokenBalance = token.balanceOf(mToken);
 
-        _mintMToken(mToken, mintAmount);
+        vm.warp(MToken(mToken).accrualBlockTimestamp());
+
+        bool minted = _mintMToken(mToken, mintAmount);
+        if (!minted) {
+            return;
+        }
+
         assertTrue(
             MErc20Delegator(payable(mToken)).balanceOf(sender) > 0,
             "mToken balance should be gt 0 after mint"
@@ -373,7 +393,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
 
         vm.warp(MToken(mToken).accrualBlockTimestamp());
 
-        _mintMToken(mToken, borrowAmount * 3);
+        bool minted = _mintMToken(mToken, borrowAmount * 3);
+        if (!minted) {
+            return;
+        }
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(mToken);
@@ -444,7 +467,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
 
         vm.warp(MToken(mToken).accrualBlockTimestamp());
 
-        _mintMToken(mToken, supplyAmount);
+        bool minted = _mintMToken(mToken, supplyAmount);
+        if (!minted) {
+            return;
+        }
 
         vm.warp(block.timestamp + toWarp);
 
@@ -493,7 +519,12 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             mTokensConfig[mTokenIndex].addressesString
         );
 
-        _mintMToken(mToken, borrowAmount * 3);
+        vm.warp(MToken(mToken).accrualBlockTimestamp());
+
+        bool minted = _mintMToken(mToken, borrowAmount * 3);
+        if (!minted) {
+            return;
+        }
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(mToken);
@@ -593,7 +624,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
 
         vm.warp(MToken(mToken).accrualBlockTimestamp());
 
-        _mintMToken(mToken, supplyAmount);
+        bool minted = _mintMToken(mToken, supplyAmount);
+        if (!minted) {
+            return;
+        }
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(mToken);
@@ -707,7 +741,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             100_000_000 * 10 ** IERC20(token).decimals()
         );
 
-        _mintMToken(mToken, mintAmount);
+        bool minted = _mintMToken(mToken, mintAmount);
+        if (!minted) {
+            return;
+        }
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewardsBefore = mrd
             .getOutstandingRewardsForUser(MToken(mToken), address(this));
