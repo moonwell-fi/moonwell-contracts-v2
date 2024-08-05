@@ -278,17 +278,22 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     console.log(string(e));
 
                     // find match proposal
+
                     for (uint256 j = 0; j < proposalsPath.length; j++) {
-                        string memory solPath;
-                        if (proposalsPath[j].endsWith(".sh")) {
-                            solPath = executeShellFile(proposalsPath[j]);
-                        } else {
-                            solPath = proposalsPath[j];
+                        Proposal proposal;
+                        {
+                            string memory solPath;
+                            if (proposalsPath[j].endsWith(".sh")) {
+                                solPath = executeShellFile(proposalsPath[j]);
+                            } else {
+                                solPath = proposalsPath[j];
+                            }
+
+                            console.log("Proposal path", solPath);
+
+                            proposal = Proposal(deployCode(solPath));
                         }
 
-                        console.log("Proposal path", solPath);
-
-                        Proposal proposal = Proposal(deployCode(solPath));
                         vm.makePersistent(address(proposal));
 
                         vm.selectFork(uint256(proposal.primaryForkId()));
