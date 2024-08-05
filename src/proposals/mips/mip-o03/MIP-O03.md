@@ -4,28 +4,28 @@ General recommendations for Optimism market:
 
 #### Caps
 
-| Risk Parameter    | Recommended Value |
-| ----------------- | ----------------- |
-| WETH Supply Cap   | 4,000             |
-| WETH Borrow Cap   | 3,400             |
-| USDC Supply Cap   | 18,200,000        |
-| USDC Borrow Cap   | 17,000,000        |
-| USDT Supply Cap   | 22,600,000        |
-| USDT Borrow Cap   | 18,400,000        |
-| DAI Supply Cap    | 2,400,000         |
-| DAI Borrow Cap    | 2,000,000         |
-| WBTC Supply Cap   | 70                |
-| WBTC Borrow Cap   | 45                |
-| wstETH Supply Cap | 1,850             |
-| wstETH Borrow Cap | 850               |
-| rETH Supply Cap   | 800               |
-| rETH Borrow Cap   | 380               |
-| cbETH Supply Cap  | 30                |
-| cbETH Borrow Cap  | 0                 |
-| OP Supply Cap     | 2,000,000         |
-| OP Borrow Cap     | 1,000,000         |
-| VELO Supply Cap   | 19,500,000        |
-| VELO Borrow Cap   | 9,000,000         |
+| Risk Parameter    | Previous Recommended Value | New Recommended Value |
+| ----------------- | -------------------------- | --------------------- |
+| WETH Supply Cap   | 4,000                      | 3200                  |
+| WETH Borrow Cap   | 3,400                      | 2700                  |
+| USDC Supply Cap   | 18,200,000                 | No Change             |
+| USDC Borrow Cap   | 17,000,000                 | No Change             |
+| USDT Supply Cap   | 22,600,000                 | No Change             |
+| USDT Borrow Cap   | 18,400,000                 | No Change             |
+| DAI Supply Cap    | 2,400,000                  | No Change             |
+| DAI Borrow Cap    | 2,000,000                  | No Change             |
+| WBTC Supply Cap   | 70                         | 66                    |
+| WBTC Borrow Cap   | 45                         | 40                    |
+| wstETH Supply Cap | 1,850                      | 1500                  |
+| wstETH Borrow Cap | 850                        | 750                   |
+| rETH Supply Cap   | 800                        | 750                   |
+| rETH Borrow Cap   | 380                        | 350                   |
+| cbETH Supply Cap  | 30                         | 30                    |
+| cbETH Borrow Cap  | 0                          | 0                     |
+| OP Supply Cap     | 2,000,000                  | 1,400,000             |
+| OP Borrow Cap     | 1,000,000                  | 650,000               |
+| VELO Supply Cap   | 19,500,000                 | 9,000,000             |
+| VELO Borrow Cap   | 9,000,000                  | 4,500,000             |
 
 #### LTs and RFs
 
