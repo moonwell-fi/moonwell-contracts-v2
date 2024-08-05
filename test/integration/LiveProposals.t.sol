@@ -31,6 +31,8 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
     /// @notice Multichain Governor address
     MultichainGovernor governor;
 
+    string[] public proposalsPath;
+
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
         address indexed sender,
@@ -51,12 +53,6 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         );
 
         governor = MultichainGovernor(payable(governorAddress));
-    }
-
-    function testActiveProposals() public {
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        uint256[] memory proposalIds = governor.liveProposals();
 
         string[] memory inputs = new string[](1);
         inputs[0] = "bin/get-latest-proposals.sh";
@@ -64,7 +60,13 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         string memory output = string(vm.ffi(inputs));
 
         // create array splitting the output string
-        string[] memory proposalsPath = output.split("\n");
+        proposalsPath = output.split("\n");
+    }
+
+    function testActiveProposals() public {
+        vm.selectFork(MOONBEAM_FORK_ID);
+
+        uint256[] memory proposalIds = governor.liveProposals();
 
         for (uint256 i = 0; i < proposalIds.length; i++) {
             /// always need to select MOONBEAM_FORK_ID before executing a
@@ -162,7 +164,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     string memory solPath;
                     if (proposalsPath[j].endsWith(".sh")) {
                         // execute .sh file
-                        inputs = new string[](1);
+                        string[] memory inputs = new string[](1);
                         inputs[0] = proposalsPath[j];
 
                         // get the template path from the just setted TEMPLATE_PATH env
