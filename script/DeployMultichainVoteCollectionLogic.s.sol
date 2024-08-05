@@ -14,7 +14,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
  to run:
     forge script script/DeployMultichainVoteCollectionLogic.s.sol:DeployMultichainVoteCollectionLogic -vvvv \ 
-    --rpc-url $chainAlias --broadcast --etherscan-api-key $chainAlias --verify
+    --rpc-url $chainAlias --broadcast --etherscan-api-key $ETHERSCAN_API_KEY--verify
 */
 contract DeployMultichainVoteCollectionLogic is Script {
     function run() public {
