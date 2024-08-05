@@ -279,6 +279,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                             string memory solPath;
                             if (proposalsPath[j].endsWith(".sh")) {
                                 solPath = executeShellFile(proposalsPath[j]);
+                                console.log("Proposal path", solPath);
                             } else {
                                 solPath = proposalsPath[j];
                             }

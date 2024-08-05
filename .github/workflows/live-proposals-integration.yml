@@ -27,5 +27,5 @@ jobs:
           chmod +x bin/get-latest-base-proposal.sh
           chmod +x bin/get-latest-moonbeam-proposal.sh
           chmod -R +x src/proposals/mips/
-          time forge test --mc LiveProposalsIntegrationTest --ffi -vvv
+          time forge test --mc LiveProposalsIntegrationTest --ffi -vvvvv
         shell: bash
