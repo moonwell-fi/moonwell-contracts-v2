@@ -36,7 +36,6 @@ contract mipO03 is HybridProposal, ParameterValidation {
     uint256 public constant NEW_cbETH_COLLATERAL_FACTOR = 0.78e18;
     uint256 public constant NEW_OP_COLLATERAL_FACTOR = 0.65e18;
     uint256 public constant NEW_VELO_COLLATERAL_FACTOR = 0.65e18;
-    uint256 public constant NEW_VELO_COLLATERAL_FACTOR = 0.65e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
