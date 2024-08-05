@@ -198,31 +198,33 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
             }
 
             if (targets[lastIndex] == wormholeCore) {
+                (
+                    address temporalGovernorAddress,
+                    address[] memory baseTargets,
+                    ,
+
+                ) = abi.decode(
+                        payload,
+                        (address, address[], uint256[], bytes[])
+                    );
+
                 vm.selectFork(BASE_FORK_ID);
+                // check if the Temporal Governor address exist on the base chain
+                if (address(temporalGovernorAddress).code.length == 0) {
+                    // if not, checkout to Optimism fork id
+                    vm.selectFork(OPTIMISM_FORK_ID);
+                }
 
                 address expectedTemporalGov = addresses.getAddress(
                     "TEMPORAL_GOVERNOR"
                 );
 
-                {
-                    // decode payload
-                    (
-                        address temporalGovernorAddress,
-                        address[] memory baseTargets,
-                        ,
+                require(
+                    temporalGovernorAddress == expectedTemporalGov,
+                    "Temporal Governor address mismatch"
+                );
 
-                    ) = abi.decode(
-                            payload,
-                            (address, address[], uint256[], bytes[])
-                        );
-
-                    require(
-                        temporalGovernorAddress == expectedTemporalGov,
-                        "Temporal Governor address mismatch"
-                    );
-
-                    checkBaseOptimismActions(baseTargets);
-                }
+                checkBaseOptimismActions(baseTargets);
 
                 bytes memory vaa = generateVAA(
                     uint32(block.timestamp),
