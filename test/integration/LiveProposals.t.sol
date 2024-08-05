@@ -337,15 +337,18 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         returns (address[] memory, uint256[] memory, bytes[] memory)
     {}
 
+    // function to execute shell file to set env variables
     function executeShellFile(
         string memory path
     ) public returns (string memory lastEnv) {
         string[] memory inputs = new string[](1);
-        inputs[0] = string.concat("./", proposalsPath[j]);
+        inputs[0] = string.concat("./", path);
 
         string memory output = string(vm.ffi(inputs));
         string[] memory envs = output.split("\n");
 
+        // call setEnv for each env variable
+        // so we can later call vm.envString
         for (uint256 k = 0; k < envs.length; k++) {
             string memory key = envs[k].split("=")[0];
             string memory value = envs[k].split("=")[1];
