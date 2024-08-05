@@ -742,7 +742,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             assertApproxEqRel(
                 bridgeWell.nativeValue,
                 expectedValue,
-                0.10e18, // 10% tolarance
+                0.20e18, // 20% tolarance due to gas cost changes
                 "Bridge value is incorrect"
             );
         }
@@ -753,7 +753,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 assertApproxEqRel(
                     actions[i].value,
                     expectedValue,
-                    0.10e18,
+                    0.20e18,
                     "Value is incorrect for action"
                 );
             }
