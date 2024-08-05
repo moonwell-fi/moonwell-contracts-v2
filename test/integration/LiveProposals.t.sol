@@ -181,11 +181,24 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     // needs to mock wormhole bridge relayer
                     proposal.beforeSimulationHook(addresses);
 
+                    uint256 proposalFileId;
+                    if (proposal.isDeprecatedGovernor()) {
+                        proposalFileId = proposal.getProposalId(
+                            addresses,
+                            addresses.getAddress(
+                                "ARTEMIS_GOVERNOR",
+                                block.chainid.toMoonbeamChainId()
+                            )
+                        );
+                    } else {
+                        proposalFileId = proposal.getProposalId(
+                            addresses,
+                            address(governor)
+                        );
+                    }
+
                     // if proposal is the one that failed, run the proposal again
-                    if (
-                        proposal.getProposalId(addresses, address(governor)) ==
-                        proposalId
-                    ) {
+                    if (proposalFileId == proposalId) {
                         vm.selectFork(MOONBEAM_FORK_ID);
                         governor.execute{value: totalValue}(proposalId);
 
@@ -281,14 +294,25 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                         proposal.preBuildMock(addresses);
                         proposal.build(addresses);
 
-                        // if proposal is the one that failed, run the temporal
-                        // governor execution again
-                        if (
-                            proposal.getProposalId(
+                        uint256 proposalFileId;
+                        if (proposal.isDeprecatedGovernor()) {
+                            proposalFileId = proposal.getProposalId(
+                                addresses,
+                                addresses.getAddress(
+                                    "ARTEMIS_GOVERNOR",
+                                    block.chainid.toMoonbeamChainId()
+                                )
+                            );
+                        } else {
+                            proposalFileId = proposal.getProposalId(
                                 addresses,
                                 address(governor)
-                            ) == proposalId
-                        ) {
+                            );
+                        }
+
+                        // if proposal is the one that failed, run the temporal
+                        // governor execution again
+                        if (proposalFileId == proposalId) {
                             // foundry selectFork resets warp, so we need to warp again
                             vm.warp(
                                 block.timestamp +
