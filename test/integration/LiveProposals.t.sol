@@ -64,7 +64,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         string memory output = string(vm.ffi(inputs));
 
         // create array splitting the output string
-        string[] memory proposalsPath = output.split(",");
+        string[] memory proposalsPath = output.split("\n");
 
         for (uint256 i = 0; i < proposalIds.length; i++) {
             /// always need to select MOONBEAM_FORK_ID before executing a
