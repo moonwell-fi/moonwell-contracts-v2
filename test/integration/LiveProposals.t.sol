@@ -115,9 +115,8 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
             address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
             addresses.removeRestriction();
 
-            uint256 lastIndex = targets.length - 1;
             bytes memory payload;
-            if (targets[lastIndex] == wormholeCore) {
+            if (targets[targets.length - 1] == wormholeCore) {
                 /// increments each time the Multichain Governor publishes a message
                 uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
                     address(governor)
@@ -125,9 +124,9 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
                 // decode calldatas
                 (, payload, ) = abi.decode(
-                    calldatas[lastIndex].slice(
+                    calldatas[targets.length - 1].slice(
                         4,
-                        calldatas[lastIndex].length - 4
+                        calldatas[targets.length - 1].length - 4
                     ),
                     (uint32, bytes, uint8)
                 );
@@ -214,7 +213,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                 }
             }
 
-            if (targets[lastIndex] == wormholeCore) {
+            if (targets[targets.length - 1] == wormholeCore) {
                 (
                     address temporalGovernorAddress,
                     address[] memory baseTargets,
