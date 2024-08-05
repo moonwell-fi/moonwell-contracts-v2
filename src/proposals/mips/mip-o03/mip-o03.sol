@@ -24,7 +24,6 @@ contract mipO03 is HybridProposal, ParameterValidation {
     uint256 public constant NEW_rETH_RESERVE_FACTOR = 0.1e18;
     uint256 public constant NEW_cbETH_RESERVE_FACTOR = 0.1e18;
     uint256 public constant NEW_OP_RESERVE_FACTOR = 0.25e18;
-    // uint256 public constant NEW_VELO_RESERVE_FACTOR = 0.25e18;
 
     uint256 public constant NEW_WETH_COLLATERAL_FACTOR = 0.81e18;
     uint256 public constant NEW_USDC_COLLATERAL_FACTOR = 0.83e18;
@@ -35,7 +34,6 @@ contract mipO03 is HybridProposal, ParameterValidation {
     uint256 public constant NEW_rETH_COLLATERAL_FACTOR = 0.78e18;
     uint256 public constant NEW_cbETH_COLLATERAL_FACTOR = 0.78e18;
     uint256 public constant NEW_OP_COLLATERAL_FACTOR = 0.65e18;
-    // uint256 public constant NEW_VELO_COLLATERAL_FACTOR = 0.65e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -46,10 +44,6 @@ contract mipO03 is HybridProposal, ParameterValidation {
 
     function primaryForkId() public pure override returns (uint256) {
         return OPTIMISM_FORK_ID;
-    }
-
-    function deploy(Addresses addresses, address) public override {
-        etch(vm, addresses);
     }
 
     function build(Addresses addresses) public override {
@@ -143,16 +137,6 @@ contract mipO03 is HybridProposal, ParameterValidation {
             "Set reserve factor for Moonwell OP to updated reserve factor",
             ActionType.Optimism
         );
-
-        // _pushAction(
-        //     addresses.getAddress("VELO"),
-        //     abi.encodeWithSignature(
-        //         "_setReserveFactor(uint256)",
-        //         NEW_VELO_RESERVE_FACTOR
-        //     ),
-        //     "Set reserve factor for VELO to updated reserve factor",
-        //     ActionType.Optimism
-        // );
 
         // Push actions to update Collateral Factors for different assets
         _pushAction(
