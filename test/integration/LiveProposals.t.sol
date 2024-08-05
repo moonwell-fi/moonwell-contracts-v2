@@ -161,16 +161,9 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
                 // find match proposal
                 for (uint256 j = 0; j < proposalsPath.length; j++) {
-                    // check if proposal ends with .json
-
                     string memory solPath;
                     if (proposalsPath[j].endsWith(".sh")) {
-                        // execute .sh file
-                        string[] memory inputs = new string[](1);
-                        inputs[0] = string.concat("./", proposalsPath[j]);
-
-                        // set env variables by executing shell file
-                        solPath = string(vm.ffi(inputs));
+                        solPath = executeShellFile(proposalsPath[j]);
                     } else {
                         solPath = proposalsPath[j];
                     }
@@ -269,12 +262,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     for (uint256 j = 0; j < proposalsPath.length; j++) {
                         string memory solPath;
                         if (proposalsPath[j].endsWith(".sh")) {
-                            // execute .sh file
-                            string[] memory inputs = new string[](1);
-                            inputs[0] = string.concat("./", proposalsPath[j]);
-
-                            // set env variables by executing shell file
-                            solPath = string(vm.ffi(inputs));
+                            solPath = executeShellFile(proposalsPath[j]);
                         } else {
                             solPath = proposalsPath[j];
                         }
@@ -348,4 +336,24 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         override
         returns (address[] memory, uint256[] memory, bytes[] memory)
     {}
+
+    function executeShellFile(
+        string memory path
+    ) public returns (string memory lastEnv) {
+        string[] memory inputs = new string[](1);
+        inputs[0] = string.concat("./", proposalsPath[j]);
+
+        string memory output = string(vm.ffi(inputs));
+        string[] memory envs = output.split("\n");
+
+        for (uint256 k = 0; k < envs.length; k++) {
+            string memory key = envs[k].split("=")[0];
+            string memory value = envs[k].split("=")[1];
+            vm.setEnv(key, value);
+
+            if (k == envs.length - 1) {
+                lastEnv = value;
+            }
+        }
+    }
 }

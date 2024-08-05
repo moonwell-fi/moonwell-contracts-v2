@@ -86,6 +86,7 @@ contract WormholeRelayerAdapter {
 
         // TODO naming;
         require(senderChainId != 0, "senderChainId not set");
+
         /// immediately call the target
         IWormholeReceiver(targetAddress).receiveWormholeMessages(
             payload,
