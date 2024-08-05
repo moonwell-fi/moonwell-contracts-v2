@@ -195,6 +195,10 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             );
 
             vm.makePersistent(address(wormholeRelayerAdapterMoonbeam));
+
+            wormholeRelayerAdapterMoonbeam.setSenderChainId(
+                MOONBEAM_WORMHOLE_CHAIN_ID
+            );
         }
 
         {
@@ -207,6 +211,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             );
 
             wormholeRelayerAdapterBase = new WormholeRelayerAdapter();
+
+            wormholeRelayerAdapterBase.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
             uint256 oldGasLimit = voteCollection.gasLimit();
             // encode gasLimit and relayer address since is stored in a single slot
