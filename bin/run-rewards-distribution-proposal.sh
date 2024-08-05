@@ -2,7 +2,7 @@
 # This script is used on the CI to print proposal output for the current epoch rewards proposal
 
 MIP=$MIP_JSON_PATH
-SOL_TEMPLATE_PATH=$SOL_TEMPLATE_PATH
+SOL_TEMPLATE_PATH=$TEMPLATE_PATH
 
 output=$(forge script $SOL_TEMPLATE_PATH 2>&1)
 
