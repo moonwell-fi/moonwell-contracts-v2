@@ -4,3 +4,6 @@ export CHAIN_ID=10
 export PRIMARY_FORK_ID=0
 export TEMPLATE_PATH="src/proposals/templates/mipRewardsDistributionExternalChain.sol"
 
+# logs template
+echo $TEMPLATE_PATH
+

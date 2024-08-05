@@ -21,6 +21,8 @@ import {ChainIds, MOONBEAM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, BASE_FORK_
 
 contract LiveProposalsIntegrationTest is Test, ProposalChecker {
     using String for string;
+    using stdJson for string;
+
     using Bytes for bytes;
     using Address for *;
     using ChainIds for uint256;
@@ -164,17 +166,11 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     string memory solPath;
                     if (proposalsPath[j].endsWith(".sh")) {
                         // execute .sh file
-                        string[] memory inputs = new string[](4);
-                        inputs[0] = "chmod +x";
-                        inputs[1] = proposalsPath[j];
-                        inputs[2] = "&& ./";
-                        inputs[3] = proposalsPath[j];
+                        string[] memory inputs = new string[](1);
+                        inputs[0] = string.concat("./", proposalsPath[j]);
 
                         // set env variables by executing shell file
-                        vm.ffi(inputs);
-
-                        // get the template path from the just setted TEMPLATE_PATH env
-                        solPath = string(vm.envString("TEMPLATE_PATH"));
+                        solPath = string(vm.ffi(inputs));
                     } else {
                         solPath = proposalsPath[j];
                     }
@@ -275,13 +271,10 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                         if (proposalsPath[j].endsWith(".sh")) {
                             // execute .sh file
                             string[] memory inputs = new string[](1);
-                            inputs[0] = proposalsPath[j];
+                            inputs[0] = string.concat("./", proposalsPath[j]);
 
                             // set env variables by executing shell file
-                            vm.ffi(inputs);
-
-                            // get the template path from the just setted TEMPLATE_PATH env
-                            solPath = string(vm.envString("TEMPLATE_PATH"));
+                            solPath = string(vm.ffi(inputs));
                         } else {
                             solPath = proposalsPath[j];
                         }
