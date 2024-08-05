@@ -2,7 +2,7 @@
 
 export MIP_REWARDS_PATH=src/proposals/mips/mip-o02/o02.json
 echo "MIP_REWARDS_PATH=$MIP_REWARDS_PATH"
-export DESCRIPTION_PATH=src/proposals/pmips/mip-o02/o02.md
+export DESCRIPTION_PATH=src/proposals/mips/mip-o02/o02.md
 echo "DESCRIPTION_PATH=$DESCRIPTION_PATH"
 export CHAIN_ID=10
 echo "CHAIN_ID=$CHAIN_ID"
