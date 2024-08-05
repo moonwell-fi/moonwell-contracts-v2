@@ -268,9 +268,24 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
                     // find match proposal
                     for (uint256 j = 0; j < proposalsPath.length; j++) {
-                        Proposal proposal = Proposal(
-                            deployCode(proposalsPath[j])
-                        );
+                        string memory solPath;
+                        if (proposalsPath[j].endsWith(".sh")) {
+                            // execute .sh file
+                            string[] memory inputs = new string[](1);
+                            inputs[0] = proposalsPath[j];
+
+                            // set env variables by executing shell file
+                            vm.ffi(inputs);
+
+                            // get the template path from the just setted TEMPLATE_PATH env
+                            solPath = string(vm.envString("TEMPLATE_PATH"));
+                        } else {
+                            solPath = proposalsPath[j];
+                        }
+
+                        console.log("Proposal path", solPath);
+
+                        Proposal proposal = Proposal(deployCode(solPath));
                         vm.makePersistent(address(proposal));
 
                         vm.selectFork(uint256(proposal.primaryForkId()));
