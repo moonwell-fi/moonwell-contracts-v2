@@ -35,6 +35,8 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
     string[] public proposalsPath;
 
+    uint256[] public proposalIds;
+
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
         address indexed sender,
@@ -63,21 +65,20 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
         // create array splitting the output string
         proposalsPath = output.split("\n");
+
+        proposalIds = governor.liveProposals();
     }
 
     function testActiveProposals() public {
         vm.selectFork(MOONBEAM_FORK_ID);
-
-        uint256[] memory proposalIds = governor.liveProposals();
 
         for (uint256 i = 0; i < proposalIds.length; i++) {
             /// always need to select MOONBEAM_FORK_ID before executing a
             /// proposal as end of loop could switch to base for execution
             vm.selectFork(MOONBEAM_FORK_ID);
 
-            uint256 proposalId = proposalIds[i];
             (address[] memory targets, , bytes[] memory calldatas) = governor
-                .getProposalData(proposalId);
+                .getProposalData(proposalIds[i]);
 
             addresses.addRestriction(MOONBEAM_CHAIN_ID);
 
@@ -94,7 +95,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     ,
                     ,
 
-                ) = governor.proposalInformation(proposalId);
+                ) = governor.proposalInformation(proposalIds[i]);
 
                 address well = addresses.getAddress("xWELL_PROXY");
 
@@ -106,7 +107,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
                 vm.warp(votingStartTime);
 
-                governor.castVote(proposalId, 0);
+                governor.castVote(proposalIds[i], 0);
                 vm.warp(crossChainVoteCollectionEndTimestamp + 1);
             }
 
@@ -147,7 +148,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
             uint256 totalValue = 0;
             {
                 (, uint256[] memory values, ) = governor.getProposalData(
-                    proposalId
+                    proposalIds[i]
                 );
                 for (uint256 j = 0; j < values.length; j++) {
                     totalValue += values[j];
@@ -155,10 +156,10 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
             }
 
             {
-                try governor.execute{value: totalValue}(proposalId) {} catch (
-                    bytes memory e
-                ) {
-                    console.log("Error executing proposal", proposalId);
+                try
+                    governor.execute{value: totalValue}(proposalIds[i])
+                {} catch (bytes memory e) {
+                    console.log("Error executing proposal", proposalIds[i]);
                     console.log(string(e));
 
                     // find match proposal
@@ -200,9 +201,9 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                         }
 
                         // if proposal is the one that failed, run the proposal again
-                        if (proposalFileId == proposalId) {
+                        if (proposalFileId == proposalIds[i]) {
                             vm.selectFork(MOONBEAM_FORK_ID);
-                            governor.execute{value: totalValue}(proposalId);
+                            governor.execute{value: totalValue}(proposalIds[i]);
 
                             vm.selectFork(uint256(proposal.primaryForkId()));
                             proposal.afterSimulationHook(addresses);
@@ -274,7 +275,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                 try temporalGovernor.executeProposal(vaa) {} catch (
                     bytes memory e
                 ) {
-                    console.log("Error executing proposal", proposalId);
+                    console.log("Error executing proposal", proposalIds[i]);
                     console.log(string(e));
 
                     // find match proposal
@@ -315,7 +316,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
                         // if proposal is the one that failed, run the temporal
                         // governor execution again
-                        if (proposalFileId == proposalId) {
+                        if (proposalFileId == proposalIds[i]) {
                             // foundry selectFork resets warp, so we need to warp again
                             vm.warp(
                                 block.timestamp +
