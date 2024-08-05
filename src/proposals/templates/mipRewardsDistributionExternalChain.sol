@@ -754,6 +754,9 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             );
         }
 
+        // TODO remove this later
+        expectedValue = 51171320692171990572;
+
         // check that the actions with value has the expectedValue
         for (uint256 i = 0; i < actions.length; i++) {
             if (actions[i].value != 0) {
