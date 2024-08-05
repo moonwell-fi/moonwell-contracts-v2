@@ -48,10 +48,6 @@ contract mipO03 is HybridProposal, ParameterValidation {
         return OPTIMISM_FORK_ID;
     }
 
-    function deploy(Addresses addresses, address) public override {
-        etch(vm, addresses);
-    }
-
     function build(Addresses addresses) public override {
         // Push actions to update Reserve Factors for different assets
         _pushAction(
