@@ -1,6 +1,9 @@
 #!/bin/bash
 # This script is used on the CI to print proposal output for the current epoch rewards proposal
 
+# Run .sh file to set the envs
+source $SCRIPT_FILE
+
 MIP=$MIP_JSON_PATH
 SOL_TEMPLATE_PATH=$TEMPLATE_PATH
 
