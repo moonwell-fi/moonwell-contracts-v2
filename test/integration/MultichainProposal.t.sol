@@ -185,6 +185,10 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             vm.selectFork(MOONBEAM_FORK_ID);
 
             wormholeRelayerAdapterMoonbeam = new WormholeRelayerAdapter();
+            vm.label(
+                address(wormholeRelayerAdapterMoonbeam),
+                "WormholeRelayerAdapterMoonbeam"
+            );
 
             vm.store(
                 address(governor),
@@ -211,6 +215,10 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             );
 
             wormholeRelayerAdapterBase = new WormholeRelayerAdapter();
+            vm.label(
+                address(wormholeRelayerAdapterBase),
+                "WormholeRelayerAdapterBase"
+            );
 
             wormholeRelayerAdapterBase.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
