@@ -149,9 +149,15 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     // check if proposal ends with .json
 
                     string memory solPath;
-                    if (proposalsPath[j].endsWith(".json")) {
+                    if (proposalsPath[j].endsWith(".sh")) {
+                        // execute .sh file
+                        inputs = new string[](1);
+                        inputs[0] = proposalsPath[j];
+
                         // get the template path from the just setted TEMPLATE_PATH env
                         solPath = string(vm.envString("TEMPLATE_PATH"));
+                    } else {
+                        solPath = proposalsPath[j];
                     }
 
                     console.log("Proposal path", solPath);

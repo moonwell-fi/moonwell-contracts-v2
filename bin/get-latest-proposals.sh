@@ -1,50 +1,27 @@
 #!/bin/bash
-BASE_DIR="artifacts/foundry"
 
-cd ./src/proposals/mips
+# Define the directory to search
+SEARCH_DIR="src/proposals/mips"
 
-# Gather mip-mXX directories, sort them descending by the number suffix
-m_dirs=$(ls -d mip-m[0-9]* | sort -t 'm' -k2 -nr)
+# Exclude the examples and mip-xwell directories and mip00.sol file
+EXCLUDE_DIRS=("$SEARCH_DIR/examples" "$SEARCH_DIR/mip-xwell" "$SEARCH_DIR/mip-xwell")
+EXCLUDE_FILES=("$SEARCH_DIR/mip00.sol")
 
-# Gather mip-bXX directories, sort them descending by the number suffix
-b_dirs=$(ls -d mip-b[0-9]* | sort -t 'b' -k2 -nr)
+# Construct the find command
+find_cmd="find \"$SEARCH_DIR\""
 
-# Convert string lists to arrays by replacing newlines with spaces
-m_dirs="${m_dirs//$'\n'/ }"
-b_dirs="${b_dirs//$'\n'/ }"
+# Add exclusions for directories
+for exclude_dir in "${EXCLUDE_DIRS[@]}"; do
+    find_cmd+=" -path \"$exclude_dir\" -prune -o"
+done
 
-# Function to intercalate arrays
-intercalate() {
-    local m_arr=($1)
-    local b_arr=($2)
-    local result=""
-    local moonbeamPath
-    local basePath
+# Add exclusions for files
+for exclude_file in "${EXCLUDE_FILES[@]}"; do
+    find_cmd+=" ! -path \"$exclude_file\""
+done
 
-    # Get the max index of the two arrays
-    local max_index=$(( ${#m_arr[@]} > ${#b_arr[@]} ? ${#m_arr[@]} : ${#b_arr[@]} ))
-        
-    # Loop through the arrays and append the paths to the result string
-    for (( i=0; i<$max_index; i++ )); do
+# Add the condition to find .sol and .sh files
+find_cmd+=" \( -name \"*.sol\" -o -name \"*.sh\" \) -print"
 
-        # Construct the paths, removing the dash from the directory name to get the file name
-        moonbeamPath="${BASE_DIR}/${m_arr[i]}.sol/${m_arr[i]//-/}.json"
-        basePath="${BASE_DIR}/${b_arr[i]}.sol/${b_arr[i]//-/}.json"
-        
-        # Append the paths to the result string if they are not empty
-        if [[ -n "${m_arr[i]}" ]]; then
-            result+="${moonbeamPath},"
-        fi
-
-        if [[ -n "${b_arr[i]}" ]]; then
-            result+="${basePath},"
-        fi
-    done
-
-    # Print the result string
-    echo "${result%,}"
-}
-
-
-# Call intercalate and trim the last comma
-intercalate "$m_dirs" "$b_dirs"
+# Execute the find command
+eval $find_cmd
