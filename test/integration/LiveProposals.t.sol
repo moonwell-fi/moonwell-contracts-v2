@@ -115,35 +115,6 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
             address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
             addresses.removeRestriction();
 
-            bytes memory payload;
-            if (targets[targets.length - 1] == wormholeCore) {
-                /// increments each time the Multichain Governor publishes a message
-                uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
-                    address(governor)
-                );
-
-                // decode calldatas
-                (, payload, ) = abi.decode(
-                    calldatas[targets.length - 1].slice(
-                        4,
-                        calldatas[targets.length - 1].length - 4
-                    ),
-                    (uint32, bytes, uint8)
-                );
-
-                /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
-                vm.expectEmit(true, true, true, true, wormholeCore);
-
-                /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
-                emit LogMessagePublished(
-                    address(governor),
-                    nextSequence,
-                    0,
-                    payload,
-                    200
-                );
-            }
-
             uint256 totalValue = 0;
             {
                 (, uint256[] memory values, ) = governor.getProposalData(
@@ -195,6 +166,34 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                         vm.selectFork(MOONBEAM_FORK_ID);
                         // needs to mock wormhole bridge relayer
                         proposal.beforeSimulationHook(addresses);
+
+                        bytes memory payload;
+                        if (targets[targets.length - 1] == wormholeCore) {
+                            /// increments each time the Multichain Governor publishes a message
+                            uint64 nextSequence = IWormhole(wormholeCore)
+                                .nextSequence(address(governor));
+
+                            // decode calldatas
+                            (, payload, ) = abi.decode(
+                                calldatas[targets.length - 1].slice(
+                                    4,
+                                    calldatas[targets.length - 1].length - 4
+                                ),
+                                (uint32, bytes, uint8)
+                            );
+
+                            /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
+                            vm.expectEmit(true, true, true, true, wormholeCore);
+
+                            /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
+                            emit LogMessagePublished(
+                                address(governor),
+                                nextSequence,
+                                0,
+                                payload,
+                                200
+                            );
+                        }
 
                         governor.execute{value: totalValue}(proposalIds[i]);
 
