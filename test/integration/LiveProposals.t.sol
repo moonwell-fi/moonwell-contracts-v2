@@ -153,59 +153,62 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     totalValue += values[j];
                 }
             }
-            try governor.execute{value: totalValue}(proposalId) {} catch (
-                bytes memory e
-            ) {
-                console.log("Error executing proposal", proposalId);
-                console.log(string(e));
 
-                // find match proposal
-                for (uint256 j = 0; j < proposalsPath.length; j++) {
-                    string memory solPath;
-                    if (proposalsPath[j].endsWith(".sh")) {
-                        solPath = executeShellFile(proposalsPath[j]);
-                    } else {
-                        solPath = proposalsPath[j];
-                    }
+            {
+                try governor.execute{value: totalValue}(proposalId) {} catch (
+                    bytes memory e
+                ) {
+                    console.log("Error executing proposal", proposalId);
+                    console.log(string(e));
 
-                    console.log("Proposal path", solPath);
+                    // find match proposal
+                    for (uint256 j = 0; j < proposalsPath.length; j++) {
+                        string memory solPath;
+                        if (proposalsPath[j].endsWith(".sh")) {
+                            solPath = executeShellFile(proposalsPath[j]);
+                        } else {
+                            solPath = proposalsPath[j];
+                        }
 
-                    Proposal proposal = Proposal(deployCode(solPath));
-                    vm.makePersistent(address(proposal));
+                        console.log("Proposal path", solPath);
 
-                    vm.selectFork(uint256(proposal.primaryForkId()));
-
-                    // runs pre build mock and build
-                    proposal.preBuildMock(addresses);
-                    proposal.build(addresses);
-                    // needs to mock wormhole bridge relayer
-                    proposal.beforeSimulationHook(addresses);
-
-                    uint256 proposalFileId;
-                    if (proposal.isDeprecatedGovernor()) {
-                        proposalFileId = proposal.getProposalId(
-                            addresses,
-                            addresses.getAddress(
-                                "ARTEMIS_GOVERNOR",
-                                block.chainid.toMoonbeamChainId()
-                            )
-                        );
-                    } else {
-                        proposalFileId = proposal.getProposalId(
-                            addresses,
-                            address(governor)
-                        );
-                    }
-
-                    // if proposal is the one that failed, run the proposal again
-                    if (proposalFileId == proposalId) {
-                        vm.selectFork(MOONBEAM_FORK_ID);
-                        governor.execute{value: totalValue}(proposalId);
+                        Proposal proposal = Proposal(deployCode(solPath));
+                        vm.makePersistent(address(proposal));
 
                         vm.selectFork(uint256(proposal.primaryForkId()));
-                        proposal.afterSimulationHook(addresses);
-                        proposal.validate(addresses, address(proposal));
-                        break;
+
+                        // runs pre build mock and build
+                        proposal.preBuildMock(addresses);
+                        proposal.build(addresses);
+                        // needs to mock wormhole bridge relayer
+                        proposal.beforeSimulationHook(addresses);
+
+                        uint256 proposalFileId;
+                        if (proposal.isDeprecatedGovernor()) {
+                            proposalFileId = proposal.getProposalId(
+                                addresses,
+                                addresses.getAddress(
+                                    "ARTEMIS_GOVERNOR",
+                                    block.chainid.toMoonbeamChainId()
+                                )
+                            );
+                        } else {
+                            proposalFileId = proposal.getProposalId(
+                                addresses,
+                                address(governor)
+                            );
+                        }
+
+                        // if proposal is the one that failed, run the proposal again
+                        if (proposalFileId == proposalId) {
+                            vm.selectFork(MOONBEAM_FORK_ID);
+                            governor.execute{value: totalValue}(proposalId);
+
+                            vm.selectFork(uint256(proposal.primaryForkId()));
+                            proposal.afterSimulationHook(addresses);
+                            proposal.validate(addresses, address(proposal));
+                            break;
+                        }
                     }
                 }
             }

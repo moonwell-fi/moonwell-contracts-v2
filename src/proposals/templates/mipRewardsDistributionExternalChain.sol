@@ -36,6 +36,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
     struct BridgeWell {
         uint256 amount;
+        uint256 nativeValue;
         uint256 network;
         string target;
     }
@@ -450,27 +451,11 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 ActionType.Moonbeam
             );
 
-            uint16 wormholeChainId = bridgeWell.network.toWormholeChainId();
-            console.log("wormhole chain id bridge well", wormholeChainId);
-
-            console.log(
-                "xwell router bridge cost",
-                xWELLRouter(router).bridgeCost(wormholeChainId)
-            );
-            // uint256 bridgeCost = xWELLRouter(router).bridgeCost(
-            //     wormholeChainId
-            // ) * 4; // make sure that the proposal does not revert due to bridge
-            // cost changing
-            // hardcode bridgeCpost so we are able to find on chain match
-            // TODO undo this once figure out a way to get the bridge cost
-            // used in the proposal
-            uint256 bridgeCost = 51171320692171990572;
-
-            console.log("bridge cost", bridgeCost);
+            uint256 wormholeChainId = bridgeWell.network.toWormholeChainId();
 
             _pushAction(
                 router,
-                bridgeCost,
+                bridgeWell.nativeValue,
                 abi.encodeWithSignature(
                     "bridgeToRecipient(address,uint256,uint16)",
                     target,
@@ -752,17 +737,23 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 quoteEVMDeliveryPrice,
                 "Bridge cost is incorrect"
             );
-        }
 
-        // TODO remove this later
-        expectedValue = 51171320692171990572;
+            // bridgeWell value must be close to the expected value
+            assertApproxEqAbs(
+                bridgeWell.nativeValue,
+                expectedValue,
+                0.10e18, // 10% tolarance
+                "Bridge value is incorrect"
+            );
+        }
 
         // check that the actions with value has the expectedValue
         for (uint256 i = 0; i < actions.length; i++) {
             if (actions[i].value != 0) {
-                assertEq(
+                assertApproxEqAbs(
                     actions[i].value,
                     expectedValue,
+                    0.10e18,
                     "Value is incorrect for action"
                 );
             }

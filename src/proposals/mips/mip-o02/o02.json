@@ -154,11 +154,13 @@
         "bridgeToRecipient": [
             {
                 "amount": 7.2074796646378946e23,
+                "nativeValue": 51171320692171990572,
                 "network": 10,
                 "target": "TEMPORAL_GOVERNOR"
             },
             {
                 "amount": 3.793410349809418e22,
+                "nativeValue": 51171320692171990572,
                 "network": 10,
                 "target": "DEX_RELAYER"
             }
