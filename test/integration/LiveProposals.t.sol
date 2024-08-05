@@ -180,9 +180,6 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                         // runs pre build mock and build
                         proposal.preBuildMock(addresses);
                         proposal.build(addresses);
-                        // needs to mock wormhole bridge relayer
-                        proposal.beforeSimulationHook(addresses);
-
                         uint256 proposalFileId;
                         if (proposal.isDeprecatedGovernor()) {
                             proposalFileId = proposal.getProposalId(
@@ -202,10 +199,14 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                         // if proposal is the one that failed, run the proposal again
                         if (proposalFileId == proposalIds[i]) {
                             vm.selectFork(MOONBEAM_FORK_ID);
+                            // needs to mock wormhole bridge relayer
+                            proposal.beforeSimulationHook(addresses);
+
                             governor.execute{value: totalValue}(proposalIds[i]);
 
                             vm.selectFork(uint256(proposal.primaryForkId()));
                             proposal.afterSimulationHook(addresses);
+
                             proposal.validate(addresses, address(proposal));
                             break;
                         }
