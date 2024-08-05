@@ -72,7 +72,7 @@ General recommendations for Optimism market:
 
 | Asset                | USDC | USDT | DAI | WETH | WBTC | cbETH | wstETH | rETH | VELO | OP  |
 | -------------------- | ---- | ---- | --- | ---- | ---- | ----- | ------ | ---- | ---- | --- |
-| Protocol Seize Share | 30%  | 30%  | 30% | 30%  | 30%  | 30%   |
+| Protocol Seize Share | 30%  | 30%  | 30% | 30%  | 30%  | 30%   | 30%    | 30%  | 30%  | 30% |
 
 Our recommendation post is located in the forums, please refer to this
 [link](https://forum.moonwell.fi/t/gauntlet-base-optimism-moonbeam-moonriver-monthly-recommendations-2024-08-01/1151).
