@@ -94,9 +94,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
     TemporalGovernor public temporalGov;
 
-    WormholeRelayerAdapter public wormholeRelayerAdapterMoonbeam;
-
-    WormholeRelayerAdapter wormholeRelayerAdapterBase;
+    WormholeRelayerAdapter public wormholeRelayerAdapter;
 
     uint256 xWELLBalanceLockboxPreProposal;
 
@@ -151,6 +149,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         voteCollection = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY", BASE_CHAIN_ID)
         );
+        vm.makePersistent(address(voteCollection));
+
         addresses.addRestriction(MOONBEAM_CHAIN_ID);
         wormhole = IWormhole(
             addresses.getAddress("WORMHOLE_CORE", MOONBEAM_CHAIN_ID)
@@ -175,6 +175,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         governor = MultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         );
+        vm.makePersistent(address(governor));
 
         addresses.removeRestriction();
 
@@ -184,24 +185,20 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         {
             vm.selectFork(MOONBEAM_FORK_ID);
 
-            wormholeRelayerAdapterMoonbeam = new WormholeRelayerAdapter();
+            wormholeRelayerAdapter = new WormholeRelayerAdapter();
+
+            vm.makePersistent(address(wormholeRelayerAdapter));
+            wormholeRelayerAdapter.setIsMultichainTest(true);
+
             vm.label(
-                address(wormholeRelayerAdapterMoonbeam),
-                "WormholeRelayerAdapterMoonbeam"
+                address(wormholeRelayerAdapter),
+                "MockWormholeRelayerAdapter"
             );
 
             vm.store(
                 address(governor),
                 keccak256(abi.encodePacked(uint256(103))),
-                bytes32(
-                    uint256(uint160(address(wormholeRelayerAdapterMoonbeam)))
-                )
-            );
-
-            vm.makePersistent(address(wormholeRelayerAdapterMoonbeam));
-
-            wormholeRelayerAdapterMoonbeam.setSenderChainId(
-                MOONBEAM_WORMHOLE_CHAIN_ID
+                bytes32(uint256(uint160(address(wormholeRelayerAdapter))))
             );
         }
 
@@ -214,29 +211,19 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
                 "incorrect wormhole relayer"
             );
 
-            wormholeRelayerAdapterBase = new WormholeRelayerAdapter();
-            vm.label(
-                address(wormholeRelayerAdapterBase),
-                "WormholeRelayerAdapterBase"
-            );
-
-            wormholeRelayerAdapterBase.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
-
             uint256 oldGasLimit = voteCollection.gasLimit();
             // encode gasLimit and relayer address since is stored in a single slot
             // relayer is first due to how evm pack values into a single storage
             bytes32 encodedData = bytes32(
-                (uint256(uint160(address(wormholeRelayerAdapterBase))) << 96) |
+                (uint256(uint160(address(wormholeRelayerAdapter))) << 96) |
                     uint256(oldGasLimit)
             );
 
             vm.store(address(voteCollection), bytes32(uint256(0)), encodedData);
 
-            vm.makePersistent(address(wormholeRelayerAdapterBase));
-
             assertEq(
                 address(voteCollection.wormholeRelayer()),
-                address(wormholeRelayerAdapterBase),
+                address(wormholeRelayerAdapter),
                 "incorrect wormhole relayer"
             );
             assertEq(
@@ -1291,19 +1278,9 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
         uint256 xwellMintAmount;
         {
-            uint256 startTimestamp = block.timestamp;
-            uint256 endTimestamp = startTimestamp + governor.votingPeriod();
-            bytes memory payload = abi.encode(
-                proposalId,
-                startTimestamp - 1,
-                startTimestamp,
-                endTimestamp,
-                endTimestamp + governor.crossChainVoteCollectionPeriod()
-            );
-
             vm.selectFork(BASE_FORK_ID);
 
-            vm.warp(startTimestamp - 5);
+            vm.warp(block.timestamp - 5);
             xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
             xwellMintAmount = xwell.buffer(
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
@@ -1313,20 +1290,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             xwell.mint(address(this), xwellMintAmount);
             xwell.approve(address(stakedWellBase), xwellMintAmount);
             stakedWellBase.stake(address(this), xwellMintAmount);
-
-            vm.warp(block.timestamp + 10);
-
-            uint256 gasCost = wormholeRelayerAdapterBase.nativePriceQuote();
-
-            vm.deal(address(governor), gasCost);
-            vm.prank(address(governor));
-            wormholeRelayerAdapterBase.sendPayloadToEvm{value: gasCost}(
-                30,
-                address(voteCollection),
-                payload,
-                0,
-                0
-            );
         }
 
         {
@@ -1395,6 +1358,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
+        wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+
         proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -1414,16 +1379,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         {
             uint256 startTimestamp = block.timestamp;
             uint256 endTimestamp = startTimestamp + governor.votingPeriod();
-            bytes memory payload = abi.encode(
-                proposalId,
-                startTimestamp - 1,
-                startTimestamp,
-                endTimestamp,
-                endTimestamp + governor.crossChainVoteCollectionPeriod()
-            );
 
             vm.selectFork(BASE_FORK_ID);
-
             vm.warp(startTimestamp - 5);
             xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
             xwellMintAmount = xwell.buffer(
@@ -1435,19 +1392,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
             xwell.delegate(address(this));
 
-            vm.warp(block.timestamp + 10);
-
-            uint256 gasCost = wormholeRelayerAdapterBase.nativePriceQuote();
-
-            vm.deal(address(governor), gasCost);
-            vm.prank(address(governor));
-            wormholeRelayerAdapterBase.sendPayloadToEvm{value: gasCost}(
-                30,
-                address(voteCollection),
-                payload,
-                0,
-                0
-            );
+            vm.warp(endTimestamp - 5);
         }
 
         {
@@ -1510,6 +1455,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             100_000_000 * 1e18
         );
 
+        wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
@@ -1532,13 +1478,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         {
             uint256 startTimestamp = block.timestamp;
             uint256 endTimestamp = startTimestamp + governor.votingPeriod();
-            bytes memory payload = abi.encode(
-                proposalId,
-                startTimestamp - 1,
-                startTimestamp,
-                endTimestamp,
-                endTimestamp + governor.crossChainVoteCollectionPeriod()
-            );
 
             vm.selectFork(BASE_FORK_ID);
 
@@ -1551,20 +1490,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             vm.prank(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
             xwell.mint(address(this), xwellMintAmount);
             xwell.delegate(address(this));
-
-            vm.warp(block.timestamp + 10);
-
-            uint256 gasCost = wormholeRelayerAdapterBase.nativePriceQuote();
-
-            vm.deal(address(governor), gasCost);
-            vm.prank(address(governor));
-            wormholeRelayerAdapterBase.sendPayloadToEvm{value: gasCost}(
-                30,
-                address(voteCollection),
-                payload,
-                0,
-                0
-            );
 
             vm.warp(endTimestamp + 1);
         }
@@ -1636,6 +1561,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         vm.deal(address(this), bridgeCost);
         uint256 startingProposalId = governor.proposalCount();
         uint256 startingGovernorBalance = address(governor).balance;
+
+        wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
 
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
@@ -1732,6 +1659,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         uint256 bridgeCost = voteCollection.bridgeCostAll();
         vm.deal(address(this), bridgeCost * 100);
 
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
+
         vm.expectEmit(true, true, true, true, address(voteCollection));
         emit VotesEmitted(proposalId, forVotes, againstVotes, abstainVotes);
 
@@ -1766,6 +1695,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
         uint256 bridgeCost = voteCollection.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
+
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
         vm.expectEmit(true, true, true, true, address(voteCollection));
         emit VotesEmitted(proposalId, forVotes, againstVotes, abstainVotes);
@@ -1840,27 +1771,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             );
 
             vm.selectFork(BASE_FORK_ID);
-
-            uint256 gasCost = wormholeRelayerAdapterBase.nativePriceQuote();
-
-            vm.deal(address(governor), gasCost);
-
-            vm.expectEmit(true, true, true, true, address(voteCollection));
-            emit ProposalCreated(
-                proposalId,
-                startTimestamp,
-                endTimestamp,
-                crossChainPeriod
-            );
-
-            vm.prank(address(governor));
-            wormholeRelayerAdapterBase.sendPayloadToEvm{value: gasCost}(
-                30,
-                address(voteCollection),
-                payload,
-                0,
-                0
-            );
 
             (
                 uint256 voteSnapshotTimestamp,
@@ -1958,27 +1868,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
             vm.selectFork(BASE_FORK_ID);
 
-            uint256 gasCost = wormholeRelayerAdapterBase.nativePriceQuote();
-
-            vm.deal(address(governor), gasCost);
-
-            vm.expectEmit(true, true, true, true, address(voteCollection));
-            emit ProposalCreated(
-                proposalId,
-                startTimestamp,
-                endTimestamp,
-                crossChainPeriod
-            );
-
-            vm.prank(address(governor));
-            wormholeRelayerAdapterBase.sendPayloadToEvm{value: gasCost}(
-                30,
-                address(voteCollection),
-                payload,
-                0,
-                0
-            );
-
             (
                 uint256 voteSnapshotTimestamp,
                 uint256 votingStartTime,
@@ -2012,13 +1901,17 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             assertEq(againstVotes, 0, "incorrect against votes");
             assertEq(abstainVotes, 0, "incorrect abstain votes");
 
-            vm.deal(address(governor), gasCost);
+            vm.selectFork(MOONBEAM_FORK_ID);
 
+            uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+
+            vm.deal(address(governor), gasCost);
             vm.expectRevert(
                 "MultichainVoteCollection: proposal already exists"
             );
+
             vm.prank(address(governor));
-            wormholeRelayerAdapterBase.sendPayloadToEvm{value: gasCost}(
+            wormholeRelayerAdapter.sendPayloadToEvm{value: gasCost}(
                 30,
                 address(voteCollection),
                 payload,
@@ -2043,6 +1936,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             ,
 
         ) = voteCollection.proposalInformation(proposalId);
+
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
         vm.warp(crossChainVoteCollectionEndTimestamp + 1);
         vm.expectRevert(
