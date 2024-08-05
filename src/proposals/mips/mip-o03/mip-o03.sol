@@ -24,7 +24,6 @@ contract mipO03 is HybridProposal, ParameterValidation {
     uint256 public constant NEW_rETH_RESERVE_FACTOR = 0.1e18;
     uint256 public constant NEW_cbETH_RESERVE_FACTOR = 0.1e18;
     uint256 public constant NEW_OP_RESERVE_FACTOR = 0.25e18;
-    uint256 public constant NEW_VELO_RESERVE_FACTOR = 0.25e18;
 
     uint256 public constant NEW_WETH_COLLATERAL_FACTOR = 0.81e18;
     uint256 public constant NEW_USDC_COLLATERAL_FACTOR = 0.83e18;
@@ -35,7 +34,6 @@ contract mipO03 is HybridProposal, ParameterValidation {
     uint256 public constant NEW_rETH_COLLATERAL_FACTOR = 0.78e18;
     uint256 public constant NEW_cbETH_COLLATERAL_FACTOR = 0.78e18;
     uint256 public constant NEW_OP_COLLATERAL_FACTOR = 0.65e18;
-    uint256 public constant NEW_VELO_COLLATERAL_FACTOR = 0.65e18;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -140,16 +138,6 @@ contract mipO03 is HybridProposal, ParameterValidation {
             ActionType.Optimism
         );
 
-        _pushAction(
-            addresses.getAddress("VELO"),
-            abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                NEW_VELO_RESERVE_FACTOR
-            ),
-            "Set reserve factor for VELO to updated reserve factor",
-            ActionType.Optimism
-        );
-
         // Push actions to update Collateral Factors for different assets
         _pushAction(
             addresses.getAddress("UNITROLLER"),
@@ -249,16 +237,6 @@ contract mipO03 is HybridProposal, ParameterValidation {
             "Set collateral factor of Moonwell OP",
             ActionType.Optimism
         );
-        _pushAction(
-            addresses.getAddress("UNITROLLER"),
-            abi.encodeWithSignature(
-                "_setCollateralFactor(address,uint256)",
-                addresses.getAddress("MOONWELL_VELO"),
-                NEW_OP_COLLATERAL_FACTOR
-            ),
-            "Set collateral factor of Moonwell VELO",
-            ActionType.Optimism
-        );
     }
 
     function validate(Addresses addresses, address) public view override {
@@ -317,12 +295,6 @@ contract mipO03 is HybridProposal, ParameterValidation {
             NEW_OP_COLLATERAL_FACTOR
         );
 
-        _validateCF(
-            addresses,
-            addresses.getAddress("MOONWELL_VELO"),
-            NEW_VELO_COLLATERAL_FACTOR
-        );
-
         // Validate Reserve Factors
         _validateRF(
             addresses.getAddress("MOONWELL_WETH"),
@@ -365,10 +337,5 @@ contract mipO03 is HybridProposal, ParameterValidation {
         );
 
         _validateRF(addresses.getAddress("MOONWELL_OP"), NEW_OP_RESERVE_FACTOR);
-
-        _validateRF(
-            addresses.getAddress("MOONWELL_VELO"),
-            NEW_VELO_RESERVE_FACTOR
-        );
     }
 }
