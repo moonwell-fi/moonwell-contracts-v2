@@ -54,8 +54,8 @@ jobs:
       - name: Run set environments script
       # SCRIPT_FILE
         run: |
-            chmod +x ${{ vars.SCRIPT_FILE }}
-            ${{ vars.SCRIPT_FILE }}
+            chmod +x $SCRIPT_FILE
+            $SCRIPT_FILE
 
       - name: Run Proposal
         run: bin/run-rewards-distribution-proposal.sh
