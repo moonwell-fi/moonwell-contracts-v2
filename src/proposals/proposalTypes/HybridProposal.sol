@@ -436,7 +436,10 @@ abstract contract HybridProposal is
 
     function teardown(Addresses, address) public virtual override {}
 
-    function run(Addresses addresses, address) public virtual override {
+    function run(
+        Addresses addresses,
+        address
+    ) public virtual override mockHook {
         require(actions.length != 0, "no governance proposal actions to run");
 
         vm.selectFork(MOONBEAM_FORK_ID);

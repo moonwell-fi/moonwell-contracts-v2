@@ -77,12 +77,6 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
     /// we need to save this value to check if the transferFrom amount was successfully transferred
     mapping(address => uint256) public wellBalancesBefore;
 
-    modifier mockHook(Addresses addresses) {
-        _beforeSimulationHook(addresses);
-        _;
-        _afterSimulationHook(addresses);
-    }
-
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(vm.envString("DESCRIPTION_PATH"))
@@ -873,7 +867,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         }
     }
 
-    function _beforeSimulationHook(Addresses addresses) private {
+    function beforeSimulationHook(Addresses addresses) public override {
         // mock relayer so we can simulate bridging well
         WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
         vm.makePersistent(address(wormholeRelayer));
@@ -917,7 +911,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         );
     }
 
-    function _afterSimulationHook(Addresses addresses) private {
+    function afterSimulationHook(Addresses addresses) public override {
         WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );

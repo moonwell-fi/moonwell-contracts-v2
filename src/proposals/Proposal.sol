@@ -25,6 +25,12 @@ abstract contract Proposal is Script, Test {
     /// returns 0 if proposal has no onchain id. must be set in the proposal
     uint256 public onchainProposalId;
 
+    modifier mockHook(Addresses addresses) {
+        beforeSimulationHook(addresses);
+        _;
+        afterSimulationHook(addresses);
+    }
+
     constructor() {
         DEBUG = vm.envOr("DEBUG", true);
         DO_DEPLOY = vm.envOr("DO_DEPLOY", true);
@@ -94,6 +100,10 @@ abstract contract Proposal is Script, Test {
     function validate(Addresses, address) public virtual;
 
     function printProposalActionSteps() public virtual;
+
+    function beforeSimulationHook(Addresses addresses) public virtual;
+
+    function afterSimulationHook(Addresses addresses) public virtual;
 
     // @notice search for a on-chain proposal that matches the proposal calldata
     // @returns the proposal id, 0 if no proposal is found

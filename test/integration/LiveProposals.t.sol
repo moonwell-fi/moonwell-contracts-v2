@@ -178,6 +178,8 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     // runs pre build mock and build
                     proposal.preBuildMock(addresses);
                     proposal.build(addresses);
+                    // needs to mock wormhole bridge relayer
+                    proposal.beforeSimulationHook(addresses);
 
                     // if proposal is the one that failed, run the proposal again
                     if (
@@ -188,6 +190,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                         governor.execute{value: totalValue}(proposalId);
 
                         vm.selectFork(uint256(proposal.primaryForkId()));
+                        proposal.afterSimulationHook(addresses);
                         proposal.validate(addresses, address(proposal));
                         break;
                     }
