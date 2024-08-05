@@ -167,6 +167,9 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                         string[] memory inputs = new string[](1);
                         inputs[0] = proposalsPath[j];
 
+                        // set env variables by executing shell file
+                        vm.ffi(inputs);
+
                         // get the template path from the just setted TEMPLATE_PATH env
                         solPath = string(vm.envString("TEMPLATE_PATH"));
                     } else {
