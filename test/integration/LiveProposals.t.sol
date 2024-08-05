@@ -164,8 +164,11 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     string memory solPath;
                     if (proposalsPath[j].endsWith(".sh")) {
                         // execute .sh file
-                        string[] memory inputs = new string[](1);
-                        inputs[0] = proposalsPath[j];
+                        string[] memory inputs = new string[](4);
+                        inputs[0] = "chmod +x";
+                        inputs[1] = proposalsPath[j];
+                        inputs[2] = "&& ./";
+                        inputs[3] = proposalsPath[j];
 
                         // set env variables by executing shell file
                         vm.ffi(inputs);
