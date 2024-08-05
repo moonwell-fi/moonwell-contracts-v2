@@ -140,7 +140,18 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                 );
             }
 
-            try governor.execute(proposalId) {} catch (bytes memory e) {
+            uint256 totalValue = 0;
+            {
+                (, uint256[] memory values, ) = governor.getProposalData(
+                    proposalId
+                );
+                for (uint256 j = 0; j < values.length; j++) {
+                    totalValue += values[j];
+                }
+            }
+            try governor.execute{value: totalValue}(proposalId) {} catch (
+                bytes memory e
+            ) {
                 console.log("Error executing proposal", proposalId);
                 console.log(string(e));
 
@@ -177,7 +188,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                         proposalId
                     ) {
                         vm.selectFork(MOONBEAM_FORK_ID);
-                        governor.execute(proposalId);
+                        governor.execute{value: totalValue}(proposalId);
 
                         vm.selectFork(uint256(proposal.primaryForkId()));
                         proposal.validate(addresses, address(proposal));
