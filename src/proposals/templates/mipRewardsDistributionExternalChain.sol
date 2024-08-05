@@ -739,7 +739,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             );
 
             // bridgeWell value must be close to the expected value
-            assertApproxEqAbs(
+            assertApproxEqRel(
                 bridgeWell.nativeValue,
                 expectedValue,
                 0.10e18, // 10% tolarance
@@ -750,7 +750,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         // check that the actions with value has the expectedValue
         for (uint256 i = 0; i < actions.length; i++) {
             if (actions[i].value != 0) {
-                assertApproxEqAbs(
+                assertApproxEqRel(
                     actions[i].value,
                     expectedValue,
                     0.10e18,
