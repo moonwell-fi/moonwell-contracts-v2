@@ -457,10 +457,14 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 "xwell router bridge cost",
                 xWELLRouter(router).bridgeCost(wormholeChainId)
             );
-            uint256 bridgeCost = xWELLRouter(router).bridgeCost(
-                wormholeChainId
-            ) * 4; // make sure that the proposal does not revert due to bridge
+            // uint256 bridgeCost = xWELLRouter(router).bridgeCost(
+            //     wormholeChainId
+            // ) * 4; // make sure that the proposal does not revert due to bridge
             // cost changing
+            // hardcode bridgeCpost so we are able to find on chain match
+            // TODO undo this once figure out a way to get the bridge cost
+            // used in the proposal
+            uint256 bridgeCost = 51171320692171990572;
 
             console.log("bridge cost", bridgeCost);
 
