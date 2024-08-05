@@ -101,9 +101,9 @@ abstract contract Proposal is Script, Test {
 
     function printProposalActionSteps() public virtual;
 
-    function beforeSimulationHook(Addresses addresses) public virtual;
+    function beforeSimulationHook(Addresses) public virtual {}
 
-    function afterSimulationHook(Addresses addresses) public virtual;
+    function afterSimulationHook(Addresses) public virtual {}
 
     // @notice search for a on-chain proposal that matches the proposal calldata
     // @returns the proposal id, 0 if no proposal is found
