@@ -125,6 +125,18 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                 }
             }
 
+            bytes memory payload;
+            if (targets[targets.length - 1] == wormholeCore) {
+                // decode calldatas
+                (, payload, ) = abi.decode(
+                    calldatas[targets.length - 1].slice(
+                        4,
+                        calldatas[targets.length - 1].length - 4
+                    ),
+                    (uint32, bytes, uint8)
+                );
+            }
+
             {
                 // find match proposal
                 for (uint256 j = 0; j < proposalsPath.length; j++) {
@@ -167,21 +179,10 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                         // needs to mock wormhole bridge relayer
                         proposal.beforeSimulationHook(addresses);
 
-                        bytes memory payload;
                         if (targets[targets.length - 1] == wormholeCore) {
                             /// increments each time the Multichain Governor publishes a message
                             uint64 nextSequence = IWormhole(wormholeCore)
                                 .nextSequence(address(governor));
-
-                            // decode calldatas
-                            (, payload, ) = abi.decode(
-                                calldatas[targets.length - 1].slice(
-                                    4,
-                                    calldatas[targets.length - 1].length - 4
-                                ),
-                                (uint32, bytes, uint8)
-                            );
-
                             /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
                             vm.expectEmit(true, true, true, true, wormholeCore);
 
