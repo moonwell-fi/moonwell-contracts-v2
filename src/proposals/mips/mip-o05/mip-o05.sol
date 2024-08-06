@@ -56,8 +56,6 @@ contract mipo05 is HybridProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 11;
     }
 
     function primaryForkId() public pure override returns (uint256) {
