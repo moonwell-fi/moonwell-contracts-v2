@@ -138,7 +138,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
             }
 
             {
-                // find match proposal
+                // find the matching proposal
                 for (uint256 j = 0; j < proposalsPath.length; j++) {
                     string memory solPath;
                     if (proposalsPath[j].endsWith(".sh")) {
