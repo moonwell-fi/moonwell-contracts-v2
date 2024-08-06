@@ -27,7 +27,7 @@ Optimism deployment with the following details:
 - Oracle Feed:
   [weETH/ETH](https://optimistic.etherscan.io/address/0xb4479d436DDa5c1A79bD88D282725615202406E3)
 - Composite Oracle Feed: [weETH/ETH](https://optimistic.etherscan.io/address/
-  TODO FILL THIS IN)
+  TODO FILL THIS IN )
 
 **VELO**
 
