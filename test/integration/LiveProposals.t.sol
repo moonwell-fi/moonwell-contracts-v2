@@ -99,7 +99,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
                 address well = addresses.getAddress("xWELL_PROXY");
 
-                vm.warp(voteSnapshotTimestamp - 1);
+                vm.warp(10000);
 
                 deal(well, address(this), governor.quorum());
 
@@ -152,12 +152,17 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     Proposal proposal = Proposal(deployCode(solPath));
                     vm.makePersistent(address(proposal));
 
-                    vm.selectFork(uint256(proposal.primaryForkId()));
+                    vm.selectFork(proposal.primaryForkId());
 
-                    // runs pre build mock and build
+                    /// 1. initialize proposal object
+                    /// 2. run pre-build mock
+                    /// 3. build proposal calldata
+                    proposal.initProposal(addresses);
                     proposal.preBuildMock(addresses);
                     proposal.build(addresses);
+
                     uint256 proposalFileId;
+
                     if (proposal.isDeprecatedGovernor()) {
                         proposalFileId = proposal.getProposalId(
                             addresses,
@@ -198,136 +203,89 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
                         governor.execute{value: totalValue}(proposalIds[i]);
 
-                        vm.selectFork(uint256(proposal.primaryForkId()));
-                        proposal.afterSimulationHook(addresses);
+                        /// TODO: handle multichain proposals that talk to multiple external chains
+                        if (targets[targets.length - 1] == wormholeCore) {
+                            (
+                                address temporalGovernorAddress,
+                                address[] memory baseTargets,
+                                ,
 
-                        proposal.validate(addresses, address(proposal));
-                        break;
-                    }
-                }
-            }
+                            ) = abi.decode(
+                                    payload,
+                                    (address, address[], uint256[], bytes[])
+                                );
 
-            if (targets[targets.length - 1] == wormholeCore) {
-                (
-                    address temporalGovernorAddress,
-                    address[] memory baseTargets,
-                    ,
-
-                ) = abi.decode(
-                        payload,
-                        (address, address[], uint256[], bytes[])
-                    );
-
-                vm.selectFork(BASE_FORK_ID);
-                // check if the Temporal Governor address exist on the base chain
-                if (address(temporalGovernorAddress).code.length == 0) {
-                    // if not, checkout to Optimism fork id
-                    vm.selectFork(OPTIMISM_FORK_ID);
-                }
-
-                address expectedTemporalGov = addresses.getAddress(
-                    "TEMPORAL_GOVERNOR"
-                );
-
-                require(
-                    temporalGovernorAddress == expectedTemporalGov,
-                    "Temporal Governor address mismatch"
-                );
-
-                checkBaseOptimismActions(baseTargets);
-
-                bytes memory vaa = generateVAA(
-                    uint32(block.timestamp),
-                    block.chainid.toMoonbeamWormholeChainId(),
-                    address(governor).toBytes(),
-                    payload
-                );
-
-                TemporalGovernor temporalGovernor = TemporalGovernor(
-                    payable(expectedTemporalGov)
-                );
-
-                {
-                    // Deploy the modified Wormhole Core implementation contract which
-                    // bypass the guardians signature check
-                    Implementation core = new Implementation();
-                    address wormhole = addresses.getAddress(
-                        "WORMHOLE_CORE",
-                        block.chainid
-                    );
-
-                    /// Set the wormhole core address to have the
-                    /// runtime bytecode of the mock core
-                    vm.etch(wormhole, address(core).code);
-                }
-
-                temporalGovernor.queueProposal(vaa);
-
-                vm.warp(block.timestamp + temporalGovernor.proposalDelay());
-
-                try temporalGovernor.executeProposal(vaa) {} catch (
-                    bytes memory e
-                ) {
-                    console.log("Error executing proposal", proposalIds[i]);
-                    console.log(string(e));
-
-                    // find match proposal
-
-                    for (uint256 j = 0; j < proposalsPath.length; j++) {
-                        Proposal proposal;
-                        {
-                            string memory solPath;
-                            if (proposalsPath[j].endsWith(".sh")) {
-                                solPath = executeShellFile(proposalsPath[j]);
-                                console.log("Proposal path", solPath);
-                            } else {
-                                solPath = proposalsPath[j];
+                            vm.selectFork(BASE_FORK_ID);
+                            // check if the Temporal Governor address exist on the base chain
+                            if (
+                                address(temporalGovernorAddress).code.length ==
+                                0
+                            ) {
+                                // if not, checkout to Optimism fork id
+                                vm.selectFork(OPTIMISM_FORK_ID);
                             }
 
-                            console.log("Proposal path", solPath);
-
-                            proposal = Proposal(deployCode(solPath));
-                        }
-
-                        vm.makePersistent(address(proposal));
-
-                        vm.selectFork(uint256(proposal.primaryForkId()));
-
-                        // runs pre build mock and build
-                        proposal.preBuildMock(addresses);
-                        proposal.build(addresses);
-
-                        uint256 proposalFileId;
-                        if (proposal.isDeprecatedGovernor()) {
-                            proposalFileId = proposal.getProposalId(
-                                addresses,
-                                addresses.getAddress(
-                                    "ARTEMIS_GOVERNOR",
-                                    block.chainid.toMoonbeamChainId()
-                                )
+                            address expectedTemporalGov = addresses.getAddress(
+                                "TEMPORAL_GOVERNOR"
                             );
-                        } else {
-                            proposalFileId = proposal.getProposalId(
-                                addresses,
-                                address(governor)
-                            );
-                        }
 
-                        // if proposal is the one that failed, run the temporal
-                        // governor execution again
-                        if (proposalFileId == proposalIds[i]) {
-                            // foundry selectFork resets warp, so we need to warp again
+                            require(
+                                temporalGovernorAddress == expectedTemporalGov,
+                                "Temporal Governor address mismatch"
+                            );
+
+                            checkBaseOptimismActions(baseTargets);
+
+                            bytes memory vaa = generateVAA(
+                                uint32(block.timestamp),
+                                block.chainid.toMoonbeamWormholeChainId(),
+                                address(governor).toBytes(),
+                                payload
+                            );
+
+                            TemporalGovernor temporalGovernor = TemporalGovernor(
+                                    payable(expectedTemporalGov)
+                                );
+
+                            {
+                                // Deploy the modified Wormhole Core implementation contract which
+                                // bypass the guardians signature check
+                                Implementation core = new Implementation();
+                                address wormhole = addresses.getAddress(
+                                    "WORMHOLE_CORE",
+                                    block.chainid
+                                );
+
+                                /// Set the wormhole core address to have the
+                                /// runtime bytecode of the mock core
+                                vm.etch(wormhole, address(core).code);
+                            }
+
+                            temporalGovernor.queueProposal(vaa);
+
                             vm.warp(
                                 block.timestamp +
                                     temporalGovernor.proposalDelay()
                             );
 
-                            temporalGovernor.executeProposal(vaa);
-
-                            // no need to select fork as we are already on base
-                            proposal.validate(addresses, address(proposal));
-                            break;
+                            try temporalGovernor.executeProposal(vaa) {} catch (
+                                bytes memory e
+                            ) {
+                                console.log(
+                                    string(
+                                        abi.encodePacked(
+                                            "Error executing proposal, error: ",
+                                            string(e)
+                                        )
+                                    )
+                                );
+                            }
                         }
+                        vm.selectFork(uint256(proposal.primaryForkId()));
+                        proposal.afterSimulationHook(addresses);
+
+                        proposal.validate(addresses, address(proposal));
+                        break;
                     }
                 }
             }
