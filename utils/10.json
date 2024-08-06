@@ -70,6 +70,11 @@
         "name": "cbETH"
     },
     {
+        "addr": "0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF",
+        "isContract": true,
+        "name": "weETH"
+    },
+    {
         "addr": "0x138b809B8472fF09Cd3E075E6EcbB2e42D41d870",
         "isContract": true,
         "name": "CHAINLINK_cbETH_ETH"
@@ -93,6 +98,11 @@
         "addr": "0xc095cb1A6B41A5Cd7dAaF993a904afDD74758D71",
         "isContract": true,
         "name": "CHAINLINK_RETH_USD_COMPOSITE_ORACLE"
+    },
+    {
+        "addr": "0xb4479d436DDa5c1A79bD88D282725615202406E3",
+        "isContract": true,
+        "name": "CHAINLINK_WEETH_ORACLE"
     },
     {
         "addr": "0x4200000000000000000000000000000000000042",
