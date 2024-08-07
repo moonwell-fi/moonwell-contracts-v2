@@ -5,6 +5,7 @@ import "@forge-std/Test.sol";
 
 import "@protocol/utils/ChainIds.sol";
 
+import {console} from "@forge-std/console.sol";
 import {Bytes} from "@utils/Bytes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
@@ -20,6 +21,8 @@ import {ChainIds, MOONBEAM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, BASE_FORK_
 
 contract LiveProposalsIntegrationTest is Test, ProposalChecker {
     using String for string;
+    using stdJson for string;
+
     using Bytes for bytes;
     using Address for *;
     using ChainIds for uint256;
@@ -28,7 +31,11 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
     Addresses addresses;
 
     /// @notice Multichain Governor address
-    address payable governor;
+    MultichainGovernor governor;
+
+    string[] public proposalsPath;
+
+    uint256[] public proposalIds;
 
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
@@ -45,15 +52,11 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        governor = payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"));
-    }
+        address governorAddress = addresses.getAddress(
+            "MULTICHAIN_GOVERNOR_PROXY"
+        );
 
-    function testActiveProposals() public {
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        MultichainGovernor governorContract = MultichainGovernor(governor);
-
-        uint256[] memory proposalIds = governorContract.liveProposals();
+        governor = MultichainGovernor(payable(governorAddress));
 
         string[] memory inputs = new string[](1);
         inputs[0] = "bin/get-latest-proposals.sh";
@@ -61,19 +64,21 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         string memory output = string(vm.ffi(inputs));
 
         // create array splitting the output string
-        string[] memory proposalsPath = output.split(",");
+        proposalsPath = output.split("\n");
+
+        proposalIds = governor.liveProposals();
+    }
+
+    function testActiveProposals() public {
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         for (uint256 i = 0; i < proposalIds.length; i++) {
             /// always need to select MOONBEAM_FORK_ID before executing a
             /// proposal as end of loop could switch to base for execution
             vm.selectFork(MOONBEAM_FORK_ID);
 
-            uint256 proposalId = proposalIds[i];
-            (
-                address[] memory targets,
-                ,
-                bytes[] memory calldatas
-            ) = governorContract.getProposalData(proposalId);
+            (address[] memory targets, , bytes[] memory calldatas) = governor
+                .getProposalData(proposalIds[i]);
 
             addresses.addRestriction(MOONBEAM_CHAIN_ID);
 
@@ -90,19 +95,19 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     ,
                     ,
 
-                ) = governorContract.proposalInformation(proposalId);
+                ) = governor.proposalInformation(proposalIds[i]);
 
                 address well = addresses.getAddress("xWELL_PROXY");
 
                 vm.warp(voteSnapshotTimestamp - 1);
 
-                deal(well, address(this), governorContract.quorum());
+                deal(well, address(this), governor.quorum());
 
                 xWELL(well).delegate(address(this));
 
                 vm.warp(votingStartTime);
 
-                governorContract.castVote(proposalId, 0);
+                governor.castVote(proposalIds[i], 0);
                 vm.warp(crossChainVoteCollectionEndTimestamp + 1);
             }
 
@@ -110,43 +115,41 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
             address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
             addresses.removeRestriction();
 
-            uint256 lastIndex = targets.length - 1;
-            bytes memory payload;
-            if (targets[lastIndex] == wormholeCore) {
-                /// increments each time the Multichain Governor publishes a message
-                uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
-                    governor
+            uint256 totalValue = 0;
+            {
+                (, uint256[] memory values, ) = governor.getProposalData(
+                    proposalIds[i]
                 );
+                for (uint256 j = 0; j < values.length; j++) {
+                    totalValue += values[j];
+                }
+            }
 
+            bytes memory payload;
+            if (targets[targets.length - 1] == wormholeCore) {
                 // decode calldatas
                 (, payload, ) = abi.decode(
-                    calldatas[lastIndex].slice(
+                    calldatas[targets.length - 1].slice(
                         4,
-                        calldatas[lastIndex].length - 4
+                        calldatas[targets.length - 1].length - 4
                     ),
                     (uint32, bytes, uint8)
                 );
-
-                /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
-                vm.expectEmit(true, true, true, true, wormholeCore);
-
-                /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
-                emit LogMessagePublished(
-                    governor,
-                    nextSequence,
-                    0,
-                    payload,
-                    200
-                );
             }
 
-            try governorContract.execute(proposalId) {} catch (bytes memory e) {
-                console.log("Error executing proposal", proposalId);
-                console.log(string(e));
-
+            {
                 // find match proposal
                 for (uint256 j = 0; j < proposalsPath.length; j++) {
-                    Proposal proposal = Proposal(deployCode(proposalsPath[j]));
+                    string memory solPath;
+                    if (proposalsPath[j].endsWith(".sh")) {
+                        solPath = executeShellFile(proposalsPath[j]);
+                    } else {
+                        solPath = proposalsPath[j];
+                    }
+
+                    console.log("Proposal path", solPath);
+
+                    Proposal proposal = Proposal(deployCode(solPath));
                     vm.makePersistent(address(proposal));
 
                     vm.selectFork(uint256(proposal.primaryForkId()));
@@ -154,53 +157,89 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                     // runs pre build mock and build
                     proposal.preBuildMock(addresses);
                     proposal.build(addresses);
+                    uint256 proposalFileId;
+                    if (proposal.isDeprecatedGovernor()) {
+                        proposalFileId = proposal.getProposalId(
+                            addresses,
+                            addresses.getAddress(
+                                "ARTEMIS_GOVERNOR",
+                                block.chainid.toMoonbeamChainId()
+                            )
+                        );
+                    } else {
+                        proposalFileId = proposal.getProposalId(
+                            addresses,
+                            address(governor)
+                        );
+                    }
 
                     // if proposal is the one that failed, run the proposal again
-                    if (
-                        proposal.getProposalId(addresses, governor) ==
-                        proposalId
-                    ) {
+                    if (proposalFileId == proposalIds[i]) {
                         vm.selectFork(MOONBEAM_FORK_ID);
-                        governorContract.execute(proposalId);
+                        // needs to mock wormhole bridge relayer
+                        proposal.beforeSimulationHook(addresses);
+
+                        if (targets[targets.length - 1] == wormholeCore) {
+                            /// increments each time the Multichain Governor publishes a message
+                            uint64 nextSequence = IWormhole(wormholeCore)
+                                .nextSequence(address(governor));
+                            /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
+                            vm.expectEmit(true, true, true, true, wormholeCore);
+
+                            /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
+                            emit LogMessagePublished(
+                                address(governor),
+                                nextSequence,
+                                0,
+                                payload,
+                                200
+                            );
+                        }
+
+                        governor.execute{value: totalValue}(proposalIds[i]);
 
                         vm.selectFork(uint256(proposal.primaryForkId()));
+                        proposal.afterSimulationHook(addresses);
+
                         proposal.validate(addresses, address(proposal));
                         break;
                     }
                 }
             }
 
-            if (targets[lastIndex] == wormholeCore) {
+            if (targets[targets.length - 1] == wormholeCore) {
+                (
+                    address temporalGovernorAddress,
+                    address[] memory baseTargets,
+                    ,
+
+                ) = abi.decode(
+                        payload,
+                        (address, address[], uint256[], bytes[])
+                    );
+
                 vm.selectFork(BASE_FORK_ID);
+                // check if the Temporal Governor address exist on the base chain
+                if (address(temporalGovernorAddress).code.length == 0) {
+                    // if not, checkout to Optimism fork id
+                    vm.selectFork(OPTIMISM_FORK_ID);
+                }
 
                 address expectedTemporalGov = addresses.getAddress(
                     "TEMPORAL_GOVERNOR"
                 );
 
-                {
-                    // decode payload
-                    (
-                        address temporalGovernorAddress,
-                        address[] memory baseTargets,
-                        ,
+                require(
+                    temporalGovernorAddress == expectedTemporalGov,
+                    "Temporal Governor address mismatch"
+                );
 
-                    ) = abi.decode(
-                            payload,
-                            (address, address[], uint256[], bytes[])
-                        );
-
-                    require(
-                        temporalGovernorAddress == expectedTemporalGov,
-                        "Temporal Governor address mismatch"
-                    );
-
-                    checkBaseOptimismActions(baseTargets);
-                }
+                checkBaseOptimismActions(baseTargets);
 
                 bytes memory vaa = generateVAA(
                     uint32(block.timestamp),
                     block.chainid.toMoonbeamWormholeChainId(),
-                    governor.toBytes(),
+                    address(governor).toBytes(),
                     payload
                 );
 
@@ -229,14 +268,27 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                 try temporalGovernor.executeProposal(vaa) {} catch (
                     bytes memory e
                 ) {
-                    console.log("Error executing proposal", proposalId);
+                    console.log("Error executing proposal", proposalIds[i]);
                     console.log(string(e));
 
                     // find match proposal
+
                     for (uint256 j = 0; j < proposalsPath.length; j++) {
-                        Proposal proposal = Proposal(
-                            deployCode(proposalsPath[j])
-                        );
+                        Proposal proposal;
+                        {
+                            string memory solPath;
+                            if (proposalsPath[j].endsWith(".sh")) {
+                                solPath = executeShellFile(proposalsPath[j]);
+                                console.log("Proposal path", solPath);
+                            } else {
+                                solPath = proposalsPath[j];
+                            }
+
+                            console.log("Proposal path", solPath);
+
+                            proposal = Proposal(deployCode(solPath));
+                        }
+
                         vm.makePersistent(address(proposal));
 
                         vm.selectFork(uint256(proposal.primaryForkId()));
@@ -245,12 +297,25 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                         proposal.preBuildMock(addresses);
                         proposal.build(addresses);
 
+                        uint256 proposalFileId;
+                        if (proposal.isDeprecatedGovernor()) {
+                            proposalFileId = proposal.getProposalId(
+                                addresses,
+                                addresses.getAddress(
+                                    "ARTEMIS_GOVERNOR",
+                                    block.chainid.toMoonbeamChainId()
+                                )
+                            );
+                        } else {
+                            proposalFileId = proposal.getProposalId(
+                                addresses,
+                                address(governor)
+                            );
+                        }
+
                         // if proposal is the one that failed, run the temporal
                         // governor execution again
-                        if (
-                            proposal.getProposalId(addresses, governor) ==
-                            proposalId
-                        ) {
+                        if (proposalFileId == proposalIds[i]) {
                             // foundry selectFork resets warp, so we need to warp again
                             vm.warp(
                                 block.timestamp +
@@ -301,4 +366,27 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         override
         returns (address[] memory, uint256[] memory, bytes[] memory)
     {}
+
+    // function to execute shell file to set env variables
+    function executeShellFile(
+        string memory path
+    ) public returns (string memory lastEnv) {
+        string[] memory inputs = new string[](1);
+        inputs[0] = string.concat("./", path);
+
+        string memory output = string(vm.ffi(inputs));
+        string[] memory envs = output.split("\n");
+
+        // call setEnv for each env variable
+        // so we can later call vm.envString
+        for (uint256 k = 0; k < envs.length; k++) {
+            string memory key = envs[k].split("=")[0];
+            string memory value = envs[k].split("=")[1];
+            vm.setEnv(key, value);
+
+            if (k == envs.length - 1) {
+                lastEnv = value;
+            }
+        }
+    }
 }

@@ -247,6 +247,8 @@ contract MultichainBaseTest is Test, MultichainGovernorDeploy, xWELLDeploy {
             addresses.voteCollectionProxy
         );
 
+        wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+
         xwell.addBridge(
             MintLimits.RateLimitMidPointInfo({
                 bridge: address(this),

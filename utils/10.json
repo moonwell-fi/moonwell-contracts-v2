@@ -350,8 +350,13 @@
         "name": "VOTE_COLLECTION_IMPL"
     },
     {
-        "addr": "0xD791292655A1d382FcC1a6Cb9171476cf91F2caa",
+        "addr": "0xBbC63D697077e06Da3830Bd1238886Ab6313e77d",
         "isContract": false,
         "name": "DEX_RELAYER"
+    },
+    {
+        "addr": "0x4F56443f075eF5c972A76365606bFBdBD37e146f",
+        "isContract": true,
+        "name": "FOUNDATION_OP_MULTISIG"
     }
 ]

@@ -2850,6 +2850,8 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         bytes memory payload = abi.encode(0, 0, 0);
         uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
 
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
+
         vm.deal(address(voteCollection), gasCost);
         vm.prank(address(voteCollection));
         vm.expectRevert("MultichainGovernor: invalid payload length");
@@ -2868,6 +2870,15 @@ contract MultichainGovernorVotingUnitTest is MultichainBaseTest {
         bytes memory payload = abi.encode(proposalId, 0, 0, 0);
         uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
 
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
+
+        assertTrue(
+            governor.isTrustedSender(
+                BASE_WORMHOLE_CHAIN_ID,
+                address(voteCollection)
+            ),
+            "sender not trusted"
+        );
         vm.deal(address(voteCollection), gasCost);
         vm.prank(address(voteCollection));
         vm.expectRevert(

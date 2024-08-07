@@ -20,6 +20,7 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 80;
+        isDeprecatedGovernor = true;
     }
 
     function primaryForkId() public pure override returns (uint256) {
