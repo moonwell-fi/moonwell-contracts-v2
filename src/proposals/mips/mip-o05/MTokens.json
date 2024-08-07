@@ -3,7 +3,7 @@
         "addressesString": "MOONWELL_weETH",
         "supplyCap": 170e18,
         "borrowCap": 85e18,
-        "collateralFactor": 0,
+        "collateralFactor": 0.74e18,
         "initialMintAmount": 1e12,
         "name": "Moonwell weETH",
         "priceFeedName": "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE",
