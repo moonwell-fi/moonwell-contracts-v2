@@ -158,25 +158,6 @@
         "seizeShare": 0.03e18,
         "supplyCap": 0,
         "borrowCap": 0,
-        "priceFeedName": "CHAINLINK_VELO_USD",
-        "tokenAddressName": "VELO",
-        "name": "Moonwell VELO",
-        "symbol": "mVELO",
-        "addressesString": "MOONWELL_VELO",
-        "jrm": {
-            "baseRatePerYear": 0.02e18,
-            "multiplierPerYear": 0.1e18,
-            "jumpMultiplierPerYear": 3.15e18,
-            "kink": 0.45e18
-        }
-    },
-    {
-        "initialMintAmount": 1e12,
-        "collateralFactor": 0,
-        "reserveFactor": 0.25e18,
-        "seizeShare": 0.03e18,
-        "supplyCap": 0,
-        "borrowCap": 0,
         "priceFeedName": "CHAINLINK_OP_USD",
         "tokenAddressName": "OP",
         "name": "Moonwell OP",
