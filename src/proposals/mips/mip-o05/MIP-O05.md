@@ -58,8 +58,8 @@ parameters for the weETH market:
 | Parameter            | Value |
 | -------------------- | ----- |
 | Collateral Factor    | 74%   |
-| Supply Cap           | 5     |
-| Borrow Cap           | 0     |
+| Supply Cap           | 170   |
+| Borrow Cap           | 85    |
 | Protocol Seize Share | 30%   |
 
 #### Interest Rate Parameters
