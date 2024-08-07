@@ -350,6 +350,11 @@ contract mipo04 is HybridProposal, Configs {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
 
+                require(
+                    config.emissionToken.code.length > 0,
+                    "emission token must have bytecode"
+                );
+
                 _pushAction(
                     address(mrd),
                     abi.encodeWithSignature(
