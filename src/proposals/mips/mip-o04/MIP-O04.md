@@ -9,7 +9,7 @@ was
 as an initial launch market for Moonwell on Optimism, but was inadvertently not
 included in the activation proposals
 ([MIP-O00](https://moonwell.fi/governance/proposal/moonbeam?id=106) and
-[MIP-O01](https://moonwell.fi/governance/proposal/moonbeam?id=107)). MIP-MO03
+[MIP-O01](https://moonwell.fi/governance/proposal/moonbeam?id=107)). MIP-MO04
 seeks to rectify this issue by activating a new VELO market through a bespoke
 Moonwell Improvement Proposal.
 
