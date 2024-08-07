@@ -1,8 +1,8 @@
 [
     {
         "addressesString": "MOONWELL_weETH",
-        "supplyCap": 5e18,
-        "borrowCap": 1,
+        "supplyCap": 170e18,
+        "borrowCap": 85e18,
         "collateralFactor": 0,
         "initialMintAmount": 1e12,
         "name": "Moonwell weETH",
