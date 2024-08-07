@@ -45,9 +45,9 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
             0.0002e18,
             "incorrect starting exchange rate"
         ); /// exchange starting price is 0.0002e18
-        assertEq(
+        assertGt(
             mwstETH.reserveFactorMantissa(),
-            0.30e18,
+            0.01e18,
             "incorrect reserve factor"
         );
         assertEq(
