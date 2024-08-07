@@ -23,7 +23,8 @@ Optimism deployment with the following details:
 **weETH**
 
 - Asset: weETH (Wrapped eETH)
-- Address: [Confirm Address]
+- Address:
+  [0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF](https://optimistic.etherscan.io/address/0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF)
 - Oracle Feed:
   [weETH/ETH](https://optimistic.etherscan.io/address/0xb4479d436DDa5c1A79bD88D282725615202406E3)
 - Composite Oracle Feed:
