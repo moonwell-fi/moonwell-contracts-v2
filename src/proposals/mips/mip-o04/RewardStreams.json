@@ -2,7 +2,7 @@
     {
         "borrowEmissionsPerSec": 1,
         "emissionToken": "0x4200000000000000000000000000000000000042",
-        "endTime": 1723240800,
+        "endTime": 1725593400,
         "mToken": "MOONWELL_VELO",
         "owner": "TEMPORAL_GOVERNOR",
         "supplyEmissionPerSec": 0
@@ -10,7 +10,7 @@
     {
         "borrowEmissionsPerSec": 1,
         "emissionToken": "0xA88594D404727625A9437C3f886C7643872296AE",
-        "endTime": 1723240800,
+        "endTime": 1725593400,
         "mToken": "MOONWELL_VELO",
         "owner": "TEMPORAL_GOVERNOR",
         "supplyEmissionPerSec": 0
