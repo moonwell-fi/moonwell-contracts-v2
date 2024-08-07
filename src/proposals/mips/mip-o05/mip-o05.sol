@@ -224,16 +224,6 @@ contract mipo05 is HybridProposal, Configs {
 
             cTokenConfigs = getCTokenConfigurations(block.chainid);
         }
-
-        for (uint256 i = 0; i < cTokenConfigs.length; i++) {
-            Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-
-            deal(
-                addresses.getAddress(config.tokenAddressName),
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                config.initialMintAmount
-            );
-        }
     }
 
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
