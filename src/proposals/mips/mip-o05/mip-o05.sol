@@ -378,6 +378,11 @@ contract mipo05 is HybridProposal, Configs {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
 
+                require(
+                    config.emissionToken.code.length > 0,
+                    "emission token not a contract"
+                );
+
                 _pushAction(
                     address(mrd),
                     abi.encodeWithSignature(
