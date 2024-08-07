@@ -56,8 +56,6 @@ contract mipb25 is HybridProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 11;
     }
 
     function primaryForkId() public pure override returns (uint256) {
@@ -379,6 +377,10 @@ contract mipb25 is HybridProposal, Configs {
         unchecked {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
+                require(
+                    config.emissionToken.code.length > 0,
+                    "emission token must have bytecode"
+                );
 
                 _pushAction(
                     address(mrd),
