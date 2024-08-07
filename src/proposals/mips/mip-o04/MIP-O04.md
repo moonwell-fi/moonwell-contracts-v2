@@ -27,7 +27,7 @@ deployment:
 This addition aligns with the original intent of including VELO in the initial
 set of markets for Moonwell's Optimism deployment.
 
-### VELO Parameters
+### Market Parameters
 
 Gauntlet, Moonwell's lead risk manager, has provided updated risk parameters for
 the VELO market in their risk parameter
