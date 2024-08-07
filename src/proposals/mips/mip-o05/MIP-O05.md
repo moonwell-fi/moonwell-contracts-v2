@@ -15,8 +15,13 @@ deployment with the following details:
 - Asset: weETH (Wrapped eETH)
 - Address:
   [0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF](https://optimistic.etherscan.io/token/0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF)
-- Oracle Feed:
+- Chainlink weETH/ETH Oracle Feed:
+  [0xb4479d436DDa5c1A79bD88D282725615202406E3](https://optimistic.etherscan.io/address/0xb4479d436DDa5c1A79bD88D282725615202406E3)
+- Chainlink ETH/USD Oracle Feed:
+  [0x13e3Ee699D1909E989722E753853AE30b17e08c5](https://optimistic.etherscan.io/address/0x13e3Ee699D1909E989722E753853AE30b17e08c5)
+- Chainlink Composite Oracle Feed:
   [0x512CE44e4F69A98bC42A57ceD8257e65e63cD74f](https://optimistic.etherscan.io/address/0x512CE44e4F69A98bC42A57ceD8257e65e63cD74f)
+-
 
 ### About weETH and Ether.fi
 
