@@ -1,4 +1,4 @@
-# MIP-O00: Optimism Activation
+# MIP-O00: Optimism Activation - Part 1
 
 I propose that the Moonwell DAO votes to authorize the activation of the
 Moonwell Protocol on [Optimism](https://www.optimism.io/). By leveraging
@@ -140,3 +140,9 @@ initial lending markets:
   [0xaddb6a0412de1ba0f936dcaeb8aaa24578dcf3b2](https://optimistic.etherscan.io/address/0xaddb6a0412de1ba0f936dcaeb8aaa24578dcf3b2)
 - **rETH**:
   [0x9bcef72be871e61ed4fbbc7630889bee758eb81d](https://optimistic.etherscan.io/address/0x9bcef72be871e61ed4fbbc763088)
+
+## Implementation
+
+This governance proposal accepts the administrator role as the Temporal Governor
+and creates the initial WELL reward configurations on all markets, enabling WELL
+rewards for both borrowing and lending.
