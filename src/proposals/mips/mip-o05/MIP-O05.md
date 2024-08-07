@@ -21,7 +21,6 @@ deployment with the following details:
   [0x13e3Ee699D1909E989722E753853AE30b17e08c5](https://optimistic.etherscan.io/address/0x13e3Ee699D1909E989722E753853AE30b17e08c5)
 - Chainlink Composite Oracle Feed:
   [0x512CE44e4F69A98bC42A57ceD8257e65e63cD74f](https://optimistic.etherscan.io/address/0x512CE44e4F69A98bC42A57ceD8257e65e63cD74f)
--
 
 ### About weETH and Ether.fi
 
