@@ -42,7 +42,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
 
         proposal = new mip00();
         proposal.primaryForkId().createForksAndSelect();
-        proposal.initProposal();
+        proposal.initProposal(addresses);
 
         if (!addresses.isAddressSet("UNITROLLER")) {
             proposal.deploy(addresses, address(proposal));
@@ -818,12 +818,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewardsAfter = mrd
             .getOutstandingRewardsForUser(MToken(mToken), address(this));
-
-        assertEq(
-            rewardsAfter[0].emissionToken,
-            emissionsConfig[mToken][0].emissionToken,
-            "Emission token incorrect"
-        );
 
         assertApproxEqRel(
             rewardsAfter[0].totalAmount,

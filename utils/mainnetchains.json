@@ -1,8 +1,14 @@
 [
     {
+        "name": "MOONBEAM",
+        "forkId": 0,
+        "chainId": 1284,
+        "wormholeChainId": 16
+    },
+    {
+        "name": "OPTIMISM",
         "chainId": 10,
         "forkId": 2,
-        "name": "OPTIMISM",
         "wormholeChainId": 24
     },
     {
@@ -10,11 +16,5 @@
         "forkId": 1,
         "name": "BASE",
         "wormholeChainId": 30
-    },
-    {
-        "chainId": 1284,
-        "forkId": 0,
-        "name": "MOONBEAM",
-        "wormholeChainId": 16
     }
 ]

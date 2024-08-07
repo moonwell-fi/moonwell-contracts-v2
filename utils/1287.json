@@ -25,7 +25,7 @@
         "isContract": false
     },
     {
-        "addr": "0x59Af53a4e8b940b9e4C317B83Bfc924A437D9d00",
+        "addr": "0x7a34BE9D160809F83755e2eb3b31B9ce58Df2178",
         "name": "xWELL_ROUTER",
         "isContract": true
     },
@@ -65,7 +65,7 @@
         "isContract": true
     },
     {
-        "addr": "0xd3e4bC4dEF4CfD0ddD67a8DaBA4C40644d63850a",
+        "addr": "0xff5CEE4791B13aC6F087aED0f8a1253758FB998A",
         "name": "xWELL_LOGIC",
         "isContract": true
     },
@@ -77,6 +77,11 @@
     {
         "addr": "0x599D4a1538d686814eE11b331EACBBa166D7C41a",
         "name": "DEPRECATED_MULTICHAIN_GOVERNOR_IMPL",
+        "isContract": true
+    },
+    {
+        "addr": "0xc0bc3243E5CA3017f258BDB3Bb3Bb96d6141AB2f",
+        "name": "MULTICHAIN_GOVERNOR_IMPL",
         "isContract": true
     },
     {
