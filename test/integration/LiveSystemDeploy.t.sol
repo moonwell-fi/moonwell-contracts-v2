@@ -322,17 +322,13 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
         );
 
-        mintAmount = bound(
-            mintAmount,
-            1 * 10 ** token.decimals(),
-            100_000_000 * 10 ** token.decimals()
-        );
-
-        address sender = address(this);
-
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
+
+        mintAmount = _bound(mintAmount, 1, _getMaxSupplyAmount(mToken));
+
+        address sender = address(this);
 
         uint256 startingTokenBalance = token.balanceOf(mToken);
 
@@ -361,19 +357,16 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
         );
 
-        borrowAmount = bound(
-            borrowAmount,
-            1 * 10 ** token.decimals(),
-            100_000_000 * 10 ** token.decimals()
-        );
-
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
 
+        borrowAmount = _bound(borrowAmount, 1000, _getMaxSupplyAmount(mToken));
+
         vm.warp(MToken(mToken).accrualBlockTimestamp());
 
-        _mintMToken(mToken, borrowAmount * 3);
+        _mintMToken(mToken, borrowAmount);
+        borrowAmount /= 10;
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(mToken);
@@ -430,17 +423,13 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
         );
 
-        supplyAmount = bound(
-            supplyAmount,
-            1 * 10 ** token.decimals(),
-            100_000_000 * 10 ** token.decimals()
-        );
-
-        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
-
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
+
+        supplyAmount = bound(supplyAmount, 10_000, _getMaxSupplyAmount(mToken));
+
+        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
 
         vm.warp(MToken(mToken).accrualBlockTimestamp());
 
@@ -480,18 +469,13 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
         IERC20 token = IERC20(
             addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
         );
-
-        borrowAmount = bound(
-            borrowAmount,
-            1 * 10 ** token.decimals(),
-            100_000_000 * 10 ** token.decimals()
-        );
-
-        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
-
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
+
+        borrowAmount = _bound(borrowAmount, 1, _getMaxBorrowAmount(mToken) / 3);
+
+        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
 
         _mintMToken(mToken, borrowAmount * 3);
 
@@ -579,17 +563,13 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
         );
 
-        supplyAmount = bound(
-            supplyAmount,
-            1 * 10 ** token.decimals(),
-            100_000_000 * 10 ** token.decimals()
-        );
-
-        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
-
         address mToken = addresses.getAddress(
             mTokensConfig[mTokenIndex].addressesString
         );
+
+        supplyAmount = bound(supplyAmount, 10_000, _getMaxSupplyAmount(mToken));
+
+        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
 
         vm.warp(MToken(mToken).accrualBlockTimestamp());
 
@@ -701,11 +681,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             mTokensConfig[mTokenIndex].tokenAddressName
         );
 
-        mintAmount = bound(
-            mintAmount,
-            1 * 10 ** IERC20(token).decimals(),
-            100_000_000 * 10 ** IERC20(token).decimals()
-        );
+        mintAmount = bound(mintAmount, 10_000, _getMaxSupplyAmount(mToken));
 
         _mintMToken(mToken, mintAmount);
 
@@ -714,6 +690,9 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
 
         // borrow
         uint256 borrowAmount = mintAmount / 3;
+        if (borrowAmount > _getMaxBorrowAmount(mToken)) {
+            borrowAmount = _getMaxBorrowAmount(mToken);
+        }
 
         {
             uint256 expectedCollateralFactor = 0.5e18;
@@ -844,4 +823,34 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
     }
 
     receive() external payable {}
+
+    function _getMaxSupplyAmount(
+        address mToken
+    ) internal view returns (uint256) {
+        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
+        if (supplyCap == 0) {
+            return 200_000;
+        }
+
+        uint256 totalCash = MToken(mToken).getCash();
+        uint256 totalBorrows = MToken(mToken).totalBorrows();
+        uint256 totalReserves = MToken(mToken).totalReserves();
+
+        // totalSupplies = totalCash + totalBorrows - totalReserves
+        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+
+        return supplyCap - totalSupplies - 1;
+    }
+
+    function _getMaxBorrowAmount(
+        address mToken
+    ) internal view returns (uint256) {
+        uint256 borrowCap = comptroller.borrowCaps(address(mToken));
+        if (borrowCap == 0) {
+            return 200_000;
+        }
+        uint256 totalBorrows = MToken(mToken).totalBorrows();
+
+        return borrowCap - totalBorrows - 1;
+    }
 }
