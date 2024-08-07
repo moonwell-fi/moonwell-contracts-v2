@@ -25,10 +25,30 @@ deployment:
   [VELO/USD](https://optimistic.etherscan.io/address/0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120)
 
 This addition aligns with the original intent of including VELO in the initial
-set of markets for Moonwell's Optimism deployment. Gauntlet, Moonwell's lead
-risk manager, will provide updated risk parameters for the VELO market in their
-imminent risk parameter recommendation proposal, ensuring that the VELO market
-is integrated with appropriate risk considerations.
+set of markets for Moonwell's Optimism deployment.
+
+### VELO Parameters
+
+Gauntlet, Moonwell's lead risk manager, has provided updated risk parameters for
+the VELO market in their risk parameter
+[recommendation proposal](https://forum.moonwell.fi/t/gauntlet-base-optimism-moonbeam-moonriver-monthly-recommendations-2024-08-01/1151/2?),
+ensuring that the VELO market is integrated with appropriate risk
+considerations.
+
+| Parameter         | Value     |
+| ----------------- | --------- |
+| Collateral Factor | 65%       |
+| Reserve Factor    | 25%       |
+| Seize Share       | 3%        |
+| Supply Cap        | 9,000,000 |
+| Borrow Cap        | 4,500,000 |
+
+| IR Parameters   | VELO |
+| --------------- | ---- |
+| Base            | 0.02 |
+| Kink            | 0.45 |
+| Multiplier      | 0.1  |
+| Jump Multiplier | 3.15 |
 
 ## Voting Options
 
