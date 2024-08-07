@@ -14,21 +14,5 @@
         "mToken": "MOONWELL_weETH",
         "owner": "TEMPORAL_GOVERNOR",
         "supplyEmissionPerSec": 0
-    },
-    {
-        "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x4200000000000000000000000000000000000042",
-        "endTime": 1725593400,
-        "mToken": "MOONWELL_VELO",
-        "owner": "TEMPORAL_GOVERNOR",
-        "supplyEmissionPerSec": 0
-    },
-    {
-        "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
-        "endTime": 1725593400,
-        "mToken": "MOONWELL_VELO",
-        "owner": "TEMPORAL_GOVERNOR",
-        "supplyEmissionPerSec": 0
     }
 ]

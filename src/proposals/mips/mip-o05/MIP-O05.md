@@ -1,42 +1,22 @@
-# MIP-O05: Add weETH and VELO Markets on Optimism
+# MIP-O05: Add weETH Market on Optimism
 
 ## Summary
 
-This proposal aims to add weETH (Wrapped eETH) and VELO as new markets on
-Moonwell's Optimism deployment. weETH is the non-rebasing equivalent of eETH, a
-liquid restaking token from [Ether.fi](https://ether.fi), representing ETH
-staked on the Beacon Chain. Additionally, this proposal aims to activate a new
-market for VELO, the utility token of [Velodrome](https://velodrome.finance), to
-Moonwell's Optimism deployment. VELO was
-[previously proposed](https://forum.moonwell.fi/t/activate-moonwell-protocol-on-optimism/1045)
-as an initial launch market for Moonwell on Optimism, but was inadvertently not
-included in the activation proposals
-([MIP-O00](https://moonwell.fi/governance/proposal/moonbeam?id=106) and
-[MIP-O01](https://moonwell.fi/governance/proposal/moonbeam?id=107)). MIP-O05
-seeks to rectify this issue by activating the VELO market with weETH.
+This proposal aims to add weETH (Wrapped eETH) as a new market on Moonwell's
+Optimism deployment. weETH is the non-rebasing equivalent of eETH, a liquid
+restaking token from [Ether.fi](https://ether.fi), representing ETH staked on
+the Beacon Chain.
 
 ## Proposal Details
 
-We propose adding weETH and VELO as new collateral assets on the Moonwell
-Optimism deployment with the following details:
-
-**weETH**
+We propose adding weETH as a new collateral asset on the Moonwell Optimism
+deployment with the following details:
 
 - Asset: weETH (Wrapped eETH)
 - Address:
-  [0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF](https://optimistic.etherscan.io/address/0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF)
+  [0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF](https://optimistic.etherscan.io/token/0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF)
 - Oracle Feed:
-  [weETH/ETH](https://optimistic.etherscan.io/address/0xb4479d436DDa5c1A79bD88D282725615202406E3)
-- Composite Oracle Feed:
-  [weETH/ETH](https://optimistic.etherscan.io/address/0x512CE44e4F69A98bC42A57ceD8257e65e63cD74f)
-
-**VELO**
-
-- Asset: Velodrome v2 (VELO)
-- Address:
-  [0x9560e827aF36c94D2Ac33a39bCE1Fe78631088Db](https://optimistic.etherscan.io/token/0x9560e827af36c94d2ac33a39bce1fe78631088db)
-- Oracle Feed:
-  [VELO/USD](https://optimistic.etherscan.io/address/0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120)
+  [0x512CE44e4F69A98bC42A57ceD8257e65e63cD74f](https://optimistic.etherscan.io/address/0x512CE44e4F69A98bC42A57ceD8257e65e63cD74f)
 
 ### About weETH and Ether.fi
 
@@ -63,7 +43,7 @@ Key points:
 ### Security and Smart Contract Information
 
 - Multiple audits performed (details available in
-  [Ether.fi documentation](https://etherfi.gitbook.io/etherfi)
+  [Ether.fi documentation](https://etherfi.gitbook.io/etherfi))
 - Active bug bounty program
 - DAO Governance with 3-day timelock before onchain upgrades/updates can be
   executed
@@ -94,8 +74,8 @@ parameters for the weETH market:
 
 ## Voting Options
 
-- For: Approve the addition of weETH and VELO as new markets on Moonwell's
-  Optimism deployment
-- Against: Reject the addition of weETH and VELO as new markets on Moonwell's
-  Optimism deployment
+- For: Approve the addition of weETH as a new market on Moonwell's Optimism
+  deployment
+- Against: Reject the addition of weETH as a new market on Moonwell's Optimism
+  deployment
 - Abstain
