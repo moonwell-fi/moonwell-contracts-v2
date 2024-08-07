@@ -16,7 +16,9 @@ deployment with the following details:
 - Address:
   [0x04c0599ae5a44757c0af6f9ec3b93da8976c150a](https://basescan.org/address/0x04c0599ae5a44757c0af6f9ec3b93da8976c150a#code)
 - Oracle Feed:
-  [weETH/eETH](https://basescan.org/address/0x35e9d7001819ea3b39da906ae6b06a62cfe2c181)
+  [weETH/ETH](https://basescan.org/address/0xFC1415403EbB0c693f9a7844b92aD2Ff24775C65)
+- Composite Oracle Feed:
+  [weETH/ETH/USD](https://basescan.org/address/0xe44b816FE6bc5047C22b9fA5e4D4c5c9747476b3)
 
 ### About weETH and Ether.fi
 
