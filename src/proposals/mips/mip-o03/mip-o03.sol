@@ -9,7 +9,7 @@ import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract mipO03 is HybridProposal, ParameterValidation {
+contract mipo03 is HybridProposal, ParameterValidation {
     using ProposalActions for *;
 
     string public constant override name = "MIP-O03";
