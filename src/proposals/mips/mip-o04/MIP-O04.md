@@ -18,10 +18,10 @@ Moonwell Improvement Proposal.
 We propose adding VELO as a new collateral asset on Moonwell's Optimism
 deployment:
 
-- Asset: Velodrome v2 (VELO)
-- Address:
+- **Asset**: Velodrome v2 (VELO)
+- **Address**:
   [0x9560e827aF36c94D2Ac33a39bCE1Fe78631088Db](https://optimistic.etherscan.io/token/0x9560e827af36c94d2ac33a39bce1fe78631088db)
-- Oracle Feed:
+- **Oracle Feed**:
   [VELO/USD](https://optimistic.etherscan.io/address/0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120)
 
 This addition aligns with the original intent of including VELO in the initial
@@ -31,7 +31,7 @@ set of markets for Moonwell's Optimism deployment.
 
 Gauntlet, Moonwell's lead risk manager, has provided updated risk parameters for
 the VELO market in their risk parameter
-[recommendation proposal](https://forum.moonwell.fi/t/gauntlet-base-optimism-moonbeam-moonriver-monthly-recommendations-2024-08-01/1151/2?),
+[recommendation proposal](https://forum.moonwell.fi/t/gauntlet-base-optimism-moonbeam-moonriver-monthly-recommendations-2024-08-01/1151/2),
 ensuring that the VELO market is integrated with appropriate risk
 considerations.
 
@@ -54,7 +54,8 @@ considerations.
 
 We propose the following voting options for the Moonwell community:
 
-- For: Approve the activation of a VELO market on Moonwell's Optimism deployment
-- Against: Reject the activation of a VELO market on Moonwell's Optimism
+- **For**: Approve the activation of a VELO market on Moonwell's Optimism
   deployment
-- Abstain
+- **Against**: Reject the activation of a VELO market on Moonwell's Optimism
+  deployment
+- **Abstain**
