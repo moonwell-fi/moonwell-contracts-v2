@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
-import {etch} from "@proposals/utils/PrecompileEtching.sol";
+
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
