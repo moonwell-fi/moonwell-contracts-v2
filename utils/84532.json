@@ -203,5 +203,10 @@
         "addr": "0xb6cbE1de9878547BbC8DdB7288A668AbF9F43d16",
         "isContract": true,
         "name": "VOTE_COLLECTION_IMPL"
+    },
+    {
+        "addr": "0x2dF0598Caa354D546dac1aAa0716553cEB81E8D8",
+        "isContract": true,
+        "name": "DEX_RELAYER"
     }
 ]
