@@ -534,7 +534,9 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         }
     }
 
-    function testGetAllMarketConfigs() public view {
+    function testGetAllMarketConfigs() public {
+        vm.selectFork(BASE_FORK_ID);
+
         MultiRewardDistributor mrd = MultiRewardDistributor(
             addresses.getAddress("MRD_PROXY")
         );
@@ -690,6 +692,12 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
     function testRetrieveGasPriceMoonbeamSucceeds() public {
         vm.selectFork(MOONBEAM_FORK_ID);
+        wormholeRelayerAdapter = WormholeRelayerAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
+        );
+
+        wormholeRelayerAdapter.setIsMultichainTest(true);
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
         uint256 gasCost = MultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
@@ -706,6 +714,13 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
     function testRetrieveGasPriceBaseSucceeds() public {
         vm.selectFork(BASE_FORK_ID);
+
+        wormholeRelayerAdapter = WormholeRelayerAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
+        );
+
+        wormholeRelayerAdapter.setIsMultichainTest(true);
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
         uint256 gasCost = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY")
