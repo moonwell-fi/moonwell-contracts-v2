@@ -23,9 +23,5 @@ jobs:
       - name: Live Proposal Integration Tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          chmod +x bin/get-latest-base-proposal.sh
-          chmod +x bin/get-latest-moonbeam-proposal.sh
-          chmod -R +x src/proposals/mips/
-          time forge test --mc LiveProposalsIntegrationTest --ffi -vvvvv
+        run: time forge test --mc LiveProposalsIntegrationTest -vvvvv
         shell: bash
