@@ -1790,6 +1790,11 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
+        vm.selectFork(MOONBEAM_FORK_ID);
+        vm.warp(crossChainVoteCollectionEndTimestamp - 1);
+
+        vm.selectFork(BASE_FORK_ID);
+
         vm.expectEmit(true, true, true, true, address(voteCollection));
         emit VotesEmitted(proposalId, forVotes, againstVotes, abstainVotes);
 
