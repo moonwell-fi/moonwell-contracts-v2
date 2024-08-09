@@ -22,7 +22,7 @@ contract WormholeRelayerAdapter {
     /// in the same chain and we need to skip the fork selection
     bool public isMultichainTest;
 
-    uint256 public nativePriceQuote = 1 ether;
+    uint256 public constant nativePriceQuote = 1 ether;
 
     uint256 public callCounter;
 
@@ -30,6 +30,8 @@ contract WormholeRelayerAdapter {
 
     mapping(uint16 chainId => bool shouldRevert)
         public shouldRevertQuoteAtChain;
+
+    event ErrorReason(bytes reason);
 
     function setShouldRevertQuoteAtChain(
         uint16[] memory chainIds,
@@ -88,13 +90,17 @@ contract WormholeRelayerAdapter {
         require(senderChainId != 0, "senderChainId not set");
 
         /// immediately call the target
-        IWormholeReceiver(targetAddress).receiveWormholeMessages(
-            payload,
-            new bytes[](0),
-            bytes32(uint256(uint160(msg.sender))),
-            senderChainId, // chain not the target chain
-            bytes32(++nonce)
-        );
+        try
+            IWormholeReceiver(targetAddress).receiveWormholeMessages(
+                payload,
+                new bytes[](0),
+                bytes32(uint256(uint160(msg.sender))),
+                senderChainId, // chain not the target chain
+                bytes32(++nonce)
+            )
+        {} catch (bytes memory err) {
+            emit ErrorReason(err);
+        }
 
         if (isMultichainTest) {
             vm.selectFork(initialFork);

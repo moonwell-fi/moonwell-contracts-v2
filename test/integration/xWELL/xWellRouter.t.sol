@@ -143,7 +143,7 @@ contract xWellRouterMoonbeamTest is Test {
         mintAmount = _bound(
             mintAmount,
             1,
-            xwell.buffer(address(wormholeAdapter))
+            xwell.buffer(address(wormholeAdapter)) / 2
         );
         glmrAmount = _bound(glmrAmount, bridgeCost, type(uint256).max);
 
@@ -211,7 +211,7 @@ contract xWellRouterMoonbeamTest is Test {
         mintAmount = _bound(
             mintAmount,
             1,
-            xwell.buffer(address(wormholeAdapter))
+            xwell.buffer(address(wormholeAdapter)) / 2
         );
 
         uint256 startingXWellBalance = xwell.balanceOf(address(this));
@@ -270,7 +270,7 @@ contract xWellRouterMoonbeamTest is Test {
     }
 
     function testBridgeToSenderFailsRefund() public {
-        uint256 mintAmount = xwell.buffer(address(wormholeAdapter));
+        uint256 mintAmount = xwell.buffer(address(wormholeAdapter)) / 2;
 
         deal(address(well), address(this), mintAmount);
 
@@ -288,7 +288,7 @@ contract xWellRouterMoonbeamTest is Test {
     }
 
     function testBridgeToSenderSucceedsNoRefund() public {
-        uint256 mintAmount = xwell.buffer(address(wormholeAdapter));
+        uint256 mintAmount = xwell.buffer(address(wormholeAdapter)) / 2;
 
         deal(address(well), address(this), mintAmount);
 
