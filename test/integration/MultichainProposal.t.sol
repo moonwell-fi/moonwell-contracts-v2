@@ -1368,6 +1368,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
+        uint256 proposalTime = block.timestamp;
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -1412,6 +1413,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             assertEq(againstVotes, 0, "incorrect against votes");
             assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
+
+        vm.warp(proposalTime + 1);
 
         /// vote yes on proposal
         voteCollection.castVote(proposalId, 0);
@@ -3025,6 +3028,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             calldatas,
             description
         );
+
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         assertEq(
             uint256(governor.state(proposalId)),
