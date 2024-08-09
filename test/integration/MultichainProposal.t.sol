@@ -1815,6 +1815,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
         voteCollection.emitVotes{value: bridgeCost}(proposalId);
 
+        vm.selectFork(BASE_FORK_ID);
+
         vm.deal(address(this), bridgeCost);
 
         vm.expectEmit(true, true, true, true, address(voteCollection));
