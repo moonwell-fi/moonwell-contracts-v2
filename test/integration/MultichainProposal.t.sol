@@ -114,7 +114,12 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
     function setUp() public override {
         vm.makePersistent(address(this));
 
+        /// new idea: make all forks start at the same timestamp
+        uint256 startTimestamp = block.timestamp;
+
         MOONBEAM_FORK_ID.createForksAndSelect();
+
+        vm.warp(startTimestamp);
         {
             Addresses tmpAddresses = new Addresses();
             vm.makePersistent(address(tmpAddresses));
@@ -128,6 +133,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
             {
                 vm.selectFork(BASE_FORK_ID);
+                vm.warp(startTimestamp);
 
                 xWELL baseWell = xWELL(tmpAddresses.getAddress("xWELL_PROXY"));
                 xWELLTotalSupplyBasePreProposal = baseWell.totalSupply();
@@ -143,6 +149,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
         proposalC = new mipm23c();
         proposalC.buildCalldata(addresses);
+        vm.warp(startTimestamp);
 
         /// switch back to Moonbeam after running proposals
         vm.selectFork(MOONBEAM_FORK_ID);
@@ -303,6 +310,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
                 );
 
                 vm.selectFork(OPTIMISM_FORK_ID);
+                vm.warp(startTimestamp);
 
                 /// stores the wormhole mock address in the wormholeRelayer variable
                 vm.store(
@@ -1388,7 +1396,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         {
             vm.selectFork(BASE_FORK_ID);
 
-            vm.warp(block.timestamp - 5);
+            vm.warp(proposalTime - 5);
             xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
             xwellMintAmount = xwell.buffer(
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
