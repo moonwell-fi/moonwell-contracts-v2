@@ -619,11 +619,11 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
             if (emissionConfig.endTime != 0) {
                 // new end time must be greater than the current end time
-                // assertGt(
-                //     setRewardSpeed.newEndTime,
-                //     emissionConfig.endTime,
-                //     "New end time must be greater than the current end time"
-                // );
+                assertGt(
+                    setRewardSpeed.newEndTime,
+                    emissionConfig.endTime,
+                    "New end time must be greater than the current end time"
+                );
 
                 _pushAction(
                     mrd,
@@ -764,9 +764,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         Addresses addresses,
         uint256 _chainId
     ) private {
-        console.log("block.chainid before switching forks: ", block.chainid);
         vm.selectFork(_chainId.toForkId());
-        console.log("block.chainid after switching forks: ", block.chainid);
 
         JsonSpecExternalChain memory spec = externalChainActions[_chainId];
 
