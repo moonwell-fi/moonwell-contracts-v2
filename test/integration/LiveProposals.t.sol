@@ -12,6 +12,7 @@ import {String} from "@utils/String.sol";
 import {Address} from "@utils/Address.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
+import {ProposalsHandler} from "@test/utils/ProposalsHandler.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
@@ -31,6 +32,9 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
     /// @notice addresses contract
     Addresses addresses;
+
+    /// @notice proposals handler
+    ProposalsHandler proposals;
 
     /// @notice Multichain Governor address
     MultichainGovernor governor;
@@ -55,6 +59,13 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         );
 
         governor = MultichainGovernor(payable(governorAddress));
+
+        proposals = new ProposalsHandler();
+        vm.makePersistent(address(proposals));
+
+        (string memory path, ) = proposals.getProposalById(34);
+
+        console.log("Proposal path: %s", path);
     }
 
     /// checks that all live proposals execute successfully
