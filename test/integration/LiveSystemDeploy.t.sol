@@ -237,7 +237,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
             mrd._updateEndTime(
                 MToken(mToken),
                 emissionsConfig[mToken][i].emissionToken,
-                emissionsConfig[mToken][i].endTime + 4 weeks
+                block.timestamp + 4 weeks
             );
 
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
@@ -248,7 +248,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError {
 
             assertEq(
                 config.endTime,
-                emissionsConfig[mToken][i].endTime + 4 weeks,
+                block.timestamp + 4 weeks,
                 "End time incorrect"
             );
         }
