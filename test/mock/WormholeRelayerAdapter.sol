@@ -90,17 +90,13 @@ contract WormholeRelayerAdapter {
         require(senderChainId != 0, "senderChainId not set");
 
         /// immediately call the target
-        try
-            IWormholeReceiver(targetAddress).receiveWormholeMessages(
-                payload,
-                new bytes[](0),
-                bytes32(uint256(uint160(msg.sender))),
-                senderChainId, // chain not the target chain
-                bytes32(++nonce)
-            )
-        {} catch (bytes memory err) {
-            emit ErrorReason(err);
-        }
+        IWormholeReceiver(targetAddress).receiveWormholeMessages(
+            payload,
+            new bytes[](0),
+            bytes32(uint256(uint160(msg.sender))),
+            senderChainId, // chain not the target chain
+            bytes32(++nonce)
+        );
 
         if (isMultichainTest) {
             vm.selectFork(initialFork);
