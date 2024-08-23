@@ -24,7 +24,6 @@ import {ChainIds, MOONBEAM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, BASE_FORK_
 
 contract LiveProposalsIntegrationTest is Test, ProposalChecker {
     using String for string;
-    using stdJson for string;
 
     using Bytes for bytes;
     using Address for *;
@@ -38,6 +37,9 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
     /// @notice Multichain Governor address
     MultichainGovernor governor;
+
+    /// @notice list of live proposals
+    uint256[] public proposalIds;
 
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
@@ -63,12 +65,8 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         proposals = new ProposalsHandler();
         vm.makePersistent(address(proposals));
 
-        (string memory path, ) = proposals.getProposalById(34);
-
-        console.log("Proposal path: %s", path);
+        proposalIds = governor.liveProposals();
     }
-
-    function testAna() public {}
 
     /// checks that all live proposals execute successfully
     function testExecutingLiveProposals() public {
@@ -76,7 +74,6 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         addresses.addRestriction(MOONBEAM_CHAIN_ID);
 
         address well = addresses.getAddress("xWELL_PROXY");
-        uint256[] memory proposalIds = governor.liveProposals();
 
         vm.warp(1000);
 
@@ -114,6 +111,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
             (, uint256[] memory values, ) = governor.getProposalData(
                 proposalIds[i]
             );
+
             for (uint256 j = 0; j < values.length; j++) {
                 totalValue += values[j];
             }
@@ -189,7 +187,6 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
 
         address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
         address well = addresses.getAddress("xWELL_PROXY");
-        uint256[] memory proposalIds = governor.liveProposals();
 
         vm.warp(1000);
 
@@ -319,6 +316,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
             ,
 
         ) = abi.decode(payload, (address, address[], uint256[], bytes[]));
+
         vm.selectFork(BASE_FORK_ID);
         // check if the Temporal Governor address exist on the base chain
         if (address(temporalGovernorAddress).code.length == 0) {
@@ -408,27 +406,4 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         override
         returns (address[] memory, uint256[] memory, bytes[] memory)
     {}
-
-    // function to execute shell file to set env variables
-    function executeShellFile(
-        string memory path
-    ) public returns (string memory lastEnv) {
-        string[] memory inputs = new string[](1);
-        inputs[0] = string.concat("./", path);
-
-        string memory output = string(vm.ffi(inputs));
-        string[] memory envs = output.split("\n");
-
-        // call setEnv for each env variable
-        // so we can later call vm.envString
-        for (uint256 k = 0; k < envs.length; k++) {
-            string memory key = envs[k].split("=")[0];
-            string memory value = envs[k].split("=")[1];
-            vm.setEnv(key, value);
-
-            if (k == envs.length - 1) {
-                lastEnv = value;
-            }
-        }
-    }
 }

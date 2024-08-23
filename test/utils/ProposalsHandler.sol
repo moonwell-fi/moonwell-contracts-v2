@@ -2,8 +2,12 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
+import {String} from "@utils/String.sol";
 
 contract ProposalsHandler is Test {
+    using stdJson for string;
+    using String for string;
+
     struct ProposalMap {
         string envPath;
         string path;
@@ -58,5 +62,28 @@ contract ProposalsHandler is Test {
     ) public view returns (uint256 proposalId, string memory envPath) {
         ProposalMap memory proposal = proposals[proposalPathToIndex[path]];
         return (proposal.proposalId, proposal.envPath);
+    }
+
+    // function to execute shell file to set env variables
+    function executeShellFile(
+        string memory path
+    ) public returns (string memory lastEnv) {
+        string[] memory inputs = new string[](1);
+        inputs[0] = string.concat("./", path);
+
+        string memory output = string(vm.ffi(inputs));
+        string[] memory envs = output.split("\n");
+
+        // call setEnv for each env variable
+        // so we can later call vm.envString
+        for (uint256 k = 0; k < envs.length; k++) {
+            string memory key = envs[k].split("=")[0];
+            string memory value = envs[k].split("=")[1];
+            vm.setEnv(key, value);
+
+            if (k == envs.length - 1) {
+                lastEnv = value;
+            }
+        }
     }
 }
