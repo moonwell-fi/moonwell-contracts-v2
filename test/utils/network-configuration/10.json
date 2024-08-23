@@ -1,0 +1,10 @@
+{
+  "markets": [
+    "MOONWELL_USDC",
+    "MOONWELL_USDT"
+    ],
+  "rewardTokens": [
+    "OP",
+    "xWELL_PROXY"
+  ]
+}

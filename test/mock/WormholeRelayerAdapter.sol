@@ -31,8 +31,6 @@ contract WormholeRelayerAdapter {
     mapping(uint16 chainId => bool shouldRevert)
         public shouldRevertQuoteAtChain;
 
-    event ErrorReason(bytes reason);
-
     function setShouldRevertQuoteAtChain(
         uint16[] memory chainIds,
         bool shouldRevert
