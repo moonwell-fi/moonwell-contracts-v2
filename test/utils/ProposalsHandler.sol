@@ -4,13 +4,8 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 contract ProposalsHandler is Test {
-    struct EnvironmentVariable {
-        string name;
-        string value;
-    }
-
     struct ProposalMap {
-        EnvironmentVariable[] environmentVariables;
+        string envPath;
         string path;
         uint256 proposalId;
     }
@@ -41,17 +36,11 @@ contract ProposalsHandler is Test {
     function addProposal(ProposalMap memory proposal) public {
         uint256 index = proposals.length;
 
+        proposals.push();
+
+        proposals[index].envPath = proposal.envPath;
         proposals[index].path = proposal.path;
         proposals[index].proposalId = proposal.proposalId;
-        proposals[index].environmentVariables = new EnvironmentVariable[](
-            proposal.environmentVariables.length
-        );
-
-        for (uint256 i = 0; i < proposal.environmentVariables.length; i++) {
-            proposals[index].environmentVariables.push(
-                proposal.environmentVariables[i]
-            );
-        }
 
         proposalIdToIndex[proposal.proposalId] = index;
         proposalPathToIndex[proposal.path] = index;
@@ -59,29 +48,15 @@ contract ProposalsHandler is Test {
 
     function getProposalById(
         uint256 id
-    )
-        public
-        view
-        returns (
-            string memory path,
-            EnvironmentVariable[] memory environmentVariables
-        )
-    {
+    ) public view returns (string memory path, string memory envPath) {
         ProposalMap memory proposal = proposals[proposalIdToIndex[id]];
-        return (proposal.path, proposal.environmentVariables);
+        return (proposal.path, proposal.envPath);
     }
 
     function getProposalByPath(
         string memory path
-    )
-        public
-        view
-        returns (
-            uint256 proposalId,
-            EnvironmentVariable[] memory environmentVariables
-        )
-    {
+    ) public view returns (uint256 proposalId, string memory envPath) {
         ProposalMap memory proposal = proposals[proposalPathToIndex[path]];
-        return (proposal.proposalId, proposal.environmentVariables);
+        return (proposal.proposalId, proposal.envPath);
     }
 }

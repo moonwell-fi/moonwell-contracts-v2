@@ -1,23 +1,6 @@
 [
     {
-        "environmentVariables": [
-            {
-                "name": "MIP_REWARDS_PATH",
-                "value": "src/proposals/mips/mip-o02/o02.json"
-            },
-            {
-                "name": "DESCRIPTION_PATH",
-                "value": "src/proposals/mips/mip-o02/o02.md"
-            },
-            {
-                "name": "CHAIN_ID",
-                "value": "10"
-            },
-            {
-                "name": "PRIMARY_FORK_ID",
-                "value": "0"
-            }
-        ],
+        "envPath": "src/proposals/mips/mip-o02/o02.sh",
         "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol:mipRewardsDistributionExternalChain",
         "proposalId": 34
     }

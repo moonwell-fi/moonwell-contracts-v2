@@ -68,6 +68,8 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         console.log("Proposal path: %s", path);
     }
 
+    function testAna() public {}
+
     /// checks that all live proposals execute successfully
     function testExecutingLiveProposals() public {
         vm.selectFork(MOONBEAM_FORK_ID);
