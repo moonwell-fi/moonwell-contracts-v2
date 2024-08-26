@@ -25,55 +25,38 @@ import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
 contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     using ChainIds for uint256;
 
-    struct NetworkConfig {
-        string[] markets;
-        string[] rewardTokens;
-    }
-
     MultiRewardDistributor mrd;
     Comptroller comptroller;
 
     address deprecatedMoonwellVelo;
 
-    address[] markets;
+    MToken[] mTokens;
 
-    address[] rewardTokens;
+    mapping(MToken => address[] rewardTokens) rewardsConfig;
 
     function setUp() public override {
-        super.setUp();
+        //super.setUp();
+        vm.createFork("optimism", 124540329);
 
         addresses = new Addresses();
-        vm.makePersistent(address(addresses));
 
-        address unitroller = addresses.getAddress("UNITROLLER");
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
 
-        string memory data = vm.readFile(
-            string(
-                abi.encodePacked(
-                    vm.projectRoot(),
-                    vm.envString("NETWORK_CONFIG")
-                )
-            )
-        );
+        MToken[] memory markets = comptroller.getAllMarkets();
 
-        bytes memory parsedJson = vm.parseJson(data);
+        for (uint256 i = 0; i < markets.length; i++) {
+            mTokens.push(markets[i]);
 
-        NetworkConfig memory jsonProposals = abi.decode(
-            parsedJson,
-            (NetworkConfig)
-        );
+            MultiRewardDistributorCommon.MarketConfig[] memory configs = mrd
+                .getAllMarketConfigs(markets[i]);
 
-        for (uint256 i = 0; i < jsonProposals.markets.length; i++) {
-            markets.push(addresses.getAddress(jsonProposals.markets[i]));
+            for (uint256 j = 0; j < configs.length; j++) {
+                rewardsConfig[markets[i]].push(configs[j].emissionToken);
+            }
         }
 
-        for (uint256 i = 0; i < jsonProposals.rewardTokens.length; i++) {
-            rewardTokens.push(
-                addresses.getAddress(jsonProposals.rewardTokens[i])
-            );
-        }
+        assertEq(mTokens.length > 0, true, "No markets found");
     }
 
     function _mintMToken(
@@ -162,160 +145,119 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         assertEq(gov.lastPauseTime(), block.timestamp);
     }
 
-    // function testFuzz_EmissionsAdminCanChangeOwner(
-    //     uint256 mTokenIndex,
-    //     address newOwner
-    // ) public {
-    //     Configs.CTokenConfiguration[] memory mTokensConfig = proposal
-    //         .getCTokenConfigurations(block.chainid);
-    //     mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
-    //     address emissionsAdmin = addresses.getAddress("TEMPORAL_GOVERNOR");
-    //     vm.assume(newOwner != emissionsAdmin);
+    function testFuzz_EmissionsAdminCanChangeOwner(
+        uint256 mTokenIndex,
+        address newOwner
+    ) public {
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        address emissionsAdmin = addresses.getAddress("TEMPORAL_GOVERNOR");
+        vm.assume(newOwner != emissionsAdmin);
 
-    //     vm.startPrank(emissionsAdmin);
+        vm.startPrank(emissionsAdmin);
 
-    //     address mToken = addresses.getAddress(
-    //         mTokensConfig[mTokenIndex].addressesString
-    //     );
-    //     vm.warp(MToken(mToken).accrualBlockTimestamp());
-    //     for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
-    //         mrd._updateOwner(
-    //             MToken(mToken),
-    //             emissionsConfig[mToken][i].emissionToken,
-    //             newOwner
-    //         );
-    //     }
-    //     vm.stopPrank();
-    // }
+        MToken mToken = mTokens[mTokenIndex];
 
-    // function testFuzz_EmissionsAdminCanChangeRewardStream(
-    //     uint256 mTokenIndex,
-    //     address newOwner
-    // ) public {
-    //     Configs.CTokenConfiguration[] memory mTokensConfig = proposal
-    //         .getCTokenConfigurations(block.chainid);
+        for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
+            mrd._updateOwner(mToken, rewardsConfig[mToken][i], newOwner);
+        }
+        vm.stopPrank();
+    }
 
-    //     mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
-    //     address emissionsAdmin = addresses.getAddress("TEMPORAL_GOVERNOR");
-    //     vm.assume(newOwner != emissionsAdmin);
+    function testFuzz_EmissionsAdminCanChangeRewardStream(
+        uint256 mTokenIndex,
+        address newOwner
+    ) public {
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        address emissionsAdmin = addresses.getAddress("TEMPORAL_GOVERNOR");
+        vm.assume(newOwner != emissionsAdmin);
 
-    //     vm.startPrank(emissionsAdmin);
-    //     address mToken = addresses.getAddress(
-    //         mTokensConfig[mTokenIndex].addressesString
-    //     );
-    //     vm.warp(MToken(mToken).accrualBlockTimestamp());
-    //     for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
-    //         mrd._updateBorrowSpeed(
-    //             MToken(mToken),
-    //             emissionsConfig[mToken][i].emissionToken,
-    //             0.123e18
-    //         );
-    //     }
-    //     vm.stopPrank();
-    // }
+        vm.startPrank(emissionsAdmin);
+        MToken mToken = mTokens[mTokenIndex];
 
-    // function testFuzz_UpdateEmissionConfigEndTimeSuccess(
-    //     uint256 mTokenIndex
-    // ) public {
-    //     Configs.CTokenConfiguration[] memory mTokensConfig = proposal
-    //         .getCTokenConfigurations(block.chainid);
+        for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
+            mrd._updateBorrowSpeed(mToken, rewardsConfig[mToken][i], 0.123e18);
+        }
+        vm.stopPrank();
+    }
 
-    //     mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
-    //     address mToken = addresses.getAddress(
-    //         mTokensConfig[mTokenIndex].addressesString
-    //     );
-    //     vm.warp(MToken(mToken).accrualBlockTimestamp());
-    //     vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+    function testFuzz_UpdateEmissionConfigEndTimeSuccess(
+        uint256 mTokenIndex
+    ) public {
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        MToken mToken = mTokens[mTokenIndex];
 
-    //     for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
-    //         mrd._updateEndTime(
-    //             MToken(mToken),
-    //             emissionsConfig[mToken][i].emissionToken,
-    //             block.timestamp + 4 weeks
-    //         );
+        vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
-    //         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-    //             .getConfigForMarket(
-    //                 MToken(mToken),
-    //                 emissionsConfig[mToken][i].emissionToken
-    //             );
+        for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
+            mrd._updateEndTime(
+                mToken,
+                rewardsConfig[mToken][i],
+                block.timestamp + 4 weeks
+            );
 
-    //         assertEq(
-    //             config.endTime,
-    //             block.timestamp + 4 weeks,
-    //             "End time incorrect"
-    //         );
-    //     }
-    //     vm.stopPrank();
-    // }
+            MultiRewardDistributorCommon.MarketConfig memory config = mrd
+                .getConfigForMarket(mToken, rewardsConfig[mToken][i]);
 
-    // function testFuzz_UpdateEmissionConfigSupplySuccess(
-    //     uint256 mTokenIndex
-    // ) public {
-    //     Configs.CTokenConfiguration[] memory mTokensConfig = proposal
-    //         .getCTokenConfigurations(block.chainid);
+            assertEq(
+                config.endTime,
+                block.timestamp + 4 weeks,
+                "End time incorrect"
+            );
+        }
+        vm.stopPrank();
+    }
 
-    //     mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
+    function testFuzz_UpdateEmissionConfigSupplySuccess(
+        uint256 mTokenIndex
+    ) public {
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
 
-    //     address mToken = addresses.getAddress(
-    //         mTokensConfig[mTokenIndex].addressesString
-    //     );
-    //     vm.warp(MToken(mToken).accrualBlockTimestamp());
-    //     for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
-    //         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    //         mrd._updateSupplySpeed(
-    //             MToken(mToken),
-    //             emissionsConfig[mToken][i].emissionToken,
-    //             1e18 /// pay 1 op per second in rewards
-    //         );
+        MToken mToken = mTokens[mTokenIndex];
 
-    //         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-    //             .getConfigForMarket(
-    //                 MToken(mToken),
-    //                 emissionsConfig[mToken][i].emissionToken
-    //             );
+        for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
+            vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+            mrd._updateSupplySpeed(
+                mToken,
+                rewardsConfig[mToken][i],
+                1e18 /// pay 1 op per second in rewards
+            );
 
-    //         assertEq(
-    //             config.supplyEmissionsPerSec,
-    //             1e18,
-    //             "Supply emissions incorrect"
-    //         );
-    //     }
-    // }
+            MultiRewardDistributorCommon.MarketConfig memory config = mrd
+                .getConfigForMarket(mToken, rewardsConfig[mToken][i]);
 
-    // function testFuzz_UpdateEmissionConfigBorrowSuccess(
-    //     uint256 mTokenIndex
-    // ) public {
-    //     Configs.CTokenConfiguration[] memory mTokensConfig = proposal
-    //         .getCTokenConfigurations(block.chainid);
+            assertEq(
+                config.supplyEmissionsPerSec,
+                1e18,
+                "Supply emissions incorrect"
+            );
+        }
+    }
 
-    //     mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
+    function testFuzz_UpdateEmissionConfigBorrowSuccess(
+        uint256 mTokenIndex
+    ) public {
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
 
-    //     address mToken = addresses.getAddress(
-    //         mTokensConfig[mTokenIndex].addressesString
-    //     );
-    //     vm.warp(MToken(mToken).accrualBlockTimestamp());
-    //     for (uint256 i = 0; i < emissionsConfig[mToken].length; i++) {
-    //         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    //         mrd._updateBorrowSpeed(
-    //             MToken(mToken),
-    //             emissionsConfig[mToken][i].emissionToken,
-    //             1e18 /// pay 1 op per second in rewards to borrowers
-    //         );
+        MToken mToken = mTokens[mTokenIndex];
 
-    //         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-    //             .getConfigForMarket(
-    //                 MToken(mToken),
-    //                 emissionsConfig[mToken][i].emissionToken
-    //             );
+        for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
+            vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+            mrd._updateBorrowSpeed(
+                mToken,
+                rewardsConfig[mToken][i],
+                1e18 /// pay 1 op per second in rewards to borrowers
+            );
 
-    //         assertEq(
-    //             config.borrowEmissionsPerSec,
-    //             1e18,
-    //             "Borrow emissions incorrect"
-    //         );
-    //     }
-    // }
+            MultiRewardDistributorCommon.MarketConfig memory config = mrd
+                .getConfigForMarket(mToken, rewardsConfig[mToken][i]);
+
+            assertEq(
+                config.borrowEmissionsPerSec,
+                1e18,
+                "Borrow emissions incorrect"
+            );
+        }
+    }
 
     // function testFuzz_MintMTokenSucceeds(
     //     uint256 mTokenIndex,
