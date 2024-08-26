@@ -259,121 +259,112 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         }
     }
 
-    // function testFuzz_MintMTokenSucceeds(
-    //     uint256 mTokenIndex,
-    //     uint256 mintAmount
-    // ) public {
-    //     Configs.CTokenConfiguration[] memory mTokensConfig = proposal
-    //         .getCTokenConfigurations(block.chainid);
+    function testFuzz_MintMTokenSucceeds(
+        uint256 mTokenIndex,
+        uint256 mintAmount
+    ) public {
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
 
-    //     mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
+        MToken mToken = mTokens[mTokenIndex];
 
-    //     IERC20 token = IERC20(
-    //         addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
-    //     );
+        uint256 max = _getMaxSupplyAmount(address(mToken));
 
-    //     mintAmount = bound(
-    //         mintAmount,
-    //         1 * 10 ** token.decimals(),
-    //         100_000_000 * 10 ** token.decimals()
-    //     );
+        if (max <= 1000e8) {
+            return;
+        }
 
-    //     address sender = address(this);
+        // 1000e8 to 90% of max supply
+        mintAmount = _bound(mintAmount, 1000e8, max - (max / 10));
 
-    //     address mToken = addresses.getAddress(
-    //         mTokensConfig[mTokenIndex].addressesString
-    //     );
+        IERC20 token = IERC20(MErc20(address(mToken)).underlying());
 
-    //     uint256 startingTokenBalance = token.balanceOf(mToken);
+        address sender = address(this);
+        uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
-    //     vm.warp(MToken(mToken).accrualBlockTimestamp());
+        bool minted = _mintMToken(address(mToken), mintAmount);
+        assertEq(minted, true, "Mint failed");
 
-    //     bool minted = _mintMToken(mToken, mintAmount);
-    //     if (!minted) {
-    //         return;
-    //     }
+        assertTrue(
+            MErc20Delegator(payable(address(mToken))).balanceOf(sender) > 0,
+            "mToken balance should be gt 0 after mint"
+        ); /// ensure balance is gt 0
 
-    //     assertTrue(
-    //         MErc20Delegator(payable(mToken)).balanceOf(sender) > 0,
-    //         "mToken balance should be gt 0 after mint"
-    //     ); /// ensure balance is gt 0
-    //     assertEq(
-    //         token.balanceOf(mToken) - startingTokenBalance,
-    //         mintAmount,
-    //         "Underlying balance not updated"
-    //     ); /// ensure underlying balance is sent to mToken
-    // }
+        assertEq(
+            token.balanceOf(address(mToken)) - startingTokenBalance,
+            mintAmount,
+            "Underlying balance not updated"
+        ); /// ensure underlying balance is sent to mToken
+    }
 
-    // function testFuzz_BorrowMTokenSucceed(
-    //     uint256 mTokenIndex,
-    //     uint256 borrowAmount
-    // ) public {
-    //     Configs.CTokenConfiguration[] memory mTokensConfig = proposal
-    //         .getCTokenConfigurations(block.chainid);
-
-    //     mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
-
-    //     IERC20 token = IERC20(
-    //         addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
-    //     );
-
-    //     borrowAmount = bound(
-    //         borrowAmount,
-    //         1 * 10 ** token.decimals(),
-    //         100_000_000 * 10 ** token.decimals()
-    //     );
-
-    //     address mToken = addresses.getAddress(
-    //         mTokensConfig[mTokenIndex].addressesString
-    //     );
-
-    //     vm.warp(MToken(mToken).accrualBlockTimestamp());
-
-    //     bool minted = _mintMToken(mToken, borrowAmount * 3);
-    //     if (!minted) {
-    //         return;
-    //     }
-
-    //     uint256 expectedCollateralFactor = 0.5e18;
-    //     (, uint256 collateralFactorMantissa) = comptroller.markets(mToken);
-    //     // check colateral factor
-    //     if (collateralFactorMantissa < expectedCollateralFactor) {
-    //         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    //         comptroller._setCollateralFactor(
-    //             MToken(mToken),
-    //             expectedCollateralFactor
-    //         );
-    //     }
-
-    //     address sender = address(this);
-
-    //     uint256 balanceBefore = sender.balance;
-
-    //     address[] memory mTokens = new address[](1);
-    //     mTokens[0] = mToken;
-
-    //     comptroller.enterMarkets(mTokens);
-    //     assertTrue(
-    //         comptroller.checkMembership(sender, MToken(mToken)),
-    //         "Membership check failed"
-    //     );
-
-    //     assertEq(
-    //         MErc20Delegator(payable(mToken)).borrow(borrowAmount),
-    //         0,
-    //         "Borrow failed"
-    //     );
-
-    //     if (address(token) == addresses.getAddress("WETH")) {
-    //         assertEq(sender.balance - balanceBefore, borrowAmount);
-    //     } else {
-    //         assertEq(
-    //             token.balanceOf(sender),
-    //             borrowAmount,
-    //             "Wrong borrow amount"
-    //         );
-    //     }
-    // }
+    //      function testFuzz_BorrowMTokenSucceed(
+    //          uint256 mTokenIndex,
+    //          uint256 mintAmount
+    //      ) public {
+    //          uint256 mintAmount = _bound(
+    //              mintAmount,
+    //              1e18,
+    //              _getMaxSupplyAmount(mTokenIndex)
+    //          );
+    //          mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+    //
+    //          MToken mToken = mTokens[mTokenIndex];
+    //
+    //          IERC20 token = IERC20(MErc20(address(mToken)).underlying());
+    //
+    //          borrowAmount = bound(
+    //              borrowAmount,
+    //              1 * 10 ** token.decimals(),
+    //              100_000_000 * 10 ** token.decimals()
+    //          );
+    //
+    //          vm.warp(MToken(mToken).accrualBlockTimestamp());
+    //
+    //          bool minted = _mintMToken(mToken, mintAmount);
+    //          if (!minted) {
+    //              return;
+    //          }
+    //
+    //          uint256 expectedCollateralFactor = 0.5e18;
+    //          (, uint256 collateralFactorMantissa) = comptroller.markets(mToken);
+    //
+    //          // check colateral factor
+    //          if (collateralFactorMantissa < expectedCollateralFactor) {
+    //              vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+    //              comptroller._setCollateralFactor(
+    //                  MToken(mToken),
+    //                  expectedCollateralFactor
+    //              );
+    //          }
+    //
+    //        address sender = address(this);
+    //
+    //        uint256 balanceBefore = sender.balance;
+    //
+    //        address[] memory mTokens = new address[](1);
+    //        mTokens[0] = mToken;
+    //
+    //        comptroller.enterMarkets(mTokens);
+    //        assertTrue(
+    //            comptroller.checkMembership(sender, MToken(mToken)),
+    //            "Membership check failed"
+    //        );
+    //
+    //        assertEq(
+    //            MErc20Delegator(payable(mToken)).borrow(borrowAmount),
+    //            0,
+    //            "Borrow failed"
+    //        );
+    //
+    //        if (address(token) == addresses.getAddress("WETH")) {
+    //            assertEq(sender.balance - balanceBefore, borrowAmount);
+    //        } else {
+    //            assertEq(
+    //                token.balanceOf(sender),
+    //                borrowAmount,
+    //                "Wrong borrow amount"
+    //            );
+    //        }
+    //    }
 
     // function testFuzz_SupplyReceivesRewards(
     //     uint256 mTokenIndex,
@@ -815,6 +806,24 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     //         "Supply side rewards not within 10%"
     //     );
     // }
+
+    function _getMaxSupplyAmount(
+        address mToken
+    ) internal view returns (uint256) {
+        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
+
+        uint256 totalCash = MToken(mToken).getCash();
+        uint256 totalBorrows = MToken(mToken).totalBorrows();
+        uint256 totalReserves = MToken(mToken).totalReserves();
+
+        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+
+        if (totalSupplies >= supplyCap) {
+            return 0;
+        }
+
+        return supplyCap - totalSupplies;
+    }
 
     receive() external payable {}
 }
