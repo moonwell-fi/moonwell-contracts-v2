@@ -369,279 +369,270 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         }
     }
 
-    // function testFuzz_SupplyReceivesRewards(
-    //     uint256 mTokenIndex,
-    //     uint256 supplyAmount,
-    //     uint256 toWarp
-    // ) public {
-    //     Configs.CTokenConfiguration[] memory mTokensConfig = proposal
-    //         .getCTokenConfigurations(block.chainid);
+    function testFuzz_SupplyReceivesRewards(
+        uint256 mTokenIndex,
+        uint256 supplyAmount,
+        uint256 toWarp
+    ) public {
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        MToken mToken = mTokens[mTokenIndex];
 
-    //     mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
+        uint256 max = _getMaxSupplyAmount(address(mToken));
 
-    //     IERC20 token = IERC20(
-    //         addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
-    //     );
+        if (max <= 1000e8) {
+            return;
+        }
 
-    //     supplyAmount = bound(
-    //         supplyAmount,
-    //         1 * 10 ** token.decimals(),
-    //         100_000_000 * 10 ** token.decimals()
-    //     );
+        // 1000e8 to 90% of max supply
+        supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
 
-    //     toWarp = _bound(toWarp, 1_000_000, 4 weeks);
+        MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
+            .getOutstandingRewardsForUser(MToken(mToken), address(this));
 
-    //     address mToken = addresses.getAddress(
-    //         mTokensConfig[mTokenIndex].addressesString
-    //     );
+        // check rewards are zero
+        for (uint256 i = 0; i < rewards.length; i++) {
+            assertEq(rewards[i].totalAmount, 0, "Rewards not zero");
+        }
 
-    //     vm.warp(MToken(mToken).accrualBlockTimestamp());
+        bool minted = _mintMToken(address(mToken), supplyAmount);
 
-    //     bool minted = _mintMToken(mToken, supplyAmount);
-    //     if (!minted) {
-    //         return;
-    //     }
+        if (!minted) {
+            return;
+        }
 
-    //     vm.warp(block.timestamp + toWarp);
+        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
 
-    //     Configs.EmissionConfig[] memory emissionConfig = emissionsConfig[
-    //         mToken
-    //     ];
+        vm.warp(block.timestamp + toWarp);
 
-    //     for (uint256 i = 0; i < emissionConfig.length; i++) {
-    //         uint256 expectedReward = (toWarp *
-    //             emissionConfig[i].supplyEmissionPerSec *
-    //             supplyAmount) / MErc20(mToken).totalSupply();
+        for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
+            uint256 supplyEmissionPerSec = mrd
+                .getConfigForMarket(mToken, rewardsConfig[mToken][i])
+                .supplyEmissionsPerSec;
 
-    //         assertEq(
-    //             mrd
-    //             .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
-    //                 .totalAmount,
-    //             expectedReward,
-    //             "Total rewards not correct"
-    //         );
-    //     }
-    // }
+            uint256 expectedReward = ((toWarp * supplyEmissionPerSec) /
+                MErc20(address(mToken)).totalSupply()) * supplyAmount;
 
-    // function testFuzz_BorrowReceivesRewards(
-    //     uint256 mTokenIndex,
-    //     uint256 borrowAmount,
-    //     uint256 toWarp
-    // ) public {
-    //     Configs.CTokenConfiguration[] memory mTokensConfig = proposal
-    //         .getCTokenConfigurations(block.chainid);
+            MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
+                .getOutstandingRewardsForUser(MToken(mToken), address(this));
 
-    //     mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
+            for (uint256 j = 0; j < rewards.length; j++) {
+                if (rewards[j].emissionToken != rewardsConfig[mToken][i]) {
+                    continue;
+                }
+                assertApproxEqRel(
+                    rewards[j].supplySide,
+                    expectedReward,
+                    0.1e18,
+                    "Supply rewards not correct"
+                );
+                assertApproxEqRel(
+                    rewards[j].totalAmount,
+                    expectedReward,
+                    0.1e18,
+                    "Total rewards not correct"
+                );
+            }
+        }
+    }
 
-    //     IERC20 token = IERC20(
-    //         addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
-    //     );
+    function testFuzz_BorrowReceivesRewards(
+        uint256 mTokenIndex,
+        uint256 supplyAmount,
+        uint256 toWarp
+    ) public {
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        MToken mToken = mTokens[mTokenIndex];
 
-    //     borrowAmount = bound(
-    //         borrowAmount,
-    //         1 * 10 ** token.decimals(),
-    //         100_000_000 * 10 ** token.decimals()
-    //     );
+        uint256 max = _getMaxSupplyAmount(address(mToken));
 
-    //     toWarp = _bound(toWarp, 1_000_000, 4 weeks);
+        if (max <= 1000e8) {
+            return;
+        }
 
-    //     address mToken = addresses.getAddress(
-    //         mTokensConfig[mTokenIndex].addressesString
-    //     );
+        // 1000e8 to 90% of max supply
+        supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
 
-    //     vm.warp(MToken(mToken).accrualBlockTimestamp());
+        bool minted = _mintMToken(address(mToken), supplyAmount);
 
-    //     bool minted = _mintMToken(mToken, borrowAmount * 3);
-    //     if (!minted) {
-    //         return;
-    //     }
+        if (!minted) {
+            return;
+        }
 
-    //     uint256 expectedCollateralFactor = 0.5e18;
-    //     (, uint256 collateralFactorMantissa) = comptroller.markets(mToken);
-    //     // check colateral factor
-    //     if (collateralFactorMantissa < expectedCollateralFactor) {
-    //         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    //         comptroller._setCollateralFactor(
-    //             MToken(mToken),
-    //             expectedCollateralFactor
-    //         );
-    //     }
+        uint256 expectedCollateralFactor = 0.5e18;
+        (, uint256 collateralFactorMantissa) = comptroller.markets(
+            address(mToken)
+        );
 
-    //     address sender = address(this);
+        // check colateral factor
+        if (collateralFactorMantissa < expectedCollateralFactor) {
+            vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+            comptroller._setCollateralFactor(
+                MToken(mToken),
+                expectedCollateralFactor
+            );
+        }
 
-    //     {
-    //         address[] memory mTokens = new address[](1);
-    //         mTokens[0] = mToken;
+        address sender = address(this);
 
-    //         comptroller.enterMarkets(mTokens);
-    //     }
+        {
+            address[] memory _mTokens = new address[](1);
+            _mTokens[0] = address(mToken);
 
-    //     assertTrue(
-    //         comptroller.checkMembership(sender, MToken(mToken)),
-    //         "Membership check failed"
-    //     );
+            comptroller.enterMarkets(_mTokens);
+        }
 
-    //     assertEq(
-    //         comptroller.borrowAllowed(mToken, sender, borrowAmount),
-    //         0,
-    //         "Borrow allowed"
-    //     );
+        assertTrue(
+            comptroller.checkMembership(sender, MToken(mToken)),
+            "Membership check failed"
+        );
 
-    //     assertEq(
-    //         MErc20Delegator(payable(mToken)).borrow(borrowAmount),
-    //         0,
-    //         "Borrow failed"
-    //     );
+        uint256 borrowAmount = supplyAmount / 3;
 
-    //     vm.warp(vm.getBlockTimestamp() + toWarp);
+        assertEq(
+            comptroller.borrowAllowed(address(mToken), sender, borrowAmount),
+            0,
+            "Borrow allowed"
+        );
 
-    //     Configs.EmissionConfig[] memory emissionConfig = emissionsConfig[
-    //         mToken
-    //     ];
+        assertEq(
+            MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
+            0,
+            "Borrow failed"
+        );
 
-    //     for (uint256 i = 0; i < emissionConfig.length; i++) {
-    //         uint256 expectedReward = _calculateBorrowRewards(
-    //             MToken(mToken),
-    //             emissionConfig[i].emissionToken,
-    //             sender
-    //         );
+        vm.warp(vm.getBlockTimestamp() + toWarp);
 
-    //         assertApproxEqRel(
-    //             mrd
-    //             .getOutstandingRewardsForUser(MToken(mToken), sender)[0]
-    //                 .totalAmount,
-    //             expectedReward,
-    //             0.1e18,
-    //             "Total rewards not correct"
-    //         );
+        for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
+            uint256 expectedReward = _calculateBorrowRewards(
+                MToken(mToken),
+                rewardsConfig[mToken][i],
+                sender
+            );
 
-    //         assertApproxEqRel(
-    //             mrd
-    //             .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
-    //                 .borrowSide,
-    //             expectedReward,
-    //             0.1e18,
-    //             "Borrow rewards not correct"
-    //         );
-    //     }
-    // }
+            assertApproxEqRel(
+                mrd
+                .getOutstandingRewardsForUser(MToken(mToken), sender)[0]
+                    .totalAmount,
+                expectedReward,
+                0.1e18,
+                "Total rewards not correct"
+            );
 
-    // function testFuzz_SupplyBorrowReceiveRewards(
-    //     uint256 mTokenIndex,
-    //     uint256 supplyAmount,
-    //     uint256 toWarp
-    // ) public {
-    //     Configs.CTokenConfiguration[] memory mTokensConfig = proposal
-    //         .getCTokenConfigurations(block.chainid);
+            assertApproxEqRel(
+                mrd
+                .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
+                    .borrowSide,
+                expectedReward,
+                0.1e18,
+                "Borrow rewards not correct"
+            );
+        }
+    }
 
-    //     mTokenIndex = _bound(mTokenIndex, 0, mTokensConfig.length - 1);
+    function testFuzz_SupplyBorrowReceiveRewards(
+        uint256 mTokenIndex,
+        uint256 supplyAmount,
+        uint256 toWarp
+    ) public {
+        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
 
-    //     IERC20 token = IERC20(
-    //         addresses.getAddress(mTokensConfig[mTokenIndex].tokenAddressName)
-    //     );
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        MToken mToken = mTokens[mTokenIndex];
 
-    //     supplyAmount = bound(
-    //         supplyAmount,
-    //         1 * 10 ** token.decimals(),
-    //         100_000_000 * 10 ** token.decimals()
-    //     );
+        uint256 max = _getMaxSupplyAmount(address(mToken));
 
-    //     toWarp = _bound(toWarp, 1_000_000, 4 weeks);
+        if (max <= 1000e8) {
+            return;
+        }
 
-    //     address mToken = addresses.getAddress(
-    //         mTokensConfig[mTokenIndex].addressesString
-    //     );
+        // 1000e8 to 90% of max supply
+        supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
 
-    //     vm.warp(MToken(mToken).accrualBlockTimestamp());
+        bool minted = _mintMToken(address(mToken), supplyAmount);
 
-    //     bool minted = _mintMToken(mToken, supplyAmount);
-    //     if (!minted) {
-    //         return;
-    //     }
+        if (!minted) {
+            return;
+        }
 
-    //     uint256 expectedCollateralFactor = 0.5e18;
-    //     (, uint256 collateralFactorMantissa) = comptroller.markets(mToken);
-    //     // check colateral factor
-    //     if (collateralFactorMantissa < expectedCollateralFactor) {
-    //         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-    //         comptroller._setCollateralFactor(
-    //             MToken(mToken),
-    //             expectedCollateralFactor
-    //         );
-    //     }
+        uint256 expectedCollateralFactor = 0.5e18;
+        (, uint256 collateralFactorMantissa) = comptroller.markets(
+            address(mToken)
+        );
 
-    //     address sender = address(this);
+        // check colateral factor
+        if (collateralFactorMantissa < expectedCollateralFactor) {
+            vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+            comptroller._setCollateralFactor(
+                MToken(mToken),
+                expectedCollateralFactor
+            );
+        }
 
-    //     address[] memory mTokens = new address[](1);
-    //     mTokens[0] = mToken;
+        address sender = address(this);
 
-    //     comptroller.enterMarkets(mTokens);
-    //     assertTrue(
-    //         comptroller.checkMembership(sender, MToken(mToken)),
-    //         "Membership check failed"
-    //     );
+        address[] memory _mTokens = new address[](1);
+        _mTokens[0] = address(mToken);
 
-    //     {
-    //         uint256 borrowAmount = supplyAmount / 3;
+        comptroller.enterMarkets(_mTokens);
+        assertTrue(
+            comptroller.checkMembership(sender, mToken),
+            "Membership check failed"
+        );
 
-    //         assertEq(
-    //             MErc20Delegator(payable(mToken)).borrow(borrowAmount),
-    //             0,
-    //             "Borrow failed"
-    //         );
-    //     }
+        {
+            uint256 borrowAmount = supplyAmount / 3;
 
-    //     vm.warp(block.timestamp + toWarp);
+            assertEq(
+                MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
+                0,
+                "Borrow failed"
+            );
+        }
 
-    //     Configs.EmissionConfig[] memory emissionConfig = emissionsConfig[
-    //         mToken
-    //     ];
+        vm.warp(block.timestamp + toWarp);
 
-    //     for (uint256 i = 0; i < emissionConfig.length; i++) {
-    //         MultiRewardDistributorCommon.MarketConfig memory config = mrd
-    //             .getConfigForMarket(
-    //                 MToken(mToken),
-    //                 emissionConfig[i].emissionToken
-    //             );
+        for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
+            MultiRewardDistributorCommon.MarketConfig memory config = mrd
+                .getConfigForMarket(MToken(mToken), rewardsConfig[mToken][i]);
 
-    //         uint256 expectedSupplyReward = (toWarp *
-    //             config.supplyEmissionsPerSec *
-    //             supplyAmount) / MErc20(mToken).totalSupply();
+            uint256 expectedSupplyReward = (toWarp *
+                config.supplyEmissionsPerSec *
+                supplyAmount) / MErc20(address(mToken)).totalSupply();
 
-    //         uint256 expectedBorrowReward = _calculateBorrowRewards(
-    //             MToken(mToken),
-    //             emissionConfig[i].emissionToken,
-    //             sender
-    //         );
+            uint256 expectedBorrowReward = _calculateBorrowRewards(
+                MToken(mToken),
+                rewardsConfig[mToken][i],
+                sender
+            );
 
-    //         assertApproxEqRel(
-    //             mrd
-    //             .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
-    //                 .totalAmount,
-    //             expectedSupplyReward + expectedBorrowReward,
-    //             0.1e18,
-    //             "Total rewards not correct"
-    //         );
+            assertApproxEqRel(
+                mrd
+                .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
+                    .totalAmount,
+                expectedSupplyReward + expectedBorrowReward,
+                0.1e18,
+                "Total rewards not correct"
+            );
 
-    //         assertApproxEqRel(
-    //             mrd
-    //             .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
-    //                 .supplySide,
-    //             expectedSupplyReward,
-    //             0.1e18,
-    //             "Supply rewards not correct"
-    //         );
+            assertApproxEqRel(
+                mrd
+                .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
+                    .supplySide,
+                expectedSupplyReward,
+                0.1e18,
+                "Supply rewards not correct"
+            );
 
-    //         assertApproxEqRel(
-    //             mrd
-    //             .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
-    //                 .borrowSide,
-    //             expectedBorrowReward,
-    //             0.1e18,
-    //             "Borrow rewards not correct"
-    //         );
-    //     }
-    // }
+            assertApproxEqRel(
+                mrd
+                .getOutstandingRewardsForUser(MToken(mToken), address(this))[0]
+                    .borrowSide,
+                expectedBorrowReward,
+                0.1e18,
+                "Borrow rewards not correct"
+            );
+        }
+    }
 
     // function testFuzz_LiquidateAccountReceiveRewards(
     //     uint256 mTokenIndex,
