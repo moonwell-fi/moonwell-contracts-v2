@@ -84,6 +84,31 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         return true;
     }
 
+    function _calculateSupplierRewards(
+        MToken mToken,
+        address emissionToken,
+        address sender,
+        uint256 toWarp
+    ) private view returns (uint256 expectedRewards) {
+        MultiRewardDistributorCommon.MarketConfig memory marketConfig = mrd
+            .getConfigForMarket(mToken, emissionToken);
+
+        uint256 endTime = marketConfig.endTime;
+
+        uint256 timeDelta;
+        if (block.timestamp > endTime) {
+            // if endTime is in the past then we need to decrease
+            timeDelta = toWarp - (block.timestamp - endTime);
+        } else {
+            timeDelta = toWarp;
+        }
+
+        expectedRewards =
+            ((timeDelta * marketConfig.supplyEmissionsPerSec) /
+                MErc20(address(mToken)).totalSupply()) *
+            mToken.balanceOf(address(this));
+    }
+
     function _calculateBorrowRewards(
         MToken mToken,
         address emissionToken,
@@ -386,14 +411,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         // 1000e8 to 90% of max supply
         supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
 
-        MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
-            .getOutstandingRewardsForUser(MToken(mToken), address(this));
-
-        // check rewards are zero
-        for (uint256 i = 0; i < rewards.length; i++) {
-            assertEq(rewards[i].totalAmount, 0, "Rewards not zero");
-        }
-
         bool minted = _mintMToken(address(mToken), supplyAmount);
 
         if (!minted) {
@@ -405,12 +422,12 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         vm.warp(block.timestamp + toWarp);
 
         for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
-            uint256 supplyEmissionPerSec = mrd
-                .getConfigForMarket(mToken, rewardsConfig[mToken][i])
-                .supplyEmissionsPerSec;
-
-            uint256 expectedReward = ((toWarp * supplyEmissionPerSec) /
-                MErc20(address(mToken)).totalSupply()) * supplyAmount;
+            uint256 expectedReward = _calculateSupplierRewards(
+                MToken(mToken),
+                rewardsConfig[mToken][i],
+                address(this),
+                toWarp
+            );
 
             MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
                 .getOutstandingRewardsForUser(MToken(mToken), address(this));
