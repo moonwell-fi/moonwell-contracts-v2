@@ -114,22 +114,19 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
     function setUp() public override {
         vm.makePersistent(address(this));
 
-        // do not start timestamp at 0
-        vm.warp(1234);
-        /// new idea: make all forks start at the same timestamp
-        uint256 startTimestamp = block.timestamp;
-
         MOONBEAM_FORK_ID.createForksAndSelect();
+
+        uint256 startTimestamp = block.timestamp;
 
         vm.warp(startTimestamp);
         {
-            Addresses tmpAddresses = new Addresses();
-            vm.makePersistent(address(tmpAddresses));
+            addresses = new Addresses();
+            vm.makePersistent(address(addresses));
 
-            xwell = xWELL(tmpAddresses.getAddress("xWELL_PROXY"));
+            xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
 
             xWELLBalanceLockboxPreProposal = xwell.balanceOf(
-                tmpAddresses.getAddress("xWELL_LOCKBOX")
+                addresses.getAddress("xWELL_LOCKBOX")
             );
             xWELLTotalSupplyMoonbeamPreProposal = xwell.totalSupply();
 
@@ -137,24 +134,17 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
                 vm.selectFork(BASE_FORK_ID);
                 vm.warp(startTimestamp);
 
-                xWELL baseWell = xWELL(tmpAddresses.getAddress("xWELL_PROXY"));
+                xWELL baseWell = xWELL(addresses.getAddress("xWELL_PROXY"));
                 xWELLTotalSupplyBasePreProposal = baseWell.totalSupply();
                 xWELLBalanceMRDPreProposal = baseWell.balanceOf(
-                    tmpAddresses.getAddress("MRD_PROXY")
+                    addresses.getAddress("MRD_PROXY")
                 );
+
+                vm.selectFork(MOONBEAM_FORK_ID);
             }
         }
 
-        super.setUp();
-
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        proposalC = new mipm23c();
-        proposalC.buildCalldata(addresses);
-        vm.warp(startTimestamp);
-
-        /// switch back to Moonbeam after running proposals
-        vm.selectFork(MOONBEAM_FORK_ID);
+        //super.setUp();
 
         voteCollection = MultichainVoteCollection(
             addresses.getAddress("VOTE_COLLECTION_PROXY", BASE_CHAIN_ID)
@@ -189,73 +179,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
         addresses.removeRestriction();
 
-        // make governor persistent so we can call receiveWormholeMessage on
-        // governor from base
-        vm.makePersistent(address(governor));
-        {
-            vm.selectFork(MOONBEAM_FORK_ID);
-
-            vm.etch(
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                type(WormholeRelayerAdapter).runtimeCode
-            );
-
-            wormholeRelayerAdapter = WormholeRelayerAdapter(
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
-            );
-
-            vm.makePersistent(address(wormholeRelayerAdapter));
-            vm.allowCheatcodes(address(wormholeRelayerAdapter));
-            wormholeRelayerAdapter.setIsMultichainTest(true);
-            wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
-
-            vm.label(
-                address(wormholeRelayerAdapter),
-                "MockWormholeRelayerAdapter"
-            );
-
-            wormholeRelayerAdapter.nativePriceQuote();
-
-            assertEq(
-                address(governor.wormholeRelayer()),
-                address(wormholeRelayerAdapter),
-                "wormhole relayer adapter not set"
-            );
-        }
-
-        {
-            vm.selectFork(BASE_FORK_ID);
-
-            assertEq(
-                address(voteCollection.wormholeRelayer()),
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                "incorrect wormhole relayer"
-            );
-
-            uint256 oldGasLimit = voteCollection.gasLimit();
-            // encode gasLimit and relayer address since is stored in a single slot
-            // relayer is first due to how evm pack values into a single storage
-            bytes32 encodedData = bytes32(
-                (uint256(uint160(address(wormholeRelayerAdapter))) << 96) |
-                    uint256(oldGasLimit)
-            );
-
-            vm.store(address(voteCollection), bytes32(uint256(0)), encodedData);
-
-            assertEq(
-                address(voteCollection.wormholeRelayer()),
-                address(wormholeRelayerAdapter),
-                "incorrect wormhole relayer"
-            );
-            assertEq(
-                voteCollection.gasLimit(),
-                oldGasLimit,
-                "incorrect gas limit vote collection"
-            );
-
-            stakedWellBase = IStakedWell(addresses.getAddress("STK_GOVTOKEN"));
-        }
-
         {
             vm.selectFork(MOONBEAM_FORK_ID);
 
@@ -264,19 +187,14 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             /// ----------------------------------------------------------
 
             /// mock relayer so we can simulate bridging well
-            WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
-            vm.makePersistent(address(wormholeRelayer));
-            vm.label(address(wormholeRelayer), "MockWormholeRelayer");
-            vm.etch(
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                address(wormholeRelayer).code
-            );
-            vm.makePersistent(addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"));
+            wormholeRelayerAdapter = new WormholeRelayerAdapter();
+            vm.makePersistent(address(wormholeRelayerAdapter));
+            vm.label(address(wormholeRelayerAdapter), "MockWormholeRelayer");
 
             /// we need to set this so that the relayer mock knows that for the next sendPayloadToEvm
             /// call it must switch forks
-            wormholeRelayer.setIsMultichainTest(true);
-            wormholeRelayer.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+            wormholeRelayerAdapter.setIsMultichainTest(true);
+            wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
 
             // set mock as the wormholeRelayer address on bridge adapter
             WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
@@ -288,53 +206,42 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             // encode gasLimit and relayer address since is stored in a single slot
             // relayer is first due to how evm pack values into a single storage
             bytes32 encodedData = bytes32(
-                (uint256(uint160(address(wormholeRelayer))) << 96) |
+                (uint256(uint160(address(wormholeRelayerAdapter))) << 96) |
                     uint256(gasLimit)
             );
 
-            {
-                vm.selectFork(BASE_FORK_ID);
+            vm.selectFork(BASE_FORK_ID);
+            vm.warp(startTimestamp);
 
-                /// stores the wormhole mock address in the wormholeRelayer variable
+            /// stores the wormhole mock address in the wormholeRelayer variable
+            vm.store(
+                address(wormholeBridgeAdapter),
+                bytes32(uint256(153)),
+                encodedData
+            );
 
-                vm.store(
-                    address(wormholeBridgeAdapter),
-                    bytes32(uint256(153)),
-                    encodedData
-                );
+            vm.selectFork(OPTIMISM_FORK_ID);
+            vm.warp(startTimestamp);
 
-                vm.etch(
-                    addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                    address(wormholeRelayer).code
-                );
-                vm.makePersistent(
-                    addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
-                );
+            /// stores the wormhole mock address in the wormholeRelayer variable
+            vm.store(
+                address(wormholeBridgeAdapter),
+                bytes32(uint256(153)),
+                encodedData
+            );
 
-                vm.selectFork(OPTIMISM_FORK_ID);
-                vm.warp(startTimestamp);
+            vm.selectFork(MOONBEAM_FORK_ID);
 
-                /// stores the wormhole mock address in the wormholeRelayer variable
-                vm.store(
-                    address(wormholeBridgeAdapter),
-                    bytes32(uint256(153)),
-                    encodedData
-                );
+            /// stores the wormhole mock address in the wormholeRelayer variable
+            vm.store(
+                address(wormholeBridgeAdapter),
+                bytes32(uint256(153)),
+                encodedData
+            );
 
-                vm.etch(
-                    addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                    address(wormholeRelayer).code
-                );
-                vm.makePersistent(
-                    addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
-                );
-
-                vm.selectFork(MOONBEAM_FORK_ID);
-
-                /// ----------------------------------------------------------
-                /// ----------------------------------------------------------
-                /// ----------------------------------------------------------
-            }
+            /// ----------------------------------------------------------
+            /// ----------------------------------------------------------
+            /// ----------------------------------------------------------
         }
     }
 
@@ -702,11 +609,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
     function testRetrieveGasPriceMoonbeamSucceeds() public {
         vm.selectFork(MOONBEAM_FORK_ID);
-        wormholeRelayerAdapter = WormholeRelayerAdapter(
-            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
-        );
-
-        wormholeRelayerAdapter.setIsMultichainTest(true);
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
         uint256 gasCost = MultichainGovernor(
@@ -725,11 +627,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
     function testRetrieveGasPriceBaseSucceeds() public {
         vm.selectFork(BASE_FORK_ID);
 
-        wormholeRelayerAdapter = WormholeRelayerAdapter(
-            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
-        );
-
-        wormholeRelayerAdapter.setIsMultichainTest(true);
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
         uint256 gasCost = MultichainVoteCollection(
