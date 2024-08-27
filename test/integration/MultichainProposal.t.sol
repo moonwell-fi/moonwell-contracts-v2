@@ -114,6 +114,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
     function setUp() public override {
         vm.makePersistent(address(this));
 
+        // do not start timestamp at 0
+        vm.warp(1234);
         /// new idea: make all forks start at the same timestamp
         uint256 startTimestamp = block.timestamp;
 
@@ -1396,6 +1398,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         {
             vm.selectFork(BASE_FORK_ID);
 
+            console.log("proposaltime", proposalTime);
+            console.log("block.timestamp", block.timestamp);
             vm.warp(proposalTime - 5);
             xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
             xwellMintAmount = xwell.buffer(
