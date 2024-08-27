@@ -139,6 +139,9 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
                 xWELLBalanceMRDPreProposal = baseWell.balanceOf(
                     addresses.getAddress("MRD_PROXY")
                 );
+                stakedWellBase = IStakedWell(
+                    addresses.getAddress("STK_GOVTOKEN")
+                );
 
                 vm.selectFork(MOONBEAM_FORK_ID);
             }
@@ -211,34 +214,28 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             );
 
             vm.selectFork(BASE_FORK_ID);
-            vm.warp(startTimestamp);
 
             /// stores the wormhole mock address in the wormholeRelayer variable
-            vm.store(
-                address(wormholeBridgeAdapter),
-                bytes32(uint256(153)),
-                encodedData
-            );
+            vm.store(address(voteCollection), bytes32(0), encodedData);
 
             vm.selectFork(OPTIMISM_FORK_ID);
             vm.warp(startTimestamp);
 
-            /// stores the wormhole mock address in the wormholeRelayer variable
-            vm.store(
-                address(wormholeBridgeAdapter),
-                bytes32(uint256(153)),
-                encodedData
+            address voteCollectionOptimism = addresses.getAddress(
+                "VOTE_COLLECTION_PROXY"
             );
+
+            /// stores the wormhole mock address in the wormholeRelayer variable
+            vm.store(voteCollectionOptimism, bytes32(0), encodedData);
 
             vm.selectFork(MOONBEAM_FORK_ID);
 
             /// stores the wormhole mock address in the wormholeRelayer variable
             vm.store(
-                address(wormholeBridgeAdapter),
-                bytes32(uint256(153)),
-                encodedData
+                address(governor),
+                bytes32(uint256(103)),
+                bytes32(uint256(uint160(address(wormholeRelayerAdapter))))
             );
-
             /// ----------------------------------------------------------
             /// ----------------------------------------------------------
             /// ----------------------------------------------------------
@@ -790,6 +787,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
     function testVotingOnMoonbeamAllTokens() public {
         vm.selectFork(MOONBEAM_FORK_ID);
+        wormholeRelayerAdapter.setIsMultichainTest(false);
 
         // mint 1/4 of the amount for each token
         uint256 mintAmount = governor.quorum() / 4;
@@ -1295,8 +1293,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         {
             vm.selectFork(BASE_FORK_ID);
 
-            console.log("proposaltime", proposalTime);
-            console.log("block.timestamp", block.timestamp);
             vm.warp(proposalTime - 5);
             xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
             xwellMintAmount = xwell.buffer(
@@ -1510,7 +1506,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             xwell.mint(address(this), xwellMintAmount);
             xwell.delegate(address(this));
 
-            vm.warp(endTimestamp + 1);
+            vm.warp(endTimestamp + 5);
         }
 
         {
@@ -2863,6 +2859,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         address proposer
     ) private view {
         uint256[] memory liveProposals = governor.liveProposals();
+        console.log("live proposals ", liveProposals.length);
         bool proposalFound = false;
 
         for (uint256 i = 0; i < liveProposals.length; i++) {
