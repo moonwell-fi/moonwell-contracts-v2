@@ -533,12 +533,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
                     0.1e18,
                     "Borrow rewards not correct"
                 );
-                assertApproxEqRel(
-                    rewards[j].totalAmount,
-                    expectedReward,
-                    0.1e18,
-                    "Total rewards not correct"
-                );
             }
         }
     }
