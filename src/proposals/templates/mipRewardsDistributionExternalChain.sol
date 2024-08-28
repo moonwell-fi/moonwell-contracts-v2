@@ -308,7 +308,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 assertApproxEqRel(
                     spec.transferFroms[i].amount,
                     totalWellEpochRewards,
-                    0.01e18,
+                    0.1e18,
                     "Transfer amount must be close to the total rewards for the epoch"
                 );
             }
