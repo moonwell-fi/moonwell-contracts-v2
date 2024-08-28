@@ -26,6 +26,8 @@ contract WormholeRelayerAdapter {
 
     uint256 public callCounter;
 
+    event MockWormholeRelayerError(string reason);
+
     mapping(uint256 chainId => bool shouldRevert) public shouldRevertAtChain;
 
     mapping(uint16 chainId => bool shouldRevert)
@@ -88,13 +90,19 @@ contract WormholeRelayerAdapter {
         require(senderChainId != 0, "senderChainId not set");
 
         /// immediately call the target
-        IWormholeReceiver(targetAddress).receiveWormholeMessages(
-            payload,
-            new bytes[](0),
-            bytes32(uint256(uint160(msg.sender))),
-            senderChainId, // chain not the target chain
-            bytes32(++nonce)
-        );
+        try
+            IWormholeReceiver(targetAddress).receiveWormholeMessages(
+                payload,
+                new bytes[](0),
+                bytes32(uint256(uint160(msg.sender))),
+                senderChainId, // chain not the target chain
+                bytes32(++nonce)
+            )
+        {
+            // success
+        } catch Error(string memory reason) {
+            emit MockWormholeRelayerError(reason);
+        }
 
         if (isMultichainTest) {
             vm.selectFork(initialFork);
