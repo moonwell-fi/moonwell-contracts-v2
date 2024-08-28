@@ -1274,7 +1274,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
-        uint256 proposalTime = block.timestamp;
         uint256 proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
@@ -1292,9 +1291,12 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
         uint256 xwellMintAmount;
         {
+            uint256 startTimestamp = block.timestamp;
+            uint256 endTimestamp = startTimestamp + governor.votingPeriod();
+
             vm.selectFork(BASE_FORK_ID);
 
-            vm.warp(proposalTime - 5);
+            vm.warp(startTimestamp - 5);
             xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
             xwellMintAmount = xwell.buffer(
                 addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
@@ -1304,6 +1306,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             xwell.mint(address(this), xwellMintAmount);
             xwell.approve(address(stakedWellBase), xwellMintAmount);
             stakedWellBase.stake(address(this), xwellMintAmount);
+
+            vm.warp(endTimestamp - 5);
         }
 
         {
@@ -1319,8 +1323,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             assertEq(againstVotes, 0, "incorrect against votes");
             assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
-
-        vm.warp(proposalTime + 1);
 
         /// vote yes on proposal
         voteCollection.castVote(proposalId, 0);
@@ -1646,6 +1648,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
 
+        wormholeRelayerAdapter.setSilenceFailure(true);
+
         vm.deal(address(this), bridgeCost * 3);
         governor.rebroadcastProposal{value: bridgeCost}(proposalId);
         governor.rebroadcastProposal{value: bridgeCost}(proposalId);
@@ -1728,8 +1732,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         emit VotesEmitted(proposalId, forVotes, againstVotes, abstainVotes);
 
         voteCollection.emitVotes{value: bridgeCost}(proposalId);
-
-        vm.selectFork(BASE_FORK_ID);
 
         vm.deal(address(this), bridgeCost);
 
@@ -1925,6 +1927,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             vm.selectFork(MOONBEAM_FORK_ID);
 
             uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+
+            wormholeRelayerAdapter.setSilenceFailure(true);
 
             vm.deal(address(governor), gasCost);
             vm.expectEmit();
