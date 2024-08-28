@@ -89,9 +89,13 @@ contract WormholeRelayerAdapter {
 
         uint256 initialFork;
 
+        uint256 timestamp = block.timestamp;
         if (isMultichainTest) {
             initialFork = vm.activeFork();
+
             vm.selectFork(chainId.toChainId().toForkId());
+
+            vm.warp(timestamp);
         }
 
         // TODO naming;
@@ -124,6 +128,7 @@ contract WormholeRelayerAdapter {
 
         if (isMultichainTest) {
             vm.selectFork(initialFork);
+            vm.warp(timestamp);
         }
 
         return uint64(nonce);

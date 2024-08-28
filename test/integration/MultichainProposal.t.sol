@@ -1013,6 +1013,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         well.delegate(address(this));
 
         vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
 
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
@@ -1556,7 +1557,8 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
     {
         /// propose, then rebroadcast
         vm.selectFork(MOONBEAM_FORK_ID);
-        //wormholeRelayerAdapter.setIsMultichainTest(false);
+
+        wormholeRelayerAdapter.setSilenceFailure(true);
 
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
@@ -1568,6 +1570,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         well.delegate(address(this));
 
         vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
 
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
@@ -1648,8 +1651,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
 
-        wormholeRelayerAdapter.setSilenceFailure(true);
-
         vm.deal(address(this), bridgeCost * 3);
         governor.rebroadcastProposal{value: bridgeCost}(proposalId);
         governor.rebroadcastProposal{value: bridgeCost}(proposalId);
@@ -1722,6 +1723,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         vm.deal(address(this), bridgeCost);
 
         wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
+        wormholeRelayerAdapter.setSilenceFailure(true);
 
         vm.selectFork(MOONBEAM_FORK_ID);
         vm.warp(crossChainVoteCollectionEndTimestamp - 1);
@@ -1976,6 +1978,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
     function testUpgradeMultichainGovernorThroughGovProposal() public {
         vm.selectFork(MOONBEAM_FORK_ID);
+        wormholeRelayerAdapter.setIsMultichainTest(false);
 
         MockMultichainGovernor newGovernor = new MockMultichainGovernor();
 
