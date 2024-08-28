@@ -15,7 +15,7 @@
             }
         ],
         "transferFrom": [
-            {             
+            {
                 "amount": 1.1846695346190907e25,
                 "from": "MGLIMMER_MULTISIG",
                 "to": "MULTICHAIN_GOVERNOR_PROXY",
