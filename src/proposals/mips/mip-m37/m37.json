@@ -1,126 +1,126 @@
 {
     "1284": {
         "addRewardInfo": {
-            "amount": 5.635575451298074e22,
+            "amount": 5.646091701626744e22,
             "endTimestamp": 1728012600,
             "pid": 15,
-            "rewardPerSec": 23295198624744024,
+            "rewardPerSec": 23338668574845996,
             "target": "STELLASWAP_REWARDER"
         },
         "setRewardSpeed": [
             {
                 "market": "mGLIMMER",
-                "newBorrowSpeed": 18949893832397676,
-                "newSupplySpeed": 18949893832397676,
+                "newBorrowSpeed": 19120914008026640,
+                "newSupplySpeed": 19120914008026640,
                 "rewardType": 0
             },
             {
                 "market": "mGLIMMER",
-                "newBorrowSpeed": 6567478029303055,
-                "newSupplySpeed": 6567478029303055,
+                "newBorrowSpeed": 6614405815543682,
+                "newSupplySpeed": 6614405815543682,
                 "rewardType": 1
             },
             {
                 "market": "mxcDOT",
-                "newBorrowSpeed": 21410690976036716,
-                "newSupplySpeed": 21410690976036716,
+                "newBorrowSpeed": 21558257596073136,
+                "newSupplySpeed": 21558257596073136,
                 "rewardType": 0
             },
             {
                 "market": "mxcDOT",
-                "newBorrowSpeed": 7420318225578512,
-                "newSupplySpeed": 7420318225578512,
+                "newBorrowSpeed": 7457544359887602,
+                "newSupplySpeed": 7457544359887602,
                 "rewardType": 1
             },
             {
                 "market": "mFRAX",
-                "newBorrowSpeed": 1077966377350911,
-                "newSupplySpeed": 1077966377350911,
+                "newBorrowSpeed": 1064303693292073,
+                "newSupplySpeed": 1064303693292073,
                 "rewardType": 0
             },
             {
                 "market": "mFRAX",
-                "newBorrowSpeed": 373591565324552,
-                "newSupplySpeed": 373591565324552,
+                "newBorrowSpeed": 368169457561524,
+                "newSupplySpeed": 368169457561524,
                 "rewardType": 1
             },
             {
                 "market": "mETHwh",
-                "newBorrowSpeed": 3447190027466614,
-                "newSupplySpeed": 3447190027466614,
+                "newBorrowSpeed": 3468871984180271,
+                "newSupplySpeed": 3468871984180271,
                 "rewardType": 0
             },
             {
                 "market": "mETHwh",
-                "newBorrowSpeed": 1194695071563632,
-                "newSupplySpeed": 1194695071563632,
+                "newBorrowSpeed": 1199970201001208,
+                "newSupplySpeed": 1199970201001208,
                 "rewardType": 1
             },
             {
                 "market": "MOONWELL_mWBTC",
                 "newBorrowSpeed": 1,
-                "newSupplySpeed": 111527250390313390,
+                "newSupplySpeed": 111574436920883460,
                 "rewardType": 0
             },
             {
                 "market": "MOONWELL_mWBTC",
                 "newBorrowSpeed": 1,
-                "newSupplySpeed": 38652077583396600,
+                "newSupplySpeed": 38596408316344270,
                 "rewardType": 1
             },
             {
                 "market": "mUSDCwh",
-                "newBorrowSpeed": 4678987754137895,
-                "newSupplySpeed": 4678987754137895,
+                "newBorrowSpeed": 4619683927281013,
+                "newSupplySpeed": 4619683927281013,
                 "rewardType": 0
             },
             {
                 "market": "mUSDCwh",
-                "newBorrowSpeed": 1621600075782092,
-                "newSupplySpeed": 1621600075782092,
+                "newBorrowSpeed": 1598065041334013,
+                "newSupplySpeed": 1598065041334013,
                 "rewardType": 1
             },
             {
                 "market": "mxcUSDT",
-                "newBorrowSpeed": 4812646253083780,
-                "newSupplySpeed": 4812646253083780,
+                "newBorrowSpeed": 4751648371680072,
+                "newSupplySpeed": 4751648371680072,
                 "rewardType": 0
             },
             {
                 "market": "mxcUSDT",
-                "newBorrowSpeed": 1667922195738036,
-                "newSupplySpeed": 1667922195738036,
+                "newBorrowSpeed": 1643714866865978,
+                "newSupplySpeed": 1643714866865978,
                 "rewardType": 1
             },
             {
                 "market": "mxcUSDC",
-                "newBorrowSpeed": 1675952983141008,
-                "newSupplySpeed": 1675952983141008,
+                "newBorrowSpeed": 1654711118285821,
+                "newSupplySpeed": 1654711118285821,
                 "rewardType": 0
             },
             {
                 "market": "mxcUSDC",
-                "newBorrowSpeed": 580836203741983,
-                "newSupplySpeed": 580836203741983,
+                "newBorrowSpeed": 572406258364010,
+                "newSupplySpeed": 572406258364010,
                 "rewardType": 1
             }
         ],
-        "stkWellEmissionsPerSecond": 218974867072593760,
+        "stkWellEmissionsPerSecond": 219383484603552350,
         "transferFrom": [
             {
-                "amount": 5.635575451298074e22,
+                "amount": 5.646091701626744e22,
                 "from": "MGLIMMER_MULTISIG",
                 "to": "MULTICHAIN_GOVERNOR_PROXY",
                 "token": "GOVTOKEN"
             },
             {
-                "amount": 5.41015147324615e23,
+                "amount": 5.420247073561673e23,
                 "from": "MGLIMMER_MULTISIG",
                 "to": "UNITROLLER",
                 "token": "GOVTOKEN"
             },
             {
-                "amount": 5.297439984220188e23,
+                "amount": 5.307325259529138e23,
                 "from": "MGLIMMER_MULTISIG",
                 "to": "ECOSYSTEM_RESERVE_PROXY",
                 "token": "GOVTOKEN"
