@@ -651,22 +651,22 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             }
         }
 
-        _pushAction(
-            addresses.getAddress("STK_GOVTOKEN"),
-            abi.encodeWithSignature(
-                "configureAsset(uint128,address)",
-                spec.stkWellEmissionsPerSecond,
-                addresses.getAddress("STK_GOVTOKEN")
-            ),
-            string(
-                abi.encodePacked(
-                    "Set reward speed to ",
-                    vm.toString(spec.stkWellEmissionsPerSecond),
-                    " for the Safety Module on ",
-                    _chainId.chainIdToName()
-                )
-            )
-        );
+        //  _pushAction(
+        //      addresses.getAddress("STK_GOVTOKEN"),
+        //      abi.encodeWithSignature(
+        //          "configureAsset(uint128,address)",
+        //          spec.stkWellEmissionsPerSecond,
+        //          addresses.getAddress("STK_GOVTOKEN")
+        //      ),
+        //      string(
+        //          abi.encodePacked(
+        //              "Set reward speed to ",
+        //              vm.toString(spec.stkWellEmissionsPerSecond),
+        //              " for the Safety Module on ",
+        //              _chainId.chainIdToName()
+        //          )
+        //      )
+        //  );
     }
 
     function _validateMoonbeam(Addresses addresses) private {
@@ -794,19 +794,19 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         }
 
         {
-            // validate emissions per second for the Safety Module
-            IStakedWell stkWell = IStakedWell(
-                addresses.getAddress("STK_GOVTOKEN")
-            );
-
-            (uint256 emissionsPerSecond, , ) = stkWell.assets(
-                addresses.getAddress("STK_GOVTOKEN")
-            );
-            assertEq(
-                emissionsPerSecond,
-                spec.stkWellEmissionsPerSecond,
-                "Emissions per second for the Safety Module is incorrect"
-            );
+            //            // validate emissions per second for the Safety Module
+            //            IStakedWell stkWell = IStakedWell(
+            //                addresses.getAddress("STK_GOVTOKEN")
+            //            );
+            //
+            //            (uint256 emissionsPerSecond, , ) = stkWell.assets(
+            //                addresses.getAddress("STK_GOVTOKEN")
+            //            );
+            //            assertEq(
+            //                emissionsPerSecond,
+            //                spec.stkWellEmissionsPerSecond,
+            //                "Emissions per second for the Safety Module is incorrect"
+            //            );
         }
         IMultiRewardDistributor distributor = IMultiRewardDistributor(
             addresses.getAddress("MRD_PROXY")
