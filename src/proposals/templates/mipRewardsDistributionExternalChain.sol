@@ -282,9 +282,13 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
                 addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
             ) {
-                totalOpEpochRewards +=
-                    spec.setRewardSpeed[i].newSupplySpeed *
+                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
                     (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+
+                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+
+                totalOpEpochRewards += supplyAmount + borrowAmount;
             }
 
             externalChainActions[_chainId].setRewardSpeed.push(
