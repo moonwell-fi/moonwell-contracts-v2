@@ -1,0 +1,173 @@
+{
+    "1284": {
+        "bridgeToRecipient": [
+            {
+                "amount": 1.1691478949962656e25,
+                "nativeValue": 24261756584303170000,
+                "network": 8453,
+                "target": "TEMPORAL_GOVERNOR"
+            },
+            {
+                "amount": 1.1809574696931976e23,
+                "nativeValue": 24261756584303170000,
+                "network": 8453,
+                "target": "DEX_RELAYER"
+            }
+        ],
+        "transferFrom": [
+            {
+                "amount": 1.1809574696931975e25,
+                "from": "MGLIMMER_MULTISIG",
+                "to": "MULTICHAIN_GOVERNOR_PROXY",
+                "token": "GOVTOKEN"
+            }
+        ]
+    },
+    "8453": {
+        "setMRDSpeeds": [
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_USDBC",
+                "newBorrowSpeed": 735588287416,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 735588287416
+            },
+            {
+                "emissionToken": "USDC",
+                "market": "MOONWELL_USDBC",
+                "newBorrowSpeed": 1,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 0
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_WETH",
+                "newBorrowSpeed": 685331574223046100,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 685331574223046100
+            },
+            {
+                "emissionToken": "USDC",
+                "market": "MOONWELL_WETH",
+                "newBorrowSpeed": 1,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 0
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_cbETH",
+                "newBorrowSpeed": 113019906699864880,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 92470832754434900
+            },
+            {
+                "emissionToken": "USDC",
+                "market": "MOONWELL_cbETH",
+                "newBorrowSpeed": 1,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 0
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_DAI",
+                "newBorrowSpeed": 9564790816124752,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 9564790816124752
+            },
+            {
+                "emissionToken": "USDC",
+                "market": "MOONWELL_DAI",
+                "newBorrowSpeed": 1,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 0
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_USDC",
+                "newBorrowSpeed": 396510824947797800,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 396510824947797800
+            },
+            {
+                "emissionToken": "USDC",
+                "market": "MOONWELL_USDC",
+                "newBorrowSpeed": 1,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 0
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_wstETH",
+                "newBorrowSpeed": 112278184599132740,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 91863969217472220
+            },
+            {
+                "emissionToken": "USDC",
+                "market": "MOONWELL_wstETH",
+                "newBorrowSpeed": 1,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 0
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_rETH",
+                "newBorrowSpeed": 29136884118357070,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 23839268824110330
+            },
+            {
+                "emissionToken": "USDC",
+                "market": "MOONWELL_rETH",
+                "newBorrowSpeed": 1,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 0
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_AERO",
+                "newBorrowSpeed": 150296269882019620,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 122969675358016060
+            },
+            {
+                "emissionToken": "USDC",
+                "market": "MOONWELL_AERO",
+                "newBorrowSpeed": 1,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 0
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_weETH",
+                "newBorrowSpeed": 5649124691005361,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 4622011110822568
+            },
+            {
+                "emissionToken": "USDC",
+                "market": "MOONWELL_weETH",
+                "newBorrowSpeed": 1,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 0
+            }
+        ],
+        "stkWellEmissionsPerSecond": 1903825285963736000,
+        "transferFrom": [
+            {
+                "amount": 7.085744818159184e24,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "MRD_PROXY",
+                "token": "xWELL_PROXY"
+            },
+            {
+                "amount": 4.6057341318034707e24,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "ECOSYSTEM_RESERVE_PROXY",
+                "token": "xWELL_PROXY"
+            }
+        ]
+    },
+    "endTimeSTamp": 1728012600,
+    "startTimeStamp": 1725593400
+}
