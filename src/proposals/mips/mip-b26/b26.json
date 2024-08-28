@@ -139,14 +139,14 @@
             },
             {
                 "emissionToken": "xWELL_PROXY",
-                "market": "MOONWELL_weETH",
+                "market": "MOONWELL_WETH",
                 "newBorrowSpeed": 5649124691005361,
                 "newEndTime": 1728012600,
                 "newSupplySpeed": 4622011110822568
             },
             {
                 "emissionToken": "USDC",
-                "market": "MOONWELL_weETH",
+                "market": "MOONWELL_WETH",
                 "newBorrowSpeed": 1,
                 "newEndTime": 1728012600,
                 "newSupplySpeed": 0
