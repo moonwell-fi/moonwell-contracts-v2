@@ -376,7 +376,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                     spec.transferFroms[i].amount,
                     spec.stkWellEmissionsPerSecond *
                         (endTimeStamp - startTimeStamp),
-                    1e9,
+                    1e18,
                     "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
                 );
             }
