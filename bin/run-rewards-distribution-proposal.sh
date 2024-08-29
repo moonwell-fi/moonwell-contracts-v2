@@ -1,9 +1,13 @@
 #!/bin/bash
 # This script is used on the CI to print proposal output for the current epoch rewards proposal
 
-MIP=$MIP_JSON_PATH
+# Run .sh file to set the envs
+source $SCRIPT_FILE
 
-output=$(forge script src/proposals/mips/mip-rewards-distribution/mipRewardsDistribution.sol 2>&1)
+MIP=$MIP_JSON_PATH
+SOL_TEMPLATE_PATH=$TEMPLATE_PATH
+
+output=$(forge script $SOL_TEMPLATE_PATH 2>&1)
 
 # Removal of ANSI Escape Codes
 clean_output=$(echo "$output" | sed 's/\x1b\[[0-9;]*m//g')

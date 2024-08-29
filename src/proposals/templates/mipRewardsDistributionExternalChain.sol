@@ -6,18 +6,18 @@ import "@forge-std/StdJson.sol";
 import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
 
-import {mip00} from "@proposals/mips/mip00.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
-import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
 import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
@@ -27,7 +27,7 @@ interface StellaSwapRewarder {
     function currentEndTimestamp(uint256 _pid) external view returns (uint256);
 }
 
-contract mipRewardsDistribution is HybridProposal, Networks {
+contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
     using String for string;
     using stdJson for string;
     using ChainIds for uint256;
@@ -36,6 +36,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
     struct BridgeWell {
         uint256 amount;
+        uint256 nativeValue;
         uint256 network;
         string target;
     }
@@ -47,22 +48,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         string token;
     }
 
-    struct AddRewardInfo {
-        uint256 amount;
-        uint256 endTimestamp;
-        uint256 pid;
-        uint256 rewardPerSec;
-        string target;
-    }
-
-    struct SetRewardSpeed {
-        string market;
-        uint256 newBorrowSpeed;
-        uint256 newSupplySpeed;
-        uint256 rewardType;
-        string target;
-    }
-
     struct SetMRDRewardSpeed {
         string emissionToken;
         string market;
@@ -72,10 +57,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
     }
 
     struct JsonSpecMoonbeam {
-        AddRewardInfo addRewardInfo;
         BridgeWell[] bridgeWells;
-        SetRewardSpeed[] setRewardSpeed;
-        uint256 stkWellEmissionsPerSecond;
         TransferFrom[] transferFroms;
     }
 
@@ -89,7 +71,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
     mapping(uint256 chainid => JsonSpecExternalChain) externalChainActions;
 
-    uint256 expectedExecutionTime;
+    uint256 chainId;
+    uint256 startTimeStamp;
+    uint256 endTimeStamp;
 
     /// we need to save this value to check if the transferFrom amount was successfully transferred
     mapping(address => uint256) public wellBalancesBefore;
@@ -100,6 +84,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         );
 
         _setProposalDescription(proposalDescription);
+
+        chainId = uint256(vm.envUint("CHAIN_ID"));
     }
 
     function name() external pure override returns (string memory) {
@@ -117,83 +103,36 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             vm.envString("MIP_REWARDS_PATH")
         );
 
-        string memory filter = ".expectedExecutionTime";
+        string memory filter = ".startTimeStamp";
 
         bytes memory parsedJson = vm.parseJson(encodedJson, filter);
 
-        expectedExecutionTime = abi.decode(parsedJson, (uint256));
+        startTimeStamp = abi.decode(parsedJson, (uint256));
 
-        _saveMoonbeamActions(addresses, encodedJson);
+        filter = ".endTimeSTamp";
 
-        // mock relayer so we can simulate bridging well
-        WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
-        vm.makePersistent(address(wormholeRelayer));
-        vm.label(address(wormholeRelayer), "MockWormholeRelayer");
+        parsedJson = vm.parseJson(encodedJson, filter);
 
-        // we need to set this so that the relayer mock knows that for the next sendPayloadToEvm
-        // call it must switch forks
-        wormholeRelayer.setIsMultichainTest(true);
+        endTimeStamp = abi.decode(parsedJson, (uint256));
 
-        // set mock as the wormholeRelayer address on bridge adapter
-        WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-        );
+        vm.selectFork(chainId.toForkId());
 
-        uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
-        // encode gasLimit and relayer address since is stored in a single slot
-        // relayer is first due to how evm pack values into a single storage
-        bytes32 encodedData = bytes32(
-            (uint256(uint160(address(wormholeRelayer))) << 96) |
-                uint256(gasLimit)
-        );
+        _saveExternalChainActions(addresses, encodedJson, chainId);
 
-        for (uint256 i = 0; i < networks.length; i++) {
-            uint256 chainId = networks[i].chainId;
-            // skip moonbeam
-            if (chainId == MOONBEAM_CHAIN_ID) {
-                continue;
-            }
+        // save well balances before so we can check if the transferFrom was successful
+        IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
+        address mrd = addresses.getAddress("MRD_PROXY");
+        wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
 
-            vm.selectFork(chainId.toForkId());
+        address dexRelayer = addresses.getAddress("DEX_RELAYER");
+        wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
 
-            _saveExternalChainActions(addresses, encodedJson, chainId);
-
-            // stores the wormhole mock address in the wormholeRelayer variable
-            vm.store(
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"),
-                bytes32(uint256(153)),
-                encodedData
-            );
-
-            // save well balances before so we can check if the transferFrom was successful
-            IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
-
-            address mrd = addresses.getAddress("MRD_PROXY");
-            wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
-
-            address dexRelayer = addresses.getAddress("DEX_RELAYER");
-            wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
-        }
-
-        // TODO remove this once o00  gets executed
-        mip00 o00 = new mip00();
-        vm.makePersistent(address(o00));
-        vm.selectFork(o00.primaryForkId());
-        o00.initProposal(addresses);
-        o00.preBuildMock(addresses);
-        o00.build(addresses);
-        o00.run(addresses, address(this));
+        address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
+        wellBalancesBefore[reserve] = xwell.balanceOf(reserve);
 
         vm.selectFork(primaryForkId());
 
         {
-            // stores the wormhole mock address in the wormholeRelayer variable
-            vm.store(
-                address(wormholeBridgeAdapter),
-                bytes32(uint256(153)),
-                encodedData
-            );
-
             // save well balances before so we can check if the transferFrom was successful
             IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
 
@@ -201,42 +140,26 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 "MULTICHAIN_GOVERNOR_PROXY"
             );
             wellBalancesBefore[governor] = well.balanceOf(governor);
-
-            address unitroller = addresses.getAddress("UNITROLLER");
-            wellBalancesBefore[unitroller] = well.balanceOf(unitroller);
-
-            address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
-            wellBalancesBefore[reserve] = well.balanceOf(reserve);
-
-            address stellaSwapRewarder = addresses.getAddress(
-                "STELLASWAP_REWARDER"
-            );
-            wellBalancesBefore[stellaSwapRewarder] = well.balanceOf(
-                stellaSwapRewarder
-            );
         }
+
+        _saveMoonbeamActions(addresses, encodedJson);
+    }
+
+    function run(
+        Addresses addresses,
+        address
+    ) public virtual override mockHook(addresses) {
+        super.run(addresses, address(0));
     }
 
     function build(Addresses addresses) public override {
-        for (uint256 i = 0; i < networks.length; i++) {
-            uint256 chainId = networks[i].chainId;
-            if (chainId == MOONBEAM_CHAIN_ID) {
-                _buildMoonbeamActions(addresses);
-            } else {
-                _buildExternalChainActions(addresses, chainId);
-            }
-        }
+        _buildMoonbeamActions(addresses);
+        _buildExternalChainActions(addresses, chainId);
     }
 
     function validate(Addresses addresses, address) public override {
-        for (uint256 i = 0; i < networks.length; i++) {
-            uint256 chainId = networks[i].chainId;
-            if (chainId == MOONBEAM_CHAIN_ID) {
-                _validateMoonbeam(addresses);
-            } else {
-                _validateExternalChainActions(addresses, chainId);
-            }
-        }
+        _validateMoonbeam(addresses);
+        _validateExternalChainActions(addresses, chainId);
     }
 
     function _saveMoonbeamActions(
@@ -252,55 +175,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             (JsonSpecMoonbeam)
         );
 
-        moonbeamActions.addRewardInfo = spec.addRewardInfo;
-
-        assertGe(
-            spec.stkWellEmissionsPerSecond,
-            0,
-            "stkWellEmissionsPerSecond must be greater than 0"
-        );
-
-        assertLe(
-            spec.stkWellEmissionsPerSecond,
-            5e18,
-            "stkWellEmissionsPerSecond must be less than 1e18"
-        );
-
-        moonbeamActions.stkWellEmissionsPerSecond = spec
-            .stkWellEmissionsPerSecond;
-
         for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
             moonbeamActions.bridgeWells.push(spec.bridgeWells[i]);
-        }
-
-        for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
-            SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
-
-            // check for duplications
-            for (
-                uint256 j = 0;
-                j < moonbeamActions.setRewardSpeed.length;
-                j++
-            ) {
-                SetRewardSpeed memory existingSetRewardSpeed = moonbeamActions
-                    .setRewardSpeed[j];
-
-                require(
-                    addresses.getAddress(existingSetRewardSpeed.market) !=
-                        addresses.getAddress(setRewardSpeed.market) ||
-                        existingSetRewardSpeed.rewardType !=
-                        setRewardSpeed.rewardType,
-                    "Duplication in setRewardSpeeds"
-                );
-            }
-
-            assertGe(
-                setRewardSpeed.newBorrowSpeed,
-                1,
-                "Borrow speed must be greater or equal to 1"
-            );
-
-            moonbeamActions.setRewardSpeed.push(setRewardSpeed);
         }
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
@@ -327,9 +203,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
     function _saveExternalChainActions(
         Addresses addresses,
         string memory data,
-        uint256 chainId
+        uint256 _chainId
     ) private {
-        string memory chain = string.concat(".", vm.toString(chainId));
+        string memory chain = string.concat(".", vm.toString(_chainId));
 
         bytes memory parsedJson = vm.parseJson(data, chain);
 
@@ -350,21 +226,22 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             "stkWellEmissionsPerSecond must be less than 1e18"
         );
 
-        externalChainActions[chainId].stkWellEmissionsPerSecond = spec
+        externalChainActions[_chainId].stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
-        uint256 totalEpochRewards = 0;
+        uint256 totalWellEpochRewards = 0;
+        uint256 totalOpEpochRewards = 0;
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             // check for duplications
             for (
                 uint256 j = 0;
-                j < externalChainActions[chainId].setRewardSpeed.length;
+                j < externalChainActions[_chainId].setRewardSpeed.length;
                 j++
             ) {
                 SetMRDRewardSpeed
                     memory existingSetRewardSpeed = externalChainActions[
-                        chainId
+                        _chainId
                     ].setRewardSpeed[j];
 
                 require(
@@ -386,15 +263,31 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 "Borrow speed must be greater or equal to 1"
             );
 
-            uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-                (spec.setRewardSpeed[i].newEndTime - expectedExecutionTime);
+            if (
+                addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
+                addresses.getAddress("xWELL_PROXY")
+            ) {
+                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
-            uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-                (spec.setRewardSpeed[i].newEndTime - expectedExecutionTime);
+                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
-            totalEpochRewards += supplyAmount + borrowAmount;
+                totalWellEpochRewards += supplyAmount + borrowAmount;
+            }
 
-            externalChainActions[chainId].setRewardSpeed.push(
+            // TODO add USDC assertion in the future
+            if (
+                chainId == OPTIMISM_CHAIN_ID &&
+                addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
+                addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
+            ) {
+                totalOpEpochRewards +=
+                    spec.setRewardSpeed[i].newSupplySpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+            }
+
+            externalChainActions[_chainId].setRewardSpeed.push(
                 spec.setRewardSpeed[i]
             );
         }
@@ -402,11 +295,36 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             if (
                 addresses.getAddress(spec.transferFroms[i].to) ==
-                addresses.getAddress("MRD_PROXY")
+                addresses.getAddress("MRD_PROXY") &&
+                addresses.getAddress(spec.transferFroms[i].from) ==
+                addresses.getAddress("TEMPORAL_GOVERNOR") &&
+                addresses.getAddress(spec.transferFroms[i].token) ==
+                addresses.getAddress("xWELL_PROXY")
             ) {
                 assertApproxEqRel(
                     spec.transferFroms[i].amount,
-                    totalEpochRewards,
+                    totalWellEpochRewards,
+                    0.01e18,
+                    "Transfer amount must be close to the total rewards for the epoch"
+                );
+            }
+
+            // check OP
+            if (
+                chainId == OPTIMISM_CHAIN_ID &&
+                addresses.getAddress(spec.transferFroms[i].to) ==
+                addresses.getAddress("MRD_PROXY") &&
+                addresses.getAddress(spec.transferFroms[i].from) ==
+                addresses.getAddress(
+                    "FOUNDATION_OP_MULTISIG",
+                    OPTIMISM_CHAIN_ID
+                ) &&
+                addresses.getAddress(spec.transferFroms[i].token) ==
+                addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
+            ) {
+                assertApproxEqRel(
+                    spec.transferFroms[i].amount,
+                    totalOpEpochRewards,
                     0.01e18,
                     "Transfer amount must be close to the total rewards for the epoch"
                 );
@@ -415,11 +333,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             // check for duplications
             for (
                 uint256 j = 0;
-                j < externalChainActions[chainId].transferFroms.length;
+                j < externalChainActions[_chainId].transferFroms.length;
                 j++
             ) {
                 TransferFrom memory existingTransferFrom = externalChainActions[
-                    chainId
+                    _chainId
                 ].transferFroms[j];
 
                 require(
@@ -431,9 +349,39 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         addresses.getAddress(existingTransferFrom.to),
                     "Duplication in transferFroms"
                 );
+
+                require(
+                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
+                        keccak256("MULTI_REWARD_DISTRIBUTOR"),
+                    "should not transfer funds to MRD logic contract"
+                );
+
+                require(
+                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
+                        keccak256("ECOSYSTEM_RESERVE_IMPL"),
+                    "should not transfer funds to Ecosystem Reserve logic contract"
+                );
+                require(
+                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
+                        keccak256("STK_GOVTOKEN_IMPL"),
+                    "should not transfer funds to Safety Module logic contract"
+                );
             }
 
-            externalChainActions[chainId].transferFroms.push(
+            if (
+                addresses.getAddress(spec.transferFroms[i].to) ==
+                addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
+            ) {
+                assertApproxEqAbs(
+                    spec.transferFroms[i].amount,
+                    spec.stkWellEmissionsPerSecond *
+                        (endTimeStamp - startTimeStamp),
+                    1e9,
+                    "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
+                );
+            }
+
+            externalChainActions[_chainId].transferFroms.push(
                 spec.transferFroms[i]
             );
         }
@@ -503,16 +451,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 ActionType.Moonbeam
             );
 
-            uint16 wormholeChainId = bridgeWell.network.toWormholeChainId();
-
-            uint256 bridgeCost = xWELLRouter(router).bridgeCost(
-                wormholeChainId
-            ) * 20; // make sure that the proposal does not revert due to bridge
-            // cost changing
+            uint256 wormholeChainId = bridgeWell.network.toWormholeChainId();
 
             _pushAction(
                 router,
-                bridgeCost,
+                bridgeWell.nativeValue,
                 abi.encodeWithSignature(
                     "bridgeToRecipient(address,uint256,uint16)",
                     target,
@@ -532,95 +475,15 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 ActionType.Moonbeam
             );
         }
-
-        _pushAction(
-            addresses.getAddress("STK_GOVTOKEN"),
-            abi.encodeWithSignature(
-                "configureAsset(uint128,address)",
-                spec.stkWellEmissionsPerSecond,
-                addresses.getAddress("STK_GOVTOKEN")
-            ),
-            "Set reward speed for the Safety Module on Moonbeam",
-            ActionType.Moonbeam
-        );
-
-        for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
-            SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
-
-            _pushAction(
-                addresses.getAddress(setRewardSpeed.target),
-                abi.encodeWithSignature(
-                    "_setRewardSpeed(uint8,address,uint256,uint256)",
-                    uint8(setRewardSpeed.rewardType),
-                    addresses.getAddress(setRewardSpeed.market),
-                    setRewardSpeed.newSupplySpeed,
-                    setRewardSpeed.newBorrowSpeed
-                ),
-                string(
-                    abi.encodePacked(
-                        "Set reward speed for market ",
-                        vm.getLabel(
-                            addresses.getAddress(setRewardSpeed.market)
-                        ),
-                        " on Moonbeam. Supply speed: ",
-                        vm.toString(setRewardSpeed.newSupplySpeed),
-                        " Borrow speed: ",
-                        vm.toString(setRewardSpeed.newBorrowSpeed)
-                    )
-                ),
-                ActionType.Moonbeam
-            );
-        }
-
-        AddRewardInfo memory addRewardInfo = spec.addRewardInfo;
-
-        // first approve
-        _pushAction(
-            addresses.getAddress("GOVTOKEN"),
-            abi.encodeWithSignature(
-                "approve(address,uint256)",
-                addresses.getAddress(addRewardInfo.target),
-                addRewardInfo.amount
-            ),
-            string(
-                abi.encodePacked(
-                    "Approve StellaSwap spend ",
-                    vm.toString(addRewardInfo.amount / 1e18),
-                    " WELL"
-                )
-            ),
-            ActionType.Moonbeam
-        );
-
-        _pushAction(
-            addresses.getAddress(addRewardInfo.target),
-            abi.encodeWithSignature(
-                "addRewardInfo(uint256,uint256,uint256)",
-                addRewardInfo.pid,
-                addRewardInfo.endTimestamp,
-                addRewardInfo.rewardPerSec
-            ),
-            string(
-                abi.encodePacked(
-                    "Add reward info for pool ",
-                    vm.toString(addRewardInfo.pid),
-                    " on StellaSwap. Reward per second: ",
-                    vm.toString(addRewardInfo.rewardPerSec),
-                    " End timestamp: ",
-                    vm.toString(addRewardInfo.endTimestamp)
-                )
-            ),
-            ActionType.Moonbeam
-        );
     }
 
     function _buildExternalChainActions(
         Addresses addresses,
-        uint256 chainId
+        uint256 _chainId
     ) private {
-        vm.selectFork(chainId.toForkId());
+        vm.selectFork(_chainId.toForkId());
 
-        JsonSpecExternalChain memory spec = externalChainActions[chainId];
+        JsonSpecExternalChain memory spec = externalChainActions[_chainId];
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             TransferFrom memory transferFrom = spec.transferFroms[i];
@@ -629,28 +492,61 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             address from = addresses.getAddress(transferFrom.from);
             address to = addresses.getAddress(transferFrom.to);
 
-            _pushAction(
-                token,
-                abi.encodeWithSignature(
-                    "transfer(address,uint256)",
-                    to,
-                    transferFrom.amount
-                ),
-                string(
-                    abi.encodePacked(
-                        "Transfer token ",
-                        vm.getLabel(token),
-                        " from ",
-                        vm.getLabel(from),
-                        " to ",
-                        vm.getLabel(to),
-                        " amount ",
-                        vm.toString(transferFrom.amount / 1e18),
-                        " on ",
-                        chainId.chainIdToName()
-                    )
+            if (
+                chainId == OPTIMISM_CHAIN_ID &&
+                from ==
+                addresses.getAddress(
+                    "FOUNDATION_OP_MULTISIG",
+                    OPTIMISM_CHAIN_ID
                 )
-            );
+            ) {
+                _pushAction(
+                    token,
+                    abi.encodeWithSignature(
+                        "transferFrom(address,address,uint256)",
+                        from,
+                        to,
+                        transferFrom.amount
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Transfer token ",
+                            vm.getLabel(token),
+                            " from ",
+                            vm.getLabel(from),
+                            " to ",
+                            vm.getLabel(to),
+                            " amount ",
+                            vm.toString(transferFrom.amount / 1e18),
+                            " on ",
+                            _chainId.chainIdToName()
+                        )
+                    )
+                );
+            } else {
+                _pushAction(
+                    token,
+                    abi.encodeWithSignature(
+                        "transfer(address,uint256)",
+                        to,
+                        transferFrom.amount
+                    ),
+                    string(
+                        abi.encodePacked(
+                            "Transfer token ",
+                            vm.getLabel(token),
+                            " from ",
+                            vm.getLabel(from),
+                            " to ",
+                            vm.getLabel(to),
+                            " amount ",
+                            vm.toString(transferFrom.amount / 1e18),
+                            " on ",
+                            _chainId.chainIdToName()
+                        )
+                    )
+                );
+            }
         }
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
@@ -690,7 +586,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             " for ",
                             vm.getLabel(market),
                             " on ",
-                            chainId.chainIdToName()
+                            _chainId.chainIdToName()
                         )
                     )
                 );
@@ -715,7 +611,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             " for ",
                             vm.getLabel(market),
                             " on ",
-                            chainId.chainIdToName()
+                            _chainId.chainIdToName()
                         )
                     )
                 );
@@ -744,7 +640,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             " for ",
                             vm.getLabel(market),
                             " on ",
-                            chainId.chainIdToName()
+                            _chainId.chainIdToName()
                         )
                     )
                 );
@@ -763,7 +659,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     "Set reward speed to ",
                     vm.toString(spec.stkWellEmissionsPerSecond),
                     " for the Safety Module on ",
-                    chainId.chainIdToName()
+                    _chainId.chainIdToName()
                 )
             )
         );
@@ -782,9 +678,10 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             if (to == addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")) {
                 //  amount must be transferred as part of the DEX rewards and
                 //  bridge calls
-                assertEq(
+                assertApproxEqAbs(
                     well.balanceOf(to),
                     wellBalancesBefore[to],
+                    0.01e18,
                     "balance changed for MULTICHAIN_GOVERNOR_PROXY"
                 );
             } else {
@@ -792,10 +689,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     well.balanceOf(to),
                     wellBalancesBefore[to] + transferFrom.amount,
                     string(
-                        abi.encodePacked(
-                            "balance changed for ",
-                            vm.getLabel(to)
-                        )
+                        abi.encodePacked("balance wrong for ", vm.getLabel(to))
                     )
                 );
             }
@@ -811,119 +705,87 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             "xWELL Router should not have an open allowance after execution"
         );
 
-        address stkGovToken = addresses.getAddress("STK_GOVTOKEN");
+        // assert bridgeToRecipient value is correct
+        xWELLRouter router = xWELLRouter(addresses.getAddress("xWELL_ROUTER"));
 
-        // assert safety module reward speed
-        IStakedWell stkWell = IStakedWell(stkGovToken);
-        (uint256 emissionsPerSecond, , ) = stkWell.assets(stkGovToken);
-        assertEq(emissionsPerSecond, spec.stkWellEmissionsPerSecond);
+        WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
 
-        // validate setRewardSpeed calls
-        for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
-            SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
+        uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
 
-            address market = addresses.getAddress(setRewardSpeed.market);
+        IWormholeRelayer relayer = IWormholeRelayer(
+            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
+        );
 
-            ComptrollerInterfaceV1 comptrollerV1 = ComptrollerInterfaceV1(
-                addresses.getAddress("UNITROLLER")
-            );
-            assertEq(
-                comptrollerV1.supplyRewardSpeeds(
-                    uint8(setRewardSpeed.rewardType),
-                    address(market)
-                ),
-                setRewardSpeed.newSupplySpeed,
-                string(
-                    abi.encodePacked(
-                        "Supply speed for ",
-                        vm.getLabel(market),
-                        " is incorrect"
-                    )
-                )
-            );
+        (uint256 quoteEVMDeliveryPrice, ) = relayer.quoteEVMDeliveryPrice(
+            chainId.toWormholeChainId(),
+            0,
+            gasLimit
+        );
+
+        uint256 expectedValue = quoteEVMDeliveryPrice * 4;
+
+        for (uint256 i = 0; i < spec.bridgeWells.length; i++) {
+            BridgeWell memory bridgeWell = spec.bridgeWells[i];
+
+            uint16 wormholeChainId = bridgeWell.network.toWormholeChainId();
 
             assertEq(
-                comptrollerV1.borrowRewardSpeeds(
-                    uint8(setRewardSpeed.rewardType),
-                    address(market)
-                ),
-                setRewardSpeed.newBorrowSpeed,
-                string(
-                    abi.encodePacked(
-                        "Borrow speed for ",
-                        vm.getLabel(market),
-                        " is incorrect"
-                    )
-                )
+                router.bridgeCost(wormholeChainId),
+                quoteEVMDeliveryPrice,
+                "Bridge cost is incorrect"
+            );
+
+            // bridgeWell value must be close to the expected value
+            assertApproxEqRel(
+                bridgeWell.nativeValue,
+                expectedValue,
+                0.20e18, // 20% tolarance due to gas cost changes
+                "Bridge value is incorrect"
             );
         }
 
-        // validate dex rewards
-        AddRewardInfo memory addRewardInfo = spec.addRewardInfo;
-
-        address stellaSwapRewarder = addresses.getAddress(
-            "STELLASWAP_REWARDER"
-        );
-        StellaSwapRewarder stellaSwap = StellaSwapRewarder(stellaSwapRewarder);
-
-        // check allowance
-        assertEq(
-            well.allowance(
-                addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"),
-                stellaSwapRewarder
-            ),
-            0,
-            "StellaSwap Rewarder should not have an open allowance after execution"
-        );
-
-        // validate that stellaswap receive the correct amount of well
-        assertEq(
-            well.balanceOf(stellaSwapRewarder),
-            wellBalancesBefore[stellaSwapRewarder] + addRewardInfo.amount,
-            "StellaSwap Rewarder should have received the correct amount of WELL"
-        );
-
-        uint256 blockTimestamp = block.timestamp;
-
-        // block.timestamp must be in the current reward period to the getter
-        // functions return the correct values
-        vm.warp(addRewardInfo.endTimestamp - 1);
-
-        assertEq(
-            stellaSwap.poolRewardsPerSec(addRewardInfo.pid),
-            addRewardInfo.rewardPerSec,
-            "Reward per second for StellaSwap is incorrect"
-        );
-        assertEq(
-            stellaSwap.currentEndTimestamp(addRewardInfo.pid),
-            addRewardInfo.endTimestamp,
-            "End timestamp for StellaSwap is incorrect"
-        );
-
-        // warp back to current block.timestamp
-        vm.warp(blockTimestamp);
+        // check that the actions with value has the expectedValue
+        for (uint256 i = 0; i < actions.length; i++) {
+            if (actions[i].value != 0) {
+                assertApproxEqRel(
+                    actions[i].value,
+                    expectedValue,
+                    0.20e18,
+                    "Value is incorrect for action"
+                );
+            }
+        }
     }
 
     function _validateExternalChainActions(
         Addresses addresses,
-        uint256 chainId
+        uint256 _chainId
     ) private {
-        vm.selectFork(chainId.toForkId());
+        vm.selectFork(_chainId.toForkId());
 
-        JsonSpecExternalChain memory spec = externalChainActions[chainId];
+        JsonSpecExternalChain memory spec = externalChainActions[_chainId];
 
         // validate transfer calls
         IERC20 well = IERC20(addresses.getAddress("xWELL_PROXY"));
 
         for (uint256 i = 0; i < spec.transferFroms.length; i++) {
             address to = addresses.getAddress(spec.transferFroms[i].to);
-            assertEq(
-                well.balanceOf(to),
-                wellBalancesBefore[to] + spec.transferFroms[i].amount,
-                string(
-                    abi.encodePacked("balance changed for ", vm.getLabel(to))
-                )
-            );
+            address token = addresses.getAddress(spec.transferFroms[i].token);
+
+            if (token == addresses.getAddress("xWELL_PROXY")) {
+                assertEq(
+                    well.balanceOf(to),
+                    wellBalancesBefore[to] + spec.transferFroms[i].amount,
+                    string(
+                        abi.encodePacked(
+                            "balance changed for ",
+                            vm.getLabel(to)
+                        )
+                    )
+                );
+            }
         }
 
         {
@@ -1000,5 +862,78 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 }
             }
         }
+    }
+
+    function beforeSimulationHook(Addresses addresses) public override {
+        // mock relayer so we can simulate bridging well
+        WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
+        vm.makePersistent(address(wormholeRelayer));
+        vm.label(address(wormholeRelayer), "MockWormholeRelayer");
+
+        // we need to set this so that the relayer mock knows that for the next sendPayloadToEvm
+        // call it must switch forks
+        wormholeRelayer.setIsMultichainTest(true);
+        wormholeRelayer.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+
+        // set mock as the wormholeRelayer address on bridge adapter
+        WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+
+        uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
+
+        // encode gasLimit and relayer address since is stored in a single slot
+        // relayer is first due to how evm pack values into a single storage
+        bytes32 encodedData = bytes32(
+            (uint256(uint160(address(wormholeRelayer))) << 96) |
+                uint256(gasLimit)
+        );
+
+        vm.selectFork(chainId.toForkId());
+
+        // stores the wormhole mock address in the wormholeRelayer variable
+        vm.store(
+            address(wormholeBridgeAdapter),
+            bytes32(uint256(153)),
+            encodedData
+        );
+
+        vm.selectFork(primaryForkId());
+
+        // stores the wormhole mock address in the wormholeRelayer variable
+        vm.store(
+            address(wormholeBridgeAdapter),
+            bytes32(uint256(153)),
+            encodedData
+        );
+    }
+
+    function afterSimulationHook(Addresses addresses) public override {
+        WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+
+        uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
+
+        bytes32 encodedData = bytes32(
+            (uint256(
+                uint160(addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"))
+            ) << 96) | uint256(gasLimit)
+        );
+
+        vm.selectFork(chainId.toForkId());
+        vm.store(
+            address(wormholeBridgeAdapter),
+            bytes32(uint256(153)),
+            encodedData
+        );
+
+        vm.selectFork(primaryForkId());
+
+        vm.store(
+            address(wormholeBridgeAdapter),
+            bytes32(uint256(153)),
+            encodedData
+        );
     }
 }
