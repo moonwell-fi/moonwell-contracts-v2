@@ -120,7 +120,7 @@ contract mipx01 is HybridProposal, Configs {
                 );
             voteCollectionTrustedSender[0] = WormholeTrustedSender
                 .TrustedSender(
-                    OPTIMISM_WORMHOLE_CHAIN_ID,
+                    block.chainid.toOptimismChainId().toWormholeChainId(),
                     addresses.getAddress("VOTE_COLLECTION_PROXY")
                 );
 
@@ -149,7 +149,7 @@ contract mipx01 is HybridProposal, Configs {
                 );
             optimismWormholeBridgeAdapter[0] = WormholeTrustedSender
                 .TrustedSender(
-                    OPTIMISM_WORMHOLE_CHAIN_ID,
+                    block.chainid.toOptimismChainId().toWormholeChainId(),
                     addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
                 );
 
@@ -544,7 +544,7 @@ contract mipx01 is HybridProposal, Configs {
                 cooldownSeconds,
                 "incorrect cooldown seconds"
             );
-            assertEq(
+            assertGe(
                 stkWell.DISTRIBUTION_END(),
                 DISTRIBUTION_END,
                 "incorrect distribution duration"

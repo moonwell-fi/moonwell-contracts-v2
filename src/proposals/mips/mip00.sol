@@ -516,13 +516,9 @@ contract mip00 is HybridProposal, Configs {
             abi.encodeWithSignature("_acceptAdmin()"),
             "Temporal governor accepts admin on Unitroller"
         );
-
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
-        address unitrollerAddress = addresses.getAddress("UNITROLLER");
-
-        /// set mint unpaused for all of the deployed MTokens
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
@@ -538,47 +534,6 @@ contract mip00 is HybridProposal, Configs {
                     cTokenAddress,
                     abi.encodeWithSignature("_acceptAdmin()"),
                     "Temporal governor accepts admin on mToken"
-                );
-
-                _pushAction(
-                    unitrollerAddress,
-                    abi.encodeWithSignature(
-                        "_setMintPaused(address,bool)",
-                        cTokenAddress,
-                        false
-                    ),
-                    "Unpause MToken market"
-                );
-
-                /// Approvals
-                _pushAction(
-                    addresses.getAddress(config.tokenAddressName),
-                    abi.encodeWithSignature(
-                        "approve(address,uint256)",
-                        cTokenAddress,
-                        config.initialMintAmount
-                    ),
-                    "Approve underlying token to be spent by market"
-                );
-
-                /// Initialize markets
-                _pushAction(
-                    cTokenAddress,
-                    abi.encodeWithSignature(
-                        "mint(uint256)",
-                        config.initialMintAmount
-                    ),
-                    "Initialize token market to prevent exploit"
-                );
-
-                _pushAction(
-                    cTokenAddress,
-                    abi.encodeWithSignature(
-                        "transfer(address,uint256)",
-                        address(0),
-                        1
-                    ),
-                    "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
                 );
             }
         }
@@ -842,7 +797,7 @@ contract mip00 is HybridProposal, Configs {
                     );
 
                     /// CToken Assertions
-                    assertFalse(
+                    assertTrue(
                         comptroller.mintGuardianPaused(
                             addresses.getAddress(config.addressesString)
                         )
@@ -897,10 +852,6 @@ contract mip00 is HybridProposal, Configs {
                         mToken.reserveFactorMantissa(),
                         config.reserveFactor
                     );
-
-                    /// assert initial mToken balances are correct
-                    assertTrue(mToken.balanceOf(address(governor)) > 0); /// governor has some
-                    assertEq(mToken.balanceOf(address(0)), 1); /// address 0 has 1 wei of assets
 
                     /// assert cToken admin is the temporal governor
                     assertEq(address(mToken.admin()), address(governor));
