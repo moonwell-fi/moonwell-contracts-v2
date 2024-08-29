@@ -9,7 +9,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
 How to use:
-forge script src/proposals/DeployCompositeOracle.s.sol:DeployCompositeOracle \
+forge script script/DeployCompositeOracle.s.sol:DeployCompositeOracle \
     -vvvv \
     --rpc-url base \
     --broadcast
@@ -17,17 +17,13 @@ Remove --broadcast if you want to try locally first, without paying any gas.
 */
 
 contract DeployCompositeOracle is Script {
-    Addresses addresses;
-
-    function setUp() public {
-        addresses = new Addresses();
-    }
-
     function run() public returns (ChainlinkCompositeOracle) {
+        Addresses addresses = new Addresses();
+
         vm.startBroadcast();
         ChainlinkCompositeOracle clco = new ChainlinkCompositeOracle(
             addresses.getAddress("CHAINLINK_ETH_USD"),
-            addresses.getAddress("CHAINLINK_RETH_ETH"),
+            addresses.getAddress("CHAINLINK_WEETH_ORACLE"),
             address(0) /// only 2 oracles for this composite oracle
         );
 
