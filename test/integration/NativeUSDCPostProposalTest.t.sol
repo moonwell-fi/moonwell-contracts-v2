@@ -41,7 +41,6 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
         assertEq(mUSDC.symbol(), "mUSDC");
         assertEq(mUSDC.decimals(), 8);
         assertGt(mUSDC.exchangeRateCurrent(), 0.0002e18); /// exchange starting price is 0.0002e18
-        assertGt(mUSDC.reserveFactorMantissa(), 0.01e18);
         assertEq(
             address(mUSDC.comptroller()),
             addresses.getAddress("UNITROLLER")

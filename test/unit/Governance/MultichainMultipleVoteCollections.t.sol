@@ -351,6 +351,8 @@ contract MultichainMultipleVoteCollectionsUnitTest is MultichainBaseTest {
         address proxyVoteCollection2 = testEmitToMultipleVoteCollections();
         uint256 proposalId = 1;
 
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
+
         MultichainVoteCollection voteCollection2 = MultichainVoteCollection(
             proxyVoteCollection2
         );
