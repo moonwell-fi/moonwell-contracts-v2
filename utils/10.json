@@ -140,11 +140,6 @@
         "name": "DEPRECATED_VELO"
     },
     {
-        "addr": "0x21d851585840942B0eF9f20d842C00C5f3735eaF",
-        "isContract": true,
-        "name": "DEPRECATED_MOONWELL_VELO"
-    },
-    {
         "addr": "0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120",
         "isContract": true,
         "name": "CHAINLINK_VELO_USD"
@@ -308,6 +303,11 @@
         "addr": "0x866b838b97Ee43F2c818B3cb5Cc77A0dc22003Fc",
         "isContract": true,
         "name": "MOONWELL_VELO"
+    },
+    {
+        "addr": "0x21d851585840942B0eF9f20d842C00C5f3735eaF",
+        "isContract": true,
+        "name": "DEPRECATED_MOONWELL_VELO"
     },
     {
         "addr": "0x69ff8B55d6f08e2266FEB10092AcE88217e0668e",

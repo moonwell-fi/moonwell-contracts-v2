@@ -115,11 +115,6 @@
         "name": "JUMP_RATE_IRM_MOONWELL_weETH"
     },
     {
-        "addr": "0xb8051464C8c92209C92F3a4CD9C73746C4c3CFb3",
-        "isContract": true,
-        "name": "MOONWELL_weETH"
-    },
-    {
         "addr": "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B",
         "name": "USDC_ORACLE",
         "isContract": true
