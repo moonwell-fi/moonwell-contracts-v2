@@ -160,7 +160,7 @@
         "isContract": true
     },
     {
-        "addr": "0xd3e4bC4dEF4CfD0ddD67a8DaBA4C40644d63850a",
+        "addr": "0xC18f4443e92D62Df803aA267E3117A1F244f09E3",
         "name": "xWELL_LOGIC",
         "isContract": true
     },
@@ -200,8 +200,13 @@
         "name": "VOTE_COLLECTION_PROXY"
     },
     {
-        "addr": "0x8B1570c2eE8B7a729384382472C9238D473E1529",
+        "addr": "0xb6cbE1de9878547BbC8DdB7288A668AbF9F43d16",
         "isContract": true,
         "name": "VOTE_COLLECTION_IMPL"
+    },
+    {
+        "addr": "0x2dF0598Caa354D546dac1aAa0716553cEB81E8D8",
+        "isContract": true,
+        "name": "DEX_RELAYER"
     }
 ]

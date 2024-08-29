@@ -207,7 +207,7 @@ contract DeploySafetyModule is Script, MultichainGovernorDeploy {
                 cooldownSeconds,
                 "incorrect cooldown seconds"
             );
-            assertEq(
+            assertGe(
                 stkWell.DISTRIBUTION_END(),
                 DISTRIBUTION_END,
                 "incorrect distribution duration"

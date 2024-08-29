@@ -22,9 +22,15 @@ contract WormholeRelayerAdapter {
     /// in the same chain and we need to skip the fork selection
     bool public isMultichainTest;
 
-    uint256 public nativePriceQuote = 1 ether;
+    // @notice some tests need to silence the failure while others expect it to revert
+    // e.g of silence failure: check for refunds
+    bool public silenceFailure;
+
+    uint256 public constant nativePriceQuote = 1 ether;
 
     uint256 public callCounter;
+
+    event MockWormholeRelayerError(string reason);
 
     mapping(uint256 chainId => bool shouldRevert) public shouldRevertAtChain;
 
@@ -47,6 +53,10 @@ contract WormholeRelayerAdapter {
         for (uint16 i = 0; i < chainIds.length; i++) {
             shouldRevertAtChain[chainIds[i]] = _shouldRevert;
         }
+    }
+
+    function setSilenceFailure(bool _silenceFailure) external {
+        silenceFailure = _silenceFailure;
     }
 
     function setSenderChainId(uint16 _senderChainId) external {
@@ -79,25 +89,46 @@ contract WormholeRelayerAdapter {
 
         uint256 initialFork;
 
+        uint256 timestamp = block.timestamp;
         if (isMultichainTest) {
             initialFork = vm.activeFork();
+
             vm.selectFork(chainId.toChainId().toForkId());
+
+            vm.warp(timestamp);
         }
 
         // TODO naming;
         require(senderChainId != 0, "senderChainId not set");
 
-        /// immediately call the target
-        IWormholeReceiver(targetAddress).receiveWormholeMessages(
-            payload,
-            new bytes[](0),
-            bytes32(uint256(uint160(msg.sender))),
-            senderChainId, // chain not the target chain
-            bytes32(++nonce)
-        );
+        if (silenceFailure) {
+            /// immediately call the target
+            try
+                IWormholeReceiver(targetAddress).receiveWormholeMessages(
+                    payload,
+                    new bytes[](0),
+                    bytes32(uint256(uint160(msg.sender))),
+                    senderChainId, // chain not the target chain
+                    bytes32(++nonce)
+                )
+            {
+                // success
+            } catch Error(string memory reason) {
+                emit MockWormholeRelayerError(reason);
+            }
+        } else {
+            IWormholeReceiver(targetAddress).receiveWormholeMessages(
+                payload,
+                new bytes[](0),
+                bytes32(uint256(uint160(msg.sender))),
+                senderChainId, // chain not the target chain
+                bytes32(++nonce)
+            );
+        }
 
         if (isMultichainTest) {
             vm.selectFork(initialFork);
+            vm.warp(timestamp);
         }
 
         return uint64(nonce);

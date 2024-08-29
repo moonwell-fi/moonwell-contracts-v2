@@ -9,4 +9,5 @@ echo "CHAIN_ID=$CHAIN_ID"
 export PRIMARY_FORK_ID=0
 echo "PRIMARY_FORK_ID=$PRIMARY_FORK_ID"
 export TEMPLATE_PATH="src/proposals/templates/mipRewardsDistributionExternalChain.sol:mipRewardsDistributionExternalChain"
+
 echo "TEMPLATE_PATH=$TEMPLATE_PATH"
