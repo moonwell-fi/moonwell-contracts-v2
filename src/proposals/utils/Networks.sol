@@ -16,7 +16,12 @@ abstract contract Networks is Test {
     Network[] public networks;
 
     constructor() {
-        string memory data = vm.readFile("./utils/chains.json");
+        string memory data = vm.readFile(
+            VMSafe(address(vm)).envOr(
+                "NETWORK_PATH",
+                "./utils/mainnetchains.json"
+            )
+        );
         bytes memory parsedJson = vm.parseJson(data);
 
         Network[] memory jsonNetworks = abi.decode(parsedJson, (Network[]));
@@ -24,4 +29,14 @@ abstract contract Networks is Test {
             networks.push(jsonNetworks[i]);
         }
     }
+}
+
+interface VMSafe {
+    /// Gets the environment variable `name` and parses it as `string`.
+    /// Reverts if the variable could not be parsed.
+    /// Returns `defaultValue` if the variable was not found.
+    function envOr(
+        string calldata name,
+        string calldata defaultValue
+    ) external view returns (string memory);
 }

@@ -6,10 +6,7 @@ env:
   OP_RPC_URL: ${{secrets.OP_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
-  DESCRIPTION_PATH: "src/proposals/mips/mip-o00/MIP-O00.md"
-  PRIMARY_FORK_ID: 2 
-  MTOKENS_PATH: "src/proposals/mips/mip-o00/mTokens.json"
-  EMISSIONS_PATH: "src/proposals/mips/mip-o00/emissionConfigWell.json"
+  PRIMARY_FORK_ID: 2
 
 jobs:
   run-base-tests:
@@ -26,4 +23,4 @@ jobs:
         uses: ./.github/actions
 
       - name: Integration Tests Base Mainnet
-        run: time forge test --match-contract LiveSystemDeploy -vvv --ffi
+        run: time forge test --match-contract LiveSystemDeploy -vvv 
