@@ -112,7 +112,7 @@ contract mipm38 is HybridProposal, ParameterValidation {
         );
 
         require(
-            actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
+            actions.proposalActionTypeCount(ActionType.Moonbeam) > 1,
             "MIP-M38: should have moonbeam actions"
         );
 
