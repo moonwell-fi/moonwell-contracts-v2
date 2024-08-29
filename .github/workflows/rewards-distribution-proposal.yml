@@ -6,18 +6,14 @@ env:
   OP_RPC_URL: ${{secrets.OP_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
-  DESCRIPTION_PATH: "src/proposals/mips/mip-m35/m35.md"
-  PRIMARY_FORK_ID: 0 
-  MIP_REWARDS_PATH: "src/proposals/mips/mip-m35/m35.json"
-  SOL_TEMPLATE_PATH: "src/proposals/mips/mip-rewards-distribution/mipRewardsDistributionMoonbeam.sol"
-  MIP_REWARDS_ID: 0 # should only run if proposal is not on chain yet, if it is
-  # onchain skip this workflow and checks for on chain calldata match
+  SCRIPT_FILE: "src/proposals/mips/mip-m37/m37.sh"
+  RUN_JOB: false # Set this to true when you want to run the proposal
 
 jobs:
   run-base-tests:
     name: rewards-distribution-proposal
     runs-on: ubuntu-latest
-    if: ${{ vars.MIP_REWARDS_ID == '0' }}
+    if: ${{ env.RUN_PROPOSAL }}
 
     steps:
       - name: Checkout code
@@ -53,6 +49,10 @@ jobs:
                 comment_id: comment.id,
               });
             }
+
+      - name: Run set environments script
+      # SCRIPT_FILE
+        run: chmod +x $SCRIPT_FILE
 
       - name: Run Proposal
         run: bin/run-rewards-distribution-proposal.sh

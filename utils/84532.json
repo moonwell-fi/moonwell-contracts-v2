@@ -206,7 +206,7 @@
     },
     {
         "addr": "0x2dF0598Caa354D546dac1aAa0716553cEB81E8D8",
-        "isContract": true,
+        "isContract": false,
         "name": "DEX_RELAYER"
     }
 ]
