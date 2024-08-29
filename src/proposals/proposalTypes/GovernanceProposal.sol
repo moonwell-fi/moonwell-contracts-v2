@@ -7,7 +7,6 @@ import {console} from "@forge-std/console.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {ITimelock} from "@protocol/interfaces/ITimelock.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
-import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 
@@ -104,7 +103,7 @@ abstract contract GovernanceProposal is Proposal {
         );
         uint256 proposalCount = onchainProposalId != 0
             ? onchainProposalId
-            : MultichainGovernor(payable(governor)).proposalCount();
+            : governorContract.proposalCount();
 
         (
             address[] memory proposalTargets,

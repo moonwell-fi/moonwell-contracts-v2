@@ -1,0 +1,21 @@
+[
+    {
+        "addressesString": "MOONWELL_weETH",
+        "supplyCap": 900e18,
+        "borrowCap": 350e18,
+        "collateralFactor": 0.74e18,
+        "initialMintAmount": 1e12,
+        "name": "Moonwell weETH",
+        "priceFeedName": "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE",
+        "reserveFactor": 0.15e18,
+        "seizeShare": 0.03e18,
+        "symbol": "mweETH",
+        "tokenAddressName": "weETH",
+        "jrm": {
+            "baseRatePerYear": 0,
+            "jumpMultiplierPerYear": 4.5e18,
+            "kink": 0.35e18,
+            "multiplierPerYear": 0.15e18
+        }
+    }
+]
