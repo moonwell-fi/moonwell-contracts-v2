@@ -5,6 +5,11 @@
         "name": "WORMHOLE_CORE"
     },
     {
+        "addr": "0x93BAD53DDfB6132b0aC8E37f6029163E63372cEE",
+        "isContract": true,
+        "name": "WORMHOLE_BRIDGE_RELAYER"
+    },
+    {
         "addr": "0x61Ec26aA57019C486B10502285c5A3D4A4750AD7",
         "isContract": true,
         "name": "CHAINLINK_ETH_USD"
@@ -37,12 +42,72 @@
     {
         "addr": "0x354804005a80e5f87cf43beD9Bd4fCc6512Be98c",
         "isContract": false,
+        "name": "PAUSE_GUARDIAN"
+    },
+    {
+        "addr": "0x354804005a80e5f87cf43beD9Bd4fCc6512Be98c",
+        "isContract": false,
         "name": "CAP_GUARDIAN"
+    },
+    {
+        "addr": "0x2FC46cd0b3e7ebFb715c4bB64CbDF7DDc86D26D0",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_PROXY"
+    },
+    {
+        "addr": "0xA29a011e862A32BD7463135b2728FF6739962E03",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_IMPL"
     },
     {
         "addr": "0xBeD75989b06a286e6E81c7aB1129003Fe49813eD",
         "isContract": true,
         "name": "TEMPORAL_GOVERNOR"
+    },
+    {
+        "addr": "0xC93729625AF307F2533Bb1b20c412584c474bEC7",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_PROXY"
+    },
+    {
+        "addr": "0x9a216C4F7d6BF0E49C5cd9BBaDF59ccE5062a92A",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_IMPL"
+    },
+    {
+        "addr": "0x6db1080c742aFd507057bF98fEf47Cf6f5f4a558",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_CONTROLLER"
+    },
+    {
+        "addr": "0xF4aAF6624Cf3448dA7628FBD763142161CB87fF6",
+        "isContract": true,
+        "name": "STK_GOVTOKEN"
+    },
+    {
+        "addr": "0x538EaFe91f8A8557b7103496777F2bE540B91784",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_IMPL"
+    },
+    {
+        "addr": "0x6bD7f004Dda748dB47Eb764a816eD2AA26EB4e40",
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0xF81d39f4F2f98B5D804FCCF3Db194D17c78145Ff",
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0xd3e4bC4dEF4CfD0ddD67a8DaBA4C40644d63850a",
+        "name": "xWELL_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0xE8F339C51cb2700113ec6ef552eE1D6cCA3BfB95",
+        "name": "xWELL_PROXY",
+        "isContract": true
     },
     {
         "addr": "0x1A28908DD5357C611D12608212CBEF9626750E41",

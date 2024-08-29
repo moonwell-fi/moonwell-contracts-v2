@@ -11,6 +11,7 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
 import {Address} from "@utils/Address.sol";
 import {Proposal} from "@proposals/Proposal.sol";
+import {Networks} from "@proposals/utils/Networks.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {ProposalsHandler} from "@test/utils/ProposalsHandler.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
@@ -22,7 +23,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {ChainIds, MOONBEAM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
-contract LiveProposalsIntegrationTest is Test, ProposalChecker {
+contract LiveProposalsIntegrationTest is Test, ProposalChecker, Networks {
     using String for string;
 
     using Bytes for bytes;
@@ -252,7 +253,6 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
                 /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
                 vm.expectEmit(true, true, true, true, wormholeCore);
 
-                /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
                 emit LogMessagePublished(
                     address(governor),
                     nextSequence,
@@ -406,4 +406,76 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker {
         override
         returns (address[] memory, uint256[] memory, bytes[] memory)
     {}
+
+    function runProposal(
+        string memory path,
+        address governorAddress,
+        uint256 proposalId
+    ) private returns (bool found) {
+        Proposal proposal = Proposal(deployCode(path));
+        vm.makePersistent(address(proposal));
+
+        vm.selectFork(uint256(proposal.primaryForkId()));
+
+        // runs pre build mock and build
+        proposal.preBuildMock(addresses);
+        proposal.build(addresses);
+
+        // if proposal is the one that failed, run the proposal again
+        if (proposal.getProposalId(addresses, governorAddress) == proposalId) {
+            vm.selectFork(MOONBEAM_FORK_ID);
+            MultichainGovernor governorContract = MultichainGovernor(governor);
+
+            governorContract.execute(proposalId);
+
+            vm.selectFork(uint256(proposal.primaryForkId()));
+            proposal.validate(addresses, address(proposal));
+
+            found = true;
+        }
+    }
+
+    function runTemporalGovProposal(
+        TemporalGovernor temporalGovernor,
+        string memory path,
+        address governorAddress,
+        bytes memory vaa,
+        uint256 proposalId
+    ) private returns (bool found) {
+        Proposal proposal = Proposal(deployCode(path));
+        vm.makePersistent(address(proposal));
+
+        vm.selectFork(uint256(proposal.primaryForkId()));
+
+        // runs pre build mock and build
+        proposal.preBuildMock(addresses);
+        proposal.build(addresses);
+
+        // if proposal is the one that failed, run the temporal
+        // governor execution again
+        if (proposal.getProposalId(addresses, governorAddress) == proposalId) {
+            // foundry selectFork resets warp, so we need to warp again
+            vm.warp(block.timestamp + temporalGovernor.proposalDelay());
+
+            temporalGovernor.executeProposal(vaa);
+
+            // no need to select fork as we are already on base
+            proposal.validate(addresses, address(proposal));
+
+            found = true;
+        }
+    }
+
+    function getProposalsByType(
+        string memory proposalType
+    ) private returns (string[] memory) {
+        string[] memory inputs = new string[](2);
+        inputs[0] = "bin/get-proposals-by-type.sh";
+        inputs[1] = proposalType;
+
+        string memory output = string(vm.ffi(inputs));
+
+        // create array splitting the output string
+        return output.split("\n");
+    }
 }
