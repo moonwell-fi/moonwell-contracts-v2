@@ -65,7 +65,7 @@ contract mipb27 is HybridProposal, Configs, ParameterValidation {
         );
 
         _pushAction(
-            addresses.getAddress("MOONWELL_USDbC"),
+            addresses.getAddress("MOONWELL_USDBC"),
             abi.encodeWithSignature(
                 "_setCollateralFactor(uint256)",
                 USDbC_NEW_CF
@@ -83,7 +83,7 @@ contract mipb27 is HybridProposal, Configs, ParameterValidation {
         );
 
         _pushAction(
-            addresses.getAddress("MOONWELL_USDbC"),
+            addresses.getAddress("MOONWELL_USDBC"),
             abi.encodeWithSignature("_setReserveFactor(uint256)", USDbC_NEW_RF),
             "Set reserve factor for Moonwell USDbC to updated reserve factor"
         );
@@ -142,7 +142,7 @@ contract mipb27 is HybridProposal, Configs, ParameterValidation {
             WETH_NEW_CF
         );
 
-        _validateRF(addresses.getAddress("MOONWELL_USDbC"), USDbC_NEW_RF);
+        _validateRF(addresses.getAddress("MOONWELL_USDBC"), USDbC_NEW_RF);
 
         _validateJRM(
             addresses.getAddress("JUMP_RATE_IRM_MOONWELL_AERO_MIP_B27"),
