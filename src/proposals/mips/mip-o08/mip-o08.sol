@@ -52,6 +52,33 @@ contract mipo08 is HybridProposal, ParameterValidation {
             "Set collateral factor of Moonwell WBTC",
             ActionType.Optimism
         );
+
+        _pushAction(
+            addresses.getAddress("MOONWELL_USDC"),
+            abi.encodeWithSignature(
+                "_setInterestRateModel(address)",
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC_MIP_O08")
+            ),
+            "Set interest rate model for Moonwell USDC to updated rate model"
+        );
+
+        _pushAction(
+            addresses.getAddress("MOONWELL_USDT"),
+            abi.encodeWithSignature(
+                "_setInterestRateModel(address)",
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDT_MIP_O08")
+            ),
+            "Set interest rate model for Moonwell USDT to updated rate model"
+        );
+
+        _pushAction(
+            addresses.getAddress("MOONWELL_DAI"),
+            abi.encodeWithSignature(
+                "_setInterestRateModel(address)",
+                addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI_MIP_O08")
+            ),
+            "Set interest rate model for Moonwell DAI to updated rate model"
+        );
     }
 
     function validate(Addresses addresses, address) public view override {
@@ -66,6 +93,39 @@ contract mipo08 is HybridProposal, ParameterValidation {
         _validateRF(
             addresses.getAddress("MOONWELL_WBTC"),
             NEW_WBTC_RESERVE_FACTOR
+        );
+
+        _validateJRM(
+            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDC_MIP_O08"),
+            addresses.getAddress("MOONWELL_USDC"),
+            IRParams({
+                baseRatePerTimestamp: 0,
+                kink: 0.9e18,
+                multiplierPerTimestamp: 0.056e18,
+                jumpMultiplierPerTimestamp: 5e18
+            })
+        );
+
+        _validateJRM(
+            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_USDT_MIP_O08"),
+            addresses.getAddress("MOONWELL_USDT"),
+            IRParams({
+                baseRatePerTimestamp: 0,
+                kink: 0.9e18,
+                multiplierPerTimestamp: 0.056e18,
+                jumpMultiplierPerTimestamp: 5e18
+            })
+        );
+
+        _validateJRM(
+            addresses.getAddress("JUMP_RATE_IRM_MOONWELL_DAI_MIP_O08"),
+            addresses.getAddress("MOONWELL_DAI"),
+            IRParams({
+                baseRatePerTimestamp: 0,
+                kink: 0.9e18,
+                multiplierPerTimestamp: 0.056e18,
+                jumpMultiplierPerTimestamp: 5e18
+            })
         );
     }
 }
