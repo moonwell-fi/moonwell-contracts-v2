@@ -122,4 +122,27 @@ library String {
 
         return splitStrings;
     }
+
+    function endsWith(
+        string memory str,
+        string memory suffix
+    ) public pure returns (bool) {
+        bytes memory strBytes = bytes(str);
+        bytes memory suffixBytes = bytes(suffix);
+
+        if (strBytes.length < suffixBytes.length) {
+            return false;
+        }
+
+        for (uint256 i = 0; i < suffixBytes.length; i++) {
+            if (
+                strBytes[strBytes.length - suffixBytes.length + i] !=
+                suffixBytes[i]
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

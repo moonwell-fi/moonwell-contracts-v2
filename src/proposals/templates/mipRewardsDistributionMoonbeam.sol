@@ -21,7 +21,7 @@ interface StellaSwapRewarder {
     function currentEndTimestamp(uint256 _pid) external view returns (uint256);
 }
 
-contract mipRewardsDistribution is HybridProposal, Networks {
+contract mipRewardsDistributionMoonbeam is HybridProposal, Networks {
     using String for string;
     using stdJson for string;
     using ChainIds for uint256;
@@ -221,6 +221,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         addresses.getAddress(existingTransferFrom.to),
                     "Duplication in transferFroms"
                 );
+
+                require(
+                    keccak256(abi.encodePacked(existingTransferFrom.to)) !=
+                        keccak256("COMPTROLLER"),
+                    "should not transfer funds to COMPTROLLER logic contract"
+                );
             }
 
             if (
@@ -243,7 +249,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     spec.transferFroms[i].amount,
                     spec.stkWellEmissionsPerSecond *
                         (endTimeStamp - startTimeStamp),
-                    1e9,
+                    1e10,
                     "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
                 );
             }
@@ -388,10 +394,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     well.balanceOf(to),
                     wellBalancesBefore[to] + transferFrom.amount,
                     string(
-                        abi.encodePacked(
-                            "balance changed for ",
-                            vm.getLabel(to)
-                        )
+                        abi.encodePacked("balance wrong for ", vm.getLabel(to))
                     )
                 );
             }
