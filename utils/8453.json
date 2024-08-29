@@ -95,6 +95,31 @@
         "isContract": true
     },
     {
+        "addr": "0x04c0599ae5a44757c0af6f9ec3b93da8976c150a",
+        "name": "weETH",
+        "isContract": true
+    },
+    {
+        "addr": "0xFC1415403EbB0c693f9a7844b92aD2Ff24775C65",
+        "name": "CHAINLINK_WEETH_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0xe44b816FE6bc5047C22b9fA5e4D4c5c9747476b3",
+        "isContract": true,
+        "name": "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE"
+    },
+    {
+        "addr": "0x6ac79dF84FA8A704711a2fb8c3763e48Ed2c0Ed6",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_weETH"
+    },
+    {
+        "addr": "0xb8051464C8c92209C92F3a4CD9C73746C4c3CFb3",
+        "isContract": true,
+        "name": "MOONWELL_weETH"
+    },
+    {
         "addr": "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B",
         "name": "USDC_ORACLE",
         "isContract": true
@@ -503,5 +528,10 @@
         "addr": "0xAf3642bAc06cDA85340ECf18D40b8Bf89958B69E",
         "isContract": false,
         "name": "DEX_RELAYER"
+    },
+    {
+        "addr": "0xb8051464C8c92209C92F3a4CD9C73746C4c3CFb3",
+        "isContract": true,
+        "name": "MOONWELL_weETH"
     }
 ]
