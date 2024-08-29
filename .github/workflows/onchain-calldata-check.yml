@@ -22,4 +22,5 @@ jobs:
         uses: ./.github/actions
 
       - name: Run Test Proposal Calldata Generation
-        run: time forge test --match-contract TestProposalCalldataGeneration -vvv --ffi
+        run: time forge test --match-contract TestProposalCalldataGeneration
+        -vvv --ffi --disable-block-gas-limit
