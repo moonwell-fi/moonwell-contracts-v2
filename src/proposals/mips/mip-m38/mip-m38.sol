@@ -88,7 +88,7 @@ contract mipm38 is HybridProposal, ParameterValidation {
             addresses.getAddress("mUSDCwh"),
             abi.encodeWithSignature(
                 "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_mUSDCwh_MIP_B38")
+                addresses.getAddress("JUMP_RATE_IRM_mUSDCwh_MIP_M38")
             ),
             "Set interest rate model for mUSDCwh to updated rate model",
             ActionType.Moonbeam
@@ -146,7 +146,7 @@ contract mipm38 is HybridProposal, ParameterValidation {
         );
 
         _validateJRM(
-            addresses.getAddress("JUMP_RATE_IRM_mUSDCwh_MIP_B38"),
+            addresses.getAddress("JUMP_RATE_IRM_mUSDCwh_MIP_M38"),
             addresses.getAddress("mUSDCwh"),
             IRParams({
                 baseRatePerTimestamp: 0.02e18,
