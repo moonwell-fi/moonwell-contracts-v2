@@ -24,4 +24,4 @@ jobs:
       - name: Run Test Proposal Calldata Generation
         run: |
              time forge test --match-contract TestProposalCalldataGeneration \
-             -vvv --ffi --disable-block-gas-limit
+             -vvv --ffi --block-gas-limit 100000000
