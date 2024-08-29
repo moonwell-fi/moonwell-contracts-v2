@@ -20,6 +20,7 @@ contract mipm21 is GovernanceProposal {
         _setProposalDescription(proposalDescription);
 
         onchainProposalId = 77;
+        isDeprecatedGovernor = true;
     }
 
     function primaryForkId() public pure override returns (uint256) {

@@ -1123,6 +1123,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     {
         testMultipleUserVoteWellSucceeds();
 
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
+
         proposalId = governor.proposalCount();
 
         IMultichainGovernor.ProposalInformation
@@ -1196,6 +1198,8 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
 
     function testEmitVotesRefundSucceeds() public {
         uint256 proposalId = testVotingValidProposalIdSucceeds();
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
+
         uint256 bridgeCost = voteCollection.bridgeCost(
             MOONBEAM_WORMHOLE_CHAIN_ID
         );
@@ -1339,6 +1343,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     function testBridgeInWrongSourceChain() public {
         bytes memory payload = abi.encode(0, 0, 0, 0, 0);
         uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
         vm.deal(address(governor), gasCost);
         vm.prank(address(governor));
@@ -1505,6 +1510,7 @@ contract MultichainVoteCollectionUnitTest is MultichainBaseTest {
     // test governor bridge in votes already collected here to reuse emit votes test
     function testBridgeInVotesAlreadyCollected() public {
         uint256 proposalId = testEmitVotesToGovernorSucceeded();
+        wormholeRelayerAdapter.setSenderChainId(BASE_WORMHOLE_CHAIN_ID);
 
         bytes memory payload = abi.encode(proposalId, 0, 0, 0);
         uint256 gasCost = wormholeRelayerAdapter.nativePriceQuote();
