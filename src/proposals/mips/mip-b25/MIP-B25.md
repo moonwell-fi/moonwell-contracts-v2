@@ -17,6 +17,8 @@ deployment with the following details:
   [0x04c0599ae5a44757c0af6f9ec3b93da8976c150a](https://basescan.org/address/0x04c0599ae5a44757c0af6f9ec3b93da8976c150a#code)
 - Oracle Feed:
   [weETH/ETH](https://basescan.org/address/0xFC1415403EbB0c693f9a7844b92aD2Ff24775C65)
+- Oracle Feed:
+  [ETH/USD](https://basescan.org/address/0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70)
 - Composite Oracle Feed:
   [weETH/ETH/USD](https://basescan.org/address/0xe44b816FE6bc5047C22b9fA5e4D4c5c9747476b3)
 
@@ -60,8 +62,8 @@ parameters for the weETH market:
 | Parameter            | Value |
 | -------------------- | ----- |
 | Collateral Factor    | 74%   |
-| Supply Cap           | 1950  |
-| Borrow Cap           | 780   |
+| Supply Cap           | 900   |
+| Borrow Cap           | 350   |
 | Protocol Seize Share | 30%   |
 
 #### Interest Rate Parameters
