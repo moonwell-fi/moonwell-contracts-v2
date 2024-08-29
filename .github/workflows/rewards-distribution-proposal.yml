@@ -7,7 +7,7 @@ env:
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
   SCRIPT_FILE: "src/proposals/mips/mip-o02/o02.sh"
-  MIP_REWARDS_ID: 0 # should only run if proposal is not on chain yet, if it is
+  MIP_REWARDS_ID: 124 # should only run if proposal is not on chain yet, if it is
   # onchain skip this workflow and checks for on chain calldata match
 
 jobs:
