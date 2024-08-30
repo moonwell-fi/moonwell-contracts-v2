@@ -22,5 +22,5 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Tests Base Mainnet
+      - name: Integration Tests Live System Optimism
         run: time forge test --match-contract LiveSystemDeploy -vvv 
