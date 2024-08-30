@@ -393,10 +393,5 @@
         "addr": "0x4F56443f075eF5c972A76365606bFBdBD37e146f",
         "isContract": true,
         "name": "FOUNDATION_OP_MULTISIG"
-    },
-    {
-        "addr": "0xb8051464C8c92209C92F3a4CD9C73746C4c3CFb3",
-        "isContract": true,
-        "name": "MOONWELL_weETH"
     }
 ]
