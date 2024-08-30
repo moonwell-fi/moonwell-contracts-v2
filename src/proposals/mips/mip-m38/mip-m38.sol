@@ -149,7 +149,7 @@ contract mipm38 is HybridProposal, ParameterValidation {
             addresses.getAddress("JUMP_RATE_IRM_mUSDCwh_MIP_M38"),
             addresses.getAddress("mUSDCwh"),
             IRParams({
-                baseRatePerTimestamp: 0.02e18,
+                baseRatePerTimestamp: 0,
                 kink: 0.65e18,
                 multiplierPerTimestamp: 0.14e18,
                 jumpMultiplierPerTimestamp: 7.4e18
@@ -159,7 +159,7 @@ contract mipm38 is HybridProposal, ParameterValidation {
             addresses.getAddress("JUMP_RATE_IRM_mFRAX_MIP_M38"),
             addresses.getAddress("MOONWELL_mFRAX"),
             IRParams({
-                baseRatePerTimestamp: 0.02e18,
+                baseRatePerTimestamp: 0,
                 kink: 0.65e18,
                 multiplierPerTimestamp: 0.14e18,
                 jumpMultiplierPerTimestamp: 7.4e18
