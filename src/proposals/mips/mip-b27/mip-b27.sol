@@ -37,46 +37,53 @@ contract mipb27 is HybridProposal, Configs, ParameterValidation {
     function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
+        address unitrollerAddress = addresses.getAddress("UNITROLLER");
+
         _pushAction(
-            addresses.getAddress("MOONWELL_wstETH"),
+            unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(uint256)",
+                "_setCollateralFactor(address,uint256)",
+                addresses.getAddress("MOONWELL_wstETH"),
                 wstETH_NEW_CF
             ),
             "Set collateral factor for Moonwell wstETH to updated collateral factor"
         );
 
         _pushAction(
-            addresses.getAddress("MOONWELL_rETH"),
+            unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(uint256)",
+                "_setCollateralFactor(address,uint256)",
+                addresses.getAddress("MOONWELL_rETH"),
                 rETH_NEW_CF
             ),
             "Set collateral factor for Moonwell rETH to updated collateral factor"
         );
 
         _pushAction(
-            addresses.getAddress("MOONWELL_cbETH"),
+            unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(uint256)",
+                "_setCollateralFactor(address,uint256)",
+                addresses.getAddress("MOONWELL_cbETH"),
                 cbETH_NEW_CF
             ),
             "Set collateral factor for Moonwell cbETH to updated collateral factor"
         );
 
         _pushAction(
-            addresses.getAddress("MOONWELL_USDBC"),
+            unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(uint256)",
+                "_setCollateralFactor(address,uint256)",
+                addresses.getAddress("MOONWELL_USDBC"),
                 USDbC_NEW_CF
             ),
             "Set collateral factor for Moonwell USDbC to updated collateral factor"
         );
 
         _pushAction(
-            addresses.getAddress("MOONWELL_WETH"),
+            unitrollerAddress,
             abi.encodeWithSignature(
-                "_setCollateralFactor(uint256)",
+                "_setCollateralFactor(address,uint256)",
+                addresses.getAddress("MOONWELL_WETH"),
                 WETH_NEW_CF
             ),
             "Set collateral factor for Moonwell WETH to updated collateral factor"
