@@ -32,11 +32,13 @@ contract mipo08 is HybridProposal, ParameterValidation {
     }
 
     function deploy(Addresses addresses, address) public override {
-        address irModel = address(
-            new JumpRateModel(BASE_RATE, MULTIPLIER, JUMP_MULTIPLIER, KINK)
-        );
+        if (!addresses.isAddressSet("JUMP_RATE_IRM_MOONWELL_MIP_O08")) {
+            address irModel = address(
+                new JumpRateModel(BASE_RATE, MULTIPLIER, JUMP_MULTIPLIER, KINK)
+            );
 
-        addresses.addAddress("JUMP_RATE_IRM_MOONWELL_MIP_O08", irModel);
+            addresses.addAddress("JUMP_RATE_IRM_MOONWELL_MIP_O08", irModel);
+        }
     }
 
     function primaryForkId() public pure override returns (uint256) {
