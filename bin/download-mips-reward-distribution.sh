@@ -6,21 +6,21 @@ mkdir -p $OUTPUT_DIR
 
 # Define the URLs and filenames
 URLS=(
-  "https://moonwell-reward-automation.moonwell.workers.dev/?type=markdown&proposal=M35&network=Moonbeam"
-  "https://moonwell-reward-automation.moonwell.workers.dev/?type=json&proposal=M35&network=Moonbeam"
-  "https://moonwell-reward-automation.moonwell.workers.dev/?type=markdown&proposal=B23&network=Base"
-  "https://moonwell-reward-automation.moonwell.workers.dev/?type=json&proposal=B23&network=Base"
-  "https://moonwell-reward-automation.moonwell.workers.dev/?type=markdown&proposal=O01&network=Optimism"
-  "https://moonwell-reward-automation.moonwell.workers.dev/?type=json&proposal=O01&network=Optimism"
+  "https://moonwell-reward-automation.moonwell.workers.dev/?type=markdown&proposal=M37&network=Moonbeam&timestamp=1724782480"
+  "https://moonwell-reward-automation.moonwell.workers.dev/?type=json&proposal=M37&network=Moonbeam&timestamp=1724782480"
+  "https://moonwell-reward-automation.moonwell.workers.dev/?type=markdown&proposal=B26&network=Base&timestamp=1724782480"
+  "https://moonwell-reward-automation.moonwell.workers.dev/?type=json&proposal=B26&network=Base&timestamp=1724782480"
+  "https://moonwell-reward-automation.moonwell.workers.dev/?type=markdown&proposal=O06&network=Optimism&timestamp=1724782480"
+  "https://moonwell-reward-automation.moonwell.workers.dev/?type=json&proposal=O06&network=Optimism&timestamp=1724782480"
 )
 
 FILENAMES=(
-  "m35.md"
-  "m35.json"
-  "b23.md"
-  "b23.json"
-  "o02.md"
-  "o02.json"
+  "m37.md"
+  "m37.json"
+  "b26.md"
+  "b26.json"
+  "o06.md"
+  "o06.json"
 )
 
 # Download the files

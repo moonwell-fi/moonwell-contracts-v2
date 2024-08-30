@@ -73,6 +73,15 @@ contract xWellRouterMoonbeamTest is Test {
         fallbackReverts = false; /// default to not revert
     }
 
+    function _boundMintAmount(
+        uint256 mintAmount
+    ) internal view returns (uint256) {
+        uint256 buffer = xwell.buffer(address(wormholeAdapter));
+        uint256 bufferCap = xwell.bufferCap(address(wormholeAdapter));
+
+        return _bound(mintAmount, 1, bufferCap - buffer);
+    }
+
     function testSetup() public view {
         assertEq(
             address(router.xwell()),
@@ -140,11 +149,7 @@ contract xWellRouterMoonbeamTest is Test {
     ) public returns (uint256) {
         uint256 bridgeCost = router.bridgeCost(BASE_WORMHOLE_CHAIN_ID);
 
-        mintAmount = _bound(
-            mintAmount,
-            1,
-            xwell.buffer(address(wormholeAdapter)) / 2
-        );
+        mintAmount = _boundMintAmount(mintAmount);
         glmrAmount = _bound(glmrAmount, bridgeCost, type(uint256).max);
 
         uint256 startingXWellBalance = xwell.balanceOf(address(this));
@@ -208,11 +213,7 @@ contract xWellRouterMoonbeamTest is Test {
     }
 
     function testBridgeOutSuccess(uint256 mintAmount) public returns (uint256) {
-        mintAmount = _bound(
-            mintAmount,
-            1,
-            xwell.buffer(address(wormholeAdapter)) / 2
-        );
+        mintAmount = _boundMintAmount(mintAmount);
 
         uint256 startingXWellBalance = xwell.balanceOf(address(this));
         uint256 startingXWellTotalSupply = xwell.totalSupply();

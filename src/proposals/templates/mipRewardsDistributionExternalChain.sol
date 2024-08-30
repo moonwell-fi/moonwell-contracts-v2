@@ -682,7 +682,6 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             if (to == addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY")) {
                 //  amount must be transferred as part of the DEX rewards and
                 //  bridge calls
-                // TODO remove the ApproxEqRel once we get the final values from the worker
                 assertApproxEqAbs(
                     well.balanceOf(to),
                     wellBalancesBefore[to],
