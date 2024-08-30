@@ -56,6 +56,8 @@ contract mipb25 is HybridProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
+
+        onchainProposalId = 120;
     }
 
     function primaryForkId() public pure override returns (uint256) {
