@@ -35,7 +35,7 @@ contract LiveSystemTest is Test {
             payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN"));
+        vm.prank(addresses.getAddress("SECURITY_COUNCIL"));
         gov.togglePause();
 
         assertTrue(gov.paused());
