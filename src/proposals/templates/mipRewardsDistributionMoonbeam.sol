@@ -462,7 +462,7 @@ contract mipRewardsDistributionMoonbeam is HybridProposal, Networks {
                 stellaSwapRewarder
             ),
             0,
-            1e8, // 0.00000001e18 well
+            1e18,
             "StellaSwap Rewarder should not have an open allowance after execution"
         );
 
@@ -470,7 +470,7 @@ contract mipRewardsDistributionMoonbeam is HybridProposal, Networks {
         assertApproxEqAbs(
             well.balanceOf(stellaSwapRewarder),
             wellBalancesBefore[stellaSwapRewarder] + addRewardInfo.amount,
-            1e8, // 0.00000001e18 well
+            1e18,
             "StellaSwap Rewarder should have received the correct amount of WELL"
         );
 

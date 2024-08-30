@@ -70,6 +70,11 @@
         "name": "cbETH"
     },
     {
+        "addr": "0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF",
+        "isContract": true,
+        "name": "weETH"
+    },
+    {
         "addr": "0x138b809B8472fF09Cd3E075E6EcbB2e42D41d870",
         "isContract": true,
         "name": "CHAINLINK_cbETH_ETH"
@@ -95,6 +100,26 @@
         "name": "CHAINLINK_RETH_USD_COMPOSITE_ORACLE"
     },
     {
+        "addr": "0xb4479d436DDa5c1A79bD88D282725615202406E3",
+        "isContract": true,
+        "name": "CHAINLINK_WEETH_ORACLE"
+    },
+    {
+        "addr": "0x512CE44e4F69A98bC42A57ceD8257e65e63cD74f",
+        "isContract": true,
+        "name": "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE"
+    },
+    {
+        "addr": "0x6ac79dF84FA8A704711a2fb8c3763e48Ed2c0Ed6",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_weETH"
+    },
+    {
+        "addr": "0xb8051464C8c92209C92F3a4CD9C73746C4c3CFb3",
+        "isContract": true,
+        "name": "MOONWELL_weETH"
+    },
+    {
         "addr": "0x4200000000000000000000000000000000000042",
         "isContract": true,
         "name": "OP"
@@ -105,9 +130,14 @@
         "name": "CHAINLINK_OP_USD"
     },
     {
-        "addr": "0x3c8B650257cFb5f272f799F5e2b4e65093a11a05",
+        "addr": "0x9560e827af36c94d2ac33a39bce1fe78631088db",
         "isContract": true,
         "name": "VELO"
+    },
+    {
+        "addr": "0x3c8B650257cFb5f272f799F5e2b4e65093a11a05",
+        "isContract": true,
+        "name": "DEPRECATED_VELO"
     },
     {
         "addr": "0x0f2Ed59657e391746C1a097BDa98F2aBb94b1120",
@@ -270,9 +300,14 @@
         "name": "JUMP_RATE_IRM_MOONWELL_VELO"
     },
     {
-        "addr": "0x21d851585840942B0eF9f20d842C00C5f3735eaF",
+        "addr": "0x866b838b97Ee43F2c818B3cb5Cc77A0dc22003Fc",
         "isContract": true,
         "name": "MOONWELL_VELO"
+    },
+    {
+        "addr": "0x21d851585840942B0eF9f20d842C00C5f3735eaF",
+        "isContract": true,
+        "name": "DEPRECATED_MOONWELL_VELO"
     },
     {
         "addr": "0x69ff8B55d6f08e2266FEB10092AcE88217e0668e",
@@ -358,10 +393,5 @@
         "addr": "0x4F56443f075eF5c972A76365606bFBdBD37e146f",
         "isContract": true,
         "name": "FOUNDATION_OP_MULTISIG"
-    },
-    {
-        "addr": "0xb8051464C8c92209C92F3a4CD9C73746C4c3CFb3",
-        "isContract": true,
-        "name": "MOONWELL_weETH"
     }
 ]
