@@ -19,6 +19,6 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Tests Base Mainnet
+      - name: Base Mainnet Integration Tests
         run: time forge test --match-contract LiveSystemBaseTest --fork-url base
           -vvv --ffi

@@ -9,10 +9,10 @@ import "@forge-std/Test.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {ChainlinkCompositeOracle} from "@protocol/oracles/ChainlinkCompositeOracle.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
@@ -24,11 +24,11 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 /// This is a template of a MIP proposal that can be used to add new mTokens
 /// @dev be sure to include all necessary underlying and price feed addresses
 /// in the Addresses.sol contract for the network the MTokens are being deployed on.
-contract mipb25 is HybridProposal, Configs {
+contract mipo05 is HybridProposal, Configs {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @notice the name of the proposal
-    string public constant override name = "MIP-B25";
+    string public constant override name = "MIP-O05";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;
@@ -48,7 +48,7 @@ contract mipb25 is HybridProposal, Configs {
         address unitroller;
     }
 
-    string constant descriptionPath = "./src/proposals/mips/mip-b25/MIP-B25.md";
+    string constant descriptionPath = "./src/proposals/mips/mip-o05/MIP-O05.md";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -57,11 +57,11 @@ contract mipb25 is HybridProposal, Configs {
 
         _setProposalDescription(proposalDescription);
 
-        onchainProposalId = 41;
+        onchainProposalId = 40;
     }
 
     function primaryForkId() public pure override returns (uint256) {
-        return BASE_FORK_ID;
+        return OPTIMISM_FORK_ID;
     }
 
     function deploy(Addresses addresses, address deployer) public override {
@@ -70,10 +70,10 @@ contract mipb25 is HybridProposal, Configs {
 
         if (cTokenConfigs.length == 0) {
             _setMTokenConfiguration(
-                "./src/proposals/mips/mip-b25/MTokens.json"
+                "./src/proposals/mips/mip-o05/MTokens.json"
             );
             _setEmissionConfiguration(
-                "./src/proposals/mips/mip-b25/RewardStreams.json"
+                "./src/proposals/mips/mip-o05/RewardStreams.json"
             );
 
             cTokenConfigs = getCTokenConfigurations(block.chainid);
@@ -218,23 +218,13 @@ contract mipb25 is HybridProposal, Configs {
 
         if (cTokenConfigs.length == 0) {
             _setMTokenConfiguration(
-                "./src/proposals/mips/mip-b25/MTokens.json"
+                "./src/proposals/mips/mip-o05/MTokens.json"
             );
             _setEmissionConfiguration(
-                "./src/proposals/mips/mip-b25/RewardStreams.json"
+                "./src/proposals/mips/mip-o05/RewardStreams.json"
             );
 
             cTokenConfigs = getCTokenConfigurations(block.chainid);
-        }
-
-        for (uint256 i = 0; i < cTokenConfigs.length; i++) {
-            Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-
-            deal(
-                addresses.getAddress(config.tokenAddressName),
-                addresses.getAddress("TEMPORAL_GOVERNOR"),
-                config.initialMintAmount
-            );
         }
     }
 
@@ -246,10 +236,10 @@ contract mipb25 is HybridProposal, Configs {
 
         if (cTokenConfigs.length == 0) {
             _setMTokenConfiguration(
-                "./src/proposals/mips/mip-b25/MTokens.json"
+                "./src/proposals/mips/mip-o05/MTokens.json"
             );
             _setEmissionConfiguration(
-                "./src/proposals/mips/mip-b25/RewardStreams.json"
+                "./src/proposals/mips/mip-o05/RewardStreams.json"
             );
 
             cTokenConfigs = getCTokenConfigurations(block.chainid);
@@ -379,9 +369,10 @@ contract mipb25 is HybridProposal, Configs {
         unchecked {
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 EmissionConfig memory config = emissionConfig[i];
+
                 require(
                     config.emissionToken.code.length > 0,
-                    "emission token must have bytecode"
+                    "emission token not a contract"
                 );
 
                 _pushAction(
