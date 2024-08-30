@@ -139,7 +139,7 @@ contract mipb27 is HybridProposal, Configs, ParameterValidation {
 
         _validateCF(
             addresses,
-            addresses.getAddress("MOONWELL_USDC"),
+            addresses.getAddress("MOONWELL_USDBC"),
             USDbC_NEW_CF
         );
 
