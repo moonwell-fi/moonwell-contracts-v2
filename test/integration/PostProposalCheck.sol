@@ -73,15 +73,14 @@ contract PostProposalCheck is Test {
 
         vm.selectFork(proposal.primaryForkId());
 
-        address deployer = address(this);
-
-        proposal.deploy(addresses, deployer);
-        proposal.afterDeploy(addresses, deployer);
-        proposal.preBuildMock(addresses);
-        proposal.build(addresses);
-
         // only runs the proposal if the proposal has not been executed yet
         if (proposal.getProposalId(addresses, address(governor)) == 0) {
+            address deployer = address(this);
+
+            proposal.deploy(addresses, deployer);
+            proposal.afterDeploy(addresses, deployer);
+            proposal.preBuildMock(addresses);
+            proposal.build(addresses);
             proposal.teardown(addresses, deployer);
             proposal.run(addresses, deployer);
             proposal.validate(addresses, deployer);
