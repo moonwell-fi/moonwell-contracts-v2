@@ -8,7 +8,7 @@ import {OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 
 contract mipo08 is HybridProposal, ParameterValidation {
     using ProposalActions for *;
