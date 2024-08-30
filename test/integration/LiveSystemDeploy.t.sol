@@ -11,14 +11,17 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
+import {WETH9} from "@protocol/router/IWETH.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
 import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
 
@@ -162,6 +165,24 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         assertTrue(gov.paused());
         assertFalse(gov.guardianPauseAllowed());
         assertEq(gov.lastPauseTime(), block.timestamp);
+    }
+
+    function testFuzz_OraclesReturnCorrectValues(
+        uint256 mTokenIndex
+    ) public view {
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+
+        MToken mToken = mTokens[mTokenIndex];
+
+        ChainlinkOracle oracle = ChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
+
+        assertGt(
+            oracle.getUnderlyingPrice(mToken),
+            1,
+            "oracle price must be non zero"
+        );
     }
 
     function testFuzz_EmissionsAdminCanChangeOwner(
@@ -799,6 +820,165 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
                 "Total rewards not correct"
             );
         }
+    }
+
+    function testRepayBorrowBehalfWethRouter() public {
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
+        uint256 mintAmount = _getMaxSupplyAmount(address(mToken));
+
+        if (mintAmount <= 1000e8) {
+            return;
+        }
+
+        bool minted = _mintMToken(address(mToken), mintAmount);
+        assertEq(minted, true, "Mint failed");
+
+        uint256 expectedCollateralFactor = 0.5e18;
+        (, uint256 collateralFactorMantissa) = comptroller.markets(
+            address(mToken)
+        );
+
+        // check colateral factor
+        if (collateralFactorMantissa < expectedCollateralFactor) {
+            vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+            comptroller._setCollateralFactor(
+                MToken(mToken),
+                expectedCollateralFactor
+            );
+        }
+
+        address sender = address(this);
+
+        address[] memory _mTokens = new address[](1);
+        _mTokens[0] = address(mToken);
+
+        comptroller.enterMarkets(_mTokens);
+        assertTrue(
+            comptroller.checkMembership(sender, mToken),
+            "Membership check failed"
+        );
+
+        uint256 borrowAmount = mintAmount / 3;
+
+        assertEq(
+            MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
+            0,
+            "Borrow failed"
+        );
+
+        address mweth = addresses.getAddress("MOONWELL_WETH");
+        WETH9 weth = WETH9(addresses.getAddress("WETH"));
+
+        WETHRouter router = new WETHRouter(
+            weth,
+            MErc20(addresses.getAddress("MOONWELL_WETH"))
+        );
+
+        vm.deal(address(this), borrowAmount);
+
+        router.repayBorrowBehalf{value: borrowAmount}(address(this));
+
+        assertEq(MErc20(mweth).borrowBalanceStored(address(this)), 0); /// fully repaid
+    }
+
+    function testRepayMoreThanBorrowBalanceWethRouter() public {
+        MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
+        uint256 mintAmount = _getMaxSupplyAmount(address(mToken));
+
+        if (mintAmount <= 1000e8) {
+            return;
+        }
+
+        bool minted = _mintMToken(address(mToken), mintAmount);
+        assertEq(minted, true, "Mint failed");
+
+        uint256 expectedCollateralFactor = 0.5e18;
+        (, uint256 collateralFactorMantissa) = comptroller.markets(
+            address(mToken)
+        );
+
+        // check colateral factor
+        if (collateralFactorMantissa < expectedCollateralFactor) {
+            vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+            comptroller._setCollateralFactor(
+                MToken(mToken),
+                expectedCollateralFactor
+            );
+        }
+
+        address sender = address(this);
+
+        address[] memory _mTokens = new address[](1);
+        _mTokens[0] = address(mToken);
+
+        comptroller.enterMarkets(_mTokens);
+        assertTrue(
+            comptroller.checkMembership(sender, mToken),
+            "Membership check failed"
+        );
+
+        uint256 borrowAmount = mintAmount / 3;
+
+        assertEq(
+            MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
+            0,
+            "Borrow failed"
+        );
+
+        uint256 borrowRepayAmount = borrowAmount * 2;
+
+        address mweth = addresses.getAddress("MOONWELL_WETH");
+        WETH9 weth = WETH9(addresses.getAddress("WETH"));
+
+        WETHRouter router = new WETHRouter(
+            weth,
+            MErc20(addresses.getAddress("MOONWELL_WETH"))
+        );
+
+        vm.deal(address(this), borrowRepayAmount);
+
+        router.repayBorrowBehalf{value: borrowRepayAmount}(address(this));
+
+        assertEq(MErc20(mweth).borrowBalanceStored(address(this)), 0); /// fully repaid
+        assertEq(address(this).balance, borrowRepayAmount / 2); /// excess eth returned
+    }
+
+    function testMintWithRouter() public {
+        WETH9 weth = WETH9(addresses.getAddress("WETH"));
+        MErc20 mToken = MErc20(addresses.getAddress("MOONWELL_WETH"));
+        uint256 startingMTokenWethBalance = weth.balanceOf(address(mToken));
+
+        uint256 mintAmount = 1 ether;
+        vm.deal(address(this), mintAmount);
+
+        WETHRouter router = new WETHRouter(
+            weth,
+            MErc20(addresses.getAddress("MOONWELL_WETH"))
+        );
+
+        router.mint{value: mintAmount}(address(this));
+
+        assertEq(address(this).balance, 0, "incorrect test contract eth value");
+        assertEq(
+            weth.balanceOf(address(mToken)),
+            mintAmount + startingMTokenWethBalance,
+            "incorrect mToken weth value after mint"
+        );
+
+        mToken.redeem(type(uint256).max);
+
+        assertApproxEqRel(
+            address(this).balance,
+            mintAmount,
+            1e15, /// tiny loss due to rounding down
+            "incorrect test contract eth value after redeem"
+        );
+        assertApproxEqRel(
+            startingMTokenWethBalance,
+            weth.balanceOf(address(mToken)),
+            1e15, /// tiny gain due to rounding down in protocol's favor
+            "incorrect mToken weth value after redeem"
+        );
     }
 
     receive() external payable {}
