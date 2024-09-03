@@ -1,0 +1,124 @@
+{
+    "10": {
+        "setMRDSpeeds": [
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_USDC",
+                "newBorrowSpeed": 74929407941220860,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 74929407941220860
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_USDT",
+                "newBorrowSpeed": 28229122423093508,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 28229122423093508
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_DAI",
+                "newBorrowSpeed": 13671809274111732,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 13671809274111732
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_WBTC",
+                "newBorrowSpeed": 1,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 34813596291265570
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_WETH",
+                "newBorrowSpeed": 86441240008736290,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 86441240008736290
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_wstETH",
+                "newBorrowSpeed": 9762185513958756,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 7987242693238980
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_cbETH",
+                "newBorrowSpeed": 1,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 199478244100388
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_rETH",
+                "newBorrowSpeed": 8677402519358546,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 7099692970384265
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_OP",
+                "newBorrowSpeed": 4905023724241758,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 14715071172725276
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_weETH",
+                "newBorrowSpeed": 2602754998214307,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 2129526816720797
+            },
+            {
+                "emissionToken": "xWELL_PROXY",
+                "market": "MOONWELL_VELO",
+                "newBorrowSpeed": 5448282504572151,
+                "newEndTime": 1728012600,
+                "newSupplySpeed": 4457685685559033
+            }
+        ],
+        "stkWellEmissionsPerSecond": 83891475694133020,
+        "transferFrom": [
+            {
+                "amount": 1.2321979849954256e24,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "MRD_PROXY",
+                "token": "xWELL_PROXY"
+            },
+            {
+                "amount": 2.0295024799924657e23,
+                "from": "TEMPORAL_GOVERNOR",
+                "to": "ECOSYSTEM_RESERVE_PROXY",
+                "token": "xWELL_PROXY"
+            }
+        ]
+    },
+    "1284": {
+        "bridgeToRecipient": [
+            {
+                "amount": 1.4351482629946722e24,
+                "nativeValue": 25518255245823460000,
+                "network": 10,
+                "target": "TEMPORAL_GOVERNOR"
+            },
+            {
+                "amount": 1.4496456999946183e22,
+                "nativeValue": 25518255245823460000,
+                "network": 10,
+                "target": "DEX_RELAYER"
+            }
+        ],
+        "transferFrom": [
+            {
+                "amount": 1.4496448009946184e24,
+                "from": "MGLIMMER_MULTISIG",
+                "to": "MULTICHAIN_GOVERNOR_PROXY",
+                "token": "GOVTOKEN"
+            }
+        ]
+    },
+    "endTimeSTamp": 1728012600,
+    "startTimeStamp": 1725593400
+}
