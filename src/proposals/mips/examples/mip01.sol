@@ -48,7 +48,7 @@ contract mipb01 is HybridProposal, Configs {
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
                         config.mToken,
                         config.owner,
-                        config.emissionToken,
+                        addresses.getAddress(config.emissionToken),
                         config.supplyEmissionPerSec,
                         config.borrowEmissionsPerSec,
                         config.endTime
@@ -78,14 +78,17 @@ contract mipb01 is HybridProposal, Configs {
                 MultiRewardDistributorCommon.MarketConfig
                     memory marketConfig = distributor.getConfigForMarket(
                         MToken(addresses.getAddress(config.mToken)),
-                        config.emissionToken
+                        addresses.getAddress(config.emissionToken)
                     );
 
                 assertEq(
                     marketConfig.owner,
                     addresses.getAddress(config.owner)
                 );
-                assertEq(marketConfig.emissionToken, config.emissionToken);
+                assertEq(
+                    marketConfig.emissionToken,
+                    addresses.getAddress(config.emissionToken)
+                );
                 assertEq(marketConfig.endTime, config.endTime);
                 assertEq(
                     marketConfig.supplyEmissionsPerSec,

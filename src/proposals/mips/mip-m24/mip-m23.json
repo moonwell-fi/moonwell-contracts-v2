@@ -1,7 +1,7 @@
 [
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "emissionToken": "xWELL_PROXY",
         "endTime": 1714401651,
         "mToken": "MOONWELL_DAI",
         "owner": "EMISSIONS_ADMIN",
@@ -9,7 +9,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "emissionToken": "xWELL_PROXY",
         "endTime": 1714401651,
         "mToken": "MOONWELL_USDBC",
         "owner": "EMISSIONS_ADMIN",
@@ -17,7 +17,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "emissionToken": "xWELL_PROXY",
         "endTime": 1714401651,
         "mToken": "MOONWELL_USDC",
         "owner": "EMISSIONS_ADMIN",
@@ -25,7 +25,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "emissionToken": "xWELL_PROXY",
         "endTime": 1714401651,
         "mToken": "MOONWELL_rETH",
         "owner": "EMISSIONS_ADMIN",
@@ -33,7 +33,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "emissionToken": "xWELL_PROXY",
         "endTime": 1714401651,
         "mToken": "MOONWELL_WETH",
         "owner": "EMISSIONS_ADMIN",
@@ -41,7 +41,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "emissionToken": "xWELL_PROXY",
         "endTime": 1714401651,
         "mToken": "MOONWELL_cbETH",
         "owner": "EMISSIONS_ADMIN",
@@ -49,7 +49,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "emissionToken": "xWELL_PROXY",
         "endTime": 1714401651,
         "mToken": "MOONWELL_wstETH",
         "owner": "EMISSIONS_ADMIN",

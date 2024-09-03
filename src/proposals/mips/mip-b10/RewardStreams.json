@@ -1,7 +1,7 @@
 [
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0xFF8adeC2221f9f4D8dfbAFa6B9a297d17603493D",
+        "emissionToken": "GOVTOKEN",
         "endTime": 1701468000,
         "mToken": "MOONWELL_rETH",
         "owner": "EMISSIONS_ADMIN",
@@ -9,7 +9,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "emissionToken": "USDC",
         "endTime": 1701468000,
         "mToken": "MOONWELL_rETH",
         "owner": "EMISSIONS_ADMIN",
