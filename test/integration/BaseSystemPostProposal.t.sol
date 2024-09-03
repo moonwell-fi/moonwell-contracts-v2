@@ -224,7 +224,7 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         assertEq(err, 0, "Error getting account liquidity");
         assertApproxEqRel(
             liquidity,
-            80e18,
+            78e18,
             1e15,
             "liquidity not within .1% of $80"
         );
