@@ -621,7 +621,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 );
             }
 
-            if (emissionConfig.endTime > 0 && setRewardSpeed.newEndTime > 0) {
+            if (emissionConfig.endTime > 0) {
                 // new end time must be greater than the current end time
                 assertGt(
                     setRewardSpeed.newEndTime,
@@ -852,19 +852,17 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                             )
                         )
                     );
-                    if (setRewardSpeed.newEndTime > 0) {
-                        assertEq(
-                            _config.endTime,
-                            setRewardSpeed.newEndTime,
-                            string(
-                                abi.encodePacked(
-                                    "End time for ",
-                                    vm.getLabel(market),
-                                    " is incorrect"
-                                )
+                    assertEq(
+                        _config.endTime,
+                        setRewardSpeed.newEndTime,
+                        string(
+                            abi.encodePacked(
+                                "End time for ",
+                                vm.getLabel(market),
+                                " is incorrect"
                             )
-                        );
-                    }
+                        )
+                    );
                 }
             }
         }
