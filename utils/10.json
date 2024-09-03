@@ -393,5 +393,10 @@
         "addr": "0x4F56443f075eF5c972A76365606bFBdBD37e146f",
         "isContract": true,
         "name": "FOUNDATION_OP_MULTISIG"
+    },
+    {
+        "addr": "0x6b6cC14068ec34df6D0a1Fd6683489A04B45C1e1",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_MIP_O08"
     }
 ]
