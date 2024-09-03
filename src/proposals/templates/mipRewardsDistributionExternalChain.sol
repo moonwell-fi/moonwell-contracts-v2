@@ -263,33 +263,33 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 "Borrow speed must be greater or equal to 1"
             );
 
-            //            if (
-            //                addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
-            //                addresses.getAddress("xWELL_PROXY")
-            //            ) {
-            //                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-            //                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
-            //
-            //                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-            //                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
-            //
-            //                totalWellEpochRewards += supplyAmount + borrowAmount;
-            //            }
-            //
-            //            // TODO add USDC assertion in the future
-            //            if (
-            //                chainId == OPTIMISM_CHAIN_ID &&
-            //                addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
-            //                addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
-            //            ) {
-            //                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-            //                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
-            //
-            //                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-            //                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
-            //
-            //                totalOpEpochRewards += supplyAmount + borrowAmount;
-            //            }
+            if (
+                addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
+                addresses.getAddress("xWELL_PROXY")
+            ) {
+                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+
+                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+
+                totalWellEpochRewards += supplyAmount + borrowAmount;
+            }
+
+            // TODO add USDC assertion in the future
+            if (
+                chainId == OPTIMISM_CHAIN_ID &&
+                addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
+                addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
+            ) {
+                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+
+                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+
+                totalOpEpochRewards += supplyAmount + borrowAmount;
+            }
 
             externalChainActions[_chainId].setRewardSpeed.push(
                 spec.setRewardSpeed[i]
@@ -651,22 +651,22 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             }
         }
 
-        // _pushAction(
-        //     addresses.getAddress("STK_GOVTOKEN"),
-        //     abi.encodeWithSignature(
-        //         "configureAsset(uint128,address)",
-        //         spec.stkWellEmissionsPerSecond,
-        //         addresses.getAddress("STK_GOVTOKEN")
-        //     ),
-        //     string(
-        //         abi.encodePacked(
-        //             "Set reward speed to ",
-        //             vm.toString(spec.stkWellEmissionsPerSecond),
-        //             " for the Safety Module on ",
-        //             _chainId.chainIdToName()
-        //         )
-        //     )
-        // );
+        _pushAction(
+            addresses.getAddress("STK_GOVTOKEN"),
+            abi.encodeWithSignature(
+                "configureAsset(uint128,address)",
+                spec.stkWellEmissionsPerSecond,
+                addresses.getAddress("STK_GOVTOKEN")
+            ),
+            string(
+                abi.encodePacked(
+                    "Set reward speed to ",
+                    vm.toString(spec.stkWellEmissionsPerSecond),
+                    " for the Safety Module on ",
+                    _chainId.chainIdToName()
+                )
+            )
+        );
     }
 
     function _validateMoonbeam(Addresses addresses) private {
