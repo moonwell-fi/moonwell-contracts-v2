@@ -1,36 +1,39 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {EIP20Interface} from "@protocol/EIP20Interface.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {OPTIMISM_FORK_ID} from "@utils/ChainIds.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
-/// @notice This lists all new markets provided in `mainnetMTokens.json`
+/// @notice This lists all new markets provided in `MTokens.json`
 /// This is a template of a MIP proposal that can be used to add new mTokens
 /// @dev be sure to include all necessary underlying and price feed addresses
 /// in the Addresses.sol contract for the network the MTokens are being deployed on.
-contract mip0x is HybridProposal, Configs {
+contract mipo04 is HybridProposal, Configs {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     /// @notice the name of the proposal
-    string public constant override name = "MIP Market Creation";
+    string public constant override name = "MIP-O04";
 
     /// @notice all MTokens have 8 decimals
     uint8 public constant mTokenDecimals = 8;
 
     /// @notice list of all mTokens that were added to the market with this proposal
-    MToken[] public mTokens;
+    EnumerableSet.AddressSet private mTokens;
 
     /// @notice supply caps of all mTokens that were added to the market with this proposal
     uint256[] public supplyCaps;
@@ -43,113 +46,59 @@ contract mip0x is HybridProposal, Configs {
         address irModel;
         address unitroller;
     }
+    string constant descriptionPath = "./src/proposals/mips/mip-o04/MIP-O04.md";
 
     constructor() {
-        /// for example, should be set to
-        /// LISTING_PATH="./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
-        string memory descriptionPath = vm.envOr(
-            "LISTING_PATH",
-            string(
-                "./src/proposals/mips/examples/mip-market-listing/MarketListingDescription.md"
-            )
-        );
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(descriptionPath)
         );
 
         _setProposalDescription(proposalDescription);
-
-        delete cTokenConfigurations[block.chainid]; /// wipe existing mToken Configs.sol
-        delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
-
-        {
-            string memory mtokensPath = vm.envOr(
-                "MTOKENS_PATH",
-                string(
-                    "./src/proposals/mips/examples/mip-market-listing/MTokens.json"
-                )
-            );
-            /// MTOKENS_PATH="./src/proposals/mips/examples/mip-market-listing/MTokens.json"
-            string memory fileContents = vm.readFile(mtokensPath);
-            bytes memory rawJson = vm.parseJson(fileContents);
-
-            CTokenConfiguration[] memory decodedJson = abi.decode(
-                rawJson,
-                (CTokenConfiguration[])
-            );
-
-            for (uint256 i = 0; i < decodedJson.length; i++) {
-                require(
-                    decodedJson[i].collateralFactor <= 0.95e18,
-                    "collateral factor absurdly high, are you sure you want to proceed?"
-                );
-
-                /// possible to set supply caps and not borrow caps,
-                /// but not set borrow caps and not set supply caps
-                if (decodedJson[i].supplyCap != 0) {
-                    require(
-                        decodedJson[i].supplyCap > decodedJson[i].borrowCap,
-                        "borrow cap gte supply cap, are you sure you want to proceed?"
-                    );
-                } else if (decodedJson[i].borrowCap != 0) {
-                    revert("borrow cap must be set with a supply cap");
-                }
-
-                cTokenConfigurations[block.chainid].push(decodedJson[i]);
-            }
-        }
-
-        {
-            string memory mtokensPath = vm.envString("EMISSION_PATH");
-            /// EMISSION_PATH="./src/proposals/mips/examples/mip-market-listing/RewardStreams.json"
-            string memory fileContents = vm.readFile(mtokensPath);
-            bytes memory rawJson = vm.parseJson(fileContents);
-            EmissionConfig[] memory decodedEmissions = abi.decode(
-                rawJson,
-                (EmissionConfig[])
-            );
-
-            for (uint256 i = 0; i < decodedEmissions.length; i++) {
-                require(
-                    decodedEmissions[i].borrowEmissionsPerSec != 0,
-                    "borrow speed must be gte 1"
-                );
-                emissions[block.chainid].push(decodedEmissions[i]);
-            }
-        }
-
-        console.log("\n\n------------ LOAD STATS ------------");
-        console.log(
-            "Loaded %d MToken configs",
-            cTokenConfigurations[block.chainid].length
-        );
-        console.log(
-            "Loaded %d reward configs",
-            emissions[block.chainid].length
-        );
-        console.log("\n\n");
     }
 
     function primaryForkId() public pure override returns (uint256) {
-        return BASE_FORK_ID;
+        return OPTIMISM_FORK_ID;
     }
 
-    /// @notice no contracts are deployed in this proposal
+    /// @notice VELO market mToken and corresponding IRM is deployed in this proposal
     function deploy(Addresses addresses, address deployer) public override {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
-        uint256 cTokenConfigsLength = cTokenConfigs.length;
+        if (cTokenConfigs.length == 0) {
+            bytes memory proposalDescription = abi.encodePacked(
+                vm.readFile(descriptionPath)
+            );
 
-        //// create all of the CTokens according to the configuration in Config.sol
+            _setProposalDescription(proposalDescription);
+            _setMTokenConfiguration(
+                "./src/proposals/mips/mip-o04/MTokens.json"
+            );
+            _setEmissionConfiguration(
+                "./src/proposals/mips/mip-o04/RewardStreams.json"
+            );
+
+            cTokenConfigs = getCTokenConfigurations(block.chainid);
+        }
+
+        //// create all of the CTokens according to the configuration in MTokens.json
         unchecked {
-            for (uint256 i = 0; i < cTokenConfigsLength; i++) {
+            for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
 
                 _validateCaps(addresses, config);
 
                 /// ----- Jump Rate IRM -------
-                {
+                if (
+                    !addresses.isAddressSet(
+                        string(
+                            abi.encodePacked(
+                                "JUMP_RATE_IRM_",
+                                config.addressesString
+                            )
+                        )
+                    )
+                ) {
                     address irModel = address(
                         new JumpRateModel(
                             config.jrm.baseRatePerYear,
@@ -170,44 +119,52 @@ contract mip0x is HybridProposal, Configs {
                     );
                 }
 
-                /// stack isn't too deep
-                CTokenAddresses memory addr = CTokenAddresses({
-                    mTokenImpl: addresses.getAddress("MTOKEN_IMPLEMENTATION"),
-                    irModel: addresses.getAddress(
-                        string(
-                            abi.encodePacked(
-                                "JUMP_RATE_IRM_",
-                                config.addressesString
+                /// ---------- MToken ----------
+                if (!addresses.isAddressSet(config.addressesString)) {
+                    /// stack isn't too deep
+                    CTokenAddresses memory addr = CTokenAddresses({
+                        mTokenImpl: addresses.getAddress(
+                            "MTOKEN_IMPLEMENTATION"
+                        ),
+                        irModel: addresses.getAddress(
+                            string(
+                                abi.encodePacked(
+                                    "JUMP_RATE_IRM_",
+                                    config.addressesString
+                                )
                             )
-                        )
-                    ),
-                    unitroller: addresses.getAddress("UNITROLLER")
-                });
+                        ),
+                        unitroller: addresses.getAddress("UNITROLLER")
+                    });
 
-                /// calculate initial exchange rate
-                /// BigNumber.from("10").pow(token.decimals + 8).mul("2");
-                /// (10 ** (18 + 8)) * 2 // 18 decimals example
-                ///    = 2e26
-                /// (10 ** (6 + 8)) * 2 // 6 decimals example
-                ///    = 2e14
-                uint256 initialExchangeRate = (10 **
-                    (ERC20(addresses.getAddress(config.tokenAddressName))
-                        .decimals() + 8)) * 2;
+                    /// calculate initial exchange rate
+                    /// BigNumber.from("10").pow(token.decimals + 8).mul("2");
+                    /// (10 ** (18 + 8)) * 2 // 18 decimals example
+                    ///    = 2e26
+                    /// (10 ** (6 + 8)) * 2 // 6 decimals example
+                    ///    = 2e14
+                    uint256 initialExchangeRate = (10 **
+                        (ERC20(addresses.getAddress(config.tokenAddressName))
+                            .decimals() + 8)) * 2;
 
-                MErc20Delegator mToken = new MErc20Delegator(
-                    addresses.getAddress(config.tokenAddressName),
-                    ComptrollerInterface(addr.unitroller),
-                    InterestRateModel(addr.irModel),
-                    initialExchangeRate,
-                    config.name,
-                    config.symbol,
-                    mTokenDecimals,
-                    payable(deployer),
-                    addr.mTokenImpl,
-                    ""
-                );
+                    MErc20Delegator mToken = new MErc20Delegator(
+                        addresses.getAddress(config.tokenAddressName),
+                        ComptrollerInterface(addr.unitroller),
+                        InterestRateModel(addr.irModel),
+                        initialExchangeRate,
+                        config.name,
+                        config.symbol,
+                        mTokenDecimals,
+                        payable(deployer),
+                        addr.mTokenImpl,
+                        ""
+                    );
 
-                addresses.addAddress(config.addressesString, address(mToken));
+                    addresses.addAddress(
+                        config.addressesString,
+                        address(mToken)
+                    );
+                }
             }
         }
     }
@@ -220,53 +177,63 @@ contract mip0x is HybridProposal, Configs {
         unchecked {
             for (uint256 i = 0; i < cTokenConfigs.length; i++) {
                 Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-                supplyCaps.push(config.supplyCap);
-                borrowCaps.push(config.borrowCap);
 
                 /// get the mToken
-                mTokens.push(
-                    MToken(addresses.getAddress(config.addressesString))
-                );
+                mTokens.add(addresses.getAddress(config.addressesString));
 
                 _validateCaps(addresses, config); /// validate supply and borrow caps
 
-                /// defaults to true, then if you need to replicate a proposal and generate
-                /// calldata, set this to false as an env var, then run the proposal
-                if (vm.envOr("DO_AFTER_DEPLOY_MTOKEN_BROADCAST", true)) {
-                    mTokens[i]._setReserveFactor(config.reserveFactor);
-                    mTokens[i]._setProtocolSeizeShare(config.seizeShare);
-                    mTokens[i]._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+                if (
+                    MToken(mTokens.at(i)).reserveFactorMantissa() !=
+                    config.reserveFactor &&
+                    MToken(mTokens.at(i)).protocolSeizeShareMantissa() !=
+                    config.seizeShare
+                ) {
+                    MToken(mTokens.at(i))._setReserveFactor(
+                        config.reserveFactor
+                    );
+                    MToken(mTokens.at(i))._setProtocolSeizeShare(
+                        config.seizeShare
+                    );
+                    MToken(mTokens.at(i))._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
                 }
             }
         }
     }
 
-    function preBuildMock(Addresses addresses) public override {
-        Configs.CTokenConfiguration[]
-            memory cTokenConfigs = getCTokenConfigurations(block.chainid);
-
-        uint256 cTokenConfigsLength = cTokenConfigs.length;
-        unchecked {
-            for (uint256 i = 0; i < cTokenConfigsLength; i++) {
-                Configs.CTokenConfiguration memory config = cTokenConfigs[i];
-                address tokenAddress = addresses.getAddress(
-                    config.tokenAddressName
-                );
-
-                deal(
-                    tokenAddress,
-                    addresses.getAddress("TEMPORAL_GOVERNOR"),
-                    cTokenConfigs[i].initialMintAmount
-                );
-            }
-        }
-    }
+    function preBuildMock(Addresses addresses) public override {}
 
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
 
     function build(Addresses addresses) public override {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
+
+        if (cTokenConfigs.length == 0) {
+            bytes memory proposalDescription = abi.encodePacked(
+                vm.readFile(descriptionPath)
+            );
+
+            _setProposalDescription(proposalDescription);
+            _setMTokenConfiguration(
+                "./src/proposals/mips/mip-o04/MTokens.json"
+            );
+            _setEmissionConfiguration(
+                "./src/proposals/mips/mip-o04/RewardStreams.json"
+            );
+
+            cTokenConfigs = getCTokenConfigurations(block.chainid);
+        }
+
+        for (uint256 i = 0; i < cTokenConfigs.length; i++) {
+            Configs.CTokenConfiguration memory config = cTokenConfigs[i];
+
+            supplyCaps.push(config.supplyCap);
+            borrowCaps.push(config.borrowCap);
+
+            mTokens.add(addresses.getAddress(config.addressesString));
+        }
+
         address unitrollerAddress = addresses.getAddress("UNITROLLER");
         address chainlinkOracleAddress = addresses.getAddress(
             "CHAINLINK_ORACLE"
@@ -276,7 +243,7 @@ contract mip0x is HybridProposal, Configs {
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setMarketSupplyCaps(address[],uint256[])",
-                mTokens,
+                mTokens.values(),
                 supplyCaps
             ),
             "Set supply caps MToken market"
@@ -286,7 +253,7 @@ contract mip0x is HybridProposal, Configs {
             unitrollerAddress,
             abi.encodeWithSignature(
                 "_setMarketBorrowCaps(address[],uint256[])",
-                mTokens,
+                mTokens.values(),
                 borrowCaps
             ),
             "Set borrow caps MToken market"
@@ -385,7 +352,7 @@ contract mip0x is HybridProposal, Configs {
 
                 require(
                     config.emissionToken.code.length > 0,
-                    "emission token not a contract"
+                    "emission token must have bytecode"
                 );
 
                 _pushAction(
@@ -428,7 +395,6 @@ contract mip0x is HybridProposal, Configs {
 
                 uint256 maxBorrowCap = (supplyCap * 10) / 9;
 
-                /// validate borrow cap is always lte 90% of supply cap
                 assertTrue(
                     borrowCap <= maxBorrowCap,
                     "borrow cap exceeds max borrow"

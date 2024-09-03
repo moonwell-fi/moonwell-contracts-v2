@@ -240,10 +240,13 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
         for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
+            MultiRewardDistributorCommon.MarketConfig memory configBefore = mrd
+                .getConfigForMarket(mToken, rewardsConfig[mToken][i]);
+
             mrd._updateEndTime(
                 mToken,
                 rewardsConfig[mToken][i],
-                block.timestamp + 4 weeks
+                configBefore.endTime + 4 weeks
             );
 
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
@@ -251,7 +254,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
             assertEq(
                 config.endTime,
-                block.timestamp + 4 weeks,
+                configBefore.endTime + 4 weeks,
                 "End time incorrect"
             );
         }

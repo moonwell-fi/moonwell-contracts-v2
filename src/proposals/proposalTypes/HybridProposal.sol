@@ -448,17 +448,24 @@ abstract contract HybridProposal is
         _runMoonbeamMultichainGovernor(addresses, address(3));
         addresses.removeRestriction();
 
+        uint256 blockTimestamp = block.timestamp;
+
         if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
             vm.selectFork(BASE_FORK_ID);
+            vm.warp(blockTimestamp);
             _runExtChain(addresses, actions.filter(ActionType.Base));
         }
 
         if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
             vm.selectFork(OPTIMISM_FORK_ID);
+            vm.warp(blockTimestamp);
             _runExtChain(addresses, actions.filter(ActionType.Optimism));
         }
 
+        blockTimestamp = block.timestamp;
+
         vm.selectFork(uint256(primaryForkId()));
+        vm.warp(blockTimestamp);
     }
 
     /// @notice search for a on-chain proposal that matches the proposal calldata

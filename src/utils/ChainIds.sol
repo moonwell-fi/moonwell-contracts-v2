@@ -175,7 +175,7 @@ library ChainIds {
             abi.encodeWithSignature("activeFork()")
         );
         (bool successSwitchFork, ) = address(vmInternal).call(
-            abi.encodeWithSignature("switchFork(uint256)", selectFork)
+            abi.encodeWithSignature("selectFork(uint256)", selectFork)
         );
 
         if (!success || !successSwitchFork) {
