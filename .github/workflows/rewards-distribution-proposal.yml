@@ -6,14 +6,14 @@ env:
   OP_RPC_URL: ${{secrets.OP_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
-  SCRIPT_FIjjjjLE: "src/proposals/mips/mip-o09/o09.sh"
+  SCRIPT_FILE: "src/proposals/mips/mip-o09/o09.sh"
   RUN_JOB: true # Set this to true when you want to run the proposal
 
 jobs:
   run-base-tests:
     name: rewards-distribution-proposal
     runs-on: ubuntu-latest
-    if: ${{ env.RUN_JOB }}
+    if: ${{ vars.RUN_JOB }}
 
     steps:
       - name: Checkout code
