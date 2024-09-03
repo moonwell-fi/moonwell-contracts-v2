@@ -4,14 +4,14 @@
             {
                 "emissionToken": "OP",
                 "market": "DEPRECATED_MOONWELL_VELO",
-                "newBorrowSpeed": 0,
+                "newBorrowSpeed": 1,
                 "newEndTime": 0,
                 "newSupplySpeed": 0
             },
             {
                 "emissionToken": "xWELL_PROXY",
                 "market": "DEPRECATED_MOONWELL_VELO",
-                "newBorrowSpeed": 0,
+                "newBorrowSpeed": 1,
                 "newEndTime": 0,
                 "newSupplySpeed": 0
             },
