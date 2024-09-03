@@ -621,7 +621,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 );
             }
 
-            if (emissionConfig.endTime != 0) {
+            if (emissionConfig.endTime > 0) {
                 // new end time must be greater than the current end time
                 assertGt(
                     setRewardSpeed.newEndTime,
