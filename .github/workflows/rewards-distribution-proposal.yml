@@ -13,7 +13,7 @@ jobs:
   run-base-tests:
     name: rewards-distribution-proposal
     runs-on: ubuntu-latest
-    if: ${{ env.RUN_PROPOSAL }}
+    if: ${{ $RUN_PROPOSAL }}
 
     steps:
       - name: Checkout code
