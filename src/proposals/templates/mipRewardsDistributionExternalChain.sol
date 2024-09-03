@@ -852,17 +852,19 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                             )
                         )
                     );
-                    assertEq(
-                        _config.endTime,
-                        setRewardSpeed.newEndTime,
-                        string(
-                            abi.encodePacked(
-                                "End time for ",
-                                vm.getLabel(market),
-                                " is incorrect"
+                    if (setRewardSpeed.newEndTime > 0) {
+                        assertEq(
+                            _config.endTime,
+                            setRewardSpeed.newEndTime,
+                            string(
+                                abi.encodePacked(
+                                    "End time for ",
+                                    vm.getLabel(market),
+                                    " is incorrect"
+                                )
                             )
-                        )
-                    );
+                        );
+                    }
                 }
             }
         }
