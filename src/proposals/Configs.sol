@@ -38,7 +38,7 @@ abstract contract Configs is Test {
 
     struct EmissionConfig {
         uint256 borrowEmissionsPerSec;
-        address emissionToken;
+        string emissionToken;
         uint256 endTime;
         string mToken;
         string owner;
@@ -319,7 +319,7 @@ abstract contract Configs is Test {
                     EmissionConfig memory emissionConfig = EmissionConfig({
                         mToken: mTokenConfigs[i].addressesString,
                         owner: "EMISSIONS_ADMIN",
-                        emissionToken: addresses.getAddress("GOVTOKEN"),
+                        emissionToken: "GOVTOKEN",
                         supplyEmissionPerSec: 0,
                         borrowEmissionsPerSec: 0,
                         endTime: block.timestamp + 4 weeks
@@ -336,7 +336,7 @@ abstract contract Configs is Test {
                     EmissionConfig memory emissionConfig = EmissionConfig({
                         mToken: mTokenConfigs[i].addressesString,
                         owner: "EMISSIONS_ADMIN",
-                        emissionToken: addresses.getAddress("xWELL_PROXY"),
+                        emissionToken: "xWELL_PROXY",
                         supplyEmissionPerSec: 0,
                         borrowEmissionsPerSec: 0,
                         endTime: block.timestamp + 4 weeks
