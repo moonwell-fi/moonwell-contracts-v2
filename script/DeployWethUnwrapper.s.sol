@@ -9,7 +9,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
 How to use:
-forge script src/proposals/DeployWethUnwrapper.s.sol:DeployWethUnwrapper \
+forge script script/DeployWethUnwrapper.s.sol:DeployWethUnwrapper \
     -vvvv \
     --rpc-url base \
     --broadcast

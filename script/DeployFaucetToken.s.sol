@@ -10,7 +10,7 @@ import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 
 /*
 How to use:
-forge script src/proposals/DeployFaucetToken.s.sol:DeployFaucetToken \
+forge script script/DeployFaucetToken.s.sol:DeployFaucetToken \
     -vvvv \
     --rpc-url base \
     --broadcast
