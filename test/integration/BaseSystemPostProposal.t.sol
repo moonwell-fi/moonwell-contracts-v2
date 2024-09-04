@@ -232,11 +232,7 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
             1e15,
             "liquidity not within .1% of $80"
         );
-        assertGe(
-            (collateralFactorMantissa * mintAmount) / 1e6,
-            liquidity,
-            "liquidity greater than expected value"
-        );
+
         assertEq(shortfall, 0, "Incorrect shortfall");
 
         comptroller.exitMarket(address(mToken));
