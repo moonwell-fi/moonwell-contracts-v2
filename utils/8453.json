@@ -140,6 +140,11 @@
         "isContract": true
     },
     {
+        "addr": "0xD791292655A1d382FcC1a6Cb9171476cf91F2caa",
+        "name": "DEPRECATED_WARDEN_EMISSIONS_ADMIN",
+        "isContract": false
+    },
+    {
         "addr": "0x8b621804a7637b781e2BbD58e256a591F2dF7d51",
         "name": "EMISSIONS_ADMIN",
         "isContract": true
