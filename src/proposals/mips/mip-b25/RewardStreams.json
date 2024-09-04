@@ -4,7 +4,7 @@
         "emissionToken": "xWELL_PROXY",
         "endTime": 1725593400,
         "mToken": "MOONWELL_weETH",
-        "owner": "EMISSIONS_ADMIN",
+        "owner": "DEPRECATED_WARDEN_EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
     },
     {
@@ -12,7 +12,7 @@
         "emissionToken": "USDC",
         "endTime": 1725593400,
         "mToken": "MOONWELL_weETH",
-        "owner": "EMISSIONS_ADMIN",
+        "owner": "DEPRECATED_WARDEN_EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
     }
 ]

@@ -4,7 +4,7 @@
         "emissionToken": "GOVTOKEN",
         "endTime": 1696629600,
         "mToken": "MOONWELL_USDC",
-        "owner": "EMISSIONS_ADMIN",
+        "owner": "DEPRECATED_WARDEN_EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
     }
 ]

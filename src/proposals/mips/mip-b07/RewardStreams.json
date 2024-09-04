@@ -4,7 +4,7 @@
         "emissionToken": "USDC",
         "endTime": 1699048800,
         "mToken": "MOONWELL_DAI",
-        "owner": "EMISSIONS_ADMIN",
+        "owner": "DEPRECATED_WARDEN_EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
     },
     {
@@ -12,7 +12,7 @@
         "emissionToken": "USDC",
         "endTime": 1699048800,
         "mToken": "MOONWELL_USDBC",
-        "owner": "EMISSIONS_ADMIN",
+        "owner": "DEPRECATED_WARDEN_EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
     },
     {
@@ -20,7 +20,7 @@
         "emissionToken": "USDC",
         "endTime": 1699048800,
         "mToken": "MOONWELL_USDC",
-        "owner": "EMISSIONS_ADMIN",
+        "owner": "DEPRECATED_WARDEN_EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
     },
     {
@@ -28,7 +28,7 @@
         "emissionToken": "USDC",
         "endTime": 1699048800,
         "mToken": "MOONWELL_WETH",
-        "owner": "EMISSIONS_ADMIN",
+        "owner": "DEPRECATED_WARDEN_EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
     },
     {
@@ -36,7 +36,7 @@
         "emissionToken": "USDC",
         "endTime": 1699048800,
         "mToken": "MOONWELL_cbETH",
-        "owner": "EMISSIONS_ADMIN",
+        "owner": "DEPRECATED_WARDEN_EMISSIONS_ADMIN",
         "supplyEmissionPerSec": 0
     }
 ]
