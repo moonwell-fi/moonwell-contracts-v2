@@ -42,7 +42,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         addresses = new Addresses();
 
-        checker = new MarketAddChecker();
+        checker = MarketAddChecker(addresses.getAddress("MARKET_ADD_CHECKER"));
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
