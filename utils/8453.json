@@ -140,9 +140,9 @@
         "isContract": true
     },
     {
-        "addr": "0xD791292655A1d382FcC1a6Cb9171476cf91F2caa",
+        "addr": "0x8b621804a7637b781e2BbD58e256a591F2dF7d51",
         "name": "EMISSIONS_ADMIN",
-        "isContract": false
+        "isContract": true
     },
     {
         "addr": "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
