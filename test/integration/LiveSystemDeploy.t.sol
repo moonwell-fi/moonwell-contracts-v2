@@ -183,6 +183,22 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         }
     }
 
+    function testAllEmissionAdminTemporalGovernor() public view {
+        MToken[] memory markets = comptroller.getAllMarkets();
+        for (uint256 i = 0; i < markets.length; i++) {
+            MultiRewardDistributorCommon.MarketConfig[] memory allConfigs = mrd
+                .getAllMarketConfigs(markets[i]);
+
+            for (uint256 j = 0; j < allConfigs.length; j++) {
+                assertEq(
+                    allConfigs[j].owner,
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    "Temporal Governor not admin"
+                );
+            }
+        }
+    }
+
     function testGuardianCanPauseTemporalGovernor() public {
         TemporalGovernor gov = TemporalGovernor(
             payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
