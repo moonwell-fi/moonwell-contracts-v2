@@ -505,16 +505,23 @@ contract Addresses is IAddresses, Test {
 
     /// @notice prints out addresses that were added in JSON format
     function printAddresses() external view {
+        bytes
+            memory printedAddress = hex"7b0A20202020202020202261646472223a2022257322";
+        bytes
+            memory printedName = hex"2020202020202020226e616d65223a20222573220A7d2573";
+        bytes
+            memory printedContract = hex"2020202020202020226973436f6e7472616374223a202573";
+
         (
             string[] memory recordedNames,
-            uint256[] memory chainIds,
+            ,
             address[] memory newlyRecordedAddresses
         ) = getRecordedAddresses();
         for (uint256 j = 0; j < recordedNames.length; j++) {
-            console.log("{\n        'addr': '%s', ", newlyRecordedAddresses[j]);
-            console.log("        'chainId': %d,", chainIds[j]);
+            console.log(string(printedAddress), newlyRecordedAddresses[j]);
+            console.log(string(printedContract), true, ",");
             console.log(
-                "        'name': '%s'\n}%s",
+                string(printedName),
                 recordedNames[j],
                 j < recordedNames.length - 1 ? "," : ""
             );
