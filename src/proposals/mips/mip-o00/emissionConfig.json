@@ -1,7 +1,7 @@
 [
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x4200000000000000000000000000000000000042",
+        "emissionToken": "OP",
         "endTime": 1723240800,
         "mToken": "MOONWELL_DAI",
         "owner": "TEMPORAL_GOVERNOR",
@@ -9,7 +9,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x4200000000000000000000000000000000000042",
+        "emissionToken": "OP",
         "endTime": 1723240800,
         "mToken": "MOONWELL_USDC",
         "owner": "TEMPORAL_GOVERNOR",
@@ -17,7 +17,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x4200000000000000000000000000000000000042",
+        "emissionToken": "OP",
         "endTime": 1723240800,
         "mToken": "MOONWELL_USDT",
         "owner": "TEMPORAL_GOVERNOR",
@@ -25,7 +25,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x4200000000000000000000000000000000000042",
+        "emissionToken": "OP",
         "endTime": 1723240800,
         "mToken": "MOONWELL_WBTC",
         "owner": "TEMPORAL_GOVERNOR",
@@ -33,7 +33,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x4200000000000000000000000000000000000042",
+        "emissionToken": "OP",
         "endTime": 1723240800,
         "mToken": "MOONWELL_WETH",
         "owner": "TEMPORAL_GOVERNOR",
@@ -41,7 +41,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x4200000000000000000000000000000000000042",
+        "emissionToken": "OP",
         "endTime": 1723240800,
         "mToken": "MOONWELL_wstETH",
         "owner": "TEMPORAL_GOVERNOR",
@@ -49,7 +49,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x4200000000000000000000000000000000000042",
+        "emissionToken": "OP",
         "endTime": 1723240800,
         "mToken": "MOONWELL_cbETH",
         "owner": "TEMPORAL_GOVERNOR",
@@ -57,7 +57,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x4200000000000000000000000000000000000042",
+        "emissionToken": "OP",
         "endTime": 1723240800,
         "mToken": "MOONWELL_rETH",
         "owner": "TEMPORAL_GOVERNOR",
@@ -65,7 +65,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x4200000000000000000000000000000000000042",
+        "emissionToken": "OP",
         "endTime": 1723240800,
         "mToken": "MOONWELL_VELO",
         "owner": "TEMPORAL_GOVERNOR",
@@ -73,7 +73,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x4200000000000000000000000000000000000042",
+        "emissionToken": "OP",
         "endTime": 1723240800,
         "mToken": "MOONWELL_OP",
         "owner": "TEMPORAL_GOVERNOR",

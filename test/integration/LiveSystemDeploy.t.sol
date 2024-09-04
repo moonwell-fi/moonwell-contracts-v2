@@ -36,7 +36,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
     function setUp() public override {
         // undo this once PostProposalCheck is refactored
-        //super.setUp();
+        // super.setUp();
         vm.envUint("PRIMARY_FORK_ID").createForksAndSelect();
 
         addresses = new Addresses();
@@ -149,6 +149,54 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         expectedRewards =
             (timeDelta * config.borrowEmissionsPerSec * amount) /
             mToken.totalBorrows();
+    }
+
+    function testAllMarketsNonZeroTotalSupply() public view {
+        MToken[] memory markets = comptroller.getAllMarkets();
+
+        for (uint256 i = 0; i < markets.length; i++) {
+            assertGt(markets[i].totalSupply(), 2_000, "empty market");
+            assertGt(markets[i].balanceOf(address(0)), 0, "no burnt tokens");
+        }
+    }
+
+    function testAllEmissionTokenConfigs() public view {
+        MToken[] memory markets = comptroller.getAllMarkets();
+        for (uint256 i = 0; i < markets.length; i++) {
+            MultiRewardDistributorCommon.MarketConfig[] memory allConfigs = mrd
+                .getAllMarketConfigs(markets[i]);
+            for (uint256 j = 0; j < allConfigs.length; j++) {
+                assertGt(
+                    allConfigs[j].borrowEmissionsPerSec,
+                    0,
+                    "Emission speed below 1"
+                );
+                assertTrue(
+                    allConfigs[j].emissionToken.code.length > 0,
+                    "Invalid emission token"
+                );
+
+                /// ensure standard calls to token succeed
+                IERC20(allConfigs[j].emissionToken).balanceOf(address(mrd));
+                IERC20(allConfigs[j].emissionToken).totalSupply();
+            }
+        }
+    }
+
+    function testAllEmissionAdminTemporalGovernor() public view {
+        MToken[] memory markets = comptroller.getAllMarkets();
+        for (uint256 i = 0; i < markets.length; i++) {
+            MultiRewardDistributorCommon.MarketConfig[] memory allConfigs = mrd
+                .getAllMarketConfigs(markets[i]);
+
+            for (uint256 j = 0; j < allConfigs.length; j++) {
+                assertEq(
+                    allConfigs[j].owner,
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    "Temporal Governor not admin"
+                );
+            }
+        }
     }
 
     function testGuardianCanPauseTemporalGovernor() public {

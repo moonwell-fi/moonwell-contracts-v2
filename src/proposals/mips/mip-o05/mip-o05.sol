@@ -212,7 +212,7 @@ contract mipo05 is HybridProposal, Configs {
         }
     }
 
-    function preBuildMock(Addresses addresses) public override {
+    function preBuildMock(Addresses) public override {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
@@ -371,8 +371,16 @@ contract mipo05 is HybridProposal, Configs {
                 EmissionConfig memory config = emissionConfig[i];
 
                 require(
-                    config.emissionToken.code.length > 0,
+                    addresses.getAddress(config.emissionToken).code.length > 0,
                     "emission token not a contract"
+                );
+                require(
+                    addresses.isAddressContract(config.emissionToken),
+                    "emission token not a contract check 2"
+                );
+                require(
+                    addresses.isAddressSet(config.emissionToken),
+                    "emission token not set"
                 );
 
                 _pushAction(
@@ -381,7 +389,7 @@ contract mipo05 is HybridProposal, Configs {
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
                         MToken(addresses.getAddress(config.mToken)),
                         addresses.getAddress(config.owner),
-                        config.emissionToken,
+                        addresses.getAddress(config.emissionToken),
                         config.supplyEmissionPerSec,
                         config.borrowEmissionsPerSec,
                         config.endTime
@@ -544,14 +552,17 @@ contract mipo05 is HybridProposal, Configs {
                     MultiRewardDistributorCommon.MarketConfig
                         memory marketConfig = distributor.getConfigForMarket(
                             MToken(addresses.getAddress(config.mToken)),
-                            config.emissionToken
+                            addresses.getAddress(config.emissionToken)
                         );
 
                     assertEq(
                         marketConfig.owner,
                         addresses.getAddress(config.owner)
                     );
-                    assertEq(marketConfig.emissionToken, config.emissionToken);
+                    assertEq(
+                        marketConfig.emissionToken,
+                        addresses.getAddress(config.emissionToken)
+                    );
                     assertEq(marketConfig.endTime, config.endTime);
                     assertEq(
                         marketConfig.supplyEmissionsPerSec,
