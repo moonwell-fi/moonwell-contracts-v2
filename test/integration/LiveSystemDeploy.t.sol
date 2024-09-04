@@ -2,30 +2,31 @@
 pragma solidity 0.8.19;
 
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {ChainIds} from "@utils/ChainIds.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {MarketAddChecker} from "@protocol/governance/MarketAddChecker.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
-
-import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     using ChainIds for uint256;
 
     MultiRewardDistributor mrd;
+    MarketAddChecker checker;
     Comptroller comptroller;
 
     address deprecatedMoonwellVelo;
@@ -40,6 +41,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         vm.envUint("PRIMARY_FORK_ID").createForksAndSelect();
 
         addresses = new Addresses();
+
+        checker = new MarketAddChecker();
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
@@ -158,6 +161,11 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             assertGt(markets[i].totalSupply(), 2_000, "empty market");
             assertGt(markets[i].balanceOf(address(0)), 0, "no burnt tokens");
         }
+    }
+
+    function testMarketAddChecker() public view {
+        checker.checkMarketAdd(addresses.getAddress("MOONWELL_cbETH"));
+        checker.checkAllMarkets(addresses.getAddress("UNITROLLER"));
     }
 
     function testAllEmissionTokenConfigs() public view {
