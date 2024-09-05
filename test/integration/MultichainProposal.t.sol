@@ -149,8 +149,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             }
         }
 
-        // undo this once PostProposalCheck is refactored
-        //super.setUp();
+        super.setUp();
 
         proposalC = new mipm23c();
         proposalC.buildCalldata(addresses);
