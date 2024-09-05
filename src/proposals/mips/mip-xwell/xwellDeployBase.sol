@@ -107,7 +107,7 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
             addresses.addAddress("xWELL_LOGIC", xwellLogic);
             addresses.addAddress("xWELL_PROXY", xwellProxy);
 
-            _printAddresses(addresses);
+            addresses.printAddresses();
             addresses.resetRecordingAddresses();
         }
     }
@@ -233,23 +233,6 @@ contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
                 ),
                 proxyAdmin,
                 "Admin is incorrect wormholeAdapter"
-            );
-        }
-    }
-
-    function _printAddresses(Addresses addresses) private view {
-        (
-            string[] memory recordedNames,
-            ,
-            address[] memory recordedAddresses
-        ) = addresses.getRecordedAddresses();
-        for (uint256 j = 0; j < recordedNames.length; j++) {
-            console.log("{\n        'addr': '%s', ", recordedAddresses[j]);
-            console.log("        'chainId': %d,", block.chainid);
-            console.log(
-                "        'name': '%s'\n}%s",
-                recordedNames[j],
-                j < recordedNames.length - 1 ? "," : ""
             );
         }
     }
