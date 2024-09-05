@@ -888,6 +888,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
         uint256 mintAmount = _getMaxSupplyAmount(address(mToken));
 
+        console.log("mintAmount", mintAmount);
+
         if (mintAmount <= 1000e8) {
             return;
         }
@@ -946,6 +948,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     function testRepayMoreThanBorrowBalanceWethRouter() public {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
         uint256 mintAmount = _getMaxSupplyAmount(address(mToken));
+
+        console.log("mint amount: ", mintAmount);
 
         if (mintAmount <= 1000e8) {
             return;
