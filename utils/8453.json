@@ -543,5 +543,10 @@
         "addr": "0xb8051464C8c92209C92F3a4CD9C73746C4c3CFb3",
         "isContract": true,
         "name": "MOONWELL_weETH"
+    },
+    {
+        "addr": "0x3b23090F40b6Dc9919942396386FC0977055cdB5",
+        "isContract": true,
+        "name": "MARKET_ADD_CHECKER"
     }
 ]
