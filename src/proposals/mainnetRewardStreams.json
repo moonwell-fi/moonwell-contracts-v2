@@ -1,7 +1,7 @@
 [
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0xFF8adeC2221f9f4D8dfbAFa6B9a297d17603493D",
+        "emissionToken": "GOVTOKEN",
         "endTime": 1696629600,
         "mToken": "MOONWELL_USDBC",
         "owner": "EMISSIONS_ADMIN",
@@ -9,7 +9,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0xFF8adeC2221f9f4D8dfbAFa6B9a297d17603493D",
+        "emissionToken": "GOVTOKEN",
         "endTime": 1694210400,
         "mToken": "MOONWELL_WETH",
         "owner": "EMISSIONS_ADMIN",
@@ -17,7 +17,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0xFF8adeC2221f9f4D8dfbAFa6B9a297d17603493D",
+        "emissionToken": "GOVTOKEN",
         "endTime": 1694210400,
         "mToken": "MOONWELL_cbETH",
         "owner": "EMISSIONS_ADMIN",

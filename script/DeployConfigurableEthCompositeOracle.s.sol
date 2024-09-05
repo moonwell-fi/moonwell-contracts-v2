@@ -13,7 +13,7 @@ import {OPTIMISM_CHAIN_ID, OPTIMISM_SEPOLIA_CHAIN_ID} from "@utils/ChainIds.sol"
 
 /*
 How to use:
-COMPOSITE_ORACLE=CHAINLINK_WSTETH_ETH forge script src/proposals/DeployConfigurableEthCompositeOracle.s.sol:DeployConfigurableEthCompositeOracle \
+COMPOSITE_ORACLE=CHAINLINK_WSTETH_ETH forge script script/DeployConfigurableEthCompositeOracle.s.sol:DeployConfigurableEthCompositeOracle \
     -vvvv \
     --rpc-url optimism \
     --broadcast

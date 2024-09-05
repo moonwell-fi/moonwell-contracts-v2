@@ -11,7 +11,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*
 How to use:
-forge script src/proposals/DeployWETHRouter.s.sol:DeployWETHRouter \
+forge script script/DeployWETHRouter.s.sol:DeployWETHRouter \
     -vvvv \
     --rpc-url base \
     --broadcast

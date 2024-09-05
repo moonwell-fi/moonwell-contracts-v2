@@ -1,7 +1,7 @@
 [
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0x4200000000000000000000000000000000000042",
+        "emissionToken": "OP",
         "endTime": 1725593400,
         "mToken": "MOONWELL_weETH",
         "owner": "TEMPORAL_GOVERNOR",
@@ -9,7 +9,7 @@
     },
     {
         "borrowEmissionsPerSec": 1,
-        "emissionToken": "0xA88594D404727625A9437C3f886C7643872296AE",
+        "emissionToken": "xWELL_PROXY",
         "endTime": 1725593400,
         "mToken": "MOONWELL_weETH",
         "owner": "TEMPORAL_GOVERNOR",
