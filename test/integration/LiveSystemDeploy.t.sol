@@ -105,11 +105,11 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
 
-        if (totalSupplies >= supplyCap) {
+        if (totalSupplies - 1 >= supplyCap) {
             return 0;
         }
 
-        return supplyCap - totalSupplies;
+        return supplyCap - totalSupplies - 1;
     }
 
     function _calculateSupplyRewards(
