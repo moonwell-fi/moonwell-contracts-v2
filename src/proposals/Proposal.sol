@@ -138,7 +138,7 @@ abstract contract Proposal is Script, Test {
                 "\n-------- Addresses added after running proposal --------"
             );
             for (uint256 j = 0; j < recordedNames.length; j++) {
-                console.log(string(printedAddress), recordedAddresses[j]);
+                console.log(string(printedAddress), recordedAddresses[j], ",");
                 console.log(string(printedContract), true, ",");
                 console.log(
                     string(printedName),
@@ -161,7 +161,7 @@ abstract contract Proposal is Script, Test {
             );
 
             for (uint256 j = 0; j < changedNames.length; j++) {
-                console.log(string(printedAddress), changedAddresses[j]);
+                console.log(string(printedAddress), changedAddresses[j], ",");
                 console.log(string(printedContract), true, ",");
                 console.log(
                     string(printedName),

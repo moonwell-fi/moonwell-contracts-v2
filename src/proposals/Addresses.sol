@@ -518,7 +518,7 @@ contract Addresses is IAddresses, Test {
             address[] memory newlyRecordedAddresses
         ) = getRecordedAddresses();
         for (uint256 j = 0; j < recordedNames.length; j++) {
-            console.log(string(printedAddress), newlyRecordedAddresses[j]);
+            console.log(string(printedAddress), newlyRecordedAddresses[j], ",");
             console.log(string(printedContract), true, ",");
             console.log(
                 string(printedName),
