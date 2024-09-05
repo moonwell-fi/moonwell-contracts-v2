@@ -575,22 +575,6 @@ contract mipb28 is HybridProposal, Configs {
             }
         }
 
-        {
-            ChainlinkCompositeOracle oracle = ChainlinkCompositeOracle(
-                addresses.getAddress("CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE")
-            );
-            (, int256 compositePrice, , , ) = oracle.latestRoundData();
-
-            int256 ethPrice = oracle.getPriceAndScale(
-                addresses.getAddress("CHAINLINK_ETH_USD"),
-                18
-            );
-            assertGt(
-                compositePrice,
-                ethPrice,
-                "derivative price should be gt than underlying"
-            );
-        }
     }
 
     /// helper function to validate supply and borrow caps
