@@ -78,18 +78,6 @@ contract mipb28 is HybridProposal, Configs {
             cTokenConfigs = getCTokenConfigurations(block.chainid);
         }
 
-        if (!addresses.isAddressSet("CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE")) {
-            addresses.addAddress(
-                "CHAINLINK_WEETH_ETH_COMPOSITE_ORACLE",
-                address(
-                    new ChainlinkCompositeOracle(
-                        addresses.getAddress("CHAINLINK_ETH_USD"),
-                        addresses.getAddress("CHAINLINK_WEETH_ORACLE"),
-                        address(0)
-                    )
-                )
-            );
-        }
 
         //// create all of the CTokens according to the configuration in Config.sol
         unchecked {
