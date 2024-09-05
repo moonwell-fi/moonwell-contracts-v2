@@ -23,4 +23,4 @@ jobs:
         uses: ./.github/actions
 
       - name: Integration Tests Base Mainnet
-        run: time forge test --match-contract LiveSystemDeploy -vvv 
+        run: time forge test --match-contract LiveSystemDeploy -vvv --ffi
