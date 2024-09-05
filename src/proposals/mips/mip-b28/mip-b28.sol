@@ -56,7 +56,6 @@ contract mipb28 is HybridProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
-
     }
 
     function primaryForkId() public pure override returns (uint256) {
@@ -77,7 +76,6 @@ contract mipb28 is HybridProposal, Configs {
 
             cTokenConfigs = getCTokenConfigurations(block.chainid);
         }
-
 
         //// create all of the CTokens according to the configuration in Config.sol
         unchecked {
@@ -343,6 +341,15 @@ contract mipb28 is HybridProposal, Configs {
                 );
 
                 _pushAction(
+                    addresses.getAddress("MARKET_ADD_CHECKER"),
+                    abi.encodeWithSignature(
+                        "checkMarketAdd(address)",
+                        cTokenAddress
+                    ),
+                    "Check the market has been correctly initialized and MOONWELL_cbBTC minted"
+                );
+
+                _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
                         "_setCollateralFactor(address,uint256)",
@@ -574,7 +581,6 @@ contract mipb28 is HybridProposal, Configs {
                 }
             }
         }
-
     }
 
     /// helper function to validate supply and borrow caps
