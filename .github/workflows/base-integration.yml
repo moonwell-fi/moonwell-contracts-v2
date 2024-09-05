@@ -27,5 +27,5 @@ jobs:
           -vvv --ffi
 
       - name: Integration Tests Live System Base 
-        run: time forge test --match-contract LiveSystemDeploy -vvv
+        run: time forge test --match-contract LiveSystemDeploy -vvv --ffi
 
