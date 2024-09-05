@@ -558,5 +558,15 @@
         "addr": "0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F",
         "isContract": true,
         "name": "CHAINLINK_BTC_USD"
+    },
+    {
+        "addr": "0x0738483Add6ab8620B731aEc0121d1d3A70BD6EA",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC"
+    },
+    {
+        "addr": "0xF877ACaFA28c19b96727966690b2f44d35aD5976",
+        "isContract": true,
+        "name": "MOONWELL_cbBTC"
     }
 ]
