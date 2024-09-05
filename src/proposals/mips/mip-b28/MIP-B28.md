@@ -27,8 +27,9 @@ I propose the addition of a [cbBTC](https://x.com/coinbase/status/18235015820064
 
 ### Gauntlet Risk Parameter Recommendations
 
-Gauntlet, Moonwell's lead risk manager, has provided the following risk
-parameter recommendations for the cbBTC market:
+Gauntlet, Moonwell's lead risk manager, has provided the following initial risk parameter recommendations for the cbBTC market. 
+
+Please note that Gauntlet serves as Cap Guardian for Moonwell. This means that as DEX liquidity for cbBTC grows, Gauntlet will be able to dynamically adjust the supply and borrow caps without requiring additional onchain governance proposals.
 
 #### Risk Parameter Recommendations
 
