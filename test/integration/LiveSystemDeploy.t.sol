@@ -36,8 +36,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     mapping(MToken => address[] rewardTokens) rewardsConfig;
 
     function setUp() public override {
-        // undo this once PostProposalCheck is refactored
-        // super.setUp();
+        super.setUp();
+
         vm.envUint("PRIMARY_FORK_ID").createForksAndSelect();
 
         addresses = new Addresses();
