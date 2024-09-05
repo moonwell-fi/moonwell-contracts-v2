@@ -1,7 +1,5 @@
 # MIP-B28: Add cbBTC Market on Base
 
-## Summary
-
 ## Proposal Details
 
 I propose the addition of a [cbBTC](https://x.com/coinbase/status/1823501582006411614) (Coinbase wrapped BTC) market to Moonwell's Base deployment. This proposal aims to initiate the process of listing cbBTC, allowing the Moonwell community and risk managers like Gauntlet to prepare for its imminent launch. By positioning Moonwell as an early adopter of this significant asset, we align ourselves with Base's vision of becoming a major hub for Bitcoin DeFi and further catalyzing the growth of the world's largest onchain economy.
