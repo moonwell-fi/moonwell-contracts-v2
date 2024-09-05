@@ -95,6 +95,8 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     }
 
     function testBorrowingOverBorrowCapFailsWeth() public {
+        mWeth.accrueInterest();
+
         uint256 mintAmount = _getMaxSupplyAmount(
             addresses.getAddress("MOONWELL_WETH")
         ) - 1e18;
@@ -102,6 +104,9 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
             addresses.getAddress("MOONWELL_WETH")
         );
         address underlying = address(mWeth.underlying());
+
+        console.log("mintAmount: ", mintAmount);
+        console.log("borrowAmount: ", borrowAmount);
 
         deal(underlying, address(this), mintAmount);
 
