@@ -1,9 +1,9 @@
 [
     {
         "addressesString": "MOONWELL_cbBTC",
-        "supplyCap": 0.001e18,
-        "borrowCap": 0.0005e18,
-        "collateralFactor": 0.84e18,
+        "supplyCap": 0.001e8,
+        "borrowCap": 0.0005e8,
+        "collateralFactor": 0.81e18,
         "initialMintAmount": 10000,
         "name": "Moonwell cbBTC",
         "priceFeedName": "CHAINLINK_BTC_USD",
