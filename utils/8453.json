@@ -548,5 +548,25 @@
         "addr": "0x3b23090F40b6Dc9919942396386FC0977055cdB5",
         "isContract": true,
         "name": "MARKET_ADD_CHECKER"
+    },
+    {
+        "addr": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+        "isContract": true,
+        "name": "cbBTC"
+    },
+    {
+        "addr": "0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F",
+        "isContract": true,
+        "name": "CHAINLINK_BTC_USD"
+    },
+    {
+        "addr": "0x0738483Add6ab8620B731aEc0121d1d3A70BD6EA",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC"
+    },
+    {
+        "addr": "0xF877ACaFA28c19b96727966690b2f44d35aD5976",
+        "isContract": true,
+        "name": "MOONWELL_cbBTC"
     }
 ]

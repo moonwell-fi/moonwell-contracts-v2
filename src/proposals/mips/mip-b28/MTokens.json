@@ -1,0 +1,21 @@
+[
+    {
+        "addressesString": "MOONWELL_cbBTC",
+        "supplyCap": 0.001e8,
+        "borrowCap": 0.0005e8,
+        "collateralFactor": 0.81e18,
+        "initialMintAmount": 10000,
+        "name": "Moonwell cbBTC",
+        "priceFeedName": "CHAINLINK_BTC_USD",
+        "reserveFactor": 0.1e18,
+        "seizeShare": 0.03e18,
+        "symbol": "mcbBTC",
+        "tokenAddressName": "cbBTC",
+        "jrm": {
+            "baseRatePerYear": 0.02e18,
+            "jumpMultiplierPerYear": 3e18,
+            "kink": 0.6e18,
+            "multiplierPerYear": 0.065e18
+        }
+    }
+]
