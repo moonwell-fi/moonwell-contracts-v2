@@ -29,7 +29,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     MarketAddChecker checker;
     Comptroller comptroller;
 
-    address deprecatedMoonwellVelo;
+    MToken deprecatedMoonwellVelo;
 
     MToken[] mTokens;
 
@@ -64,10 +64,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     }
 
     function _mintMToken(address mToken, uint256 amount) internal {
-        if (mToken == deprecatedMoonwellVelo) {
-            return false;
-        }
-
         address underlying = MErc20(mToken).underlying();
 
         if (underlying == addresses.getAddress("WETH")) {
@@ -350,6 +346,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         MToken mToken = mTokens[mTokenIndex];
 
+        if (mToken == deprecatedMoonwellVelo) {
+            return;
+        }
+
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         if (max <= 1000e8) {
@@ -364,8 +364,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         address sender = address(this);
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
-        bool minted = _mintMToken(address(mToken), mintAmount);
-        assertEq(minted, true, "Mint failed");
+        _mintMToken(address(mToken), mintAmount);
 
         assertTrue(
             MErc20Delegator(payable(address(mToken))).balanceOf(sender) > 0,
@@ -385,6 +384,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     ) public {
         mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
         MToken mToken = mTokens[mTokenIndex];
+
+        if (mToken == deprecatedMoonwellVelo) {
+            return;
+        }
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
@@ -457,6 +460,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
         MToken mToken = mTokens[mTokenIndex];
 
+        if (mToken == deprecatedMoonwellVelo) {
+            return;
+        }
+
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         if (max <= 1000e8) {
@@ -514,6 +521,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         toWarp = _bound(toWarp, 1_000_000, 4 weeks);
         mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
         MToken mToken = mTokens[mTokenIndex];
+
+        if (mToken == deprecatedMoonwellVelo) {
+            return;
+        }
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
@@ -606,6 +617,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
         MToken mToken = mTokens[mTokenIndex];
+
+        if (mToken == deprecatedMoonwellVelo) {
+            return;
+        }
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
@@ -721,6 +736,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             rewardsConfig[mTokens[mTokenIndex]].length - 1
         );
         MToken mToken = mTokens[mTokenIndex];
+
+        if (mToken == deprecatedMoonwellVelo) {
+            return;
+        }
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
