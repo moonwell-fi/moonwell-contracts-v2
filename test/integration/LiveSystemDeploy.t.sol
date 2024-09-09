@@ -297,20 +297,17 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             MultiRewardDistributorCommon.MarketConfig memory configBefore = mrd
                 .getConfigForMarket(mToken, rewardsConfig[mToken][i]);
 
-            mrd._updateEndTime(
-                mToken,
-                rewardsConfig[mToken][i],
-                configBefore.endTime + 4 weeks
-            );
+            uint256 newEndTime = configBefore.endTime + 4 weeks >
+                vm.getBlockTimestamp()
+                ? configBefore.endTime + 4 weeks
+                : vm.getBlockTimestamp() + 4 weeks;
+
+            mrd._updateEndTime(mToken, rewardsConfig[mToken][i], newEndTime);
 
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
                 .getConfigForMarket(mToken, rewardsConfig[mToken][i]);
 
-            assertEq(
-                config.endTime,
-                configBefore.endTime + 4 weeks,
-                "End time incorrect"
-            );
+            assertEq(config.endTime, newEndTime, "End time incorrect");
         }
         vm.stopPrank();
     }
