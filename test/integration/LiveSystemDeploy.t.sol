@@ -85,9 +85,9 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         );
     }
 
-    function _getMaxSupplyAmount(
-        address mToken
-    ) private view returns (uint256) {
+    function _getMaxSupplyAmount(address mToken) private returns (uint256) {
+        MToken(mToken).accrueInterest();
+
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         console.log("supply cap", supplyCap);
