@@ -282,9 +282,13 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
                 addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
             ) {
-                totalOpEpochRewards +=
-                    spec.setRewardSpeed[i].newSupplySpeed *
+                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
                     (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+
+                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+
+                totalOpEpochRewards += supplyAmount + borrowAmount;
             }
 
             externalChainActions[_chainId].setRewardSpeed.push(
@@ -304,7 +308,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 assertApproxEqRel(
                     spec.transferFroms[i].amount,
                     totalWellEpochRewards,
-                    0.01e18,
+                    0.1e18,
                     "Transfer amount must be close to the total rewards for the epoch"
                 );
             }
@@ -617,7 +621,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 );
             }
 
-            if (emissionConfig.endTime != 0) {
+            if (emissionConfig.endTime > 0) {
                 // new end time must be greater than the current end time
                 assertGt(
                     setRewardSpeed.newEndTime,

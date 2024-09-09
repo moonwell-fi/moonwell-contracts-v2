@@ -2,44 +2,47 @@
 pragma solidity 0.8.19;
 
 import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@forge-std/Test.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {ChainIds} from "@utils/ChainIds.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
+import {ChainIds} from "@utils/ChainIds.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
+import {MarketAddChecker} from "@protocol/governance/MarketAddChecker.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
-
-import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     using ChainIds for uint256;
 
     MultiRewardDistributor mrd;
+    MarketAddChecker checker;
     Comptroller comptroller;
 
-    address deprecatedMoonwellVelo;
+    MToken deprecatedMoonwellVelo;
 
     MToken[] mTokens;
 
     mapping(MToken => address[] rewardTokens) rewardsConfig;
 
     function setUp() public override {
-        // undo this once PostProposalCheck is refactored
-        //super.setUp();
+        super.setUp();
+
         vm.envUint("PRIMARY_FORK_ID").createForksAndSelect();
 
         addresses = new Addresses();
+
+        checker = MarketAddChecker(addresses.getAddress("MARKET_ADD_CHECKER"));
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
@@ -60,14 +63,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         assertEq(mTokens.length > 0, true, "No markets found");
     }
 
-    function _mintMToken(
-        address mToken,
-        uint256 amount
-    ) internal returns (bool) {
-        if (mToken == deprecatedMoonwellVelo) {
-            return false;
-        }
-
+    function _mintMToken(address mToken, uint256 amount) internal {
         address underlying = MErc20(mToken).underlying();
 
         if (underlying == addresses.getAddress("WETH")) {
@@ -81,8 +77,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             0,
             "Mint failed"
         );
-
-        return true;
     }
 
     function _getMaxSupplyAmount(
@@ -107,7 +101,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         MToken mToken,
         address emissionToken,
         uint256 amount,
-        uint256 toWarp
+        uint256 timeBefore,
+        uint256 timeAfter
     ) private view returns (uint256 expectedRewards) {
         MultiRewardDistributorCommon.MarketConfig memory marketConfig = mrd
             .getConfigForMarket(mToken, emissionToken);
@@ -115,11 +110,15 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         uint256 endTime = marketConfig.endTime;
 
         uint256 timeDelta;
-        if (vm.getBlockTimestamp() > endTime) {
-            // if endTime is in the past then we need to decrease
-            timeDelta = toWarp - (vm.getBlockTimestamp() - endTime);
+
+        if (timeAfter > endTime) {
+            if (timeBefore > endTime) {
+                timeDelta = 0;
+            } else {
+                timeDelta = endTime - timeBefore;
+            }
         } else {
-            timeDelta = toWarp;
+            timeDelta = timeAfter - timeBefore;
         }
 
         expectedRewards =
@@ -131,7 +130,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         MToken mToken,
         address emissionToken,
         uint256 amount,
-        uint256 toWarp
+        uint256 timeBefore,
+        uint256 timeAfter
     ) private view returns (uint256 expectedRewards) {
         MultiRewardDistributorCommon.MarketConfig memory config = mrd
             .getConfigForMarket(mToken, emissionToken);
@@ -139,16 +139,73 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         uint256 endTime = config.endTime;
 
         uint256 timeDelta;
-        if (vm.getBlockTimestamp() > endTime) {
-            // if endTime is in the past then we need to decrease
-            timeDelta = toWarp - (vm.getBlockTimestamp() - endTime);
+
+        if (timeAfter > endTime) {
+            if (timeBefore > endTime) {
+                timeDelta = 0;
+            } else {
+                timeDelta = endTime - timeBefore;
+            }
         } else {
-            timeDelta = toWarp;
+            timeDelta = timeAfter - timeBefore;
         }
 
         expectedRewards =
             (timeDelta * config.borrowEmissionsPerSec * amount) /
             mToken.totalBorrows();
+    }
+
+    function testAllMarketsNonZeroTotalSupply() public view {
+        MToken[] memory markets = comptroller.getAllMarkets();
+
+        for (uint256 i = 0; i < markets.length; i++) {
+            assertGt(markets[i].totalSupply(), 2_000, "empty market");
+            assertGt(markets[i].balanceOf(address(0)), 0, "no burnt tokens");
+        }
+    }
+
+    function testMarketAddChecker() public view {
+        checker.checkMarketAdd(addresses.getAddress("MOONWELL_cbETH"));
+        checker.checkAllMarkets(addresses.getAddress("UNITROLLER"));
+    }
+
+    function testAllEmissionTokenConfigs() public view {
+        MToken[] memory markets = comptroller.getAllMarkets();
+        for (uint256 i = 0; i < markets.length; i++) {
+            MultiRewardDistributorCommon.MarketConfig[] memory allConfigs = mrd
+                .getAllMarketConfigs(markets[i]);
+            for (uint256 j = 0; j < allConfigs.length; j++) {
+                assertGt(
+                    allConfigs[j].borrowEmissionsPerSec,
+                    0,
+                    "Emission speed below 1"
+                );
+                assertTrue(
+                    allConfigs[j].emissionToken.code.length > 0,
+                    "Invalid emission token"
+                );
+
+                /// ensure standard calls to token succeed
+                IERC20(allConfigs[j].emissionToken).balanceOf(address(mrd));
+                IERC20(allConfigs[j].emissionToken).totalSupply();
+            }
+        }
+    }
+
+    function testAllEmissionAdminTemporalGovernor() public view {
+        MToken[] memory markets = comptroller.getAllMarkets();
+        for (uint256 i = 0; i < markets.length; i++) {
+            MultiRewardDistributorCommon.MarketConfig[] memory allConfigs = mrd
+                .getAllMarketConfigs(markets[i]);
+
+            for (uint256 j = 0; j < allConfigs.length; j++) {
+                assertEq(
+                    allConfigs[j].owner,
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    "Temporal Governor not admin"
+                );
+            }
+        }
     }
 
     function testGuardianCanPauseTemporalGovernor() public {
@@ -208,10 +265,13 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
         for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
+            MultiRewardDistributorCommon.MarketConfig memory configBefore = mrd
+                .getConfigForMarket(mToken, rewardsConfig[mToken][i]);
+
             mrd._updateEndTime(
                 mToken,
                 rewardsConfig[mToken][i],
-                block.timestamp + 4 weeks
+                configBefore.endTime + 4 weeks
             );
 
             MultiRewardDistributorCommon.MarketConfig memory config = mrd
@@ -219,7 +279,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
             assertEq(
                 config.endTime,
-                block.timestamp + 4 weeks,
+                configBefore.endTime + 4 weeks,
                 "End time incorrect"
             );
         }
@@ -286,6 +346,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         MToken mToken = mTokens[mTokenIndex];
 
+        if (mToken == deprecatedMoonwellVelo) {
+            return;
+        }
+
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         if (max <= 1000e8) {
@@ -300,8 +364,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         address sender = address(this);
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
-        bool minted = _mintMToken(address(mToken), mintAmount);
-        assertEq(minted, true, "Mint failed");
+        _mintMToken(address(mToken), mintAmount);
 
         assertTrue(
             MErc20Delegator(payable(address(mToken))).balanceOf(sender) > 0,
@@ -322,6 +385,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
         MToken mToken = mTokens[mTokenIndex];
 
+        if (mToken == deprecatedMoonwellVelo) {
+            return;
+        }
+
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         if (max <= 1000e8) {
@@ -331,10 +398,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         // 1000e8 to 90% of max supply
         mintAmount = _bound(mintAmount, 1000e8, max - (max / 10));
 
-        bool minted = _mintMToken(address(mToken), mintAmount);
-        if (!minted) {
-            return;
-        }
+        _mintMToken(address(mToken), mintAmount);
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(
@@ -396,6 +460,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
         MToken mToken = mTokens[mTokenIndex];
 
+        if (mToken == deprecatedMoonwellVelo) {
+            return;
+        }
+
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         if (max <= 1000e8) {
@@ -405,22 +473,21 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         // 1000e8 to 90% of max supply
         supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
 
-        bool minted = _mintMToken(address(mToken), supplyAmount);
-
-        if (!minted) {
-            return;
-        }
+        _mintMToken(address(mToken), supplyAmount);
 
         toWarp = _bound(toWarp, 1_000_000, 4 weeks);
 
-        vm.warp(block.timestamp + toWarp);
+        uint256 timeBefore = vm.getBlockTimestamp();
+        vm.warp(timeBefore + toWarp);
+        uint256 timeAfter = vm.getBlockTimestamp();
 
         for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
             uint256 expectedReward = _calculateSupplyRewards(
                 MToken(mToken),
                 rewardsConfig[mToken][i],
                 mToken.balanceOf(address(this)),
-                toWarp
+                timeBefore,
+                timeAfter
             );
 
             MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
@@ -455,6 +522,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
         MToken mToken = mTokens[mTokenIndex];
 
+        if (mToken == deprecatedMoonwellVelo) {
+            return;
+        }
+
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         if (max <= 1000e8) {
@@ -464,11 +535,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         // 1000e8 to 90% of max supply
         supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
 
-        bool minted = _mintMToken(address(mToken), supplyAmount);
-
-        if (!minted) {
-            return;
-        }
+        _mintMToken(address(mToken), supplyAmount);
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(
@@ -512,14 +579,17 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             "Borrow failed"
         );
 
-        vm.warp(vm.getBlockTimestamp() + toWarp);
+        uint256 timeBefore = vm.getBlockTimestamp();
+        vm.warp(timeBefore + toWarp);
+        uint256 timeAfter = vm.getBlockTimestamp();
 
         for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
             uint256 expectedReward = _calculateBorrowRewards(
                 MToken(mToken),
                 rewardsConfig[mToken][i],
                 mToken.borrowBalanceStored(sender),
-                toWarp
+                timeBefore,
+                timeAfter
             );
             MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
                 .getOutstandingRewardsForUser(MToken(mToken), sender);
@@ -548,6 +618,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
         MToken mToken = mTokens[mTokenIndex];
 
+        if (mToken == deprecatedMoonwellVelo) {
+            return;
+        }
+
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         if (max <= 1000e8) {
@@ -557,11 +631,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         // 1000e8 to 90% of max supply
         supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
 
-        bool minted = _mintMToken(address(mToken), supplyAmount);
-
-        if (!minted) {
-            return;
-        }
+        _mintMToken(address(mToken), supplyAmount);
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(
@@ -598,21 +668,25 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             );
         }
 
-        vm.warp(vm.getBlockTimestamp() + toWarp);
+        uint256 timeBefore = vm.getBlockTimestamp();
+        vm.warp(timeBefore + toWarp);
+        uint256 timeAfter = vm.getBlockTimestamp();
 
         for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
             uint256 expectedSupplyReward = _calculateSupplyRewards(
                 MToken(mToken),
                 rewardsConfig[mToken][i],
                 mToken.balanceOf(sender),
-                toWarp
+                timeBefore,
+                timeAfter
             );
 
             uint256 expectedBorrowReward = _calculateBorrowRewards(
                 MToken(mToken),
                 rewardsConfig[mToken][i],
                 mToken.borrowBalanceStored(sender),
-                toWarp
+                timeBefore,
+                timeAfter
             );
 
             MultiRewardDistributorCommon.RewardInfo[] memory rewards = mrd
@@ -663,6 +737,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         );
         MToken mToken = mTokens[mTokenIndex];
 
+        if (mToken == deprecatedMoonwellVelo) {
+            return;
+        }
+
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         if (max <= 1000e8) {
@@ -672,11 +750,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         // 1000e8 to 90% of max supply
         mintAmount = _bound(mintAmount, 1000e8, max - (max / 10));
 
-        bool minted = _mintMToken(address(mToken), mintAmount);
-
-        if (!minted) {
-            return;
-        }
+        _mintMToken(address(mToken), mintAmount);
 
         uint256 borrowAmount = mintAmount / 3;
 
@@ -711,7 +785,9 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             "Borrow failed"
         );
 
-        vm.warp(vm.getBlockTimestamp() + toWarp);
+        uint256 timeBefore = vm.getBlockTimestamp();
+        vm.warp(timeBefore + toWarp);
+        uint256 timeAfter = vm.getBlockTimestamp();
 
         address token = MErc20(address(mToken)).underlying();
 
@@ -721,14 +797,16 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             MToken(mToken),
             rewardsConfig[mToken][rewardTokenIndex],
             balanceBefore / 3,
-            toWarp
+            timeBefore,
+            timeAfter
         );
 
         uint256 expectedBorrowReward = _calculateBorrowRewards(
             MToken(mToken),
             rewardsConfig[mToken][rewardTokenIndex],
             mToken.borrowBalanceStored(address(this)),
-            toWarp
+            timeBefore,
+            timeAfter
         );
 
         /// borrower is now underwater on loan

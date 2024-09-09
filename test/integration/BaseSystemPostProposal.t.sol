@@ -221,13 +221,18 @@ contract BaseSystemPostProposalTest is PostProposalCheck, Configs {
         (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
             .getAccountLiquidity(address(this));
 
+        (, uint256 collateralFactorMantissa) = comptroller.markets(
+            address(mToken)
+        );
+
         assertEq(err, 0, "Error getting account liquidity");
         assertApproxEqRel(
             liquidity,
-            80e18,
+            (collateralFactorMantissa * mintAmount) / 1e6,
             1e15,
             "liquidity not within .1% of $80"
         );
+
         assertEq(shortfall, 0, "Incorrect shortfall");
 
         comptroller.exitMarket(address(mToken));

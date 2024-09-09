@@ -149,8 +149,7 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
             }
         }
 
-        // undo this once PostProposalCheck is refactored
-        //super.setUp();
+        super.setUp();
 
         proposalC = new mipm23c();
         proposalC.buildCalldata(addresses);
@@ -1384,6 +1383,13 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
 
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
+
+        bytes32 encodedData = bytes32(
+            uint256(uint160(address(wormholeRelayerAdapter)))
+        );
+
+        /// stores the wormhole mock address in the wormholeRelayer variable
+        vm.store(address(governor), bytes32(uint256(103)), encodedData);
 
         proposalId = governor.propose{value: bridgeCost}(
             targets,

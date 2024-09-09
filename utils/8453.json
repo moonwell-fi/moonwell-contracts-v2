@@ -141,8 +141,13 @@
     },
     {
         "addr": "0xD791292655A1d382FcC1a6Cb9171476cf91F2caa",
-        "name": "EMISSIONS_ADMIN",
+        "name": "DEPRECATED_WARDEN_EMISSIONS_ADMIN",
         "isContract": false
+    },
+    {
+        "addr": "0x8b621804a7637b781e2BbD58e256a591F2dF7d51",
+        "name": "EMISSIONS_ADMIN",
+        "isContract": true
     },
     {
         "addr": "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
@@ -222,6 +227,11 @@
     {
         "addr": "0x54dC357F7461BcEEE5BdbA80996f5CB7d7512445",
         "name": "JUMP_RATE_IRM_MOONWELL_USDC",
+        "isContract": true
+    },
+    {
+        "addr": "0x97E310638D59d2464b39328DBbFdAbc307aB00E2",
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_B27",
         "isContract": true
     },
     {
@@ -465,6 +475,11 @@
         "name": "JUMP_RATE_IRM_MOONWELL_AERO_MIP_B24"
     },
     {
+        "addr": "0x745e8CC80E30F4497c56bc5E010FbBD23079049C",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_AERO_MIP_B27"
+    },
+    {
         "addr": "0x73902f619CEB9B31FD8EFecf435CbDf89E369Ba6",
         "isContract": true,
         "name": "MOONWELL_AERO"
@@ -528,5 +543,30 @@
         "addr": "0xb8051464C8c92209C92F3a4CD9C73746C4c3CFb3",
         "isContract": true,
         "name": "MOONWELL_weETH"
+    },
+    {
+        "addr": "0x3b23090F40b6Dc9919942396386FC0977055cdB5",
+        "isContract": true,
+        "name": "MARKET_ADD_CHECKER"
+    },
+    {
+        "addr": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+        "isContract": true,
+        "name": "cbBTC"
+    },
+    {
+        "addr": "0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F",
+        "isContract": true,
+        "name": "CHAINLINK_BTC_USD"
+    },
+    {
+        "addr": "0x0738483Add6ab8620B731aEc0121d1d3A70BD6EA",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC"
+    },
+    {
+        "addr": "0xF877ACaFA28c19b96727966690b2f44d35aD5976",
+        "isContract": true,
+        "name": "MOONWELL_cbBTC"
     }
 ]
