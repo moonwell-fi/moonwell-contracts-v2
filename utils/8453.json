@@ -573,5 +573,10 @@
         "addr": "0xDAe398520e2B67cd3f27aeF9Cf14D93D927f8250",
         "isContract": true,
         "name": "CHAINLINK_EURC_USD"
+    },
+    {
+        "addr": "0x60a3e35cc302bfa44cb288bc5a4f316fdb1adb42",
+        "isContract": true,
+        "name": "EURC"
     }
 ]
