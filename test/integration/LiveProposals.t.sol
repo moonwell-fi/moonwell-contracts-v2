@@ -13,7 +13,7 @@ import {Address} from "@utils/Address.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
-import {ProposalsHandler} from "@test/utils/ProposalsHandler.sol";
+import {ProposalMap} from "@test/utils/ProposalMap.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
@@ -34,7 +34,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker, Networks {
     Addresses addresses;
 
     /// @notice proposals handler
-    ProposalsHandler proposals;
+    ProposalMap proposals;
 
     /// @notice Multichain Governor address
     MultichainGovernor governor;
@@ -63,7 +63,7 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker, Networks {
 
         governor = MultichainGovernor(payable(governorAddress));
 
-        proposals = new ProposalsHandler();
+        proposals = new ProposalMap();
         vm.makePersistent(address(proposals));
 
         proposalIds = governor.liveProposals();

@@ -1,7 +1,7 @@
 [
     {
         "envPath": "src/proposals/mips/mip-o02/o02.sh",
-        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol:mipRewardsDistributionExternalChain",
-        "proposalId": 34
+        "id": 34,
+        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol:mipRewardsDistributionExternalChain"
     }
 ]

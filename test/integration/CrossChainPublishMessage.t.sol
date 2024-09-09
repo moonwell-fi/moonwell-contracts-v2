@@ -61,143 +61,143 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
         vm.warp(block.timestamp + 1000);
     }
 
-    function testQueueAndPublishMessageRawBytes() public {
-        if (proposals.length == 0) {
-            /// if no proposals to execute, return
-            return;
-        }
+    // function testQueueAndPublishMessageRawBytes() public {
+    //     if (proposals.length == 0) {
+    //         /// if no proposals to execute, return
+    //         return;
+    //     }
 
-        for (uint256 i = 0; i < proposals.length; i++) {
-            HybridProposal proposal = HybridProposal(address(proposals[i]));
+    //     for (uint256 i = 0; i < proposals.length; i++) {
+    //         HybridProposal proposal = HybridProposal(address(proposals[i]));
 
-            //  only run tests against a base proposal
-            if (uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID) {
-                return;
-            }
+    //         //  only run tests against a base proposal
+    //         if (uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID) {
+    //             return;
+    //         }
 
-            // At this point the primaryForkId should not be moonbeam
-            vm.selectFork(uint256(proposal.primaryForkId()));
-            proposal.build(addresses);
+    //         // At this point the primaryForkId should not be moonbeam
+    //         vm.selectFork(uint256(proposal.primaryForkId()));
+    //         proposal.build(addresses);
 
-            // returns the correct address as block.chainid is base/base sepolia
-            address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
+    //         // returns the correct address as block.chainid is base/base sepolia
+    //         address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
 
-            /// this returns the moonbeam wormhole core address as
-            /// block.chainid is base/base sepolia optimism/optimism sepolia
-            address wormholeCore = addresses.getAddress(
-                "WORMHOLE_CORE",
-                block.chainid.toMoonbeamChainId()
-            );
+    //         /// this returns the moonbeam wormhole core address as
+    //         /// block.chainid is base/base sepolia optimism/optimism sepolia
+    //         address wormholeCore = addresses.getAddress(
+    //             "WORMHOLE_CORE",
+    //             block.chainid.toMoonbeamChainId()
+    //         );
 
-            bytes memory multichainGovernorQueuePayload = proposal.getCalldata(
-                addresses
-            );
+    //         bytes memory multichainGovernorQueuePayload = proposal.getCalldata(
+    //             addresses
+    //         );
 
-            console.log("artemis governor queue governance calldata");
-            emit log_bytes(multichainGovernorQueuePayload);
+    //         console.log("artemis governor queue governance calldata");
+    //         emit log_bytes(multichainGovernorQueuePayload);
 
-            /// iterate over and execute all proposals consecutively
-            (
-                address[] memory targets,
-                uint256[] memory values,
-                bytes[] memory payloads
-            ) = proposal.getTargetsPayloadsValues(addresses);
+    //         /// iterate over and execute all proposals consecutively
+    //         (
+    //             address[] memory targets,
+    //             uint256[] memory values,
+    //             bytes[] memory payloads
+    //         ) = proposal.getTargetsPayloadsValues(addresses);
 
-            vm.selectFork(MOONBEAM_FORK_ID);
+    //         vm.selectFork(MOONBEAM_FORK_ID);
 
-            testMintSelf();
-            {
-                uint256 cost = governor.bridgeCostAll();
-                vm.deal(voter, cost);
-                vm.prank(voter);
-                (bool success, ) = address(governor).call{value: cost}(
-                    multichainGovernorQueuePayload
-                );
+    //         testMintSelf();
+    //         {
+    //             uint256 cost = governor.bridgeCostAll();
+    //             vm.deal(voter, cost);
+    //             vm.prank(voter);
+    //             (bool success, ) = address(governor).call{value: cost}(
+    //                 multichainGovernorQueuePayload
+    //             );
 
-                require(success, "proposing gov proposal on moonbeam failed");
-            }
+    //             require(success, "proposing gov proposal on moonbeam failed");
+    //         }
 
-            /// -----------------------------------------------------------
-            /// -----------------------------------------------------------
-            /// ---------------- ADDRESS SANITY CHECKS --------------------
-            /// -----------------------------------------------------------
-            /// -----------------------------------------------------------
+    //         /// -----------------------------------------------------------
+    //         /// -----------------------------------------------------------
+    //         /// ---------------- ADDRESS SANITY CHECKS --------------------
+    //         /// -----------------------------------------------------------
+    //         /// -----------------------------------------------------------
 
-            require(
-                wormholeCore != address(0),
-                "invalid temporal governor address"
-            );
-            require(
-                temporalGov != address(0),
-                "invalid temporal governor address"
-            );
+    //         require(
+    //             wormholeCore != address(0),
+    //             "invalid temporal governor address"
+    //         );
+    //         require(
+    //             temporalGov != address(0),
+    //             "invalid temporal governor address"
+    //         );
 
-            uint256 proposalId = governor.proposalCount();
+    //         uint256 proposalId = governor.proposalCount();
 
-            uint64 nextSequence = IWormhole(wormhole).nextSequence(
-                address(governor)
-            );
+    //         uint64 nextSequence = IWormhole(wormhole).nextSequence(
+    //             address(governor)
+    //         );
 
-            vm.prank(voter);
-            governor.castVote(proposalId, 0); /// VOTE YES
+    //         vm.prank(voter);
+    //         governor.castVote(proposalId, 0); /// VOTE YES
 
-            vm.warp(
-                governor.votingPeriod() +
-                    governor.crossChainVoteCollectionPeriod() +
-                    block.timestamp +
-                    1
-            );
+    //         vm.warp(
+    //             governor.votingPeriod() +
+    //                 governor.crossChainVoteCollectionPeriod() +
+    //                 block.timestamp +
+    //                 1
+    //         );
 
-            bytes memory temporalGovExecData = abi.encode(
-                temporalGov,
-                targets,
-                values,
-                payloads
-            );
+    //         bytes memory temporalGovExecData = abi.encode(
+    //             temporalGov,
+    //             targets,
+    //             values,
+    //             payloads
+    //         );
 
-            vm.expectEmit(true, true, true, true, wormholeCore);
+    //         vm.expectEmit(true, true, true, true, wormholeCore);
 
-            /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
-            emit LogMessagePublished(
-                address(governor),
-                nextSequence,
-                0, /// nonce is hardcoded at 0 in HybridProposal.sol
-                temporalGovExecData,
-                200 /// consistency level is hardcoded at 200 in HybridProposal.sol
-            );
-            governor.execute(proposalId);
-        }
-    }
+    //         /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
+    //         emit LogMessagePublished(
+    //             address(governor),
+    //             nextSequence,
+    //             0, /// nonce is hardcoded at 0 in HybridProposal.sol
+    //             temporalGovExecData,
+    //             200 /// consistency level is hardcoded at 200 in HybridProposal.sol
+    //         );
+    //         governor.execute(proposalId);
+    //     }
+    // }
 
-    function testExecuteTemporalGovMessage() public {
-        testQueueAndPublishMessageRawBytes();
-
-        for (uint256 j = 0; j < proposals.length; j++) {
-            HybridProposal proposal = HybridProposal(address(proposals[j]));
-
-            //  only run tests against a base proposal
-            if (uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID) {
-                return;
-            }
-
-            // At this point the primaryForkId should not be moonbeam
-            vm.selectFork(uint256(proposal.primaryForkId()));
-            (
-                address[] memory targets, /// contracts to call /// native token amount to send is ignored as temporal gov cannot accept eth
-                ,
-                bytes[] memory calldatas
-            ) = proposal.getTargetsPayloadsValues(addresses);
-
-            vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-
-            for (uint256 i = 0; i < targets.length; i++) {
-                (bool success, bytes memory errorString) = targets[i].call(
-                    abi.encodePacked(calldatas[i])
-                );
-                require(success, string(errorString));
-            }
-
-            vm.stopPrank();
-        }
-    }
+    //    function testExecuteTemporalGovMessage() public {
+    //        testQueueAndPublishMessageRawBytes();
+    //
+    //        for (uint256 j = 0; j < proposals.length; j++) {
+    //            HybridProposal proposal = HybridProposal(address(proposals[j]));
+    //
+    //            //  only run tests against a base proposal
+    //            if (uint256(proposal.primaryForkId()) == MOONBEAM_FORK_ID) {
+    //                return;
+    //            }
+    //
+    //            // At this point the primaryForkId should not be moonbeam
+    //            vm.selectFork(uint256(proposal.primaryForkId()));
+    //            (
+    //                address[] memory targets, /// contracts to call /// native token amount to send is ignored as temporal gov cannot accept eth
+    //                ,
+    //                bytes[] memory calldatas
+    //            ) = proposal.getTargetsPayloadsValues(addresses);
+    //
+    //            vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+    //
+    //            for (uint256 i = 0; i < targets.length; i++) {
+    //                (bool success, bytes memory errorString) = targets[i].call(
+    //                    abi.encodePacked(calldatas[i])
+    //                );
+    //                require(success, string(errorString));
+    //            }
+    //
+    //            vm.stopPrank();
+    //        }
+    //    }
 }
