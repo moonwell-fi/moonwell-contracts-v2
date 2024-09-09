@@ -90,11 +90,16 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     ) private view returns (uint256) {
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
+        console.log("supply cap", supplyCap);
+
         uint256 totalCash = MToken(mToken).getCash();
         uint256 totalBorrows = MToken(mToken).totalBorrows();
         uint256 totalReserves = MToken(mToken).totalReserves();
 
-        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
+        uint256 totalSupplies = sub_(
+            add_(totalCash, totalBorrows),
+            totalReserves
+        );
 
         if (totalSupplies - 1 >= supplyCap) {
             return 0;
