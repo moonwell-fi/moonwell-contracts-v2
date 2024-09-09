@@ -74,7 +74,6 @@ contract PostProposalCheck is Test {
         vm.selectFork(proposal.primaryForkId());
 
         address deployer = address(proposal);
-
         proposal.deploy(addresses, deployer);
         proposal.afterDeploy(addresses, deployer);
         proposal.preBuildMock(addresses);
