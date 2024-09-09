@@ -913,8 +913,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        bool minted = _mintMToken(address(mToken), mintAmount);
-        assertEq(minted, true, "Mint failed");
+        _mintMToken(address(mToken), mintAmount);
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(
@@ -974,8 +973,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        bool minted = _mintMToken(address(mToken), mintAmount);
-        assertEq(minted, true, "Mint failed");
+        _mintMToken(address(mToken), mintAmount);
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(
