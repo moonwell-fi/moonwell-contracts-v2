@@ -91,5 +91,7 @@ contract PostProposalCheck is ProposalMap {
             executeShellFile(devProposals[i].envPath);
             runProposal(addresses, devProposals[i].path);
         }
+
+        vm.selectFork(MOONBEAM_FORK_ID);
     }
 }
