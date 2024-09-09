@@ -568,5 +568,10 @@
         "addr": "0xF877ACaFA28c19b96727966690b2f44d35aD5976",
         "isContract": true,
         "name": "MOONWELL_cbBTC"
+    },
+    {
+        "addr": "0xDAe398520e2B67cd3f27aeF9Cf14D93D927f8250",
+        "isContract": true,
+        "name": "CHAINLINK_EURC_USD"
     }
 ]
