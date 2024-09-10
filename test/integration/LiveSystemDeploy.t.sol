@@ -112,7 +112,9 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         return supplyCap - totalSupplies - 1;
     }
 
-    function _getMaxBorrowAmount(address mToken) private returns (uint256) {
+    function _getMaxBorrowAmount(
+        address mToken
+    ) private view returns (uint256) {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = MToken(mToken).totalBorrows();
 
