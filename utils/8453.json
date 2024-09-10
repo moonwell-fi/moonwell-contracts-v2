@@ -70,6 +70,11 @@
         "name": "WETH_METAMORPHO_VAULT"
     },
     {
+        "addr": "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026",
+        "isContract": true,
+        "name": "EURC_METAMORPHO_VAULT"
+    },
+    {
         "addr": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
         "name": "USDC",
         "isContract": true
