@@ -578,5 +578,15 @@
         "addr": "0x60a3e35cc302bfa44cb288bc5a4f316fdb1adb42",
         "isContract": true,
         "name": "EURC"
+    },
+    {
+        "addr": "0x7830f646E6cb7460eF1069E4Fec8CF5B10F7BBea",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_EURC"
+    },
+    {
+        "addr": "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
+        "isContract": true,
+        "name": "MOONWELL_EURC"
     }
 ]
