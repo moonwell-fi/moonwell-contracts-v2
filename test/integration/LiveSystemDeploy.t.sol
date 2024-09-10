@@ -116,20 +116,13 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = MToken(mToken).totalBorrows();
 
-        uint256 mTokenBalance = MToken(mToken).balanceOf(address(this));
-
-        uint256 suppliedValue = mul_(
-            mTokenBalance,
-            MToken(mToken).exchangeRateStored()
+        (uint256 err, uint256 liquidity, ) = comptroler.getAccountLiquidity(
+            address(this)
         );
-
-        (, uint256 collateralFactorMantissa) = comptroller.markets(
-            address(mToken)
-        );
-
-        uint256 maxUserBorrow = mul_(suppliedValue, collateralFactorMantissa);
+        assertEq(err, 0, "Error getting liquidity");
 
         uint256 borrowAllowed = borrowCap - totalBorrows - 1;
+        uint256 maxUserBorrow = liquidity - 1;
 
         return borrowAllowed > maxUserBorrow ? maxUserBorrow : borrowAllowed;
     }
