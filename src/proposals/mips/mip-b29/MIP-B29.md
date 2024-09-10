@@ -58,7 +58,7 @@ without requiring additional onchain governance proposals.
 | Collateral Factor (CF) | 83%       |
 | Supply Cap             | 4.2M EURC |
 | Borrow Cap             | 3.9M EURC |
-| Protocol Seize Share   | 30%       |
+| Protocol Seize Share   | 3%        |
 | Reserve Factor         | 10%       |
 
 ### Interest Rate Model Recommendations
