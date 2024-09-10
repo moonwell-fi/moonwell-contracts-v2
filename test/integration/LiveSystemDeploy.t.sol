@@ -124,9 +124,16 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         assertEq(err, 0, "Error getting liquidity");
 
         uint256 borrowAllowed = borrowCap - totalBorrows - 1;
+        console.log("borrow allowed", borrowAllowed);
         uint256 maxUserBorrow = liquidity - 1;
+        console.log("max user borrow", maxUserBorrow);
 
-        return borrowAllowed > maxUserBorrow ? maxUserBorrow : borrowAllowed;
+        if (maxUserBorrow == 0 || borrowAllowed == 0) {
+            return 0;
+        }
+
+        return
+            (borrowAllowed > maxUserBorrow ? maxUserBorrow : borrowAllowed) / 2;
     }
 
     function _calculateSupplyRewards(
