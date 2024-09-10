@@ -90,6 +90,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
+        if (supplyCap == 0) {
+            return type(uint128).max;
+        }
+
         console.log("supply cap", supplyCap);
 
         uint256 totalCash = MToken(mToken).getCash();
