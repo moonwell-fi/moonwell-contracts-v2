@@ -116,7 +116,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = MToken(mToken).totalBorrows();
 
-        (uint256 err, uint256 liquidity, ) = comptroler.getAccountLiquidity(
+        (uint256 err, uint256 liquidity, ) = comptroller.getAccountLiquidity(
             address(this)
         );
         assertEq(err, 0, "Error getting liquidity");
