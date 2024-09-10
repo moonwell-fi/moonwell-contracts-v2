@@ -447,7 +447,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = mintAmount / 3;
+        uint256 borrowAmount = mintAmount / 4;
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
@@ -577,7 +577,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = supplyAmount / 3;
+        uint256 borrowAmount = supplyAmount / 4;
 
         assertEq(
             comptroller.borrowAllowed(address(mToken), sender, borrowAmount),
@@ -667,7 +667,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         );
 
         {
-            uint256 borrowAmount = supplyAmount / 3;
+            uint256 borrowAmount = supplyAmount / 4;
 
             assertEq(
                 MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
@@ -756,7 +756,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         _mintMToken(address(mToken), mintAmount);
 
-        uint256 borrowAmount = mintAmount / 3;
+        uint256 borrowAmount = mintAmount / 4;
 
         {
             uint256 expectedCollateralFactor = 0.5e18;
@@ -916,7 +916,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = mintAmount / 3;
+        uint256 borrowAmount = mintAmount / 4;
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
@@ -972,7 +972,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = mintAmount / 3;
+        uint256 borrowAmount = mintAmount / 4;
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
