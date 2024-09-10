@@ -35,6 +35,7 @@ Please note that Gauntlet serves as Cap Guardian for Moonwell, which allows for 
 | Supply Cap                 | 4.2M EURC       |
 | Borrow Cap                 | 3.9M EURC       |
 | Protocol Seize Share       | 30%             |
+| Reserve Factor             | 10%             |
 
 ### Interest Rate Model Recommendations
 
