@@ -1,12 +1,9 @@
-name: Base Integration Tests
+name: Base Integration Tests - Part 2
 
 on: [pull_request]
 
 env:
-    OP_RPC_URL: ${{secrets.OP_RPC_URL}}
     BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
-    MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
-    PRIMARY_FORK_ID: 1
 
 jobs:
   run-base-tests:
@@ -22,6 +19,6 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Tests Live System Base 
-        run: time forge test --match-contract LiveSystemDeploy -vvv --ffi
-
+      - name: Base Mainnet Integration Tests
+        run: time forge test --match-contract LiveSystemBaseTest --fork-url base
+          -vvv --ffi
