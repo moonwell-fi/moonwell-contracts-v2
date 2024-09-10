@@ -3,7 +3,7 @@
         "addressesString": "MOONWELL_EURC",
         "supplyCap": 4200000e6,
         "borrowCap": 3900000e6,
-        "collateralFactor": 0.31e18,
+        "collateralFactor": 0.83e18,
         "initialMintAmount": 1e6,
         "name": "Moonwell EURC",
         "priceFeedName": "CHAINLINK_EURC_USD",
