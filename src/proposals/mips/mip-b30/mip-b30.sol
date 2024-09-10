@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
-import {ERC20Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 
 import "@forge-std/Test.sol";
 
@@ -15,8 +14,8 @@ import {FeeSplitter as Splitter} from "@protocol/morpho/FeeSplitter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_PRE_BUILD_MOCK=true DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
-/// src/proposals/mips/mip-b30/mip-b30.sol:mipb21
-contract mipb21 is HybridProposal, Configs, ParameterValidation {
+/// src/proposals/mips/mip-b30/mip-b30.sol:mipb30
+contract mipb30 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B30";
 
     uint256 public constant PERFORMANCE_FEE = 0.15e18;
