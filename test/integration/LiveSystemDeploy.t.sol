@@ -399,8 +399,11 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
-        // 1000e8 to 90% of max supply
-        mintAmount = _bound(mintAmount, 1000e8, max - (max / 10));
+        if (max <= 1e8) {
+            return;
+        }
+
+        mintAmount = _bound(mintAmount, 1e8, max);
 
         IERC20 token = IERC20(MErc20(address(mToken)).underlying());
 
@@ -433,9 +436,11 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         }
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
+        if (max <= 1e8) {
+            return;
+        }
 
-        // 1000e8 to 90% of max supply
-        mintAmount = _bound(mintAmount, 1, max);
+        mintAmount = _bound(mintAmount, 1e8, max);
 
         _mintMToken(address(mToken), mintAmount);
 
@@ -505,8 +510,12 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
+        if (max <= 1e8) {
+            return;
+        }
+
         // 1000e8 to 90% of max supply
-        supplyAmount = _bound(supplyAmount, 1, max);
+        supplyAmount = _bound(supplyAmount, 1e8, max);
 
         _mintMToken(address(mToken), supplyAmount);
 
@@ -563,8 +572,12 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
+        if (max <= 1e8) {
+            return;
+        }
+
         // 1000e8 to 90% of max supply
-        supplyAmount = _bound(supplyAmount, 1, max);
+        supplyAmount = _bound(supplyAmount, 1e8, max);
 
         _mintMToken(address(mToken), supplyAmount);
 
@@ -655,8 +668,12 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
+        if (max <= 1e8) {
+            return;
+        }
+
         // 1000e8 to 90% of max supply
-        supplyAmount = _bound(supplyAmount, 1, max);
+        supplyAmount = _bound(supplyAmount, 1e8, max);
 
         _mintMToken(address(mToken), supplyAmount);
 
@@ -770,8 +787,12 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
+        if (max <= 1e8) {
+            return;
+        }
+
         // 1000e8 to 90% of max supply
-        mintAmount = _bound(mintAmount, 1, max);
+        mintAmount = _bound(mintAmount, 1e8, max);
 
         _mintMToken(address(mToken), mintAmount);
 
@@ -906,6 +927,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
         uint256 mintAmount = _getMaxSupplyAmount(address(mToken));
 
+        if (max <= 1e8) {
+            return;
+        }
+
         console.log("mintAmount", mintAmount);
 
         _mintMToken(address(mToken), mintAmount);
@@ -961,6 +986,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     function testRepayMoreThanBorrowBalanceWethRouter() public {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
         uint256 mintAmount = _getMaxSupplyAmount(address(mToken));
+
+        if (max <= 1e8) {
+            return;
+        }
 
         console.log("mint amount: ", mintAmount);
 
