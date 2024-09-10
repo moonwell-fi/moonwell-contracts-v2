@@ -74,7 +74,7 @@ without requiring additional onchain governance proposals.
 
 - Primary liquidity source: [Aerodrome](https://aerodrome.finance), with over
   $8M TVL in EURC-USDC pools
-- Recommended supply cap: 44.2M EURC (40% of circulating supply)
+- Recommended supply cap: 4.2M EURC (40% of circulating supply)
 - Recommended borrow cap: 3.9M EURC
 - EURC Interest Rate Curves: Aligned with those of USDC
 
