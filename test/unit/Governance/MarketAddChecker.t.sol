@@ -20,13 +20,25 @@ contract MarketAddCheckerUnitTest is Test {
     }
 
     function testCheckMarketAddRevertsEmpty() public {
-        vm.expectRevert("Zero total supply");
+        vm.expectRevert("Total supply lt 100 wei");
+        checker.checkMarketAdd(address(well));
+
+        well.mint(address(this), 99);
+
+        vm.expectRevert("Total supply lt 100 wei");
         checker.checkMarketAdd(address(well));
     }
 
     function testCheckMarketAddRevertsNoTokensBurnt() public {
         well.mint(address(this), 100);
         vm.expectRevert("No balance burnt");
+        checker.checkMarketAdd(address(well));
+    }
+
+    function testCheckMarketAddSucceeds100WeiTokensBurnt() public {
+        well.mint(address(this), 99);
+        deal(address(well), address(0), 1, true);
+
         checker.checkMarketAdd(address(well));
     }
 }

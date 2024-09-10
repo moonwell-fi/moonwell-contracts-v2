@@ -545,7 +545,7 @@
         "name": "MOONWELL_weETH"
     },
     {
-        "addr": "0x3b23090F40b6Dc9919942396386FC0977055cdB5",
+        "addr": "0xE9fFd686Ca83CeB308962f4e50c5Fd7F2E3c037e",
         "isContract": true,
         "name": "MARKET_ADD_CHECKER"
     },
@@ -568,5 +568,25 @@
         "addr": "0xF877ACaFA28c19b96727966690b2f44d35aD5976",
         "isContract": true,
         "name": "MOONWELL_cbBTC"
+    },
+    {
+        "addr": "0xDAe398520e2B67cd3f27aeF9Cf14D93D927f8250",
+        "isContract": true,
+        "name": "CHAINLINK_EURC_USD"
+    },
+    {
+        "addr": "0x60a3e35cc302bfa44cb288bc5a4f316fdb1adb42",
+        "isContract": true,
+        "name": "EURC"
+    },
+    {
+        "addr": "0x7830f646E6cb7460eF1069E4Fec8CF5B10F7BBea",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_EURC"
+    },
+    {
+        "addr": "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
+        "isContract": true,
+        "name": "MOONWELL_EURC"
     }
 ]

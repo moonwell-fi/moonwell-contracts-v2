@@ -10,7 +10,7 @@ contract MarketAddChecker {
     /// @notice check that a market has been correctly initialized
     /// @param market address of the market to check
     function checkMarketAdd(address market) public view {
-        require(MToken(market).totalSupply() > 0, "Zero total supply");
+        require(MToken(market).totalSupply() >= 100, "Total supply lt 100 wei");
         require(MToken(market).balanceOf(address(0)) > 0, "No balance burnt");
     }
 
