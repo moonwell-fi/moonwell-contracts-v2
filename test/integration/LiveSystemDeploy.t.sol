@@ -416,7 +416,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         // 1000e8 to 90% of max supply
-        mintAmount = _bound(mintAmount, 1000e8, max - (max / 10));
+        mintAmount = _bound(mintAmount, 1, max);
 
         _mintMToken(address(mToken), mintAmount);
 
@@ -487,7 +487,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         // 1000e8 to 90% of max supply
-        supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
+        supplyAmount = _bound(supplyAmount, 1, max);
 
         _mintMToken(address(mToken), supplyAmount);
 
@@ -545,7 +545,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         // 1000e8 to 90% of max supply
-        supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
+        supplyAmount = _bound(supplyAmount, 1, max);
 
         _mintMToken(address(mToken), supplyAmount);
 
@@ -637,7 +637,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         // 1000e8 to 90% of max supply
-        supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
+        supplyAmount = _bound(supplyAmount, 1, max);
 
         _mintMToken(address(mToken), supplyAmount);
 
@@ -752,7 +752,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
         // 1000e8 to 90% of max supply
-        mintAmount = _bound(mintAmount, 1000e8, max - (max / 10));
+        mintAmount = _bound(mintAmount, 1, max);
 
         _mintMToken(address(mToken), mintAmount);
 
