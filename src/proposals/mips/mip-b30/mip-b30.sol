@@ -111,6 +111,31 @@ contract mipb30 is HybridProposal, Configs, ParameterValidation {
             "EURC Metamorpho Fee Split incorrect"
         );
 
+        /// ---------------- PAUSE GUARDIAN / TIMELOCK DURATION ----------------
+
+        assertEq(
+            IMetaMorphoBase(addresses.getAddress("EURC_METAMORPHO_VAULT"))
+                .guardian(),
+            addresses.getAddress("PAUSE_GUARDIAN"),
+            "USDC Metamorpho Vault pause guardian incorrect"
+        );
+        assertEq(
+            IMetaMorphoBase(addresses.getAddress("EURC_METAMORPHO_VAULT"))
+                .timelock(),
+            4 days,
+            "USDC Metamorpho Vault timelock incorrect"
+        );
+
+        /// --------------------- PERFORMANCE FEES ---------------------
+
+        assertEq(
+            uint256(
+                IMetaMorphoBase(addresses.getAddress("EURC_METAMORPHO_VAULT"))
+                    .fee()
+            ),
+            PERFORMANCE_FEE,
+            "USDC Metamorpho Vault performance fee incorrect"
+        );
         assertEq(
             uint256(
                 IMetaMorphoBase(addresses.getAddress("USDC_METAMORPHO_VAULT"))
