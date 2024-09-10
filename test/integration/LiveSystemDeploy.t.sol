@@ -378,10 +378,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
-        if (max <= 1000e8) {
-            return;
-        }
-
         // 1000e8 to 90% of max supply
         mintAmount = _bound(mintAmount, 1000e8, max - (max / 10));
 
@@ -416,10 +412,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         }
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
-
-        if (max <= 1000e8) {
-            return;
-        }
 
         // 1000e8 to 90% of max supply
         mintAmount = _bound(mintAmount, 1000e8, max - (max / 10));
@@ -492,10 +484,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
-        if (max <= 1000e8) {
-            return;
-        }
-
         // 1000e8 to 90% of max supply
         supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
 
@@ -553,10 +541,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         }
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
-
-        if (max <= 1000e8) {
-            return;
-        }
 
         // 1000e8 to 90% of max supply
         supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
@@ -649,10 +633,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         }
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
-
-        if (max <= 1000e8) {
-            return;
-        }
 
         // 1000e8 to 90% of max supply
         supplyAmount = _bound(supplyAmount, 1000e8, max - (max / 10));
@@ -768,10 +748,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         }
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
-
-        if (max <= 1000e8) {
-            return;
-        }
 
         // 1000e8 to 90% of max supply
         mintAmount = _bound(mintAmount, 1000e8, max - (max / 10));
@@ -911,10 +887,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         console.log("mintAmount", mintAmount);
 
-        if (mintAmount <= 1000e8) {
-            return;
-        }
-
         _mintMToken(address(mToken), mintAmount);
 
         uint256 expectedCollateralFactor = 0.5e18;
@@ -970,10 +942,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         uint256 mintAmount = _getMaxSupplyAmount(address(mToken));
 
         console.log("mint amount: ", mintAmount);
-
-        if (mintAmount <= 1000e8) {
-            return;
-        }
 
         _mintMToken(address(mToken), mintAmount);
 
