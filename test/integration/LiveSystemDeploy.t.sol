@@ -286,7 +286,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     }
 
     function testFuzz_UpdateEmissionConfigEndTimeSuccess(
-        uint256 mTokenIndex
+        uint256 mTokenIndex,
+        uint256 newEndTime
     ) public {
         mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
         MToken mToken = mTokens[mTokenIndex];
@@ -297,10 +298,11 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             MultiRewardDistributorCommon.MarketConfig memory configBefore = mrd
                 .getConfigForMarket(mToken, rewardsConfig[mToken][i]);
 
-            uint256 newEndTime = configBefore.endTime + 4 weeks >
-                vm.getBlockTimestamp()
-                ? configBefore.endTime + 4 weeks
-                : vm.getBlockTimestamp() + 4 weeks;
+            uint256 lowerBound = configBefore.endTime > vm.getBlockTimestamp()
+                ? configBefore.endTime + 1
+                : vm.getBlockTimestamp() + 1;
+
+            newEndTime = bound(newEndTime, lowerBound, lowerBound + 4 weeks);
 
             mrd._updateEndTime(mToken, rewardsConfig[mToken][i], newEndTime);
 
