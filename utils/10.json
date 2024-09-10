@@ -400,7 +400,7 @@
         "name": "JUMP_RATE_IRM_MOONWELL_MIP_O08"
     },
     {
-        "addr": "0x3b23090F40b6Dc9919942396386FC0977055cdB5",
+        "addr": "0xe9ffd686ca83ceb308962f4e50c5fd7f2e3c037e",
         "isContract": true,
         "name": "MARKET_ADD_CHECKER"
     }
