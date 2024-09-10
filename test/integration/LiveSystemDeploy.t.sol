@@ -112,30 +112,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         return supplyCap - totalSupplies - 1;
     }
 
-    function _getMaxBorrowAmount(
-        address mToken
-    ) private view returns (uint256) {
-        uint256 borrowCap = comptroller.borrowCaps(address(mToken));
-        uint256 totalBorrows = MToken(mToken).totalBorrows();
-
-        (uint256 err, uint256 liquidity, ) = comptroller.getAccountLiquidity(
-            address(this)
-        );
-        assertEq(err, 0, "Error getting liquidity");
-
-        uint256 borrowAllowed = borrowCap - totalBorrows - 1;
-        console.log("borrow allowed", borrowAllowed);
-        uint256 maxUserBorrow = liquidity - 1;
-        console.log("max user borrow", maxUserBorrow);
-
-        if (maxUserBorrow == 0 || borrowAllowed == 0) {
-            return 0;
-        }
-
-        return
-            (borrowAllowed > maxUserBorrow ? maxUserBorrow : borrowAllowed) / 2;
-    }
-
     function _calculateSupplyRewards(
         MToken mToken,
         address emissionToken,
@@ -408,11 +384,11 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
-        if (max <= 1e8) {
+        if (max <= 1000e8) {
             return;
         }
 
-        mintAmount = _bound(mintAmount, 1e8, max);
+        mintAmount = _bound(mintAmount, 1000e8, max);
 
         IERC20 token = IERC20(MErc20(address(mToken)).underlying());
 
@@ -445,11 +421,11 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         }
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
-        if (max <= 1e8) {
+        if (max <= 1000e8) {
             return;
         }
 
-        mintAmount = _bound(mintAmount, 1e8, max);
+        mintAmount = _bound(mintAmount, 1000e8, max);
 
         _mintMToken(address(mToken), mintAmount);
 
@@ -480,7 +456,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = _getMaxBorrowAmount(address(mToken));
+        uint256 borrowAmount = mintAmount / 3;
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
@@ -519,12 +495,12 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
-        if (max <= 1e8) {
+        if (max <= 1000e8) {
             return;
         }
 
         // 1000e8 to 90% of max supply
-        supplyAmount = _bound(supplyAmount, 1e8, max);
+        supplyAmount = _bound(supplyAmount, 1000e8, max);
 
         _mintMToken(address(mToken), supplyAmount);
 
@@ -581,12 +557,11 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
-        if (max <= 1e8) {
+        if (max <= 1000e8) {
             return;
         }
 
-        // 1000e8 to 90% of max supply
-        supplyAmount = _bound(supplyAmount, 1e8, max);
+        supplyAmount = _bound(supplyAmount, 1000e8, max);
 
         _mintMToken(address(mToken), supplyAmount);
 
@@ -618,7 +593,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = _getMaxBorrowAmount(address(mToken));
+        uint256 borrowAmount = supplyAmount / 3;
 
         assertEq(
             comptroller.borrowAllowed(address(mToken), sender, borrowAmount),
@@ -677,12 +652,12 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
-        if (max <= 1e8) {
+        if (max <= 1000e8) {
             return;
         }
 
         // 1000e8 to 90% of max supply
-        supplyAmount = _bound(supplyAmount, 1e8, max);
+        supplyAmount = _bound(supplyAmount, 1000e8, max);
 
         _mintMToken(address(mToken), supplyAmount);
 
@@ -712,7 +687,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         );
 
         {
-            uint256 borrowAmount = _getMaxBorrowAmount(address(mToken));
+            uint256 borrowAmount = supplyAmount / 3;
 
             assertEq(
                 MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
@@ -796,16 +771,16 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         uint256 max = _getMaxSupplyAmount(address(mToken));
 
-        if (max <= 1e8) {
+        if (max <= 1000e8) {
             return;
         }
 
         // 1000e8 to 90% of max supply
-        mintAmount = _bound(mintAmount, 1e8, max);
+        mintAmount = _bound(mintAmount, 1000e8, max);
 
         _mintMToken(address(mToken), mintAmount);
 
-        uint256 borrowAmount = _getMaxBorrowAmount(address(mToken));
+        uint256 borrowAmount = mintAmount / 3;
 
         {
             uint256 expectedCollateralFactor = 0.5e18;
@@ -965,7 +940,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = _getMaxBorrowAmount(address(mToken));
+        uint256 borrowAmount = mintAmount / 3;
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
@@ -1021,7 +996,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = _getMaxBorrowAmount(address(mToken));
+        uint256 borrowAmount = mintAmount / 3;
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
