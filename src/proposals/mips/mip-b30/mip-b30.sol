@@ -20,19 +20,12 @@ contract mipb30 is HybridProposal, Configs, ParameterValidation {
 
     uint256 public constant PERFORMANCE_FEE = 0.15e18;
 
-    /// @notice metamorpho storage slot offset for pending owner
-    bytes32 public constant PENDING_OWNER_SLOT = bytes32(uint256(9));
-
-    uint256 public startingWellAllowance;
-
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile("./src/proposals/mips/mip-b30/MIP-B30.md")
         );
 
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 21;
     }
 
     function primaryForkId() public pure override returns (uint256) {
