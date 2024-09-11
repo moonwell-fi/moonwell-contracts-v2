@@ -1,0 +1,21 @@
+[
+    {
+        "addressesString": "MOONWELL_EURC",
+        "supplyCap": 4200000e6,
+        "borrowCap": 3900000e6,
+        "collateralFactor": 0.83e18,
+        "initialMintAmount": 1e6,
+        "name": "Moonwell EURC",
+        "priceFeedName": "CHAINLINK_EURC_USD",
+        "reserveFactor": 0.1e18,
+        "seizeShare": 0.03e18,
+        "symbol": "mEURC",
+        "tokenAddressName": "EURC",
+        "jrm": {
+            "baseRatePerYear": 0,
+            "jumpMultiplierPerYear": 9e18,
+            "kink": 0.9e18,
+            "multiplierPerYear": 0.056e18
+        }
+    }
+]
