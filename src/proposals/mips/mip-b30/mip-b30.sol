@@ -85,9 +85,8 @@ contract mipb30 is HybridProposal, Configs, ParameterValidation {
 
         /// --------------------- SPLITTERS ---------------------
 
-        /// TODO change this to EURC_METAMORPHO_FEE_SPLITTER once deployed
         Splitter eurcSplitter = Splitter(
-            addresses.getAddress("USDC_METAMORPHO_FEE_SPLITTER")
+            addresses.getAddress("EURC_METAMORPHO_FEE_SPLITTER")
         );
 
         assertEq(
