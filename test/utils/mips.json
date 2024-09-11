@@ -1,5 +1,15 @@
 [
     {
+        "envPath": "",
+        "id": 0,
+        "path": "src/proposals/mips/mip-b28/mip-b28.sol"
+    },
+    {
+        "envPath": "",
+        "id": 35,
+        "path": "src/proposals/mips/mip-b24/mip-b24.sol"
+    },
+    {
         "envPath": "src/proposals/mips/mip-o02/o02.sh",
         "id": 34,
         "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol:mipRewardsDistributionExternalChain"

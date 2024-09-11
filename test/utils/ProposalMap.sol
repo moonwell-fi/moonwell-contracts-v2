@@ -91,18 +91,20 @@ contract ProposalMap is Test {
 
     // function to execute shell file to set env variables
     function executeShellFile(string memory shellPath) public {
-        string[] memory inputs = new string[](1);
-        inputs[0] = string.concat("./", shellPath);
+        if (bytes32(bytes(shellPath)) != bytes32("")) {
+            string[] memory inputs = new string[](1);
+            inputs[0] = string.concat("./", shellPath);
 
-        string memory output = string(vm.ffi(inputs));
-        string[] memory envs = output.split("\n");
+            string memory output = string(vm.ffi(inputs));
+            string[] memory envs = output.split("\n");
 
-        // call setEnv for each env variable
-        // so we can later call vm.envString
-        for (uint256 k = 0; k < envs.length; k++) {
-            string memory key = envs[k].split("=")[0];
-            string memory value = envs[k].split("=")[1];
-            vm.setEnv(key, value);
+            // call setEnv for each env variable
+            // so we can later call vm.envString
+            for (uint256 k = 0; k < envs.length; k++) {
+                string memory key = envs[k].split("=")[0];
+                string memory value = envs[k].split("=")[1];
+                vm.setEnv(key, value);
+            }
         }
     }
 
@@ -110,12 +112,7 @@ contract ProposalMap is Test {
         Addresses addresses,
         string memory proposalPath
     ) public {
-        string[] memory inputs = new string[](1);
-        inputs[0] = proposalPath;
-
-        string memory output = string(vm.ffi(inputs));
-
-        Proposal proposal = Proposal(deployCode(output));
+        Proposal proposal = Proposal(deployCode(proposalPath));
         vm.makePersistent(address(proposal));
 
         vm.selectFork(proposal.primaryForkId());
