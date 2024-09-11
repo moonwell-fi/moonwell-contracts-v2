@@ -43,7 +43,7 @@ contract PostProposalCheck is LiveProposalCheck {
         console.log("dev proposals length", devProposals.length);
 
         // execute in the inverse order so that the lowest id is executed first
-        for (uint256 i = devProposals.length - 1; i >= 0; i++) {
+        for (uint256 i = devProposals.length - 1; i >= 0; i--) {
             console.log("proposal envpath", devProposals[i].envPath);
             proposalMap.executeShellFile(devProposals[i].envPath);
             proposalMap.runProposal(addresses, devProposals[i].path);
