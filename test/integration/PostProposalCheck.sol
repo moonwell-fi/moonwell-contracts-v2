@@ -9,8 +9,9 @@ import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
+import {LiveProposalCheck} from "@test/utils/LiveProposalCheck.sol";
 
-contract PostProposalCheck is ProposalMap {
+contract PostProposalCheck is LiveProposalCheck {
     using String for string;
     using ChainIds for uint256;
 
@@ -20,8 +21,13 @@ contract PostProposalCheck is ProposalMap {
     /// @notice governor address
     MultichainGovernor governor;
 
+    /// @notice proposal to file map contract
+    ProposalMap proposalMap;
+
     function setUp() public virtual {
         MOONBEAM_FORK_ID.createForksAndSelect();
+
+        proposalMap = new ProposalMap();
 
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
@@ -30,66 +36,16 @@ contract PostProposalCheck is ProposalMap {
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         );
 
-        uint256[] memory liveProposals = governor.liveProposals();
-        address well = addresses.getAddress("xWELL_PROXY");
+        executeLiveProposals(addresses, governor);
 
-        vm.warp(1000);
-
-        deal(well, address(this), governor.quorum());
-        xWELL(well).delegate(address(this));
-
-        console.log("live proposals number:", liveProposals.length);
-
-        for (uint256 i = 0; i < liveProposals.length; i++) {
-            {
-                // Simulate proposals execution
-                (
-                    ,
-                    ,
-                    uint256 votingStartTime,
-                    ,
-                    uint256 crossChainVoteCollectionEndTimestamp,
-                    ,
-                    ,
-                    ,
-
-                ) = governor.proposalInformation(liveProposals[i]);
-
-                vm.warp(votingStartTime);
-
-                governor.castVote(liveProposals[i], 0);
-
-                vm.warp(crossChainVoteCollectionEndTimestamp + 1);
-            }
-
-            uint256 totalValue = 0;
-            (, uint256[] memory values, ) = governor.getProposalData(
-                liveProposals[i]
-            );
-
-            for (uint256 j = 0; j < values.length; j++) {
-                totalValue += values[j];
-            }
-
-            governor.execute{value: totalValue}(liveProposals[i]);
-        }
-
-        /// only etch out precompile contracts if on the moonbeam chain
-        if (
-            addresses.isAddressSet("xcUSDT") &&
-            addresses.isAddressSet("xcUSDC") &&
-            addresses.isAddressSet("xcDOT")
-        ) {
-            etch(vm, addresses);
-        }
-
-        ProposalFields[] memory devProposals = getAllProposalsInDevelopment();
+        ProposalMap.ProposalFields[] memory devProposals = proposalMap
+            .getAllProposalsInDevelopment();
         console.log("dev proposals length", devProposals.length);
 
         for (uint256 i = 0; i < devProposals.length; i++) {
             console.log("proposal envpath", devProposals[i].envPath);
-            executeShellFile(devProposals[i].envPath);
-            runProposal(addresses, devProposals[i].path);
+            proposalMap.executeShellFile(devProposals[i].envPath);
+            proposalMap.runProposal(addresses, devProposals[i].path);
         }
 
         vm.selectFork(MOONBEAM_FORK_ID);

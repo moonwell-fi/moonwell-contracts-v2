@@ -33,6 +33,8 @@ contract wstETHPostProposalTest is PostProposalCheck {
         mwstETH.accrueInterest();
     }
 
+    function test_setUp() public {}
+
     function testSetupmwstETH() public {
         assertEq(address(mwstETH.underlying()), addresses.getAddress("wstETH"));
         assertEq(mwstETH.name(), "Moonwell Wrapped Lido Staked Ether");
