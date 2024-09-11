@@ -56,7 +56,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         MToken[] memory markets = comptroller.getAllMarkets();
 
         deprecatedMoonwellVelo = MToken(
-            addresses.getAddress("DEPRECATED_MOONWELL_VELO")
+            addresses.getAddress("DEPRECATED_MOONWELL_VELO", OPTIMISM_CHAIN_ID)
         );
 
         for (uint256 i = 0; i < markets.length; i++) {
