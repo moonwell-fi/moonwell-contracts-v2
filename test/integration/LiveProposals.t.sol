@@ -465,17 +465,4 @@ contract LiveProposalsIntegrationTest is Test, ProposalChecker, Networks {
             found = true;
         }
     }
-
-    function getProposalsByType(
-        string memory proposalType
-    ) private returns (string[] memory) {
-        string[] memory inputs = new string[](2);
-        inputs[0] = "bin/get-proposals-by-type.sh";
-        inputs[1] = proposalType;
-
-        string memory output = string(vm.ffi(inputs));
-
-        // create array splitting the output string
-        return output.split("\n");
-    }
 }
