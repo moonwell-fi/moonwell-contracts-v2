@@ -14,7 +14,7 @@ import {WETH9} from "@protocol/router/IWETH.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {ChainIds} from "@utils/ChainIds.sol";
+import {ChainIds, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
