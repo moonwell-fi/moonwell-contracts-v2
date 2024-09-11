@@ -60,6 +60,11 @@
         "name": "WETH_METAMORPHO_FEE_SPLITTER"
     },
     {
+        "addr": "0xEB59E94B48B0fa68f8dD981a4b4CD9E30ebB44Cd",
+        "isContract": true,
+        "name": "EURC_METAMORPHO_FEE_SPLITTER"
+    },
+    {
         "addr": "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca",
         "isContract": true,
         "name": "USDC_METAMORPHO_VAULT"
@@ -68,6 +73,11 @@
         "addr": "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1",
         "isContract": true,
         "name": "WETH_METAMORPHO_VAULT"
+    },
+    {
+        "addr": "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026",
+        "isContract": true,
+        "name": "EURC_METAMORPHO_VAULT"
     },
     {
         "addr": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
