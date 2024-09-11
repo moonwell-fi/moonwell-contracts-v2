@@ -247,7 +247,7 @@ contract mipb00 is HybridProposal, Configs {
             proxyAdmin.transferOwnership(governor);
 
             TemporalGovernor(payable(governor)).transferOwnership(
-                addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN")
+                addresses.getAddress("SECURITY_COUNCIL")
             );
 
             /// set chainlink oracle on the comptroller implementation contract
@@ -480,10 +480,7 @@ contract mipb00 is HybridProposal, Configs {
             payable(addresses.getAddress("TEMPORAL_GOVERNOR"))
         );
 
-        assertEq(
-            governor.owner(),
-            addresses.getAddress("TEMPORAL_GOVERNOR_GUARDIAN")
-        );
+        assertEq(governor.owner(), addresses.getAddress("SECURITY_COUNCIL"));
         assertEq(temporalGovDelay[block.chainid], governor.proposalDelay());
 
         {
