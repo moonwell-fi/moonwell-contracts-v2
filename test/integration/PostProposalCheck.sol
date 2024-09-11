@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-late
 pragma solidity 0.8.19;
+import {console} from "forge-std/console.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
@@ -29,6 +30,7 @@ contract PostProposalCheck is ProposalMap {
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         );
 
+        uint256[] memory liveProposals = governor.liveProposals();
         address well = addresses.getAddress("xWELL_PROXY");
 
         vm.warp(1000);
@@ -36,13 +38,9 @@ contract PostProposalCheck is ProposalMap {
         deal(well, address(this), governor.quorum());
         xWELL(well).delegate(address(this));
 
-        uint256[] memory liveProposals = governor.liveProposals();
+        console.log("live proposals number:", liveProposals.length);
 
         for (uint256 i = 0; i < liveProposals.length; i++) {
-            (address[] memory targets, , ) = governor.getProposalData(
-                liveProposals[i]
-            );
-
             {
                 // Simulate proposals execution
                 (
@@ -86,8 +84,10 @@ contract PostProposalCheck is ProposalMap {
         }
 
         ProposalFields[] memory devProposals = getAllProposalsInDevelopment();
+        console.log("dev proposals length", devProposals.length);
 
         for (uint256 i = 0; i < devProposals.length; i++) {
+            console.log("proposal envpath", devProposals[i].envPath);
             executeShellFile(devProposals[i].envPath);
             runProposal(addresses, devProposals[i].path);
         }
