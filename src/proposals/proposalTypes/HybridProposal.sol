@@ -478,15 +478,20 @@ abstract contract HybridProposal is
     ) public override returns (uint256 proposalId) {
         vm.selectFork(MOONBEAM_FORK_ID);
 
+        uint256 proposalCount = onchainProposalId != 0
+            ? onchainProposalId
+            : MultichainGovernor(payable(governor)).proposalCount();
         bytes memory proposalCalldata = getCalldata(addresses);
 
-        if (onchainProposalId > 0) {
+        // Loop through all proposals to find the one that matches
+        // Start from the latest proposal as it is more likely to be the one
+        while (proposalCount > 0) {
             (
                 address[] memory targets,
                 uint256[] memory values,
                 bytes[] memory calldatas
             ) = MultichainGovernor(payable(governor)).getProposalData(
-                    onchainProposalId
+                    proposalCount
                 );
 
             bytes memory onchainCalldata = abi.encodeWithSignature(
@@ -498,38 +503,11 @@ abstract contract HybridProposal is
             );
 
             if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
-                return proposalId;
+                proposalId = proposalCount;
+                break;
             }
-        } else {
-            uint256 proposalCount = MultichainGovernor(payable(governor))
-                .proposalCount();
 
-            // Loop through all proposals to find the one that matches
-            // Start from the latest proposal as it is more likely to be the one
-            while (proposalCount > 0) {
-                (
-                    address[] memory targets,
-                    uint256[] memory values,
-                    bytes[] memory calldatas
-                ) = MultichainGovernor(payable(governor)).getProposalData(
-                        proposalCount
-                    );
-
-                bytes memory onchainCalldata = abi.encodeWithSignature(
-                    "propose(address[],uint256[],bytes[],string)",
-                    targets,
-                    values,
-                    calldatas,
-                    PROPOSAL_DESCRIPTION
-                );
-
-                if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
-                    proposalId = proposalCount;
-                    break;
-                }
-
-                proposalCount--;
-            }
+            proposalCount--;
         }
 
         vm.selectFork(primaryForkId());
