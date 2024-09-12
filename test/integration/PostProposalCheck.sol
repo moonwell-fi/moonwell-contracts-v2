@@ -36,10 +36,13 @@ contract PostProposalCheck is LiveProposalCheck {
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         );
 
+        // execute proposals that are succeeded but not executed yet
         executeSucceededProposals(addresses, governor);
 
+        // execute proposals that are in the vote or vote collection period
         executeLiveProposals(addresses, governor);
 
+        // execute proposals that are not on chain yet
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
             .getAllProposalsInDevelopment();
 
@@ -49,6 +52,8 @@ contract PostProposalCheck is LiveProposalCheck {
             proposalMap.runProposal(addresses, devProposals[i].path);
         }
 
-        vm.selectFork(MOONBEAM_FORK_ID);
+        if (vm.activeFork() != MOONBEAM_FORK_ID) {
+            vm.selectFork(MOONBEAM_FORK_ID);
+        }
     }
 }
