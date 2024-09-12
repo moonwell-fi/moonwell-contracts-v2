@@ -54,7 +54,7 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
         executeSucceededProposals(addresses, governor);
     }
 
-    /// checks that all live proposals execute successfully
+    // checks that all live proposals execute successfully
     // execute the VAA in the temporal governor if it's a cross chain proposal
     // without mocking wormhole
     function testExecutingLiveProposals() public {

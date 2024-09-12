@@ -46,6 +46,10 @@ contract PostProposalCheck is LiveProposalCheck {
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
             .getAllProposalsInDevelopment();
 
+        if (devProposals.length == 0) {
+            return;
+        }
+
         // execute in the inverse order so that the lowest id is executed first
         for (uint256 i = devProposals.length - 1; i >= 0; i--) {
             proposalMap.executeShellFile(devProposals[i].envPath);
