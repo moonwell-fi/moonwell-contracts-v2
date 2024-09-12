@@ -111,8 +111,8 @@ contract ProposalMap is Test {
     function runProposal(
         Addresses addresses,
         string memory proposalPath
-    ) public {
-        Proposal proposal = Proposal(deployCode(proposalPath));
+    ) public returns (Proposal proposal) {
+        proposal = Proposal(deployCode(proposalPath));
         vm.makePersistent(address(proposal));
 
         vm.selectFork(proposal.primaryForkId());

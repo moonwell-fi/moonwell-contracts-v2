@@ -4,12 +4,13 @@ import {console} from "forge-std/console.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
-import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
 import {LiveProposalCheck} from "@test/utils/LiveProposalCheck.sol";
+import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 contract PostProposalCheck is LiveProposalCheck {
     using String for string;
@@ -23,6 +24,9 @@ contract PostProposalCheck is LiveProposalCheck {
 
     /// @notice proposal to file map contract
     ProposalMap proposalMap;
+
+    /// @notice array of proposals in development
+    Proposal[] public proposals;
 
     function setUp() public virtual {
         MOONBEAM_FORK_ID.createForksAndSelect();
@@ -53,7 +57,11 @@ contract PostProposalCheck is LiveProposalCheck {
         // execute in the inverse order so that the lowest id is executed first
         for (uint256 i = devProposals.length - 1; i >= 0; i--) {
             proposalMap.executeShellFile(devProposals[i].envPath);
-            proposalMap.runProposal(addresses, devProposals[i].path);
+            Proposal proposal = proposalMap.runProposal(
+                addresses,
+                devProposals[i].path
+            );
+            proposals.push(proposal);
         }
 
         if (vm.activeFork() != MOONBEAM_FORK_ID) {
