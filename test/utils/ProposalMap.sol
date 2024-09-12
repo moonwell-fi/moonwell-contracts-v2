@@ -24,7 +24,12 @@ contract ProposalMap is Test {
 
     constructor() {
         string memory data = vm.readFile(
-            string(abi.encodePacked(vm.projectRoot(), "/test/utils/mips.json"))
+            string(
+                abi.encodePacked(
+                    vm.projectRoot(),
+                    "/src/proposals/mips/mips.json"
+                )
+            )
         );
 
         bytes memory parsedJson = vm.parseJson(data);
