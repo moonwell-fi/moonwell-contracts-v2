@@ -107,10 +107,7 @@ contract mipb00 is HybridProposal, Configs {
         /// ------- Reward Distributor -------
         {
             MultiRewardDistributor distributor = new MultiRewardDistributor();
-            addresses.addAddress(
-                "MULTI_REWARD_DISTRIBUTOR",
-                address(distributor)
-            );
+            addresses.addAddress("MRD_IMPL", address(distributor));
         }
         {
             /// ------- Unitroller/Comptroller -------
@@ -135,7 +132,7 @@ contract mipb00 is HybridProposal, Configs {
                 addresses.getAddress("PAUSE_GUARDIAN")
             );
             TransparentUpgradeableProxy mrdProxy = new TransparentUpgradeableProxy(
-                    addresses.getAddress("MULTI_REWARD_DISTRIBUTOR"),
+                    addresses.getAddress("MRD_IMPL"),
                     address(proxyAdmin),
                     initData
                 );
@@ -599,7 +596,7 @@ contract mipb00 is HybridProposal, Configs {
         /// assert multi reward distributor comptroller and guardian are unset
         {
             MultiRewardDistributor distributor = MultiRewardDistributor(
-                addresses.getAddress("MULTI_REWARD_DISTRIBUTOR")
+                addresses.getAddress("MRD_IMPL")
             );
             assertEq(address(distributor.comptroller()), address(0));
             assertEq(address(distributor.pauseGuardian()), address(0));
@@ -635,13 +632,7 @@ contract mipb00 is HybridProposal, Configs {
                 _IMPLEMENTATION_SLOT
             );
             assertEq(
-                bytes32(
-                    uint256(
-                        uint160(
-                            addresses.getAddress("MULTI_REWARD_DISTRIBUTOR")
-                        )
-                    )
-                ),
+                bytes32(uint256(uint160(addresses.getAddress("MRD_IMPL")))),
                 data
             );
         }

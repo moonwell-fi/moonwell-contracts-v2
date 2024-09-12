@@ -176,12 +176,9 @@ contract mip00 is HybridProposal, Configs {
 
         /// ------- Reward Distributor -------
 
-        if (!addresses.isAddressSet("MULTI_REWARD_DISTRIBUTOR")) {
+        if (!addresses.isAddressSet("MRD_IMPL")) {
             MultiRewardDistributor distributor = new MultiRewardDistributor();
-            addresses.addAddress(
-                "MULTI_REWARD_DISTRIBUTOR",
-                address(distributor)
-            );
+            addresses.addAddress("MRD_IMPL", address(distributor));
         }
 
         /// ------- Unitroller/Comptroller -------
@@ -199,7 +196,7 @@ contract mip00 is HybridProposal, Configs {
             addresses.addAddress("UNITROLLER", address(unitroller));
         }
 
-        /// ------- PROXY ADMIN / MULTI_REWARD_DISTRIBUTOR -------
+        /// ------- PROXY ADMIN / MRD_IMPL -------
 
         if (
             !addresses.isAddressSet("MRD_PROXY_ADMIN") &&
@@ -214,7 +211,7 @@ contract mip00 is HybridProposal, Configs {
                 addresses.getAddress("SECURITY_COUNCIL")
             );
             TransparentUpgradeableProxy mrdProxy = new TransparentUpgradeableProxy(
-                    addresses.getAddress("MULTI_REWARD_DISTRIBUTOR"),
+                    addresses.getAddress("MRD_IMPL"),
                     address(proxyAdmin),
                     initData
                 );
@@ -703,7 +700,7 @@ contract mip00 is HybridProposal, Configs {
         /// assert multi reward distributor comptroller and guardian are unset
         {
             MultiRewardDistributor distributor = MultiRewardDistributor(
-                addresses.getAddress("MULTI_REWARD_DISTRIBUTOR")
+                addresses.getAddress("MRD_IMPL")
             );
             assertEq(address(distributor.comptroller()), address(0));
             assertEq(address(distributor.pauseGuardian()), address(0));
@@ -722,7 +719,7 @@ contract mip00 is HybridProposal, Configs {
             validateProxy(
                 vm,
                 addresses.getAddress("MRD_PROXY"),
-                addresses.getAddress("MULTI_REWARD_DISTRIBUTOR"),
+                addresses.getAddress("MRD_IMPL"),
                 addresses.getAddress("MRD_PROXY_ADMIN"),
                 "MRD_PROXY"
             );
