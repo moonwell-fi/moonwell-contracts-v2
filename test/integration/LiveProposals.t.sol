@@ -65,8 +65,6 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
     // check that all live proposals execute successfully
     // mock wormhole to simulate the queue step
     function testExecutingLiveProposalsMockWormhole() public {
-        addresses.addRestriction(MOONBEAM_CHAIN_ID);
-
         /// ----------------------------------------------------------
         /// ---------------- Wormhole Relayer Etching ----------------
         /// ----------------------------------------------------------
@@ -135,6 +133,10 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
         // execute proposals that are not on chain yet
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
             .getAllProposalsInDevelopment();
+
+        if (devProposals.length == 0) {
+            return;
+        }
 
         // execute in the inverse order so that the lowest id is executed first
         for (uint256 i = devProposals.length - 1; i >= 0; i--) {
