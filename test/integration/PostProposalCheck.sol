@@ -36,6 +36,8 @@ contract PostProposalCheck is LiveProposalCheck {
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         );
 
+        executeSucceededProposals(addresses, governor);
+
         executeLiveProposals(addresses, governor);
 
         ProposalMap.ProposalFields[] memory devProposals = proposalMap

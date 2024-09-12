@@ -39,134 +39,158 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         uint8 consistencyLevel
     );
 
+    function executeSucceededProposals(
+        Addresses addresses,
+        MultichainGovernor governor
+    ) public {
+        if (vm.activeFork() != MOONBEAM_FORK_ID) {
+            vm.selectFork(MOONBEAM_FORK_ID);
+        }
+
+        uint256 proposalId = governor.proposalCount();
+
+        mockWell(addresses, governor);
+
+        uint256 count = 0;
+
+        while (count < 10) {
+            IMultichainGovernor.ProposalState state = governor.state(
+                proposalId
+            );
+
+            if (state == IMultichainGovernor.ProposalState.Succeeded) {
+                _execProposal(addresses, governor, proposalId);
+            }
+
+            proposalId--;
+            count++;
+        }
+    }
+
     function executeLiveProposals(
         Addresses addresses,
         MultichainGovernor governor
     ) public {
-        vm.selectFork(MOONBEAM_FORK_ID);
-        addresses.addRestriction(MOONBEAM_CHAIN_ID);
+        if (vm.activeFork() != MOONBEAM_FORK_ID) {
+            vm.selectFork(MOONBEAM_FORK_ID);
+        }
 
         uint256[] memory liveProposals = governor.liveProposals();
 
-        address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
-        address well = addresses.getAddress("xWELL_PROXY");
-
-        vm.warp(1000);
-
-        deal(well, address(this), governor.quorum());
-        xWELL(well).delegate(address(this));
-
-        /// remove restriction so that stack is balanced
-        addresses.removeRestriction();
+        mockWell(addresses, governor);
 
         for (uint256 i = 0; i < liveProposals.length; i++) {
-            /// switch back to the Moonbeam fork
-            vm.selectFork(MOONBEAM_FORK_ID);
+            _execProposal(addresses, governor, liveProposals[i]);
+        }
+    }
 
-            /// add restriction for moonbeam actions
-            addresses.addRestriction(MOONBEAM_CHAIN_ID);
+    function _execProposal(
+        Addresses addresses,
+        MultichainGovernor governor,
+        uint256 proposalId
+    ) public {
+        /// add restriction for moonbeam actions
+        addresses.addRestriction(MOONBEAM_CHAIN_ID);
 
+        (
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas
+        ) = governor.getProposalData(proposalId);
+
+        checkMoonbeamActions(targets);
+        {
+            // Simulate proposals execution
             (
-                address[] memory targets,
-                uint256[] memory values,
-                bytes[] memory calldatas
-            ) = governor.getProposalData(liveProposals[i]);
+                ,
+                ,
+                uint256 votingStartTime,
+                ,
+                uint256 crossChainVoteCollectionEndTimestamp,
+                ,
+                ,
+                ,
 
-            checkMoonbeamActions(targets);
-            {
-                // Simulate proposals execution
-                (
-                    ,
-                    ,
-                    uint256 votingStartTime,
-                    ,
-                    uint256 crossChainVoteCollectionEndTimestamp,
-                    ,
-                    ,
-                    ,
+            ) = governor.proposalInformation(proposalId);
 
-                ) = governor.proposalInformation(liveProposals[i]);
+            vm.warp(votingStartTime);
 
-                vm.warp(votingStartTime);
+            governor.castVote(proposalId, 0);
 
-                governor.castVote(liveProposals[i], 0);
+            vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+        }
 
-                vm.warp(crossChainVoteCollectionEndTimestamp + 1);
+        bytes memory payload;
+        address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
+
+        if (targets[targets.length - 1] == wormholeCore) {
+            // decode temporal governor calldata
+            (, payload, ) = abi.decode(
+                /// 1. strip off function selector
+                /// 2. decode the call to publishMessage payload
+                calldatas[targets.length - 1].slice(
+                    4,
+                    calldatas[targets.length - 1].length - 4
+                ),
+                (uint32, bytes, uint8)
+            );
+
+            uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
+                address(governor)
+            );
+
+            /// increments each time the Multichain Governor publishes a message
+            /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
+            vm.expectEmit(true, true, true, true, wormholeCore);
+
+            emit LogMessagePublished(
+                address(governor),
+                nextSequence,
+                0,
+                payload,
+                200
+            );
+        }
+
+        /// execution
+        {
+            uint256 totalValue = 0;
+
+            for (uint256 j = 0; j < values.length; j++) {
+                totalValue += values[j];
             }
 
-            bytes memory payload;
-            if (targets[targets.length - 1] == wormholeCore) {
-                // decode temporal governor calldata
-                (, payload, ) = abi.decode(
-                    /// 1. strip off function selector
-                    /// 2. decode the call to publishMessage payload
-                    calldatas[targets.length - 1].slice(
-                        4,
-                        calldatas[targets.length - 1].length - 4
-                    ),
-                    (uint32, bytes, uint8)
-                );
+            governor.execute{value: totalValue}(proposalId);
+        }
 
-                uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
-                    address(governor)
-                );
+        /// remove restriction for moonbeam actions
+        addresses.removeRestriction();
 
-                /// increments each time the Multichain Governor publishes a message
-                /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
-                vm.expectEmit(true, true, true, true, wormholeCore);
+        {
+            /// supports as many destination networks as needed
+            uint256 j = targets.length;
 
-                emit LogMessagePublished(
-                    address(governor),
-                    nextSequence,
-                    0,
-                    payload,
-                    200
-                );
-            }
+            /// iterate over all targets to check if any of them is the wormhole core
+            /// if the target is WormholeCore, run the Temporal Governor logic on the corresponding chain
+            while (j != 0) {
+                if (targets[j - 1] == wormholeCore) {
+                    console.log(
+                        "Executing Temporal Governor for proposal %i: ",
+                        proposalId
+                    );
 
-            /// execution
-            {
-                uint256 totalValue = 0;
+                    // decode temporal governor calldata
+                    (, payload, ) = abi.decode(
+                        /// 1. strip off function selector
+                        /// 2. decode the call to publishMessage payload
+                        calldatas[j - 1].slice(4, calldatas[j - 1].length - 4),
+                        (uint32, bytes, uint8)
+                    );
 
-                for (uint256 j = 0; j < values.length; j++) {
-                    totalValue += values[j];
+                    _execExtChain(addresses, governor, payload);
                 }
 
-                governor.execute{value: totalValue}(liveProposals[i]);
-            }
-
-            /// remove restriction for moonbeam actions
-            addresses.removeRestriction();
-
-            {
-                /// supports as many destination networks as needed
-                uint256 j = targets.length;
-
-                /// iterate over all targets to check if any of them is the wormhole core
-                /// if the target is WormholeCore, run the Temporal Governor logic on the corresponding chain
-                while (j != 0) {
-                    if (targets[j - 1] == wormholeCore) {
-                        console.log(
-                            "Executing Temporal Governor for proposal %i: ",
-                            liveProposals[i]
-                        );
-
-                        // decode temporal governor calldata
-                        (, payload, ) = abi.decode(
-                            /// 1. strip off function selector
-                            /// 2. decode the call to publishMessage payload
-                            calldatas[j - 1].slice(
-                                4,
-                                calldatas[j - 1].length - 4
-                            ),
-                            (uint32, bytes, uint8)
-                        );
-
-                        _execExtChain(addresses, governor, payload);
-                    }
-
-                    j--;
-                }
+                j--;
             }
         }
 
@@ -266,5 +290,18 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             consistencyLevel,
             payload
         );
+    }
+
+    function mockWell(Addresses addresses, MultichainGovernor governor) public {
+        uint256 timestampBefore = vm.getBlockTimestamp();
+
+        address well = addresses.getAddress("xWELL_PROXY");
+
+        vm.warp(1000);
+
+        deal(well, address(this), governor.quorum());
+        xWELL(well).delegate(address(this));
+
+        vm.warp(timestampBefore);
     }
 }
