@@ -46,7 +46,7 @@ contract CalldataPrinting is Script {
                     bytes32(bytes(devProposal))
                 ) {
                     console.log(
-                        "\n\n----------------- PROPOSAL START -----------------\n",
+                        "\n\n=================== PROPOSAL START ==================\n",
                         devProposal
                     );
                     proposalMap.executeShellFile(devProposals[i].envPath);
@@ -58,7 +58,7 @@ contract CalldataPrinting is Script {
                     proposal.printCalldata(addresses);
 
                     console.log(
-                        "\n------------------- PROPOSAL END -------------------\n\n"
+                        "\n===================== PROPOSAL END ===================\n\n"
                     );
                 }
             }
