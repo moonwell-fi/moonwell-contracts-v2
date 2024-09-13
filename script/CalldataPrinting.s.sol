@@ -4,13 +4,15 @@ import "@forge-std/Test.sol";
 import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
-import {String} from "@utils/String.sol";
+import {String} from "@protocol/utils/String.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
+import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract CalldataPrinting is Script, Test {
+contract CalldataPrinting is Script {
     using String for string;
+    using ChainIds for uint256;
 
     /// @notice addresses contract
     Addresses addresses;
@@ -18,18 +20,20 @@ contract CalldataPrinting is Script, Test {
     /// @notice proposal to file map contract
     ProposalMap proposalMap;
 
-    constructor() {
+    function run() public {
+        string memory changedFiles = vm.envString("PR_CHANGED_FILES");
+        console.log("changed files", changedFiles);
+
+        string[] memory changedFilesArray = changedFiles.split(" ");
+        console.log("changed files length", changedFilesArray.length);
+
+        MOONBEAM_FORK_ID.createForksAndSelect();
+
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
         proposalMap = new ProposalMap();
         vm.makePersistent(address(proposalMap));
-    }
-
-    function run() public {
-        string memory changedFiles = vm.envString("PR_CHANGED_FILES");
-
-        string[] memory changedFilesArray = changedFiles.split(" ");
 
         // proposals that are not on chain yet
         ProposalMap.ProposalFields[] memory devProposals = proposalMap

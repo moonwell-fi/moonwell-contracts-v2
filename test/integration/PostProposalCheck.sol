@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 import {console} from "forge-std/console.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
