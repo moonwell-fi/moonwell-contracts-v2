@@ -138,9 +138,12 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
         }
 
         // execute in the inverse order so that the lowest id is executed first
-        for (uint256 i = devProposals.length - 1; i >= 0; i--) {
-            proposalMap.executeShellFile(devProposals[i].envPath);
-            proposalMap.runProposal(addresses, devProposals[i].path);
+        for (uint256 i = devProposals.length; i > 0; i--) {
+            proposalMap.executeShellFile(devProposals[i - 1].envPath);
+            Proposal proposal = proposalMap.runProposal(
+                addresses,
+                devProposals[i - 1].path
+            );
         }
     }
 }
