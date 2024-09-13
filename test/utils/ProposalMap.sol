@@ -12,6 +12,7 @@ contract ProposalMap is Test {
 
     struct ProposalFields {
         string envPath;
+        string governor;
         uint256 id;
         string path;
     }
@@ -50,6 +51,7 @@ contract ProposalMap is Test {
         proposals.push();
 
         proposals[index].envPath = proposal.envPath;
+        proposals[index].governor = proposal.governor;
         proposals[index].path = proposal.path;
         proposals[index].id = proposal.id;
 
@@ -88,6 +90,32 @@ contract ProposalMap is Test {
         uint256 index = 0;
         for (uint256 i = 0; i < proposals.length; i++) {
             if (proposals[i].id == 0) {
+                _proposals[index] = proposals[i];
+                index++;
+            }
+        }
+    }
+
+    function filterByGovernor(
+        string memory governor
+    ) public view returns (ProposalFields[] memory _proposals) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (
+                bytes32(bytes(proposals[i].governor)) ==
+                bytes32(bytes(governor))
+            ) {
+                count++;
+            }
+        }
+
+        _proposals = new ProposalFields[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (
+                bytes32(bytes(proposals[i].governor)) ==
+                bytes32(bytes(governor))
+            ) {
                 _proposals[index] = proposals[i];
                 index++;
             }

@@ -43,15 +43,19 @@ contract TestProposalCalldataGeneration is ProposalMap {
     }
 
     function testProposalToolingCalldataGeneration() public {
-        for (uint256 i = proposals.length; i > 0; i--) {
+        ProposalFields[] memory multichainGovernorProposals = filterByGovernor(
+            "MultichainGovernor"
+        );
+        for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
             // exclude proposals that are not onchain yet
-            if (proposals[i - 1].id == 0) {
+            if (multichainGovernorProposals[i - 1].id == 0) {
                 continue;
             }
 
-            executeShellFile(proposals[i - 1].envPath);
+            executeShellFile(multichainGovernorProposals[i - 1].envPath);
 
-            string memory proposalPath = proposals[i - 1].path;
+            string memory proposalPath = multichainGovernorProposals[i - 1]
+                .path;
 
             HybridProposal proposal = HybridProposal(deployCode(proposalPath));
             vm.makePersistent(address(proposal));
@@ -71,7 +75,7 @@ contract TestProposalCalldataGeneration is ProposalMap {
                 address[] memory onchainTargets,
                 uint256[] memory onchainValues,
                 bytes[] memory onchainCalldatas
-            ) = governor.getProposalData(proposals[i - 1].id);
+            ) = governor.getProposalData(multichainGovernorProposals[i - 1].id);
 
             bytes32 onchainHash = keccak256(
                 abi.encode(onchainTargets, onchainValues, onchainCalldatas)
