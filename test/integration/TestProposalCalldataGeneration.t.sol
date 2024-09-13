@@ -44,9 +44,11 @@ contract TestProposalCalldataGeneration is ProposalMap {
 
     function testProposalToolingCalldataGeneration() public {
         for (uint256 i = proposals.length; i > 0; i--) {
+            executeShellFile(proposals[i - 1].envPath);
+
             string memory proposalPath = proposals[i - 1].path;
 
-            Proposal proposal = Proposal(deployCode(proposalPath));
+            HybridProposal proposal = HybridProposal(deployCode(proposalPath));
             vm.makePersistent(address(proposal));
 
             vm.selectFork(proposal.primaryForkId());
@@ -57,7 +59,7 @@ contract TestProposalCalldataGeneration is ProposalMap {
                 address[] memory targets,
                 uint256[] memory values,
                 bytes[] memory calldatas
-            ) = proposalContract.getTargetsPayloadsValues(addresses);
+            ) = proposal.getTargetsPayloadsValues(addresses);
             bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
 
             (
