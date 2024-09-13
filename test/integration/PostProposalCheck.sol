@@ -54,13 +54,14 @@ contract PostProposalCheck is LiveProposalCheck {
         proposals = new Proposal[](devProposals.length);
 
         // execute in the inverse order so that the lowest id is executed first
-        for (uint256 i = devProposals.length - 1; i >= 0; i--) {
-            proposalMap.executeShellFile(devProposals[i].envPath);
+        for (uint256 i = devProposals.length; i > 0; i--) {
+            proposalMap.executeShellFile(devProposals[i - 1].envPath);
             Proposal proposal = proposalMap.runProposal(
                 addresses,
-                devProposals[i].path
+                devProposals[i - 1].path
             );
-            proposals[i] = proposal;
+
+            proposals.push(proposal);
         }
 
         if (vm.activeFork() != MOONBEAM_FORK_ID) {
