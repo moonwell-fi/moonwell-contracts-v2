@@ -22,10 +22,8 @@ contract CalldataPrinting is Script {
 
     function run() public {
         string memory changedFiles = vm.envString("PR_CHANGED_FILES");
-        console.log("changed files", changedFiles);
 
         string[] memory changedFilesArray = changedFiles.split(" ");
-        console.log("changed files length", changedFilesArray.length);
 
         MOONBEAM_FORK_ID.createForksAndSelect();
 
@@ -39,23 +37,22 @@ contract CalldataPrinting is Script {
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
             .getAllProposalsInDevelopment();
 
-        for (uint256 i = 0; i < changedFilesArray.length; i++) {
-            string memory changedFile = changedFilesArray[i];
+        for (uint256 i = 0; i < devProposals.length; i++) {
+            string memory devProposal = devProposals[i].path;
 
-            for (uint256 j = 0; j < devProposals.length; j++) {
+            for (uint256 j = 0; j < changedFilesArray.length; j++) {
                 if (
-                    bytes32(bytes(changedFile)) ==
-                    bytes32(bytes(devProposals[j].path))
+                    bytes32(bytes(changedFilesArray[j])) ==
+                    bytes32(bytes(devProposal))
                 ) {
                     console.log(
-                        "Proposal in development: ",
-                        devProposals[j].path
+                        "\n\n------------------ Proposal Path -------------------\n",
+                        devProposal
                     );
-
                     proposalMap.executeShellFile(devProposals[i].envPath);
                     Proposal proposal = proposalMap.runProposal(
                         addresses,
-                        devProposals[i].path
+                        devProposal
                     );
                     proposal.printProposalActionSteps();
                     proposal.printCalldata(addresses);

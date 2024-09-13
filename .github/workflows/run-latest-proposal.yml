@@ -69,8 +69,8 @@ jobs:
               });
             }
 
-      - name: Run Proposal
-        run: bin/run-proposal.sh
+      - name: Run Calldata Printing
+        run: bin/run-calldata-printing.sh
 
       - name: Comment PR with Proposal Output
         uses: actions/github-script@v6
@@ -78,12 +78,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            if (fs.existsSync('output.json')) {
-                const output = JSON.parse(fs.readFileSync('output.json', 'utf8'));
+            if (fs.existsSync('output.txt')) {
+                const output = fs.readFileSync('output.txt', 'utf8');
                 const prNumber = context.payload.pull_request.number;
                 github.rest.issues.createComment({
                    ...context.repo,
                    issue_number: prNumber,
-                   body: `### Latest Proposal: ${output.file}\n\`\`\`\n${output.output}\n\`\`\``
+                   body: `\`\`\`\n${output}\n\`\`\``
                    });
              }
