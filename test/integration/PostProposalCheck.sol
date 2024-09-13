@@ -22,16 +22,11 @@ contract PostProposalCheck is LiveProposalCheck {
     /// @notice governor address
     MultichainGovernor governor;
 
-    /// @notice proposal to file map contract
-    ProposalMap proposalMap;
-
     /// @notice array of proposals in development
     Proposal[] public proposals;
 
     function setUp() public virtual {
         MOONBEAM_FORK_ID.createForksAndSelect();
-
-        proposalMap = new ProposalMap();
 
         addresses = new Addresses();
         vm.makePersistent(address(addresses));

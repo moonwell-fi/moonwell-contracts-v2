@@ -3,17 +3,17 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import "@protocol/utils/ChainIds.sol";
-
 import {console} from "@forge-std/console.sol";
+
+import "@utils/ChainIds.sol";
 import {Bytes} from "@utils/Bytes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
 import {Address} from "@utils/Address.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
-import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
+import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
@@ -21,7 +21,6 @@ import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {ChainIds, MOONBEAM_FORK_ID, MOONBEAM_CHAIN_ID, BASE_CHAIN_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract LiveProposalCheck is Test, ProposalChecker, Networks {
     using String for string;
@@ -29,6 +28,13 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
     using Bytes for bytes;
     using Address for *;
     using ChainIds for uint256;
+
+    /// @notice proposal to file map contract
+    ProposalMap proposalMap;
+
+    function setUp() public virtual {
+        proposalMap = new ProposalMap();
+    }
 
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
@@ -187,7 +193,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                         (uint32, bytes, uint8)
                     );
 
-                    _execExtChain(addresses, governor, payload);
+                    _execExtChain(addresses, governor, payload, proposalId);
                 }
 
                 j--;
@@ -202,7 +208,8 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
     function _execExtChain(
         Addresses addresses,
         MultichainGovernor governor,
-        bytes memory payload
+        bytes memory payload,
+        uint256 proposalId
     ) private {
         (
             address temporalGovernorAddress,
@@ -256,7 +263,27 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
         vm.warp(block.timestamp + temporalGovernor.proposalDelay());
 
-        temporalGovernor.executeProposal(vaa);
+        try temporalGovernor.executeProposal(vaa) {} catch (bytes memory e) {
+            console.log(
+                string(
+                    abi.encodePacked(
+                        "Error executing proposal, error: ",
+                        string(e)
+                    )
+                )
+            );
+
+            (string memory proposalPath, string memory envPath) = proposalMap
+                .getProposalById(proposalId);
+
+            proposalMap.executeShellFile(envPath);
+
+            Proposal proposal = Proposal(deployCode(proposalPath));
+
+            proposal.preBuildMock(addresses);
+
+            temporalGovernor.executeProposal(vaa);
+        }
     }
 
     /// @dev utility function to generate a Wormhole VAA payload excluding the guardians signature
