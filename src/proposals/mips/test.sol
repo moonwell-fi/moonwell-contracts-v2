@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
@@ -28,9 +27,7 @@ contract testnet is HybridProposal, ParameterValidation {
         return MOONBEAM_FORK_ID;
     }
 
-    function deploy(Addresses addresses, address) public override {
-        //etch(vm, addresses);
-    }
+    function deploy(Addresses addresses, address) public override {}
 
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {

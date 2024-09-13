@@ -2,12 +2,7 @@
     {
         "envPath": "",
         "id": 0,
-        "path": "src/proposals/mips/testnet.sol"
-    },
-    {
-        "envPath": "",
-        "id": 0,
-        "path": "src/proposals/mips/testnet.sol"
+        "path": "src/proposals/mips/test.sol"
     },
     {
         "envPath": "",
