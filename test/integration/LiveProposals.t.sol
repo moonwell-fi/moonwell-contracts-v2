@@ -2,10 +2,9 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
-
-import "@protocol/utils/ChainIds.sol";
-
 import {console} from "@forge-std/console.sol";
+
+import "@utils/ChainIds.sol";
 import {Bytes} from "@utils/Bytes.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
@@ -36,7 +35,7 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
     /// @notice Multichain Governor address
     MultichainGovernor governor;
 
-    function setUp() public {
+    function setUp() public override {
         MOONBEAM_FORK_ID.createForksAndSelect();
 
         addresses = new Addresses();
@@ -128,8 +127,6 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
     }
 
     function testExecutingInDevelopmentProposals() public {
-        ProposalMap proposalMap = new ProposalMap();
-
         // execute proposals that are not on chain yet
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
             .getAllProposalsInDevelopment();
