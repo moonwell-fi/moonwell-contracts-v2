@@ -44,6 +44,11 @@ contract TestProposalCalldataGeneration is ProposalMap {
 
     function testProposalToolingCalldataGeneration() public {
         for (uint256 i = proposals.length; i > 0; i--) {
+            // exclude proposals that are not onchain yet
+            if (proposals[i - 1].id == 0) {
+                continue;
+            }
+
             executeShellFile(proposals[i - 1].envPath);
 
             string memory proposalPath = proposals[i - 1].path;
