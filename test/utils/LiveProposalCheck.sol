@@ -34,6 +34,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
     function setUp() public virtual {
         proposalMap = new ProposalMap();
+        vm.makePersistent(proposalMap);
     }
 
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
