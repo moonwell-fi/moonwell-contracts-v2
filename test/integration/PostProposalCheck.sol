@@ -60,6 +60,7 @@ contract PostProposalCheck is LiveProposalCheck {
                 addresses,
                 devProposals[i - 1].path
             );
+            vm.makePersistent(address(proposal));
 
             proposals.push(proposal);
         }
