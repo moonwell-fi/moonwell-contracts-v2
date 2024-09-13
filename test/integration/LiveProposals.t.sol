@@ -36,6 +36,8 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
     MultichainGovernor governor;
 
     function setUp() public override {
+        super.setUp();
+
         MOONBEAM_FORK_ID.createForksAndSelect();
 
         addresses = new Addresses();

@@ -26,6 +26,8 @@ contract PostProposalCheck is LiveProposalCheck {
     Proposal[] public proposals;
 
     function setUp() public virtual override {
+        super.setUp();
+
         MOONBEAM_FORK_ID.createForksAndSelect();
 
         addresses = new Addresses();

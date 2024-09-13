@@ -32,11 +32,6 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
     /// @notice proposal to file map contract
     ProposalMap proposalMap;
 
-    function setUp() public virtual {
-        proposalMap = new ProposalMap();
-        vm.makePersistent(address(proposalMap));
-    }
-
     /// @notice allows asserting wormhole core correctly emits data to temporal governor
     event LogMessagePublished(
         address indexed sender,
@@ -45,6 +40,11 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         bytes payload,
         uint8 consistencyLevel
     );
+
+    function setUp() public virtual {
+        proposalMap = new ProposalMap();
+        vm.makePersistent(address(proposalMap));
+    }
 
     function executeSucceededProposals(
         Addresses addresses,
