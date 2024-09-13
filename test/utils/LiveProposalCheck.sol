@@ -256,16 +256,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
         vm.warp(block.timestamp + temporalGovernor.proposalDelay());
 
-        try temporalGovernor.executeProposal(vaa) {} catch (bytes memory e) {
-            console.log(
-                string(
-                    abi.encodePacked(
-                        "Error executing proposal, error: ",
-                        string(e)
-                    )
-                )
-            );
-        }
+        temporalGovernor.executeProposal(vaa);
     }
 
     /// @dev utility function to generate a Wormhole VAA payload excluding the guardians signature
