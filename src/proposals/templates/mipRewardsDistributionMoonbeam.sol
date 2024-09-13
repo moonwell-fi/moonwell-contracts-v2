@@ -9,17 +9,12 @@ import "@protocol/utils/String.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
+import {IStellaSwapRewarder} from "@protocol/interfaces/IStellaSwapRewarder.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-
-interface StellaSwapRewarder {
-    function poolRewardsPerSec(uint256 _pid) external view returns (uint256);
-
-    function currentEndTimestamp(uint256 _pid) external view returns (uint256);
-}
 
 contract mipRewardsDistributionMoonbeam is HybridProposal, Networks {
     using String for string;
@@ -454,7 +449,9 @@ contract mipRewardsDistributionMoonbeam is HybridProposal, Networks {
         address stellaSwapRewarder = addresses.getAddress(
             "STELLASWAP_REWARDER"
         );
-        StellaSwapRewarder stellaSwap = StellaSwapRewarder(stellaSwapRewarder);
+        IStellaSwapRewarder stellaSwap = IStellaSwapRewarder(
+            stellaSwapRewarder
+        );
         // check allowance tolerating a dust wei amount
         assertApproxEqAbs(
             well.allowance(
