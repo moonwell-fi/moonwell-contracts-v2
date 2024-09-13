@@ -60,7 +60,7 @@ contract PostProposalCheck is LiveProposalCheck {
                 addresses,
                 devProposals[i].path
             );
-            proposals.push(proposal);
+            proposals[i] = proposal;
         }
 
         if (vm.activeFork() != MOONBEAM_FORK_ID) {
