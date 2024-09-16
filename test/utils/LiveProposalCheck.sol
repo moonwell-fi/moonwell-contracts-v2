@@ -167,6 +167,8 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                 totalValue += values[j];
             }
 
+            vm.deal(address(this), totalValue);
+
             governor.execute{value: totalValue}(proposalId);
         }
 
