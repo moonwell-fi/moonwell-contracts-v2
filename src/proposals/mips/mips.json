@@ -8,42 +8,36 @@
     {
         "envPath": "",
         "governor": "MultichainGovernor",
-
         "id": 52,
         "path": "src/proposals/mips/mip-b30/mip-b30.sol"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
-
         "id": 51,
         "path": "src/proposals/mips/mip-b29/mip-b29.sol"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
-
         "id": 50,
         "path": "src/proposals/mips/mip-b28/mip-b28.sol"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
-
         "id": 49,
         "path": "src/proposals/mips/mip-o09/mip-o09.sol"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
-
         "id": 46,
         "path": "src/proposals/mips/mip-m38/mip-m38.sol"
     },
     {
         "envPath": "src/proposals/mips/mip-m37/m37.sh",
         "governor": "MultichainGovernor",
-
         "id": 45,
         "path": "src/proposals/templates/mipRewardsDistributionMoonbeam.sol"
     },
@@ -57,70 +51,54 @@
     {
         "envPath": "src/proposals/mips/mip-o07/o07.sh",
         "governor": "MultichainGovernor",
-
         "id": 43,
         "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
     },
     {
         "envPath": "src/proposals/mips/mip-o06/o06.sh",
         "governor": "MultichainGovernor",
-
         "id": 42,
         "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
-
         "id": 41,
         "path": "src/proposals/mips/mip-b25/mip-b25.sol"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
-
         "id": 40,
         "path": "src/proposals/mips/mip-o05/mip-o05.sol"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
-
         "id": 39,
         "path": "src/proposals/mips/mip-o04/mip-o04.sol"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
-
         "id": 37,
         "path": "src/proposals/mips/mip-o03/mip-o03.sol"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
-
         "id": 36,
         "path": "src/proposals/mips/mip-m36/mip-m36.sol"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
-
         "id": 35,
         "path": "src/proposals/mips/mip-b24/mip-b24.sol"
     },
     {
-        "envPath": "src/proposals/mips/mip-o02/o02.sh",
-        "governor": "MultichainGovernor",
-
-        "id": 34,
-        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
-    },
-    {
         "envPath": "src/proposals/mips/mip-b23/b23.sh",
         "governor": "MultichainGovernor",
-
         "id": 33,
         "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
     },
