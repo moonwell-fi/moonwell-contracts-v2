@@ -350,7 +350,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
                 require(
                     keccak256(abi.encodePacked(existingTransferFrom.to)) !=
-                        keccak256("MULTI_REWARD_DISTRIBUTOR"),
+                        keccak256("MRD_IMPL"),
                     "should not transfer funds to MRD logic contract"
                 );
 
