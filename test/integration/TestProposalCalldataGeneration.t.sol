@@ -62,6 +62,7 @@ contract TestProposalCalldataGeneration is ProposalMap {
 
             vm.selectFork(proposal.primaryForkId());
 
+            proposal.initProposal(addresses);
             proposal.build(addresses);
 
             (
