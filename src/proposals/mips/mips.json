@@ -1,6 +1,11 @@
 [
     {
         "envPath": "",
+        "id": 0,
+        "path": "src/proposals/mips/test.sol"
+    },
+    {
+        "envPath": "",
         "id": 52,
         "path": "src/proposals/mips/mip-b30/mip-b30.sol"
     },
@@ -27,22 +32,22 @@
     {
         "envPath": "src/proposals/mips/mip-m37/m37.sh",
         "id": 45,
-        "path": "src/proposals/templates/mipRewardsDistributionMoonbeam.sol:mipRewardsDistributionMoonbeam"
+        "path": "src/proposals/templates/mipRewardsDistributionMoonbeam.sol"
     },
     {
         "envPath": "src/proposals/mips/mip-b26/b26.sh",
         "id": 44,
-        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol:mipRewardsDistributionExternalChain"
+        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
     },
     {
         "envPath": "src/proposals/mips/mip-o07/o07.sh",
         "id": 43,
-        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol:mipRewardsDistributionExternalChain"
+        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
     },
     {
         "envPath": "src/proposals/mips/mip-o06/o06.sh",
         "id": 42,
-        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol:mipRewardsDistributionExternalChain"
+        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
     },
     {
         "envPath": "",
@@ -77,16 +82,16 @@
     {
         "envPath": "src/proposals/mips/mip-o02/o02.sh",
         "id": 34,
-        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol:mipRewardsDistributionExternalChain"
+        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
     },
     {
         "envPath": "src/proposals/mips/mip-b23/b23.sh",
         "id": 33,
-        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol:mipRewardsDistributionExternalChain"
+        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
     },
     {
         "envPath": "src/proposals/mips/mip-m35/m35.sh",
         "id": 29,
-        "path": "src/proposals/templates/mipRewardsDistributionMoonbeam.sol:mipRewardsDistributionMoonbeam"
+        "path": "src/proposals/templates/mipRewardsDistributionMoonbeam.sol"
     }
 ]

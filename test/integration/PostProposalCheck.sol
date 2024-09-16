@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 import {console} from "forge-std/console.sol";
 
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {String} from "@utils/String.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -52,12 +52,14 @@ contract PostProposalCheck is LiveProposalCheck {
         }
 
         // execute in the inverse order so that the lowest id is executed first
-        for (uint256 i = devProposals.length - 1; i >= 0; i--) {
-            proposalMap.executeShellFile(devProposals[i].envPath);
+        for (uint256 i = devProposals.length; i > 0; i--) {
+            proposalMap.executeShellFile(devProposals[i - 1].envPath);
             Proposal proposal = proposalMap.runProposal(
                 addresses,
-                devProposals[i].path
+                devProposals[i - 1].path
             );
+            vm.makePersistent(address(proposal));
+
             proposals.push(proposal);
         }
 

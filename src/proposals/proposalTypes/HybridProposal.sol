@@ -354,12 +354,12 @@ abstract contract HybridProposal is
 
     function printProposalActionSteps() public override {
         console.log(
-            "\n\nProposal Description:\n\n%s",
+            "\n\n--------------- Proposal Description ----------------\n",
             string(PROPOSAL_DESCRIPTION)
         );
 
         console.log(
-            "\n\n------------------ Proposal Actions ------------------"
+            "\n\n----------------- Proposal Actions ------------------\n"
         );
 
         (
@@ -422,7 +422,9 @@ abstract contract HybridProposal is
 
     /// @notice Print out the proposal action steps and which chains they were run on
     function printCalldata(Addresses addresses) public view override {
-        console.log("Governor multichain proposal calldata");
+        console.log(
+            "\n\n----------------- Proposal Calldata ------------------\n"
+        );
         console.logBytes(getCalldata(addresses));
     }
 
