@@ -127,50 +127,46 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             vm.warp(crossChainVoteCollectionEndTimestamp + 1);
         }
 
+        uint256 totalValue = 0;
+
+        for (uint256 j = 0; j < values.length; j++) {
+            totalValue += values[j];
+        }
+
+        vm.deal(address(this), totalValue);
+
         bytes memory payload;
+
         address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
 
-        if (targets[targets.length - 1] == wormholeCore) {
-            // decode temporal governor calldata
-            (, payload, ) = abi.decode(
-                /// 1. strip off function selector
-                /// 2. decode the call to publishMessage payload
-                calldatas[targets.length - 1].slice(
-                    4,
-                    calldatas[targets.length - 1].length - 4
-                ),
-                (uint32, bytes, uint8)
-            );
+        uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
+            address(governor)
+        );
 
-            uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
-                address(governor)
-            );
+        for (uint256 i = 0; i < targets; i++) {
+            if (targets[i] == wormholeCore) {
+                // decode temporal governor calldata
+                (, payload, ) = abi.decode(
+                    /// 1. strip off function selector
+                    /// 2. decode the call to publishMessage payload
+                    calldatas[i].slice(4, calldatas[i].length - 4),
+                    (uint32, bytes, uint8)
+                );
 
-            /// increments each time the Multichain Governor publishes a message
-            /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
-            vm.expectEmit(true, true, true, true, wormholeCore);
+                /// increments each time the Multichain Governor publishes a message
+                vm.expectEmit(true, true, true, true, wormholeCore);
 
-            emit LogMessagePublished(
-                address(governor),
-                nextSequence,
-                0,
-                payload,
-                200
-            );
-        }
-
-        /// execution
-        {
-            uint256 totalValue = 0;
-
-            for (uint256 j = 0; j < values.length; j++) {
-                totalValue += values[j];
+                emit LogMessagePublished(
+                    address(governor),
+                    nextSequence++,
+                    0,
+                    payload,
+                    200
+                );
             }
-
-            vm.deal(address(this), totalValue);
-
-            governor.execute{value: totalValue}(proposalId);
         }
+
+        governor.execute{value: totalValue}(proposalId);
 
         /// remove restriction for moonbeam actions
         addresses.removeRestriction();
