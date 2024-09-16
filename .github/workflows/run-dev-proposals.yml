@@ -55,9 +55,12 @@ jobs:
             });
 
             const actionComments = comments.data.filter(comment => 
-              comment.user.login === 'github-actions[bot]' &&
-              comment.body.includes('=================== PROPOSAL START ==================')
-            );
+                comment.user.login === 'github-actions[bot]' &&
+                (
+                comment.body.includes('=================== PROPOSAL START ==================') ||
+                comment.body.includes('If you wish to simulate on-chain transactions pass a RPC URL')
+               )
+             );
 
             if (actionComments.length === 0) {
               return;
