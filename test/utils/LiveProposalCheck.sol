@@ -143,7 +143,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             address(governor)
         );
 
-        for (uint256 i = 0; i < targets; i++) {
+        for (uint256 i = 0; i < targets.length; i++) {
             if (targets[i] == wormholeCore) {
                 // decode temporal governor calldata
                 (, payload, ) = abi.decode(
