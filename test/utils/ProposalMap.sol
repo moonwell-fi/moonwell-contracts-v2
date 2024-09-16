@@ -151,6 +151,7 @@ contract ProposalMap is Test {
         vm.selectFork(proposal.primaryForkId());
 
         address deployer = address(proposal);
+        proposal.initProposal(addresses);
         proposal.deploy(addresses, deployer);
         proposal.afterDeploy(addresses, deployer);
         proposal.preBuildMock(addresses);
