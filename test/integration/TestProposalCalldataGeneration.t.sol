@@ -72,6 +72,8 @@ contract TestProposalCalldataGeneration is ProposalMap {
             ) = proposal.getTargetsPayloadsValues(addresses);
             bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
 
+            vm.selectFork(MOONBEAM_FORK_ID);
+
             (
                 address[] memory onchainTargets,
                 uint256[] memory onchainValues,
