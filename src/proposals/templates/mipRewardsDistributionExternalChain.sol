@@ -57,7 +57,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
     struct JsonSpecExternalChain {
         SetMRDRewardSpeed[] setRewardSpeed;
-        uint256 stkWellEmissionsPerSecond;
+        int256 stkWellEmissionsPerSecond;
         TransferFrom[] transferFroms;
     }
 
