@@ -251,11 +251,13 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 );
             }
 
-            assertGe(
-                spec.setRewardSpeed[i].newBorrowSpeed,
-                1,
-                "Borrow speed must be greater or equal to 1"
-            );
+            if (spec.setRewardSpeed[i].newBorrowSpeed != -1) {
+                assertGe(
+                    spec.setRewardSpeed[i].newBorrowSpeed,
+                    1,
+                    "Borrow speed must be greater or equal to 1"
+                );
+            }
 
             if (
                 addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
