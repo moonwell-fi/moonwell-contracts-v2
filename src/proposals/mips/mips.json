@@ -42,6 +42,13 @@
         "proposalType": "HybridProposal"
     },
     {
+        "envPath": "src/proposals/mips/mip-b26/b26.sh",
+        "governor": "MultichainGovernor",
+        "id": 44,
+        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol",
+        "proposalType": "HybridProposal"
+    },
+    {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 41,
