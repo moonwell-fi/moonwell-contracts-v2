@@ -25,7 +25,7 @@
             {
                 "emissionToken": "xWELL_PROXY",
                 "market": "MOONWELL_WBTC",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1728012600,
                 "newSupplySpeed": 34813596291265570
             },
