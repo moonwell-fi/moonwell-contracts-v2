@@ -480,9 +480,8 @@ abstract contract HybridProposal is
     ) public override returns (uint256 proposalId) {
         vm.selectFork(MOONBEAM_FORK_ID);
 
-        uint256 proposalCount = onchainProposalId != 0
-            ? onchainProposalId
-            : MultichainGovernor(payable(governor)).proposalCount();
+        uint256 proposalCount = MultichainGovernor(payable(governor))
+            .proposalCount();
         bytes memory proposalCalldata = getCalldata(addresses);
 
         // Loop through all proposals to find the one that matches

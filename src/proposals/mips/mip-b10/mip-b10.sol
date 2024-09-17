@@ -122,8 +122,6 @@ contract mipb10 is HybridProposal, Configs {
             emissions[block.chainid].length
         );
         console.log("\n\n");
-
-        onchainProposalId = 61;
     }
 
     function primaryForkId() public pure override returns (uint256) {

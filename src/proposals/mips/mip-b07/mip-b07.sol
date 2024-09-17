@@ -27,8 +27,6 @@ contract mipb07 is HybridProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 55;
     }
 
     function primaryForkId() public pure override returns (uint256) {

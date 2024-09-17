@@ -373,9 +373,9 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
             ) {
                 assertApproxEqAbs(
-                    spec.transferFroms[i].amount,
+                    int256(spec.transferFroms[i].amount),
                     spec.stkWellEmissionsPerSecond *
-                        (endTimeStamp - startTimeStamp),
+                        int256(endTimeStamp - startTimeStamp),
                     1e18,
                     "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
                 );
@@ -787,7 +787,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 addresses.getAddress("STK_GOVTOKEN")
             );
             assertEq(
-                emissionsPerSecond,
+                int256(emissionsPerSecond),
                 spec.stkWellEmissionsPerSecond,
                 "Emissions per second for the Safety Module is incorrect"
             );

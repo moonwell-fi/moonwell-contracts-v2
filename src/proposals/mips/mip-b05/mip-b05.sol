@@ -37,8 +37,6 @@ contract mipb05 is HybridProposal, Configs {
             vm.readFile("./src/proposals/mips/mip-b05/MIP-B05.md")
         );
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 51;
     }
 
     function primaryForkId() public pure override returns (uint256) {

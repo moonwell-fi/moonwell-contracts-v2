@@ -101,9 +101,7 @@ abstract contract GovernanceProposal is Proposal {
         MoonwellArtemisGovernor governorContract = MoonwellArtemisGovernor(
             payable(governor)
         );
-        uint256 proposalCount = onchainProposalId != 0
-            ? onchainProposalId
-            : governorContract.proposalCount();
+        uint256 proposalCount = governorContract.proposalCount();
 
         (
             address[] memory proposalTargets,
