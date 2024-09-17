@@ -18,9 +18,6 @@ contract mipm21 is GovernanceProposal {
             vm.readFile("./src/proposals/mips/mip-m21/MIP-M21.md")
         );
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 77;
-        isDeprecatedGovernor = true;
     }
 
     function primaryForkId() public pure override returns (uint256) {

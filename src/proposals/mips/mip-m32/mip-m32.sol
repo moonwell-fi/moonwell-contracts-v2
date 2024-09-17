@@ -26,8 +26,6 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-m32/MIP-M32.md")
         );
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 20;
     }
 
     function primaryForkId() public pure override returns (uint256) {
