@@ -49,6 +49,20 @@
         "proposalType": "HybridProposal"
     },
     {
+        "envPath": "src/proposals/mips/mip-o07/o07.sh",
+        "governor": "MultichainGovernor",
+        "id": 43,
+        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol",
+        "proposalType": "HybridProposal"
+    },
+    {
+        "envPath": "src/proposals/mips/mip-o06/o06.sh",
+        "governor": "MultichainGovernor",
+        "id": 42,
+        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol",
+        "proposalType": "HybridProposal"
+    },
+    {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 41,

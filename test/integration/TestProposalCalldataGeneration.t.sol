@@ -87,6 +87,8 @@ contract TestProposalCalldataGeneration is ProposalMap {
                 abi.encode(onchainTargets, onchainValues, onchainCalldatas)
             );
 
+            proposal.printProposalActionSteps();
+
             assertEq(
                 hash,
                 onchainHash,

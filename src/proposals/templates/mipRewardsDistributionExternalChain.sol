@@ -632,22 +632,24 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             }
         }
 
-        _pushAction(
-            addresses.getAddress("STK_GOVTOKEN"),
-            abi.encodeWithSignature(
-                "configureAsset(uint128,address)",
-                spec.stkWellEmissionsPerSecond,
-                addresses.getAddress("STK_GOVTOKEN")
-            ),
-            string(
-                abi.encodePacked(
-                    "Set reward speed to ",
-                    vm.toString(spec.stkWellEmissionsPerSecond),
-                    " for the Safety Module on ",
-                    _chainId.chainIdToName()
+        if (spc.stkWellEmissionsPerSecond != -1) {
+            _pushAction(
+                addresses.getAddress("STK_GOVTOKEN"),
+                abi.encodeWithSignature(
+                    "configureAsset(uint128,address)",
+                    spec.stkWellEmissionsPerSecond,
+                    addresses.getAddress("STK_GOVTOKEN")
+                ),
+                string(
+                    abi.encodePacked(
+                        "Set reward speed to ",
+                        vm.toString(spec.stkWellEmissionsPerSecond),
+                        " for the Safety Module on ",
+                        _chainId.chainIdToName()
+                    )
                 )
-            )
-        );
+            );
+        }
     }
 
     function _validateMoonbeam(Addresses addresses) private {
