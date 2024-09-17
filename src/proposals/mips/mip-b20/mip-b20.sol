@@ -23,8 +23,6 @@ contract mipb20 is HybridProposal, Configs, ParameterValidation {
         );
 
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 19;
     }
 
     function primaryForkId() public pure override returns (uint256) {

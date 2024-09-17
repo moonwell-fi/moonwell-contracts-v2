@@ -78,6 +78,60 @@
         "path": "src/proposals/templates/mipRewardsDistributionMoonbeam.sol"
     },
     {
+        "envPath": "src/proposals/mips/mip-m35/m35.sh",
+        "governor": "MultichainGovernor",
+        "id": 29,
+        "path": "src/proposals/templates/mipRewardsDistributionMoonbeam.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "MultichainGovernor",
+        "id": 22,
+        "path": "src/proposals/mip-b22/mip-b22.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "MultichainGovernor",
+        "id": 21,
+        "path": "src/proposals/mip-b21/mip-b21.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "MultichainGovernor",
+        "id": 19,
+        "path": "src/proposals/mip-b20/mip-b20.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "MultichainGovernor",
+        "id": 16,
+        "path": "src/proposals/mip-b19/mip-b19.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "MultichainGovernor",
+        "id": 12,
+        "path": "src/proposals/mip-b18/mip-b18.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "MultichainGovernor",
+        "id": 11,
+        "path": "src/proposals/mip-b17/mip-b17.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "MultichainGovernor",
+        "id": 5,
+        "path": "src/proposals/mip-b16/mip-b16.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "MultichainGovernor",
+        "id": 3,
+        "path": "src/proposals/mip-b15/mip-b15.sol"
+    },
+    {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 74,
