@@ -36,12 +36,6 @@
         "path": "src/proposals/templates/mipRewardsDistributionMoonbeam.sol"
     },
     {
-        "envPath": "src/proposals/mips/mip-b26/b26.sh",
-        "governor": "MultichainGovernor",
-        "id": 44,
-        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
-    },
-    {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 41,
