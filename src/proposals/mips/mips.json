@@ -101,5 +101,41 @@
         "governor": "MultichainGovernor",
         "id": 29,
         "path": "src/proposals/templates/mipRewardsDistributionMoonbeam.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "ArtemisGovernor",
+        "id": 54,
+        "path": "src/proposals/mip-b06/mip-b06.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "ArtemisGovernor",
+        "id": 51,
+        "path": "src/proposals/mip-b05/mip-b05.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "ArtemisGovernor",
+        "id": 43,
+        "path": "src/proposals/mip-b03/mip-b03.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "ArtemisGovernor",
+        "id": 42,
+        "path": "src/proposals/mip-b02/mip-b02.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "ArtemisGovernor",
+        "id": 41,
+        "path": "src/proposals/mip-b01/mip-b01.sol"
+    },
+    {
+        "envPath": "",
+        "governor": "ArtemisGovernor",
+        "id": 39,
+        "path": "src/proposals/mip-b00/mip-b00.sol"
     }
 ]
