@@ -634,7 +634,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             }
         }
 
-        if (spc.stkWellEmissionsPerSecond != -1) {
+        if (spec.stkWellEmissionsPerSecond != -1) {
             _pushAction(
                 addresses.getAddress("STK_GOVTOKEN"),
                 abi.encodeWithSignature(
