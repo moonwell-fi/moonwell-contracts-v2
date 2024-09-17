@@ -198,13 +198,6 @@
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
-        "id": 79,
-        "path": "src/proposals/mips/mip-m23/mip-m23.sol",
-        "proposalType": "GovernanceProposal"
-    },
-    {
-        "envPath": "",
-        "governor": "ArtemisGovernor",
         "id": 77,
         "path": "src/proposals/mips/mip-m21/mip-m21.sol",
         "proposalType": "GovernanceProposal"
