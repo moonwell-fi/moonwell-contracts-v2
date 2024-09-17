@@ -38,20 +38,7 @@
     {
         "envPath": "src/proposals/mips/mip-b26/b26.sh",
         "governor": "MultichainGovernor",
-
         "id": 44,
-        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
-    },
-    {
-        "envPath": "src/proposals/mips/mip-o07/o07.sh",
-        "governor": "MultichainGovernor",
-        "id": 43,
-        "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
-    },
-    {
-        "envPath": "src/proposals/mips/mip-o06/o06.sh",
-        "governor": "MultichainGovernor",
-        "id": 42,
         "path": "src/proposals/templates/mipRewardsDistributionExternalChain.sol"
     },
     {
