@@ -54,8 +54,6 @@ contract mipb08 is HybridProposal, Configs {
         );
 
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 58;
     }
 
     function primaryForkId() public pure override returns (uint256) {
