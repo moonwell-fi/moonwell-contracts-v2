@@ -177,7 +177,7 @@
     {
         "addr": "0xFf0731337F615aC5403cb243623283BC04cDe121",
         "isContract": true,
-        "name": "MULTI_REWARD_DISTRIBUTOR"
+        "name": "MRD_IMPL"
     },
     {
         "addr": "0x8dFBb21dbD61af533092d54B293660CF77A30Ce2",

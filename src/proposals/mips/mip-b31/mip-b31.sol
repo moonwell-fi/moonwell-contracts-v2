@@ -48,7 +48,7 @@ contract mipb31 is HybridProposal, Configs {
         _pushAction(
             mrd,
             abi.encodeWithSignature(
-                "_addEmissionConfig(address,address,uint256,uint256,uint256,uint256)",
+                "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
                 MToken(market),
                 addresses.getAddress("TEMPORAL_GOVERNOR"),
                 emissionToken,
