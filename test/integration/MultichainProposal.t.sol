@@ -16,7 +16,6 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {mipx01} from "@proposals/mips/mip-x01/mip-x01.sol";
 import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
-import {Networks} from "@proposals/utils/Networks.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
@@ -55,7 +54,7 @@ export DO_TEARDOWN=true
 export DO_VALIDATE=true
 
 */
-contract MultichainProposalTest is PostProposalCheck, Networks {
+contract MultichainProposalTest is PostProposalCheck {
     using ChainIds for uint256;
 
     MultichainVoteCollection public voteCollection;
@@ -72,14 +71,6 @@ contract MultichainProposalTest is PostProposalCheck, Networks {
         uint256 votingStartTime,
         uint256 votingEndTime,
         uint256 votingCollectionEndTime
-    );
-
-    event LogMessagePublished(
-        address indexed sender,
-        uint64 sequence,
-        uint32 nonce,
-        bytes payload,
-        uint8 consistencyLevel
     );
 
     event VotesEmitted(
