@@ -125,5 +125,6 @@ abstract contract ProposalChecker {
         public
         view
         virtual
-        returns (address[] memory, uint256[] memory, bytes[] memory);
+        returns (address[] memory, uint256[] memory, bytes[] memory)
+    {}
 }

@@ -1,4 +1,4 @@
-name: "Run Latest Proposal"
+name: "Run In Development Proposals"
 
 env:
   FOUNDRY_PROFILE: "ci"
@@ -14,7 +14,7 @@ on:
       - "main"
 
 jobs:
-  run-proposal:
+  run-in-development-proposal:
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
@@ -55,9 +55,12 @@ jobs:
             });
 
             const actionComments = comments.data.filter(comment => 
-              comment.user.login === 'github-actions[bot]' &&
-              comment.body.includes('Latest Proposal')
-            );
+                comment.user.login === 'github-actions[bot]' &&
+                (
+                comment.body.includes('=================== PROPOSAL START ==================') ||
+                comment.body.includes('If you wish to simulate on-chain transactions pass a RPC URL')
+               )
+             );
 
             if (actionComments.length === 0) {
               return;
@@ -69,21 +72,21 @@ jobs:
               });
             }
 
-      - name: Run Proposal
-        run: bin/run-proposal.sh
+      - name: Run Calldata Printing
+        run: bin/run-calldata-printing.sh
 
-      - name: Comment PR with Proposal Output
+      - name: Comment PR with Calldata Printing Output
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            if (fs.existsSync('output.json')) {
-                const output = JSON.parse(fs.readFileSync('output.json', 'utf8'));
+            if (fs.existsSync('output.txt')) {
+                const output = fs.readFileSync('output.txt', 'utf8');
                 const prNumber = context.payload.pull_request.number;
                 github.rest.issues.createComment({
                    ...context.repo,
                    issue_number: prNumber,
-                   body: `### Latest Proposal: ${output.file}\n\`\`\`\n${output.output}\n\`\`\``
+                   body: `\`\`\`\n${output}\n\`\`\``
                    });
              }

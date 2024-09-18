@@ -25,14 +25,6 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
     IWormhole public wormhole;
     ERC20Votes public well;
 
-    event LogMessagePublished(
-        address indexed sender,
-        uint64 sequence,
-        uint32 nonce,
-        bytes payload,
-        uint8 consistencyLevel
-    );
-
     address public constant voter = address(100_000_000);
 
     function setUp() public override {
