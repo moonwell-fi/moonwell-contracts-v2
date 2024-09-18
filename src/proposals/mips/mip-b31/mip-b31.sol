@@ -20,7 +20,7 @@ contract mipb31 is HybridProposal, Configs {
 
     uint256 public constant BORROW_SIDE_REWARDS = 3025;
 
-    uint256 public constant END_TIME = 24994202400;
+    uint256 public constant END_TIME = 1730431800;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -87,7 +87,7 @@ contract mipb31 is HybridProposal, Configs {
         );
         assertEq(config.endTime, END_TIME, "End time not set correctly");
 
-        uint256 startTimestamp = 1726695000;
+        uint256 startTimestamp = 1727127000;
         uint256 expectedTotalSupplyRewards = 14997182400;
 
         assertApproxEqRel(
