@@ -20,6 +20,8 @@ contract mipb31 is HybridProposal, Configs {
 
     uint256 public constant BORROW_SIDE_REWARDS = 3025;
 
+    uint256 public constant END_TIME = 24994202400;
+
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile("./src/proposals/mips/mip-b31/MIP-B31.md")
@@ -80,6 +82,25 @@ contract mipb31 is HybridProposal, Configs {
                 )
             )
         );
+
+        _pushAction(
+            mrd,
+            abi.encodeWithSignature(
+                "_updateEndTime(address,address,uint256)",
+                market,
+                emissionToken,
+                END_TIME
+            ),
+            string(
+                abi.encodePacked(
+                    "Set reward end time to ",
+                    vm.toString(setRewardSpeed.newEndTime),
+                    " for ",
+                    vm.getLabel(market),
+                    " on Base"
+                )
+            )
+        );
     }
 
     function teardown(Addresses addresses, address) public pure override {}
@@ -107,5 +128,6 @@ contract mipb31 is HybridProposal, Configs {
             BORROW_SIDE_REWARDS,
             "Borrow rewards not set correctly"
         );
+        assertEq(config.endTime, END_TIME, "End time not set correctly");
     }
 }
