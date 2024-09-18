@@ -129,5 +129,22 @@ contract mipb31 is HybridProposal, Configs {
             "Borrow rewards not set correctly"
         );
         assertEq(config.endTime, END_TIME, "End time not set correctly");
+
+        uint256 startTimestamp = 1726695000;
+        uint256 expectedTotalSupplyRewards = 14997182400;
+
+        assertApproxEqRel(
+            config.supplyEmissionsPerSec * (END_TIME - startTimestamp),
+            expectedTotalSupplyRewards,
+            0.01e18
+        );
+
+        uint256 expectedTotalBorrowRewards = 9997020000;
+
+        assertApproxEqRel(
+            config.borrowEmissionsPerSec * (END_TIME - startTimestamp),
+            expectedTotalBorrowRewards,
+            0.01e18
+        );
     }
 }
