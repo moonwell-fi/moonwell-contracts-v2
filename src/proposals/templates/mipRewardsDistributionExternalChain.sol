@@ -623,7 +623,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                         "_updateEndTime(address,address,uint256)",
                         addresses.getAddress(setRewardSpeed.market),
                         addresses.getAddress(setRewardSpeed.emissionToken),
-                        setRewardSpeed.newEndTime.toUint256()
+                        setRewardSpeed.newEndTime
                     ),
                     string(
                         abi.encodePacked(
@@ -644,7 +644,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 addresses.getAddress("STK_GOVTOKEN"),
                 abi.encodeWithSignature(
                     "configureAsset(uint128,address)",
-                    spec.stkWellEmissionsPerSecond.toUint128(),
+                    spec.stkWellEmissionsPerSecond.toUint256().toUint128(),
                     addresses.getAddress("STK_GOVTOKEN")
                 ),
                 string(
