@@ -208,17 +208,19 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             (JsonSpecExternalChain)
         );
 
-        assertGe(
-            spec.stkWellEmissionsPerSecond,
-            0,
-            "stkWellEmissionsPerSecond must be greater than 0"
-        );
+        if (spec.stkWellEmissionsPerSecond != -1) {
+            assertGe(
+                spec.stkWellEmissionsPerSecond,
+                0,
+                "stkWellEmissionsPerSecond must be greater than 0"
+            );
 
-        assertLe(
-            spec.stkWellEmissionsPerSecond,
-            5e18,
-            "stkWellEmissionsPerSecond must be less than 1e18"
-        );
+            assertLe(
+                spec.stkWellEmissionsPerSecond,
+                5e18,
+                "stkWellEmissionsPerSecond must be less than 1e18"
+            );
+        }
 
         externalChainActions[_chainId].stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
