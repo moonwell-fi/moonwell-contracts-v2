@@ -48,58 +48,15 @@ contract mipb31 is HybridProposal, Configs {
         _pushAction(
             mrd,
             abi.encodeWithSignature(
-                "_updateSupplySpeed(address,address,uint256)",
-                market,
+                "_addEmissionConfig(address,address,uint256,uint256,uint256,uint256)",
+                MToken(market),
+                addresses.getAddress("TEMPORAL_GOVERNOR"),
                 emissionToken,
-                SUPPLY_SIDE_REWARDS
-            ),
-            string(
-                abi.encodePacked(
-                    "Set reward supply speed to ",
-                    vm.toString(SUPPLY_SIDE_REWARDS),
-                    " for ",
-                    vm.getLabel(market),
-                    " on Base"
-                )
-            )
-        );
-
-        _pushAction(
-            mrd,
-            abi.encodeWithSignature(
-                "_updateBorrowSpeed(address,address,uint256)",
-                market,
-                emissionToken,
-                BORROW_SIDE_REWARDS
-            ),
-            string(
-                abi.encodePacked(
-                    "Set reward borrow speed to ",
-                    vm.toString(BORROW_SIDE_REWARDS),
-                    " for ",
-                    vm.getLabel(market),
-                    " on Base"
-                )
-            )
-        );
-
-        _pushAction(
-            mrd,
-            abi.encodeWithSignature(
-                "_updateEndTime(address,address,uint256)",
-                market,
-                emissionToken,
+                SUPPLY_SIDE_REWARDS,
+                BORROW_SIDE_REWARDS,
                 END_TIME
             ),
-            string(
-                abi.encodePacked(
-                    "Set reward end time to ",
-                    vm.toString(END_TIME),
-                    " for ",
-                    vm.getLabel(market),
-                    " on Base"
-                )
-            )
+            "Add emission config for Moonwell EURC on Base"
         );
     }
 
