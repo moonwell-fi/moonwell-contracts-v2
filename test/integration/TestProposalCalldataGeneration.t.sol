@@ -77,15 +77,20 @@ contract TestProposalCalldataGeneration is ProposalMap {
 
             vm.selectFork(MOONBEAM_FORK_ID);
 
-            (
-                address[] memory onchainTargets,
-                uint256[] memory onchainValues,
-                bytes[] memory onchainCalldatas
-            ) = governor.getProposalData(multichainGovernorProposals[i - 1].id);
+            bytes32 onchainHash;
+            {
+                (
+                    address[] memory onchainTargets,
+                    uint256[] memory onchainValues,
+                    bytes[] memory onchainCalldatas
+                ) = governor.getProposalData(
+                        multichainGovernorProposals[i - 1].id
+                    );
 
-            bytes32 onchainHash = keccak256(
-                abi.encode(onchainTargets, onchainValues, onchainCalldatas)
-            );
+                onchainHash = keccak256(
+                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
+                );
+            }
 
             proposal.printProposalActionSteps();
 
@@ -95,7 +100,7 @@ contract TestProposalCalldataGeneration is ProposalMap {
                 string(
                     abi.encodePacked(
                         "Hashes do not match for proposal ",
-                        multichainGovernorProposals[i - 1].id
+                        vm.toString(multichainGovernorProposals[i - 1].id)
                     )
                 )
             );
@@ -139,16 +144,21 @@ contract TestProposalCalldataGeneration is ProposalMap {
 
             vm.selectFork(MOONBEAM_FORK_ID);
 
-            (
-                address[] memory onchainTargets,
-                uint256[] memory onchainValues,
-                ,
-                bytes[] memory onchainCalldatas
-            ) = artemisGovernor.getActions(artemisGovernorProposals[i - 1].id);
+            bytes32 onchainHash;
+            {
+                (
+                    address[] memory onchainTargets,
+                    uint256[] memory onchainValues,
+                    ,
+                    bytes[] memory onchainCalldatas
+                ) = artemisGovernor.getActions(
+                        artemisGovernorProposals[i - 1].id
+                    );
 
-            bytes32 onchainHash = keccak256(
-                abi.encode(onchainTargets, onchainValues, onchainCalldatas)
-            );
+                onchainHash = keccak256(
+                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
+                );
+            }
 
             assertEq(
                 hash,
@@ -156,7 +166,7 @@ contract TestProposalCalldataGeneration is ProposalMap {
                 string(
                     abi.encodePacked(
                         "Hashes do not match for proposal ",
-                        artemisGovernorProposals[i - 1].id
+                        vm.toString(artemisGovernorProposals[i - 1].id)
                     )
                 )
             );
@@ -203,16 +213,21 @@ contract TestProposalCalldataGeneration is ProposalMap {
 
             vm.selectFork(MOONBEAM_FORK_ID);
 
-            (
-                address[] memory onchainTargets,
-                uint256[] memory onchainValues,
-                ,
-                bytes[] memory onchainCalldatas
-            ) = artemisGovernor.getActions(artemisGovernorProposals[i - 1].id);
+            bytes32 onchainHash;
+            {
+                (
+                    address[] memory onchainTargets,
+                    uint256[] memory onchainValues,
+                    ,
+                    bytes[] memory onchainCalldatas
+                ) = artemisGovernor.getActions(
+                        artemisGovernorProposals[i - 1].id
+                    );
 
-            bytes32 onchainHash = keccak256(
-                abi.encode(onchainTargets, onchainValues, onchainCalldatas)
-            );
+                onchainHash = keccak256(
+                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
+                );
+            }
 
             assertEq(
                 hash,
@@ -220,7 +235,7 @@ contract TestProposalCalldataGeneration is ProposalMap {
                 string(
                     abi.encodePacked(
                         "Hashes do not match for proposal ",
-                        artemisGovernorProposals[i - 1].id
+                        vm.toString(artemisGovernorProposals[i - 1].id)
                     )
                 )
             );

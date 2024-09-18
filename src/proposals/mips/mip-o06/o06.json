@@ -73,7 +73,7 @@
             },
             {
                 "emissionToken": "xWELL_PROXY",
-                "market": "MOONWELL_VELO",
+                "market": "DEPRECATED_MOONWELL_VELO",
                 "newBorrowSpeed": 5448282504572151,
                 "newEndTime": 1728012600,
                 "newSupplySpeed": 4457685685559033
