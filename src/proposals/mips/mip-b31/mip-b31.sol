@@ -94,7 +94,7 @@ contract mipb31 is HybridProposal, Configs {
             string(
                 abi.encodePacked(
                     "Set reward end time to ",
-                    vm.toString(setRewardSpeed.newEndTime),
+                    vm.toString(END_TIME),
                     " for ",
                     vm.getLabel(market),
                     " on Base"
