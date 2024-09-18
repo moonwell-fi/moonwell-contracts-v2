@@ -90,63 +90,6 @@ abstract contract GovernanceProposal is Proposal {
         printActions();
     }
 
-    /// @notice search for a on-chain proposal that matches the proposal calldata
-    /// @return proposalId 0 if no proposal is found
-    function getProposalId(
-        Addresses,
-        address governor
-    ) public override returns (uint256 proposalId) {
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        MoonwellArtemisGovernor governorContract = MoonwellArtemisGovernor(
-            payable(governor)
-        );
-        uint256 proposalCount = governorContract.proposalCount();
-
-        (
-            address[] memory proposalTargets,
-            uint256[] memory proposalValues,
-            string[] memory proposalSignatures,
-            bytes[] memory proposalCalldatas
-        ) = _getActions();
-
-        bytes memory governorCalldata = abi.encodeWithSignature(
-            "propose(address[],uint256[],string[],bytes[],string)",
-            proposalTargets,
-            proposalValues,
-            proposalSignatures,
-            proposalCalldatas,
-            PROPOSAL_DESCRIPTION
-        );
-
-        while (proposalCount > 0) {
-            (
-                address[] memory onchainTargets,
-                uint256[] memory onchainValues,
-                string[] memory onchainSignatures,
-                bytes[] memory onchainCalldatas
-            ) = governorContract.getActions(proposalCount);
-
-            bytes memory onchainCalldata = abi.encodeWithSignature(
-                "propose(address[],uint256[],string[],bytes[],string)",
-                onchainTargets,
-                onchainValues,
-                onchainSignatures,
-                onchainCalldatas,
-                PROPOSAL_DESCRIPTION
-            );
-
-            if (keccak256(governorCalldata) == keccak256(onchainCalldata)) {
-                proposalId = proposalCount;
-                break;
-            }
-
-            proposalCount--;
-        }
-
-        vm.selectFork(uint256(primaryForkId()));
-    }
-
     /// @notice print the proposal action steps
     function printProposalActionSteps() public override {
         console.log(

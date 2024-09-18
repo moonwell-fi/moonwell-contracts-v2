@@ -101,13 +101,6 @@ abstract contract Proposal is Script, Test {
 
     function afterSimulationHook(Addresses) public virtual {}
 
-    // @notice search for a on-chain proposal that matches the proposal calldata
-    // @returns the proposal id, 0 if no proposal is found
-    function getProposalId(
-        Addresses,
-        address
-    ) public virtual returns (uint256 proposalId);
-
     /// @notice initialize the proposal after the proposal is created and the
     /// live fork is selected
     function initProposal(Addresses) public virtual {}
