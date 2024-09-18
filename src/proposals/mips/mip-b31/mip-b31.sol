@@ -62,8 +62,6 @@ contract mipb31 is HybridProposal, Configs {
 
     function teardown(Addresses addresses, address) public pure override {}
 
-    /// @notice assert that the new interest rate model is set correctly
-    /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
         address market = addresses.getAddress("MOONWELL_EURC");
         address emissionToken = addresses.getAddress("EURC");
