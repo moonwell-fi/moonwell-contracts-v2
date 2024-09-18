@@ -21,10 +21,6 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Make proposal files executable
-        run: |
-          chmod -R +x src/proposals/mips
-
       - name: Run Test Proposal Calldata Generation
         run: |
              time forge test --match-contract TestProposalCalldataGeneration \
