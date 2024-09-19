@@ -21,10 +21,9 @@ jobs:
         uses: ./.github/actions
 
       - name: Live Proposal Integration Tests
-        shell: bash
         uses: nick-fields/retry@v3
         with:
-           timeout_minutes: 10
+           timeout_minutes: 15
            max_attempts: 3
            command: time forge test --mc LiveProposalsIntegrationTest -vvvvv
 
