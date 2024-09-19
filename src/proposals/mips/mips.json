@@ -3,7 +3,7 @@
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 53,
-        "path": "src/proposals/mips/mip-b30/mip-b31.sol",
+        "path": "src/proposals/mips/mip-b31/mip-b31.sol",
         "proposalType": "HybridProposal"
     },
     {
