@@ -20,5 +20,9 @@ jobs:
         uses: ./.github/actions
 
       - name: Base Mainnet Integration Tests
-        run: time forge test --match-contract LiveSystemBaseTest --fork-url base
-          -vvv --ffi
+        uses: nick-fields/retry@v3
+        with:
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract LiveSystemBaseTest --fork-url base -vvv --ffi
+

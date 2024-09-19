@@ -21,11 +21,12 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Make proposal files executable
-        run: |
-          chmod -R +x src/proposals/mips
-
       - name: Run Test Proposal Calldata Generation
-        run: |
-             time forge test --match-contract TestProposalCalldataGeneration \
+        uses: nick-fields/retry@v3
+        with:
+           timeout_minutes: 20
+           max_attempts: 3
+           command: >-
+             time forge test --match-contract TestProposalCalldataGeneration 
              -vvv --ffi --block-gas-limit 10000000000
+

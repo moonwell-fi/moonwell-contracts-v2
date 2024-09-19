@@ -3,9 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 import "@forge-std/StdJson.sol";
+
+import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+
 import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
-
 import {MToken} from "@protocol/MToken.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
@@ -22,6 +24,7 @@ import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
+    using SafeCast for *;
     using String for string;
     using stdJson for string;
     using ChainIds for uint256;
@@ -576,7 +579,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                         "_updateSupplySpeed(address,address,uint256)",
                         addresses.getAddress(setRewardSpeed.market),
                         addresses.getAddress(setRewardSpeed.emissionToken),
-                        setRewardSpeed.newSupplySpeed
+                        setRewardSpeed.newSupplySpeed.toUint256()
                     ),
                     string(
                         abi.encodePacked(
@@ -598,7 +601,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                         "_updateBorrowSpeed(address,address,uint256)",
                         addresses.getAddress(setRewardSpeed.market),
                         addresses.getAddress(setRewardSpeed.emissionToken),
-                        setRewardSpeed.newBorrowSpeed
+                        setRewardSpeed.newBorrowSpeed.toUint256()
                     ),
                     string(
                         abi.encodePacked(
@@ -641,7 +644,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 addresses.getAddress("STK_GOVTOKEN"),
                 abi.encodeWithSignature(
                     "configureAsset(uint128,address)",
-                    spec.stkWellEmissionsPerSecond,
+                    spec.stkWellEmissionsPerSecond.toUint256().toUint128(),
                     addresses.getAddress("STK_GOVTOKEN")
                 ),
                 string(

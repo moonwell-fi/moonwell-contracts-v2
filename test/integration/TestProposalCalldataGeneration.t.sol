@@ -92,8 +92,6 @@ contract TestProposalCalldataGeneration is ProposalMap {
                 );
             }
 
-            proposal.printProposalActionSteps();
-
             assertEq(
                 hash,
                 onchainHash,
