@@ -104,8 +104,8 @@ contract ProposalMap is Test {
         uint256 count = 0;
         for (uint256 i = 0; i < proposals.length; i++) {
             if (
-                bytes32(bytes(proposals[i].governor)) ==
-                bytes32(bytes(governor))
+                keccak256(abi.encodePacked(proposals[i].governor)) ==
+                keccak256(abi.encodePacked(governor))
             ) {
                 count++;
             }
@@ -115,8 +115,8 @@ contract ProposalMap is Test {
         uint256 index = 0;
         for (uint256 i = 0; i < proposals.length; i++) {
             if (
-                bytes32(bytes(proposals[i].governor)) ==
-                bytes32(bytes(governor))
+                keccak256(abi.encodePacked(proposals[i].governor)) ==
+                keccak256(abi.encodePacked(governor))
             ) {
                 _proposals[index] = proposals[i];
                 index++;
