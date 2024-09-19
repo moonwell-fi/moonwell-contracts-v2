@@ -44,7 +44,7 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         /// to blocks too far in the past will cause the test to fail due to the rpc provider
         /// updating this value to the current block number means tests will fail if the eth
         /// price changes, so those will need to be updated too.
-        vm.rollFork(202629125);
+        vm.rollFork(255158645);
     }
 
     function testSetup() public view {

@@ -23,4 +23,5 @@ jobs:
         with:
            timeout_minutes: 10
            max_attempts: 3
-           command: time forge test --match-contract ArbitrumTest --fork-url arbitrum
+           command: time forge test --match-contract ArbitrumTest --fork-url
+                    arbitrum -vvvvv
