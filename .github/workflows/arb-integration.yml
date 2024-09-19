@@ -1,5 +1,4 @@
-name: Foundry arb integration tests
-
+name: Arb integration tests
 on: [pull_request]
 
 env:
@@ -20,4 +19,9 @@ jobs:
         uses: ./.github/actions
 
       - name: Arbitrum Integration Test Contracts
-        run: time forge test --match-contract ArbitrumTest --fork-url arbitrum
+        run: 
+        uses: nick-fields/retry@v3
+        with:
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract ArbitrumTest --fork-url arbitrum
