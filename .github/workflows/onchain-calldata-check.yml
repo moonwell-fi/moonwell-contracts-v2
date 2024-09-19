@@ -26,6 +26,7 @@ jobs:
         with:
            timeout_minutes: 20
            max_attempts: 3
-           command: time forge test --match-contract TestProposalCalldataGeneration \
-                    -vvv --ffi --block-gas-limit 10000000000
+           command: >-
+             time forge test --match-contract TestProposalCalldataGeneration 
+             -vvv --ffi --block-gas-limit 10000000000
 
