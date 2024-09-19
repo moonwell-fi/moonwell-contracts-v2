@@ -22,8 +22,6 @@ contract mipb14 is HybridProposal, Configs, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-b14/mip-b14.md")
         );
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 74;
     }
 
     function primaryForkId() public pure override returns (uint256) {

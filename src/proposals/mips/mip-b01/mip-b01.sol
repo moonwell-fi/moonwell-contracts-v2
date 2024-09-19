@@ -22,7 +22,6 @@ contract mipb01 is HybridProposal, Configs {
             bytes(vm.readFile("./src/proposals/mips/mip-b01/MIP-B01.md"))
         );
 
-        onchainProposalId = 41;
         nonce = 2;
     }
 

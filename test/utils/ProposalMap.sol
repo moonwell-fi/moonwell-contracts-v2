@@ -12,8 +12,10 @@ contract ProposalMap is Test {
 
     struct ProposalFields {
         string envPath;
+        string governor;
         uint256 id;
         string path;
+        string proposalType;
     }
 
     ProposalFields[] public proposals;
@@ -50,8 +52,10 @@ contract ProposalMap is Test {
         proposals.push();
 
         proposals[index].envPath = proposal.envPath;
-        proposals[index].path = proposal.path;
+        proposals[index].governor = proposal.governor;
         proposals[index].id = proposal.id;
+        proposals[index].path = proposal.path;
+        proposals[index].proposalType = proposal.proposalType;
 
         proposalIdToIndex[proposal.id] = index;
         proposalPathToIndex[proposal.path] = index;
@@ -94,6 +98,63 @@ contract ProposalMap is Test {
         }
     }
 
+    function filterByGovernor(
+        string memory governor
+    ) public view returns (ProposalFields[] memory _proposals) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (
+                keccak256(abi.encodePacked(proposals[i].governor)) ==
+                keccak256(abi.encodePacked(governor))
+            ) {
+                count++;
+            }
+        }
+
+        _proposals = new ProposalFields[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (
+                keccak256(abi.encodePacked(proposals[i].governor)) ==
+                keccak256(abi.encodePacked(governor))
+            ) {
+                _proposals[index] = proposals[i];
+                index++;
+            }
+        }
+    }
+
+    function filterByGovernorAndProposalType(
+        string memory governor,
+        string memory proposalType
+    ) public view returns (ProposalFields[] memory _proposals) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (
+                keccak256(abi.encodePacked(proposals[i].governor)) ==
+                keccak256(abi.encodePacked(governor)) &&
+                keccak256(abi.encodePacked(proposals[i].proposalType)) ==
+                keccak256(abi.encodePacked(proposalType))
+            ) {
+                count++;
+            }
+        }
+
+        _proposals = new ProposalFields[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < proposals.length; i++) {
+            if (
+                keccak256(abi.encodePacked(proposals[i].governor)) ==
+                keccak256(abi.encodePacked(governor)) &&
+                keccak256(abi.encodePacked(proposals[i].proposalType)) ==
+                keccak256(abi.encodePacked(proposalType))
+            ) {
+                _proposals[index] = proposals[i];
+                index++;
+            }
+        }
+    }
+
     // function to execute shell file to set env variables
     function executeShellFile(string memory shellPath) public {
         if (bytes32(bytes(shellPath)) != bytes32("")) {
@@ -123,6 +184,7 @@ contract ProposalMap is Test {
         vm.selectFork(proposal.primaryForkId());
 
         address deployer = address(proposal);
+        proposal.initProposal(addresses);
         proposal.deploy(addresses, deployer);
         proposal.afterDeploy(addresses, deployer);
         proposal.preBuildMock(addresses);

@@ -29,8 +29,6 @@ contract mipm29 is HybridProposal, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-m29/MIP-M29.md")
         );
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 15;
     }
 
     function primaryForkId() public pure override returns (uint256) {

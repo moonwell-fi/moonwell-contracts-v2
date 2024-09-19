@@ -28,8 +28,6 @@ contract mipb09 is HybridProposal, Configs {
             vm.readFile("./src/proposals/mips/mip-b09/MIP-B09.md")
         );
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 59;
     }
 
     function primaryForkId() public pure override returns (uint256) {

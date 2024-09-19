@@ -340,7 +340,7 @@ contract mipb28 is HybridProposal, Configs {
                 );
 
                 _pushAction(
-                    addresses.getAddress("MARKET_ADD_CHECKER"),
+                    addresses.getAddress("DEPRECATED_MARKET_ADD_CHECKER"),
                     abi.encodeWithSignature(
                         "checkMarketAdd(address)",
                         cTokenAddress

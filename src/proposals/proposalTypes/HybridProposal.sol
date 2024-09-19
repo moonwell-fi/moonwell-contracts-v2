@@ -470,51 +470,6 @@ abstract contract HybridProposal is
         vm.warp(blockTimestamp);
     }
 
-    /// @notice search for a on-chain proposal that matches the proposal calldata
-    /// @param addresses the addresses contract
-    /// @param governor the governor address
-    /// @return proposalId the proposal id, 0 if no proposal is found
-    function getProposalId(
-        Addresses addresses,
-        address governor
-    ) public override returns (uint256 proposalId) {
-        vm.selectFork(MOONBEAM_FORK_ID);
-
-        uint256 proposalCount = onchainProposalId != 0
-            ? onchainProposalId
-            : MultichainGovernor(payable(governor)).proposalCount();
-        bytes memory proposalCalldata = getCalldata(addresses);
-
-        // Loop through all proposals to find the one that matches
-        // Start from the latest proposal as it is more likely to be the one
-        while (proposalCount > 0) {
-            (
-                address[] memory targets,
-                uint256[] memory values,
-                bytes[] memory calldatas
-            ) = MultichainGovernor(payable(governor)).getProposalData(
-                    proposalCount
-                );
-
-            bytes memory onchainCalldata = abi.encodeWithSignature(
-                "propose(address[],uint256[],bytes[],string)",
-                targets,
-                values,
-                calldatas,
-                PROPOSAL_DESCRIPTION
-            );
-
-            if (keccak256(proposalCalldata) == keccak256(onchainCalldata)) {
-                proposalId = proposalCount;
-                break;
-            }
-
-            proposalCount--;
-        }
-
-        vm.selectFork(primaryForkId());
-    }
-
     /// @notice Runs the proposal on moonbeam, verifying the actions through the hook
     /// @param addresses the addresses contract
     /// @param caller the proposer address

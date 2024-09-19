@@ -31,8 +31,6 @@ contract mipm27 is HybridProposal, ParameterValidation {
             vm.readFile("./src/proposals/mips/mip-m27/MIP-M27.md")
         );
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 13;
     }
 
     function primaryForkId() public pure override returns (uint256) {
