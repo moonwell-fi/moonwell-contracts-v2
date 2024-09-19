@@ -39,17 +39,20 @@ contract CalldataPrinting is Script {
 
         for (uint256 i = 0; i < devProposals.length; i++) {
             string memory devProposal = devProposals[i].path;
+            string memory envPath = devProposals[i].envPath;
 
             for (uint256 j = 0; j < changedFilesArray.length; j++) {
                 if (
-                    bytes32(bytes(changedFilesArray[j])) ==
-                    bytes32(bytes(devProposal))
+                    keccak256(abi.encodePacked(changedFilesArray[j])) ==
+                    keccak256(abi.encodePacked(devProposal)) ||
+                    keccak256(abi.encodePacked(changedFilesArray[j])) ==
+                    keccak256(abi.encodePacked(envPath))
                 ) {
                     console.log(
                         "\n\n=================== PROPOSAL START ==================\n",
                         devProposal
                     );
-                    proposalMap.executeShellFile(devProposals[i].envPath);
+                    proposalMap.executeShellFile(envPath);
                     Proposal proposal = proposalMap.runProposal(
                         addresses,
                         devProposal
