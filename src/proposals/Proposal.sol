@@ -21,12 +21,6 @@ abstract contract Proposal is Script, Test {
     bool private DO_VALIDATE;
     bool private DO_PRINT;
 
-    bool public isDeprecatedGovernor;
-
-    /// @notice onchain proposal id for the proposal
-    /// returns 0 if proposal has no onchain id. must be set in the proposal
-    uint256 public onchainProposalId;
-
     modifier mockHook(Addresses addresses) {
         beforeSimulationHook(addresses);
         _;
@@ -106,13 +100,6 @@ abstract contract Proposal is Script, Test {
     function beforeSimulationHook(Addresses) public virtual {}
 
     function afterSimulationHook(Addresses) public virtual {}
-
-    // @notice search for a on-chain proposal that matches the proposal calldata
-    // @returns the proposal id, 0 if no proposal is found
-    function getProposalId(
-        Addresses,
-        address
-    ) public virtual returns (uint256 proposalId);
 
     /// @notice initialize the proposal after the proposal is created and the
     /// live fork is selected

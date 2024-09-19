@@ -68,7 +68,6 @@ contract mipb00 is HybridProposal, Configs {
         );
         _setProposalDescription(proposalDescription);
 
-        onchainProposalId = 39;
         nonce = 2;
     }
 

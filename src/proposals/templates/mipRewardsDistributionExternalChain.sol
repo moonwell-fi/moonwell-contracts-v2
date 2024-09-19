@@ -3,9 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 import "@forge-std/StdJson.sol";
+
+import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+
 import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
-
 import {MToken} from "@protocol/MToken.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
@@ -21,13 +23,8 @@ import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-interface StellaSwapRewarder {
-    function poolRewardsPerSec(uint256 _pid) external view returns (uint256);
-
-    function currentEndTimestamp(uint256 _pid) external view returns (uint256);
-}
-
 contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
+    using SafeCast for *;
     using String for string;
     using stdJson for string;
     using ChainIds for uint256;
@@ -51,9 +48,9 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
     struct SetMRDRewardSpeed {
         string emissionToken;
         string market;
-        uint256 newBorrowSpeed;
+        int256 newBorrowSpeed;
         uint256 newEndTime;
-        uint256 newSupplySpeed;
+        int256 newSupplySpeed;
     }
 
     struct JsonSpecMoonbeam {
@@ -63,7 +60,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
     struct JsonSpecExternalChain {
         SetMRDRewardSpeed[] setRewardSpeed;
-        uint256 stkWellEmissionsPerSecond;
+        int256 stkWellEmissionsPerSecond;
         TransferFrom[] transferFroms;
     }
 
@@ -214,23 +211,25 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             (JsonSpecExternalChain)
         );
 
-        assertGe(
-            spec.stkWellEmissionsPerSecond,
-            0,
-            "stkWellEmissionsPerSecond must be greater than 0"
-        );
+        if (spec.stkWellEmissionsPerSecond != -1) {
+            assertGe(
+                spec.stkWellEmissionsPerSecond,
+                0,
+                "stkWellEmissionsPerSecond must be greater than 0"
+            );
 
-        assertLe(
-            spec.stkWellEmissionsPerSecond,
-            5e18,
-            "stkWellEmissionsPerSecond must be less than 1e18"
-        );
+            assertLe(
+                spec.stkWellEmissionsPerSecond,
+                5e18,
+                "stkWellEmissionsPerSecond must be less than 1e18"
+            );
+        }
 
         externalChainActions[_chainId].stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
-        uint256 totalWellEpochRewards = 0;
-        uint256 totalOpEpochRewards = 0;
+        int256 totalWellEpochRewards = 0;
+        int256 totalOpEpochRewards = 0;
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             // check for duplications
@@ -257,21 +256,23 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 );
             }
 
-            assertGe(
-                spec.setRewardSpeed[i].newBorrowSpeed,
-                1,
-                "Borrow speed must be greater or equal to 1"
-            );
+            if (spec.setRewardSpeed[i].newBorrowSpeed != -1) {
+                assertGe(
+                    spec.setRewardSpeed[i].newBorrowSpeed,
+                    1,
+                    "Borrow speed must be greater or equal to 1"
+                );
+            }
 
             if (
                 addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
                 addresses.getAddress("xWELL_PROXY")
             ) {
-                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+                int256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
+                    int256(spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
-                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+                int256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                    int256(spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
                 totalWellEpochRewards += supplyAmount + borrowAmount;
             }
@@ -282,11 +283,11 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
                 addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
             ) {
-                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+                int256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
+                    int256(spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
-                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-                    (spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+                int256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                    int256(spec.setRewardSpeed[i].newEndTime - startTimeStamp);
 
                 totalOpEpochRewards += supplyAmount + borrowAmount;
             }
@@ -306,7 +307,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 addresses.getAddress("xWELL_PROXY")
             ) {
                 assertApproxEqRel(
-                    spec.transferFroms[i].amount,
+                    int256(spec.transferFroms[i].amount),
                     totalWellEpochRewards,
                     0.1e18,
                     "Transfer amount must be close to the total rewards for the epoch"
@@ -327,7 +328,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
             ) {
                 assertApproxEqRel(
-                    spec.transferFroms[i].amount,
+                    int256(spec.transferFroms[i].amount),
                     totalOpEpochRewards,
                     0.01e18,
                     "Transfer amount must be close to the total rewards for the epoch"
@@ -377,9 +378,9 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
             ) {
                 assertApproxEqAbs(
-                    spec.transferFroms[i].amount,
+                    int256(spec.transferFroms[i].amount),
                     spec.stkWellEmissionsPerSecond *
-                        (endTimeStamp - startTimeStamp),
+                        int256(endTimeStamp - startTimeStamp),
                     1e18,
                     "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
                 );
@@ -571,17 +572,14 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 );
 
             // only update if the values are different or the configuration exists
-            if (
-                emissionConfig.supplyEmissionsPerSec !=
-                setRewardSpeed.newSupplySpeed
-            ) {
+            if (setRewardSpeed.newSupplySpeed != -1) {
                 _pushAction(
                     mrd,
                     abi.encodeWithSignature(
                         "_updateSupplySpeed(address,address,uint256)",
                         addresses.getAddress(setRewardSpeed.market),
                         addresses.getAddress(setRewardSpeed.emissionToken),
-                        setRewardSpeed.newSupplySpeed
+                        setRewardSpeed.newSupplySpeed.toUint256()
                     ),
                     string(
                         abi.encodePacked(
@@ -596,17 +594,14 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 );
             }
 
-            if (
-                emissionConfig.borrowEmissionsPerSec !=
-                setRewardSpeed.newBorrowSpeed
-            ) {
+            if (setRewardSpeed.newBorrowSpeed != -1) {
                 _pushAction(
                     mrd,
                     abi.encodeWithSignature(
                         "_updateBorrowSpeed(address,address,uint256)",
                         addresses.getAddress(setRewardSpeed.market),
                         addresses.getAddress(setRewardSpeed.emissionToken),
-                        setRewardSpeed.newBorrowSpeed
+                        setRewardSpeed.newBorrowSpeed.toUint256()
                     ),
                     string(
                         abi.encodePacked(
@@ -622,13 +617,6 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             }
 
             if (emissionConfig.endTime > 0) {
-                // new end time must be greater than the current end time
-                assertGt(
-                    setRewardSpeed.newEndTime,
-                    emissionConfig.endTime,
-                    "New end time must be greater than the current end time"
-                );
-
                 _pushAction(
                     mrd,
                     abi.encodeWithSignature(
@@ -651,22 +639,24 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
             }
         }
 
-        _pushAction(
-            addresses.getAddress("STK_GOVTOKEN"),
-            abi.encodeWithSignature(
-                "configureAsset(uint128,address)",
-                spec.stkWellEmissionsPerSecond,
-                addresses.getAddress("STK_GOVTOKEN")
-            ),
-            string(
-                abi.encodePacked(
-                    "Set reward speed to ",
-                    vm.toString(spec.stkWellEmissionsPerSecond),
-                    " for the Safety Module on ",
-                    _chainId.chainIdToName()
+        if (spec.stkWellEmissionsPerSecond != -1) {
+            _pushAction(
+                addresses.getAddress("STK_GOVTOKEN"),
+                abi.encodeWithSignature(
+                    "configureAsset(uint128,address)",
+                    spec.stkWellEmissionsPerSecond.toUint256().toUint128(),
+                    addresses.getAddress("STK_GOVTOKEN")
+                ),
+                string(
+                    abi.encodePacked(
+                        "Set reward speed to ",
+                        vm.toString(spec.stkWellEmissionsPerSecond),
+                        " for the Safety Module on ",
+                        _chainId.chainIdToName()
+                    )
                 )
-            )
-        );
+            );
+        }
     }
 
     function _validateMoonbeam(Addresses addresses) private {
@@ -802,7 +792,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                 addresses.getAddress("STK_GOVTOKEN")
             );
             assertEq(
-                emissionsPerSecond,
+                int256(emissionsPerSecond),
                 spec.stkWellEmissionsPerSecond,
                 "Emissions per second for the Safety Module is incorrect"
             );
@@ -831,7 +821,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                         setRewardSpeed.market
                     );
                     assertEq(
-                        _config.supplyEmissionsPerSec,
+                        int256(_config.supplyEmissionsPerSec),
                         setRewardSpeed.newSupplySpeed,
                         string(
                             abi.encodePacked(
@@ -842,7 +832,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
                         )
                     );
                     assertEq(
-                        _config.borrowEmissionsPerSec,
+                        int256(_config.borrowEmissionsPerSec),
                         setRewardSpeed.newBorrowSpeed,
                         string(
                             abi.encodePacked(

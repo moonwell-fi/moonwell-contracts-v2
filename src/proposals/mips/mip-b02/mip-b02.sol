@@ -37,7 +37,6 @@ contract mipb02 is HybridProposal, Configs {
 
         _setProposalDescription(proposalDescription);
 
-        onchainProposalId = 42;
         nonce = 2;
     }
 

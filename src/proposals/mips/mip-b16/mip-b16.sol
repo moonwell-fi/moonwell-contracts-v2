@@ -37,8 +37,6 @@ contract mipb16 is
         );
 
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 5;
     }
 
     function primaryForkId() public pure override returns (uint256) {

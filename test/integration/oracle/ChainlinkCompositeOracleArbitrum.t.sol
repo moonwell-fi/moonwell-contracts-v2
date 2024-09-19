@@ -25,13 +25,13 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         0xa668682974E3f121185a3cD94f00322beC674275;
 
     /// @notice expected wsteth/usd price
-    uint256 public constant expectedwstEthUsdPrice = 3614882813449691700118;
+    uint256 public constant expectedwstEthUsdPrice = 2860461528718925441033;
 
     /// @notice expected steth/usd price
-    uint256 public constant expectedStethUsdPrice = 3105417811919294597070;
+    uint256 public constant expectedStethUsdPrice = 2425549600420448180829;
 
     /// @notice expected cbeth/usd price
-    uint256 public constant expectedcbEthUsdPrice = 3308361417282418265307;
+    uint256 public constant expectedcbEthUsdPrice = 2617810961300474575309;
 
     function setUp() public {
         oracle = new ChainlinkCompositeOracle(
@@ -44,7 +44,7 @@ contract ChainlinkCompositeOracleArbitrumTest is Test {
         /// to blocks too far in the past will cause the test to fail due to the rpc provider
         /// updating this value to the current block number means tests will fail if the eth
         /// price changes, so those will need to be updated too.
-        vm.rollFork(202629125);
+        vm.rollFork(255158645);
     }
 
     function testSetup() public view {

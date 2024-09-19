@@ -73,7 +73,11 @@ jobs:
             }
 
       - name: Run Calldata Printing
-        run: bin/run-calldata-printing.sh
+        uses: nick-fields/retry@v3
+        with:
+           timeout_minutes: 10
+           max_attempts: 3
+           command: bin/run-calldata-printing.sh
 
       - name: Comment PR with Calldata Printing Output
         uses: actions/github-script@v6

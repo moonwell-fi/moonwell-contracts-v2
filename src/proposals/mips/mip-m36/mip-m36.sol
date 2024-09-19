@@ -10,16 +10,15 @@ import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-/// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
-/// src/proposals/mips/mip-m33/mip-m33.sol:mipm33
-contract mipm33 is HybridProposal, ParameterValidation {
+contract mipm36 is HybridProposal, ParameterValidation {
     using ProposalActions for *;
 
-    string public constant override name = "MIP-M33";
+    string public constant override name = "MIP-M36";
 
+    uint256 public constant NEW_MFRAX_RESERVE_FACTOR = 0.3e18;
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m33/MIP-M33.md")
+            vm.readFile("./src/proposals/mips/mip-m36/MIP-M36.md")
         );
         _setProposalDescription(proposalDescription);
     }
@@ -36,12 +35,12 @@ contract mipm33 is HybridProposal, ParameterValidation {
     function build(Addresses addresses) public override {
         /// Moonbeam actions
         _pushAction(
-            addresses.getAddress("MOONWELL_mWBTC"),
+            addresses.getAddress("mFRAX"),
             abi.encodeWithSignature(
-                "_setInterestRateModel(address)",
-                addresses.getAddress("JUMP_RATE_IRM_mWBTCwh")
+                "_setReserveFactor(uint256)",
+                NEW_MFRAX_RESERVE_FACTOR
             ),
-            "Set interest rate model for mWBTCwh to updated rate model",
+            "Set reserve factor for mFRAX to updated reserve factor",
             ActionType.Moonbeam
         );
     }
@@ -50,12 +49,12 @@ contract mipm33 is HybridProposal, ParameterValidation {
         /// safety check to ensure no base actions are run
         require(
             actions.proposalActionTypeCount(ActionType.Base) == 0,
-            "MIP-M33: should have no base actions"
+            "MIP-M36: should have no base actions"
         );
 
         require(
             actions.proposalActionTypeCount(ActionType.Moonbeam) == 1,
-            "MIP-M33: should have moonbeam actions"
+            "MIP-M36: should have moonbeam actions"
         );
 
         /// only run actions on moonbeam
@@ -63,15 +62,6 @@ contract mipm33 is HybridProposal, ParameterValidation {
     }
 
     function validate(Addresses addresses, address) public view override {
-        _validateJRM(
-            addresses.getAddress("JUMP_RATE_IRM_mWBTCwh"),
-            addresses.getAddress("MOONWELL_mWBTC"),
-            IRParams({
-                baseRatePerTimestamp: 0.02e18,
-                kink: 0.45e18,
-                multiplierPerTimestamp: 0.187e18,
-                jumpMultiplierPerTimestamp: 3e18
-            })
-        );
+        _validateRF(addresses.getAddress("mFRAX"), NEW_MFRAX_RESERVE_FACTOR);
     }
 }

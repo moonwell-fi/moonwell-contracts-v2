@@ -32,8 +32,6 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
             vm.readFile("./src/proposals/mips/mip-m24/MIP-M24.md")
         );
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 1;
     }
 
     function primaryForkId() public pure override returns (uint256) {

@@ -16,9 +16,6 @@ contract mipm16 is GovernanceProposal {
             vm.readFile("./src/proposals/mips/mip-m16/MIP-M16.md")
         );
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 70;
-        isDeprecatedGovernor = true;
     }
 
     function primaryForkId() public pure override returns (uint256) {

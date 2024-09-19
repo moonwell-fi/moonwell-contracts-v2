@@ -1,4 +1,4 @@
-name: Foundry multichain integration tests
+name: Multichain Integration Tests
 
 on: [pull_request]
 
@@ -22,4 +22,8 @@ jobs:
         uses: ./.github/actions
 
       - name: Integration Test Proposals Multichain
-        run: time forge test --match-contract MultichainProposalTest -vvv --ffi
+        uses: nick-fields/retry@v3
+        with:
+           timeout_minutes: 15
+           max_attempts: 3
+           command: time forge test --match-contract MultichainProposalTest -vvv --ffi

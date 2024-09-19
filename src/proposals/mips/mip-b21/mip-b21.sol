@@ -31,8 +31,6 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
         );
 
         _setProposalDescription(proposalDescription);
-
-        onchainProposalId = 21;
     }
 
     function primaryForkId() public pure override returns (uint256) {

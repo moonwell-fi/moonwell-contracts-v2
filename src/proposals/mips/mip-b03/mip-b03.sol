@@ -55,7 +55,6 @@ contract mip03 is HybridProposal, Configs {
 
         _setProposalDescription(proposalDescription);
 
-        onchainProposalId = 43;
         nonce = 4;
     }
 

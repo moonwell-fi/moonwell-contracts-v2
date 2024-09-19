@@ -25,7 +25,7 @@
             {
                 "emissionToken": "OP",
                 "market": "MOONWELL_WBTC",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1728012600,
                 "newSupplySpeed": 481543232059018
             },
@@ -46,7 +46,7 @@
             {
                 "emissionToken": "OP",
                 "market": "MOONWELL_cbETH",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1728012600,
                 "newSupplySpeed": 2759192057778
             },
@@ -73,13 +73,13 @@
             },
             {
                 "emissionToken": "OP",
-                "market": "MOONWELL_VELO",
+                "market": "DEPRECATED_MOONWELL_VELO",
                 "newBorrowSpeed": 75360889017964,
                 "newEndTime": 1728012600,
                 "newSupplySpeed": 61658909196516
             }
         ],
-        "stkWellEmissionsPerSecond": 83891475694133020,
+        "stkWellEmissionsPerSecond": -1,
         "transferFrom": [
             {
                 "amount": 1.704380817042e22,

@@ -1,4 +1,4 @@
-name: Foundry moonbeam integration tests
+name: Moonbeam Integration Tests
 
 on: [pull_request]
 
@@ -21,4 +21,8 @@ jobs:
         uses: ./.github/actions
 
       - name: Integration Tests Moonbeam Mainnet
-        run: time forge test --match-contract MoonbeamTest --fork-url moonbeam -vvv
+        uses: nick-fields/retry@v3
+        with:
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract MoonbeamTest --fork-url moonbeam -vvv

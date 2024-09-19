@@ -2,16 +2,18 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
-
 import {console} from "@forge-std/console.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
+
+import {ProposalMap} from "@test/utils/ProposalMap.sol";
 import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {GovernanceProposal} from "@proposals/proposalTypes/GovernanceProposal.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
+import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
-contract TestProposalCalldataGeneration is Test {
+contract TestProposalCalldataGeneration is ProposalMap {
     Addresses public addresses;
 
     MultichainGovernor public governor;
@@ -41,134 +43,203 @@ contract TestProposalCalldataGeneration is Test {
         );
     }
 
-    function testProposalToolingCalldataGeneration() public {
-        // find hybrid proposals matches
+    function testMultichainGovernorCalldataMatch() public {
+        ProposalFields[]
+            memory multichainGovernorProposals = filterByGovernorAndProposalType(
+                "MultichainGovernor",
+                "HybridProposal"
+            );
+        for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
+            // exclude proposals that are not onchain yet
+            if (multichainGovernorProposals[i - 1].id == 0) {
+                continue;
+            }
 
-        string[] memory inputs = new string[](2);
-        inputs[0] = "bin/get-proposals-by-type.sh";
-        inputs[1] = "HybridProposal";
-        string memory output = string(vm.ffi(inputs));
-        // create array splitting the output string
-        string[] memory proposalsPath = vm.split(output, "\n");
-        for (uint256 i = proposalsPath.length; i > 0; i--) {
-            address proposal = deployCode(proposalsPath[i - 1]);
-            if (proposal == address(0)) {
-                continue;
-            }
-            vm.makePersistent(proposal);
-            HybridProposal proposalContract = HybridProposal(proposal);
-            uint256 proposalId = proposalContract.onchainProposalId();
-            // is id is not set it means the proposal is not onchain yet
-            if (proposalId == 0) {
-                continue;
-            }
-            vm.selectFork(uint256(proposalContract.primaryForkId()));
-            proposalContract.build(addresses);
-            // get proposal actions
+            executeShellFile(multichainGovernorProposals[i - 1].envPath);
+
+            string memory proposalPath = multichainGovernorProposals[i - 1]
+                .path;
+
+            HybridProposal proposal = HybridProposal(deployCode(proposalPath));
+            vm.makePersistent(address(proposal));
+
+            vm.selectFork(proposal.primaryForkId());
+
+            proposal.initProposal(addresses);
+            proposal.build(addresses);
+
             (
                 address[] memory targets,
                 uint256[] memory values,
                 bytes[] memory calldatas
-            ) = proposalContract.getTargetsPayloadsValues(addresses);
+            ) = proposal.getTargetsPayloadsValues(addresses);
             bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
-            address[] memory onchainTargets = new address[](targets.length);
-            uint256[] memory onchainValues = new uint256[](values.length);
-            bytes[] memory onchainCalldatas = new bytes[](calldatas.length);
+
             vm.selectFork(MOONBEAM_FORK_ID);
-            (onchainTargets, onchainValues, onchainCalldatas) = governor
-                .getProposalData(proposalId);
-            bytes32 onchainHash = keccak256(
-                abi.encode(onchainTargets, onchainValues, onchainCalldatas)
-            );
-            if (hash != onchainHash) {
+
+            bytes32 onchainHash;
+            {
                 (
-                    onchainTargets,
-                    onchainValues,
-                    ,
-                    onchainCalldatas
-                ) = MoonwellArtemisGovernor(artemisGovernor).getActions(
-                    proposalId
-                );
+                    address[] memory onchainTargets,
+                    uint256[] memory onchainValues,
+                    bytes[] memory onchainCalldatas
+                ) = governor.getProposalData(
+                        multichainGovernorProposals[i - 1].id
+                    );
+
                 onchainHash = keccak256(
                     abi.encode(onchainTargets, onchainValues, onchainCalldatas)
                 );
             }
-            assertEq(hash, onchainHash, "Hashes do not match");
-            console.log(
-                "Found onchain calldata for proposal: ",
-                proposalContract.name()
-            );
-        }
-    }
-
-    function testProposalToolingArtemisGovernorCalldataMatch() public {
-        string[] memory inputs = new string[](2);
-        inputs[0] = "bin/get-proposals-by-type.sh";
-        inputs[1] = "GovernanceProposal";
-
-        string memory output = string(vm.ffi(inputs));
-
-        // create array splitting the output string
-        string[] memory proposalsPath = vm.split(output, "\n");
-
-        for (uint256 i = proposalsPath.length; i > 0; i--) {
-            address proposal = deployCode(proposalsPath[i - 1]);
-            if (proposal == address(0)) {
-                continue;
-            }
-
-            vm.makePersistent(proposal);
-
-            GovernanceProposal proposalContract = GovernanceProposal(proposal);
-
-            uint256 proposalId = proposalContract.onchainProposalId();
-
-            // is id is not set it means the proposal is not onchain yet
-            if (proposalId == 0) {
-                continue;
-            }
-
-            vm.selectFork(uint256(proposalContract.primaryForkId()));
-            proposalContract.build(addresses);
-
-            vm.selectFork(MOONBEAM_FORK_ID);
-
-            // get proposal actions
-            (
-                address[] memory targets,
-                uint256[] memory values,
-                ,
-                bytes[] memory calldatas
-            ) = proposalContract._getActions();
-
-            bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
-
-            vm.selectFork(MOONBEAM_FORK_ID);
-
-            (
-                address[] memory onchainTargets,
-                uint256[] memory onchainValues,
-                ,
-                bytes[] memory onchainCalldatas
-            ) = MoonwellArtemisGovernor(artemisGovernor).getActions(proposalId);
-
-            bytes32 onchainHash = keccak256(
-                abi.encode(onchainTargets, onchainValues, onchainCalldatas)
-            );
 
             assertEq(
                 hash,
                 onchainHash,
                 string(
                     abi.encodePacked(
-                        "Hashes do not match for proposal: ",
-                        proposalContract.name()
+                        "Hashes do not match for proposal ",
+                        vm.toString(multichainGovernorProposals[i - 1].id)
                     )
                 )
             );
             console.log(
                 "Found onchain calldata for proposal: ",
-                proposalContract.name()
+                proposal.name()
+            );
+        }
+    }
+
+    function testArtemisGovernorCalldataMatchHybridProposal() public {
+        ProposalFields[]
+            memory artemisGovernorProposals = filterByGovernorAndProposalType(
+                "ArtemisGovernor",
+                "HybridProposal"
+            );
+        for (uint256 i = artemisGovernorProposals.length; i > 0; i--) {
+            // exclude proposals that are not onchain yet
+            if (artemisGovernorProposals[i - 1].id == 0) {
+                continue;
+            }
+
+            executeShellFile(artemisGovernorProposals[i - 1].envPath);
+
+            string memory proposalPath = artemisGovernorProposals[i - 1].path;
+
+            HybridProposal proposal = HybridProposal(deployCode(proposalPath));
+            vm.makePersistent(address(proposal));
+
+            vm.selectFork(proposal.primaryForkId());
+
+            proposal.initProposal(addresses);
+            proposal.build(addresses);
+
+            (
+                address[] memory targets,
+                uint256[] memory values,
+                bytes[] memory calldatas
+            ) = proposal.getTargetsPayloadsValues(addresses);
+            bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
+
+            vm.selectFork(MOONBEAM_FORK_ID);
+
+            bytes32 onchainHash;
+            {
+                (
+                    address[] memory onchainTargets,
+                    uint256[] memory onchainValues,
+                    ,
+                    bytes[] memory onchainCalldatas
+                ) = artemisGovernor.getActions(
+                        artemisGovernorProposals[i - 1].id
+                    );
+
+                onchainHash = keccak256(
+                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
+                );
+            }
+
+            assertEq(
+                hash,
+                onchainHash,
+                string(
+                    abi.encodePacked(
+                        "Hashes do not match for proposal ",
+                        vm.toString(artemisGovernorProposals[i - 1].id)
+                    )
+                )
+            );
+            console.log(
+                "Found onchain calldata for proposal: ",
+                proposal.name()
+            );
+        }
+    }
+
+    function testArtemisGovernorCalldataMatchGovernanceProposal() public {
+        ProposalFields[]
+            memory artemisGovernorProposals = filterByGovernorAndProposalType(
+                "ArtemisGovernor",
+                "GovernanceProposal"
+            );
+        for (uint256 i = artemisGovernorProposals.length; i > 0; i--) {
+            // exclude proposals that are not onchain yet
+            if (artemisGovernorProposals[i - 1].id == 0) {
+                continue;
+            }
+
+            executeShellFile(artemisGovernorProposals[i - 1].envPath);
+
+            string memory proposalPath = artemisGovernorProposals[i - 1].path;
+
+            GovernanceProposal proposal = GovernanceProposal(
+                deployCode(proposalPath)
+            );
+            vm.makePersistent(address(proposal));
+
+            vm.selectFork(proposal.primaryForkId());
+
+            proposal.initProposal(addresses);
+            proposal.build(addresses);
+
+            (
+                address[] memory targets,
+                uint256[] memory values,
+                ,
+                bytes[] memory calldatas
+            ) = proposal._getActions();
+            bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
+
+            vm.selectFork(MOONBEAM_FORK_ID);
+
+            bytes32 onchainHash;
+            {
+                (
+                    address[] memory onchainTargets,
+                    uint256[] memory onchainValues,
+                    ,
+                    bytes[] memory onchainCalldatas
+                ) = artemisGovernor.getActions(
+                        artemisGovernorProposals[i - 1].id
+                    );
+
+                onchainHash = keccak256(
+                    abi.encode(onchainTargets, onchainValues, onchainCalldatas)
+                );
+            }
+
+            assertEq(
+                hash,
+                onchainHash,
+                string(
+                    abi.encodePacked(
+                        "Hashes do not match for proposal ",
+                        vm.toString(artemisGovernorProposals[i - 1].id)
+                    )
+                )
+            );
+            console.log(
+                "Found onchain calldata for proposal: ",
+                proposal.name()
             );
         }
     }

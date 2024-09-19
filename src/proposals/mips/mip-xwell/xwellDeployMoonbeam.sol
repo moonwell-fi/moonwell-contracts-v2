@@ -46,15 +46,6 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
         return MOONBEAM_FORK_ID;
     }
 
-    // @notice search for a on-chain proposal that matches the proposal calldata
-    // @returns the proposal id, 0 if no proposal is found
-    function getProposalId(
-        Addresses,
-        address
-    ) public pure override returns (uint256) {
-        revert("Not implemented");
-    }
-
     function deploy(Addresses addresses, address) public override {
         /// --------------------------------------------------
         /// --------------------------------------------------
