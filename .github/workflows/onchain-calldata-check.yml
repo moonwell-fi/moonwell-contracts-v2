@@ -22,6 +22,10 @@ jobs:
         uses: ./.github/actions
 
       - name: Run Test Proposal Calldata Generation
-        run: |
-             time forge test --match-contract TestProposalCalldataGeneration \
-             -vvv --ffi --block-gas-limit 10000000000
+        uses: nick-fields/retry@v3
+        with:
+           timeout_minutes: 20
+           max_attempts: 3
+           command: time forge test --match-contract TestProposalCalldataGeneration \
+                    -vvv --ffi --block-gas-limit 10000000000
+
