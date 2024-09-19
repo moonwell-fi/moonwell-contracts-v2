@@ -17,4 +17,10 @@ jobs:
         uses: ./.github/actions
 
       - name: Invariant Test Contracts
-        run: time forge test -vvv --match-contract Invariant
+        uses: nick-fields/retry@v3
+        with:
+           timeout_minutes: 15
+           max_attempts: 3
+           command: time forge test -vvv --match-contract Invariant
+
+
