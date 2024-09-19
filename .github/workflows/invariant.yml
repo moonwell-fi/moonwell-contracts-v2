@@ -1,4 +1,4 @@
-name: Foundry invariant tests
+name: Invariant Tests
 
 on: [pull_request]
 
