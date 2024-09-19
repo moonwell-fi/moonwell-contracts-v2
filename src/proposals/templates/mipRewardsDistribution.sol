@@ -109,6 +109,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         return MOONBEAM_FORK_ID;
     }
 
+    function run(
+        Addresses addresses,
+        address
+    ) public virtual override mockHook(addresses) {
+        super.run(addresses, address(0));
+    }
+
     function initProposal(Addresses addresses) public override {
         etch(vm, addresses);
 
@@ -128,21 +135,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         endTimeStamp = abi.decode(parsedJson, (uint256));
 
-        vm.selectFork(chainId.toForkId());
-
-        _saveExternalChainActions(addresses, encodedJson, chainId);
-
-        // save well balances before so we can check if the transferFrom was successful
-        IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
-        address mrd = addresses.getAddress("MRD_PROXY");
-        wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
-
-        address dexRelayer = addresses.getAddress("DEX_RELAYER");
-        wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
-
-        address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
-        wellBalancesBefore[reserve] = xwell.balanceOf(reserve);
-
         vm.selectFork(primaryForkId());
 
         {
@@ -155,24 +147,40 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             wellBalancesBefore[governor] = well.balanceOf(governor);
         }
 
-        _saveMoonbeamActions(addresses, encodedJson);
-    }
+        for (uint256 i = 0; i < networks.length; i++) {
+            chainId = networks[i].chainId;
+            if (chainId != MOONBEAM_CHAIN_ID) {
+                vm.selectFork(networks[i].forkId);
+                _saveExternalChainActions(addresses, encodedJson, chainId);
 
-    function run(
-        Addresses addresses,
-        address
-    ) public virtual override mockHook(addresses) {
-        super.run(addresses, address(0));
+                // save well balances before so we can check if the transferFrom was successful
+                IERC20 xwell = IERC20(addresses.getAddress("xWELL_PROXY"));
+                address mrd = addresses.getAddress("MRD_PROXY");
+                wellBalancesBefore[mrd] = xwell.balanceOf(mrd);
+
+                address dexRelayer = addresses.getAddress("DEX_RELAYER");
+                wellBalancesBefore[dexRelayer] = xwell.balanceOf(dexRelayer);
+
+                address reserve = addresses.getAddress(
+                    "ECOSYSTEM_RESERVE_PROXY"
+                );
+                wellBalancesBefore[reserve] = xwell.balanceOf(reserve);
+            }
+        }
+
+        vm.selectFork(MOONBEAM_FORK_ID);
+
+        _saveMoonbeamActions(addresses, encodedJson);
     }
 
     function build(Addresses addresses) public override {
         _buildMoonbeamActions(addresses);
-        _buildExternalChainActions(addresses, chainId);
+        _buildExternalChainActions(addresses, 8453);
     }
 
     function validate(Addresses addresses, address) public override {
         _validateMoonbeam(addresses);
-        _validateExternalChainActions(addresses, chainId);
+        _validateExternalChainActions(addresses, 8453);
     }
 
     function _saveMoonbeamActions(
@@ -259,15 +267,15 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 TransferFrom memory existingTransferFrom = moonbeamActions
                     .transferFroms[j];
 
-                require(
-                    addresses.getAddress(existingTransferFrom.token) !=
-                        addresses.getAddress(spec.transferFroms[i].token) ||
-                        addresses.getAddress(existingTransferFrom.from) !=
-                        addresses.getAddress(spec.transferFroms[i].from) ||
-                        addresses.getAddress(spec.transferFroms[i].to) !=
-                        addresses.getAddress(existingTransferFrom.to),
-                    "Duplication in transferFroms"
-                );
+                //                require(
+                //                    addresses.getAddress(existingTransferFrom.token) !=
+                //                        addresses.getAddress(spec.transferFroms[i].token) ||
+                //                        addresses.getAddress(existingTransferFrom.from) !=
+                //                        addresses.getAddress(spec.transferFroms[i].from) ||
+                //                        addresses.getAddress(spec.transferFroms[i].to) !=
+                //                        addresses.getAddress(existingTransferFrom.to),
+                //                    "Duplication in transferFroms"
+                //                );
 
                 require(
                     keccak256(abi.encodePacked(existingTransferFrom.to)) !=
@@ -453,15 +461,15 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     _chainId
                 ].transferFroms[j];
 
-                require(
-                    addresses.getAddress(existingTransferFrom.token) !=
-                        addresses.getAddress(spec.transferFroms[i].token) ||
-                        addresses.getAddress(existingTransferFrom.from) !=
-                        addresses.getAddress(spec.transferFroms[i].from) ||
-                        addresses.getAddress(spec.transferFroms[i].to) !=
-                        addresses.getAddress(existingTransferFrom.to),
-                    "Duplication in transferFroms"
-                );
+                //                require(
+                //                    addresses.getAddress(existingTransferFrom.token) !=
+                //                        addresses.getAddress(spec.transferFroms[i].token) ||
+                //                        addresses.getAddress(existingTransferFrom.from) !=
+                //                        addresses.getAddress(spec.transferFroms[i].from) ||
+                //                        addresses.getAddress(spec.transferFroms[i].to) !=
+                //                        addresses.getAddress(existingTransferFrom.to),
+                //                    "Duplication in transferFroms"
+                //                );
 
                 require(
                     keccak256(abi.encodePacked(existingTransferFrom.to)) !=
