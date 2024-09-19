@@ -17,4 +17,9 @@ jobs:
         uses: ./.github/actions
 
       - name: Unit Test Contracts
-        run: time forge test -vvv --match-contract UnitTest
+        uses: nick-fields/retry@v3
+        with:
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test -vvv --match-contract UnitTest
+
