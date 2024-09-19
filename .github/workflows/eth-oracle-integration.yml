@@ -1,4 +1,4 @@
-name: Foundry Eth chainlink oracle integration tests
+name: Eth Chainlink Oracle Integration Tests
 
 on: [pull_request]
 
@@ -19,5 +19,9 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Test Contracts
-        run: time forge test --match-contract ChainlinkCompositeOracleIntegrationTest --fork-url ethereum
+      - name: Integration Test Cross Chain Publish Message
+        uses: nick-fields/retry@v3
+        with:
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract ChainlinkCompositeOracleIntegrationTest --fork-url ethereum
