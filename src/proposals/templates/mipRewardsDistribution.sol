@@ -6,6 +6,8 @@ import "@forge-std/StdJson.sol";
 import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
 
+import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+
 import {MToken} from "@protocol/MToken.sol";
 import {OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
@@ -25,6 +27,7 @@ import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract mipRewardsDistribution is HybridProposal, Networks {
+    using SafeCast for *;
     using String for string;
     using stdJson for string;
     using ChainIds for uint256;
@@ -55,8 +58,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
     struct SetRewardSpeed {
         string market;
-        uint256 newBorrowSpeed;
-        uint256 newSupplySpeed;
+        int256 newBorrowSpeed;
+        int256 newSupplySpeed;
         uint256 rewardType;
     }
 
@@ -219,7 +222,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         moonbeamActions.stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
-        uint256 totalEpochRewards = 0;
+        int256 totalEpochRewards = 0;
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
@@ -249,11 +252,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             );
 
             if (setRewardSpeed.rewardType == 0) {
-                uint256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-                    (endTimeStamp - startTimeStamp);
+                int256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
+                    int256(endTimeStamp - startTimeStamp);
 
-                uint256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-                    (endTimeStamp - startTimeStamp);
+                int256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
+                    int256(endTimeStamp - startTimeStamp);
 
                 totalEpochRewards += supplyAmount + borrowAmount;
             }
@@ -289,7 +292,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress("UNITROLLER")
             ) {
                 assertApproxEqRel(
-                    spec.transferFroms[i].amount,
+                    int256(spec.transferFroms[i].amount),
                     totalEpochRewards,
                     0.01e18,
                     "Transfer amount must be close to the total rewards for the epoch"
@@ -605,8 +608,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     "_setRewardSpeed(uint8,address,uint256,uint256)",
                     uint8(setRewardSpeed.rewardType),
                     addresses.getAddress(setRewardSpeed.market),
-                    setRewardSpeed.newSupplySpeed,
-                    setRewardSpeed.newBorrowSpeed
+                    setRewardSpeed.newSupplySpeed.toUint256(),
+                    setRewardSpeed.newBorrowSpeed.toUint256()
                 ),
                 string(
                     abi.encodePacked(
@@ -664,22 +667,24 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             ActionType.Moonbeam
         );
 
-        _pushAction(
-            addresses.getAddress("STK_GOVTOKEN"),
-            abi.encodeWithSignature(
-                "configureAsset(uint128,address)",
-                spec.stkWellEmissionsPerSecond,
-                addresses.getAddress("STK_GOVTOKEN")
-            ),
-            //"Set reward speed for the Safety Module on Moonbeam",
-            string(
-                abi.encodePacked(
-                    "Set reward speed for the Safety Module on Moonbeam. Emissions per second: ",
-                    vm.toString(spec.stkWellEmissionsPerSecond)
-                )
-            ),
-            ActionType.Moonbeam
-        );
+        if (spec.stkWellEmissionsPerSecond != -1) {
+            _pushAction(
+                addresses.getAddress("STK_GOVTOKEN"),
+                abi.encodeWithSignature(
+                    "configureAsset(uint128,address)",
+                    spec.stkWellEmissionsPerSecond.toUint256().toUint128(),
+                    addresses.getAddress("STK_GOVTOKEN")
+                ),
+                //"Set reward speed for the Safety Module on Moonbeam",
+                string(
+                    abi.encodePacked(
+                        "Set reward speed for the Safety Module on Moonbeam. Emissions per second: ",
+                        vm.toString(spec.stkWellEmissionsPerSecond)
+                    )
+                ),
+                ActionType.Moonbeam
+            );
+        }
     }
 
     function _buildExternalChainActions(
@@ -779,7 +784,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         "_updateSupplySpeed(address,address,uint256)",
                         addresses.getAddress(setRewardSpeed.market),
                         addresses.getAddress(setRewardSpeed.emissionToken),
-                        setRewardSpeed.newSupplySpeed
+                        setRewardSpeed.newSupplySpeed.toUint256()
                     ),
                     string(
                         abi.encodePacked(
@@ -844,7 +849,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress("STK_GOVTOKEN"),
                 abi.encodeWithSignature(
                     "configureAsset(uint128,address)",
-                    spec.stkWellEmissionsPerSecond,
+                    spec.stkWellEmissionsPerSecond.toUint256().toUint128(),
                     addresses.getAddress("STK_GOVTOKEN")
                 ),
                 string(
@@ -964,9 +969,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress("UNITROLLER")
             );
             assertEq(
-                comptrollerV1.supplyRewardSpeeds(
-                    uint8(setRewardSpeed.rewardType),
-                    address(market)
+                int256(
+                    comptrollerV1.supplyRewardSpeeds(
+                        uint8(setRewardSpeed.rewardType),
+                        address(market)
+                    )
                 ),
                 setRewardSpeed.newSupplySpeed,
                 string(
@@ -978,9 +985,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 )
             );
             assertEq(
-                comptrollerV1.borrowRewardSpeeds(
-                    uint8(setRewardSpeed.rewardType),
-                    address(market)
+                int256(
+                    comptrollerV1.borrowRewardSpeeds(
+                        uint8(setRewardSpeed.rewardType),
+                        address(market)
+                    )
                 ),
                 setRewardSpeed.newBorrowSpeed,
                 string(
