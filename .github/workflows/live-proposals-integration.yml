@@ -25,5 +25,5 @@ jobs:
         with:
            timeout_minutes: 15
            max_attempts: 3
-           command: time forge test --mc LiveProposalsIntegrationTest -vvvvv
+           command: time forge test --mc LiveProposalsIntegrationTest -vvvvv --ffi
 
