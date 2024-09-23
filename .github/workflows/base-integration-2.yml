@@ -22,6 +22,8 @@ jobs:
       - name: Base Mainnet Integration Tests
         uses: nick-fields/retry@v3
         with:
+           polling_interval_seconds: 10
+           retry_wait_seconds: 20
            timeout_minutes: 10
            max_attempts: 3
            command: time forge test --match-contract LiveSystemBaseTest --fork-url base -vvv --ffi
