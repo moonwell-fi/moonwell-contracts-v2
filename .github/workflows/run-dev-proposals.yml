@@ -75,6 +75,8 @@ jobs:
       - name: Run Calldata Printing
         uses: nick-fields/retry@v3
         with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 30
            timeout_minutes: 10
            max_attempts: 3
            command: bin/run-calldata-printing.sh
