@@ -356,7 +356,7 @@
             {
                 "emissionToken": "USDC",
                 "market": "MOONWELL_USDBC",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": -1
             },
