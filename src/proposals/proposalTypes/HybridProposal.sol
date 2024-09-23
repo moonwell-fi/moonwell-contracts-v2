@@ -559,7 +559,7 @@ abstract contract HybridProposal is
             vm.prank(caller);
             (bool success, bytes memory returndata) = address(
                 payable(governorAddress)
-            ).call{value: cost}(proposeCalldata);
+            ).call{value: cost, gas: 52_000_000}(proposeCalldata);
             data = returndata;
 
             require(success, "propose multichain governor failed");
@@ -707,8 +707,30 @@ abstract contract HybridProposal is
                 );
             }
 
-            /// Execute the proposal
-            governor.execute{value: actions.sumTotalValue()}(proposalId);
+            vm.deal(caller, actions.sumTotalValue());
+
+            // /// Execute the proposal
+            // governor.execute{value: actions.sumTotalValue(), gas: 52_000_000}(
+            //     proposalId
+            // );
+
+            {
+                bytes memory executeCalldata = abi.encodeWithSignature(
+                    "execute(uint256)",
+                    proposalId
+                );
+
+                // Execute the proposal
+                vm.prank(caller);
+                (bool success, bytes memory returndata) = address(
+                    payable(governorAddress)
+                ).call{value: actions.sumTotalValue(), gas: 52_000_000}(
+                    executeCalldata
+                );
+                data = returndata;
+
+                require(success, "propose multichain governor failed");
+            }
         }
 
         require(
