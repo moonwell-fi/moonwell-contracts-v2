@@ -1191,14 +1191,17 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 uint256(gasLimit)
         );
 
-        vm.selectFork(chainId.toForkId());
-
-        // stores the wormhole mock address in the wormholeRelayer variable
-        vm.store(
-            address(wormholeBridgeAdapter),
-            bytes32(uint256(153)),
-            encodedData
-        );
+        for (uint256 i = 0; i < networks.length; i++) {
+            chainId = networks[i].chainId;
+            if (chainId != MOONBEAM_CHAIN_ID) {
+                vm.selectFork(networks[i].forkId);
+                vm.store(
+                    address(wormholeBridgeAdapter),
+                    bytes32(uint256(153)),
+                    encodedData
+                );
+            }
+        }
 
         vm.selectFork(primaryForkId());
 
