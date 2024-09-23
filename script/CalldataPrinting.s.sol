@@ -1,6 +1,5 @@
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
 import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
@@ -52,7 +51,7 @@ contract CalldataPrinting is Script {
                         "\n\n=================== PROPOSAL START ==================\n",
                         devProposal
                     );
-                    proposalMap.executeShellFile(envPath);
+                    proposalMap.setEnv(envPath);
                     Proposal proposal = proposalMap.runProposal(
                         addresses,
                         devProposal

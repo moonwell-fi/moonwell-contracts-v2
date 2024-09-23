@@ -275,7 +275,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             (string memory proposalPath, string memory envPath) = proposalMap
                 .getProposalById(proposalId);
 
-            proposalMap.executeShellFile(envPath);
+            proposalMap.setEnv(envPath);
 
             Proposal proposal = Proposal(deployCode(proposalPath));
 
