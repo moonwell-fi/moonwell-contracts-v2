@@ -865,7 +865,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             vm.toString(setRewardSpeed.newSupplySpeed),
                             " for ",
                             vm.getLabel(market),
-                            " on ",
+                            ".\nNetwork: ",
                             _chainId.chainIdToName(),
                             "\nReward token: ",
                             setRewardSpeed.emissionToken
@@ -889,7 +889,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             vm.toString(setRewardSpeed.newBorrowSpeed),
                             " for ",
                             vm.getLabel(market),
-                            " on ",
+                            ".\nNetwork: ",
                             _chainId.chainIdToName(),
                             "\nReward token: ",
                             setRewardSpeed.emissionToken
@@ -913,7 +913,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             vm.toString(setRewardSpeed.newEndTime),
                             " for ",
                             vm.getLabel(market),
-                            " on ",
+                            ".\nNetwork:",
                             _chainId.chainIdToName(),
                             "\nReward token: ",
                             setRewardSpeed.emissionToken
