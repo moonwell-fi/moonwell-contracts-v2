@@ -370,7 +370,7 @@
             {
                 "emissionToken": "USDC",
                 "market": "MOONWELL_WETH",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": -1
             },
@@ -384,7 +384,7 @@
             {
                 "emissionToken": "USDC",
                 "market": "MOONWELL_cbETH",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": -1
             },
@@ -398,7 +398,7 @@
             {
                 "emissionToken": "USDC",
                 "market": "MOONWELL_DAI",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": -1
             },
@@ -412,7 +412,7 @@
             {
                 "emissionToken": "USDC",
                 "market": "MOONWELL_USDC",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": -1
             },
@@ -426,7 +426,7 @@
             {
                 "emissionToken": "USDC",
                 "market": "MOONWELL_wstETH",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": -1
             },
@@ -440,7 +440,7 @@
             {
                 "emissionToken": "USDC",
                 "market": "MOONWELL_rETH",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": -1
             },
@@ -454,7 +454,7 @@
             {
                 "emissionToken": "USDC",
                 "market": "MOONWELL_AERO",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": -1
             },
@@ -468,7 +468,7 @@
             {
                 "emissionToken": "USDC",
                 "market": "MOONWELL_weETH",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": -1
             },
@@ -482,7 +482,7 @@
             {
                 "emissionToken": "USDC",
                 "market": "MOONWELL_cbBTC",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": -1
             },
@@ -496,7 +496,7 @@
             {
                 "emissionToken": "USDC",
                 "market": "MOONWELL_EURC",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": -1
             }
