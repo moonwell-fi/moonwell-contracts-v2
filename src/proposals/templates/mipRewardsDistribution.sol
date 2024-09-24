@@ -189,12 +189,26 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
     function build(Addresses addresses) public override {
         _buildMoonbeamActions(addresses);
-        _buildExternalChainActions(addresses, 8453);
+
+        for (uint256 i = 0; i < networks.length; i++) {
+            chainId = networks[i].chainId;
+            if (chainId != MOONBEAM_CHAIN_ID) {
+                vm.selectFork(networks[i].forkId);
+                _buildExternalChainActions(addresses, chainId);
+            }
+        }
     }
 
     function validate(Addresses addresses, address) public override {
         _validateMoonbeam(addresses);
-        _validateExternalChainActions(addresses, 8453);
+
+        for (uint256 i = 0; i < networks.length; i++) {
+            chainId = networks[i].chainId;
+            if (chainId != MOONBEAM_CHAIN_ID) {
+                vm.selectFork(networks[i].forkId);
+                _validateExternalChainActions(addresses, chainId);
+            }
+        }
     }
 
     function beforeSimulationHook(Addresses addresses) public override {
