@@ -42,9 +42,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     mapping(MToken => address[] rewardTokens) rewardsConfig;
 
     function setUp() public override {
+        uint256 primaryForkId = vm.envUint("PRIMARY_FORK_ID");
         super.setUp();
 
-        vm.selectFork(vm.envUint("PRIMARY_FORK_ID"));
+        vm.selectFork(primaryForkId);
 
         addresses = new Addresses();
 
