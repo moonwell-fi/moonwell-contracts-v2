@@ -148,6 +148,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 "MULTICHAIN_GOVERNOR_PROXY"
             );
             wellBalancesBefore[governor] = well.balanceOf(governor);
+
+            address unitroller = addresses.getAddress("UNITROLLER");
+            wellBalancesBefore[unitroller] = well.balanceOf(unitroller);
         }
 
         for (uint256 i = 0; i < networks.length; i++) {
