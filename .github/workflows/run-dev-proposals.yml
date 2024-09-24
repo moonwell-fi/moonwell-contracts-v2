@@ -79,7 +79,7 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 20
            max_attempts: 3
-        command: bin/run-calldata-printing.sh
+           command: bin/run-calldata-printing.sh
 
       - name: Comment PR with Calldata Printing Output
         uses: actions/github-script@v6
