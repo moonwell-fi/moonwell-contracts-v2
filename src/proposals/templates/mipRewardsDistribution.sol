@@ -197,6 +197,82 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         _validateExternalChainActions(addresses, 8453);
     }
 
+    function beforeSimulationHook(Addresses addresses) public override {
+        // mock relayer so we can simulate bridging well
+        WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
+        vm.makePersistent(address(wormholeRelayer));
+        vm.label(address(wormholeRelayer), "MockWormholeRelayer");
+
+        // we need to set this so that the relayer mock knows that for the next sendPayloadToEvm
+        // call it must switch forks
+        wormholeRelayer.setIsMultichainTest(true);
+        wormholeRelayer.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+
+        // set mock as the wormholeRelayer address on bridge adapter
+        WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+
+        uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
+
+        // encode gasLimit and relayer address since is stored in a single slot
+        // relayer is first due to how evm pack values into a single storage
+        bytes32 encodedData = bytes32(
+            (uint256(uint160(address(wormholeRelayer))) << 96) |
+                uint256(gasLimit)
+        );
+
+        for (uint256 i = 0; i < networks.length; i++) {
+            chainId = networks[i].chainId;
+            if (chainId != MOONBEAM_CHAIN_ID) {
+                vm.selectFork(networks[i].forkId);
+                vm.store(
+                    address(wormholeBridgeAdapter),
+                    bytes32(uint256(153)),
+                    encodedData
+                );
+            }
+        }
+
+        vm.selectFork(primaryForkId());
+
+        // stores the wormhole mock address in the wormholeRelayer variable
+        vm.store(
+            address(wormholeBridgeAdapter),
+            bytes32(uint256(153)),
+            encodedData
+        );
+    }
+
+    function afterSimulationHook(Addresses addresses) public override {
+        WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+
+        uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
+
+        bytes32 encodedData = bytes32(
+            (uint256(
+                uint160(addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"))
+            ) << 96) | uint256(gasLimit)
+        );
+
+        vm.selectFork(chainId.toForkId());
+        vm.store(
+            address(wormholeBridgeAdapter),
+            bytes32(uint256(153)),
+            encodedData
+        );
+
+        vm.selectFork(primaryForkId());
+
+        vm.store(
+            address(wormholeBridgeAdapter),
+            bytes32(uint256(153)),
+            encodedData
+        );
+    }
+
     function _saveMoonbeamActions(
         Addresses addresses,
         string memory data
@@ -342,21 +418,15 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         );
 
         if (spec.stkWellEmissionsPerSecond != -1) {
-            assertGe(
-                spec.stkWellEmissionsPerSecond,
-                0,
-                "stkWellEmissionsPerSecond must be greater than 0"
-            );
-
             assertLe(
                 spec.stkWellEmissionsPerSecond,
                 5e18,
-                "stkWellEmissionsPerSecond must be less than 1e18"
+                "stkWellEmissionsPerSecond must be less than 5e18"
             );
-        }
 
-        externalChainActions[_chainId].stkWellEmissionsPerSecond = spec
-            .stkWellEmissionsPerSecond;
+            externalChainActions[_chainId].stkWellEmissionsPerSecond = spec
+                .stkWellEmissionsPerSecond;
+        }
 
         int256 totalWellEpochRewards = 0;
         int256 totalOpEpochRewards = 0;
@@ -398,11 +468,22 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
                 addresses.getAddress("xWELL_PROXY")
             ) {
-                int256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-                    int256(spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+                int256 supplySpeed = spec.setRewardSpeed[i].newSupplySpeed;
 
-                int256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-                    int256(spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+                int256 supplyAmount = supplySpeed != int256(-1)
+                    ? (supplySpeed *
+                        int256(
+                            spec.setRewardSpeed[i].newEndTime - startTimeStamp
+                        ))
+                    : int256(0);
+
+                int256 borrowSpeed = spec.setRewardSpeed[i].newBorrowSpeed;
+                int256 borrowAmount = borrowSpeed != int256(-1)
+                    ? (borrowSpeed *
+                        int256(
+                            spec.setRewardSpeed[i].newEndTime - startTimeStamp
+                        ))
+                    : int256(0);
 
                 totalWellEpochRewards += supplyAmount + borrowAmount;
             }
@@ -639,6 +720,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 ActionType.Moonbeam
             );
         }
+
         AddRewardInfo memory addRewardInfo = spec.addRewardInfo;
         // first approve
         _pushAction(
@@ -1190,81 +1272,5 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 }
             }
         }
-    }
-
-    function beforeSimulationHook(Addresses addresses) public override {
-        // mock relayer so we can simulate bridging well
-        WormholeRelayerAdapter wormholeRelayer = new WormholeRelayerAdapter();
-        vm.makePersistent(address(wormholeRelayer));
-        vm.label(address(wormholeRelayer), "MockWormholeRelayer");
-
-        // we need to set this so that the relayer mock knows that for the next sendPayloadToEvm
-        // call it must switch forks
-        wormholeRelayer.setIsMultichainTest(true);
-        wormholeRelayer.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
-
-        // set mock as the wormholeRelayer address on bridge adapter
-        WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-        );
-
-        uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
-
-        // encode gasLimit and relayer address since is stored in a single slot
-        // relayer is first due to how evm pack values into a single storage
-        bytes32 encodedData = bytes32(
-            (uint256(uint160(address(wormholeRelayer))) << 96) |
-                uint256(gasLimit)
-        );
-
-        for (uint256 i = 0; i < networks.length; i++) {
-            chainId = networks[i].chainId;
-            if (chainId != MOONBEAM_CHAIN_ID) {
-                vm.selectFork(networks[i].forkId);
-                vm.store(
-                    address(wormholeBridgeAdapter),
-                    bytes32(uint256(153)),
-                    encodedData
-                );
-            }
-        }
-
-        vm.selectFork(primaryForkId());
-
-        // stores the wormhole mock address in the wormholeRelayer variable
-        vm.store(
-            address(wormholeBridgeAdapter),
-            bytes32(uint256(153)),
-            encodedData
-        );
-    }
-
-    function afterSimulationHook(Addresses addresses) public override {
-        WormholeBridgeAdapter wormholeBridgeAdapter = WormholeBridgeAdapter(
-            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-        );
-
-        uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
-
-        bytes32 encodedData = bytes32(
-            (uint256(
-                uint160(addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"))
-            ) << 96) | uint256(gasLimit)
-        );
-
-        vm.selectFork(chainId.toForkId());
-        vm.store(
-            address(wormholeBridgeAdapter),
-            bytes32(uint256(153)),
-            encodedData
-        );
-
-        vm.selectFork(primaryForkId());
-
-        vm.store(
-            address(wormholeBridgeAdapter),
-            bytes32(uint256(153)),
-            encodedData
-        );
     }
 }
