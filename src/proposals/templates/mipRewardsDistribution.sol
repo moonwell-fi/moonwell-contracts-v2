@@ -980,7 +980,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress("UNITROLLER")
             );
 
-            if (setRewardSeed.newSupplySpeed != -1) {
+            if (setRewardSpeed.newSupplySpeed != -1) {
                 assertEq(
                     int256(
                         comptrollerV1.supplyRewardSpeeds(
@@ -999,7 +999,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 );
             }
 
-            if (setRewardSeed.newBorrowSpeed != -1) {
+            if (setRewardSpeed.newBorrowSpeed != -1) {
                 assertEq(
                     int256(
                         comptrollerV1.borrowRewardSpeeds(
