@@ -248,11 +248,14 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
                 // TODO remove this once we have the approval
                 if (chainId == OPTIMISM_CHAIN_ID) {
-                    vm.prank(addresses.getAddress("FOUNDATION_OP_MULTISIG"));
+                    vm.startPrank(
+                        addresses.getAddress("FOUNDATION_OP_MULTISIG")
+                    );
                     IERC20(addresses.getAddress("OP")).approve(
                         addresses.getAddress("TEMPORAL_GOVERNOR"),
                         18_000e18
                     );
+                    vm.stopPrank();
                 }
             }
         }
