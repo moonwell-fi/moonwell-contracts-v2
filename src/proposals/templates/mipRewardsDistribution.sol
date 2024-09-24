@@ -979,50 +979,58 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             ComptrollerInterfaceV1 comptrollerV1 = ComptrollerInterfaceV1(
                 addresses.getAddress("UNITROLLER")
             );
-            assertEq(
-                int256(
-                    comptrollerV1.supplyRewardSpeeds(
-                        uint8(setRewardSpeed.rewardType),
-                        address(market)
+
+            if (setRewardSeed.newSupplySpeed != -1) {
+                assertEq(
+                    int256(
+                        comptrollerV1.supplyRewardSpeeds(
+                            uint8(setRewardSpeed.rewardType),
+                            address(market)
+                        )
+                    ),
+                    setRewardSpeed.newSupplySpeed,
+                    string(
+                        abi.encodePacked(
+                            "Supply speed for ",
+                            vm.getLabel(market),
+                            " is incorrect"
+                        )
                     )
-                ),
-                setRewardSpeed.newSupplySpeed,
-                string(
-                    abi.encodePacked(
-                        "Supply speed for ",
-                        vm.getLabel(market),
-                        " is incorrect"
+                );
+            }
+
+            if (setRewardSeed.newBorrowSpeed != -1) {
+                assertEq(
+                    int256(
+                        comptrollerV1.borrowRewardSpeeds(
+                            uint8(setRewardSpeed.rewardType),
+                            address(market)
+                        )
+                    ),
+                    setRewardSpeed.newBorrowSpeed,
+                    string(
+                        abi.encodePacked(
+                            "Borrow speed for ",
+                            vm.getLabel(market),
+                            " is incorrect"
+                        )
                     )
-                )
-            );
-            assertEq(
-                int256(
-                    comptrollerV1.borrowRewardSpeeds(
-                        uint8(setRewardSpeed.rewardType),
-                        address(market)
-                    )
-                ),
-                setRewardSpeed.newBorrowSpeed,
-                string(
-                    abi.encodePacked(
-                        "Borrow speed for ",
-                        vm.getLabel(market),
-                        " is incorrect"
-                    )
-                )
-            );
+                );
+            }
         }
 
         {
-            address stkGovToken = addresses.getAddress("STK_GOVTOKEN");
-            // assert safety module reward speed
-            IStakedWell stkWell = IStakedWell(stkGovToken);
+            if (spec.stkWellEmissionsPerSecond != -1) {
+                address stkGovToken = addresses.getAddress("STK_GOVTOKEN");
+                // assert safety module reward speed
+                IStakedWell stkWell = IStakedWell(stkGovToken);
 
-            (uint256 emissionsPerSecond, , ) = stkWell.assets(stkGovToken);
-            assertEq(
-                int256(emissionsPerSecond),
-                spec.stkWellEmissionsPerSecond
-            );
+                (uint256 emissionsPerSecond, , ) = stkWell.assets(stkGovToken);
+                assertEq(
+                    int256(emissionsPerSecond),
+                    spec.stkWellEmissionsPerSecond
+                );
+            }
         }
 
         // validate dex rewards
@@ -1139,28 +1147,35 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     address market = addresses.getAddress(
                         setRewardSpeed.market
                     );
-                    assertEq(
-                        int256(_config.supplyEmissionsPerSec),
-                        setRewardSpeed.newSupplySpeed,
-                        string(
-                            abi.encodePacked(
-                                "Supply speed for ",
-                                vm.getLabel(market),
-                                " is incorrect"
+
+                    if (setRewardSpeed.newSupplySpeed != -1) {
+                        assertEq(
+                            int256(_config.supplyEmissionsPerSec),
+                            setRewardSpeed.newSupplySpeed,
+                            string(
+                                abi.encodePacked(
+                                    "Supply speed for ",
+                                    vm.getLabel(market),
+                                    " is incorrect"
+                                )
                             )
-                        )
-                    );
-                    assertEq(
-                        int256(_config.borrowEmissionsPerSec),
-                        setRewardSpeed.newBorrowSpeed,
-                        string(
-                            abi.encodePacked(
-                                "Borrow speed for ",
-                                vm.getLabel(market),
-                                " is incorrect"
+                        );
+                    }
+
+                    if (setRewardSpeed.newBorrowSpeed != -1) {
+                        assertEq(
+                            int256(_config.borrowEmissionsPerSec),
+                            setRewardSpeed.newBorrowSpeed,
+                            string(
+                                abi.encodePacked(
+                                    "Borrow speed for ",
+                                    vm.getLabel(market),
+                                    " is incorrect"
+                                )
                             )
-                        )
-                    );
+                        );
+                    }
+
                     assertEq(
                         _config.endTime,
                         setRewardSpeed.newEndTime,
