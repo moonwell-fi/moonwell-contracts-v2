@@ -709,28 +709,11 @@ abstract contract HybridProposal is
 
             vm.deal(caller, actions.sumTotalValue());
 
-            // /// Execute the proposal
-            // governor.execute{value: actions.sumTotalValue(), gas: 52_000_000}(
-            //     proposalId
-            // );
-
-            {
-                bytes memory executeCalldata = abi.encodeWithSignature(
-                    "execute(uint256)",
-                    proposalId
-                );
-
-                // Execute the proposal
-                vm.prank(caller);
-                (bool success, bytes memory returndata) = address(
-                    payable(governorAddress)
-                ).call{value: actions.sumTotalValue(), gas: 52_000_000}(
-                    executeCalldata
-                );
-                data = returndata;
-
-                require(success, "propose multichain governor failed");
-            }
+            // Execute the proposal
+            vm.prank(caller);
+            governor.execute{value: actions.sumTotalValue(), gas: 52_000_000}(
+                proposalId
+            );
         }
 
         require(
