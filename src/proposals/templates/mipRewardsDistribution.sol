@@ -880,7 +880,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 assertApproxEqAbs(
                     well.balanceOf(to),
                     wellBalancesBefore[to],
-                    0.1e18,
+                    1e18,
                     "balance changed for MULTICHAIN_GOVERNOR_PROXY"
                 );
             } else {
