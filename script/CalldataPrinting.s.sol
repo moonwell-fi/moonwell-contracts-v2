@@ -51,8 +51,6 @@ contract CalldataPrinting is Script {
                         "\n\n=================== PROPOSAL START ==================\n",
                         devProposal
                     );
-                    console.log(changedFilesArray.length);
-                    console.log("env path: ", envPath);
                     proposalMap.setEnv(envPath);
                     Proposal proposal = proposalMap.runProposal(
                         addresses,
@@ -64,6 +62,8 @@ contract CalldataPrinting is Script {
                     console.log(
                         "\n===================== PROPOSAL END ===================\n\n"
                     );
+
+                    break;
                 }
             }
         }
