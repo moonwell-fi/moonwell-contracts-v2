@@ -88,14 +88,14 @@
             {
                 "emissionToken": "xWELL_PROXY",
                 "market": "MOONWELL_cbETH",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": 252043235841315
             },
             {
                 "emissionToken": "OP",
                 "market": "MOONWELL_cbETH",
-                "newBorrowSpeed": 1,
+                "newBorrowSpeed": -1,
                 "newEndTime": 1730431800,
                 "newSupplySpeed": 2716989308998
             },

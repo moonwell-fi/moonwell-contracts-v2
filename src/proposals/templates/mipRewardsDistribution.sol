@@ -869,12 +869,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress("MRD_PROXY")
             );
 
-            IMultiRewardDistributor.MarketConfig
-                memory emissionConfig = distributor.getConfigForMarket(
-                    MToken(addresses.getAddress(setRewardSpeed.market)),
-                    addresses.getAddress(setRewardSpeed.emissionToken)
-                );
-
             // only update if the values are different or the configuration exists
             if (setRewardSpeed.newSupplySpeed != -1) {
                 _pushAction(
