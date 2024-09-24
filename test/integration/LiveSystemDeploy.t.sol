@@ -44,7 +44,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     function setUp() public override {
         super.setUp();
 
-        vm.envUint("PRIMARY_FORK_ID").createForksAndSelect();
+        vm.selectFork(vm.envUint("PRIMARY_FORK_ID"));
 
         addresses = new Addresses();
 
