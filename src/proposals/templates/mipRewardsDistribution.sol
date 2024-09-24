@@ -67,7 +67,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         string emissionToken;
         string market;
         int256 newBorrowSpeed;
-        uint256 newEndTime;
+        int256 newEndTime;
         int256 newSupplySpeed;
     }
 
@@ -88,8 +88,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
     JsonSpecMoonbeam moonbeamActions;
 
     uint256 chainId;
-    uint256 startTimeStamp;
-    uint256 endTimeStamp;
+    int256 startTimeStamp;
+    int256 endTimeStamp;
 
     mapping(uint256 chainid => JsonSpecExternalChain) externalChainActions;
 
@@ -130,13 +130,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         bytes memory parsedJson = vm.parseJson(encodedJson, filter);
 
-        startTimeStamp = abi.decode(parsedJson, (uint256));
+        startTimeStamp = int256(abi.decode(parsedJson, (uint256)));
 
         filter = ".endTimeSTamp";
 
         parsedJson = vm.parseJson(encodedJson, filter);
 
-        endTimeStamp = abi.decode(parsedJson, (uint256));
+        endTimeStamp = int256(abi.decode(parsedJson, (uint256)));
 
         for (uint256 i = 0; i < networks.length; i++) {
             chainId = networks[i].chainId;
@@ -357,16 +357,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 TransferFrom memory existingTransferFrom = moonbeamActions
                     .transferFroms[j];
 
-                //                require(
-                //                    addresses.getAddress(existingTransferFrom.token) !=
-                //                        addresses.getAddress(spec.transferFroms[i].token) ||
-                //                        addresses.getAddress(existingTransferFrom.from) !=
-                //                        addresses.getAddress(spec.transferFroms[i].from) ||
-                //                        addresses.getAddress(spec.transferFroms[i].to) !=
-                //                        addresses.getAddress(existingTransferFrom.to),
-                //                    "Duplication in transferFroms"
-                //                );
-
                 require(
                     keccak256(abi.encodePacked(existingTransferFrom.to)) !=
                         keccak256("COMPTROLLER"),
@@ -556,16 +546,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     _chainId
                 ].transferFroms[j];
 
-                //                require(
-                //                    addresses.getAddress(existingTransferFrom.token) !=
-                //                        addresses.getAddress(spec.transferFroms[i].token) ||
-                //                        addresses.getAddress(existingTransferFrom.from) !=
-                //                        addresses.getAddress(spec.transferFroms[i].from) ||
-                //                        addresses.getAddress(spec.transferFroms[i].to) !=
-                //                        addresses.getAddress(existingTransferFrom.to),
-                //                    "Duplication in transferFroms"
-                //                );
-
                 require(
                     keccak256(abi.encodePacked(existingTransferFrom.to)) !=
                         keccak256("MRD_IMPL"),
@@ -709,11 +689,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         vm.getLabel(
                             addresses.getAddress(setRewardSpeed.market)
                         ),
-                        " on Moonbeam. Supply speed: ",
+                        " on Moonbeam.\nSupply speed: ",
                         vm.toString(setRewardSpeed.newSupplySpeed),
-                        " Borrow speed: ",
+                        "\nBorrow speed: ",
                         vm.toString(setRewardSpeed.newBorrowSpeed),
-                        " Reward type: ",
+                        "\nReward type: ",
                         vm.toString(setRewardSpeed.rewardType)
                     )
                 ),
@@ -751,9 +731,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 abi.encodePacked(
                     "Add reward info for pool ",
                     vm.toString(addRewardInfo.pid),
-                    " on StellaSwap. Reward per second: ",
+                    " on StellaSwap.\nReward per second: ",
                     vm.toString(uint256(addRewardInfo.rewardPerSec)),
-                    " End timestamp: ",
+                    "\nEnd timestamp: ",
                     vm.toString(addRewardInfo.endTimestamp)
                 )
             ),
@@ -771,7 +751,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 //"Set reward speed for the Safety Module on Moonbeam",
                 string(
                     abi.encodePacked(
-                        "Set reward speed for the Safety Module on Moonbeam. Emissions per second: ",
+                        "Set reward speed for the Safety Module on Moonbeam.\nEmissions per second: ",
                         vm.toString(spec.stkWellEmissionsPerSecond)
                     )
                 ),
@@ -886,7 +866,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             " for ",
                             vm.getLabel(market),
                             " on ",
-                            _chainId.chainIdToName()
+                            _chainId.chainIdToName(),
+                            "\nReward token: ",
+                            setRewardSpeed.emissionToken
                         )
                     )
                 );
@@ -908,13 +890,15 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             " for ",
                             vm.getLabel(market),
                             " on ",
-                            _chainId.chainIdToName()
+                            _chainId.chainIdToName(),
+                            "\nReward token: ",
+                            setRewardSpeed.emissionToken
                         )
                     )
                 );
             }
 
-            if (emissionConfig.endTime > 0) {
+            if (setRewardSpeed.newEndTime != -1) {
                 _pushAction(
                     mrd,
                     abi.encodeWithSignature(
@@ -930,7 +914,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             " for ",
                             vm.getLabel(market),
                             " on ",
-                            _chainId.chainIdToName()
+                            _chainId.chainIdToName(),
+                            "\nReward token: ",
+                            setRewardSpeed.emissionToken
                         )
                     )
                 );
@@ -1259,7 +1245,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     }
 
                     assertEq(
-                        _config.endTime,
+                        int256(_config.endTime),
                         setRewardSpeed.newEndTime,
                         string(
                             abi.encodePacked(
