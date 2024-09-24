@@ -151,6 +151,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
             address unitroller = addresses.getAddress("UNITROLLER");
             wellBalancesBefore[unitroller] = well.balanceOf(unitroller);
+
+            address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
+            wellBalancesBefore[reserve] = well.balanceOf(reserve);
         }
 
         for (uint256 i = 0; i < networks.length; i++) {
