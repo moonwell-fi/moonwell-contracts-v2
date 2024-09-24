@@ -138,24 +138,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         endTimeStamp = abi.decode(parsedJson, (uint256));
 
-        vm.selectFork(primaryForkId());
-
-        {
-            // save well balances before so we can check if the transferFrom was successful
-            IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
-
-            address governor = addresses.getAddress(
-                "MULTICHAIN_GOVERNOR_PROXY"
-            );
-            wellBalancesBefore[governor] = well.balanceOf(governor);
-
-            address unitroller = addresses.getAddress("UNITROLLER");
-            wellBalancesBefore[unitroller] = well.balanceOf(unitroller);
-
-            address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
-            wellBalancesBefore[reserve] = well.balanceOf(reserve);
-        }
-
         for (uint256 i = 0; i < networks.length; i++) {
             chainId = networks[i].chainId;
             if (chainId != MOONBEAM_CHAIN_ID) {
@@ -178,6 +160,29 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         }
 
         vm.selectFork(MOONBEAM_FORK_ID);
+
+        {
+            // save well balances before so we can check if the transferFrom was successful
+            IERC20 well = IERC20(addresses.getAddress("GOVTOKEN"));
+
+            address governor = addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_PROXY"
+            );
+            wellBalancesBefore[governor] = well.balanceOf(governor);
+
+            address unitroller = addresses.getAddress("UNITROLLER");
+            wellBalancesBefore[unitroller] = well.balanceOf(unitroller);
+
+            address reserve = addresses.getAddress("ECOSYSTEM_RESERVE_PROXY");
+            wellBalancesBefore[reserve] = well.balanceOf(reserve);
+
+            address stellaSwapRewarder = addresses.getAddress(
+                "STELLASWAP_REWARDER"
+            );
+            wellBalancesBefore[stellaSwapRewarder] = well.balanceOf(
+                stellaSwapRewarder
+            );
+        }
 
         _saveMoonbeamActions(addresses, encodedJson);
     }
