@@ -505,7 +505,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             }
 
             int256 supplySpeed = spec.setRewardSpeed[i].newSupplySpeed;
-
             int256 borrowSpeed = spec.setRewardSpeed[i].newBorrowSpeed;
             if (
                 addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
@@ -525,8 +524,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
                 uint256 borrowAmount = borrowSpeed != int256(-1)
                     ? (uint256(borrowSpeed) *
-                        uint256(spec.setRewardSpeed[i].newEndTime) -
-                        startTimeStamp)
+                        (uint256(spec.setRewardSpeed[i].newEndTime) -
+                            startTimeStamp))
                     : 0;
 
                 totalWellEpochRewards += supplyAmount + borrowAmount;
@@ -543,14 +542,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         (uint256(spec.setRewardSpeed[i].newEndTime) -
                             startTimeStamp)
                     : 0;
-                console.log("supplyAmount", supplyAmount);
 
                 uint256 borrowAmount = borrowSpeed != int256(-1)
                     ? (uint256(borrowSpeed) *
-                        uint256(spec.setRewardSpeed[i].newEndTime) -
-                        startTimeStamp)
+                        (uint256(spec.setRewardSpeed[i].newEndTime) -
+                            startTimeStamp))
                     : 0;
-                console.log("borrowAmount", borrowAmount);
 
                 totalOpEpochRewards += supplyAmount + borrowAmount;
             }
