@@ -88,8 +88,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
     JsonSpecMoonbeam moonbeamActions;
 
     uint256 chainId;
-    int256 startTimeStamp;
-    int256 endTimeStamp;
+    uint256 startTimeStamp;
+    uint256 endTimeStamp;
 
     mapping(uint256 chainid => JsonSpecExternalChain) externalChainActions;
 
@@ -130,13 +130,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         bytes memory parsedJson = vm.parseJson(encodedJson, filter);
 
-        startTimeStamp = int256(abi.decode(parsedJson, (uint256)));
+        startTimeStamp = abi.decode(parsedJson, (uint256));
 
         filter = ".endTimeSTamp";
 
         parsedJson = vm.parseJson(encodedJson, filter);
 
-        endTimeStamp = int256(abi.decode(parsedJson, (uint256)));
+        endTimeStamp = abi.decode(parsedJson, (uint256));
 
         assertGt(
             endTimeStamp,
@@ -347,7 +347,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         moonbeamActions.stkWellEmissionsPerSecond = spec
             .stkWellEmissionsPerSecond;
 
-        int256 totalEpochRewards = 0;
+        uint256 totalEpochRewards = 0;
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
@@ -383,11 +383,17 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     "Supply speed must be less than 10 WELL per second"
                 );
 
-                int256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-                    int256(endTimeStamp - startTimeStamp);
+                uint256 supplyAmount = uint256(
+                    spec.setRewardSpeed[i].newSupplySpeed
+                ) *
+                    endTimeStamp -
+                    startTimeStamp;
 
-                int256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-                    int256(endTimeStamp - startTimeStamp);
+                uint256 borrowAmount = uint256(
+                    spec.setRewardSpeed[i].newBorrowSpeed
+                ) *
+                    endTimeStamp -
+                    startTimeStamp;
 
                 totalEpochRewards += supplyAmount + borrowAmount;
             }
@@ -413,7 +419,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress("UNITROLLER")
             ) {
                 assertApproxEqRel(
-                    int256(spec.transferFroms[i].amount),
+                    spec.transferFroms[i].amount,
                     totalEpochRewards,
                     0.01e18,
                     "Transfer amount must be close to the total rewards for the epoch"
@@ -462,8 +468,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 .stkWellEmissionsPerSecond;
         }
 
-        int256 totalWellEpochRewards = 0;
-        int256 totalOpEpochRewards = 0;
+        uint256 totalWellEpochRewards = 0;
+        uint256 totalOpEpochRewards = 0;
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             // check for duplications
@@ -510,20 +516,18 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     "Supply speed must be less than 10 WELL per second"
                 );
 
-                int256 supplyAmount = supplySpeed != int256(-1)
-                    ? (supplySpeed *
-                        int256(
-                            spec.setRewardSpeed[i].newEndTime - startTimeStamp
-                        ))
-                    : int256(0);
+                uint256 supplyAmount = supplySpeed != int256(-1)
+                    ? (uint256(supplySpeed) *
+                        uint256(spec.setRewardSpeed[i].newEndTime) -
+                        startTimeStamp)
+                    : 0;
 
                 int256 borrowSpeed = spec.setRewardSpeed[i].newBorrowSpeed;
-                int256 borrowAmount = borrowSpeed != int256(-1)
-                    ? (borrowSpeed *
-                        int256(
-                            spec.setRewardSpeed[i].newEndTime - startTimeStamp
-                        ))
-                    : int256(0);
+                uint256 borrowAmount = borrowSpeed != int256(-1)
+                    ? (uint256(borrowSpeed) *
+                        uint256(spec.setRewardSpeed[i].newEndTime) -
+                        startTimeStamp)
+                    : 0;
 
                 totalWellEpochRewards += supplyAmount + borrowAmount;
             }
@@ -534,11 +538,17 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
                 addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
             ) {
-                int256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
-                    int256(spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+                uint256 supplyAmount = uint256(
+                    spec.setRewardSpeed[i].newSupplySpeed
+                ) *
+                    (uint256(spec.setRewardSpeed[i].newEndTime) -
+                        startTimeStamp);
 
-                int256 borrowAmount = spec.setRewardSpeed[i].newBorrowSpeed *
-                    int256(spec.setRewardSpeed[i].newEndTime - startTimeStamp);
+                uint256 borrowAmount = uint256(
+                    spec.setRewardSpeed[i].newBorrowSpeed
+                ) *
+                    uint256(spec.setRewardSpeed[i].newEndTime) -
+                    startTimeStamp;
 
                 totalOpEpochRewards += supplyAmount + borrowAmount;
             }
@@ -558,7 +568,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress("xWELL_PROXY")
             ) {
                 assertApproxEqRel(
-                    int256(spec.transferFroms[i].amount),
+                    spec.transferFroms[i].amount,
                     totalWellEpochRewards,
                     0.1e18,
                     "Transfer amount must be close to the total rewards for the epoch"
@@ -579,7 +589,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
             ) {
                 assertApproxEqRel(
-                    int256(spec.transferFroms[i].amount),
+                    spec.transferFroms[i].amount,
                     totalOpEpochRewards,
                     0.01e18,
                     "Transfer amount must be close to the total rewards for the epoch"
