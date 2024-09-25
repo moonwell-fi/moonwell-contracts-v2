@@ -504,12 +504,13 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 );
             }
 
+            int256 supplySpeed = spec.setRewardSpeed[i].newSupplySpeed;
+
+            int256 borrowSpeed = spec.setRewardSpeed[i].newBorrowSpeed;
             if (
                 addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
                 addresses.getAddress("xWELL_PROXY")
             ) {
-                int256 supplySpeed = spec.setRewardSpeed[i].newSupplySpeed;
-
                 assertLe(
                     supplySpeed,
                     10e18,
@@ -522,7 +523,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                             startTimeStamp)
                     : 0;
 
-                int256 borrowSpeed = spec.setRewardSpeed[i].newBorrowSpeed;
                 uint256 borrowAmount = borrowSpeed != int256(-1)
                     ? (uint256(borrowSpeed) *
                         uint256(spec.setRewardSpeed[i].newEndTime) -
@@ -545,7 +545,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     : 0;
                 console.log("supplyAmount", supplyAmount);
 
-                int256 borrowSpeed = spec.setRewardSpeed[i].newBorrowSpeed;
                 uint256 borrowAmount = borrowSpeed != int256(-1)
                     ? (uint256(borrowSpeed) *
                         uint256(spec.setRewardSpeed[i].newEndTime) -
