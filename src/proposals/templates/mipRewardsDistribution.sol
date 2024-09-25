@@ -377,6 +377,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             );
 
             if (setRewardSpeed.rewardType == 0) {
+                assertLe(
+                    setRewardSpeed.newSupplySpeed,
+                    10e18,
+                    "Supply speed must be less than 10 WELL per second"
+                );
+
                 int256 supplyAmount = spec.setRewardSpeed[i].newSupplySpeed *
                     int256(endTimeStamp - startTimeStamp);
 
@@ -497,6 +503,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress("xWELL_PROXY")
             ) {
                 int256 supplySpeed = spec.setRewardSpeed[i].newSupplySpeed;
+
+                assertLe(
+                    supplySpeed,
+                    10e18,
+                    "Supply speed must be less than 10 WELL per second"
+                );
 
                 int256 supplyAmount = supplySpeed != int256(-1)
                     ? (supplySpeed *
@@ -880,12 +892,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             SetMRDRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
 
             address market = addresses.getAddress(setRewardSpeed.market);
-
             address mrd = addresses.getAddress("MRD_PROXY");
-
-            IMultiRewardDistributor distributor = IMultiRewardDistributor(
-                addresses.getAddress("MRD_PROXY")
-            );
 
             // only update if the values are different or the configuration exists
             if (setRewardSpeed.newSupplySpeed != -1) {
