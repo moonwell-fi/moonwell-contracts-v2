@@ -285,11 +285,11 @@ contract mipRewardsDistributionMoonbeam is HybridProposal, Networks {
             );
         }
         _pushAction(
-            addresses.getAddress("STK_GOVTOKEN"),
+            addresses.getAddress("STK_GOVTOKEN_PROXY"),
             abi.encodeWithSignature(
                 "configureAsset(uint128,address)",
                 spec.stkWellEmissionsPerSecond,
-                addresses.getAddress("STK_GOVTOKEN")
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
             ),
             //"Set reward speed for the Safety Module on Moonbeam",
             string(
@@ -403,7 +403,7 @@ contract mipRewardsDistributionMoonbeam is HybridProposal, Networks {
             0,
             "xWELL Router should not have an open allowance after execution"
         );
-        address stkGovToken = addresses.getAddress("STK_GOVTOKEN");
+        address stkGovToken = addresses.getAddress("STK_GOVTOKEN_PROXY");
         // assert safety module reward speed
         IStakedWell stkWell = IStakedWell(stkGovToken);
         (uint256 emissionsPerSecond, , ) = stkWell.assets(stkGovToken);

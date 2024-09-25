@@ -442,7 +442,7 @@
     {
         "addr": "0xe66E3A37C3274Ac24FE8590f7D84A2427194DC17",
         "isContract": true,
-        "name": "STK_GOVTOKEN"
+        "name": "STK_GOVTOKEN_PROXY"
     },
     {
         "addr": "0x4439640C018E541eC6b29a5828bc876327cf556C",

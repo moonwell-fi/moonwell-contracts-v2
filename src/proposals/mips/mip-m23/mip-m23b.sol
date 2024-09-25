@@ -25,7 +25,7 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 /// src/proposals/mips/mip-m23/mip-m23b.sol:mipm23b
 /// --broadcast --slow --fork-url base
 /// Once the proposal is execute, VOTE_COLLECTION_PROXY, VOTE_COLLECTION_IMPL,
-/// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, STK_GOVTOKEN, STK_GOVTOKEN_IMPL
+/// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, STK_GOVTOKEN_PROXY, STK_GOVTOKEN_IMPL
 /// and xWELL_PROXY must be added to the addresses.json file.
 contract mipm23b is HybridProposal, MultichainGovernorDeploy {
     using ChainIds for uint256;
@@ -53,7 +53,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
     function deploy(Addresses addresses, address) public override {
         address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
 
-        if (!addresses.isAddressSet("STK_GOVTOKEN", block.chainid)) {
+        if (!addresses.isAddressSet("STK_GOVTOKEN_PROXY", block.chainid)) {
             /// deploy both EcosystemReserve and EcosystemReserve Controller + their corresponding proxies
             (
                 address ecosystemReserveProxy,
@@ -87,7 +87,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                     address(0), /// stop error on beforeTransfer hook in ERC20WithSnapshot
                     proxyAdmin
                 );
-                addresses.addAddress("STK_GOVTOKEN", stkWellProxy);
+                addresses.addAddress("STK_GOVTOKEN_PROXY", stkWellProxy);
                 addresses.addAddress("STK_GOVTOKEN_IMPL", stkWellImpl);
             }
         }
@@ -98,7 +98,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
                 address collectionImpl
             ) = deployVoteCollection(
                     addresses.getAddress("xWELL_PROXY"),
-                    addresses.getAddress("STK_GOVTOKEN"),
+                    addresses.getAddress("STK_GOVTOKEN_PROXY"),
                     addresses.getAddress(
                         "MULTICHAIN_GOVERNOR_PROXY",
                         block.chainid.toMoonbeamChainId()
@@ -143,7 +143,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         /// approve stkWELL contract to spend xWELL from the ecosystem reserve contract
         ecosystemReserveController.approve(
             addresses.getAddress("xWELL_PROXY"),
-            addresses.getAddress("STK_GOVTOKEN"),
+            addresses.getAddress("STK_GOVTOKEN_PROXY"),
             approvalAmount
         );
 
@@ -181,7 +181,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
             validateProxy(
                 vm,
-                addresses.getAddress("STK_GOVTOKEN"),
+                addresses.getAddress("STK_GOVTOKEN_PROXY"),
                 addresses.getAddress("STK_GOVTOKEN_IMPL"),
                 addresses.getAddress("MRD_PROXY_ADMIN"),
                 "STK_GOVTOKEN validation"
@@ -232,7 +232,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
             assertEq(
                 xWell.allowance(
                     address(ecosystemReserve),
-                    addresses.getAddress("STK_GOVTOKEN")
+                    addresses.getAddress("STK_GOVTOKEN_PROXY")
                 ),
                 approvalAmount,
                 "ecosystem reserve not approved to give stkWELL_PROXY approvalAmount"
@@ -251,7 +251,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
         /// validate stkWELL contract
         {
             IStakedWellUplift stkWell = IStakedWellUplift(
-                addresses.getAddress("STK_GOVTOKEN")
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
             );
 
             /// stake and reward token are the same
@@ -320,7 +320,7 @@ contract mipm23b is HybridProposal, MultichainGovernorDeploy {
 
             assertEq(
                 address(voteCollection.stkWell()),
-                addresses.getAddress("STK_GOVTOKEN"),
+                addresses.getAddress("STK_GOVTOKEN_PROXY"),
                 "incorrect stkWELL"
             );
 
