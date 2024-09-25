@@ -547,8 +547,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 uint256 borrowAmount = uint256(
                     spec.setRewardSpeed[i].newBorrowSpeed
                 ) *
-                    uint256(spec.setRewardSpeed[i].newEndTime) -
-                    startTimeStamp;
+                    (uint256(spec.setRewardSpeed[i].newEndTime) -
+                        startTimeStamp);
 
                 totalOpEpochRewards += supplyAmount + borrowAmount;
             }
