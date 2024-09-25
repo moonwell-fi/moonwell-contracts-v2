@@ -700,6 +700,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
+            assertGe(
+                setRewardSpeed.newBorrowSpeed,
+                1,
+                "Borrow speed must be greater or equal to 1"
+            );
+
             _pushAction(
                 addresses.getAddress("UNITROLLER"),
                 abi.encodeWithSignature(
@@ -727,40 +733,40 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             );
         }
 
-        AddRewardInfo memory addRewardInfo = spec.addRewardInfo;
+        AddRewardInfo memory stellaSwapReward = spec.addRewardInfo;
         // first approve
         _pushAction(
             addresses.getAddress("GOVTOKEN"),
             abi.encodeWithSignature(
                 "approve(address,uint256)",
-                addresses.getAddress(addRewardInfo.target),
-                uint256(addRewardInfo.amount)
+                addresses.getAddress(stellaSwapReward.target),
+                uint256(stellaSwapReward.amount)
             ),
             string(
                 abi.encodePacked(
                     "Approve StellaSwap spend ",
-                    vm.toString(uint256(addRewardInfo.amount) / 1e18),
+                    vm.toString(uint256(stellaSwapReward.amount) / 1e18),
                     " WELL"
                 )
             ),
             ActionType.Moonbeam
         );
         _pushAction(
-            addresses.getAddress(addRewardInfo.target),
+            addresses.getAddress(stellaSwapReward.target),
             abi.encodeWithSignature(
                 "addRewardInfo(uint256,uint256,uint256)",
-                addRewardInfo.pid,
-                addRewardInfo.endTimestamp,
-                addRewardInfo.rewardPerSec
+                stellaSwapReward.pid,
+                stellaSwapReward.endTimestamp,
+                stellaSwapReward.rewardPerSec
             ),
             string(
                 abi.encodePacked(
                     "Add reward info for pool ",
-                    vm.toString(addRewardInfo.pid),
+                    vm.toString(stellaSwapReward.pid),
                     " on StellaSwap.\nReward per second: ",
-                    vm.toString(uint256(addRewardInfo.rewardPerSec)),
+                    vm.toString(uint256(stellaSwapReward.rewardPerSec)),
                     "\nEnd timestamp: ",
-                    vm.toString(addRewardInfo.endTimestamp)
+                    vm.toString(stellaSwapReward.endTimestamp)
                 )
             ),
             ActionType.Moonbeam
@@ -895,6 +901,12 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             }
 
             if (setRewardSpeed.newBorrowSpeed != -1) {
+                assertGe(
+                    setRewardSpeed.newBorrowSpeed,
+                    1,
+                    "Borrow speed must be greater or equal to 1"
+                );
+
                 _pushAction(
                     mrd,
                     abi.encodeWithSignature(
