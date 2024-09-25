@@ -538,17 +538,20 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress(spec.setRewardSpeed[i].emissionToken) ==
                 addresses.getAddress("OP", OPTIMISM_CHAIN_ID)
             ) {
-                uint256 supplyAmount = uint256(
-                    spec.setRewardSpeed[i].newSupplySpeed
-                ) *
-                    (uint256(spec.setRewardSpeed[i].newEndTime) -
-                        startTimeStamp);
+                uint256 supplyAmount = supplySpeed != int256(-1)
+                    ? uint256(supplySpeed) *
+                        (uint256(spec.setRewardSpeed[i].newEndTime) -
+                            startTimeStamp)
+                    : 0;
+                console.log("supplyAmount", supplyAmount);
 
-                uint256 borrowAmount = uint256(
-                    spec.setRewardSpeed[i].newBorrowSpeed
-                ) *
-                    (uint256(spec.setRewardSpeed[i].newEndTime) -
-                        startTimeStamp);
+                int256 borrowSpeed = spec.setRewardSpeed[i].newBorrowSpeed;
+                uint256 borrowAmount = borrowSpeed != int256(-1)
+                    ? (uint256(borrowSpeed) *
+                        uint256(spec.setRewardSpeed[i].newEndTime) -
+                        startTimeStamp)
+                    : 0;
+                console.log("borrowAmount", borrowAmount);
 
                 totalOpEpochRewards += supplyAmount + borrowAmount;
             }
