@@ -555,6 +555,8 @@ abstract contract HybridProposal is
             uint256 cost = governor.bridgeCostAll();
             vm.deal(caller, cost * 2);
 
+            uint256 gasStart = gasleft();
+
             // Execute the proposal
             vm.prank(caller);
             (bool success, bytes memory returndata) = address(
@@ -563,6 +565,11 @@ abstract contract HybridProposal is
             data = returndata;
 
             require(success, "propose multichain governor failed");
+
+            require(
+                gasStart - gasleft() <= 60_000_000,
+                "Proposal propose gas limit exceeded"
+            );
         }
 
         uint256 proposalId = abi.decode(data, (uint256));
@@ -709,10 +716,17 @@ abstract contract HybridProposal is
 
             vm.deal(caller, actions.sumTotalValue());
 
+            uint256 gasStart = gasleft();
+
             // Execute the proposal
             vm.prank(caller);
             governor.execute{value: actions.sumTotalValue(), gas: 52_000_000}(
                 proposalId
+            );
+
+            require(
+                gasStart - gasleft() <= 60_000_000,
+                "Proposal propose gas limit exceeded"
             );
         }
 
