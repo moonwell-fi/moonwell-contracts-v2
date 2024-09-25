@@ -517,9 +517,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 );
 
                 uint256 supplyAmount = supplySpeed != int256(-1)
-                    ? (uint256(supplySpeed) *
-                        uint256(spec.setRewardSpeed[i].newEndTime) -
-                        startTimeStamp)
+                    ? uint256(supplySpeed) *
+                        (uint256(spec.setRewardSpeed[i].newEndTime) -
+                            startTimeStamp)
                     : 0;
 
                 int256 borrowSpeed = spec.setRewardSpeed[i].newBorrowSpeed;
