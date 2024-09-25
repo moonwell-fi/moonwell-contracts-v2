@@ -1147,7 +1147,8 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 (uint256 emissionsPerSecond, , ) = stkWell.assets(stkGovToken);
                 assertEq(
                     int256(emissionsPerSecond),
-                    spec.stkWellEmissionsPerSecond
+                    spec.stkWellEmissionsPerSecond,
+                    "Emissions per second for the Safety Module on Moonbeam is incorrect"
                 );
             }
         }
