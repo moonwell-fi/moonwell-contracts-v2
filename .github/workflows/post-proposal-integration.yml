@@ -21,7 +21,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Tests Base Mainnet
+      - name: Integration Tests Post Proposal Check
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30

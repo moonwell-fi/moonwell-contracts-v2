@@ -8,7 +8,7 @@ env:
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
 
 jobs:
-  run-moonbeam-tests:
+  run-multichain-tests:
     name: multichain-integration-tests
     runs-on: ubuntu-latest
 
