@@ -244,6 +244,11 @@
         "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_B27",
         "isContract": true
     },
+    {   
+        "addr": "0x6182b94bF494eb796C476a4Cf549f2bDD249Bf09",
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32",
+        "isContract": true
+    },
     {
         "addr": "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
         "name": "MOONWELL_USDC",
@@ -578,6 +583,11 @@
         "addr": "0x0738483Add6ab8620B731aEc0121d1d3A70BD6EA",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_cbBTC"
+    },
+    {
+        "addr": "0x61e0dEC383Ef2E4be7e198F0e33605A553Da281d",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_B32"
     },
     {
         "addr": "0xF877ACaFA28c19b96727966690b2f44d35aD5976",
