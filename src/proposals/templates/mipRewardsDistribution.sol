@@ -138,6 +138,18 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         endTimeStamp = int256(abi.decode(parsedJson, (uint256)));
 
+        assertGt(
+            endTimeStamp,
+            startTimeStamp,
+            "endTimeStamp must be greater than startTimeStamp"
+        );
+
+        assertGe(
+            endTimeStamp - startTimeStamp,
+            3 weeks,
+            "endTimeStamp - startTimeStamp must be greater than 3 weeks"
+        );
+
         for (uint256 i = 0; i < networks.length; i++) {
             chainId = networks[i].chainId;
             if (chainId != MOONBEAM_CHAIN_ID) {
@@ -913,7 +925,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         "_updateBorrowSpeed(address,address,uint256)",
                         addresses.getAddress(setRewardSpeed.market),
                         addresses.getAddress(setRewardSpeed.emissionToken),
-                        setRewardSpeed.newBorrowSpeed
+                        setRewardSpeed.newBorrowSpeed.toUint256()
                     ),
                     string(
                         abi.encodePacked(
