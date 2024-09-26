@@ -73,11 +73,9 @@ jobs:
             }
 
       - name: Give write permissions
-        id: permissions
-        run: chmod +x src/proposals/mips/
+        run: chmod -R +x src/proposals/mips/
 
       - name: Run Calldata Printing
-        needs: permissions 
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
