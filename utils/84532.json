@@ -187,7 +187,7 @@
     {
         "addr": "0x136b89Fc7e52493AadC7710a64603793a857dAfA",
         "isContract": true,
-        "name": "STK_GOVTOKEN"
+        "name": "STK_GOVTOKEN_PROXY"
     },
     {
         "addr": "0xa48382Da31A70EFecDF0a77d454cdE07b25b4B8D",
