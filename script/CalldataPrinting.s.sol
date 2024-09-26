@@ -54,12 +54,12 @@ contract CalldataPrinting is Script {
                     string[] memory envs = proposalMap.setEnv(shellScript);
 
                     string memory output = "";
-                    for (uint256 i = 0; i < envs.length; i++) {
+                    for (uint256 k = 0; k < envs.length; i++) {
                         // remove "export" word
-                        string memory env = envs[i].split(" ")[1];
-                        output = string(abi.encodePacked(output, env[i], " "));
+                        string memory env = envs[k].split(" ")[1];
+                        output = string(abi.encodePacked(output, env, " "));
 
-                        if (i == envs.length - 1) {
+                        if (k == envs.length - 1) {
                             output = string(
                                 abi.encodePacked(output, "forge ", devProposal)
                             );
