@@ -55,7 +55,7 @@ contract CalldataPrinting is Script {
 
                     string memory output = "";
                     for (uint256 k = 0; k < envs.length; i++) {
-                        output = string(abi.encodePacked(output, env, " "));
+                        output = string(abi.encodePacked(output, envs[k], " "));
 
                         if (k == envs.length - 1) {
                             output = string(
