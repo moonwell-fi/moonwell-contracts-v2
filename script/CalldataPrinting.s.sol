@@ -55,8 +55,6 @@ contract CalldataPrinting is Script {
 
                     string memory output = "";
                     for (uint256 k = 0; k < envs.length; i++) {
-                        // remove "export" word
-                        string memory env = envs[k].split(" ")[1];
                         output = string(abi.encodePacked(output, env, " "));
 
                         if (k == envs.length - 1) {
@@ -68,12 +66,12 @@ contract CalldataPrinting is Script {
 
                     console.log(output);
 
-                    Proposal proposal = proposalMap.runProposal(
-                        addresses,
-                        devProposal
-                    );
-                    proposal.printProposalActionSteps();
-                    proposal.printCalldata(addresses);
+                    //                    Proposal proposal = proposalMap.runProposal(
+                    //                        addresses,
+                    //                        devProposal
+                    //                    );
+                    //                    proposal.printProposalActionSteps();
+                    //                    proposal.printCalldata(addresses);
 
                     console.log(
                         "\n===================== PROPOSAL END ===================\n\n"

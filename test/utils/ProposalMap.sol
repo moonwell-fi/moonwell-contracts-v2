@@ -3,12 +3,10 @@ pragma solidity 0.8.19;
 
 import {Script, stdJson} from "@forge-std/Script.sol";
 
-import {String} from "@protocol/utils/String.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract ProposalMap is Script {
-    using String for string;
     using stdJson for string;
 
     struct ProposalFields {
