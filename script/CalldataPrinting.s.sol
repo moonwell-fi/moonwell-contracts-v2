@@ -54,8 +54,9 @@ contract CalldataPrinting is Script {
                     string[] memory envs = proposalMap.setEnv(shellScript);
 
                     string memory output = "";
-                    for (uint256 k = 0; k < envs.length; i++) {
+                    for (uint256 k = 0; k < envs.length; k++) {
                         output = string(abi.encodePacked(output, envs[k], " "));
+                        console.log(output);
 
                         if (k == envs.length - 1) {
                             output = string(
