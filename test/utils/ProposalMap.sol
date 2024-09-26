@@ -157,13 +157,15 @@ contract ProposalMap is Script {
     }
 
     // function to execute shell file to set env variables
-    function setEnv(string memory shellPath) public {
+    function setEnv(
+        string memory shellPath
+    ) public returns (string[] memory envs) {
         if (bytes32(bytes(shellPath)) != bytes32("")) {
             string[] memory inputs = new string[](1);
             inputs[0] = string.concat("./", shellPath);
 
             string memory output = string(vm.ffi(inputs));
-            string[] memory envs = split(output, "\n");
+            envs = split(output, "\n");
 
             // call setEnv for each env variable
             // so we can later call vm.envString

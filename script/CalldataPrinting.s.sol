@@ -51,7 +51,18 @@ contract CalldataPrinting is Script {
                         "\n\n=================== PROPOSAL START ==================\n",
                         devProposal
                     );
-                    proposalMap.setEnv(shellScript);
+                    // log the command by looping over envs and joining them and removing the export keyword from the start
+                    string[] memory envs = proposalMap.setEnv(shellScript);
+
+                    string memory output = "";
+                    for (uint256 i = 0; i < envs.length; i++) {
+                        // remove "export" word
+                        string memory env = envs[i].split(" ")[1];
+                        output = string(abi.encodePacked(output, env[i]));
+                    }
+
+                    console.log(output);
+
                     Proposal proposal = proposalMap.runProposal(
                         addresses,
                         devProposal
