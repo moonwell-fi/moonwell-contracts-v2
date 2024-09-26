@@ -48,8 +48,7 @@ contract CalldataPrinting is Script {
                     keccak256(abi.encodePacked(shellScript))
                 ) {
                     console.log(
-                        "\n\n=================== PROPOSAL START ==================\n",
-                        devProposal
+                        "\n\n=================== PROPOSAL START ==================\n"
                     );
                     // log the command by looping over envs and joining them and removing the export keyword from the start
                     string[] memory envs = proposalMap.setEnv(shellScript);
