@@ -58,7 +58,13 @@ contract CalldataPrinting is Script {
                     for (uint256 i = 0; i < envs.length; i++) {
                         // remove "export" word
                         string memory env = envs[i].split(" ")[1];
-                        output = string(abi.encodePacked(output, env[i]));
+                        output = string(abi.encodePacked(output, env[i], " "));
+
+                        if (i == envs.length - 1) {
+                            output = string(
+                                abi.encodePacked(output, "forge ", devProposal)
+                            );
+                        }
                     }
 
                     console.log(output);
