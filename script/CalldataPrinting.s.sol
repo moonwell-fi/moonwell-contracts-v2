@@ -55,8 +55,7 @@ contract CalldataPrinting is Script {
                     string memory command = "";
                     if (envs.length == 0) {
                         command = string(
-                            abi.encodePacked("forge script "),
-                            devProposal
+                            abi.encodePacked("forge script ", devProposal)
                         );
                     } else {
                         for (uint256 k = 0; k < envs.length; k++) {
