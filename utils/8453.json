@@ -356,7 +356,7 @@
     },
     {
         "addr": "0x706f82e9bb5b0813501714ab5974216704980e31",
-        "name": "WORMHOLE_BRIDGE_RELAYER",
+        "name": "WORMHOLE_BRIDGE_RELAYER_PROXY",
         "isContract": true
     },
     {

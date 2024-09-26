@@ -587,8 +587,8 @@ contract mipx01 is HybridProposal, Configs {
 
             assertEq(
                 address(voteCollection.wormholeRelayer()),
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                "incorrect WORMHOLE_BRIDGE_RELAYER address"
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
+                "incorrect WORMHOLE_BRIDGE_RELAYER_PROXY address"
             );
 
             assertEq(
