@@ -56,23 +56,26 @@ contract CalldataPrinting is Script {
                     string memory output = "";
                     for (uint256 k = 0; k < envs.length; k++) {
                         output = string(abi.encodePacked(output, envs[k], " "));
-                        console.log(output);
 
                         if (k == envs.length - 1) {
                             output = string(
-                                abi.encodePacked(output, "forge ", devProposal)
+                                abi.encodePacked(
+                                    output,
+                                    "forge script",
+                                    devProposal
+                                )
                             );
                         }
                     }
 
                     console.log(output);
 
-                    //                    Proposal proposal = proposalMap.runProposal(
-                    //                        addresses,
-                    //                        devProposal
-                    //                    );
-                    //                    proposal.printProposalActionSteps();
-                    //                    proposal.printCalldata(addresses);
+                    Proposal proposal = proposalMap.runProposal(
+                        addresses,
+                        devProposal
+                    );
+                    proposal.printProposalActionSteps();
+                    proposal.printCalldata(addresses);
 
                     console.log(
                         "\n===================== PROPOSAL END ===================\n\n"
