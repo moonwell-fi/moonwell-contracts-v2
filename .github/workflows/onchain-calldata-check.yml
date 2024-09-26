@@ -27,6 +27,9 @@ jobs:
         with:
           format: "space-delimited"
 
+      - name: Make the script executable
+        run: chmod +x bin/run-onchain-calldata-check.sh
+
       - name: Run Test Proposal Calldata Generation
         uses: nick-fields/retry@v3
         with:
