@@ -178,10 +178,6 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         /// remove restriction for moonbeam actions
         addresses.removeRestriction();
 
-        (string memory proposalPath, ) = proposalMap.getProposalById(
-            proposalId
-        );
-
         {
             /// supports as many destination networks as needed
             uint256 j = targets.length;
