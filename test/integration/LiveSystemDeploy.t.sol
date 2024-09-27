@@ -74,8 +74,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         assertEq(mTokens.length > 0, true, "No markets found");
     }
 
-    function test_setUp() public {}
-
     function _mintMToken(address mToken, uint256 amount) internal {
         address underlying = MErc20(mToken).underlying();
 
@@ -1058,7 +1056,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         MErc20 mToken = MErc20(addresses.getAddress("MOONWELL_WETH"));
         uint256 startingMTokenWethBalance = weth.balanceOf(address(mToken));
 
-        uint256 mintAmount = 1 ether;
+        uint256 mintAmount = _getMaxSupplyAmount(address(mToken));
         vm.deal(address(this), mintAmount);
 
         WETHRouter router = new WETHRouter(
