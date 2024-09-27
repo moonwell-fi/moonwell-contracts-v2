@@ -22,13 +22,6 @@ contract MarketRecommendationsTemplate is
     using ChainIds for uint256;
     using stdStorage for StdStorage;
 
-    struct IRParams {
-        uint256 baseRatePerTimestamp;
-        uint256 jumpMultiplierPerTimestamp;
-        uint256 kink;
-        uint256 multiplierPerTimestamp;
-    }
-
     struct MarketUpdate {
         int256 collateralFactor;
         string irm;
@@ -165,15 +158,14 @@ contract MarketRecommendationsTemplate is
                 _validateCF(
                     addresses,
                     addresses.getAddress(rec.market),
-                    rec.collateralFactor
+                    rec.collateralFactor.toUint256()
                 );
             }
 
             if (rec.reserveFactor != -1) {
                 _validateRF(
-                    addresses,
                     addresses.getAddress(rec.market),
-                    rec.reserveFactor
+                    rec.reserveFactor.toUint256()
                 );
             }
 
