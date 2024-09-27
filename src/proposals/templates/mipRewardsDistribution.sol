@@ -18,12 +18,11 @@ import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
-import {IStellaSwapRewarder} from "@protocol/interfaces/IStellaSwapRewarder.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
+import {IStellaSwapRewarder} from "@protocol/interfaces/IStellaSwapRewarder.sol";
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
-import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract mipRewardsDistribution is HybridProposal, Networks {
@@ -426,7 +425,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress(spec.transferFroms[i].to) ==
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
             ) {
-                assertApproxEqAbs(
+                assertEq(
                     int256(spec.transferFroms[i].amount),
                     spec.stkWellEmissionsPerSecond *
                         int256(endTimeStamp - startTimeStamp),
