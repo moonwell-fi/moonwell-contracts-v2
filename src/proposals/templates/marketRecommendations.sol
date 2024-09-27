@@ -35,10 +35,6 @@ contract MarketRecommendationsTemplate is HybridProposal, Networks {
         return "MIP Market Recommendations Update";
     }
 
-    function name() external pure override returns (string memory) {
-        return "MIP Rewards Distribution";
-    }
-
     function primaryForkId() public pure override returns (uint256) {
         return MOONBEAM_FORK_ID;
     }
@@ -56,11 +52,16 @@ contract MarketRecommendationsTemplate is HybridProposal, Networks {
     function _saveChainMarketUpdate(
         Addresses addresses,
         uint256 chainId,
-        bytes memory data
+        string memory data
     ) internal {
         string memory chain = string.concat(".", vm.toString(chainId));
 
-        MarketUpdate[] memory updates = abi.decode(data, (MarketUpdate[]));
+        bytes memory parsedJson = vm.parseJson(data, chain);
+
+        MarketUpdate[] memory updates = abi.decode(
+            parsedJson,
+            (MarketUpdate[])
+        );
 
         for (uint256 i = 0; i < updates.length; i++) {
             MarketUpdate memory update = updates[i];
@@ -78,7 +79,7 @@ contract MarketRecommendationsTemplate is HybridProposal, Networks {
         }
     }
 
-    function _buildChainActions(Addresses addresses, uint256 chainId) {
+    function _buildChainActions(Addresses addresses, uint256 chainId) public {
         vm.selectFork(chainId.toForkId());
         MarketUpdate[] memory updates = marketUpdates[chainId];
 
