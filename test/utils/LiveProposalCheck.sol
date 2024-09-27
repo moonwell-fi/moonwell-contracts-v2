@@ -143,7 +143,10 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             proposalId
         );
 
+        proposalMap.setEnv(envPath);
+
         Proposal proposal = Proposal(deployCode(proposalPath));
+
         proposal.beforeSimulationHook(addresses);
 
         uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
