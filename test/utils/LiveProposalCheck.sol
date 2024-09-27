@@ -139,9 +139,8 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
         address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
 
-        (string memory proposalPath, ) = proposalMap.getProposalById(
-            proposalId
-        );
+        (string memory proposalPath, string memory envPath) = proposalMap
+            .getProposalById(proposalId);
 
         proposalMap.setEnv(envPath);
 
