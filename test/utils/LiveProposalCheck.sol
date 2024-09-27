@@ -171,6 +171,13 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         /// remove restriction for moonbeam actions
         addresses.removeRestriction();
 
+        (string memory proposalPath, string memory envPath) = proposalMap
+            .getProposalById(proposalId);
+
+        // calls before simulation hook to mock wormhole
+        Proposal proposal = Proposal(deployCode(proposalPath));
+        proposal.beforeSimulationHook(addresses);
+
         {
             /// supports as many destination networks as needed
             uint256 j = targets.length;
@@ -198,6 +205,8 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                 j--;
             }
         }
+
+        proposal.afterSimulationHook(addresses);
 
         if (vm.activeFork() != MOONBEAM_FORK_ID) {
             vm.selectFork(MOONBEAM_FORK_ID);
