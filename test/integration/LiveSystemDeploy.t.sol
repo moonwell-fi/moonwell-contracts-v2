@@ -74,6 +74,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         assertEq(mTokens.length > 0, true, "No markets found");
     }
 
+    function test_setUp() public {}
+
     function _mintMToken(address mToken, uint256 amount) internal {
         address underlying = MErc20(mToken).underlying();
 
