@@ -15,10 +15,10 @@ contract MarketRecommendationsTemplate is HybridProposal, Networks {
     using stdStorage for StdStorage;
 
     struct MarketUpdate {
-        uint256 collateralFactor;
+        int256 collateralFactor;
         string irm;
         string market;
-        uint256 reserveFactor;
+        int256 reserveFactor;
     }
 
     mapping(uint256 chainId => MarketUpdate[]) public marketUpdates;
@@ -56,7 +56,7 @@ contract MarketRecommendationsTemplate is HybridProposal, Networks {
     function _saveChainMarketUpdate(
         Addresses addresses,
         uint256 chainId,
-        string memory data
+        bytes memory data
     ) internal {
         string memory chain = string.concat(".", vm.toString(chainId));
 
