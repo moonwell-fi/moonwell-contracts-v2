@@ -183,7 +183,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
 
         initData.well = addresses.getAddress("GOVTOKEN");
         initData.xWell = addresses.getAddress("xWELL_PROXY");
-        initData.stkWell = addresses.getAddress("STK_GOVTOKEN");
+        initData.stkWell = addresses.getAddress("STK_GOVTOKEN_PROXY");
         initData.distributor = addresses.getAddress(
             "TOKEN_SALE_DISTRIBUTOR_PROXY"
         );
@@ -202,7 +202,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
             "BREAK_GLASS_GUARDIAN"
         );
         initData.wormholeRelayer = addresses.getAddress(
-            "WORMHOLE_BRIDGE_RELAYER"
+            "WORMHOLE_BRIDGE_RELAYER_PROXY"
         );
 
         require(approvedCalldata.length == 6, "calldata not set");
@@ -264,7 +264,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         );
         assertEq(
             address(governor.stkWell()),
-            addresses.getAddress("STK_GOVTOKEN"),
+            addresses.getAddress("STK_GOVTOKEN_PROXY"),
             "incorrect stkWell address"
         );
         assertEq(
@@ -284,7 +284,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         );
         assertEq(
             address(governor.wormholeRelayer()),
-            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
             "incorrect wormholeRelayer"
         );
         assertEq(

@@ -218,7 +218,7 @@ contract BreakGlass is Script, HybridProposal {
         });
 
         calls[12] = Calls({
-            target: addresses.getAddress("STK_GOVTOKEN"),
+            target: addresses.getAddress("STK_GOVTOKEN_PROXY"),
             call: approvedCalldata[3] /// setEmissionsManager
         });
 

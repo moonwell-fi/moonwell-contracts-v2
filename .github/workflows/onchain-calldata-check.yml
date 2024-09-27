@@ -21,6 +21,15 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
+      - name: Get Changed Files
+        id: files
+        uses: jitterbit/get-changed-files@v1
+        with:
+          format: "space-delimited"
+
+      - name: Make the script executable
+        run: chmod +x bin/run-onchain-calldata-check.sh
+
       - name: Run Test Proposal Calldata Generation
         uses: nick-fields/retry@v3
         with:
@@ -28,7 +37,5 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 20
            max_attempts: 3
-           command: >-
-             time forge test --match-contract TestProposalCalldataGeneration 
-             -vvv --ffi --block-gas-limit 10000000000
+           command: bin/run-onchain-calldata-check.sh
 

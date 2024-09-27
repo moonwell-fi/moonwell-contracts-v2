@@ -167,7 +167,7 @@
     {
         "addr": "0x27428DD2d3DD32A4D7f7C497eAaa23130d894911",
         "isContract": true,
-        "name": "WORMHOLE_BRIDGE_RELAYER"
+        "name": "WORMHOLE_BRIDGE_RELAYER_PROXY"
     },
     {
         "addr": "0x17C9ba3fDa7EC71CcfD75f978Ef31E21927aFF3d",
@@ -177,7 +177,7 @@
     {
         "addr": "0xFf0731337F615aC5403cb243623283BC04cDe121",
         "isContract": true,
-        "name": "MULTI_REWARD_DISTRIBUTOR"
+        "name": "MRD_IMPL"
     },
     {
         "addr": "0x8dFBb21dbD61af533092d54B293660CF77A30Ce2",
@@ -367,7 +367,7 @@
     {
         "addr": "0xfB26A4947A38cb53e2D083c6490060CCCE7438c5",
         "isContract": true,
-        "name": "STK_GOVTOKEN"
+        "name": "STK_GOVTOKEN_PROXY"
     },
     {
         "addr": "0xAbd65097F869f36f56Be9eC60DfB4A441a00c47C",
