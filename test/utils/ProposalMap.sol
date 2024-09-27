@@ -58,7 +58,10 @@ contract ProposalMap is Script {
 
         // only includes multichain governor proposals to mapping
         // to avoid ids conflict
-        if (proposal.governor == "MultichainGovernor") {
+        if (
+            keccak256(abi.encodePacked(proposal.governor)) ==
+            keccak256(abi.encodePacked("MultichainGovernor"))
+        ) {
             proposalIdToIndex[proposal.id] = index;
             proposalPathToIndex[proposal.path] = index;
         }
