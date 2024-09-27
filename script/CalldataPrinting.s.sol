@@ -48,10 +48,35 @@ contract CalldataPrinting is Script {
                     keccak256(abi.encodePacked(shellScript))
                 ) {
                     console.log(
-                        "\n\n=================== PROPOSAL START ==================\n",
-                        devProposal
+                        "\n\n=================== PROPOSAL START ==================\n"
                     );
-                    proposalMap.setEnv(shellScript);
+                    string[] memory envs = proposalMap.setEnv(shellScript);
+
+                    string memory command = "";
+                    if (envs.length == 0) {
+                        command = string(
+                            abi.encodePacked("forge script ", devProposal)
+                        );
+                    } else {
+                        for (uint256 k = 0; k < envs.length; k++) {
+                            command = string(
+                                abi.encodePacked(command, envs[k], " ")
+                            );
+
+                            if (k == envs.length - 1) {
+                                command = string(
+                                    abi.encodePacked(
+                                        command,
+                                        "forge script ",
+                                        devProposal
+                                    )
+                                );
+                            }
+                        }
+                    }
+
+                    console.log(command);
+
                     Proposal proposal = proposalMap.runProposal(
                         addresses,
                         devProposal

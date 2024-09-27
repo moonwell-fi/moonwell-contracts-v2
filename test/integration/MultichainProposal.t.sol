@@ -114,7 +114,6 @@ contract MultichainProposalTest is PostProposalCheck {
                 vm.selectFork(BASE_FORK_ID);
                 vm.warp(startTimestamp);
 
-                xWELL baseWell = xWELL(addresses.getAddress("xWELL_PROXY"));
                 stakedWellBase = IStakedWell(
                     addresses.getAddress("STK_GOVTOKEN")
                 );
