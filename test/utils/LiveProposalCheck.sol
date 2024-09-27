@@ -139,6 +139,9 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
         address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
 
+        /// remove restriction for moonbeam actions
+        addresses.removeRestriction();
+
         (string memory proposalPath, string memory envPath) = proposalMap
             .getProposalById(proposalId);
 
@@ -176,9 +179,6 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         }
 
         governor.execute{value: totalValue}(proposalId);
-
-        /// remove restriction for moonbeam actions
-        addresses.removeRestriction();
 
         {
             /// supports as many destination networks as needed
