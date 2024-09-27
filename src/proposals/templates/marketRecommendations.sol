@@ -4,15 +4,30 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 import "@forge-std/StdJson.sol";
 
+import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+
 import "@protocol/utils/ChainIds.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 
-contract MarketRecommendationsTemplate is HybridProposal, Networks {
+contract MarketRecommendationsTemplate is
+    HybridProposal,
+    Networks,
+    ParameterValidation
+{
+    using SafeCast for *;
     using stdJson for string;
     using ChainIds for uint256;
     using stdStorage for StdStorage;
+
+    struct IRParams {
+        uint256 baseRatePerTimestamp;
+        uint256 jumpMultiplierPerTimestamp;
+        uint256 kink;
+        uint256 multiplierPerTimestamp;
+    }
 
     struct MarketUpdate {
         int256 collateralFactor;
@@ -64,18 +79,23 @@ contract MarketRecommendationsTemplate is HybridProposal, Networks {
         );
 
         for (uint256 i = 0; i < updates.length; i++) {
-            MarketUpdate memory update = updates[i];
+            MarketUpdate memory rec = updates[i];
 
-            console.log("Updating market %s on chain %s", update.market, chain);
+            require(
+                addresses.getAddress(rec.market) != address(0),
+                "Market address is not set"
+            );
+
+            console.log("Updating market %s on chain %s", rec.market, chain);
 
             console.log(
                 "Reserve factor: %s, collateral factor: %s, IRM: %s",
-                vm.toString(update.reserveFactor),
-                vm.toString(update.collateralFactor),
-                update.irm
+                vm.toString(rec.reserveFactor),
+                vm.toString(rec.collateralFactor),
+                rec.irm
             );
 
-            marketUpdates[chainId].push(update);
+            marketUpdates[chainId].push(rec);
         }
     }
 
@@ -90,7 +110,7 @@ contract MarketRecommendationsTemplate is HybridProposal, Networks {
                     addresses.getAddress(rec.market),
                     abi.encodeWithSignature(
                         "_setCollateralFactor(uint256)",
-                        rec.collateralFactor
+                        rec.collateralFactor.toUint256()
                     ),
                     string(
                         abi.encodePacked(
@@ -106,7 +126,7 @@ contract MarketRecommendationsTemplate is HybridProposal, Networks {
                     addresses.getAddress(rec.market),
                     abi.encodeWithSignature(
                         "_setReserveFactor(uint256)",
-                        rec.reserveFactor
+                        rec.reserveFactor.toUint256()
                     ),
                     string(
                         abi.encodePacked("Set reserve factor for ", rec.market)
@@ -132,6 +152,32 @@ contract MarketRecommendationsTemplate is HybridProposal, Networks {
             uint256 chainId = networks[i].chainId;
 
             //_validateChain(addresses, chainId);
+        }
+    }
+
+    function _validateChain(Addresses addresses, uint256 chainId) private view {
+        MarketUpdate[] memory updates = marketUpdates[chainId];
+
+        for (uint256 i = 0; i < updates.length; i++) {
+            MarketUpdate memory rec = updates[i];
+
+            if (rec.collateralFactor != -1) {
+                _validateCF(
+                    addresses,
+                    addresses.getAddress(rec.market),
+                    rec.collateralFactor
+                );
+            }
+
+            if (rec.reserveFactor != -1) {
+                _validateRF(
+                    addresses,
+                    addresses.getAddress(rec.market),
+                    rec.reserveFactor
+                );
+            }
+
+            if (keccak256(abi.encodePacked(rec.irm)) != keccak256("")) {}
         }
     }
 }
