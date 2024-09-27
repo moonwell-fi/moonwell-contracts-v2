@@ -56,8 +56,12 @@ contract ProposalMap is Script {
         proposals[index].path = proposal.path;
         proposals[index].proposalType = proposal.proposalType;
 
-        proposalIdToIndex[proposal.id] = index;
-        proposalPathToIndex[proposal.path] = index;
+        // only includes multichain governor proposals to mapping
+        // to avoid ids conflict
+        if (proposal.governor == "MultichainGovernor") {
+            proposalIdToIndex[proposal.id] = index;
+            proposalPathToIndex[proposal.path] = index;
+        }
     }
 
     function getProposalById(
