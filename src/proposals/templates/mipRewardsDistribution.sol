@@ -290,7 +290,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         bytes32 encodedData = bytes32(
             (uint256(
-                uint160(addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"))
+                uint160(addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"))
             ) << 96) | uint256(gasLimit)
         );
 
@@ -1050,7 +1050,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
 
             IWormholeRelayer relayer = IWormholeRelayer(
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY")
             );
 
             (uint256 quoteEVMDeliveryPrice, ) = relayer.quoteEVMDeliveryPrice(
