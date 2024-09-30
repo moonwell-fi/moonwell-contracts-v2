@@ -1211,7 +1211,7 @@ contract MultichainProposalTest is PostProposalCheck {
         vm.selectFork(BASE_FORK_ID);
 
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
-        xwellMintAmount = xwell.buffer(
+        uint256 xwellMintAmount = xwell.buffer(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
         );
 
@@ -1220,6 +1220,11 @@ contract MultichainProposalTest is PostProposalCheck {
         xwell.approve(address(stakedWellBase), xwellMintAmount);
 
         stakedWellBase.stake(address(this), xwellMintAmount);
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
+
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
@@ -1268,6 +1273,8 @@ contract MultichainProposalTest is PostProposalCheck {
             assertEq(againstVotes, 0, "incorrect against votes");
             assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
+
+        vm.selectFork(BASE_FORK_ID);
 
         /// vote yes on proposal
         voteCollection.castVote(proposalId, 0);
