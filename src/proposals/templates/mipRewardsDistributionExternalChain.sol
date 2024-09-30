@@ -17,7 +17,6 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
