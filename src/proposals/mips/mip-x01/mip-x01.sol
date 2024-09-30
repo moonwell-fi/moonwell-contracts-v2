@@ -431,7 +431,7 @@ contract mipx01 is HybridProposal, Configs {
 
             validateProxy(
                 vm,
-                addresses.getAddress("STK_GOVTOKEN"),
+                addresses.getAddress("STK_GOVTOKEN_PROXY"),
                 addresses.getAddress("STK_GOVTOKEN_IMPL"),
                 addresses.getAddress("MRD_PROXY_ADMIN"),
                 "STK_GOVTOKEN validation"
@@ -482,7 +482,7 @@ contract mipx01 is HybridProposal, Configs {
             assertEq(
                 xWell.allowance(
                     address(ecosystemReserve),
-                    addresses.getAddress("STK_GOVTOKEN")
+                    addresses.getAddress("STK_GOVTOKEN_PROXY")
                 ),
                 approvalAmount,
                 "ecosystem reserve not approved to give stkWELL_PROXY approvalAmount"
@@ -501,7 +501,7 @@ contract mipx01 is HybridProposal, Configs {
         /// validate stkWELL contract
         {
             IStakedWellUplift stkWell = IStakedWellUplift(
-                addresses.getAddress("STK_GOVTOKEN")
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
             );
 
             {
@@ -581,14 +581,14 @@ contract mipx01 is HybridProposal, Configs {
 
             assertEq(
                 address(voteCollection.stkWell()),
-                addresses.getAddress("STK_GOVTOKEN"),
+                addresses.getAddress("STK_GOVTOKEN_PROXY"),
                 "incorrect stkWELL"
             );
 
             assertEq(
                 address(voteCollection.wormholeRelayer()),
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
-                "incorrect WORMHOLE_BRIDGE_RELAYER address"
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
+                "incorrect WORMHOLE_BRIDGE_RELAYER_PROXY address"
             );
 
             assertEq(

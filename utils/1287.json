@@ -41,7 +41,7 @@
     },
     {
         "addr": "0x0591C25ebd0580E0d4F27A82Fc2e24E7489CB5e0",
-        "name": "WORMHOLE_BRIDGE_RELAYER",
+        "name": "WORMHOLE_BRIDGE_RELAYER_PROXY",
         "isContract": true
     },
     {
@@ -116,7 +116,7 @@
     },
     {
         "addr": "0xCBfcab5e2E9DdC0B5Fa8B06Cd0e7a928c6D58DC0",
-        "name": "STK_GOVTOKEN",
+        "name": "STK_GOVTOKEN_PROXY",
         "isContract": true
     },
     {

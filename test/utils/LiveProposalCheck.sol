@@ -139,6 +139,18 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
         address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
 
+        /// remove restriction for moonbeam actions
+        addresses.removeRestriction();
+
+        (string memory proposalPath, string memory envPath) = proposalMap
+            .getProposalById(proposalId);
+
+        proposalMap.setEnv(envPath);
+
+        Proposal proposal = Proposal(deployCode(proposalPath));
+
+        proposal.beforeSimulationHook(addresses);
+
         uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
             address(governor)
         );
@@ -167,9 +179,6 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         }
 
         governor.execute{value: totalValue}(proposalId);
-
-        /// remove restriction for moonbeam actions
-        addresses.removeRestriction();
 
         {
             /// supports as many destination networks as needed
@@ -202,6 +211,8 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         if (vm.activeFork() != MOONBEAM_FORK_ID) {
             vm.selectFork(MOONBEAM_FORK_ID);
         }
+
+        proposal.afterSimulationHook(addresses);
     }
 
     function _execExtChain(
@@ -275,7 +286,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             (string memory proposalPath, string memory envPath) = proposalMap
                 .getProposalById(proposalId);
 
-            proposalMap.executeShellFile(envPath);
+            proposalMap.setEnv(envPath);
 
             Proposal proposal = Proposal(deployCode(proposalPath));
 

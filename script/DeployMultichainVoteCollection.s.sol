@@ -32,12 +32,12 @@ contract DeployMultichainVoteCollection is Script, MultichainGovernorDeploy {
             address collectionImpl
         ) = deployVoteCollection(
                 addresses.getAddress("xWELL_PROXY"),
-                addresses.getAddress("STK_GOVTOKEN"),
+                addresses.getAddress("STK_GOVTOKEN_PROXY"),
                 addresses.getAddress(
                     "MULTICHAIN_GOVERNOR_PROXY",
                     block.chainid.toMoonbeamChainId()
                 ),
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
                 block.chainid.toMoonbeamWormholeChainId(),
                 addresses.getAddress("MRD_PROXY_ADMIN"),
                 addresses.getAddress("TEMPORAL_GOVERNOR")

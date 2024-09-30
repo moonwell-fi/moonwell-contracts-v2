@@ -641,11 +641,11 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
         if (spec.stkWellEmissionsPerSecond != -1) {
             _pushAction(
-                addresses.getAddress("STK_GOVTOKEN"),
+                addresses.getAddress("STK_GOVTOKEN_PROXY"),
                 abi.encodeWithSignature(
                     "configureAsset(uint128,address)",
                     spec.stkWellEmissionsPerSecond.toUint256().toUint128(),
-                    addresses.getAddress("STK_GOVTOKEN")
+                    addresses.getAddress("STK_GOVTOKEN_PROXY")
                 ),
                 string(
                     abi.encodePacked(
@@ -709,7 +709,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         uint256 gasLimit = wormholeBridgeAdapter.gasLimit();
 
         IWormholeRelayer relayer = IWormholeRelayer(
-            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER")
+            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY")
         );
 
         (uint256 quoteEVMDeliveryPrice, ) = relayer.quoteEVMDeliveryPrice(
@@ -785,11 +785,11 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         {
             // validate emissions per second for the Safety Module
             IStakedWell stkWell = IStakedWell(
-                addresses.getAddress("STK_GOVTOKEN")
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
             );
 
             (uint256 emissionsPerSecond, , ) = stkWell.assets(
-                addresses.getAddress("STK_GOVTOKEN")
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
             );
             assertEq(
                 int256(emissionsPerSecond),
@@ -911,7 +911,7 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
 
         bytes32 encodedData = bytes32(
             (uint256(
-                uint160(addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"))
+                uint160(addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"))
             ) << 96) | uint256(gasLimit)
         );
 
