@@ -41,12 +41,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         deal(address(underlying), address(this), mintAmount);
         underlying.approve(address(factory), mintAmount);
 
-        vault = MoonwellERC4626(
-            factory.deployMoonwellERC4626(
-                addresses.getAddress("MOONWELL_USDBC"),
-                rewardRecipient
-            )
-        );
+        vault = MoonwellERC4626(addresses.getAddress("USDC_METAMORPHO_VAULT"));
 
         comptroller = IComptroller(addresses.getAddress("UNITROLLER"));
         usdc = ERC20(addresses.getAddress("USDBC"));
