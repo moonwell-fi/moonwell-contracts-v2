@@ -1208,6 +1208,19 @@ contract MultichainProposalTest is PostProposalCheck {
         well.transfer(address(this), mintAmount);
         well.delegate(address(this));
 
+        vm.selectFork(BASE_FORK_ID);
+
+        xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
+        xwellMintAmount = xwell.buffer(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+
+        vm.prank(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
+        xwell.mint(address(this), xwellMintAmount);
+        xwell.approve(address(stakedWellBase), xwellMintAmount);
+
+        stakedWellBase.stake(address(this), xwellMintAmount);
+
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + 1);
 
@@ -1241,27 +1254,6 @@ contract MultichainProposalTest is PostProposalCheck {
         );
 
         _assertProposalCreated(proposalId, address(this));
-
-        uint256 xwellMintAmount;
-        {
-            uint256 startTimestamp = block.timestamp;
-            uint256 endTimestamp = startTimestamp + governor.votingPeriod();
-
-            vm.selectFork(BASE_FORK_ID);
-
-            vm.warp(startTimestamp - 5);
-            xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
-            xwellMintAmount = xwell.buffer(
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-            );
-
-            vm.prank(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
-            xwell.mint(address(this), xwellMintAmount);
-            xwell.approve(address(stakedWellBase), xwellMintAmount);
-            stakedWellBase.stake(address(this), xwellMintAmount);
-
-            vm.warp(endTimestamp - 5);
-        }
 
         {
             (
