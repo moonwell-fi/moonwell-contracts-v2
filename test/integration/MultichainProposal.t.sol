@@ -1260,6 +1260,8 @@ contract MultichainProposalTest is PostProposalCheck {
 
         _assertProposalCreated(proposalId, address(this));
 
+        vm.selectFork(BASE_FORK_ID);
+
         {
             (
                 uint256 totalVotes,
@@ -1273,8 +1275,6 @@ contract MultichainProposalTest is PostProposalCheck {
             assertEq(againstVotes, 0, "incorrect against votes");
             assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
-
-        vm.selectFork(BASE_FORK_ID);
 
         /// vote yes on proposal
         voteCollection.castVote(proposalId, 0);
