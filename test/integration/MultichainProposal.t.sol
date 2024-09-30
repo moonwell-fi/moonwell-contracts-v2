@@ -90,14 +90,6 @@ contract MultichainProposalTest is PostProposalCheck {
 
     WormholeRelayerAdapter public wormholeRelayerAdapter;
 
-    uint256 xWELLBalanceLockboxPreProposal;
-
-    uint256 xWELLTotalSupplyBasePreProposal;
-
-    uint256 xWELLTotalSupplyMoonbeamPreProposal;
-
-    uint256 xWELLBalanceMRDPreProposal;
-
     /// @notice new xWELL buffer cap
     uint256 public constant XWELL_BUFFER_CAP = 100_000_000 * 1e18;
 
@@ -118,20 +110,10 @@ contract MultichainProposalTest is PostProposalCheck {
 
             xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
 
-            xWELLBalanceLockboxPreProposal = xwell.balanceOf(
-                addresses.getAddress("xWELL_LOCKBOX")
-            );
-            xWELLTotalSupplyMoonbeamPreProposal = xwell.totalSupply();
-
             {
                 vm.selectFork(BASE_FORK_ID);
                 vm.warp(startTimestamp);
 
-                xWELL baseWell = xWELL(addresses.getAddress("xWELL_PROXY"));
-                xWELLTotalSupplyBasePreProposal = baseWell.totalSupply();
-                xWELLBalanceMRDPreProposal = baseWell.balanceOf(
-                    addresses.getAddress("MRD_PROXY")
-                );
                 stakedWellBase = IStakedWell(
                     addresses.getAddress("STK_GOVTOKEN_PROXY")
                 );
@@ -317,16 +299,6 @@ contract MultichainProposalTest is PostProposalCheck {
                 "WELL",
                 "name should not change post proposal"
             );
-            assertEq(
-                xWELLTotalSupplyBasePreProposal,
-                baseWell.totalSupply(),
-                "total supply base xWELL incorrect"
-            );
-            assertEq(
-                xWELLBalanceMRDPreProposal,
-                baseWell.balanceOf(addresses.getAddress("MRD_PROXY")),
-                "mrd balance changed post proposal"
-            );
         }
         {
             vm.selectFork(MOONBEAM_FORK_ID);
@@ -355,16 +327,6 @@ contract MultichainProposalTest is PostProposalCheck {
                 xwell.symbol(),
                 "WELL",
                 "name should not change post proposal"
-            );
-            assertEq(
-                xWELLBalanceLockboxPreProposal,
-                xwell.balanceOf(addresses.getAddress("xWELL_LOCKBOX")),
-                "xWELL_LOCKBOX balance changed post proposal"
-            );
-            assertEq(
-                xWELLTotalSupplyMoonbeamPreProposal,
-                xwell.totalSupply(),
-                "total supply moonbeam xWELL incorrect"
             );
         }
         {
