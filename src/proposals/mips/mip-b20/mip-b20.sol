@@ -37,11 +37,11 @@ contract mipb20 is HybridProposal, Configs, ParameterValidation {
 
     function build(Addresses addresses) public override {
         _pushAction(
-            addresses.getAddress("STK_GOVTOKEN"),
+            addresses.getAddress("STK_GOVTOKEN_PROXY"),
             abi.encodeWithSignature(
                 "configureAsset(uint128,address)",
                 NEW_REWARD_SPEED,
-                addresses.getAddress("STK_GOVTOKEN")
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
             ),
             "Set new reward speed to 2.475835385901440000 WELL per second"
         );
@@ -53,10 +53,10 @@ contract mipb20 is HybridProposal, Configs, ParameterValidation {
     /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
         IStakedWellUplift stkWell = IStakedWellUplift(
-            addresses.getAddress("STK_GOVTOKEN")
+            addresses.getAddress("STK_GOVTOKEN_PROXY")
         );
         (uint128 emissionsPerSecond, , ) = stkWell.assets(
-            addresses.getAddress("STK_GOVTOKEN")
+            addresses.getAddress("STK_GOVTOKEN_PROXY")
         );
 
         assertEq(emissionsPerSecond, NEW_REWARD_SPEED, "emissionsPerSecond");

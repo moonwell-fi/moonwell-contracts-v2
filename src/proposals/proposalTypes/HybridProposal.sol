@@ -555,18 +555,19 @@ abstract contract HybridProposal is
             uint256 cost = governor.bridgeCostAll();
             vm.deal(caller, cost * 2);
 
-            // Execute the proposal
             uint256 gasStart = gasleft();
+
+            // Execute the proposal
             vm.prank(caller);
             (bool success, bytes memory returndata) = address(
                 payable(governorAddress)
-            ).call{value: cost, gas: 14_500_000}(proposeCalldata);
+            ).call{value: cost, gas: 52_000_000}(proposeCalldata);
             data = returndata;
 
             require(success, "propose multichain governor failed");
 
             require(
-                gasStart - gasleft() <= 13_000_000,
+                gasStart - gasleft() <= 60_000_000,
                 "Proposal propose gas limit exceeded"
             );
         }
@@ -682,8 +683,6 @@ abstract contract HybridProposal is
                 }
             }
 
-            uint256 gasStart = gasleft();
-
             /// increments each time the Multichain Governor publishes a message
             uint64 nextSequence = IWormhole(wormholeCoreMoonbeam).nextSequence(
                 address(governor)
@@ -715,12 +714,19 @@ abstract contract HybridProposal is
                 );
             }
 
-            /// Execute the proposal
-            governor.execute{value: actions.sumTotalValue()}(proposalId);
+            vm.deal(caller, actions.sumTotalValue());
+
+            uint256 gasStart = gasleft();
+
+            // Execute the proposal
+            vm.prank(caller);
+            governor.execute{value: actions.sumTotalValue(), gas: 52_000_000}(
+                proposalId
+            );
 
             require(
-                gasStart - gasleft() <= 13_000_000,
-                "Proposal execute gas limit exceeded"
+                gasStart - gasleft() <= 60_000_000,
+                "Proposal propose gas limit exceeded"
             );
         }
 

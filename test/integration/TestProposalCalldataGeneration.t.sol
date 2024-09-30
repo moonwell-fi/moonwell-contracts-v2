@@ -13,7 +13,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
-contract TestProposalCalldataGeneration is ProposalMap {
+contract TestProposalCalldataGeneration is ProposalMap, Test {
     Addresses public addresses;
 
     MultichainGovernor public governor;
@@ -55,7 +55,7 @@ contract TestProposalCalldataGeneration is ProposalMap {
                 continue;
             }
 
-            executeShellFile(multichainGovernorProposals[i - 1].envPath);
+            setEnv(multichainGovernorProposals[i - 1].envPath);
 
             string memory proposalPath = multichainGovernorProposals[i - 1]
                 .path;
@@ -121,7 +121,7 @@ contract TestProposalCalldataGeneration is ProposalMap {
                 continue;
             }
 
-            executeShellFile(artemisGovernorProposals[i - 1].envPath);
+            setEnv(artemisGovernorProposals[i - 1].envPath);
 
             string memory proposalPath = artemisGovernorProposals[i - 1].path;
 
@@ -187,7 +187,7 @@ contract TestProposalCalldataGeneration is ProposalMap {
                 continue;
             }
 
-            executeShellFile(artemisGovernorProposals[i - 1].envPath);
+            setEnv(artemisGovernorProposals[i - 1].envPath);
 
             string memory proposalPath = artemisGovernorProposals[i - 1].path;
 

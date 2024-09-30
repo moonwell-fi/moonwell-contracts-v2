@@ -19,6 +19,8 @@ jobs:
       - name: Unit Test Contracts
         uses: nick-fields/retry@v3
         with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
            timeout_minutes: 10
            max_attempts: 3
            command: time forge test -vvv --match-contract UnitTest
