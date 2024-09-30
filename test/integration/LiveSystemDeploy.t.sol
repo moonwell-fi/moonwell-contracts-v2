@@ -25,7 +25,6 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
