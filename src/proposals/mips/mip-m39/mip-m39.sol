@@ -33,9 +33,11 @@ contract mipm39 is HybridProposal, ParameterValidation {
         return MOONBEAM_FORK_ID;
     }
 
-    function deploy(Addresses addresses, address) public override {
+    function beforeSimulationHook(Addresses addresses) public override {
         etch(vm, addresses);
     }
+
+    function deploy(Addresses addresses, address) public override {}
 
     /// run this action through the Multichain Governor
     function build(Addresses addresses) public override {
@@ -87,10 +89,12 @@ contract mipm39 is HybridProposal, ParameterValidation {
 
         _pushAction(
             addresses.getAddress("MOONWELL_mWBTC"),
-            abi.encodeWithSignature("_setReserveFactor(uint256)", NEW_M_WBTCWH_RESERVE_FACTOR),
+            abi.encodeWithSignature(
+                "_setReserveFactor(uint256)",
+                NEW_M_WBTCWH_RESERVE_FACTOR
+            ),
             "Set reserve factor for Moonwell WBTC to updated reserve factor"
         );
-
     }
 
     function run(Addresses addresses, address) public override {
@@ -134,7 +138,9 @@ contract mipm39 is HybridProposal, ParameterValidation {
             NEW_M_XCUSDC_COLLATERAL_FACTOR
         );
 
-        _validateRF(addresses.getAddress("MOONWELL_mWBTC"), NEW_M_WBTCWH_RESERVE_FACTOR);
-
+        _validateRF(
+            addresses.getAddress("MOONWELL_mWBTC"),
+            NEW_M_WBTCWH_RESERVE_FACTOR
+        );
     }
 }
