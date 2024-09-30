@@ -42,9 +42,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     mapping(MToken => address[] rewardTokens) rewardsConfig;
 
     function setUp() public override {
+        uint256 primaryForkId = vm.envUint("PRIMARY_FORK_ID");
         super.setUp();
 
-        vm.envUint("PRIMARY_FORK_ID").createForksAndSelect();
+        vm.selectFork(primaryForkId);
 
         addresses = new Addresses();
 
@@ -1055,7 +1056,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         MErc20 mToken = MErc20(addresses.getAddress("MOONWELL_WETH"));
         uint256 startingMTokenWethBalance = weth.balanceOf(address(mToken));
 
-        uint256 mintAmount = 1 ether;
+        uint256 mintAmount = _getMaxSupplyAmount(address(mToken));
         vm.deal(address(this), mintAmount);
 
         WETHRouter router = new WETHRouter(

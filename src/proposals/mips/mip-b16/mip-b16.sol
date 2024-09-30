@@ -75,11 +75,11 @@ contract mipb16 is
         );
 
         _pushAction(
-            addresses.getAddress("STK_GOVTOKEN"),
+            addresses.getAddress("STK_GOVTOKEN_PROXY"),
             abi.encodeWithSignature(
                 "configureAsset(uint128,address)",
                 REWARD_SPEED,
-                addresses.getAddress("STK_GOVTOKEN")
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
             ),
             "Set reward speed for the Safety Module on Base"
         );
@@ -108,7 +108,7 @@ contract mipb16 is
     function validate(Addresses addresses, address) public override {
         vm.selectFork(primaryForkId());
 
-        address stkWellProxy = addresses.getAddress("STK_GOVTOKEN");
+        address stkWellProxy = addresses.getAddress("STK_GOVTOKEN_PROXY");
         (
             uint128 emissionsPerSecond,
             uint128 lastUpdateTimestamp,

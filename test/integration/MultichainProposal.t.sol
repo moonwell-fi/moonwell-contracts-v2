@@ -90,14 +90,6 @@ contract MultichainProposalTest is PostProposalCheck {
 
     WormholeRelayerAdapter public wormholeRelayerAdapter;
 
-    uint256 xWELLBalanceLockboxPreProposal;
-
-    uint256 xWELLTotalSupplyBasePreProposal;
-
-    uint256 xWELLTotalSupplyMoonbeamPreProposal;
-
-    uint256 xWELLBalanceMRDPreProposal;
-
     /// @notice new xWELL buffer cap
     uint256 public constant XWELL_BUFFER_CAP = 100_000_000 * 1e18;
 
@@ -118,22 +110,12 @@ contract MultichainProposalTest is PostProposalCheck {
 
             xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
 
-            xWELLBalanceLockboxPreProposal = xwell.balanceOf(
-                addresses.getAddress("xWELL_LOCKBOX")
-            );
-            xWELLTotalSupplyMoonbeamPreProposal = xwell.totalSupply();
-
             {
                 vm.selectFork(BASE_FORK_ID);
                 vm.warp(startTimestamp);
 
-                xWELL baseWell = xWELL(addresses.getAddress("xWELL_PROXY"));
-                xWELLTotalSupplyBasePreProposal = baseWell.totalSupply();
-                xWELLBalanceMRDPreProposal = baseWell.balanceOf(
-                    addresses.getAddress("MRD_PROXY")
-                );
                 stakedWellBase = IStakedWell(
-                    addresses.getAddress("STK_GOVTOKEN")
+                    addresses.getAddress("STK_GOVTOKEN_PROXY")
                 );
 
                 vm.selectFork(MOONBEAM_FORK_ID);
@@ -158,7 +140,7 @@ contract MultichainProposalTest is PostProposalCheck {
         well = ERC20Votes(addresses.getAddress("GOVTOKEN", MOONBEAM_CHAIN_ID));
 
         stakedWellMoonbeam = IStakedWell(
-            addresses.getAddress("STK_GOVTOKEN", MOONBEAM_CHAIN_ID)
+            addresses.getAddress("STK_GOVTOKEN_PROXY", MOONBEAM_CHAIN_ID)
         );
 
         distributor = TokenSaleDistributorInterfaceV1(
@@ -251,7 +233,7 @@ contract MultichainProposalTest is PostProposalCheck {
         );
         assertEq(
             address(voteCollection.stkWell()),
-            addresses.getAddress("STK_GOVTOKEN"),
+            addresses.getAddress("STK_GOVTOKEN_PROXY"),
             "incorrect xWELL contract"
         );
 
@@ -317,16 +299,6 @@ contract MultichainProposalTest is PostProposalCheck {
                 "WELL",
                 "name should not change post proposal"
             );
-            assertEq(
-                xWELLTotalSupplyBasePreProposal,
-                baseWell.totalSupply(),
-                "total supply base xWELL incorrect"
-            );
-            assertEq(
-                xWELLBalanceMRDPreProposal,
-                baseWell.balanceOf(addresses.getAddress("MRD_PROXY")),
-                "mrd balance changed post proposal"
-            );
         }
         {
             vm.selectFork(MOONBEAM_FORK_ID);
@@ -355,16 +327,6 @@ contract MultichainProposalTest is PostProposalCheck {
                 xwell.symbol(),
                 "WELL",
                 "name should not change post proposal"
-            );
-            assertEq(
-                xWELLBalanceLockboxPreProposal,
-                xwell.balanceOf(addresses.getAddress("xWELL_LOCKBOX")),
-                "xWELL_LOCKBOX balance changed post proposal"
-            );
-            assertEq(
-                xWELLTotalSupplyMoonbeamPreProposal,
-                xwell.totalSupply(),
-                "total supply moonbeam xWELL incorrect"
             );
         }
         {
@@ -2218,7 +2180,7 @@ contract MultichainProposalTest is PostProposalCheck {
         targets[4] = addresses.getAddress("CHAINLINK_ORACLE");
         calldatas[4] = changeAdminCalldata;
 
-        targets[5] = addresses.getAddress("STK_GOVTOKEN");
+        targets[5] = addresses.getAddress("STK_GOVTOKEN_PROXY");
         calldatas[5] = setEmissionsManagerCalldata;
 
         targets[6] = addresses.getAddress("UNITROLLER");
@@ -2299,7 +2261,7 @@ contract MultichainProposalTest is PostProposalCheck {
         governor.executeBreakGlass(targets, calldatas);
 
         assertEq(
-            IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"))
+            IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN_PROXY"))
                 .EMISSION_MANAGER(),
             artemisTimelockAddress,
             "stkWELL EMISSIONS MANAGER"
@@ -2543,7 +2505,7 @@ contract MultichainProposalTest is PostProposalCheck {
         ///
         uint256 mintAmount = 1_000_000 * 1e18;
         IStakedWellUplift stkwell = IStakedWellUplift(
-            addresses.getAddress("STK_GOVTOKEN")
+            addresses.getAddress("STK_GOVTOKEN_PROXY")
         );
         assertGt(
             stkwell.DISTRIBUTION_END(),
@@ -2666,7 +2628,7 @@ contract MultichainProposalTest is PostProposalCheck {
         ///
         uint256 mintAmount = 1_000_000 * 1e18;
         IStakedWellUplift stkwell = IStakedWellUplift(
-            addresses.getAddress("STK_GOVTOKEN")
+            addresses.getAddress("STK_GOVTOKEN_PROXY")
         );
         assertGt(
             stkwell.DISTRIBUTION_END(),

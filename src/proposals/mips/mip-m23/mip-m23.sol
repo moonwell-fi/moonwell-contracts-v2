@@ -180,7 +180,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
 
         /// transfer emissions manager of safety module
         _pushAction(
-            addresses.getAddress("STK_GOVTOKEN"),
+            addresses.getAddress("STK_GOVTOKEN_PROXY"),
             abi.encodeWithSignature(
                 "setEmissionsManager(address)",
                 multichainGovernorAddress
@@ -395,7 +395,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         address timelock = addresses.getAddress("MOONBEAM_TIMELOCK");
 
         assertEq(
-            IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN"))
+            IStakedWellUplift(addresses.getAddress("STK_GOVTOKEN_PROXY"))
                 .EMISSION_MANAGER(),
             governor,
             "stkWELL EMISSIONS MANAGER"

@@ -233,7 +233,7 @@ contract DeployXWellTestnet is Script, xWELLDeploy, Networks {
                 address(
                     WormholeBridgeAdapter(wormholeAdapter).wormholeRelayer()
                 ),
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
                 "wormhole bridge adapter relayer is incorrect"
             );
             assertEq(
