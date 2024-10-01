@@ -391,7 +391,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        uint256 max = marketBase._getMaxSupplyAmount(mToken);
+        uint256 max = marketBase.getMaxSupplyAmount(mToken);
 
         if (max <= 10e8) {
             return;
@@ -429,7 +429,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        uint256 max = marketBase._getMaxSupplyAmount(mToken);
+        uint256 max = marketBase.getMaxSupplyAmount(mToken);
 
         if (max <= 10e8) {
             return;
@@ -503,7 +503,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        uint256 max = marketBase._getMaxSupplyAmount(mToken);
+        uint256 max = marketBase.getMaxSupplyAmount(mToken);
 
         if (max <= 1000e8) {
             return;
@@ -565,7 +565,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        uint256 max = marketBase._getMaxSupplyAmount(mToken);
+        uint256 max = marketBase.getMaxSupplyAmount(mToken);
 
         if (max <= 1000e8) {
             return;
@@ -660,7 +660,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        uint256 max = marketBase._getMaxSupplyAmount(mToken);
+        uint256 max = marketBase.getMaxSupplyAmount(mToken);
 
         if (max <= 1e8) {
             return;
@@ -778,7 +778,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        uint256 max = marketBase._getMaxSupplyAmount(mToken);
+        uint256 max = marketBase.getMaxSupplyAmount(mToken);
 
         if (max <= 10e8) {
             return;
@@ -917,7 +917,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
     function testRepayBorrowBehalfWethRouter() public {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
-        uint256 mintAmount = marketBase._getMaxSupplyAmount(mToken);
+        uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
 
         _mintMToken(address(mToken), mintAmount);
 
@@ -971,7 +971,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
     function testRepayMoreThanBorrowBalanceWethRouter() public {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
-        uint256 mintAmount = marketBase._getMaxSupplyAmount(mToken);
+        uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
 
         _mintMToken(address(mToken), mintAmount);
 
@@ -1031,7 +1031,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         MErc20 mToken = MErc20(addresses.getAddress("MOONWELL_WETH"));
         uint256 startingMTokenWethBalance = weth.balanceOf(address(mToken));
 
-        uint256 mintAmount = marketBase._getMaxSupplyAmount(mToken);
+        uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
         vm.deal(address(this), mintAmount);
 
         WETHRouter router = new WETHRouter(

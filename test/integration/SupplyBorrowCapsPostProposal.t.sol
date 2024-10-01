@@ -8,17 +8,19 @@ import "@forge-std/Test.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {MarketBase} from "@test/utils/MarketBase.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     Comptroller comptroller;
     MErc20 mUSDbC;
     MErc20 mWeth;
     MErc20 mcbEth;
+    MarketBase public marketBase;
 
     /// @notice max mint amount for usdc market
     uint256 public constant maxMintAmountUsdc = 40_000_000e6;
@@ -35,6 +37,8 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
         vm.selectFork(BASE_FORK_ID);
 
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+        marketBase = new MarketBase(comptroller);
+
         mUSDbC = MErc20(addresses.getAddress("MOONWELL_USDBC"));
         mWeth = MErc20(addresses.getAddress("MOONWELL_WETH"));
         mcbEth = MErc20(addresses.getAddress("MOONWELL_cbETH"));
@@ -72,9 +76,9 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     function testBorrowingOverBorrowCapFailscbEth() public {
         mcbEth.accrueInterest();
 
-        uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_cbETH")
-        ) - 1;
+        uint256 mintAmount = marketBase.getMaxSupplyAmount(
+            MToken(addresses.getAddress("MOONWELL_cbETH"))
+        );
         uint256 borrowAmount = _getMaxBorrowAmount(
             addresses.getAddress("MOONWELL_cbETH")
         );
@@ -97,9 +101,9 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     function testBorrowingOverBorrowCapFailsWeth() public {
         mWeth.accrueInterest();
 
-        uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_WETH")
-        ) - 1e18;
+        uint256 mintAmount = marketBase.getMaxSupplyAmount(
+            MToken(addresses.getAddress("MOONWELL_WETH"))
+        );
         uint256 borrowAmount = _getMaxBorrowAmount(
             addresses.getAddress("MOONWELL_WETH")
         );
@@ -123,9 +127,9 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
     }
 
     function testBorrowingOverBorrowCapFailsUsdc() public {
-        uint256 usdcMintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_USDBC")
-        ) - 1_000e6;
+        uint256 usdcMintAmount = marketBase.getMaxSupplyAmount(
+            MToken(addresses.getAddress("MOONWELL_USDBC"))
+        );
         uint256 borrowAmount = comptroller.borrowCaps(address(mUSDbC)) + 1;
         address underlying = address(mUSDbC.underlying());
 
@@ -145,21 +149,6 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
 
         vm.expectRevert("market borrow cap reached");
         mUSDbC.borrow(borrowAmount);
-    }
-
-    function _getMaxSupplyAmount(
-        address mToken
-    ) internal view returns (uint256) {
-        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
-
-        uint256 totalCash = MToken(mToken).getCash();
-        uint256 totalBorrows = MToken(mToken).totalBorrows();
-        uint256 totalReserves = MToken(mToken).totalReserves();
-
-        // totalSupplies = totalCash + totalBorrows - totalReserves
-        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
-
-        return supplyCap - totalSupplies - 1;
     }
 
     function _getMaxBorrowAmount(

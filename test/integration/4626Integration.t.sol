@@ -50,7 +50,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         underlying.approve(address(factory), mintAmount);
 
         if (
-            marketBase._getMaxSupplyAmount(
+            marketBase.getMaxSupplyAmount(
                 MToken(addresses.getAddress("MOONWELL_USDBC"))
             ) > 10 ** ((underlying.decimals() * 2) / 3)
         ) {
@@ -58,7 +58,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
                 factory.deployMoonwellERC4626(address(mToken), rewardRecipient)
             );
         } else if (
-            marketBase._getMaxSupplyAmount(
+            marketBase.getMaxSupplyAmount(
                 MToken(addresses.getAddress("MOONWELL_USDC"))
             ) > 10 ** ((ERC20(addresses.getAddress("USDC")).decimals() * 2) / 3)
         ) {

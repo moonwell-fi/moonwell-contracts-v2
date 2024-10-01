@@ -14,7 +14,7 @@ contract MarketBase is ExponentialNoError {
         comptroller = _comptroller;
     }
 
-    function _getMaxSupplyAmount(MToken mToken) public returns (uint256) {
+    function getMaxSupplyAmount(MToken mToken) public returns (uint256) {
         mToken.accrueInterest();
 
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
