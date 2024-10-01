@@ -9,20 +9,23 @@ import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {mip0x as mip} from "@proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {MarketBase} from "@test/utils/MarketBase.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {mip0x as mip} from "@proposals/mips/examples/mip-market-listing/mip-market-listing.sol";
 
 contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
     MultiRewardDistributor mrd;
     Comptroller comptroller;
     address well;
     MErc20 mUSDC;
+
+    MarketBase public marketBase;
 
     function setUp() public override {
         super.setUp();
@@ -32,6 +35,7 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
         well = addresses.getAddress("GOVTOKEN");
         mUSDC = MErc20(addresses.getAddress("MOONWELL_USDC"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+        marketBase = new MarketBase(comptroller);
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
     }
 
@@ -68,10 +72,8 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
     }
 
     function testBorrowingOverBorrowCapFailsUsdc() public {
-        /// TODO figure out why this test intermittently fails when it subtracts 1000e6 from mintAmount
-        /// fails with mintAllowed error, "market supply cap reached"
-        uint256 usdcMintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_USDC")
+        uint256 usdcMintAmount = marketBase.getMaxSupplyAmount(
+            MToken(addresses.getAddress("MOONWELL_USDC"))
         ) / 10;
 
         uint256 borrowAmount = comptroller.borrowCaps(address(mUSDC)) + 1;
@@ -171,21 +173,6 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
         );
         assertEq(config.emissionToken, well, "incorrect reward token");
         assertEq(config.borrowEmissionsPerSec, 1e18, "incorrect reward rate");
-    }
-
-    function _getMaxSupplyAmount(
-        address mToken
-    ) internal view returns (uint256) {
-        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
-
-        uint256 totalCash = MToken(mToken).getCash();
-        uint256 totalBorrows = MToken(mToken).totalBorrows();
-        uint256 totalReserves = MToken(mToken).totalReserves();
-
-        // totalSupplies = totalCash + totalBorrows - totalReserves
-        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
-
-        return supplyCap - totalSupplies - 1;
     }
 
     function _getMaxBorrowAmount(
