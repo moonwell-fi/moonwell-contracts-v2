@@ -3,7 +3,7 @@
 A proposal to adjust 8 risk parameters:
 
 | Risk Parameter       | Current Value | Recommended Value |
-|----------------------|---------------|-------------------|
+| -------------------- | ------------- | ----------------- |
 | AERO Supply Cap      | 28,500,000    | 35,000,000        |
 | AERO Borrow Cap      | 18,500,000    | 25,000,000        |
 | cbBTC Supply Cap     | 220           | 280               |
@@ -13,21 +13,21 @@ A proposal to adjust 8 risk parameters:
 | DAI Borrow Cap       | 1,500,000     | 500,000           |
 | USDbC Reserve Factor | 50%           | 75%               |
 
-<sub> *Cap Recommendations will be implemented via Guardian </sub>
+<sub> \*Cap Recommendations will be implemented via Guardian </sub>
 
 ### IR Parameters
 
 A proposal to adjust IR parameters for USDC and cbBTC
 
 | USDC IR Parameters | Current   | Recommended |
-|--------------------|-----------|-------------|
+| ------------------ | --------- | ----------- |
 | Base               | 0         | 0           |
 | Kink               | 0.9       | 0.9         |
 | Multiplier         | **0.056** | **0.05**    |
 | Jump Multiplier    | 9         | 9           |
 
 | cbBTC IR Parameters | Current   | Recommended |
-|---------------------|-----------|-------------|
+| ------------------- | --------- | ----------- |
 | Base                | **0.02**  | **0**       |
 | Kink                | 0.6       | 0.6         |
 | Multiplier          | **0.065** | **0.067**   |
