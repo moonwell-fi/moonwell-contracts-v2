@@ -400,6 +400,21 @@
         "name": "JUMP_RATE_IRM_MOONWELL_MIP_O08"
     },
     {
+        "addr": "0xF5C73A4198941b49831cc95C5E407571851fbA4b",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_O10"
+    },
+    {
+        "addr": "0x54dC357F7461BcEEE5BdbA80996f5CB7d7512445",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDT_MIP_O10"
+    },
+    {
+        "addr": "0x0A72A4c3c9FC1345C1Cdaf52E0195367F8b688d0",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_DAI_MIP_O10"
+    },
+    {
         "addr": "0xe9ffd686ca83ceb308962f4e50c5fd7f2e3c037e",
         "isContract": true,
         "name": "MARKET_ADD_CHECKER"
