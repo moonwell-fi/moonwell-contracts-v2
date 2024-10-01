@@ -27,7 +27,7 @@ import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
-contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
+contract LiveSystem is Test, ExponentialNoError, PostProposalCheck {
     using ChainIds for uint256;
 
     MultiRewardDistributor mrd;
