@@ -13,6 +13,7 @@ import {Configs} from "@proposals/Configs.sol";
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {Unitroller} from "@protocol/Unitroller.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {MarketBase} from "@test/utils/MarketBase.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {ChainIds, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
@@ -36,6 +37,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
     MToken deprecatedMoonwellVelo;
 
     MToken[] mTokens;
+    MarketBase public marketBase;
 
     mapping(MToken => address[] rewardTokens) rewardsConfig;
 
@@ -51,6 +53,8 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+
+        marketBase = new MarketBase(comptroller);
 
         MToken[] memory markets = comptroller.getAllMarkets();
 
@@ -86,33 +90,6 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             0,
             "Mint failed"
         );
-    }
-
-    function _getMaxSupplyAmount(address mToken) private returns (uint256) {
-        MToken(mToken).accrueInterest();
-
-        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
-
-        if (supplyCap == 0) {
-            return type(uint128).max;
-        }
-
-        console.log("supply cap", supplyCap);
-
-        uint256 totalCash = MToken(mToken).getCash();
-        uint256 totalBorrows = MToken(mToken).totalBorrows();
-        uint256 totalReserves = MToken(mToken).totalReserves();
-
-        uint256 totalSupplies = sub_(
-            add_(totalCash, totalBorrows),
-            totalReserves
-        );
-
-        if (totalSupplies - 1 >= supplyCap) {
-            return 0;
-        }
-
-        return supplyCap - totalSupplies - 1;
     }
 
     function _calculateSupplyRewards(
@@ -414,7 +391,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        uint256 max = _getMaxSupplyAmount(address(mToken));
+        uint256 max = marketBase._getMaxSupplyAmount(mToken);
 
         if (max <= 10e8) {
             return;
@@ -452,7 +429,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        uint256 max = _getMaxSupplyAmount(address(mToken));
+        uint256 max = marketBase._getMaxSupplyAmount(mToken);
 
         if (max <= 10e8) {
             return;
@@ -526,7 +503,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        uint256 max = _getMaxSupplyAmount(address(mToken));
+        uint256 max = marketBase._getMaxSupplyAmount(mToken);
 
         if (max <= 1000e8) {
             return;
@@ -588,7 +565,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        uint256 max = _getMaxSupplyAmount(address(mToken));
+        uint256 max = marketBase._getMaxSupplyAmount(mToken);
 
         if (max <= 1000e8) {
             return;
@@ -683,7 +660,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        uint256 max = _getMaxSupplyAmount(address(mToken));
+        uint256 max = marketBase._getMaxSupplyAmount(mToken);
 
         if (max <= 1e8) {
             return;
@@ -801,7 +778,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             return;
         }
 
-        uint256 max = _getMaxSupplyAmount(address(mToken));
+        uint256 max = marketBase._getMaxSupplyAmount(mToken);
 
         if (max <= 10e8) {
             return;
@@ -940,7 +917,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
     function testRepayBorrowBehalfWethRouter() public {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
-        uint256 mintAmount = _getMaxSupplyAmount(address(mToken));
+        uint256 mintAmount = marketBase._getMaxSupplyAmount(mToken);
 
         _mintMToken(address(mToken), mintAmount);
 
@@ -994,7 +971,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
 
     function testRepayMoreThanBorrowBalanceWethRouter() public {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
-        uint256 mintAmount = _getMaxSupplyAmount(address(mToken));
+        uint256 mintAmount = marketBase._getMaxSupplyAmount(mToken);
 
         _mintMToken(address(mToken), mintAmount);
 
@@ -1054,7 +1031,7 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
         MErc20 mToken = MErc20(addresses.getAddress("MOONWELL_WETH"));
         uint256 startingMTokenWethBalance = weth.balanceOf(address(mToken));
 
-        uint256 mintAmount = _getMaxSupplyAmount(address(mToken));
+        uint256 mintAmount = marketBase._getMaxSupplyAmount(mToken);
         vm.deal(address(this), mintAmount);
 
         WETHRouter router = new WETHRouter(
