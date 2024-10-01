@@ -20,10 +20,9 @@ jobs:
         uses: ./.github/actions
 
   xwell-integration-tests:
-    name: base-integration-tests
+    name: xwell-integration-tests
     runs-on: ubuntu-latest
     needs: setup-environment
-
     steps:
       - name: xWell Integration Tests
         uses: nick-fields/retry@v3
@@ -35,10 +34,9 @@ jobs:
            command: time forge test --match-contract xWellIntegrationTest --fork-url base -vvv --ffi
 
   erc4626-eth-deploy-integration-tests:
-    name: base-integration-tests
+    name: erc4626-eth-deploy-integration-tests
     runs-on: ubuntu-latest
     needs: setup-environment
-
     steps:
       - name: ERC4626 Eth Deploy Integration Tests
         uses: nick-fields/retry@v3
@@ -50,10 +48,9 @@ jobs:
            command: time forge test --match-contract ERC4626EthDeployIntegrationTest --fork-url base -vvv --ffi
 
   erc4626-eth-live-integration-tests:
-    name: base-integration-tests
+    name: erc4626-eth-live-integration-tests
     runs-on: ubuntu-latest
     needs: setup-environment
-
     steps:
       - name: ERC4626 Eth Live Integration Tests
         uses: nick-fields/retry@v3
@@ -65,10 +62,9 @@ jobs:
            command: time forge test --match-contract ERC4626EthLiveIntegrationTest --fork-url base -vvv --ffi
 
   erc4626-factory-integration-tests:
-    name: base-integration-tests
+    name: erc4626-factory-integration-tests
     runs-on: ubuntu-latest
     needs: setup-environment
-
     steps:
       - name: ERC4626Factory Integration Tests
         uses: nick-fields/retry@v3
@@ -83,7 +79,6 @@ jobs:
     name: base-integration-tests
     runs-on: ubuntu-latest
     needs: setup-environment
-
     steps:
       - name: Fee Splitter Integration Tests
         uses: nick-fields/retry@v3
@@ -95,10 +90,9 @@ jobs:
            command: time forge test --match-contract FeeSplitterIntegrationTest --fork-url base -vvv --ffi
 
   erc4626-live-integration-tests:
-    name: base-integration-tests
+    name: erc4626-live-integration-tests
     runs-on: ubuntu-latest
     needs: setup-environment
-
     steps:
       - name: ERC4626Factory Live Integration Tests
         uses: nick-fields/retry@v3

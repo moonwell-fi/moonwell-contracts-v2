@@ -3,11 +3,14 @@ name: Base Sepolia Integration Tests
 on: [pull_request]
 
 env:
-  BASE_RPC_URL: ${{secrets.BASE_SEPOLIA_RPC_URL}}
+    BASE_RPC_URL: ${{secrets.BASE_SEPOLIA_RPC_URL}}
+    OP_RPC_URL: ${{secrets.OP_SEPOLIA_RPC_URL}}
+    MOONBEAM_RPC_URL: ${{secrets.MOONBASE_RPC_URL}}
+    PRIMARY_FORK_ID: 1
 
 jobs:
-  run-base-tests:
-    name: base-sepolia-integration-tests
+  setup-environment:
+    name: Setup Environment
     runs-on: ubuntu-latest
 
     steps:
@@ -18,14 +21,32 @@ jobs:
 
       - name: Setup Environment
         uses: ./.github/actions
-      
-      - name: Base Sepolia Integration Tests
+
+  xwell-integration-tests:
+    name: xwell-integration-tests
+    runs-on: ubuntu-latest
+    needs: setup-environment
+    steps:
+      - name: xWell Integration Tests
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
            timeout_minutes: 10
            max_attempts: 3
-           command: time forge test --match-contract LiveSystemTest --fork-url base -vvv --ffi
+           command: time forge test --match-contract xWellIntegrationTest --fork-url base -vvv --ffi
 
-
+  live-system-integration-tests:
+    name: live-system-integration-tests
+    runs-on: ubuntu-latest
+    needs: setup-environment
+    steps:
+      - name: Base Mainnet Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract LiveSystem -vvv --ffi
+ 
