@@ -26,6 +26,17 @@ runs:
       run: echo "$HOME/.foundry/bin" >> $GITHUB_PATH
       shell: bash
 
+    # Verify forge installation path
+    - name: Check forge installation
+      run: |
+        echo "Forge binary path:"
+        ls -l $HOME/.foundry/bin/forge
+        echo "Contents of ~/.foundry/bin:"
+        ls -l $HOME/.foundry/bin
+        echo "Verify forge version"
+        forge --version
+      shell: bash
+
     - name: Clean Contracts
       run: forge clean
       shell: bash
