@@ -5,21 +5,22 @@ import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
+import {MarketBase} from "@test/utils/MarketBase.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
-import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
 contract wstETHPostProposalTest is PostProposalCheck {
     MultiRewardDistributor mrd;
     Comptroller comptroller;
     address well;
     MErc20 mwstETH;
+    MarketBase public marketBase;
 
     function setUp() public override {
         super.setUp();
@@ -29,6 +30,7 @@ contract wstETHPostProposalTest is PostProposalCheck {
         well = addresses.getAddress("GOVTOKEN");
         mwstETH = MErc20(addresses.getAddress("MOONWELL_wstETH"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+        marketBase = new MarketBase(comptroller);
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         mwstETH.accrueInterest();
     }
@@ -60,12 +62,12 @@ contract wstETHPostProposalTest is PostProposalCheck {
     }
 
     function testSupplyingOverSupplyCapFails() public {
-        uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_wstETH")
+        uint256 mintAmount = marketBase.getMaxSupplyAmount(
+            MToken(addresses.getAddress("MOONWELL_wstETH"))
         ) + 1;
 
         if (mintAmount == 1) {
-            return;
+            vm.skip(true);
         }
 
         address underlying = address(mwstETH.underlying());
@@ -77,12 +79,12 @@ contract wstETHPostProposalTest is PostProposalCheck {
     }
 
     function testBorrowingOverBorrowCapFails() public {
-        uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_wstETH")
+        uint256 mintAmount = marketBase.getMaxSupplyAmount(
+            MToken(addresses.getAddress("MOONWELL_wstETH"))
         );
 
         if (mintAmount == 1 || mintAmount < 1e18) {
-            return;
+            vm.skip(true);
         }
 
         mintAmount -= 1e18;
@@ -108,9 +110,13 @@ contract wstETHPostProposalTest is PostProposalCheck {
 
     function testMintwstETHMTokenSucceeds() public {
         address sender = address(this);
-        uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_wstETH")
-        ) / 2;
+        uint256 mintAmount = marketBase.getMaxSupplyAmount(
+            MToken(addresses.getAddress("MOONWELL_wstETH"))
+        );
+
+        if (mintAmount == 0) {
+            vm.skip(true);
+        }
 
         MErc20Delegator mToken = MErc20Delegator(
             payable(addresses.getAddress("MOONWELL_wstETH"))
@@ -189,25 +195,6 @@ contract wstETHPostProposalTest is PostProposalCheck {
         );
         assertEq(config.emissionToken, well, "incorrect reward token");
         assertEq(config.borrowEmissionsPerSec, 1e18, "incorrect reward rate");
-    }
-
-    function _getMaxSupplyAmount(
-        address mToken
-    ) internal view returns (uint256) {
-        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
-
-        uint256 totalCash = MToken(mToken).getCash();
-        uint256 totalBorrows = MToken(mToken).totalBorrows();
-        uint256 totalReserves = MToken(mToken).totalReserves();
-
-        // totalSupplies = totalCash + totalBorrows - totalReserves
-        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
-
-        if (totalSupplies - 1 > supplyCap) {
-            return 0;
-        }
-
-        return supplyCap - totalSupplies - 1;
     }
 
     function _getMaxBorrowAmount(
