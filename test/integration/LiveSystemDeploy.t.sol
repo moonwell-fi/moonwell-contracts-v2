@@ -603,7 +603,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = supplyAmount / 3;
+        uint256 borrowAmount = supplyAmount / 3 >
+            _getMaxBorrowAmount(address(mToken))
+            ? _getMaxBorrowAmount(address(mToken))
+            : supplyAmount / 3;
 
         assertEq(
             comptroller.borrowAllowed(address(mToken), sender, borrowAmount),
@@ -813,7 +816,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             );
         }
 
-        uint256 borrowAmount = mintAmount / 3;
+        uint256 borrowAmount = mintAmount / 3 >
+            _getMaxBorrowAmount(address(mToken))
+            ? _getMaxBorrowAmount(address(mToken))
+            : mintAmount / 3;
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
