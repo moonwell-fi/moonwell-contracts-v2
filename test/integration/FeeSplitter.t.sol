@@ -13,7 +13,7 @@ import {IMorphoBlue} from "@protocol/morpho/IMorphoBlue.sol";
 import {IMetaMorphoFactory} from "@protocol/morpho/IMetaMorphoFactory.sol";
 import {IMetaMorpho, MarketParams} from "@protocol/morpho/IMetaMorpho.sol";
 
-contract FeeSplitterLiveSystemBaseTest is Test {
+contract FeeSplitterIntegrationTest is Test {
     /// @notice the addresses contract
     Addresses addresses;
 

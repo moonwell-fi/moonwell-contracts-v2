@@ -17,7 +17,7 @@ import {deployFactory} from "@protocol/4626/4626FactoryDeploy.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract MoonwellERC4626LiveSystemBaseTest is Test {
+contract ERC4626LiveIntegrationTest is Test {
     using LibCompound for MErc20;
     address constant rewardRecipient = address(10_000_000);
     TestProposals proposals;

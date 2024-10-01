@@ -34,14 +34,13 @@ jobs:
            max_attempts: 3
            command: time forge test --match-contract xWellIntegrationTest --fork-url base -vvv --ffi
 
-
   erc4626-eth-deploy-integration-tests:
     name: base-integration-tests
     runs-on: ubuntu-latest
     needs: setup-environment
 
     steps:
-      - name: xWell Integration Tests
+      - name: ERC4626 Eth Deploy Integration Tests
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
@@ -56,7 +55,7 @@ jobs:
     needs: setup-environment
 
     steps:
-      - name: xWell Integration Tests
+      - name: ERC4626 Eth Live Integration Tests
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
@@ -64,5 +63,50 @@ jobs:
            timeout_minutes: 10
            max_attempts: 3
            command: time forge test --match-contract ERC4626EthLiveIntegrationTest --fork-url base -vvv --ffi
+
+  erc4626-factory-integration-tests:
+    name: base-integration-tests
+    runs-on: ubuntu-latest
+    needs: setup-environment
+
+    steps:
+      - name: ERC4626Factory Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract ERC4626FactoryIntegrationTest --fork-url base -vvv --ffi
+
+  fee-splitter-integration-tests:
+    name: base-integration-tests
+    runs-on: ubuntu-latest
+    needs: setup-environment
+
+    steps:
+      - name: Fee Splitter Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract FeeSplitterIntegrationTest --fork-url base -vvv --ffi
+
+  erc4626-live-integration-tests:
+    name: base-integration-tests
+    runs-on: ubuntu-latest
+    needs: setup-environment
+
+    steps:
+      - name: ERC4626Factory Live Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract ERC4626LiveIntegrationTest --fork-url base -vvv --ffi
 
 
