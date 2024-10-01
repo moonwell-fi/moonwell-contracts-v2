@@ -22,9 +22,6 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Add forge to PATH
-        run: echo "${{ github.workspace }}/.github/actions/forge-bin" >> $GITHUB_PATH
-
   live-system-integration-tests:
     name: live-system-integration-tests
     runs-on: ubuntu-latest

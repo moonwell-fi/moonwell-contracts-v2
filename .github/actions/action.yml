@@ -9,10 +9,22 @@ runs:
       with:
         submodules: recursive
 
+    - name: Cache Foundry toolchain
+      uses: actions/cache@v2
+      with:
+        path: ~/.foundry
+        key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-foundry-
+
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
       with:
         version: nightly-2442e7a5fc165d7d0b022aa8b9f09dcdf675157b
+
+    - name: Add forge to PATH
+      run: echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+      shell: bash
 
     - name: Clean Contracts
       run: forge clean
