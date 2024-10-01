@@ -399,7 +399,7 @@
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_MIP_O08"
     },
-    {   
+    {
         "addr": "0xF5C73A4198941b49831cc95C5E407571851fbA4b",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_O10"
