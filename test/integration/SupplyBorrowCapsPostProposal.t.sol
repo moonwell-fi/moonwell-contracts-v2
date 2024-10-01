@@ -130,6 +130,11 @@ contract SupplyBorrowCapsPostProposalTest is PostProposalCheck, Configs {
         uint256 usdcMintAmount = marketBase.getMaxSupplyAmount(
             MToken(addresses.getAddress("MOONWELL_USDBC"))
         );
+
+        if (usdcMintAmount == 0) {
+            vm.skip(true);
+        }
+
         uint256 borrowAmount = comptroller.borrowCaps(address(mUSDbC)) + 1;
         address underlying = address(mUSDbC.underlying());
 

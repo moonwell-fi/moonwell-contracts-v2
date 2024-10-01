@@ -35,6 +35,7 @@ contract NativeUSDCPostProposalTest is Test, PostProposalCheck, Configs {
         well = addresses.getAddress("GOVTOKEN");
         mUSDC = MErc20(addresses.getAddress("MOONWELL_USDC"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+        marketBase = new MarketBasse(comptroller);
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
     }
 
