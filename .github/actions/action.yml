@@ -29,11 +29,11 @@ runs:
     # Verify forge installation path
     - name: Check forge installation
       run: |
+        echo "Verify Forge installation"
+        foundryup
         echo "Forge binary path:"
-        ls -l $HOME/.foundry/bin/forge
-        echo "Contents of ~/.foundry/bin:"
-        ls -l $HOME/.foundry/bin
-        echo "Verify forge version"
+        which forge
+        echo "Forge version:"
         forge --version
       shell: bash
 
