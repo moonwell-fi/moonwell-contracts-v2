@@ -167,7 +167,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
     function testWithdrawWithZeroCashFails() public {
         testMaxMintDepositSucceedsMaxMintGtZero();
-        deal(address(underlying), addresses.getAddress("MOONWELL_USDBC"), 0);
+        deal(address(underlying), address(mToken), 0);
 
         uint256 withdrawAmount = vault.balanceOf(address(this));
 
@@ -190,7 +190,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
     function testSweepFailsMToken() public {
         address[] memory tokens = new address[](1);
-        tokens[0] = addresses.getAddress("MOONWELL_USDBC");
+        tokens[0] = address(mToken);
 
         vm.expectRevert("CompoundERC4626: cannot sweep mToken");
         vm.prank(rewardRecipient);
@@ -211,10 +211,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
     function testMintGuardianPausedMaxMintReturnsZero() public {
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        comptroller._setMintPaused(
-            MToken(addresses.getAddress("MOONWELL_USDBC")),
-            true
-        );
+        comptroller._setMintPaused(mToken, true);
         vm.stopPrank();
 
         assertEq(vault.maxMint(address(this)), 0);
@@ -225,7 +222,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         supplyCaps[0] = 0;
 
         MToken[] memory mTokens = new MToken[](1);
-        mTokens[0] = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        mTokens[0] = mToken;
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         comptroller._setMarketSupplyCaps(mTokens, supplyCaps);
@@ -235,9 +232,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
     function testMaxMint() public view {
         uint256 maxMint = vault.maxMint(address(this));
-        uint256 supplyCap = comptroller.supplyCaps(
-            addresses.getAddress("MOONWELL_USDBC")
-        );
+        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         assertGt(maxMint, 0);
         assertLt(maxMint, supplyCap);
@@ -245,15 +240,13 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
     function testMaxMintDepositSucceedsMaxMintGtZero() public {
         assertEq(
-            MErc20(addresses.getAddress("MOONWELL_USDBC")).accrueInterest(),
+            MErc20(address(mToken)).accrueInterest(),
             0,
             "accrue interest failed"
         );
 
         uint256 maxMint = vault.maxMint(address(this));
-        uint256 supplyCap = comptroller.supplyCaps(
-            addresses.getAddress("MOONWELL_USDBC")
-        );
+        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         assertGt(maxMint, 0, "max mint not gt 0");
         assertLt(maxMint, supplyCap, "max mint not lt supply cap");
@@ -358,7 +351,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         supplyCaps[0] = 0;
 
         MToken[] memory mTokens = new MToken[](1);
-        mTokens[0] = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        mTokens[0] = mToken;
 
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         comptroller._setMarketSupplyCaps(mTokens, supplyCaps);
