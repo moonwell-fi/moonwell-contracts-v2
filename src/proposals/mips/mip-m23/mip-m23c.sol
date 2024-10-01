@@ -202,7 +202,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
             "BREAK_GLASS_GUARDIAN"
         );
         initData.wormholeRelayer = addresses.getAddress(
-            "WORMHOLE_BRIDGE_RELAYER"
+            "WORMHOLE_BRIDGE_RELAYER_PROXY"
         );
 
         require(approvedCalldata.length == 6, "calldata not set");
@@ -284,7 +284,7 @@ contract mipm23c is HybridProposal, MultichainGovernorDeploy {
         );
         assertEq(
             address(governor.wormholeRelayer()),
-            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+            addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
             "incorrect wormholeRelayer"
         );
         assertEq(

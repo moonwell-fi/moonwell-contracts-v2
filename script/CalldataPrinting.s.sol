@@ -1,6 +1,5 @@
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
 import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 
@@ -39,17 +38,45 @@ contract CalldataPrinting is Script {
 
         for (uint256 i = 0; i < devProposals.length; i++) {
             string memory devProposal = devProposals[i].path;
+            string memory shellScript = devProposals[i].envPath;
 
             for (uint256 j = 0; j < changedFilesArray.length; j++) {
                 if (
-                    bytes32(bytes(changedFilesArray[j])) ==
-                    bytes32(bytes(devProposal))
+                    keccak256(abi.encodePacked(changedFilesArray[j])) ==
+                    keccak256(abi.encodePacked(devProposal)) ||
+                    keccak256(abi.encodePacked(changedFilesArray[j])) ==
+                    keccak256(abi.encodePacked(shellScript))
                 ) {
                     console.log(
-                        "\n\n=================== PROPOSAL START ==================\n",
-                        devProposal
+                        "\n\n=================== PROPOSAL START ==================\n"
                     );
-                    proposalMap.executeShellFile(devProposals[i].envPath);
+                    string[] memory envs = proposalMap.setEnv(shellScript);
+
+                    string memory command = "";
+                    if (envs.length == 0) {
+                        command = string(
+                            abi.encodePacked("forge script ", devProposal)
+                        );
+                    } else {
+                        for (uint256 k = 0; k < envs.length; k++) {
+                            command = string(
+                                abi.encodePacked(command, envs[k], " ")
+                            );
+
+                            if (k == envs.length - 1) {
+                                command = string(
+                                    abi.encodePacked(
+                                        command,
+                                        "forge script ",
+                                        devProposal
+                                    )
+                                );
+                            }
+                        }
+                    }
+
+                    console.log(command);
+
                     Proposal proposal = proposalMap.runProposal(
                         addresses,
                         devProposal
@@ -60,6 +87,8 @@ contract CalldataPrinting is Script {
                     console.log(
                         "\n===================== PROPOSAL END ===================\n\n"
                     );
+
+                    break;
                 }
             }
         }

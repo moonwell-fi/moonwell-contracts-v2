@@ -7,8 +7,9 @@ import "@forge-std/Test.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
-import {Comptroller} from "@protocol/Comptroller.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
+import {MarketBase} from "@test/utils/MarketBase.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
@@ -22,6 +23,7 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
     Comptroller comptroller;
     address well;
     MErc20 mwstETH;
+    MarketBase public marketBase;
 
     function setUp() public override {
         super.setUp();
@@ -31,6 +33,7 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
         well = addresses.getAddress("GOVTOKEN");
         mwstETH = MErc20(addresses.getAddress("MOONWELL_rETH"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+        marketBase = new MarketBase(comptroller);
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         mwstETH.accrueInterest();
     }
@@ -62,8 +65,8 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
     }
 
     function testSupplyingOverSupplyCapFails() public {
-        uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_rETH")
+        uint256 mintAmount = marketBase.getMaxSupplyAmount(
+            MToken(addresses.getAddress("MOONWELL_rETH"))
         ) + 1;
         address underlying = address(mwstETH.underlying());
         deal(underlying, address(this), mintAmount);
@@ -74,19 +77,20 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
     }
 
     function testBorrowingOverBorrowCapFails() public {
-        uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_rETH")
+        uint256 mintAmount = marketBase.getMaxSupplyAmount(
+            MToken(addresses.getAddress("MOONWELL_rETH"))
         );
         /// filter out case where no minting allowed
         if (mintAmount == 0) {
-            return;
+            vm.skip(true);
         }
+
         uint256 borrowAmount = _getMaxBorrowAmount(
             addresses.getAddress("MOONWELL_rETH")
         );
         /// filter out case where no borrowing allowed
         if (borrowAmount == 0) {
-            return;
+            vm.skip(true);
         }
         borrowAmount += 100;
 
@@ -108,13 +112,13 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
 
     function testMintwstETHMTokenSucceeds() public {
         address sender = address(this);
-        uint256 mintAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_rETH")
-        ) / 2;
+        uint256 mintAmount = marketBase.getMaxSupplyAmount(
+            MToken(addresses.getAddress("MOONWELL_rETH"))
+        );
 
         /// filter out zero mint case
         if (mintAmount == 0) {
-            return;
+            vm.skip(true);
         }
 
         MErc20Delegator mToken = MErc20Delegator(
@@ -194,25 +198,6 @@ contract rETHLiveSystemBasePostProposalTest is Test, PostProposalCheck {
         );
         assertEq(config.emissionToken, well, "incorrect reward token");
         assertEq(config.borrowEmissionsPerSec, 1e18, "incorrect reward rate");
-    }
-
-    function _getMaxSupplyAmount(
-        address mToken
-    ) internal view returns (uint256) {
-        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
-
-        uint256 totalCash = MToken(mToken).getCash();
-        uint256 totalBorrows = MToken(mToken).totalBorrows();
-        uint256 totalReserves = MToken(mToken).totalReserves();
-
-        // totalSupplies = totalCash + totalBorrows - totalReserves
-        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
-
-        if (totalSupplies - 1 > supplyCap) {
-            return 0;
-        }
-
-        return supplyCap - totalSupplies - 1;
     }
 
     function _getMaxBorrowAmount(

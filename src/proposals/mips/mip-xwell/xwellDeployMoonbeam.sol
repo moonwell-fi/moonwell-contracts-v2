@@ -69,7 +69,9 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
 
             /// @notice this is the wormhole bridge relayer the wormhole bridge adapter
             /// will plug into.
-            address relayer = addresses.getAddress("WORMHOLE_BRIDGE_RELAYER");
+            address relayer = addresses.getAddress(
+                "WORMHOLE_BRIDGE_RELAYER_PROXY"
+            );
 
             /// @notice the well token address
             address wellAddress = addresses.getAddress("GOVTOKEN");
@@ -192,7 +194,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
                     WormholeBridgeAdapter(wormholeBridgeAdapterProxy)
                         .wormholeRelayer()
                 ),
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
                 "wormhole bridge adapter relayer is incorrect"
             );
             assertEq(

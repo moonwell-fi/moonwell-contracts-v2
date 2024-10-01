@@ -57,7 +57,9 @@ contract DeployXWell is Script, xWELLDeploy, Networks {
             address proxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
             address pauseGuardian = addresses.getAddress("PAUSE_GUARDIAN");
             address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
-            address relayer = addresses.getAddress("WORMHOLE_BRIDGE_RELAYER");
+            address relayer = addresses.getAddress(
+                "WORMHOLE_BRIDGE_RELAYER_PROXY"
+            );
 
             {
                 (, address deployerAddress, ) = vm.readCallers();
@@ -231,7 +233,7 @@ contract DeployXWell is Script, xWELLDeploy, Networks {
                 address(
                     WormholeBridgeAdapter(wormholeAdapter).wormholeRelayer()
                 ),
-                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER"),
+                addresses.getAddress("WORMHOLE_BRIDGE_RELAYER_PROXY"),
                 "wormhole bridge adapter relayer is incorrect"
             );
             assertEq(

@@ -284,6 +284,7 @@ contract mipRewardsDistributionMoonbeam is HybridProposal, Networks {
                 )
             );
         }
+
         _pushAction(
             addresses.getAddress("STK_GOVTOKEN_PROXY"),
             abi.encodeWithSignature(
@@ -300,6 +301,7 @@ contract mipRewardsDistributionMoonbeam is HybridProposal, Networks {
             ),
             ActionType.Moonbeam
         );
+
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
             _pushAction(
@@ -404,10 +406,12 @@ contract mipRewardsDistributionMoonbeam is HybridProposal, Networks {
             "xWELL Router should not have an open allowance after execution"
         );
         address stkGovToken = addresses.getAddress("STK_GOVTOKEN_PROXY");
+
         // assert safety module reward speed
         IStakedWell stkWell = IStakedWell(stkGovToken);
         (uint256 emissionsPerSecond, , ) = stkWell.assets(stkGovToken);
         assertEq(emissionsPerSecond, spec.stkWellEmissionsPerSecond);
+
         // validate setRewardSpeed calls
         for (uint256 i = 0; i < spec.setRewardSpeed.length; i++) {
             SetRewardSpeed memory setRewardSpeed = spec.setRewardSpeed[i];
