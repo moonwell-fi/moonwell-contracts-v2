@@ -6,8 +6,8 @@ env:
     BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
 
 jobs:
-  run-base-tests:
-    name: base-integration-tests
+  setup-environment:
+    name: Setup Environment
     runs-on: ubuntu-latest
 
     steps:
@@ -19,12 +19,50 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Base Mainnet Integration Tests
+  xwell-integration-tests:
+    name: base-integration-tests
+    runs-on: ubuntu-latest
+    needs: setup-environment
+
+    steps:
+      - name: xWell Integration Tests
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
            timeout_minutes: 10
            max_attempts: 3
-           command: time forge test --match-contract LiveSystemBaseTest --fork-url base -vvv --ffi
+           command: time forge test --match-contract xWellIntegrationTest --fork-url base -vvv --ffi
+
+
+  erc4626-eth-deploy-integration-tests:
+    name: base-integration-tests
+    runs-on: ubuntu-latest
+    needs: setup-environment
+
+    steps:
+      - name: xWell Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract ERC4626EthDeployIntegrationTest --fork-url base -vvv --ffi
+
+  erc4626-eth-live-integration-tests:
+    name: base-integration-tests
+    runs-on: ubuntu-latest
+    needs: setup-environment
+
+    steps:
+      - name: xWell Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract ERC4626EthLiveIntegrationTest --fork-url base -vvv --ffi
+
 

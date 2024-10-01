@@ -11,12 +11,11 @@ import {Address} from "@utils/Address.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 import {MintLimits} from "@protocol/xWELL/MintLimits.sol";
 import {XERC20Lockbox} from "@protocol/xWELL/XERC20Lockbox.sol";
-import {xwellDeployBase} from "@protocol/proposals/mips/mip-xwell/xwellDeployBase.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract DeployxWellLiveSystemBaseTest is xwellDeployBase {
+contract xWellIntegrationTest is Test {
     using ChainIds for uint256;
     using Address for address;
 

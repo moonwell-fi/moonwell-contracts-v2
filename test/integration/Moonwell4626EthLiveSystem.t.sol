@@ -23,7 +23,7 @@ import {Malicious4626Minter} from "@test/mock/Malicious4626Minter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MoonwellERC4626Eth} from "@protocol/4626/MoonwellERC4626Eth.sol";
 
-contract Moonwell4626EthLiveSystemBaseTest is Configs {
+contract ERC4626EthLiveIntegrationTest is Configs {
     Comptroller comptroller;
     Addresses addresses;
     WETH9 weth;
