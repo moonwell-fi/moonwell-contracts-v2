@@ -6,18 +6,15 @@ import {console} from "@forge-std/console.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract MarketBase is ExponentialNoError {
     Comptroller comptroller;
-    Addresses addresses;
 
-    function setUp() public virtual {
-        addresses = new Addresses();
-        comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+    constructor(Comptroller _comptroller) {
+        comptroller = _comptroller;
     }
 
-    function _getMaxSupplyAmount(MToken mToken) internal returns (uint256) {
+    function _getMaxSupplyAmount(MToken mToken) public returns (uint256) {
         mToken.accrueInterest();
 
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));

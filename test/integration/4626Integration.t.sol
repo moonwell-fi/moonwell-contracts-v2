@@ -8,14 +8,16 @@ import "@forge-std/Test.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {MarketBase} from "@test/utils/MarketBase.sol";
 import {LibCompound} from "@protocol/4626/LibCompound.sol";
 import {Factory4626} from "@protocol/4626/Factory4626.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {deployFactory} from "@protocol/4626/4626FactoryDeploy.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
-import {MarketBase} from "@test/utils/MarketBase.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract MoonwellERC4626LiveSystemBaseTest is Test, MarketBase {
+contract MoonwellERC4626LiveSystemBaseTest is Test {
     using LibCompound for MErc20;
     address constant rewardRecipient = address(10_000_000);
     TestProposals proposals;
@@ -26,9 +28,15 @@ contract MoonwellERC4626LiveSystemBaseTest is Test, MarketBase {
     MToken mToken;
 
     MoonwellERC4626 public vault;
+    Comptroller comptroller;
+    MarketBase public marketBase;
 
-    function setUp() public override {
-        super.setUp();
+    Addresses addresses;
+
+    function setUp() public {
+        addresses = new Addresses();
+        comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+        marketBase = new MarketBase(comptroller);
 
         addresses.addAddressEOA("REWARDS_RECEIVER", rewardRecipient);
         Factory4626 factory = deployFactory(addresses);
@@ -42,7 +50,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test, MarketBase {
         underlying.approve(address(factory), mintAmount);
 
         if (
-            _getMaxSupplyAmount(
+            marketBase._getMaxSupplyAmount(
                 MToken(addresses.getAddress("MOONWELL_USDBC"))
             ) > 10 ** ((underlying.decimals() * 2) / 3)
         ) {
@@ -50,8 +58,9 @@ contract MoonwellERC4626LiveSystemBaseTest is Test, MarketBase {
                 factory.deployMoonwellERC4626(address(mToken), rewardRecipient)
             );
         } else if (
-            _getMaxSupplyAmount(MToken(addresses.getAddress("MOONWELL_USDC"))) >
-            10 ** ((ERC20(addresses.getAddress("USDC")).decimals() * 2) / 3)
+            marketBase._getMaxSupplyAmount(
+                MToken(addresses.getAddress("MOONWELL_USDC"))
+            ) > 10 ** ((ERC20(addresses.getAddress("USDC")).decimals() * 2) / 3)
         ) {
             mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
             underlying = ERC20(addresses.getAddress("USDC"));
