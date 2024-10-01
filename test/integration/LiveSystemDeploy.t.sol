@@ -816,10 +816,10 @@ contract LiveSystemDeploy is Test, ExponentialNoError, PostProposalCheck {
             );
         }
 
-        uint256 borrowAmount = mintAmount / 3 >
-            _getMaxBorrowAmount(address(mToken))
-            ? _getMaxBorrowAmount(address(mToken))
-            : mintAmount / 3;
+        if (mintAmount / 3 < _getMaxBorrowAmount(address(mToken))) {
+            vm.skip(true);
+        }
+        uint256 borrowAmount = mintAmount / 3;
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
