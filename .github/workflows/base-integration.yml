@@ -23,7 +23,7 @@ jobs:
         uses: ./.github/actions
 
   live-system-integration-tests:
-    name: live-system-integration-tests
+    name: Live System Integration Tests
     runs-on: ubuntu-latest
     needs: setup-environment
     steps:
@@ -37,7 +37,7 @@ jobs:
            command: time forge test --match-contract LiveSystem -vvv --ffi
 
   xwell-integration-tests:
-    name: xwell-integration-tests
+    name: xWell Integration Tests
     runs-on: ubuntu-latest
     needs: setup-environment
     steps:
@@ -51,7 +51,7 @@ jobs:
            command: time forge test --match-contract xWellIntegrationTest --fork-url base -vvv --ffi
 
   erc4626-eth-deploy-integration-tests:
-    name: erc4626-eth-deploy-integration-tests
+    name: ERC4626 Eth Deploy Integration Tests
     runs-on: ubuntu-latest
     needs: setup-environment
     steps:
@@ -65,7 +65,7 @@ jobs:
            command: time forge test --match-contract ERC4626EthDeployIntegrationTest --fork-url base -vvv --ffi
 
   erc4626-eth-live-integration-tests:
-    name: erc4626-eth-live-integration-tests
+    name: ERC4626 Eth Live Integration Tests
     runs-on: ubuntu-latest
     needs: setup-environment
     steps:
@@ -79,11 +79,11 @@ jobs:
            command: time forge test --match-contract ERC4626EthLiveIntegrationTest --fork-url base -vvv --ffi
 
   erc4626-factory-integration-tests:
-    name: erc4626-factory-integration-tests
+    name: ERC4626 Factory Integration Tests
     runs-on: ubuntu-latest
     needs: setup-environment
     steps:
-      - name: ERC4626Factory Integration Tests
+      - name: ERC4626 Factory Integration Tests
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
@@ -93,7 +93,7 @@ jobs:
            command: time forge test --match-contract ERC4626FactoryIntegrationTest --fork-url base -vvv --ffi
 
   fee-splitter-integration-tests:
-    name: base-integration-tests
+    name: Fee Splitter Integration Tests
     runs-on: ubuntu-latest
     needs: setup-environment
     steps:
@@ -107,11 +107,11 @@ jobs:
            command: time forge test --match-contract FeeSplitterIntegrationTest --fork-url base -vvv --ffi
 
   erc4626-live-integration-tests:
-    name: erc4626-live-integration-tests
+    name: ERC4626 Live Integration Tests
     runs-on: ubuntu-latest
     needs: setup-environment
     steps:
-      - name: ERC4626Factory Live Integration Tests
+      - name: ERC4626 Live Integration Tests
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
