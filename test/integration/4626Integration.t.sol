@@ -8,32 +8,40 @@ import "@forge-std/Test.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MockERC20} from "@test/mock/MockERC20.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {MarketBase} from "@test/utils/MarketBase.sol";
 import {LibCompound} from "@protocol/4626/LibCompound.sol";
 import {Factory4626} from "@protocol/4626/Factory4626.sol";
 import {TestProposals} from "@proposals/TestProposals.sol";
 import {deployFactory} from "@protocol/4626/4626FactoryDeploy.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
-import {Comptroller as IComptroller} from "@protocol/Comptroller.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract MoonwellERC4626LiveSystemBaseTest is Test {
     using LibCompound for MErc20;
     address constant rewardRecipient = address(10_000_000);
-    Addresses addresses;
     TestProposals proposals;
 
-    IComptroller public comptroller;
     ERC20 public underlying;
-    ERC20 public usdc;
     ERC20 public well;
 
+    MToken mToken;
+
     MoonwellERC4626 public vault;
+    Comptroller comptroller;
+    MarketBase public marketBase;
+
+    Addresses addresses;
 
     function setUp() public {
         addresses = new Addresses();
+        comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+        marketBase = new MarketBase(comptroller);
 
         addresses.addAddressEOA("REWARDS_RECEIVER", rewardRecipient);
         Factory4626 factory = deployFactory(addresses);
+
+        mToken = MToken(addresses.getAddress("MOONWELL_USDBC"));
         underlying = ERC20(addresses.getAddress("USDBC"));
 
         uint256 mintAmount = 10 ** 4;
@@ -41,37 +49,56 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         deal(address(underlying), address(this), mintAmount);
         underlying.approve(address(factory), mintAmount);
 
-        vault = MoonwellERC4626(
-            factory.deployMoonwellERC4626(
-                addresses.getAddress("MOONWELL_USDBC"),
-                rewardRecipient
-            )
-        );
+        if (
+            marketBase.getMaxSupplyAmount(
+                MToken(addresses.getAddress("MOONWELL_USDBC"))
+            ) > 10 ** ((underlying.decimals() * 2) / 3)
+        ) {
+            vault = MoonwellERC4626(
+                factory.deployMoonwellERC4626(address(mToken), rewardRecipient)
+            );
+        } else if (
+            marketBase.getMaxSupplyAmount(
+                MToken(addresses.getAddress("MOONWELL_USDC"))
+            ) > 10 ** ((ERC20(addresses.getAddress("USDC")).decimals() * 2) / 3)
+        ) {
+            mToken = MToken(addresses.getAddress("MOONWELL_USDC"));
+            underlying = ERC20(addresses.getAddress("USDC"));
+            deal(address(underlying), address(this), mintAmount);
+            underlying.approve(address(factory), mintAmount);
 
-        comptroller = IComptroller(addresses.getAddress("UNITROLLER"));
-        usdc = ERC20(addresses.getAddress("USDBC"));
+            vault = MoonwellERC4626(
+                factory.deployMoonwellERC4626(address(mToken), rewardRecipient)
+            );
+        } else {
+            // if supply cap has been reached, skip the test
+            vm.skip(true);
+        }
+
         well = ERC20(addresses.getAddress("GOVTOKEN"));
     }
 
     function testSetup() public view {
         assertEq(address(vault.asset()), address(underlying));
-        assertEq(
-            address(vault.mToken()),
-            addresses.getAddress("MOONWELL_USDBC")
-        );
+        assertEq(address(vault.mToken()), address(mToken));
         assertEq(
             address(vault.comptroller()),
             addresses.getAddress("UNITROLLER")
         );
         assertEq(vault.rewardRecipient(), rewardRecipient);
 
-        assertEq(vault.name(), "ERC4626-Wrapped Moonwell USDbC");
-        assertEq(vault.symbol(), "wmUSDbC");
+        string memory vaultName = string.concat(
+            "ERC4626-Wrapped Moonwell ",
+            underlying.symbol()
+        );
+        assertEq(vault.name(), vaultName);
+
+        string memory vaultSymbol = string.concat("wm", underlying.symbol());
+
+        assertEq(vault.symbol(), vaultSymbol);
         assertEq(vault.totalSupply(), 10 ** 4, "total supply incorrect");
         assertGt(
-            ERC20(addresses.getAddress("MOONWELL_USDBC")).balanceOf(
-                address(vault)
-            ),
+            mToken.balanceOf(address(vault)),
             40e6,
             "underlying mToken balance incorrect"
         );
@@ -140,7 +167,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
     function testWithdrawWithZeroCashFails() public {
         testMaxMintDepositSucceedsMaxMintGtZero();
-        deal(address(underlying), addresses.getAddress("MOONWELL_USDBC"), 0);
+        deal(address(underlying), address(mToken), 0);
 
         uint256 withdrawAmount = vault.balanceOf(address(this));
 
@@ -163,7 +190,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
     function testSweepFailsMToken() public {
         address[] memory tokens = new address[](1);
-        tokens[0] = addresses.getAddress("MOONWELL_USDBC");
+        tokens[0] = address(mToken);
 
         vm.expectRevert("CompoundERC4626: cannot sweep mToken");
         vm.prank(rewardRecipient);
@@ -179,15 +206,12 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
         vm.prank(rewardRecipient);
         vault.sweepRewards(tokens);
-        assertEq(usdc.balanceOf(vault.rewardRecipient()), mintAmount);
+        assertEq(underlying.balanceOf(vault.rewardRecipient()), mintAmount);
     }
 
     function testMintGuardianPausedMaxMintReturnsZero() public {
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        comptroller._setMintPaused(
-            MToken(addresses.getAddress("MOONWELL_USDBC")),
-            true
-        );
+        comptroller._setMintPaused(mToken, true);
         vm.stopPrank();
 
         assertEq(vault.maxMint(address(this)), 0);
@@ -198,7 +222,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         supplyCaps[0] = 0;
 
         MToken[] memory mTokens = new MToken[](1);
-        mTokens[0] = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        mTokens[0] = mToken;
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         comptroller._setMarketSupplyCaps(mTokens, supplyCaps);
@@ -208,9 +232,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
     function testMaxMint() public view {
         uint256 maxMint = vault.maxMint(address(this));
-        uint256 supplyCap = comptroller.supplyCaps(
-            addresses.getAddress("MOONWELL_USDBC")
-        );
+        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         assertGt(maxMint, 0);
         assertLt(maxMint, supplyCap);
@@ -218,15 +240,13 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
 
     function testMaxMintDepositSucceedsMaxMintGtZero() public {
         assertEq(
-            MErc20(addresses.getAddress("MOONWELL_USDBC")).accrueInterest(),
+            MErc20(address(mToken)).accrueInterest(),
             0,
             "accrue interest failed"
         );
 
         uint256 maxMint = vault.maxMint(address(this));
-        uint256 supplyCap = comptroller.supplyCaps(
-            addresses.getAddress("MOONWELL_USDBC")
-        );
+        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         assertGt(maxMint, 0, "max mint not gt 0");
         assertLt(maxMint, supplyCap, "max mint not lt supply cap");
@@ -331,7 +351,7 @@ contract MoonwellERC4626LiveSystemBaseTest is Test {
         supplyCaps[0] = 0;
 
         MToken[] memory mTokens = new MToken[](1);
-        mTokens[0] = MToken(addresses.getAddress("MOONWELL_USDBC"));
+        mTokens[0] = mToken;
 
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         comptroller._setMarketSupplyCaps(mTokens, supplyCaps);
