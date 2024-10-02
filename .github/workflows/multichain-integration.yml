@@ -8,8 +8,8 @@ env:
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
 
 jobs:
-  run-multichain-tests:
-    name: multichain-integration-tests
+  run-proposal-tests:
+    name: Proposal Test
     runs-on: ubuntu-latest
 
     steps:
@@ -21,7 +21,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Test Proposals Multichain
+      - name: Run Integration Test
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
@@ -31,3 +31,25 @@ jobs:
            command: >-
              time forge test --match-contract MultichainProposalTest -vvv
              --ffi --decode-internal
+
+  run-cross-chain-tests:
+    name: Cross Chain Publish Message Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Run Integration Test
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract CrossChainPublishMessageTest -vvv --ffi
