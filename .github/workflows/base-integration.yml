@@ -1,4 +1,4 @@
-name: Base Integration Tests
+name: Base 
 
 on: [pull_request]
 
@@ -10,7 +10,7 @@ env:
 
 jobs:
   live-system-integration-tests:
-    name: Live System 
+    name: Live System Integraion Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -31,7 +31,7 @@ jobs:
            command: time forge test --match-contract LiveSystem -vvv --ffi
 
   fee-splitter-xwell-integration-tests:
-    name: Fee Splitter/xWell 
+    name: Fee Splitter/xWell Integration Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -53,7 +53,7 @@ jobs:
            command: time forge test --match-contract 'xWellIntegrationTest|FeeSplitterIntegrationTest' --fork-url base -vvv --ffi
 
   erc4626-vault-integration-tests:
-    name: ERC4626 
+    name: ERC4626 Integration Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

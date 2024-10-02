@@ -1,4 +1,4 @@
-name: Eth Chainlink Oracle Integration Tests
+name: Ethereum
 
 on: [pull_request]
 
@@ -7,7 +7,7 @@ env:
 
 jobs:
   run-eth-mainnet-tests:
-    name: Eth Oracle Integration Test
+    name: Oracle Integration Test
     runs-on: ubuntu-latest
 
     steps:

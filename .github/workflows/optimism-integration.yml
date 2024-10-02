@@ -1,4 +1,4 @@
-name: Optimism Integration Tests
+name: Optimism
 
 on: [pull_request]
 
@@ -10,7 +10,7 @@ env:
 
 jobs:
   live-system-integration-tests:
-    name: Live System 
+    name: Live System Integration Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -31,7 +31,7 @@ jobs:
            command: time forge test --match-contract LiveSystem -vvv --ffi
 
   xwell-integration-tests:
-    name: xWell 
+    name: xWell Integration Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

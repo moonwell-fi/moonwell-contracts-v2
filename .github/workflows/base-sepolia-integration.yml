@@ -1,4 +1,4 @@
-name: Base Sepolia Integration Tests
+name: Base Sepolia
 
 on: [pull_request]
 

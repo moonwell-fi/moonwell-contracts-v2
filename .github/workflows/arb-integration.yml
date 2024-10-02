@@ -1,4 +1,4 @@
-name: Arb integration tests
+name: Arbitrum
 on: [pull_request]
 
 env:
@@ -6,7 +6,7 @@ env:
 
 jobs:
   run-arb-tests:
-    name: Arbitrum Integration Test
+    name: Integration Test
     runs-on: ubuntu-latest
 
     steps:
