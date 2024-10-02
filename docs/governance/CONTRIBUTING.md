@@ -49,7 +49,18 @@ All pull requests must adhere to the style guidelines detailed in
 
 ## How to test a proposal
 
-`forge test --match-contract LiveSystemBaseTest --fork-url base -vvv`
+### Set the `PRIMARY_FORK_ID` environment variable
+
+For example, to test a proposal on the base network, set the `PRIMARY_FORK_ID`
+to `1`. Find the corresponding fork ID in the `utils/mainnetchains.json` file.
+
+```bash
+    export PRIMARY_FORK_ID=1
+```
+
+### Run Integration Tests
+
+`forge test --match-contract LiveSystem -vvv`
 
 Integration tests inherit from `PostProposalCheck`, which will run the latest
 proposals from both base and moonbeam if they have not already been proposed on
