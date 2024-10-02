@@ -147,7 +147,7 @@ contract mip00 is HybridProposal, Configs {
             TemporalGovernor.TrustedSender[]
                 memory trustedSenders = new TemporalGovernor.TrustedSender[](1);
 
-            addresses.addRestriction(MOONBEAM_CHAIN_ID);
+            addresses.addRestriction(block.chainid.toMoonbeamChainId());
             /// this should return the moonbeam/moonbase wormhole chain id
             trustedSenders[0].chainId = block
                 .chainid
@@ -485,7 +485,7 @@ contract mip00 is HybridProposal, Configs {
             _buildCalldata(addresses);
         }
 
-        addresses.addRestriction(MOONBEAM_CHAIN_ID);
+        addresses.addRestriction(block.chainid.toMoonbeamChainId());
 
         /// update approved break glass guardian calldata in Multichain Governor
         _pushAction(
@@ -731,7 +731,7 @@ contract mip00 is HybridProposal, Configs {
             "temporal governor wormhole core set incorrectly"
         );
 
-        addresses.addRestriction(MOONBEAM_CHAIN_ID);
+        addresses.addRestriction(block.chainid.toMoonbeamChainId());
         assertTrue(
             governor.isTrustedSender(
                 block.chainid.toMoonbeamWormholeChainId(),
