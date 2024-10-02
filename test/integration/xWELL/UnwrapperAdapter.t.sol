@@ -18,7 +18,7 @@ import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeUnwrapperAdapter} from "@protocol/xWELL/WormholeUnwrapperAdapter.sol";
 import {Address} from "@utils/Address.sol";
 
-contract UnwrapperAdapterLiveSystemMoonbeamTest is mipm21 {
+contract UnwrapperAdapterMoonbeamTest is mipm21 {
     using Address for address;
     using ChainIds for uint256;
 
