@@ -27,6 +27,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup-environment
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
       - name: Live System Integration Tests
         uses: nick-fields/retry@v3
         with:
@@ -36,88 +44,49 @@ jobs:
            max_attempts: 3
            command: time forge test --match-contract LiveSystem -vvv --ffi
 
-  xwell-integration-tests:
-    name: xWell Integration Tests
+  fee-splitter-xwell-integration-tests:
+    name: Fee Splitter/xWell Integration Tests
     runs-on: ubuntu-latest
     needs: setup-environment
     steps:
-      - name: xWell Integration Tests
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Run Integration Tests
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
            timeout_minutes: 10
            max_attempts: 3
-           command: time forge test --match-contract xWellIntegrationTest --fork-url base -vvv --ffi
+           # matches 2 contracts, they will run concurrently
+           command: time forge test --match-contract 'xWellIntegrationTest|FeeSplitterIntegrationTest' --fork-url base -vvv --ffi
 
-  erc4626-eth-deploy-integration-tests:
-    name: ERC4626 Eth Deploy Integration Tests
+  erc4626-vault-integration-tests:
+    name: ERC4626 Integration Tests
     runs-on: ubuntu-latest
     needs: setup-environment
     steps:
-      - name: ERC4626 Eth Deploy Integration Tests
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Run Integration Test
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
            timeout_minutes: 10
            max_attempts: 3
-           command: time forge test --match-contract ERC4626EthDeployIntegrationTest --fork-url base -vvv --ffi
-
-  erc4626-eth-live-integration-tests:
-    name: ERC4626 Eth Live Integration Tests
-    runs-on: ubuntu-latest
-    needs: setup-environment
-    steps:
-      - name: ERC4626 Eth Live Integration Tests
-        uses: nick-fields/retry@v3
-        with:
-           polling_interval_seconds: 30
-           retry_wait_seconds: 60
-           timeout_minutes: 10
-           max_attempts: 3
-           command: time forge test --match-contract ERC4626EthLiveIntegrationTest --fork-url base -vvv --ffi
-
-  erc4626-factory-integration-tests:
-    name: ERC4626 Factory Integration Tests
-    runs-on: ubuntu-latest
-    needs: setup-environment
-    steps:
-      - name: ERC4626 Factory Integration Tests
-        uses: nick-fields/retry@v3
-        with:
-           polling_interval_seconds: 30
-           retry_wait_seconds: 60
-           timeout_minutes: 10
-           max_attempts: 3
-           command: time forge test --match-contract ERC4626FactoryIntegrationTest --fork-url base -vvv --ffi
-
-  fee-splitter-integration-tests:
-    name: Fee Splitter Integration Tests
-    runs-on: ubuntu-latest
-    needs: setup-environment
-    steps:
-      - name: Fee Splitter Integration Tests
-        uses: nick-fields/retry@v3
-        with:
-           polling_interval_seconds: 30
-           retry_wait_seconds: 60
-           timeout_minutes: 10
-           max_attempts: 3
-           command: time forge test --match-contract FeeSplitterIntegrationTest --fork-url base -vvv --ffi
-
-  erc4626-live-integration-tests:
-    name: ERC4626 Live Integration Tests
-    runs-on: ubuntu-latest
-    needs: setup-environment
-    steps:
-      - name: ERC4626 Live Integration Tests
-        uses: nick-fields/retry@v3
-        with:
-           polling_interval_seconds: 30
-           retry_wait_seconds: 60
-           timeout_minutes: 10
-           max_attempts: 3
-           command: time forge test --match-contract ERC4626LiveIntegrationTest --fork-url base -vvv --ffi
-
+           # since 'ERC4626' matches 4 contracts, they will run concurrently
+           command: time forge test --match-contract ERC4626 --fork-url base -vvv --ffi
 
