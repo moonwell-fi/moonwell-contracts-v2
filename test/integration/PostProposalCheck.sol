@@ -2,10 +2,10 @@
 pragma solidity 0.8.19;
 import {console} from "forge-std/console.sol";
 
+import "@utils/ChainIds.sol";
 import {String} from "@utils/String.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Proposal} from "@proposals/Proposal.sol";
-import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
@@ -32,6 +32,11 @@ contract PostProposalCheck is LiveProposalCheck {
 
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
+
+        // do not run proposals on moonbase
+        if (block.chainid == MOONBASE_CHAIN_ID) {
+            return;
+        }
 
         governor = MultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))

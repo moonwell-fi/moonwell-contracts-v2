@@ -45,8 +45,6 @@ contract LiveSystem is Test, ExponentialNoError, PostProposalCheck {
 
         vm.selectFork(primaryForkId);
 
-        addresses = new Addresses();
-
         checker = MarketAddChecker(addresses.getAddress("MARKET_ADD_CHECKER"));
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
