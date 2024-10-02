@@ -146,12 +146,12 @@
     },
     {
         "addr": "0x1AC96f01B9d2c6AdD1cEEBDEeA0B6B48Db6C0827",
-        "name": "xcUSDC",
+        "name": "USDC",
         "isContract": true
     },
     {
         "addr": "0xef388dA299f5E75b4e935B7eC9602097aA89b76f",
-        "name": "xcUSDT",
+        "name": "USDT",
         "isContract": true
     },
     {
