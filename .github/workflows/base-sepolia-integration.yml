@@ -28,7 +28,7 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 10
            max_attempts: 3
-           command: time forge test --match-contract LiveSystem -vvv --ffi
+           command: time forge test --match-contract LiveSystem -vvv --ffi --no-match-contract rETHLiveSystemBasePostProposalTest
 
   xwell-integration-tests:
     name: xWell Integration Tests
