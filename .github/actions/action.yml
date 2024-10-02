@@ -22,10 +22,11 @@ runs:
       with:
         version: nightly-2442e7a5fc165d7d0b022aa8b9f09dcdf675157b
 
-    # Explicitly add the directory where forge is installed to PATH
-    - name: Add Forge to PATH
-      run: echo "/home/runner/work/_temp" >> $GITHUB_PATH
+    - name: Set GitHub Path
+      run: echo "$GITHUB_ACTION_PATH" >> $GITHUB_PATH
       shell: bash
+      env:
+        GITHUB_ACTION_PATH: ${{ github.action_path }}
 
       # Verify forge installation path
     - name: Check forge installation
