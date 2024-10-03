@@ -20,7 +20,7 @@ import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
-contract SupplyBorrowPostProposalTest is Test, PostProposalCheck {
+contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
     using ChainIds for uint256;
 
     MultiRewardDistributor mrd;
