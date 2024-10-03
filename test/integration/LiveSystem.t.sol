@@ -1045,5 +1045,55 @@ contract LiveSystem is Test, ExponentialNoError, PostProposalCheck {
         );
     }
 
+    function testFuzz_SupplyingOverSupplyCapFails(uint256 mTokenIndex) public {
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        MToken mToken = mTokens[mTokenIndex];
+
+        uint256 amount = marketBase.getMaxSupplyAmount(mToken) + 1;
+
+        if (amount == 1) {
+            vm.skip(true);
+        }
+
+        address underlying = MErc20(address(mToken)).underlying();
+
+        if (underlying == addresses.getAddress("WETH")) {
+            vm.deal(addresses.getAddress("WETH"), amount);
+        }
+
+        deal(underlying, address(this), amount);
+        IERC20(underlying).approve(address(mToken), amount);
+
+        vm.expectRevert("market supply cap reached");
+        MErc20Delegator(payable(address(mToken))).mint(amount);
+    }
+
+    function testFuzz_BorrowingOverBorrowCapFails(uint256 mTokenIndex) public {
+        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        MToken mToken = mTokens[mTokenIndex];
+
+        uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
+
+        _mintMToken(address(mToken), mintAmount);
+
+        uint256 amount = _getMaxBorrowAmount(address(mToken)) + 1;
+
+        if (amount == 1) {
+            vm.skip(true);
+        }
+
+        address underlying = MErc20(address(mToken)).underlying();
+
+        if (underlying == addresses.getAddress("WETH")) {
+            vm.deal(addresses.getAddress("WETH"), amount);
+        }
+
+        deal(underlying, address(this), amount);
+        IERC20(underlying).approve(address(mToken), amount);
+
+        vm.expectRevert("market borrow cap reached");
+        MErc20Delegator(payable(address(mToken))).borrow(amount);
+    }
+
     receive() external payable {}
 }
