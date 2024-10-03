@@ -52,6 +52,8 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             if (markets[i] == deprecatedMoonwellVelo) {
                 continue;
             }
+            mTokens.push(markets[i]);
+
             MultiRewardDistributorCommon.MarketConfig[] memory configs = mrd
                 .getAllMarketConfigs(markets[i]);
 
