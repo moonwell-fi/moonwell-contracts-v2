@@ -20,7 +20,7 @@ contract MarketBase is ExponentialNoError {
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         if (supplyCap == 0) {
-            return type(uint256).max;
+            return type(uint128).max;
         }
 
         uint256 totalCash = mToken.getCash();

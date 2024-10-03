@@ -850,12 +850,16 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
 
+        if (mintAmount == 0) {
+            vm.skip(true);
+        }
+
         _mintMToken(address(mToken), mintAmount);
 
         uint256 amount = marketBase.getMaxBorrowAmount(mToken, address(this)) +
             1;
 
-        if (amount == 1) {
+        if (amount < 1) {
             vm.skip(true);
         }
 
@@ -867,6 +871,11 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         deal(underlying, address(this), amount);
         IERC20(underlying).approve(address(mToken), amount);
+
+        address[] memory _mTokens = new address[](1);
+        _mTokens[0] = address(mToken);
+
+        comptroller.enterMarkets(_mTokens);
 
         vm.expectRevert("market borrow cap reached");
         MErc20Delegator(payable(address(mToken))).borrow(amount);
