@@ -39,12 +39,13 @@ contract MarketBase is ExponentialNoError {
         return supplyCap - totalSupplies - 1;
     }
 
-    function getMaxBorrowAmount(MToken mToken) public view returns (uint256) {
+    function getMaxBorrowAmount(
+        MToken mToken,
+        address user
+    ) public view returns (uint256) {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = mToken.totalBorrows();
-        (, uint256 usdLiquidity, ) = comptroller.getAccountLiquidity(
-            address(this)
-        );
+        (, uint256 usdLiquidity, ) = comptroller.getAccountLiquidity(user);
 
         uint256 oraclePrice = comptroller.oracle().getUnderlyingPrice(mToken);
 

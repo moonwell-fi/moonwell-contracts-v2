@@ -218,7 +218,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = marketBase.getMaxBorrowAmount(mToken);
+        uint256 borrowAmount = marketBase.getMaxBorrowAmount(
+            mToken,
+            address(this)
+        );
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
@@ -348,8 +351,8 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         );
 
         uint256 borrowAmount = supplyAmount / 3 >
-            marketBase.getMaxBorrowAmount(mToken)
-            ? marketBase.getMaxBorrowAmount(mToken)
+            marketBase.getMaxBorrowAmount(mToken, address(this))
+            ? marketBase.getMaxBorrowAmount(mToken, address(this))
             : supplyAmount / 3;
 
         assertEq(
@@ -439,7 +442,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         );
 
         {
-            uint256 borrowAmount = marketBase.getMaxBorrowAmount(mToken);
+            uint256 borrowAmount = marketBase.getMaxBorrowAmount(
+                mToken,
+                address(this)
+            );
 
             assertEq(
                 MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
@@ -552,7 +558,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             );
         }
 
-        if (mintAmount / 3 < marketBase.getMaxBorrowAmount(mToken)) {
+        if (
+            mintAmount / 3 <
+            marketBase.getMaxBorrowAmount(mToken, address(this))
+        ) {
             vm.skip(true);
         }
         uint256 borrowAmount = mintAmount / 3;
@@ -688,7 +697,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = marketBase.getMaxBorrowAmount(mToken);
+        uint256 borrowAmount = marketBase.getMaxBorrowAmount(
+            mToken,
+            address(this)
+        );
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
@@ -742,7 +754,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = marketBase.getMaxBorrowAmount(mToken);
+        uint256 borrowAmount = marketBase.getMaxBorrowAmount(
+            mToken,
+            address(this)
+        );
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
@@ -837,7 +852,8 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         _mintMToken(address(mToken), mintAmount);
 
-        uint256 amount = marketBase.getMaxBorrowAmount(mToken) + 1;
+        uint256 amount = marketBase.getMaxBorrowAmount(mToken, address(this)) +
+            1;
 
         if (amount == 1) {
             vm.skip(true);
