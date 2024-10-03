@@ -1,4 +1,4 @@
-name: Optimism Integration Tests
+name: Optimism
 
 on: [pull_request]
 
@@ -9,10 +9,9 @@ env:
   PRIMARY_FORK_ID: 2
 
 jobs:
-  run-base-tests:
-    name: optimism-integration-tests
+  live-system-integration-tests:
+    name: Live System Integration Test
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -22,11 +21,35 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Tests Base Mainnet
+      - name: Live System Integration Tests
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 15
+           timeout_minutes: 10
            max_attempts: 3
-           command: time forge test --match-contract LiveSystemDeploy -vvv --ffi
+           command: time forge test --match-contract LiveSystem -vvv --ffi
+
+  xwell-integration-tests:
+    name: xWell Integration Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Run Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 10
+           max_attempts: 3
+           # matches 2 contracts, they will run concurrently
+           command: time forge test --match-contract 'xWellIntegrationTest' --fork-url optimism -vvv --ffi
+
+

@@ -132,7 +132,7 @@ contract MultichainProposalTest is PostProposalCheck {
         );
         vm.makePersistent(address(voteCollection));
 
-        addresses.addRestriction(MOONBEAM_CHAIN_ID);
+        addresses.addRestriction(block.chainid.toMoonbeamChainId());
         wormhole = IWormhole(
             addresses.getAddress("WORMHOLE_CORE", MOONBEAM_CHAIN_ID)
         );

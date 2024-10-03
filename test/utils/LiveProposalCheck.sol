@@ -97,7 +97,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         uint256 proposalId
     ) public {
         /// add restriction for moonbeam actions
-        addresses.addRestriction(MOONBEAM_CHAIN_ID);
+        addresses.addRestriction(block.chainid.toMoonbeamChainId());
 
         (
             address[] memory targets,

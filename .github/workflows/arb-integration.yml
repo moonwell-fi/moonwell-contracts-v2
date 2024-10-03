@@ -1,4 +1,4 @@
-name: Arb integration tests
+name: Arbitrum
 on: [pull_request]
 
 env:
@@ -6,7 +6,7 @@ env:
 
 jobs:
   run-arb-tests:
-    name: arb-integration-tests
+    name: Integration Test
     runs-on: ubuntu-latest
 
     steps:
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Arbitrum Integration Test Contracts
+      - name: Run Integration Test
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30

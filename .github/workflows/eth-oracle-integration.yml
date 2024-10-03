@@ -1,4 +1,4 @@
-name: Eth Chainlink Oracle Integration Tests
+name: Ethereum
 
 on: [pull_request]
 
@@ -7,7 +7,7 @@ env:
 
 jobs:
   run-eth-mainnet-tests:
-    name: eth-oracle-integration-tests
+    name: Oracle Integration Test
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +19,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Test Contracts
+      - name: Run Integration Test
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30

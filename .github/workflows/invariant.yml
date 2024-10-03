@@ -1,10 +1,10 @@
-name: Invariant Tests
+name: Invariant 
 
 on: [pull_request]
 
 jobs:
   invariant-tests:
-    name: invariant-tests
+    name: Invariant Test
     runs-on: ubuntu-latest
 
     steps:
@@ -16,7 +16,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Invariant Test Contracts
+      - name: Run Invariant Test 
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30

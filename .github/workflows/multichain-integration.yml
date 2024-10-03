@@ -1,4 +1,4 @@
-name: Multichain Integration Tests
+name: Multichain 
 
 on: [pull_request]
 
@@ -8,8 +8,8 @@ env:
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
 
 jobs:
-  run-multichain-tests:
-    name: multichain-integration-tests
+  run-proposal-tests:
+    name: Proposal Integration Test
     runs-on: ubuntu-latest
 
     steps:
@@ -21,7 +21,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Test Proposals Multichain
+      - name: Run Integration Test
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
@@ -31,3 +31,189 @@ jobs:
            command: >-
              time forge test --match-contract MultichainProposalTest -vvv
              --ffi --decode-internal
+
+  run-cross-chain-tests:
+    name: Cross Chain Publish Message Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Run Integration Test
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract CrossChainPublishMessageTest -vvv --ffi
+
+
+  run-live-proposals-integration-tests:
+    name: Live Proposal Integration Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Run Integration Test
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 15
+           max_attempts: 3
+           command: time forge test --mc LiveProposalsIntegrationTest -vvvvv --ffi
+
+  run-on-chain-calldata-check:
+    name: On Chain Calldata Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Get Changed Files
+        id: files
+        uses: jitterbit/get-changed-files@v1
+        with:
+          format: "space-delimited"
+
+      - name: Make the script executable
+        run: chmod +x bin/run-onchain-calldata-check.sh
+
+      - name: Run Test Proposal Calldata Generation
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 20
+           max_attempts: 3
+           command: bin/run-onchain-calldata-check.sh
+
+  run-in-development-proposal:
+    name: In Development Proposal
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Get Changed Files
+        id: files
+        uses: jitterbit/get-changed-files@v1
+        with:
+          format: "space-delimited"
+
+      - name: Set PR_CHANGED_FILES
+        run: |
+          echo "PR_CHANGED_FILES=${{ steps.files.outputs.added_modified }}" >> $GITHUB_ENV
+
+      - name: Set DEBUG flag
+        run: echo "DEBUG=true" >> $GITHUB_ENV
+
+      - name: Set PROPOSALS_FOLDER
+        run: echo "PROPOSALS_FOLDER=src/proposals/mips" >> $GITHUB_ENV
+
+      - name: List and Delete Previous Comments
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: issue_number
+            });
+
+            const actionComments = comments.data.filter(comment => 
+                comment.user.login === 'github-actions[bot]' &&
+                (
+                comment.body.includes('=================== PROPOSAL START ==================') ||
+                comment.body.includes('If you wish to simulate on-chain transactions pass a RPC URL')
+               )
+             );
+
+            if (actionComments.length === 0) {
+              return;
+            }
+            for (const comment of actionComments) {
+              await github.rest.issues.deleteComment({
+                ...context.repo,
+                comment_id: comment.id,
+              });
+            }
+
+      - name: Give write permissions
+        run: chmod -R +x src/proposals/mips/
+
+      - name: Run Calldata Printing
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 20
+           max_attempts: 3
+           command: bin/run-calldata-printing.sh
+
+      - name: Comment PR with Calldata Printing Output
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('output.txt')) {
+                const output = fs.readFileSync('output.txt', 'utf8');
+                const prNumber = context.payload.pull_request.number;
+                github.rest.issues.createComment({
+                   ...context.repo,
+                   issue_number: prNumber,
+                   body: `\`\`\`\n${output}\n\`\`\``
+                   });
+             }
+
+  run-post-proposal-tests:
+    name: Post Proposal Integration Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Run Integration Test
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 20
+           max_attempts: 3
+           command: time forge test --match-contract PostProposalTest -vvv --ffi
+
