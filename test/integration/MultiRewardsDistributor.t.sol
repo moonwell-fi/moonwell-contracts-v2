@@ -21,7 +21,7 @@ import {MarketAddChecker} from "@protocol/governance/MarketAddChecker.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
-contract LiveSystem is Test, PostProposalCheck {
+contract MultiRewardsDistributorLiveSystem is Test, PostProposalCheck {
     using ChainIds for uint256;
 
     MultiRewardDistributor mrd;
@@ -67,20 +67,6 @@ contract LiveSystem is Test, PostProposalCheck {
         }
 
         assertEq(mTokens.length > 0, true, "No markets found");
-    }
-
-    function testAllMarketsNonZeroTotalSupply() public view {
-        MToken[] memory markets = comptroller.getAllMarkets();
-
-        for (uint256 i = 0; i < markets.length; i++) {
-            assertGt(markets[i].totalSupply(), 2_000, "empty market");
-            assertGt(markets[i].balanceOf(address(0)), 0, "no burnt tokens");
-        }
-    }
-
-    function testMarketAddChecker() public view {
-        checker.checkMarketAdd(addresses.getAddress("MOONWELL_cbETH"));
-        checker.checkAllMarkets(addresses.getAddress("UNITROLLER"));
     }
 
     function testAllEmissionTokenConfigs() public view {

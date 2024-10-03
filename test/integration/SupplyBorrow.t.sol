@@ -17,6 +17,7 @@ import {ChainIds, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {MarketAddChecker} from "@protocol/governance/MarketAddChecker.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
@@ -27,6 +28,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
     Comptroller comptroller;
 
     MToken[] mTokens;
+    MarketAddChecker checker;
     MarketBase public marketBase;
 
     mapping(MToken => address[] rewardTokens) rewardsConfig;
@@ -39,7 +41,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         mrd = MultiRewardDistributor(addresses.getAddress("MRD_PROXY"));
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
-
+        checker = MarketAddChecker(addresses.getAddress("MARKET_ADD_CHECKER"));
         marketBase = new MarketBase(comptroller);
 
         MToken[] memory markets = comptroller.getAllMarkets();
@@ -139,6 +141,20 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             mToken.totalBorrows();
     }
 
+    function testAllMarketsNonZeroTotalSupply() public view {
+        MToken[] memory markets = comptroller.getAllMarkets();
+
+        for (uint256 i = 0; i < markets.length; i++) {
+            assertGt(markets[i].totalSupply(), 2_000, "empty market");
+            assertGt(markets[i].balanceOf(address(0)), 0, "no burnt tokens");
+        }
+    }
+
+    function testMarketAddChecker() public view {
+        checker.checkMarketAdd(addresses.getAddress("MOONWELL_cbETH"));
+        checker.checkAllMarkets(addresses.getAddress("UNITROLLER"));
+    }
+
     function testFuzz_MintMTokenSucceeds(
         uint256 mTokenIndex,
         uint256 mintAmount
@@ -184,7 +200,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         uint256 max = marketBase.getMaxSupplyAmount(mToken);
 
         if (max <= 10e8) {
-            return;
+            vm.skip(true);
         }
 
         mintAmount = _bound(mintAmount, 10e8, max);
