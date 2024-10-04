@@ -575,11 +575,12 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
 
         if (
-            mintAmount / 3 <
+            mintAmount / 3 >
             marketBase.getMaxUserBorrowAmount(mToken, address(this))
         ) {
             return;
         }
+
         uint256 borrowAmount = mintAmount / 3;
 
         assertEq(
