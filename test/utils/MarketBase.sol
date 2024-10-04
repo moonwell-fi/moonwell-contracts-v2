@@ -39,7 +39,14 @@ contract MarketBase is ExponentialNoError {
         return supplyCap - totalSupplies - 1;
     }
 
-    function getMaxBorrowAmount(
+    function getMaxBorrowAmount(MToken mToken) public view returns (uint256) {
+        uint256 borrowCap = comptroller.borrowCaps(address(mToken));
+        uint256 totalBorrows = mToken.totalBorrows();
+
+        return borrowCap - totalBorrows;
+    }
+
+    function getMaxUserBorrowAmount(
         MToken mToken,
         address user
     ) public view returns (uint256) {
@@ -58,9 +65,7 @@ contract MarketBase is ExponentialNoError {
         }
 
         return (
-            borrowableAmount > maxUserBorrow
-                ? maxUserBorrow - 1
-                : borrowableAmount - 1
+            borrowableAmount > maxUserBorrow ? maxUserBorrow : borrowableAmount
         );
     }
 }

@@ -234,7 +234,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = marketBase.getMaxBorrowAmount(
+        uint256 borrowAmount = marketBase.getMaxUserBorrowAmount(
             mToken,
             address(this)
         );
@@ -367,8 +367,8 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         );
 
         uint256 borrowAmount = supplyAmount / 3 >
-            marketBase.getMaxBorrowAmount(mToken, address(this))
-            ? marketBase.getMaxBorrowAmount(mToken, address(this))
+            marketBase.getMaxUserBorrowAmount(mToken, address(this))
+            ? marketBase.getMaxUserBorrowAmount(mToken, address(this))
             : supplyAmount / 3;
 
         assertEq(
@@ -458,7 +458,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         );
 
         {
-            uint256 borrowAmount = marketBase.getMaxBorrowAmount(
+            uint256 borrowAmount = marketBase.getMaxUserBorrowAmount(
                 mToken,
                 address(this)
             );
@@ -576,7 +576,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         if (
             mintAmount / 3 <
-            marketBase.getMaxBorrowAmount(mToken, address(this))
+            marketBase.getMaxUserBorrowAmount(mToken, address(this))
         ) {
             vm.skip(true);
         }
@@ -713,7 +713,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = marketBase.getMaxBorrowAmount(
+        uint256 borrowAmount = marketBase.getMaxUserBorrowAmount(
             mToken,
             address(this)
         );
@@ -770,7 +770,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = marketBase.getMaxBorrowAmount(
+        uint256 borrowAmount = marketBase.getMaxUserBorrowAmount(
             mToken,
             address(this)
         );
@@ -867,7 +867,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
 
         if (mintAmount == 0) {
-            vm.skip(true);
+            return;
         }
 
         _mintMToken(address(mToken), mintAmount);
@@ -877,11 +877,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         comptroller.enterMarkets(_mTokens);
 
-        uint256 amount = marketBase.getMaxBorrowAmount(mToken, address(this)) +
-            1e18;
+        uint256 amount = marketBase.getMaxBorrowAmount(mToken) + 1;
 
-        if (amount < 1e18) {
-            vm.skip(true);
+        if (amount == 1) {
+            return;
         }
 
         address underlying = MErc20(address(mToken)).underlying();
