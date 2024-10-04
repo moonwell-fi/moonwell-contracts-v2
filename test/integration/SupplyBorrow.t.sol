@@ -200,7 +200,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         uint256 max = marketBase.getMaxSupplyAmount(mToken);
 
         if (max <= 10e8) {
-            vm.skip(true);
+            return;
         }
 
         mintAmount = _bound(mintAmount, 10e8, max);
@@ -578,7 +578,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             mintAmount / 3 <
             marketBase.getMaxUserBorrowAmount(mToken, address(this))
         ) {
-            vm.skip(true);
+            return;
         }
         uint256 borrowAmount = mintAmount / 3;
 
@@ -844,7 +844,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         uint256 amount = marketBase.getMaxSupplyAmount(mToken) + 1;
 
         if (amount == 1) {
-            vm.skip(true);
+            return;
         }
 
         address underlying = MErc20(address(mToken)).underlying();
