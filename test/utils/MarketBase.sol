@@ -65,7 +65,9 @@ contract MarketBase is ExponentialNoError {
         }
 
         return (
-            borrowableAmount > maxUserBorrow ? maxUserBorrow : borrowableAmount
+            borrowableAmount > maxUserBorrow
+                ? maxUserBorrow - 1
+                : borrowableAmount - 1
         );
     }
 }
