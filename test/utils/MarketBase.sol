@@ -20,10 +20,8 @@ contract MarketBase is ExponentialNoError {
         uint256 supplyCap = comptroller.supplyCaps(address(mToken));
 
         if (supplyCap == 0) {
-            return type(uint256).max;
+            return type(uint128).max;
         }
-
-        console.log("supply cap", supplyCap);
 
         uint256 totalCash = mToken.getCash();
         uint256 totalBorrows = mToken.totalBorrows();
@@ -39,5 +37,37 @@ contract MarketBase is ExponentialNoError {
         }
 
         return supplyCap - totalSupplies - 1;
+    }
+
+    function getMaxBorrowAmount(MToken mToken) public view returns (uint256) {
+        uint256 borrowCap = comptroller.borrowCaps(address(mToken));
+        uint256 totalBorrows = mToken.totalBorrows();
+
+        return borrowCap - totalBorrows;
+    }
+
+    function getMaxUserBorrowAmount(
+        MToken mToken,
+        address user
+    ) public view returns (uint256) {
+        uint256 borrowCap = comptroller.borrowCaps(address(mToken));
+        uint256 totalBorrows = mToken.totalBorrows();
+        (, uint256 usdLiquidity, ) = comptroller.getAccountLiquidity(user);
+
+        uint256 oraclePrice = comptroller.oracle().getUnderlyingPrice(mToken);
+
+        uint256 maxUserBorrow = (usdLiquidity * 1e18) / oraclePrice;
+
+        uint256 borrowableAmount = borrowCap - totalBorrows;
+
+        if (maxUserBorrow == 0 || borrowableAmount == 0) {
+            return 0;
+        }
+
+        return (
+            borrowableAmount > maxUserBorrow
+                ? maxUserBorrow - 1
+                : borrowableAmount - 1
+        );
     }
 }
