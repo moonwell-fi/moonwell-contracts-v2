@@ -10,25 +10,16 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
-import {OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
-import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
-import {xWELLRouter} from "@protocol/xWELL/xWELLRouter.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {etch} from "@proposals/utils/PrecompileEtching.sol";
-import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {IWormholeRelayer} from "@protocol/wormhole/IWormholeRelayer.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
+import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
-import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
-import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
-import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
     using String for string;
