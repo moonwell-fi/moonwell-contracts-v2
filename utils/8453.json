@@ -613,5 +613,20 @@
         "addr": "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
         "isContract": true,
         "name": "MOONWELL_EURC"
+    },
+    {
+        "addr": "0xEDfa23602D0EC14714057867A78d01e94176BEA0",
+        "isContract": true,
+        "name": "rsETH"
+    },
+    {
+        "addr": "todo fill in with composite oracle",
+        "isContract": true,
+        "name": "CHAINLINK_rsETH_ETH_COMPOSITE_ORACLE"
+    },
+    {
+        "addr": "todo fill in with value provided by team",
+        "name": "CHAINLINK_rsETH_ETH",
+        "isContract": true
     }
 ]

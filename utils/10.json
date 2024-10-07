@@ -418,5 +418,15 @@
         "addr": "0xe9ffd686ca83ceb308962f4e50c5fd7f2e3c037e",
         "isContract": true,
         "name": "MARKET_ADD_CHECKER"
+    },
+    {
+        "addr": "0x87eEE96D50Fb761AD85B1c982d28A042169d61b1",
+        "isContract": true,
+        "name": "rsETH"
+    },
+    {
+        "addr": "todo fill in with composite oracle",
+        "isContract": true,
+        "name": "rsETH"
     }
 ]
