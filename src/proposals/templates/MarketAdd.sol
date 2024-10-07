@@ -97,13 +97,11 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         super.run(addresses, address(0));
     }
 
-    function initProposal(Addresses addresses) public override {
-        string memory encodedJson = vm.readFile(vm.envString("MTOKENS_PATH"));
-
+    function initProposal(Addresses) public override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
-            _saveMTokens(addresses, encodedJson, chainId);
-            _saveEmissionConfigurations(addresses, chainId);
+            _saveMTokens(chainId);
+            _saveEmissionConfigurations(chainId);
         }
     }
 
@@ -544,11 +542,9 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         }
     }
 
-    function _saveMTokens(
-        Addresses addresses,
-        string memory encodedJson,
-        uint256 chainId
-    ) internal {
+    function _saveMTokens(uint256 chainId) internal {
+        string memory encodedJson = vm.readFile(vm.envString("MTOKENS_PATH"));
+
         string memory chain = string.concat(".", vm.toString(chainId));
 
         bytes memory parsedJson = vm.parseJson(encodedJson, chain);
@@ -563,10 +559,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         }
     }
 
-    function _saveEmissionConfigurations(
-        Addresses addresses,
-        uint256 chainId
-    ) internal {
+    function _saveEmissionConfigurations(uint256 chainId) internal {
         string memory encodedJson = vm.readFile(
             vm.envString("EMISSION_CONFIGURATIONS_PATH")
         );
