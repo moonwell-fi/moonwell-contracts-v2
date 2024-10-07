@@ -1,5 +1,12 @@
 [
     {
+        "envpath": "src/proposals/mips/mip-x03/x03.sh",
+        "governor": "MultichainGovernor",
+        "id": 0,
+        "path": "src/proposals/templates/MarketAdd.sol",
+        "proposalType": "HybridProposal"
+    },
+    {
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 57,
