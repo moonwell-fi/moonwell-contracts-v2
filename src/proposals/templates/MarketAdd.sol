@@ -9,6 +9,7 @@ import "@protocol/utils/String.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {MToken} from "@protocol/MToken.sol";
+import {MErc20} from "@protocol/MErc20.sol";
 import {OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
@@ -25,6 +26,7 @@ import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
@@ -112,7 +114,201 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         }
     }
 
-    function validate(Addresses addresses, address) public override {}
+    function build(Addresses addresses) public override {
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            _buildToChain(addresses, chainId);
+        }
+    }
+
+    function validate(Addresses addresses, address) public override {
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            _validate(addresses, chainId);
+        }
+    }
+
+    function _validate(Addresses addresses, uint256 chainId) internal {
+        vm.selectFork(chainId.toForkId());
+
+        MTokenConfiguration[] memory _mTokens = mTokens[chainId];
+
+        address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        Comptroller comptroller = Comptroller(
+            addresses.getAddress("UNITROLLER")
+        );
+
+        unchecked {
+            for (uint256 i = 0; i < _mTokens.length; i++) {
+                MTokenConfiguration memory config = _mTokens[i];
+
+                uint256 borrowCap = comptroller.borrowCaps(
+                    addresses.getAddress(config.addressesString)
+                );
+                uint256 supplyCap = comptroller.supplyCaps(
+                    addresses.getAddress(config.addressesString)
+                );
+
+                uint256 maxBorrowCap = (supplyCap * 10) / 9;
+
+                assertTrue(
+                    borrowCap <= maxBorrowCap,
+                    "borrow cap exceeds max borrow"
+                );
+
+                /// CToken Assertions
+                assertFalse(
+                    comptroller.mintGuardianPaused(
+                        addresses.getAddress(config.addressesString)
+                    ),
+                    "minting paused by guardian"
+                ); /// minting allowed by guardian
+
+                assertFalse(
+                    comptroller.borrowGuardianPaused(
+                        addresses.getAddress(config.addressesString)
+                    ),
+                    "borrowing paused by guardian"
+                ); /// borrowing allowed by guardian
+
+                assertEq(borrowCap, config.borrowCap, "borrow cap incorrect");
+                assertEq(supplyCap, config.supplyCap, "supply cap incorrect");
+
+                /// assert mToken irModel is correct
+                JumpRateModel jrm = JumpRateModel(
+                    addresses.getAddress(
+                        string(
+                            abi.encodePacked(
+                                "JUMP_RATE_IRM_",
+                                config.addressesString
+                            )
+                        )
+                    )
+                );
+                assertEq(
+                    address(
+                        MToken(addresses.getAddress(config.addressesString))
+                            .interestRateModel()
+                    ),
+                    address(jrm)
+                );
+
+                MErc20 mToken = MErc20(
+                    addresses.getAddress(config.addressesString)
+                );
+
+                /// reserve factor and protocol seize share
+                assertEq(
+                    mToken.protocolSeizeShareMantissa(),
+                    config.seizeShare
+                );
+                assertEq(mToken.reserveFactorMantissa(), config.reserveFactor);
+
+                /// assert initial mToken balances are correct
+                assertTrue(mToken.balanceOf(address(governor)) > 0); /// governor has some
+                assertEq(mToken.balanceOf(address(0)), 1); /// address 0 has 1 wei of assets
+
+                /// assert cToken admin is the temporal governor
+                assertEq(address(mToken.admin()), address(governor));
+
+                /// assert mToken comptroller is correct
+                assertEq(
+                    address(mToken.comptroller()),
+                    addresses.getAddress("UNITROLLER")
+                );
+
+                /// assert mToken underlying is correct
+                assertEq(
+                    address(mToken.underlying()),
+                    addresses.getAddress(config.tokenAddressName)
+                );
+
+                /// assert mToken delegate is uniform across contracts
+                assertEq(
+                    address(
+                        MErc20Delegator(payable(address(mToken)))
+                            .implementation()
+                    ),
+                    addresses.getAddress("MTOKEN_IMPLEMENTATION")
+                );
+
+                uint256 initialExchangeRate = (10 **
+                    (8 +
+                        ERC20(addresses.getAddress(config.tokenAddressName))
+                            .decimals())) * 2;
+
+                /// assert mToken initial exchange rate is correct
+                assertEq(mToken.exchangeRateCurrent(), initialExchangeRate);
+
+                /// assert mToken name and symbol are correct
+                assertEq(mToken.name(), config.name);
+                assertEq(mToken.symbol(), config.symbol);
+                assertEq(mToken.decimals(), mTokenDecimals);
+
+                /// Jump Rate Model Assertions
+                {
+                    assertEq(
+                        jrm.baseRatePerTimestamp(),
+                        (config.jrm.baseRatePerYear * 1e18) /
+                            jrm.timestampsPerYear() /
+                            1e18
+                    );
+                    assertEq(
+                        jrm.multiplierPerTimestamp(),
+                        (config.jrm.multiplierPerYear * 1e18) /
+                            jrm.timestampsPerYear() /
+                            1e18
+                    );
+                    assertEq(
+                        jrm.jumpMultiplierPerTimestamp(),
+                        (config.jrm.jumpMultiplierPerYear * 1e18) /
+                            jrm.timestampsPerYear() /
+                            1e18
+                    );
+                    assertEq(jrm.kink(), config.jrm.kink);
+                }
+            }
+        }
+
+        {
+            MultiRewardDistributor distributor = MultiRewardDistributor(
+                addresses.getAddress("MRD_PROXY")
+            );
+            EmissionConfiguration[]
+                memory emissionConfig = emissionConfigurations[chainId];
+
+            unchecked {
+                for (uint256 i = 0; i < emissionConfig.length; i++) {
+                    EmissionConfiguration memory config = emissionConfig[i];
+                    MultiRewardDistributorCommon.MarketConfig
+                        memory marketConfig = distributor.getConfigForMarket(
+                            MToken(addresses.getAddress(config.mToken)),
+                            addresses.getAddress(config.emissionToken)
+                        );
+
+                    assertEq(
+                        marketConfig.owner,
+                        addresses.getAddress(config.owner)
+                    );
+                    assertEq(
+                        marketConfig.emissionToken,
+                        addresses.getAddress(config.emissionToken)
+                    );
+                    assertEq(marketConfig.endTime, config.endTime);
+                    assertEq(
+                        marketConfig.supplyEmissionsPerSec,
+                        config.supplyEmissionPerSec
+                    );
+                    assertEq(
+                        marketConfig.borrowEmissionsPerSec,
+                        config.borrowEmissionsPerSec
+                    );
+                    assertEq(marketConfig.supplyGlobalIndex, 1e36);
+                    assertEq(marketConfig.borrowGlobalIndex, 1e36);
+                }
+            }
+        }
+    }
 
     function _deployToChain(
         Addresses addresses,
