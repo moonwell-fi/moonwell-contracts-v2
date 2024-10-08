@@ -172,7 +172,13 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
 
         MTokenConfiguration[] memory _mTokens = mTokens[chainId];
 
-        address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        address governor;
+        if (block.chainid == MOONBEAM_FORK_ID) {
+            governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+        } else {
+            governor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        }
+
         Comptroller comptroller = Comptroller(
             addresses.getAddress("UNITROLLER")
         );
@@ -247,7 +253,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                 assertTrue(mToken.balanceOf(address(governor)) > 0); /// governor has some
                 assertEq(mToken.balanceOf(address(0)), 1); /// address 0 has 1 wei of assets
 
-                /// assert cToken admin is the temporal governor
+                /// assert mToken admin is the temporal governor / multichain governor
                 assertEq(address(mToken.admin()), address(governor));
 
                 /// assert mToken comptroller is correct
@@ -309,7 +315,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
             }
         }
 
-        {
+        if (block.chainid != MOONBEAM_FORK_ID) {
             MultiRewardDistributor distributor = MultiRewardDistributor(
                 addresses.getAddress("MRD_PROXY")
             );
@@ -327,27 +333,44 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
 
                     assertEq(
                         marketConfig.owner,
-                        addresses.getAddress(config.owner)
+                        addresses.getAddress(config.owner),
+                        "MRD owner config incorrect"
                     );
                     assertEq(
                         marketConfig.owner,
-                        addresses.getAddress("TEMPORAL_GOVERNOR")
+                        addresses.getAddress("TEMPORAL_GOVERNOR"),
+                        "MRD owner config incorrect"
                     );
                     assertEq(
                         marketConfig.emissionToken,
-                        addresses.getAddress(config.emissionToken)
+                        addresses.getAddress(config.emissionToken),
+                        "MRD emission token config incorrect"
                     );
-                    assertEq(marketConfig.endTime, config.endTime);
+                    assertEq(
+                        marketConfig.endTime,
+                        config.endTime,
+                        "MRD end time config incorrect"
+                    );
                     assertEq(
                         marketConfig.supplyEmissionsPerSec,
-                        config.supplyEmissionPerSec
+                        config.supplyEmissionPerSec,
+                        "MRD supply emissions config incorrect"
                     );
                     assertEq(
                         marketConfig.borrowEmissionsPerSec,
-                        config.borrowEmissionsPerSec
+                        config.borrowEmissionsPerSec,
+                        "MRD borrow emissions config incorrect"
                     );
-                    assertEq(marketConfig.supplyGlobalIndex, 1e36);
-                    assertEq(marketConfig.borrowGlobalIndex, 1e36);
+                    assertEq(
+                        marketConfig.supplyGlobalIndex,
+                        1e36,
+                        "MRD supply global index incorrect"
+                    );
+                    assertEq(
+                        marketConfig.borrowGlobalIndex,
+                        1e36,
+                        "MRD borrow global index incorrect"
+                    );
                 }
             }
         }
@@ -736,6 +759,13 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
 
             for (uint256 j = 0; j < mTokens[chainId].length; j++) {
                 MTokenConfiguration memory config = mTokens[chainId][j];
+
+                address admin;
+                if (block.chainid == MOONBEAM_FORK_ID) {
+                    admin = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
+                } else {
+                    admin = addresses.getAddress("TEMPORAL_GOVERNOR");
+                }
 
                 deal(
                     addresses.getAddress(config.tokenAddressName),
