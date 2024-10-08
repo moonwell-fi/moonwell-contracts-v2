@@ -551,15 +551,17 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
 
         string memory chain = string.concat(".", vm.toString(chainId));
 
-        bytes memory parsedJson = vm.parseJson(encodedJson, chain);
+        if (vm.keyExistsJson(encodedJson, chain)) {
+            bytes memory parsedJson = vm.parseJson(encodedJson, chain);
 
-        MTokenConfiguration[] memory _mTokens = abi.decode(
-            parsedJson,
-            (MTokenConfiguration[])
-        );
+            MTokenConfiguration[] memory _mTokens = abi.decode(
+                parsedJson,
+                (MTokenConfiguration[])
+            );
 
-        for (uint256 i = 0; i < _mTokens.length; i++) {
-            mTokens[chainId].push(_mTokens[i]);
+            for (uint256 i = 0; i < _mTokens.length; i++) {
+                mTokens[chainId].push(_mTokens[i]);
+            }
         }
     }
 
@@ -569,16 +571,17 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         );
 
         string memory chain = string.concat(".", vm.toString(chainId));
+        if (vm.keyExistsJson(encodedJson, chain)) {
+            bytes memory parsedJson = vm.parseJson(encodedJson, chain);
 
-        bytes memory parsedJson = vm.parseJson(encodedJson, chain);
+            EmissionConfiguration[] memory emissionConfig = abi.decode(
+                parsedJson,
+                (EmissionConfiguration[])
+            );
 
-        EmissionConfiguration[] memory emissionConfig = abi.decode(
-            parsedJson,
-            (EmissionConfiguration[])
-        );
-
-        for (uint256 i = 0; i < emissionConfig.length; i++) {
-            emissionConfigurations[chainId].push(emissionConfig[i]);
+            for (uint256 i = 0; i < emissionConfig.length; i++) {
+                emissionConfigurations[chainId].push(emissionConfig[i]);
+            }
         }
     }
 }

@@ -13,10 +13,10 @@ contract ParameterValidation is Test {
     uint256 public constant SCALE = 1e18;
 
     struct IRParams {
-        uint256 baseRatePerTimestamp;
-        uint256 jumpMultiplierPerTimestamp;
         uint256 kink;
+        uint256 baseRatePerTimestamp;
         uint256 multiplierPerTimestamp;
+        uint256 jumpMultiplierPerTimestamp;
     }
 
     function _validateJRM(
