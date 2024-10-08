@@ -96,6 +96,10 @@ jobs:
         with:
           format: "space-delimited"
 
+      - name: Set PR_CHANGED_FILES
+        run: |
+          echo "PR_CHANGED_FILES=${{ steps.files.outputs.added_modified }}" >> $GITHUB_ENV
+
       - name: Make the script executable
         run: chmod +x bin/run-onchain-calldata-check.sh
 
