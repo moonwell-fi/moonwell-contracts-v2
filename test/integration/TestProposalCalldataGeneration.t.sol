@@ -60,6 +60,12 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             string memory proposalPath = multichainGovernorProposals[i - 1]
                 .path;
 
+            console.log("Proposal path: ", proposalPath);
+            console.log(
+                "Proposal env path: ",
+                multichainGovernorProposals[i - 1].envPath
+            );
+
             HybridProposal proposal = HybridProposal(deployCode(proposalPath));
             vm.makePersistent(address(proposal));
 
