@@ -17,7 +17,7 @@
             "seizeShare": 0.03e18,
             "supplyCap": 1075e18,
             "symbol": "mrsETH",
-            "tokenAddressName": "rsETH"
+            "tokenAddressName": "wrsETH"
         }
     ]
 }
