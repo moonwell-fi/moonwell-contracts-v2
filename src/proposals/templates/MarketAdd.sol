@@ -592,7 +592,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                     address(mrd),
                     abi.encodeWithSignature(
                         "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
-                        MToken(addresses.getAddress(config.mToken)),
+                        addresses.getAddress(config.mToken),
                         addresses.getAddress(config.owner),
                         addresses.getAddress(config.emissionToken),
                         config.supplyEmissionPerSec,
