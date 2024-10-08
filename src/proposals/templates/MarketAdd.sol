@@ -327,6 +327,10 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                         addresses.getAddress(config.owner)
                     );
                     assertEq(
+                        marketConfig.owner,
+                        addresses.getAddress("TEMPORAL_GOVERNOR")
+                    );
+                    assertEq(
                         marketConfig.emissionToken,
                         addresses.getAddress(config.emissionToken)
                     );
