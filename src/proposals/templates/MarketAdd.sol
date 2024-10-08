@@ -101,6 +101,10 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
             uint256 chainId = networks[i].chainId;
             _deployToChain(addresses, deployer, chainId);
         }
+
+        if (vm.activeFork() != primaryForkId()) {
+            vm.selectFork(primaryForkId());
+        }
     }
 
     function build(Addresses addresses) public override {
@@ -118,6 +122,10 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _validate(addresses, chainId);
+        }
+
+        if (vm.activeFork() != primaryForkId()) {
+            vm.selectFork(primaryForkId());
         }
     }
 
@@ -308,6 +316,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         address deployer,
         uint256 chainId
     ) internal {
+        vm.selectFork(chainId.toForkId());
         MTokenConfiguration[] memory _mTokens = mTokens[chainId];
         unchecked {
             for (uint256 i = 0; i < _mTokens.length; i++) {
