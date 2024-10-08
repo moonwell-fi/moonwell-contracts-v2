@@ -171,10 +171,9 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         vm.selectFork(chainId.toForkId());
 
         MTokenConfiguration[] memory _mTokens = mTokens[chainId];
-        console.log("inside validate");
 
         address governor;
-        if (block.chainid == MOONBEAM_FORK_ID) {
+        if (vm.activeFork() == MOONBEAM_FORK_ID) {
             governor = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
         } else {
             governor = addresses.getAddress("TEMPORAL_GOVERNOR");
@@ -316,7 +315,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
             }
         }
 
-        if (block.chainid != MOONBEAM_FORK_ID) {
+        if (vm.activeFork() != MOONBEAM_FORK_ID) {
             MultiRewardDistributor distributor = MultiRewardDistributor(
                 addresses.getAddress("MRD_PROXY")
             );
@@ -762,7 +761,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                 MTokenConfiguration memory config = mTokens[chainId][j];
 
                 address admin;
-                if (block.chainid == MOONBEAM_FORK_ID) {
+                if (vm.activeFork() == MOONBEAM_FORK_ID) {
                     admin = addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY");
                 } else {
                     admin = addresses.getAddress("TEMPORAL_GOVERNOR");
