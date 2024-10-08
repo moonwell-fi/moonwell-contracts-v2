@@ -3,6 +3,7 @@ export MTOKENS_PATH=src/proposals/mips/mip-x03/MTokens.json
 echo "MTOKENS_PATH=$MTOKENS_PATH"
 
 export EMISSION_CONFIGURATIONS_PATH=src/proposals/mips/mip-x03/RewardStreams.json
+echo "EMISSION_CONFIGURATIONS_PATH=$EMISSION_CONFIGURATIONS_PATH"
 
 export DESCRIPTION_PATH=src/proposals/mips/mip-x02/x02.md
 echo "DESCRIPTION_PATH=$DESCRIPTION_PATH"

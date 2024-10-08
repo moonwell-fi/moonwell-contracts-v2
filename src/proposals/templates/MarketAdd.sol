@@ -551,6 +551,15 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                 );
 
                 _pushAction(
+                    addresses.getAddress("MARKET_ADD_CHECKER"),
+                    abi.encodeWithSignature(
+                        "checkMarketAdd(address)",
+                        cTokenAddress
+                    ),
+                    "Check the market has been correctly initialized and collateral token minted"
+                );
+
+                _pushAction(
                     unitrollerAddress,
                     abi.encodeWithSignature(
                         "_setCollateralFactor(address,uint256)",
