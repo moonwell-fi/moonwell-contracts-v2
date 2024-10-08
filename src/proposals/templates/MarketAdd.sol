@@ -65,6 +65,14 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
     mapping(uint256 chainid => MTokenConfiguration[]) mTokens;
     mapping(uint256 chainid => EmissionConfiguration[]) emissionConfigurations;
 
+    modifier selectPrimaryFork() {
+        _;
+
+        if (vm.activeFork() != primaryForkId()) {
+            vm.selectFork(primaryForkId());
+        }
+    }
+
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile(vm.envString("DESCRIPTION_PATH"))
@@ -129,36 +137,30 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         }
     }
 
-    function deploy(Addresses addresses, address deployer) public override {
+    function deploy(
+        Addresses addresses,
+        address deployer
+    ) public override selectPrimaryFork {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _deployToChain(addresses, deployer, chainId);
         }
-
-        if (vm.activeFork() != primaryForkId()) {
-            vm.selectFork(primaryForkId());
-        }
     }
 
-    function build(Addresses addresses) public override {
+    function build(Addresses addresses) public override selectPrimaryFork {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _buildToChain(addresses, chainId);
         }
-
-        if (vm.activeFork() != primaryForkId()) {
-            vm.selectFork(primaryForkId());
-        }
     }
 
-    function validate(Addresses addresses, address) public override {
+    function validate(
+        Addresses addresses,
+        address
+    ) public override selectPrimaryFork {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _validate(addresses, chainId);
-        }
-
-        if (vm.activeFork() != primaryForkId()) {
-            vm.selectFork(primaryForkId());
         }
     }
 
