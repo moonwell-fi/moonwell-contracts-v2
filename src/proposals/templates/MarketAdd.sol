@@ -349,10 +349,14 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         address deployer,
         uint256 chainId
     ) internal {
+        MTokenConfiguration[] memory _mTokens = mTokens[chainId];
+
+        if (_mTokens.length == 0) {
+            return;
+        }
+
         vm.selectFork(chainId.toForkId());
         vm.startBroadcast();
-
-        MTokenConfiguration[] memory _mTokens = mTokens[chainId];
         unchecked {
             for (uint256 i = 0; i < _mTokens.length; i++) {
                 MTokenConfiguration memory config = _mTokens[i];
@@ -434,9 +438,13 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
     }
 
     function _buildToChain(Addresses addresses, uint256 chainId) internal {
-        vm.selectFork(chainId.toForkId());
         MTokenConfiguration[] memory _mTokens = mTokens[chainId];
 
+        if (_mTokens.length == 0) {
+            return;
+        }
+
+        vm.selectFork(chainId.toForkId());
         address[] memory markets = new address[](_mTokens.length);
         uint256[] memory supplyCaps = new uint256[](_mTokens.length);
         uint256[] memory borrowCaps = new uint256[](_mTokens.length);
@@ -556,6 +564,10 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         EmissionConfiguration[] memory emissionConfig = emissionConfigurations[
             chainId
         ];
+
+        if (emissionConfig.length == 0) {
+            return;
+        }
 
         MultiRewardDistributor mrd = MultiRewardDistributor(
             addresses.getAddress("MRD_PROXY")
