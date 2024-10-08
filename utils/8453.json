@@ -617,16 +617,11 @@
     {
         "addr": "0xEDfa23602D0EC14714057867A78d01e94176BEA0",
         "isContract": true,
-        "name": "rsETH"
+        "name": "wrsETH"
     },
     {
-        "addr": "todo fill in with composite oracle",
-        "isContract": true,
-        "name": "CHAINLINK_rsETH_ETH_COMPOSITE_ORACLE"
-    },
-    {
-        "addr": "todo fill in with value provided by team",
-        "name": "CHAINLINK_rsETH_ETH",
+        "addr": "0xe8dD07CCf5BC4922424140E44Eb970F5950725ef",
+        "name": "CHAINLINK_wrsETH_ETH",
         "isContract": true
     }
 ]
