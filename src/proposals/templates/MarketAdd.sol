@@ -450,7 +450,6 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         Addresses addresses,
         uint256 chainId
     ) internal {
-        address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
         MTokenConfiguration[] memory _mTokens = mTokens[chainId];
 
         if (_mTokens.length == 0) {
@@ -458,6 +457,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         }
 
         vm.selectFork(chainId.toForkId());
+        address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
         unchecked {
             for (uint256 i = 0; i < _mTokens.length; i++) {
