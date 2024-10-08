@@ -111,13 +111,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         return MOONBEAM_FORK_ID;
     }
 
-    function run(
-        Addresses addresses,
-        address
-    ) public virtual override mockHook(addresses) {
-        super.run(addresses, address(0));
-    }
-
     function initProposal(Addresses addresses) public override {
         etch(vm, addresses);
 

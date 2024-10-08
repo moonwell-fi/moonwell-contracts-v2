@@ -122,13 +122,6 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         return MOONBEAM_FORK_ID;
     }
 
-    function run(
-        Addresses addresses,
-        address
-    ) public virtual override mockHook(addresses) {
-        super.run(addresses, address(0));
-    }
-
     function initProposal(Addresses) public override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
@@ -144,6 +137,16 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _deployToChain(addresses, deployer, chainId);
+        }
+    }
+
+    function afterDeploy(
+        Addresses addresses,
+        address
+    ) public override selectPrimaryFork {
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            _afterDeployToChain(addresses, chainId);
         }
     }
 
@@ -443,6 +446,40 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         vm.stopBroadcast();
     }
 
+    function _afterDeployToChain(
+        Addresses addresses,
+        uint256 chainId
+    ) internal {
+        address governor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        MTokenConfiguration[] memory _mTokens = mTokens[chainId];
+
+        if (_mTokens.length == 0) {
+            return;
+        }
+
+        vm.selectFork(chainId.toForkId());
+
+        unchecked {
+            for (uint256 i = 0; i < _mTokens.length; i++) {
+                MTokenConfiguration memory config = _mTokens[i];
+                address mToken = addresses.getAddress(config.addressesString);
+
+                _validateCaps(addresses, config); /// validate supply and borrow caps
+
+                if (
+                    MToken(mToken).reserveFactorMantissa() !=
+                    config.reserveFactor &&
+                    MToken(mToken).protocolSeizeShareMantissa() !=
+                    config.seizeShare
+                ) {
+                    MToken(mToken)._setReserveFactor(config.reserveFactor);
+                    MToken(mToken)._setProtocolSeizeShare(config.seizeShare);
+                    MToken(mToken)._setPendingAdmin(payable(governor)); /// set governor as pending admin of the mToken
+                }
+            }
+        }
+    }
+
     function _buildToChain(Addresses addresses, uint256 chainId) internal {
         MTokenConfiguration[] memory _mTokens = mTokens[chainId];
 
@@ -685,6 +722,23 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                         "borrow cap suspiciously high, if this is the right borrow cap, set OVERRIDE_BORROW_CAP environment variable to true"
                     );
                 }
+            }
+        }
+    }
+
+    function beforeSimulationHook(Addresses addresses) public override {
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            vm.selectFork(chainId.toForkId());
+
+            for (uint256 j = 0; j < mTokens[chainId].length; j++) {
+                MTokenConfiguration memory config = mTokens[chainId][j];
+
+                deal(
+                    addresses.getAddress(config.tokenAddressName),
+                    addresses.getAddress("TEMPORAL_GOVERNOR"),
+                    config.initialMintAmount
+                );
             }
         }
     }
