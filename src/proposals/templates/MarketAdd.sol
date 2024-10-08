@@ -171,6 +171,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         vm.selectFork(chainId.toForkId());
 
         MTokenConfiguration[] memory _mTokens = mTokens[chainId];
+        console.log("inside validate");
 
         address governor;
         if (block.chainid == MOONBEAM_FORK_ID) {

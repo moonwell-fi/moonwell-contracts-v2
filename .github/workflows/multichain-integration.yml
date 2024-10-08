@@ -75,7 +75,9 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 15
            max_attempts: 3
-           command: time forge test --mc LiveProposalsIntegrationTest -vvvvv --ffi
+           command: >
+                    time forge test --mc LiveProposalsIntegrationTest -vvvvv --ffi
+                    --evm-version shanghai
 
   run-on-chain-calldata-check:
     name: On Chain Calldata Check
@@ -215,5 +217,7 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 20
            max_attempts: 3
-           command: time forge test --match-contract PostProposalTest -vvv --ffi
+           command: >
+                    time forge test --match-contract PostProposalTest -vvv --ffi
+                    --evm-version shanghai
 
