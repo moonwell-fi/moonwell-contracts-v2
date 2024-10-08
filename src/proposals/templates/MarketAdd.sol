@@ -11,15 +11,15 @@ import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
+import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 
 contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
     using String for string;
