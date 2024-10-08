@@ -73,6 +73,39 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         _setProposalDescription(proposalDescription);
     }
 
+    function run() public override {
+        primaryForkId().createForksAndSelect();
+
+        Addresses addresses = new Addresses();
+        vm.makePersistent(address(addresses));
+
+        vm.selectFork(primaryForkId());
+
+        initProposal(addresses);
+
+        (, address deployerAddress, ) = vm.readCallers();
+
+        if (DO_DEPLOY) deploy(addresses, deployerAddress);
+        if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
+
+        if (DO_PRE_BUILD_MOCK) preBuildMock(addresses);
+        if (DO_BUILD) build(addresses);
+        if (DO_RUN) run(addresses, deployerAddress);
+        if (DO_TEARDOWN) teardown(addresses, deployerAddress);
+        if (DO_VALIDATE) {
+            validate(addresses, deployerAddress);
+            console.log("Validation completed for proposal ", this.name());
+        }
+        if (DO_PRINT) {
+            printProposalActionSteps();
+
+            addresses.removeAllRestrictions();
+            printCalldata(addresses);
+
+            _printAddressesChanges(addresses);
+        }
+    }
+
     function name() external pure override returns (string memory) {
         return "MIP Market Add";
     }
@@ -100,6 +133,10 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             _deployToChain(addresses, deployer, chainId);
+        }
+
+        if (vm.activeFork() != primaryForkId()) {
+            vm.selectFork(primaryForkId());
         }
     }
 
@@ -313,6 +350,8 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         uint256 chainId
     ) internal {
         vm.selectFork(chainId.toForkId());
+        vm.startBroadcast();
+
         MTokenConfiguration[] memory _mTokens = mTokens[chainId];
         unchecked {
             for (uint256 i = 0; i < _mTokens.length; i++) {
@@ -391,6 +430,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                 }
             }
         }
+        vm.stopBroadcast();
     }
 
     function _buildToChain(Addresses addresses, uint256 chainId) internal {
