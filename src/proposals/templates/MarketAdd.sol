@@ -108,6 +108,10 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
             uint256 chainId = networks[i].chainId;
             _buildToChain(addresses, chainId);
         }
+
+        if (vm.activeFork() != primaryForkId()) {
+            vm.selectFork(primaryForkId());
+        }
     }
 
     function validate(Addresses addresses, address) public override {
