@@ -6,7 +6,7 @@ import "@forge-std/StdJson.sol";
 import "@protocol/utils/ChainIds.sol";
 import "@protocol/utils/String.sol";
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import {MToken} from "@protocol/MToken.sol";
 import {MErc20} from "@protocol/MErc20.sol";
@@ -268,7 +268,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
 
                 uint256 initialExchangeRate = (10 **
                     (8 +
-                        ERC20(addresses.getAddress(config.tokenAddressName))
+                        IERC20(addresses.getAddress(config.tokenAddressName))
                             .decimals())) * 2;
 
                 /// assert mToken initial exchange rate is correct
@@ -396,7 +396,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                     /// (10 ** (6 + 8)) * 2 // 6 decimals example
                     ///    = 2e14
                     uint256 initialExchangeRate = (10 **
-                        (ERC20(addresses.getAddress(config.tokenAddressName))
+                        (IERC20(addresses.getAddress(config.tokenAddressName))
                             .decimals() + 8)) * 2;
 
                     MErc20Delegator mToken = new MErc20Delegator(
@@ -486,7 +486,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                     chainlinkOracleAddress,
                     abi.encodeWithSignature(
                         "setFeed(string,address)",
-                        ERC20(addresses.getAddress(config.tokenAddressName))
+                        IERC20(addresses.getAddress(config.tokenAddressName))
                             .symbol(),
                         addresses.getAddress(config.priceFeedName)
                     ),
