@@ -18,8 +18,8 @@ import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
+import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
 contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
     using String for string;
