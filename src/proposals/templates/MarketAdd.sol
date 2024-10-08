@@ -366,7 +366,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         unchecked {
             for (uint256 i = 0; i < _mTokens.length; i++) {
                 MTokenConfiguration memory config = _mTokens[i];
-                //   _validateCaps(addresses, config);
+                _validateCaps(addresses, config);
 
                 /// ----- Jump Rate IRM -------
                 if (
@@ -644,6 +644,47 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
 
             for (uint256 i = 0; i < emissionConfig.length; i++) {
                 emissionConfigurations[chainId].push(emissionConfig[i]);
+            }
+        }
+    }
+
+    /// helper function to validate supply and borrow caps
+    function _validateCaps(
+        Addresses addresses,
+        MTokenConfiguration memory config
+    ) internal view {
+        {
+            if (config.supplyCap != 0 || config.borrowCap != 0) {
+                uint8 decimals = IERC20(
+                    addresses.getAddress(config.tokenAddressName)
+                ).decimals();
+
+                /// override defaults to false, dev can set to true to override these checks
+
+                if (
+                    config.supplyCap != 0 &&
+                    !vm.envOr("OVERRIDE_SUPPLY_CAP", false)
+                ) {
+                    /// strip off all the decimals
+                    uint256 adjustedSupplyCap = config.supplyCap /
+                        (10 ** decimals);
+                    require(
+                        adjustedSupplyCap < 120_000_000,
+                        "supply cap suspiciously high, if this is the right supply cap, set OVERRIDE_SUPPLY_CAP environment variable to true"
+                    );
+                }
+
+                if (
+                    config.borrowCap != 0 &&
+                    !vm.envOr("OVERRIDE_BORROW_CAP", false)
+                ) {
+                    uint256 adjustedBorrowCap = config.borrowCap /
+                        (10 ** decimals);
+                    require(
+                        adjustedBorrowCap < 120_000_000,
+                        "borrow cap suspiciously high, if this is the right borrow cap, set OVERRIDE_BORROW_CAP environment variable to true"
+                    );
+                }
             }
         }
     }
