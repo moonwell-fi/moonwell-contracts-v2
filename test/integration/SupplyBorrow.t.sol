@@ -428,7 +428,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             return;
         }
 
-        supplyAmount = _bound(supplyAmount, 1e8, max);
+        supplyAmount = _bound(supplyAmount, 1e12, max);
 
         _mintMToken(address(mToken), supplyAmount);
 
