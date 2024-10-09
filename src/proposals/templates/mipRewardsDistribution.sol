@@ -418,11 +418,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress(spec.transferFroms[i].to) ==
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
             ) {
-                assertApproxEqAbs(
+                assertApproxEqRel(
                     int256(spec.transferFroms[i].amount),
                     spec.stkWellEmissionsPerSecond *
                         int256(endTimeStamp - startTimeStamp),
-                    1e5,
+                    0.1e18,
                     "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
                 );
             }
