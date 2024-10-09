@@ -795,11 +795,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         if (spec.stkWellEmissionsPerSecond != -1) {
             _pushAction(
-                addresses.getAddress("STK_GOVTOKEN"),
+                addresses.getAddress("STK_GOVTOKEN_PROXY"),
                 abi.encodeWithSignature(
                     "configureAsset(uint128,address)",
                     spec.stkWellEmissionsPerSecond.toUint256().toUint128(),
-                    addresses.getAddress("STK_GOVTOKEN")
+                    addresses.getAddress("STK_GOVTOKEN_PROXY")
                 ),
                 //"Set reward speed for the Safety Module on Moonbeam",
                 string(
@@ -973,11 +973,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         if (spec.stkWellEmissionsPerSecond != -1) {
             _pushAction(
-                addresses.getAddress("STK_GOVTOKEN"),
+                addresses.getAddress("STK_GOVTOKEN_PROXY"),
                 abi.encodeWithSignature(
                     "configureAsset(uint128,address)",
                     spec.stkWellEmissionsPerSecond.toUint256().toUint128(),
-                    addresses.getAddress("STK_GOVTOKEN")
+                    addresses.getAddress("STK_GOVTOKEN_PROXY")
                 ),
                 string(
                     abi.encodePacked(
@@ -1137,7 +1137,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         {
             if (spec.stkWellEmissionsPerSecond != -1) {
-                address stkGovToken = addresses.getAddress("STK_GOVTOKEN");
+                address stkGovToken = addresses.getAddress(
+                    "STK_GOVTOKEN_PROXY"
+                );
                 // assert safety module reward speed
                 IStakedWell stkWell = IStakedWell(stkGovToken);
 
@@ -1229,11 +1231,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         {
             // validate emissions per second for the Safety Module
             IStakedWell stkWell = IStakedWell(
-                addresses.getAddress("STK_GOVTOKEN")
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
             );
 
             (uint256 emissionsPerSecond, , ) = stkWell.assets(
-                addresses.getAddress("STK_GOVTOKEN")
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
             );
             assertEq(
                 int256(emissionsPerSecond),
