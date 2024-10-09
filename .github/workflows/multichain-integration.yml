@@ -52,7 +52,9 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 10
            max_attempts: 3
-           command: time forge test --match-contract CrossChainPublishMessageTest -vvv --ffi
+           command: >
+                    time forge test --match-contract
+                    CrossChainPublishMessageTest -vvv --ffi --evm-version shanghai
 
 
   run-live-proposals-integration-tests:
