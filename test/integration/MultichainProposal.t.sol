@@ -1289,8 +1289,6 @@ contract MultichainProposalTest is PostProposalCheck {
             assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
 
-        console.log("block.timestamp", block.timestamp);
-
         /// vote yes on proposal
         voteCollection.castVote(proposalId, 0);
 
