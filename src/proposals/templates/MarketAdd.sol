@@ -672,13 +672,14 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
     }
 
     function _saveMTokens(uint256 chainId) internal {
-        string memory envPath = vm.envOr("MTOKENS_PATH", "");
+        string memory empty = "";
+        string memory envPath = vm.envOr("MTOKENS_PATH", empty);
 
         if (abi.encodePacked(envPath).length == 0) {
             return;
         }
 
-        string memory encodedJson = vm.readFile();
+        string memory encodedJson = vm.readFile(envPath);
 
         string memory chain = string.concat(".", vm.toString(chainId));
 
