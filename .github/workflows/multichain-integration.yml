@@ -29,8 +29,8 @@ jobs:
            timeout_minutes: 15
            max_attempts: 3
            command: >-
-             time forge test --match-contract MultichainProposalTest -vvv
-             --ffi --decode-internal --evm-version shanghai
+             time forge test --match-contract MultichainProposalTest -vvvvv
+             --ffi --evm-version shanghai
 
   run-cross-chain-tests:
     name: Cross Chain Publish Message Test

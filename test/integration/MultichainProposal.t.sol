@@ -1243,7 +1243,15 @@ contract MultichainProposalTest is PostProposalCheck {
             100_000_000 * 1e18
         );
 
+        bytes32 encodedData = bytes32(
+            uint256(uint160(address(wormholeRelayerAdapter)))
+        );
+
+        /// stores the wormhole mock address in the wormholeRelayer variable
         wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+        wormholeRelayerAdapter.setIsMultichainTest(true);
+
+        vm.store(address(governor), bytes32(uint256(103)), encodedData);
 
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
