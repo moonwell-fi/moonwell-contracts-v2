@@ -104,6 +104,9 @@ jobs:
         run: |
           echo "PR_CHANGED_FILES=${{ steps.files.outputs.added_modified }}" >> $GITHUB_ENV
 
+      - name: Give write permissions
+        run: chmod -R +x src/proposals/mips/
+
       - name: Make the script executable
         run: chmod +x bin/run-onchain-calldata-check.sh
 
