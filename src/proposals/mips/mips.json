@@ -112,17 +112,17 @@
         "proposalType": "HybridProposal"
     },
     {
-        "envPath": "",
+        "envPath": "src/proposals/mips/mip-o05/o05.sh",
         "governor": "MultichainGovernor",
         "id": 40,
-        "path": "src/proposals/mips/mip-o05/mip-o05.sol",
+        "path": "src/proposals/templates/MarketAdd.sol",
         "proposalType": "HybridProposal"
     },
     {
-        "envPath": "",
+        "envPath": "src/proposals/mips/mip-o04/o04.sh",
         "governor": "MultichainGovernor",
         "id": 39,
-        "path": "src/proposals/mips/mip-o04/mip-o04.sol",
+        "path": "src/proposals/templates/MarketAdd.sol",
         "proposalType": "HybridProposal"
     },
     {
