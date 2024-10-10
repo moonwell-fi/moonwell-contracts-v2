@@ -1208,6 +1208,11 @@ contract MultichainProposalTest is PostProposalCheck {
         well.transfer(address(this), mintAmount);
         well.delegate(address(this));
 
+        vm.roll(block.number + 1);
+        uint256 timestamp = block.timestamp + 1;
+
+        vm.warp(timestamp);
+
         vm.selectFork(BASE_FORK_ID);
 
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
@@ -1221,13 +1226,9 @@ contract MultichainProposalTest is PostProposalCheck {
 
         stakedWellBase.stake(address(this), xwellMintAmount);
 
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + 1);
+        vm.warp(timestamp);
 
         vm.selectFork(MOONBEAM_FORK_ID);
-
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + 1);
 
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
@@ -1275,6 +1276,8 @@ contract MultichainProposalTest is PostProposalCheck {
             assertEq(againstVotes, 0, "incorrect against votes");
             assertEq(abstainVotes, 0, "incorrect abstain votes");
         }
+
+        console.log("block.timestamp", block.timestamp);
 
         /// vote yes on proposal
         voteCollection.castVote(proposalId, 0);
