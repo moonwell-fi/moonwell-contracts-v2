@@ -27,7 +27,7 @@ jobs:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
            timeout_minutes: 15
-           max_attempts: 3
+           max_attempts: 1
            command: >-
              time forge test --match-contract MultichainProposalTest -vvvvv
              --ffi --evm-version shanghai
