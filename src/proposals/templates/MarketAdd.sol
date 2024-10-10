@@ -619,14 +619,16 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                     "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
                 );
 
-                _pushAction(
-                    addresses.getAddress("MARKET_ADD_CHECKER"),
-                    abi.encodeWithSignature(
-                        "checkMarketAdd(address)",
-                        cTokenAddress
-                    ),
-                    "Check the market has been correctly initialized and collateral token minted"
-                );
+                if (!vm.envBool("EXCLUDE_MARKET_ADD_CHECKER")) {
+                    _pushAction(
+                        addresses.getAddress("MARKET_ADD_CHECKER"),
+                        abi.encodeWithSignature(
+                            "checkMarketAdd(address)",
+                            cTokenAddress
+                        ),
+                        "Check the market has been correctly initialized and collateral token minted"
+                    );
+                }
 
                 _pushAction(
                     unitrollerAddress,
