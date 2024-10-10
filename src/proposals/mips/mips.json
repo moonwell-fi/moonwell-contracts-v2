@@ -231,7 +231,7 @@
         "proposalType": "HybridProposal"
     },
     {
-        "envPath": "src/proposals/mips/mip-b17/mip-b17.sh",
+        "envPath": "src/proposals/mips/mip-b17/b17.sh",
         "governor": "MultichainGovernor",
         "id": 11,
         "path": "src/proposals/templates/MarketAdd.sol",
