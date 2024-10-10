@@ -16,5 +16,23 @@
             "owner": "TEMPORAL_GOVERNOR",
             "supplyEmissionPerSec": 0
         }
+    ],
+    "10": [
+        {
+            "borrowEmissionsPerSec": 1,
+            "emissionToken": "xWELL_PROXY",
+            "endTime": 1730444400,
+            "mToken": "MOONWELL_rsETH",
+            "owner": "TEMPORAL_GOVERNOR",
+            "supplyEmissionPerSec": 0
+        },
+        {
+            "borrowEmissionsPerSec": 1,
+            "emissionToken": "OP",
+            "endTime": 1730444400,
+            "mToken": "MOONWELL_rsETH",
+            "owner": "TEMPORAL_GOVERNOR",
+            "supplyEmissionPerSec": 0
+        }
     ]
 }
