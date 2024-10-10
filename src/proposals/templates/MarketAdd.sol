@@ -87,8 +87,6 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         Addresses addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
-        vm.selectFork(primaryForkId());
-
         initProposal(addresses);
 
         (, address deployerAddress, ) = vm.readCallers();
@@ -674,7 +672,13 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
     }
 
     function _saveMTokens(uint256 chainId) internal {
-        string memory encodedJson = vm.readFile(vm.envString("MTOKENS_PATH"));
+        string memory envPath = vm.envOr("MTOKENS_PATH", "");
+
+        if (abi.encodePacked(envPath).length == 0) {
+            return;
+        }
+
+        string memory encodedJson = vm.readFile();
 
         string memory chain = string.concat(".", vm.toString(chainId));
 
