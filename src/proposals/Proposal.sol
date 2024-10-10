@@ -11,15 +11,15 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 abstract contract Proposal is Script, Test {
     using ChainIds for uint256;
 
-    bool private DEBUG;
-    bool private DO_DEPLOY;
-    bool private DO_AFTER_DEPLOY;
-    bool private DO_PRE_BUILD_MOCK;
-    bool private DO_BUILD;
-    bool private DO_RUN;
-    bool private DO_TEARDOWN;
-    bool private DO_VALIDATE;
-    bool private DO_PRINT;
+    bool internal DEBUG;
+    bool internal DO_DEPLOY;
+    bool internal DO_AFTER_DEPLOY;
+    bool internal DO_PRE_BUILD_MOCK;
+    bool internal DO_BUILD;
+    bool internal DO_RUN;
+    bool internal DO_TEARDOWN;
+    bool internal DO_VALIDATE;
+    bool internal DO_PRINT;
 
     modifier mockHook(Addresses addresses) {
         beforeSimulationHook(addresses);
@@ -106,7 +106,7 @@ abstract contract Proposal is Script, Test {
     function initProposal(Addresses) public virtual {}
 
     /// @dev Print recorded addresses
-    function _printAddressesChanges(Addresses addresses) private view {
+    function _printAddressesChanges(Addresses addresses) internal view {
         bytes
             memory printedAddress = hex"7b0A20202020202020202261646472223a2022257322";
         bytes

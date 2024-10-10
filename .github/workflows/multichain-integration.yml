@@ -27,10 +27,10 @@ jobs:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
            timeout_minutes: 15
-           max_attempts: 3
+           max_attempts: 1
            command: >-
-             time forge test --match-contract MultichainProposalTest -vvv
-             --ffi --decode-internal
+             time forge test --match-contract MultichainProposalTest -vvvvv
+             --ffi --evm-version shanghai
 
   run-cross-chain-tests:
     name: Cross Chain Publish Message Test
@@ -52,7 +52,9 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 10
            max_attempts: 3
-           command: time forge test --match-contract CrossChainPublishMessageTest -vvv --ffi
+           command: >
+                    time forge test --match-contract
+                    CrossChainPublishMessageTest -vvv --ffi --evm-version shanghai
 
 
   run-live-proposals-integration-tests:
@@ -75,7 +77,9 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 15
            max_attempts: 3
-           command: time forge test --mc LiveProposalsIntegrationTest -vvvvv --ffi
+           command: >
+                    time forge test --mc LiveProposalsIntegrationTest -vvvvv --ffi
+                    --evm-version shanghai
 
   run-on-chain-calldata-check:
     name: On Chain Calldata Check
@@ -96,6 +100,13 @@ jobs:
         with:
           format: "space-delimited"
 
+      - name: Set PR_CHANGED_FILES
+        run: |
+          echo "PR_CHANGED_FILES=${{ steps.files.outputs.added_modified }}" >> $GITHUB_ENV
+
+      - name: Give write permissions
+        run: chmod -R +x src/proposals/mips/
+
       - name: Make the script executable
         run: chmod +x bin/run-onchain-calldata-check.sh
 
@@ -105,7 +116,7 @@ jobs:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
            timeout_minutes: 20
-           max_attempts: 3
+           max_attempts: 1
            command: bin/run-onchain-calldata-check.sh
 
   run-in-development-proposal:
@@ -150,11 +161,7 @@ jobs:
             });
 
             const actionComments = comments.data.filter(comment => 
-                comment.user.login === 'github-actions[bot]' &&
-                (
-                comment.body.includes('=================== PROPOSAL START ==================') ||
-                comment.body.includes('If you wish to simulate on-chain transactions pass a RPC URL')
-               )
+                comment.user.login === 'github-actions[bot]' 
              );
 
             if (actionComments.length === 0) {
@@ -215,5 +222,7 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 20
            max_attempts: 3
-           command: time forge test --match-contract PostProposalTest -vvv --ffi
+           command: >
+                    time forge test --match-contract PostProposalTest -vvv --ffi
+                    --evm-version shanghai
 

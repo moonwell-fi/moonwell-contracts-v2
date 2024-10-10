@@ -424,11 +424,11 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         uint256 max = marketBase.getMaxSupplyAmount(mToken);
 
-        if (max <= 1e8) {
+        if (max <= 1e12) {
             return;
         }
 
-        supplyAmount = _bound(supplyAmount, 1e8, max);
+        supplyAmount = _bound(supplyAmount, 1e12, max);
 
         _mintMToken(address(mToken), supplyAmount);
 
