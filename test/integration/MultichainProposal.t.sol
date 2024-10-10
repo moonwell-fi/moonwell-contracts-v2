@@ -1215,6 +1215,9 @@ contract MultichainProposalTest is PostProposalCheck {
 
         vm.selectFork(BASE_FORK_ID);
 
+        console.log("block.timestmap", block.timestamp);
+        vm.warp(timestamp - 1);
+
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
         uint256 xwellMintAmount = xwell.buffer(
             addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
@@ -1226,6 +1229,7 @@ contract MultichainProposalTest is PostProposalCheck {
 
         stakedWellBase.stake(address(this), xwellMintAmount);
 
+        console.log("block.timestmap", block.timestamp);
         vm.warp(timestamp);
 
         vm.selectFork(MOONBEAM_FORK_ID);
