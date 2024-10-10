@@ -511,134 +511,133 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
     function _buildToChain(Addresses addresses, uint256 chainId) internal {
         MTokenConfiguration[] memory _mTokens = mTokens[chainId];
 
-        if (_mTokens.length == 0) {
-            return;
-        }
-
         vm.selectFork(chainId.toForkId());
-        address[] memory markets = new address[](_mTokens.length);
-        uint256[] memory supplyCaps = new uint256[](_mTokens.length);
-        uint256[] memory borrowCaps = new uint256[](_mTokens.length);
+        if (_mTokens.length > 0) {
+            address[] memory markets = new address[](_mTokens.length);
+            uint256[] memory supplyCaps = new uint256[](_mTokens.length);
+            uint256[] memory borrowCaps = new uint256[](_mTokens.length);
 
-        for (uint256 i = 0; i < _mTokens.length; i++) {
-            MTokenConfiguration memory config = _mTokens[i];
-
-            supplyCaps[i] = config.supplyCap;
-            borrowCaps[i] = config.borrowCap;
-            markets[i] = addresses.getAddress(config.addressesString);
-        }
-
-        address unitrollerAddress = addresses.getAddress("UNITROLLER");
-        address chainlinkOracleAddress = addresses.getAddress(
-            "CHAINLINK_ORACLE"
-        );
-
-        _pushAction(
-            unitrollerAddress,
-            abi.encodeWithSignature(
-                "_setMarketSupplyCaps(address[],uint256[])",
-                markets,
-                supplyCaps
-            ),
-            "Set supply caps MToken market"
-        );
-
-        _pushAction(
-            unitrollerAddress,
-            abi.encodeWithSignature(
-                "_setMarketBorrowCaps(address[],uint256[])",
-                markets,
-                borrowCaps
-            ),
-            "Set borrow caps MToken market"
-        );
-
-        unchecked {
             for (uint256 i = 0; i < _mTokens.length; i++) {
                 MTokenConfiguration memory config = _mTokens[i];
 
-                address cTokenAddress = addresses.getAddress(
-                    config.addressesString
-                );
+                supplyCaps[i] = config.supplyCap;
+                borrowCaps[i] = config.borrowCap;
+                markets[i] = addresses.getAddress(config.addressesString);
+            }
 
-                _pushAction(
-                    chainlinkOracleAddress,
-                    abi.encodeWithSignature(
-                        "setFeed(string,address)",
-                        IERC20(addresses.getAddress(config.tokenAddressName))
-                            .symbol(),
-                        addresses.getAddress(config.priceFeedName)
-                    ),
-                    "Set price feed for underlying address in MToken market"
-                );
+            address unitrollerAddress = addresses.getAddress("UNITROLLER");
+            address chainlinkOracleAddress = addresses.getAddress(
+                "CHAINLINK_ORACLE"
+            );
 
-                _pushAction(
-                    unitrollerAddress,
-                    abi.encodeWithSignature(
-                        "_supportMarket(address)",
-                        addresses.getAddress(config.addressesString)
-                    ),
-                    "Support MToken market in comptroller"
-                );
+            _pushAction(
+                unitrollerAddress,
+                abi.encodeWithSignature(
+                    "_setMarketSupplyCaps(address[],uint256[])",
+                    markets,
+                    supplyCaps
+                ),
+                "Set supply caps MToken market"
+            );
 
-                /// temporal governor accepts admin of mToken
-                _pushAction(
-                    cTokenAddress,
-                    abi.encodeWithSignature("_acceptAdmin()"),
-                    "Temporal governor accepts admin on mToken"
-                );
+            _pushAction(
+                unitrollerAddress,
+                abi.encodeWithSignature(
+                    "_setMarketBorrowCaps(address[],uint256[])",
+                    markets,
+                    borrowCaps
+                ),
+                "Set borrow caps MToken market"
+            );
 
-                /// Approvals
-                _pushAction(
-                    addresses.getAddress(config.tokenAddressName),
-                    abi.encodeWithSignature(
-                        "approve(address,uint256)",
-                        cTokenAddress,
-                        config.initialMintAmount
-                    ),
-                    "Approve underlying token to be spent by market"
-                );
+            unchecked {
+                for (uint256 i = 0; i < _mTokens.length; i++) {
+                    MTokenConfiguration memory config = _mTokens[i];
 
-                /// Initialize markets
-                _pushAction(
-                    cTokenAddress,
-                    abi.encodeWithSignature(
-                        "mint(uint256)",
-                        config.initialMintAmount
-                    ),
-                    "Initialize token market to prevent exploit"
-                );
+                    address cTokenAddress = addresses.getAddress(
+                        config.addressesString
+                    );
 
-                _pushAction(
-                    cTokenAddress,
-                    abi.encodeWithSignature(
-                        "transfer(address,uint256)",
-                        address(0),
-                        1
-                    ),
-                    "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
-                );
-
-                if (!vm.envOr("EXCLUDE_MARKET_ADD_CHECKER", false)) {
                     _pushAction(
-                        addresses.getAddress("MARKET_ADD_CHECKER"),
+                        chainlinkOracleAddress,
                         abi.encodeWithSignature(
-                            "checkMarketAdd(address)",
-                            cTokenAddress
+                            "setFeed(string,address)",
+                            IERC20(
+                                addresses.getAddress(config.tokenAddressName)
+                            ).symbol(),
+                            addresses.getAddress(config.priceFeedName)
                         ),
-                        "Check the market has been correctly initialized and collateral token minted"
+                        "Set price feed for underlying address in MToken market"
+                    );
+
+                    _pushAction(
+                        unitrollerAddress,
+                        abi.encodeWithSignature(
+                            "_supportMarket(address)",
+                            addresses.getAddress(config.addressesString)
+                        ),
+                        "Support MToken market in comptroller"
+                    );
+
+                    /// temporal governor accepts admin of mToken
+                    _pushAction(
+                        cTokenAddress,
+                        abi.encodeWithSignature("_acceptAdmin()"),
+                        "Temporal governor accepts admin on mToken"
+                    );
+
+                    /// Approvals
+                    _pushAction(
+                        addresses.getAddress(config.tokenAddressName),
+                        abi.encodeWithSignature(
+                            "approve(address,uint256)",
+                            cTokenAddress,
+                            config.initialMintAmount
+                        ),
+                        "Approve underlying token to be spent by market"
+                    );
+
+                    /// Initialize markets
+                    _pushAction(
+                        cTokenAddress,
+                        abi.encodeWithSignature(
+                            "mint(uint256)",
+                            config.initialMintAmount
+                        ),
+                        "Initialize token market to prevent exploit"
+                    );
+
+                    _pushAction(
+                        cTokenAddress,
+                        abi.encodeWithSignature(
+                            "transfer(address,uint256)",
+                            address(0),
+                            1
+                        ),
+                        "Send 1 wei to address 0 to prevent a state where market has 0 mToken"
+                    );
+
+                    if (!vm.envOr("EXCLUDE_MARKET_ADD_CHECKER", false)) {
+                        _pushAction(
+                            addresses.getAddress("MARKET_ADD_CHECKER"),
+                            abi.encodeWithSignature(
+                                "checkMarketAdd(address)",
+                                cTokenAddress
+                            ),
+                            "Check the market has been correctly initialized and collateral token minted"
+                        );
+                    }
+
+                    _pushAction(
+                        unitrollerAddress,
+                        abi.encodeWithSignature(
+                            "_setCollateralFactor(address,uint256)",
+                            addresses.getAddress(config.addressesString),
+                            config.collateralFactor
+                        ),
+                        "Set Collateral Factor for MToken market in comptroller"
                     );
                 }
-
-                _pushAction(
-                    unitrollerAddress,
-                    abi.encodeWithSignature(
-                        "_setCollateralFactor(address,uint256)",
-                        addresses.getAddress(config.addressesString),
-                        config.collateralFactor
-                    ),
-                    "Set Collateral Factor for MToken market in comptroller"
-                );
             }
         }
 
@@ -647,31 +646,29 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
             chainId
         ];
 
-        if (emissionConfig.length == 0) {
-            return;
-        }
+        if (emissionConfig.length > 0) {
+            MultiRewardDistributor mrd = MultiRewardDistributor(
+                addresses.getAddress("MRD_PROXY")
+            );
 
-        MultiRewardDistributor mrd = MultiRewardDistributor(
-            addresses.getAddress("MRD_PROXY")
-        );
+            unchecked {
+                for (uint256 i = 0; i < emissionConfig.length; i++) {
+                    EmissionConfiguration memory config = emissionConfig[i];
 
-        unchecked {
-            for (uint256 i = 0; i < emissionConfig.length; i++) {
-                EmissionConfiguration memory config = emissionConfig[i];
-
-                _pushAction(
-                    address(mrd),
-                    abi.encodeWithSignature(
-                        "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
-                        addresses.getAddress(config.mToken),
-                        addresses.getAddress(config.owner),
-                        addresses.getAddress(config.emissionToken),
-                        config.supplyEmissionPerSec,
-                        config.borrowEmissionsPerSec,
-                        config.endTime
-                    ),
-                    "Add emission config for MToken market in MultiRewardDistributor"
-                );
+                    _pushAction(
+                        address(mrd),
+                        abi.encodeWithSignature(
+                            "_addEmissionConfig(address,address,address,uint256,uint256,uint256)",
+                            addresses.getAddress(config.mToken),
+                            addresses.getAddress(config.owner),
+                            addresses.getAddress(config.emissionToken),
+                            config.supplyEmissionPerSec,
+                            config.borrowEmissionsPerSec,
+                            config.endTime
+                        ),
+                        "Add emission config for MToken market in MultiRewardDistributor"
+                    );
+                }
             }
         }
     }
