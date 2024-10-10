@@ -1243,6 +1243,8 @@ contract MultichainProposalTest is PostProposalCheck {
             100_000_000 * 1e18
         );
 
+        wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
 
