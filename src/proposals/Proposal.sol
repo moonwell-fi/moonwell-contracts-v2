@@ -5,7 +5,7 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 import {Test} from "@forge-std/Test.sol";
 
-import {ChainIds} from "@utils/ChainIds.sol";
+import "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 abstract contract Proposal is Script, Test {
@@ -116,22 +116,74 @@ abstract contract Proposal is Script, Test {
 
         (
             string[] memory recordedNames,
-            ,
+            uint256[] memory chainIds,
             address[] memory recordedAddresses
         ) = addresses.getRecordedAddresses();
 
         if (recordedNames.length > 0) {
             console.log(
-                "\n-------- Addresses added after running proposal --------"
+                "\n------- Addresses added after running proposal -------"
+            );
+
+            // print all addresses beloging to OPTIMISM_CHAIN_ID
+            console.log(
+                "\n----------- Addresses added for Optimism -----------"
             );
             for (uint256 j = 0; j < recordedNames.length; j++) {
-                console.log(string(printedAddress), recordedAddresses[j], ",");
-                console.log(string(printedContract), true, ",");
-                console.log(
-                    string(printedName),
-                    recordedNames[j],
-                    j < recordedNames.length - 1 ? "," : ""
-                );
+                if (chainIds[j] == OPTIMISM_CHAIN_ID) {
+                    console.log(
+                        string(printedAddress),
+                        recordedAddresses[j],
+                        ","
+                    );
+                    console.log(string(printedContract), true, ",");
+                    console.log(
+                        string(printedName),
+                        recordedNames[j],
+                        j < recordedNames.length - 1 ? "," : ""
+                    );
+                }
+            }
+
+            // print all addresses beloging to BASE_CHAIND_ID
+            console.log(
+                "\n------------- Addresses added for Base -------------"
+            );
+            for (uint256 j = 0; j < recordedNames.length; j++) {
+                if (chainIds[j] == BASE_CHAIN_ID) {
+                    console.log(
+                        string(printedAddress),
+                        recordedAddresses[j],
+                        ","
+                    );
+                    console.log(string(printedContract), true, ",");
+                    console.log(
+                        string(printedName),
+                        recordedNames[j],
+                        j < recordedNames.length - 1 ? "," : ""
+                    );
+                }
+            }
+
+            // print all addresses beloging to MOONBEAM_CHAIN_ID
+            console.log(
+                "\n----------- Addresses added for Moonbeam -----------"
+            );
+
+            for (uint256 j = 0; j < recordedNames.length; j++) {
+                if (chainIds[j] == MOONBEAM_CHAIN_ID) {
+                    console.log(
+                        string(printedAddress),
+                        recordedAddresses[j],
+                        ","
+                    );
+                    console.log(string(printedContract), true, ",");
+                    console.log(
+                        string(printedName),
+                        recordedNames[j],
+                        j < recordedNames.length - 1 ? "," : ""
+                    );
+                }
             }
         }
 
