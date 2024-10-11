@@ -79,6 +79,8 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             ) = proposal.getTargetsPayloadsValues(addresses);
             bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
 
+            cleanEnv(multichainGovernorProposals[i - 1].envPath);
+
             vm.selectFork(MOONBEAM_FORK_ID);
 
             bytes32 onchainHash;
@@ -120,7 +122,6 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
                 "HybridProposal"
             );
         for (uint256 i = artemisGovernorProposals.length; i > 0; i--) {
-            // exclude proposals that are not onchain yet
             if (artemisGovernorProposals[i - 1].id == 0) {
                 continue;
             }
@@ -161,6 +162,8 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
                 bytes[] memory calldatas
             ) = proposal.getTargetsPayloadsValues(addresses);
             bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
+
+            cleanEnv(artemisGovernorProposals[i - 1].envPath);
 
             vm.selectFork(MOONBEAM_FORK_ID);
 
@@ -230,6 +233,8 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
                 bytes[] memory calldatas
             ) = proposal._getActions();
             bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
+
+            cleanEnv(artemisGovernorProposals[i - 1].envPath);
 
             vm.selectFork(MOONBEAM_FORK_ID);
 

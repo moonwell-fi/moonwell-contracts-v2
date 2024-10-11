@@ -182,6 +182,22 @@ contract ProposalMap is Script {
         }
     }
 
+    // function to clean env variables after proposal execution
+    function cleanEnv(string memory shellPath) public {
+        if (bytes32(bytes(shellPath)) != bytes32("")) {
+            string[] memory inputs = new string[](1);
+            inputs[0] = string.concat("./", shellPath);
+
+            string memory output = string(vm.ffi(inputs));
+            string[] memory envs = split(output, "\n");
+
+            for (uint256 k = 0; k < envs.length; k++) {
+                string memory key = split(envs[k], "=")[0];
+                vm.setEnv(key, "");
+            }
+        }
+    }
+
     function runProposal(
         Addresses addresses,
         string memory proposalPath
