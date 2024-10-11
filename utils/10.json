@@ -433,5 +433,15 @@
         "addr": "0x0738483Add6ab8620B731aEc0121d1d3A70BD6EA",
         "name": "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
         "isContract": true
+    },
+    {
+        "addr": "0x9008f34b1abeA057B625917A97BC546D88404425",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_wrsETH"
+    },
+    {
+        "addr": "0x181bA797ccF779D8aB339721ED6ee827E758668e",
+        "isContract": true,
+        "name": "MOONWELL_wrsETH"
     }
 ]
