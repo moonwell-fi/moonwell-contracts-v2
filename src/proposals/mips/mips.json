@@ -364,10 +364,10 @@
         "proposalType": "HybridProposal"
     },
     {
-        "envPath": "",
+        "envPath": "src/proposals/mips/mip-b03/b03.sh",
         "governor": "ArtemisGovernor",
         "id": 43,
-        "path": "src/proposals/mips/mip-b03/mip-b03.sol",
+        "path": "src/proposals/templates/MarketAdd.sol",
         "proposalType": "HybridProposal"
     },
     {
