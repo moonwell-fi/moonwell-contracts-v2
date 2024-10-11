@@ -1,21 +1,23 @@
-[
-    {
-        "addressesString": "MOONWELL_AERO",
-        "borrowCap": 3000000e18,
-        "collateralFactor": 0,
-        "initialMintAmount": 1e18,
-        "jrm": {
-            "baseRatePerYear": 0,
-            "jumpMultiplierPerYear": 3.15e18,
-            "kink": 0.45e18,
-            "multiplierPerYear": 0.07e18
-        },
-        "name": "Moonwell AERO",
-        "priceFeedName": "CHAINLINK_AERO_ORACLE",
-        "reserveFactor": 0.25e18,
-        "seizeShare": 0.03e18,
-        "supplyCap": 6000000e18,
-        "symbol": "mAERO",
-        "tokenAddressName": "AERO"
-    }
-]
+{
+    "8453": [
+        {
+            "addressesString": "MOONWELL_AERO",
+            "borrowCap": 3000000e18,
+            "collateralFactor": 0,
+            "initialMintAmount": 1e18,
+            "jrm": {
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 3.15e18,
+                "kink": 0.45e18,
+                "multiplierPerYear": 0.07e18
+            },
+            "name": "Moonwell AERO",
+            "priceFeedName": "CHAINLINK_AERO_ORACLE",
+            "reserveFactor": 0.25e18,
+            "seizeShare": 0.03e18,
+            "supplyCap": 6000000e18,
+            "symbol": "mAERO",
+            "tokenAddressName": "AERO"
+        }
+    ]
+}
