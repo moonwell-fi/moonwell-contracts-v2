@@ -21,6 +21,10 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {JumpRateModel, InterestRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
+/**
+ * After setting up the shell file, execute the proposal with the following command:
+ * source path/to/env.sh && forge script src/proposals/templates/MarketAdd.sol -vvv --evm-version shanghai
+ */
 contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
     using String for string;
     using stdJson for string;
