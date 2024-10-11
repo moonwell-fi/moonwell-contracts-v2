@@ -7,7 +7,7 @@ if echo "$PR_CHANGED_FILES" | grep -qE "src/proposals/templates|src/proposal/pro
   
   # Run the forge command
   time forge test --match-contract TestProposalCalldataGeneration \
-       -vvv --ffi --block-gas-limit 10000000000 --evm-version shanghai
+       -vvv --ffi --block-gas-limit 10000000000
 else
   echo "No matching files found. Skipping job.."
 fi

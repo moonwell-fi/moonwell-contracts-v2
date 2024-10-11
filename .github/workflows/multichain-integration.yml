@@ -30,7 +30,7 @@ jobs:
            max_attempts: 1
            command: >-
              time forge test --match-contract MultichainProposalTest -vvvvv
-             --ffi --evm-version shanghai
+             --ffi 
 
   run-cross-chain-tests:
     name: Cross Chain Publish Message Test
@@ -54,7 +54,7 @@ jobs:
            max_attempts: 3
            command: >
                     time forge test --match-contract
-                    CrossChainPublishMessageTest -vvv --ffi --evm-version shanghai
+                    CrossChainPublishMessageTest -vvv --ffi
 
 
   run-live-proposals-integration-tests:
@@ -77,9 +77,8 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 15
            max_attempts: 3
-           command: >
-                    time forge test --mc LiveProposalsIntegrationTest -vvvvv --ffi
-                    --evm-version shanghai
+           command: time forge test --mc LiveProposalsIntegrationTest -vvvvv --ffi
+                    
 
   run-on-chain-calldata-check:
     name: On Chain Calldata Check
@@ -222,7 +221,6 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 20
            max_attempts: 3
-           command: >
-                    time forge test --match-contract PostProposalTest -vvv --ffi
-                    --evm-version shanghai
+           command: time forge test --match-contract PostProposalTest -vvv --ffi
+                    
 
