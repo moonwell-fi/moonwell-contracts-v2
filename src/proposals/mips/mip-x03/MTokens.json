@@ -1,7 +1,7 @@
 {
     "8453": [
         {
-            "addressesString": "MOONWELL_rsETH",
+            "addressesString": "MOONWELL_wrsETH",
             "borrowCap": 430e18,
             "collateralFactor": 0.74e18,
             "initialMintAmount": 1e12,
@@ -11,18 +11,18 @@
                 "kink": 0.35e18,
                 "multiplierPerYear": 0.15e18
             },
-            "name": "Moonwell rsETH",
+            "name": "Moonwell wrsETH",
             "priceFeedName": "CHAINLINK_rsETH_ETH_COMPOSITE_ORACLE",
             "reserveFactor": 0.15e18,
             "seizeShare": 0.03e18,
             "supplyCap": 1075e18,
-            "symbol": "mrsETH",
+            "symbol": "mwrsETH",
             "tokenAddressName": "wrsETH"
         }
     ],
     "10": [
         {
-            "addressesString": "MOONWELL_rsETH",
+            "addressesString": "MOONWELL_wrsETH",
             "borrowCap": 160e18,
             "collateralFactor": 0.74e18,
             "initialMintAmount": 1e12,
@@ -32,12 +32,12 @@
                 "kink": 0.35e18,
                 "multiplierPerYear": 0.15e18
             },
-            "name": "Moonwell rsETH",
+            "name": "Moonwell wrsETH",
             "priceFeedName": "CHAINLINK_rsETH_ETH_COMPOSITE_ORACLE",
             "reserveFactor": 0.15e18,
             "seizeShare": 0.03e18,
             "supplyCap": 400e18,
-            "symbol": "mrsETH",
+            "symbol": "mwrsETH",
             "tokenAddressName": "wrsETH"
         }
     ]

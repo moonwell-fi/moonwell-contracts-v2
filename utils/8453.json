@@ -620,13 +620,13 @@
         "name": "wrsETH"
     },
     {
-        "addr": "0xe8dD07CCf5BC4922424140E44Eb970F5950725ef",
-        "name": "CHAINLINK_wrsETH_ETH",
+        "addr": "0xd7221b10FBBC1e1ba95Fd0B4D031C15f7F365296",
+        "name": "CHAINLINK_rsETH_ETH",
         "isContract": true
     },
     {
-        "addr": "0xC2a4D9ff4Bc4528D1b62e15014f71A1b352b37a5",
-        "name": "CHAINLINK_rsETH_ETH_COMPOSITE_ORACLE",
+        "addr": "0x79C613B4f07080963C3B0CA58Eb2745dD4C744A5",
+        "name": "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
         "isContract": true
     }
 ]
