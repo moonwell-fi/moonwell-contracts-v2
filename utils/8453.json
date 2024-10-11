@@ -613,5 +613,10 @@
         "addr": "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
         "isContract": true,
         "name": "MOONWELL_EURC"
+    },
+    {
+        "addr": "0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0",
+        "isContract": true,
+        "name": "GAUNTLET_MULTISIG"
     }
 ]
