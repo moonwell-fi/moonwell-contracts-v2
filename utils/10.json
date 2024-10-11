@@ -431,7 +431,7 @@
     },
     {
         "addr": "0x75C52c997ec68a6Fd0F9423ff051676b6E5C8ac9",
-        "name": "CHAINLINK_rsETH_ETH_COMPOSITE_ORACLE",
+        "name": "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
         "isContract": true
     }
 ]
