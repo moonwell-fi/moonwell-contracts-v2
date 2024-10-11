@@ -49,7 +49,7 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             );
         for (uint256 i = multichainGovernorProposals.length; i > 0; i--) {
             // exclude proposals that are not onchain yet
-            if (multichainGovernorProposals[i - 1].id == 0) {
+            if (multichainGovernorProposals[i - 1].id != 11) {
                 continue;
             }
 
@@ -71,6 +71,22 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
 
             proposal.initProposal(addresses);
             proposal.build(addresses);
+
+            (
+                address[] memory _targets,
+                uint256[] memory _values,
+                bytes[] memory _calldatas,
+                ,
+                string[] memory _descriptions
+            ) = proposal.getProposalActionSteps();
+
+            for (uint256 j = 0; j < _targets.length; j++) {
+                console.log("Target: ", _targets[j]);
+                console.log("Value: ", _values[j]);
+                console.log("Calldata: ");
+                console.logBytes(_calldatas[j]);
+                console.log("Description: ", _descriptions[j]);
+            }
 
             (
                 address[] memory targets,
