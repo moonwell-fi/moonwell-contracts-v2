@@ -12,7 +12,7 @@
                 "multiplierPerYear": 0.15e18
             },
             "name": "Moonwell wrsETH",
-            "priceFeedName": "CHAINLINK_rsETH_ETH_COMPOSITE_ORACLE",
+            "priceFeedName": "CHAINLINK_wrsETH_ETH_COMPOSITE_ORACLE",
             "reserveFactor": 0.15e18,
             "seizeShare": 0.03e18,
             "supplyCap": 1075e18,
@@ -33,7 +33,7 @@
                 "multiplierPerYear": 0.15e18
             },
             "name": "Moonwell wrsETH",
-            "priceFeedName": "CHAINLINK_rsETH_ETH_COMPOSITE_ORACLE",
+            "priceFeedName": "CHAINLINK_wrsETH_ETH_COMPOSITE_ORACLE",
             "reserveFactor": 0.15e18,
             "seizeShare": 0.03e18,
             "supplyCap": 400e18,
