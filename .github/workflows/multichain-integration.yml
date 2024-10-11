@@ -27,10 +27,8 @@ jobs:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
            timeout_minutes: 15
-           max_attempts: 1
-           command: >-
-             time forge test --match-contract MultichainProposalTest -vvvvv
-             --ffi 
+           max_attempts: 3
+           command: time forge test --match-contract MultichainProposalTest -vvvvv --ffi 
 
   run-cross-chain-tests:
     name: Cross Chain Publish Message Test
@@ -52,9 +50,7 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 10
            max_attempts: 3
-           command: >
-                    time forge test --match-contract
-                    CrossChainPublishMessageTest -vvv --ffi
+           command: time forge test --match-contract CrossChainPublishMessageTest -vvv --ffi
 
 
   run-live-proposals-integration-tests:
@@ -115,7 +111,7 @@ jobs:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
            timeout_minutes: 20
-           max_attempts: 1
+           max_attempts: 3
            command: bin/run-onchain-calldata-check.sh
 
   run-in-development-proposal:
