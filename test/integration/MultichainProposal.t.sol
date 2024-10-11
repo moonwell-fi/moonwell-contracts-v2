@@ -1208,7 +1208,14 @@ contract MultichainProposalTest is PostProposalCheck {
         well.transfer(address(this), mintAmount);
         well.delegate(address(this));
 
+        vm.roll(block.number + 1);
+        uint256 timestamp = block.timestamp + 1;
+
+        vm.warp(timestamp);
+
         vm.selectFork(BASE_FORK_ID);
+
+        vm.warp(timestamp - 1);
 
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
         uint256 xwellMintAmount = xwell.buffer(
@@ -1221,13 +1228,9 @@ contract MultichainProposalTest is PostProposalCheck {
 
         stakedWellBase.stake(address(this), xwellMintAmount);
 
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + 1);
+        vm.warp(timestamp);
 
         vm.selectFork(MOONBEAM_FORK_ID);
-
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + 1);
 
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
@@ -1241,6 +1244,16 @@ contract MultichainProposalTest is PostProposalCheck {
             "updateProposalThreshold(uint256)",
             100_000_000 * 1e18
         );
+
+        bytes32 encodedData = bytes32(
+            uint256(uint160(address(wormholeRelayerAdapter)))
+        );
+
+        /// stores the wormhole mock address in the wormholeRelayer variable
+        wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+        wormholeRelayerAdapter.setIsMultichainTest(true);
+
+        vm.store(address(governor), bytes32(uint256(103)), encodedData);
 
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
