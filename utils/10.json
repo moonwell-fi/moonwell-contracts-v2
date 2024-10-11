@@ -427,7 +427,7 @@
     {
         "addr": "0x03fe94a215E3842deD931769F913d93FF33d0051",
         "isContract": true,
-        "name": "CHAINLINK_wrsETH_ETH"
+        "name": "CHAINLINK_rsETH_ETH"
     },
     {
         "addr": "0x0738483Add6ab8620B731aEc0121d1d3A70BD6EA",

@@ -23,7 +23,7 @@ contract DeployCompositewrsETHOracle is Script {
         vm.startBroadcast();
         ChainlinkCompositeOracle clco = new ChainlinkCompositeOracle(
             addresses.getAddress("CHAINLINK_ETH_USD"),
-            addresses.getAddress("CHAINLINK_wrsETH_ETH"),
+            addresses.getAddress("CHAINLINK_rsETH_ETH"),
             address(0) /// only 2 oracles for this composite oracle
         );
 
