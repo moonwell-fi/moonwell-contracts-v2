@@ -100,7 +100,9 @@ contract MultiRewardsDistributorLiveSystem is Test, PostProposalCheck {
 
             for (uint256 j = 0; j < allConfigs.length; j++) {
                 if (
-                    address(markets[i]) == addresses.getAddress("MOONWELL_USDC")
+                    address(markets[i]) ==
+                    addresses.getAddress("MOONWELL_USDC") &&
+                    block.chainid == block.chainid.toBaseChainId()
                 ) {
                     assertEq(
                         allConfigs[j].owner,
