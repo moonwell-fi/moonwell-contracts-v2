@@ -19,7 +19,6 @@ import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";

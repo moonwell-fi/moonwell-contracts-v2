@@ -14,7 +14,6 @@ import {WETH9} from "@protocol/router/IWETH.sol";
 import {MarketBase} from "@test/utils/MarketBase.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
 import {deploy4626Router} from "@protocol/4626/4626FactoryDeploy.sol";
