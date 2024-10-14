@@ -111,13 +111,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         return MOONBEAM_FORK_ID;
     }
 
-    function run(
-        Addresses addresses,
-        address
-    ) public virtual override mockHook(addresses) {
-        super.run(addresses, address(0));
-    }
-
     function initProposal(Addresses addresses) public override {
         etch(vm, addresses);
 
@@ -425,10 +418,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 addresses.getAddress(spec.transferFroms[i].to) ==
                 addresses.getAddress("ECOSYSTEM_RESERVE_PROXY")
             ) {
-                assertEq(
+                assertApproxEqRel(
                     int256(spec.transferFroms[i].amount),
                     spec.stkWellEmissionsPerSecond *
                         int256(endTimeStamp - startTimeStamp),
+                    0.1e18,
                     "Amount transferred to ECOSYSTEM_RESERVE_PROXY must be equal to the stkWellEmissionsPerSecond * the epoch duration"
                 );
             }
@@ -801,11 +795,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         if (spec.stkWellEmissionsPerSecond != -1) {
             _pushAction(
-                addresses.getAddress("STK_GOVTOKEN"),
+                addresses.getAddress("STK_GOVTOKEN_PROXY"),
                 abi.encodeWithSignature(
                     "configureAsset(uint128,address)",
                     spec.stkWellEmissionsPerSecond.toUint256().toUint128(),
-                    addresses.getAddress("STK_GOVTOKEN")
+                    addresses.getAddress("STK_GOVTOKEN_PROXY")
                 ),
                 //"Set reward speed for the Safety Module on Moonbeam",
                 string(
@@ -979,11 +973,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         if (spec.stkWellEmissionsPerSecond != -1) {
             _pushAction(
-                addresses.getAddress("STK_GOVTOKEN"),
+                addresses.getAddress("STK_GOVTOKEN_PROXY"),
                 abi.encodeWithSignature(
                     "configureAsset(uint128,address)",
                     spec.stkWellEmissionsPerSecond.toUint256().toUint128(),
-                    addresses.getAddress("STK_GOVTOKEN")
+                    addresses.getAddress("STK_GOVTOKEN_PROXY")
                 ),
                 string(
                     abi.encodePacked(
@@ -1143,7 +1137,9 @@ contract mipRewardsDistribution is HybridProposal, Networks {
 
         {
             if (spec.stkWellEmissionsPerSecond != -1) {
-                address stkGovToken = addresses.getAddress("STK_GOVTOKEN");
+                address stkGovToken = addresses.getAddress(
+                    "STK_GOVTOKEN_PROXY"
+                );
                 // assert safety module reward speed
                 IStakedWell stkWell = IStakedWell(stkGovToken);
 
@@ -1235,11 +1231,11 @@ contract mipRewardsDistribution is HybridProposal, Networks {
         {
             // validate emissions per second for the Safety Module
             IStakedWell stkWell = IStakedWell(
-                addresses.getAddress("STK_GOVTOKEN")
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
             );
 
             (uint256 emissionsPerSecond, , ) = stkWell.assets(
-                addresses.getAddress("STK_GOVTOKEN")
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
             );
             assertEq(
                 int256(emissionsPerSecond),

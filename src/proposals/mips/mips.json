@@ -1,5 +1,12 @@
 [
     {
+        "envpath": "src/proposals/mips/mip-x03/x03.sh",
+        "governor": "MultichainGovernor",
+        "id": 0,
+        "path": "src/proposals/templates/MarketAdd.sol",
+        "proposalType": "HybridProposal"
+    },
+    {
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 57,
@@ -105,17 +112,17 @@
         "proposalType": "HybridProposal"
     },
     {
-        "envPath": "",
+        "envPath": "src/proposals/mips/mip-o05/o05.sh",
         "governor": "MultichainGovernor",
         "id": 40,
-        "path": "src/proposals/mips/mip-o05/mip-o05.sol",
+        "path": "src/proposals/templates/MarketAdd.sol",
         "proposalType": "HybridProposal"
     },
     {
-        "envPath": "",
+        "envPath": "src/proposals/mips/mip-o04/o04.sh",
         "governor": "MultichainGovernor",
         "id": 39,
-        "path": "src/proposals/mips/mip-o04/mip-o04.sol",
+        "path": "src/proposals/templates/MarketAdd.sol",
         "proposalType": "HybridProposal"
     },
     {
@@ -224,10 +231,10 @@
         "proposalType": "HybridProposal"
     },
     {
-        "envPath": "",
+        "envPath": "src/proposals/mips/mip-b17/b17.sh",
         "governor": "MultichainGovernor",
         "id": 11,
-        "path": "src/proposals/mips/mip-b17/mip-b17.sol",
+        "path": "src/proposals/templates/MarketAdd.sol",
         "proposalType": "HybridProposal"
     },
     {
@@ -315,10 +322,10 @@
         "proposalType": "HybridProposal"
     },
     {
-        "envPath": "",
+        "envPath": "src/proposals/mips/mip-b10/b10.sh",
         "governor": "ArtemisGovernor",
         "id": 61,
-        "path": "src/proposals/mips/mip-b10/mip-b10.sol",
+        "path": "src/proposals/templates/MarketAdd.sol",
         "proposalType": "HybridProposal"
     },
     {
@@ -329,17 +336,17 @@
         "proposalType": "HybridProposal"
     },
     {
-        "envPath": "",
+        "envPath": "src/proposals/mips/mip-b08/b08.sh",
         "governor": "ArtemisGovernor",
         "id": 58,
-        "path": "src/proposals/mips/mip-b08/mip-b08.sol",
+        "path": "src/proposals/templates/MarketAdd.sol",
         "proposalType": "HybridProposal"
     },
     {
-        "envPath": "",
+        "envPath": "src/proposals/mips/mip-b07/b07.sh",
         "governor": "ArtemisGovernor",
         "id": 55,
-        "path": "src/proposals/mips/mip-b07/mip-b07.sol",
+        "path": "src/proposals/templates/MarketAdd.sol",
         "proposalType": "HybridProposal"
     },
     {
@@ -357,10 +364,10 @@
         "proposalType": "HybridProposal"
     },
     {
-        "envPath": "",
+        "envPath": "src/proposals/mips/mip-b03/b03.sh",
         "governor": "ArtemisGovernor",
         "id": 43,
-        "path": "src/proposals/mips/mip-b03/mip-b03.sol",
+        "path": "src/proposals/templates/MarketAdd.sol",
         "proposalType": "HybridProposal"
     },
     {

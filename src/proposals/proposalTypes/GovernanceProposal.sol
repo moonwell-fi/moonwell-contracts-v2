@@ -10,8 +10,6 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 
 abstract contract GovernanceProposal is Proposal {
-    bool private DEBUG;
-
     struct GovernanceAction {
         address target;
         uint256 value;
