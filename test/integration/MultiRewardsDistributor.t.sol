@@ -99,11 +99,21 @@ contract MultiRewardsDistributorLiveSystem is Test, PostProposalCheck {
                 .getAllMarketConfigs(markets[i]);
 
             for (uint256 j = 0; j < allConfigs.length; j++) {
-                assertEq(
-                    allConfigs[j].owner,
-                    addresses.getAddress("TEMPORAL_GOVERNOR"),
-                    "Temporal Governor not admin"
-                );
+                if (
+                    address(markets[i]) == addresses.getAddress("MOONWELL_USDC")
+                ) {
+                    assertEq(
+                        allConfigs[j].owner,
+                        addresses.getAddress("GAUNTLET_MULTISIG"),
+                        "Gautlet not admin"
+                    );
+                } else {
+                    assertEq(
+                        allConfigs[j].owner,
+                        addresses.getAddress("TEMPORAL_GOVERNOR"),
+                        "Temporal Governor not admin"
+                    );
+                }
             }
         }
     }
