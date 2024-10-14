@@ -293,10 +293,6 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             proposal.preBuildMock(addresses);
             proposal.beforeSimulationHook(addresses);
 
-            if (vm.activeFork() != MOONBEAM_FORK_ID) {
-                vm.selectFork(MOONBEAM_FORK_ID);
-            }
-
             temporalGovernor.executeProposal(vaa);
         }
     }
