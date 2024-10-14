@@ -47,7 +47,6 @@ if the tests fail, try setting the environment variables as follows:
 
 export DO_DEPLOY=true
 export DO_AFTER_DEPLOY=true
-export DO_PRE_BUILD_MOCK=true
 export DO_BUILD=true
 export DO_RUN=true
 export DO_TEARDOWN=true

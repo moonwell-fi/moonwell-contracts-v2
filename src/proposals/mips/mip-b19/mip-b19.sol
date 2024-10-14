@@ -27,7 +27,7 @@ contract mipb19 is HybridProposal, Configs, ParameterValidation {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function preBuildMock(Addresses addresses) public override {}
+    function beforeSimulationHook(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         _pushAction(

@@ -211,7 +211,6 @@ contract ProposalMap is Script {
         proposal.initProposal(addresses);
         proposal.deploy(addresses, deployer);
         proposal.afterDeploy(addresses, deployer);
-        proposal.preBuildMock(addresses);
         proposal.build(addresses);
         proposal.teardown(addresses, deployer);
         proposal.run(addresses, deployer);

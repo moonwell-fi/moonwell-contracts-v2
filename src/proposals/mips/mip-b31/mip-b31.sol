@@ -11,7 +11,7 @@ import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
-/// DO_PRE_BUILD_MOCK=true DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
+/// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b31/mip-b31.sol:mipb31
 contract mipb31 is HybridProposal, Configs {
     string public constant override name = "MIP-B31";
@@ -38,7 +38,7 @@ contract mipb31 is HybridProposal, Configs {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function preBuildMock(Addresses addresses) public override {}
+    function beforeSimulationHook(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         address market = addresses.getAddress("MOONWELL_EURC");

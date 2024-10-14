@@ -16,7 +16,6 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 /*
 export DO_DEPLOY=false
 export DO_AFTER_DEPLOY=false
-export DO_PRE_BUILD_MOCK=false
 export DO_BUILD=true
 export DO_RUN=true
 export DO_TEARDOWN=false
@@ -56,8 +55,6 @@ contract mipb02 is HybridProposal, Configs {
     }
 
     function afterDeploy(Addresses addresses, address) public override {}
-
-    function preBuildMock(Addresses addresses) public override {}
 
     function build(Addresses addresses) public override {
         /// point weth mToken to new logic contract

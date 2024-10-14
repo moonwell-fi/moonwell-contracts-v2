@@ -23,13 +23,13 @@ import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 /*
 to deploy:
 
-DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_BUILD=true \
 DO_RUN=true DO_VALIDATE=true forge script \
 src/proposals/mips/mip-o01/mip-o01.sol:mipo01 -vvv --broadcast --account ~/.foundry/keystores/<your-account-keystore-name>
 
 to dry-run:
 
-DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_BUILD=true \
   DO_RUN=true DO_VALIDATE=true forge script \
   src/proposals/mips/mip-o01/mip-o01.sol:mipo01 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
 */
@@ -78,7 +78,7 @@ contract mipo01 is HybridProposal, Configs {
         forkId = OPTIMISM_FORK_ID;
     }
 
-    function preBuildMock(Addresses addresses) public override {
+    function beforeSimulationHook(Addresses addresses) public override {
         // TODO remove this once mipo00 is executed
         mip00 mipo00 = new mip00();
         mipo00.initProposal(addresses);
