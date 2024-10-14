@@ -6,7 +6,7 @@ test = 'test'
 cache_path  = 'artifacts/forge-cache'
 fs_permissions = [{ access = "read", path = "./"}]
 auto_detect_solc = true
-evm_version = 'paris' # lock to paris to prevent use of push0 opcode which is not live on base
+evm_version = 'shanghai' # lock to shanghai to use push0 opcode which is live on base, optimism and Moonbeam
 optimizer_runs = 1
 rpc_storage_caching = { chains = "all", endpoints = "all" }
 ignored_warnings_from = ["src/MErc20Delegator.sol", "src/tokensale/TokenSaleDistributorProxy.sol"]
