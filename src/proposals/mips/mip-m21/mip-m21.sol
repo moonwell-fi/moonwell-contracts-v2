@@ -37,8 +37,6 @@ contract mipm21 is GovernanceProposal {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function beforeSimulationHook(Addresses addresses) public override {}
-
     function build(Addresses addresses) public override {
         /// @dev Upgrade wormhole bridge adapter to wormhole unwrapper adapter
         _pushGovernanceAction(

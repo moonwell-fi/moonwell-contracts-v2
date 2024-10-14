@@ -38,8 +38,6 @@ contract mipb31 is HybridProposal, Configs {
 
     function afterDeploy(Addresses addresses, address) public override {}
 
-    function beforeSimulationHook(Addresses addresses) public override {}
-
     function build(Addresses addresses) public override {
         address market = addresses.getAddress("MOONWELL_EURC");
         address mrd = addresses.getAddress("MRD_PROXY");
