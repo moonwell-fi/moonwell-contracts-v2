@@ -148,12 +148,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         proposalMap.setEnv(envPath);
 
         Proposal proposal = Proposal(deployCode(proposalPath));
-
         proposal.beforeSimulationHook(addresses);
-
-        if (vm.activeFork() != MOONBEAM_FORK_ID) {
-            vm.selectFork(MOONBEAM_FORK_ID);
-        }
 
         uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
             address(governor)
@@ -294,8 +289,13 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
             Proposal proposal = Proposal(deployCode(proposalPath));
 
+            proposal.initProposal(addresses);
             proposal.preBuildMock(addresses);
             proposal.beforeSimulationHook(addresses);
+
+            if (vm.activeFork() != MOONBEAM_FORK_ID) {
+                vm.selectFork(MOONBEAM_FORK_ID);
+            }
 
             temporalGovernor.executeProposal(vaa);
         }
