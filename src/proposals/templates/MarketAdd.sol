@@ -763,6 +763,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
     }
 
     function beforeSimulationHook(Addresses addresses) public override {
+        uint256 forkBefore = vm.activeFork();
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
             vm.selectFork(chainId.toForkId());
@@ -783,6 +784,10 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                     config.initialMintAmount
                 );
             }
+        }
+
+        if (vm.activeFork() != forkBefore) {
+            vm.selectFork(forkBefore);
         }
     }
 }
