@@ -6,7 +6,6 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
 
-import {mip00} from "@proposals/mips/mip00.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Address} from "@utils/Address.sol";
