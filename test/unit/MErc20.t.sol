@@ -12,7 +12,7 @@ import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
 import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
 import {FaucetTokenWithPermit} from "@test/helper/FaucetToken.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
-import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
+import {ComptrollerErrorReporter} from "@protocol/TokenErrorReporter.sol";
 import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
 
 interface InstrumentedExternalEvents {

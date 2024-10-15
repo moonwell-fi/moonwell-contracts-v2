@@ -16,7 +16,7 @@ import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MaliciousBorrower} from "@test/mock/MaliciousBorrower.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
-import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
+import {ComptrollerErrorReporter} from "@protocol/TokenErrorReporter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract ReentrancyPostProposalTest is

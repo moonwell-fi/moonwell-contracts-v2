@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "./ErrorReporter.sol";
+import "./TokenErrorReporter.sol";
 import "./ComptrollerStorage.sol";
 /**
  * @title ComptrollerCore
