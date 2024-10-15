@@ -148,6 +148,8 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
         }
     }
 
+    function afterDeploy(Addresses, address) public virtual override {}
+
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
 
     /// no cross chain proposal actions to run

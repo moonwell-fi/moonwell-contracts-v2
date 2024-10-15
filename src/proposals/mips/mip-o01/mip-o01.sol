@@ -72,19 +72,11 @@ contract mipo01 is HybridProposal, Configs {
         _setMTokenConfiguration("src/proposals/mips/mip-o00/mTokens.json");
     }
 
-    /// @dev change this if wanting to deploy to a different chain
-    /// double check addresses and change the WORMHOLE_CORE to the correct chain
     function primaryForkId() public pure override returns (uint256) {
         return OPTIMISM_FORK_ID;
     }
 
     function beforeSimulationHook(Addresses addresses) public override {
-        // TODO remove this once mipo00 is executed
-        mip00 mipo00 = new mip00();
-        mipo00.initProposal(addresses);
-        mip00(mipo00).build(addresses);
-        mip00(mipo00).run(addresses, address(0));
-
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
