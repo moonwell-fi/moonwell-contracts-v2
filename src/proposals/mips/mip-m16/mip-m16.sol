@@ -24,8 +24,6 @@ contract mipm16 is GovernanceProposal {
 
     function deploy(Addresses addresses, address) public override {}
 
-    function afterDeploy(Addresses addresses, address) public override {}
-
     function build(Addresses addresses) public override {
         address mUSDCAddress = addresses.getAddress("MOONWELL_mUSDC");
         address mETHAddress = addresses.getAddress("DEPRECATED_MOONWELL_mETH");

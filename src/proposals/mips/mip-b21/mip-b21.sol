@@ -39,8 +39,6 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
 
     function deploy(Addresses addresses, address) public override {}
 
-    function afterDeploy(Addresses addresses, address) public override {}
-
     function beforeSimulationHook(Addresses addresses) public override {
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         startingWellAllowance = ERC20Upgradeable(

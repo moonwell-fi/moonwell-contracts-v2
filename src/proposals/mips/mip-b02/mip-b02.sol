@@ -54,8 +54,6 @@ contract mipb02 is HybridProposal, Configs {
         }
     }
 
-    function afterDeploy(Addresses addresses, address) public override {}
-
     function build(Addresses addresses) public override {
         /// point weth mToken to new logic contract
         _pushAction(

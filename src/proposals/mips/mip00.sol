@@ -120,11 +120,7 @@ contract mip00 is HybridProposal, Configs {
     /// @dev change this if wanting to deploy to a different chain
     /// double check addresses and change the WORMHOLE_CORE to the correct chain
     function primaryForkId() public pure override returns (uint256 forkId) {
-        //forkId = vm.envUint("PRIMARY_FORK_ID");
-        // TODO undo this after mipo00 execution
-        // we need this because we are calling this proposal inside
-        // mipRewardsDistribution proposal which PRIMARY_FORK_ID=0
-        forkId = OPTIMISM_FORK_ID;
+        forkId = vm.envUint("PRIMARY_FORK_ID");
 
         require(forkId <= OPTIMISM_FORK_ID, "invalid primary fork id");
     }

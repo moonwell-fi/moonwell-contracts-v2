@@ -74,8 +74,8 @@ contract mipo01 is HybridProposal, Configs {
 
     /// @dev change this if wanting to deploy to a different chain
     /// double check addresses and change the WORMHOLE_CORE to the correct chain
-    function primaryForkId() public pure override returns (uint256 forkId) {
-        forkId = OPTIMISM_FORK_ID;
+    function primaryForkId() public pure override returns (uint256) {
+        return OPTIMISM_FORK_ID;
     }
 
     function beforeSimulationHook(Addresses addresses) public override {

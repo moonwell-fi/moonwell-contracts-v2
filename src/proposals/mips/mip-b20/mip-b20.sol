@@ -31,8 +31,6 @@ contract mipb20 is HybridProposal, Configs, ParameterValidation {
 
     function deploy(Addresses addresses, address) public override {}
 
-    function afterDeploy(Addresses addresses, address) public override {}
-
     function build(Addresses addresses) public override {
         _pushAction(
             addresses.getAddress("STK_GOVTOKEN_PROXY"),

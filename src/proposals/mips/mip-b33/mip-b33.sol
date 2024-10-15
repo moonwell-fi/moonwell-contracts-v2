@@ -28,8 +28,6 @@ contract mipb33 is HybridProposal, Configs {
 
     function deploy(Addresses addresses, address) public override {}
 
-    function afterDeploy(Addresses addresses, address) public override {}
-
     function build(Addresses addresses) public override {
         _pushAction(
             addresses.getAddress("MRD_PROXY"),
