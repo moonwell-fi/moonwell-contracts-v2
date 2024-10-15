@@ -613,5 +613,35 @@
         "addr": "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
         "isContract": true,
         "name": "MOONWELL_EURC"
+    },
+    {
+        "addr": "0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0",
+        "isContract": true,
+        "name": "GAUNTLET_MULTISIG"
+    },
+    {
+        "addr": "0xEDfa23602D0EC14714057867A78d01e94176BEA0",
+        "isContract": true,
+        "name": "wrsETH"
+    },
+    {
+        "addr": "0xd7221b10FBBC1e1ba95Fd0B4D031C15f7F365296",
+        "name": "CHAINLINK_rsETH_ETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x79C613B4f07080963C3B0CA58Eb2745dD4C744A5",
+        "name": "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x63f9f904CE2912853C2F7bb43dD1c1A6136F09b1",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_wrsETH"
+    },
+    {
+        "addr": "0xfC41B49d064Ac646015b459C522820DB9472F4B5",
+        "isContract": true,
+        "name": "MOONWELL_wrsETH"
     }
 ]

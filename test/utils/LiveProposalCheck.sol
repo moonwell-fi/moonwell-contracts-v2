@@ -148,7 +148,6 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         proposalMap.setEnv(envPath);
 
         Proposal proposal = Proposal(deployCode(proposalPath));
-
         proposal.beforeSimulationHook(addresses);
 
         uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
@@ -290,7 +289,9 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
             Proposal proposal = Proposal(deployCode(proposalPath));
 
+            proposal.initProposal(addresses);
             proposal.preBuildMock(addresses);
+            proposal.beforeSimulationHook(addresses);
 
             temporalGovernor.executeProposal(vaa);
         }

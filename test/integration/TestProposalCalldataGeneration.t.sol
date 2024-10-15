@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 import {console} from "@forge-std/console.sol";
 
+import "@protocol/utils/ChainIds.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
 import {MOONBEAM_FORK_ID, BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -14,6 +15,8 @@ import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/
 import {MultichainGovernor, IMultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 contract TestProposalCalldataGeneration is ProposalMap, Test {
+    using ChainIds for uint256;
+
     Addresses public addresses;
 
     MultichainGovernor public governor;
@@ -23,16 +26,11 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
     mapping(uint256 proposalId => bytes32 hash) public artemisProposalHashes;
 
     function setUp() public {
-        vm.createFork(vm.envString("MOONBEAM_RPC_URL"));
-        vm.createFork(vm.envString("BASE_RPC_URL"));
-        vm.createFork(vm.envString("OP_RPC_URL"));
-
+        MOONBEAM_FORK_ID.createForksAndSelect();
         addresses = new Addresses();
 
         vm.makePersistent(address(this));
         vm.makePersistent(address(addresses));
-
-        vm.selectFork(MOONBEAM_FORK_ID);
 
         governor = MultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
@@ -60,6 +58,12 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
             string memory proposalPath = multichainGovernorProposals[i - 1]
                 .path;
 
+            console.log("Proposal path: ", proposalPath);
+            console.log(
+                "Proposal env path: ",
+                multichainGovernorProposals[i - 1].envPath
+            );
+
             HybridProposal proposal = HybridProposal(deployCode(proposalPath));
             vm.makePersistent(address(proposal));
 
@@ -74,6 +78,8 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
                 bytes[] memory calldatas
             ) = proposal.getTargetsPayloadsValues(addresses);
             bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
+
+            cleanEnv(multichainGovernorProposals[i - 1].envPath);
 
             vm.selectFork(MOONBEAM_FORK_ID);
 
@@ -116,7 +122,6 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
                 "HybridProposal"
             );
         for (uint256 i = artemisGovernorProposals.length; i > 0; i--) {
-            // exclude proposals that are not onchain yet
             if (artemisGovernorProposals[i - 1].id == 0) {
                 continue;
             }
@@ -139,6 +144,8 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
                 bytes[] memory calldatas
             ) = proposal.getTargetsPayloadsValues(addresses);
             bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
+
+            cleanEnv(artemisGovernorProposals[i - 1].envPath);
 
             vm.selectFork(MOONBEAM_FORK_ID);
 
@@ -208,6 +215,8 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
                 bytes[] memory calldatas
             ) = proposal._getActions();
             bytes32 hash = keccak256(abi.encode(targets, values, calldatas));
+
+            cleanEnv(artemisGovernorProposals[i - 1].envPath);
 
             vm.selectFork(MOONBEAM_FORK_ID);
 
