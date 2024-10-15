@@ -84,7 +84,7 @@ this proposal. The following environment variables are available:
 
 - **DO_DEPLOY** - Whether or not to deploy the system. Defaults to true.
 - **DO_AFTER_DEPLOY** - Whether or not to run the after deploy script. Defaults
-  to true. Defaults to true.
+  to true.
 - **DO_BUILD** - Whether or not to build the calldata for the proposal. Defaults
   to true.
 - **DO_RUN** - Whether or not to simulate the execution of the proposal.
