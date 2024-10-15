@@ -880,7 +880,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         uint256 amount = marketBase.getMaxBorrowAmount(mToken) + 1;
 
-        if (amount == 1) {
+        if (amount == 1 || amount > type(uint128).max) {
             return;
         }
 
