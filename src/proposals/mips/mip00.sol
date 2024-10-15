@@ -117,8 +117,6 @@ contract mip00 is HybridProposal, Configs {
         _setEmissionConfiguration(vm.envString("EMISSIONS_PATH"));
     }
 
-    /// @dev change this if wanting to deploy to a different chain
-    /// double check addresses and change the WORMHOLE_CORE to the correct chain
     function primaryForkId() public view override returns (uint256 forkId) {
         forkId = vm.envUint("PRIMARY_FORK_ID");
 
