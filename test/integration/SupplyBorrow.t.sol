@@ -565,7 +565,6 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
     function _liquidateAccountReceiveRewards(
         uint256 mTokenIndex,
-        uint256 rewardTokenIndex,
         uint256 mintAmount,
         uint256 toWarp
     ) private {
@@ -582,7 +581,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         mintAmount = _bound(mintAmount, 10e8, max);
 
         // uses different users to each market ensuring that previous liquidations do not impact this test
-        address user = address(uint160(mTokenIndex + 1));
+        address user = address(uint160(mTokenIndex + 123));
 
         _mintMToken(user, address(mToken), mintAmount);
 
@@ -628,25 +627,8 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         vm.warp(timeBefore + toWarp);
         uint256 timeAfter = vm.getBlockTimestamp();
 
-        address token = MErc20(address(mToken)).underlying();
-
         uint256 balanceBefore = mToken.balanceOf(user);
-
-        uint256 expectedSupplyReward = _calculateSupplyRewards(
-            MToken(mToken),
-            rewardsConfig[mToken][rewardTokenIndex],
-            balanceBefore / 3,
-            timeBefore,
-            timeAfter
-        );
-
-        uint256 expectedBorrowReward = _calculateBorrowRewards(
-            MToken(mToken),
-            rewardsConfig[mToken][rewardTokenIndex],
-            mToken.borrowBalanceStored(user),
-            timeBefore,
-            timeAfter
-        );
+        uint256 borrowBalanceBefore = mToken.borrowBalanceStored(user);
 
         /// borrower is now underwater on loan
         deal(address(mToken), user, balanceBefore / 3);
@@ -660,34 +642,52 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             assertGt(shortfall, 0, "Shortfall not gt 0");
         }
 
-        uint256 repayAmount = (mintAmount / 3) / 2;
-        deal(token, address(100_000_000), repayAmount);
+        {
+            uint256 repayAmount = (mintAmount / 3) / 2;
+            deal(
+                MErc20(address(mToken)).underlying(),
+                address(100_000_000),
+                repayAmount
+            );
 
-        vm.startPrank(address(100_000_000));
-        IERC20(token).approve(address(mToken), repayAmount);
+            vm.startPrank(address(100_000_000));
+            IERC20(MErc20(address(mToken)).underlying()).approve(
+                address(mToken),
+                repayAmount
+            );
 
-        assertEq(
-            MErc20Delegator(payable(address(mToken))).liquidateBorrow(
-                user,
-                repayAmount,
-                MErc20(address(mToken))
-            ),
-            0,
-            "Liquidation failed"
-        );
+            assertEq(
+                MErc20Delegator(payable(address(mToken))).liquidateBorrow(
+                    user,
+                    repayAmount,
+                    MErc20(address(mToken))
+                ),
+                0,
+                "Liquidation failed"
+            );
 
-        vm.stopPrank();
+            vm.stopPrank();
+        }
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewardsPaid = mrd
             .getOutstandingRewardsForUser(MToken(mToken), user);
 
         for (uint256 j = 0; j < rewardsPaid.length; j++) {
-            if (
-                rewardsPaid[j].emissionToken !=
-                rewardsConfig[mToken][rewardTokenIndex]
-            ) {
-                continue;
-            }
+            uint256 expectedSupplyReward = _calculateSupplyRewards(
+                MToken(mToken),
+                rewardsPaid[j].emissionToken,
+                balanceBefore / 3,
+                timeBefore,
+                timeAfter
+            );
+
+            uint256 expectedBorrowReward = _calculateBorrowRewards(
+                MToken(mToken),
+                rewardsPaid[j].emissionToken,
+                borrowBalanceBefore,
+                timeBefore,
+                timeAfter
+            );
 
             assertApproxEqRel(
                 rewardsPaid[j].supplySide,
@@ -717,9 +717,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         uint256 toWarp
     ) public {
         for (uint256 i = 0; i < mTokens.length; i++) {
-            for (uint256 j = 0; j < rewardsConfig[mTokens[i]].length; j++) {
-                _liquidateAccountReceiveRewards(i, j, mintAmount, toWarp);
-            }
+            _liquidateAccountReceiveRewards(i, mintAmount, toWarp);
         }
     }
 
