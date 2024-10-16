@@ -194,11 +194,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testFuzz_BorrowMTokenSucceed(
+    function borrowMTokenSucceed(
         uint256 mTokenIndex,
         uint256 mintAmount
-    ) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+    ) private {
         MToken mToken = mTokens[mTokenIndex];
 
         uint256 max = marketBase.getMaxSupplyAmount(mToken);
@@ -263,6 +262,12 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
                 borrowAmount,
                 "Wrong borrow amount"
             );
+        }
+    }
+
+    function testFuzz_BorrowMTokenSucceed(uint256 mintAmount) {
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            borrowMTokenSucceed(i, mintAmount);
         }
     }
 
