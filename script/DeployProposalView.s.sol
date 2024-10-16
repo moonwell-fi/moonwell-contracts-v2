@@ -21,7 +21,7 @@ contract DeployProposalView is Script {
     function run() public {
         Addresses addresses = new Addresses();
 
-        address relayer = addresses.getAddress("RELAYER");
+        address relayer = addresses.getAddress("DEFENDER_RELAYER");
 
         vm.startBroadcast();
         ProposalView proposalView = new ProposalView{salt: salt}(relayer);
