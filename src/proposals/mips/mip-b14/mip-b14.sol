@@ -32,8 +32,6 @@ contract mipb14 is HybridProposal, Configs, ParameterValidation {
 
     function afterDeploy(Addresses, address) public override {}
 
-    function preBuildMock(Addresses) public override {}
-
     function build(Addresses addresses) public override {
         _pushAction(
             addresses.getAddress("MOONWELL_DAI"),

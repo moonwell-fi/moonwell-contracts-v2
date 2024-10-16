@@ -12,7 +12,6 @@ import {Comptroller} from "@protocol/Comptroller.sol";
 import {MarketBase} from "@test/utils/MarketBase.sol";
 import {LibCompound} from "@protocol/4626/LibCompound.sol";
 import {Factory4626} from "@protocol/4626/Factory4626.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
 import {deployFactory} from "@protocol/4626/4626FactoryDeploy.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -20,7 +19,6 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 contract ERC4626LiveIntegrationTest is Test {
     using LibCompound for MErc20;
     address constant rewardRecipient = address(10_000_000);
-    TestProposals proposals;
 
     ERC20 public underlying;
     ERC20 public well;

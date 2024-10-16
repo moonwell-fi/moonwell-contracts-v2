@@ -196,7 +196,7 @@ contract mipb29 is HybridProposal, Configs {
         }
     }
 
-    function preBuildMock(Addresses addresses) public override {
+    function beforeSimulationHook(Addresses addresses) public override {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 

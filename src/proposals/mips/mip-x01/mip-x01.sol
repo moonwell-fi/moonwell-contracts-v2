@@ -19,7 +19,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
 
 /*
-DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_BUILD=true \
 DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-x01/mip-x01.sol:mipx01 \
  -vvv
 */

@@ -37,7 +37,10 @@ interface IProposal {
     // After deploying, do setup for a testnet,
     // e.g. if you deployed a contract that needs funds
     // for a governance proposal, deal them funds
-    function preBuildMock(Addresses) external;
+    function beforeSimulationHook(Addresses) external;
+
+    // After simulation, do cleanup, e.g. remove funds
+    function afterSimulationHook(Addresses) external;
 
     /// After finishing deploy and deploy cleanup, build the proposal
     function build(Addresses) external;

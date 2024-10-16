@@ -24,10 +24,6 @@ contract mipb01 is HybridProposal, Configs {
 
     function deploy(Addresses addresses, address) public override {}
 
-    function afterDeploy(Addresses addresses, address) public override {}
-
-    function preBuildMock(Addresses addresses) public override {}
-
     function build(Addresses addresses) public override {
         /// -------------- EMISSION CONFIGURATION --------------
 
