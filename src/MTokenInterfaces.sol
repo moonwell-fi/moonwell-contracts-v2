@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "./ComptrollerInterface.sol";
 import "./irm/InterestRateModel.sol";
 import "./EIP20NonStandardInterface.sol";
-import "./ErrorReporter.sol";
+import "./TokenErrorReporter.sol";
 
 contract MTokenStorage {
     /// @dev Guard variable for re-entrancy checks
