@@ -19,7 +19,6 @@ import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
@@ -47,7 +46,6 @@ if the tests fail, try setting the environment variables as follows:
 
 export DO_DEPLOY=true
 export DO_AFTER_DEPLOY=true
-export DO_PRE_BUILD_MOCK=true
 export DO_BUILD=true
 export DO_RUN=true
 export DO_TEARDOWN=true

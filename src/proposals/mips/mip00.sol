@@ -37,13 +37,13 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 /*
 to deploy:
 
-DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_BUILD=true \
 DO_RUN=true DO_VALIDATE=true forge script \
 src/proposals/mips/mip00.sol:mip00 -vvv --broadcast --account ~/.foundry/keystores/<your-account-keystore-name>
 
 to dry-run:
 
-DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_BUILD=true \
   DO_RUN=true DO_VALIDATE=true forge script \
   src/proposals/mips/mip00.sol:mip00 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
 
@@ -117,14 +117,8 @@ contract mip00 is HybridProposal, Configs {
         _setEmissionConfiguration(vm.envString("EMISSIONS_PATH"));
     }
 
-    /// @dev change this if wanting to deploy to a different chain
-    /// double check addresses and change the WORMHOLE_CORE to the correct chain
     function primaryForkId() public view override returns (uint256 forkId) {
-        //forkId = vm.envUint("PRIMARY_FORK_ID");
-        // TODO undo this after mipo00 execution
-        // we need this because we are calling this proposal inside
-        // mipRewardsDistribution proposal which PRIMARY_FORK_ID=0
-        forkId = OPTIMISM_FORK_ID;
+        forkId = vm.envUint("PRIMARY_FORK_ID");
 
         require(forkId <= OPTIMISM_FORK_ID, "invalid primary fork id");
     }
@@ -460,7 +454,7 @@ contract mip00 is HybridProposal, Configs {
         }
     }
 
-    function preBuildMock(Addresses addresses) public override {
+    function beforeSimulationHook(Addresses addresses) public override {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 

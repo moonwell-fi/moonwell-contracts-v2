@@ -250,4 +250,6 @@ abstract contract GovernanceProposal is Proposal {
             vm.roll(block.number + 1);
         }
     }
+
+    function afterDeploy(Addresses, address) public virtual override {}
 }

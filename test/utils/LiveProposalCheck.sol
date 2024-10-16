@@ -290,10 +290,11 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             Proposal proposal = Proposal(deployCode(proposalPath));
 
             proposal.initProposal(addresses);
-            proposal.preBuildMock(addresses);
             proposal.beforeSimulationHook(addresses);
 
             temporalGovernor.executeProposal(vaa);
+
+            proposal.afterSimulationHook(addresses);
         }
     }
 

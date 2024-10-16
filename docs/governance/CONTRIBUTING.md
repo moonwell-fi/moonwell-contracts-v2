@@ -85,8 +85,6 @@ this proposal. The following environment variables are available:
 - **DO_DEPLOY** - Whether or not to deploy the system. Defaults to true.
 - **DO_AFTER_DEPLOY** - Whether or not to run the after deploy script. Defaults
   to true.
-- **DO_PRE_BUILD_MOCK** - Whether or not to run the after deploy setup script.
-  Defaults to true.
 - **DO_BUILD** - Whether or not to build the calldata for the proposal. Defaults
   to true.
 - **DO_RUN** - Whether or not to simulate the execution of the proposal.
@@ -106,7 +104,6 @@ this proposal. The following environment variables are available:
 ```
 export DO_DEPLOY=true
 export DO_AFTER_DEPLOY=true
-export DO_PRE_BUILD_MOCK=true
 export DO_BUILD=true
 export DO_RUN=false
 export DO_TEARDOWN=false
@@ -116,7 +113,6 @@ export DO_VALIDATE=false
 For a proposal where a new market is being listed:
 
 ```
-export DO_AFTER_DEPLOY_MTOKEN_BROADCAST=true
 export OVERRIDE_SUPPLY_CAP=false
 export OVERRIDE_BORROW_CAP=false
 ```
@@ -126,12 +122,10 @@ For a market listing proposal where the contracts have already been deployed:
 ```
 export DO_DEPLOY=false
 export DO_AFTER_DEPLOY=true
-export DO_PRE_BUILD_MOCK=true
 export DO_BUILD=true
 export DO_RUN=true
 export DO_TEARDOWN=true
 export DO_VALIDATE=true
-export DO_AFTER_DEPLOY_MTOKEN_BROADCAST=false
 
 ```
 
@@ -160,7 +154,6 @@ env setup to build and run without any other steps:
 ```bash
 export DO_DEPLOY=false
 export DO_AFTER_DEPLOY=false
-export DO_PRE_BUILD_MOCK=false
 export DO_BUILD=true
 export DO_RUN=true
 export DO_TEARDOWN=true

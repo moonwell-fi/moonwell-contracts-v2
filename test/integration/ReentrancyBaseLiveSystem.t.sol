@@ -12,7 +12,6 @@ import {Configs} from "@proposals/Configs.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {mipb02 as mip} from "@proposals/mips/mip-b02/mip-b02.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MaliciousBorrower} from "@test/mock/MaliciousBorrower.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";

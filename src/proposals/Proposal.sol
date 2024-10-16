@@ -14,7 +14,6 @@ abstract contract Proposal is Script, Test {
     bool internal DEBUG;
     bool internal DO_DEPLOY;
     bool internal DO_AFTER_DEPLOY;
-    bool internal DO_PRE_BUILD_MOCK;
     bool internal DO_BUILD;
     bool internal DO_RUN;
     bool internal DO_TEARDOWN;
@@ -31,7 +30,6 @@ abstract contract Proposal is Script, Test {
         DEBUG = vm.envOr("DEBUG", true);
         DO_DEPLOY = vm.envOr("DO_DEPLOY", true);
         DO_AFTER_DEPLOY = vm.envOr("DO_AFTER_DEPLOY", true);
-        DO_PRE_BUILD_MOCK = vm.envOr("DO_PRE_BUILD_MOCK", true);
         DO_BUILD = vm.envOr("DO_BUILD", true);
         DO_RUN = vm.envOr("DO_RUN", true);
         DO_TEARDOWN = vm.envOr("DO_TEARDOWN", true);
@@ -57,7 +55,6 @@ abstract contract Proposal is Script, Test {
         if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
         vm.stopBroadcast();
 
-        if (DO_PRE_BUILD_MOCK) preBuildMock(addresses);
         if (DO_BUILD) build(addresses);
         if (DO_RUN) run(addresses, deployerAddress);
         if (DO_TEARDOWN) teardown(addresses, deployerAddress);
@@ -82,8 +79,6 @@ abstract contract Proposal is Script, Test {
     function deploy(Addresses, address) public virtual;
 
     function afterDeploy(Addresses, address) public virtual;
-
-    function preBuildMock(Addresses) public virtual;
 
     function build(Addresses) public virtual;
 

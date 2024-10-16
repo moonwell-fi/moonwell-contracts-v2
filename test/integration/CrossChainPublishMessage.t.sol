@@ -10,7 +10,6 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {String} from "@utils/String.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IArtemisGovernor as MoonwellArtemisGovernor} from "@protocol/interfaces/IArtemisGovernor.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";

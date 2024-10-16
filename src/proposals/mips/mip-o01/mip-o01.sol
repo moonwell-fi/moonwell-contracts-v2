@@ -6,7 +6,6 @@ import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "@forge-std/Test.sol";
 import "@protocol/utils/ChainIds.sol";
 
-import {mip00} from "@proposals/mips/mip00.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Address} from "@utils/Address.sol";
@@ -23,13 +22,13 @@ import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 /*
 to deploy:
 
-DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_BUILD=true \
 DO_RUN=true DO_VALIDATE=true forge script \
 src/proposals/mips/mip-o01/mip-o01.sol:mipo01 -vvv --broadcast --account ~/.foundry/keystores/<your-account-keystore-name>
 
 to dry-run:
 
-DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_PRE_BUILD_MOCK=true DO_BUILD=true \
+DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_BUILD=true \
   DO_RUN=true DO_VALIDATE=true forge script \
   src/proposals/mips/mip-o01/mip-o01.sol:mipo01 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
 */
@@ -72,19 +71,11 @@ contract mipo01 is HybridProposal, Configs {
         _setMTokenConfiguration("src/proposals/mips/mip-o00/mTokens.json");
     }
 
-    /// @dev change this if wanting to deploy to a different chain
-    /// double check addresses and change the WORMHOLE_CORE to the correct chain
-    function primaryForkId() public view override returns (uint256 forkId) {
-        forkId = OPTIMISM_FORK_ID;
+    function primaryForkId() public pure override returns (uint256) {
+        return OPTIMISM_FORK_ID;
     }
 
-    function preBuildMock(Addresses addresses) public override {
-        // TODO remove this once mipo00 is executed
-        mip00 mipo00 = new mip00();
-        mipo00.initProposal(addresses);
-        mip00(mipo00).build(addresses);
-        mip00(mipo00).run(addresses, address(0));
-
+    function beforeSimulationHook(Addresses addresses) public override {
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
