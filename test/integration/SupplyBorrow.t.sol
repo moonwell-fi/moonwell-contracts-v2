@@ -155,12 +155,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         checker.checkAllMarkets(addresses.getAddress("UNITROLLER"));
     }
 
-    function testFuzz_MintMTokenSucceeds(
+    function _mintMTokenSucceeds(
         uint256 mTokenIndex,
         uint256 mintAmount
-    ) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
-
+    ) private {
         MToken mToken = mTokens[mTokenIndex];
 
         uint256 max = marketBase.getMaxSupplyAmount(mToken);
@@ -188,6 +186,12 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             mintAmount,
             "Underlying balance not updated"
         ); /// ensure underlying balance is sent to mToken
+    }
+
+    function testFuzz_MintMTokenSucceed(uint256 mintAmount) {
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            mintMTokenSucceed(i, mintAmount);
+        }
     }
 
     function testFuzz_BorrowMTokenSucceed(
