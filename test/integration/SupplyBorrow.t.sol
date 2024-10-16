@@ -155,7 +155,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         checker.checkAllMarkets(addresses.getAddress("UNITROLLER"));
     }
 
-    function _mintMTokenSucceeds(
+    function _mintMTokenSucceed(
         uint256 mTokenIndex,
         uint256 mintAmount
     ) private {
@@ -188,9 +188,9 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         ); /// ensure underlying balance is sent to mToken
     }
 
-    function testFuzz_MintMTokenSucceed(uint256 mintAmount) {
+    function testFuzz_MintMTokenSucceed(uint256 mintAmount) public {
         for (uint256 i = 0; i < mTokens.length; i++) {
-            mintMTokenSucceed(i, mintAmount);
+            _mintMTokenSucceed(i, mintAmount);
         }
     }
 
@@ -265,7 +265,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testFuzz_BorrowMTokenSucceed(uint256 mintAmount) {
+    function testFuzz_BorrowMTokenSucceed(uint256 mintAmount) public {
         for (uint256 i = 0; i < mTokens.length; i++) {
             _borrowMTokenSucceed(i, mintAmount);
         }
