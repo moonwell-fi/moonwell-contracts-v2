@@ -194,7 +194,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function borrowMTokenSucceed(
+    function _borrowMTokenSucceed(
         uint256 mTokenIndex,
         uint256 mintAmount
     ) private {
@@ -267,16 +267,15 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
     function testFuzz_BorrowMTokenSucceed(uint256 mintAmount) {
         for (uint256 i = 0; i < mTokens.length; i++) {
-            borrowMTokenSucceed(i, mintAmount);
+            _borrowMTokenSucceed(i, mintAmount);
         }
     }
 
-    function testFuzz_SupplyReceivesRewards(
+    function _supplyReceivesRewards(
         uint256 mTokenIndex,
         uint256 supplyAmount,
         uint256 toWarp
     ) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
         MToken mToken = mTokens[mTokenIndex];
 
         uint256 max = marketBase.getMaxSupplyAmount(mToken);
@@ -328,13 +327,20 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testFuzz_BorrowReceivesRewards(
-        uint256 mTokenIndex,
+    function testFuzz_SupplyReceivesRewards(
         uint256 supplyAmount,
         uint256 toWarp
     ) public {
-        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            _supplyReceivesRewards(i, supplyAmount, toWarp);
+        }
+    }
+
+    function _borrowReceivesRewards(
+        uint256 mTokenIndex,
+        uint256 supplyAmount,
+        uint256 toWarp
+    ) private {
         MToken mToken = mTokens[mTokenIndex];
 
         uint256 max = marketBase.getMaxSupplyAmount(mToken);
@@ -343,6 +349,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             return;
         }
 
+        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
         supplyAmount = _bound(supplyAmount, 1000e8, max);
 
         _mintMToken(address(mToken), supplyAmount);
@@ -421,14 +428,20 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testFuzz_SupplyBorrowReceiveRewards(
-        uint256 mTokenIndex,
+    function testFuzz_BorrowReceivesRewards(
         uint256 supplyAmount,
         uint256 toWarp
     ) public {
-        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            _borrowReceivesRewards(i, supplyAmount, toWarp);
+        }
+    }
 
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+    function _supplyBorrowReceiveRewards(
+        uint256 mTokenIndex,
+        uint256 supplyAmount,
+        uint256 toWarp
+    ) private {
         MToken mToken = mTokens[mTokenIndex];
 
         uint256 max = marketBase.getMaxSupplyAmount(mToken);
@@ -437,6 +450,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             return;
         }
 
+        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
         supplyAmount = _bound(supplyAmount, 1e12, max);
 
         _mintMToken(address(mToken), supplyAmount);
@@ -532,20 +546,21 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testFuzz_LiquidateAccountReceiveRewards(
+    function testFuzz_SupplyBorrowReceiveRewards(
+        uint256 supplyAmount,
+        uint256 toWarp
+    ) public {
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            _supplyBorrowReceiveRewards(i, supplyAmount, toWarp);
+        }
+    }
+
+    function _liquidateAccountReceiveRewards(
         uint256 mTokenIndex,
         uint256 rewardTokenIndex,
         uint256 mintAmount,
         uint256 toWarp
-    ) public {
-        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
-
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
-        rewardTokenIndex = _bound(
-            rewardTokenIndex,
-            0,
-            rewardsConfig[mTokens[mTokenIndex]].length - 1
-        );
+    ) private {
         MToken mToken = mTokens[mTokenIndex];
 
         uint256 max = marketBase.getMaxSupplyAmount(mToken);
@@ -554,6 +569,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             return;
         }
 
+        toWarp = _bound(toWarp, 1_000_000, 4 weeks);
         mintAmount = _bound(mintAmount, 10e8, max);
 
         _mintMToken(address(mToken), mintAmount);
@@ -692,7 +708,18 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testRepayBorrowBehalfWethRouter() public {
+    function testFuzz_LiquidateAccountReceiveRewards(
+        uint256 mintAmount,
+        uint256 toWarp
+    ) public {
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            for (uint256 j = 0; j < rewardsConfig[mTokens[i]].length; j++) {
+                _liquidateAccountReceiveRewards(i, j, mintAmount, toWarp);
+            }
+        }
+    }
+
+    function test_RepayBorrowBehalfWethRouter() public {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
         uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
 
@@ -749,7 +776,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         assertEq(MErc20(mweth).borrowBalanceStored(address(this)), 0); /// fully repaid
     }
 
-    function testRepayMoreThanBorrowBalanceWethRouter() public {
+    function test_RepayMoreThanBorrowBalanceWethRouter() public {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
         uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
 
@@ -809,7 +836,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         assertEq(address(this).balance, borrowRepayAmount / 2); /// excess eth returned
     }
 
-    function testMintWithRouter() public {
+    function test_MintWithRouter() public {
         WETH9 weth = WETH9(addresses.getAddress("WETH"));
         MErc20 mToken = MErc20(addresses.getAddress("MOONWELL_WETH"));
         uint256 startingMTokenWethBalance = weth.balanceOf(address(mToken));
@@ -847,8 +874,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         );
     }
 
-    function testFuzz_SupplyingOverSupplyCapFails(uint256 mTokenIndex) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+    function _supplyingOverSupplyCapFails(uint256 mTokenIndex) private {
         MToken mToken = mTokens[mTokenIndex];
 
         uint256 amount = marketBase.getMaxSupplyAmount(mToken) + 1;
@@ -870,8 +896,13 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         MErc20Delegator(payable(address(mToken))).mint(amount);
     }
 
-    function testFuzz_BorrowingOverBorrowCapFails(uint256 mTokenIndex) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+    function test_SupplyingOverSupplyCapFails() public {
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            _supplyingOverSupplyCapFails(i);
+        }
+    }
+
+    function _borrowingOverBorrowCapFails(uint256 mTokenIndex) private {
         MToken mToken = mTokens[mTokenIndex];
 
         uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
@@ -904,6 +935,12 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         vm.expectRevert("market borrow cap reached");
         MErc20Delegator(payable(address(mToken))).borrow(amount);
+    }
+
+    function test_BorrowingOverBorrowCapFails() public {
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            _borrowingOverBorrowCapFails(i);
+        }
     }
 
     receive() external payable {}
