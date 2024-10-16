@@ -13,13 +13,14 @@ import {Unitroller} from "@protocol/Unitroller.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MarketBase} from "@test/utils/MarketBase.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {ChainIds, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {MarketAddChecker} from "@protocol/governance/MarketAddChecker.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
+import {ChainIds, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
     using ChainIds for uint256;
@@ -188,7 +189,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         ); /// ensure underlying balance is sent to mToken
     }
 
-    function testFuzz_MintMTokenSucceed(uint256 mintAmount) public {
+    function testFuzzMintMTokenSucceed(uint256 mintAmount) public {
         for (uint256 i = 0; i < mTokens.length; i++) {
             _mintMTokenSucceed(i, mintAmount);
         }
@@ -265,7 +266,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testFuzz_BorrowMTokenSucceed(uint256 mintAmount) public {
+    function testFuzzBorrowMTokenSucceed(uint256 mintAmount) public {
         for (uint256 i = 0; i < mTokens.length; i++) {
             _borrowMTokenSucceed(i, mintAmount);
         }
@@ -327,7 +328,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testFuzz_SupplyReceivesRewards(
+    function testFuzzSupplyReceivesRewards(
         uint256 supplyAmount,
         uint256 toWarp
     ) public {
@@ -428,7 +429,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testFuzz_BorrowReceivesRewards(
+    function testFuzzBorrowReceivesRewards(
         uint256 supplyAmount,
         uint256 toWarp
     ) public {
@@ -546,7 +547,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testFuzz_SupplyBorrowReceiveRewards(
+    function testFuzzSupplyBorrowReceiveRewards(
         uint256 supplyAmount,
         uint256 toWarp
     ) public {
@@ -708,7 +709,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testFuzz_LiquidateAccountReceiveRewards(
+    function testFuzzLiquidateAccountReceiveRewards(
         uint256 mintAmount,
         uint256 toWarp
     ) public {
@@ -719,7 +720,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function test_RepayBorrowBehalfWethRouter() public {
+    function testRepayBorrowBehalfWethRouter() public {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
         uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
 
@@ -776,7 +777,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         assertEq(MErc20(mweth).borrowBalanceStored(address(this)), 0); /// fully repaid
     }
 
-    function test_RepayMoreThanBorrowBalanceWethRouter() public {
+    function testRepayMoreThanBorrowBalanceWethRouter() public {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
         uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
 
@@ -836,7 +837,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         assertEq(address(this).balance, borrowRepayAmount / 2); /// excess eth returned
     }
 
-    function test_MintWithRouter() public {
+    function testMintWithRouter() public {
         WETH9 weth = WETH9(addresses.getAddress("WETH"));
         MErc20 mToken = MErc20(addresses.getAddress("MOONWELL_WETH"));
         uint256 startingMTokenWethBalance = weth.balanceOf(address(mToken));
@@ -937,9 +938,29 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         MErc20Delegator(payable(address(mToken))).borrow(amount);
     }
 
-    function test_BorrowingOverBorrowCapFails() public {
+    function testBorrowingOverBorrowCapFails() public {
         for (uint256 i = 0; i < mTokens.length; i++) {
             _borrowingOverBorrowCapFails(i);
+        }
+    }
+
+    function _oraclesReturnCorrectValues(uint256 mTokenIndex) private view {
+        MToken mToken = mTokens[mTokenIndex];
+
+        ChainlinkOracle oracle = ChainlinkOracle(
+            addresses.getAddress("CHAINLINK_ORACLE")
+        );
+
+        assertGt(
+            oracle.getUnderlyingPrice(mToken),
+            1,
+            "oracle price must be non zero"
+        );
+    }
+
+    function testOraclesReturnCorrectValues() public view {
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            _oraclesReturnCorrectValues(i);
         }
     }
 
