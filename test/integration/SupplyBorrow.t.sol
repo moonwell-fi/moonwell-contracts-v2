@@ -563,6 +563,9 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
     }
 
+    mapping(address token => uint256 borrowRewardPerToken) borrowRewardPerToken;
+    mapping(address token => uint256 supplyRewardPerToken) supplyRewardPerToken;
+
     function _liquidateAccountReceiveRewards(
         uint256 mTokenIndex,
         uint256 mintAmount,
@@ -627,11 +630,30 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         vm.warp(timeBefore + toWarp);
         uint256 timeAfter = vm.getBlockTimestamp();
 
-        uint256 balanceBefore = mToken.balanceOf(user);
-        uint256 borrowBalanceBefore = mToken.borrowBalanceStored(user);
+        for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
+            supplyRewardPerToken[
+                rewardsConfig[mToken][i]
+            ] = _calculateSupplyRewards(
+                MToken(mToken),
+                rewardsConfig[mToken][i],
+                mToken.balanceOf(user),
+                timeBefore,
+                timeAfter
+            );
+
+            borrowRewardPerToken[
+                rewardsConfig[mToken][i]
+            ] = _calculateBorrowRewards(
+                MToken(mToken),
+                rewardsConfig[mToken][i],
+                mToken.borrowBalanceStored(user),
+                timeBefore,
+                timeAfter
+            );
+        }
 
         /// borrower is now underwater on loan
-        deal(address(mToken), user, balanceBefore / 3);
+        deal(address(mToken), user, mToken.balanceOf(user) / 3);
 
         {
             (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
@@ -673,21 +695,12 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             .getOutstandingRewardsForUser(MToken(mToken), user);
 
         for (uint256 j = 0; j < rewardsPaid.length; j++) {
-            uint256 expectedSupplyReward = _calculateSupplyRewards(
-                MToken(mToken),
-                rewardsPaid[j].emissionToken,
-                balanceBefore / 3,
-                timeBefore,
-                timeAfter
-            );
-
-            uint256 expectedBorrowReward = _calculateBorrowRewards(
-                MToken(mToken),
-                rewardsPaid[j].emissionToken,
-                borrowBalanceBefore,
-                timeBefore,
-                timeAfter
-            );
+            uint256 expectedSupplyReward = supplyRewardPerToken[
+                rewardsPaid[j].emissionToken
+            ];
+            uint256 expectedBorrowReward = borrowRewardPerToken[
+                rewardsPaid[j].emissionToken
+            ];
 
             assertApproxEqRel(
                 rewardsPaid[j].supplySide,
