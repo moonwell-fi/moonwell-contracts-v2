@@ -68,13 +68,19 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         assertEq(mTokens.length > 0, true, "No markets found");
     }
 
-    function _mintMToken(address mToken, uint256 amount) internal {
+    function _mintMToken(
+        address user,
+        address mToken,
+        uint256 amount
+    ) internal {
         address underlying = MErc20(mToken).underlying();
 
         if (underlying == addresses.getAddress("WETH")) {
             vm.deal(addresses.getAddress("WETH"), amount);
         }
-        deal(underlying, address(this), amount);
+        deal(underlying, user, amount);
+        vm.startPrank(user);
+
         IERC20(underlying).approve(mToken, amount);
 
         assertEq(
@@ -82,6 +88,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             0,
             "Mint failed"
         );
+        vm.stopPrank();
     }
 
     function _calculateSupplyRewards(
@@ -175,7 +182,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         address sender = address(this);
         uint256 startingTokenBalance = token.balanceOf(address(mToken));
 
-        _mintMToken(address(mToken), mintAmount);
+        _mintMToken(address(this), address(mToken), mintAmount);
 
         assertTrue(
             MErc20Delegator(payable(address(mToken))).balanceOf(sender) > 0,
@@ -209,7 +216,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         mintAmount = _bound(mintAmount, 10e8, max);
 
-        _mintMToken(address(mToken), mintAmount);
+        _mintMToken(address(this), address(mToken), mintAmount);
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(
@@ -288,7 +295,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         // 1000e8 to 90% of max supply
         supplyAmount = _bound(supplyAmount, 1000e8, max);
 
-        _mintMToken(address(mToken), supplyAmount);
+        _mintMToken(address(this), address(mToken), supplyAmount);
 
         toWarp = _bound(toWarp, 1_000_000, 4 weeks);
 
@@ -353,7 +360,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         toWarp = _bound(toWarp, 1_000_000, 4 weeks);
         supplyAmount = _bound(supplyAmount, 1000e8, max);
 
-        _mintMToken(address(mToken), supplyAmount);
+        _mintMToken(address(this), address(mToken), supplyAmount);
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(
@@ -454,7 +461,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         toWarp = _bound(toWarp, 1_000_000, 4 weeks);
         supplyAmount = _bound(supplyAmount, 1e12, max);
 
-        _mintMToken(address(mToken), supplyAmount);
+        _mintMToken(address(this), address(mToken), supplyAmount);
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(
@@ -571,9 +578,13 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
 
         toWarp = _bound(toWarp, 1_000_000, 4 weeks);
+
         mintAmount = _bound(mintAmount, 10e8, max);
 
-        _mintMToken(address(mToken), mintAmount);
+        // uses different users to each market ensuring that previous liquidations do not impact this test
+        address user = address(uint160(mTokenIndex + 1));
+
+        _mintMToken(user, address(mToken), mintAmount);
 
         {
             uint256 expectedCollateralFactor = 0.5e18;
@@ -592,28 +603,26 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             address[] memory _mTokens = new address[](1);
             _mTokens[0] = address(mToken);
 
+            vm.startPrank(user);
             comptroller.enterMarkets(_mTokens);
 
             assertTrue(
-                comptroller.checkMembership(address(this), MToken(mToken)),
+                comptroller.checkMembership(user, MToken(mToken)),
                 "Membership check failed"
             );
         }
 
-        if (
-            mintAmount / 3 >
-            marketBase.getMaxUserBorrowAmount(mToken, address(this))
-        ) {
+        if (mintAmount / 3 > marketBase.getMaxUserBorrowAmount(mToken, user)) {
             return;
         }
 
-        uint256 borrowAmount = mintAmount / 3;
-
         assertEq(
-            MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
+            MErc20Delegator(payable(address(mToken))).borrow(mintAmount / 3),
             0,
             "Borrow failed"
         );
+
+        vm.stopPrank();
 
         uint256 timeBefore = vm.getBlockTimestamp();
         vm.warp(timeBefore + toWarp);
@@ -621,7 +630,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
 
         address token = MErc20(address(mToken)).underlying();
 
-        uint256 balanceBefore = mToken.balanceOf(address(this));
+        uint256 balanceBefore = mToken.balanceOf(user);
 
         uint256 expectedSupplyReward = _calculateSupplyRewards(
             MToken(mToken),
@@ -634,39 +643,33 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         uint256 expectedBorrowReward = _calculateBorrowRewards(
             MToken(mToken),
             rewardsConfig[mToken][rewardTokenIndex],
-            mToken.borrowBalanceStored(address(this)),
+            mToken.borrowBalanceStored(user),
             timeBefore,
             timeAfter
         );
 
         /// borrower is now underwater on loan
-        deal(address(mToken), address(this), balanceBefore / 3);
+        deal(address(mToken), user, balanceBefore / 3);
 
         {
             (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
-                .getHypotheticalAccountLiquidity(
-                    address(this),
-                    address(mToken),
-                    0,
-                    0
-                );
+                .getHypotheticalAccountLiquidity(user, address(mToken), 0, 0);
 
             assertEq(err, 0, "Error in hypothetical liquidity calculation");
             assertEq(liquidity, 0, "Liquidity not 0");
             assertGt(shortfall, 0, "Shortfall not gt 0");
         }
 
-        uint256 repayAmt = borrowAmount / 2;
-
-        deal(token, address(100_000_000), repayAmt);
+        uint256 repayAmount = (mintAmount / 3) / 2;
+        deal(token, address(100_000_000), repayAmount);
 
         vm.startPrank(address(100_000_000));
-        IERC20(token).approve(address(mToken), repayAmt);
+        IERC20(token).approve(address(mToken), repayAmount);
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).liquidateBorrow(
-                address(this),
-                repayAmt,
+                user,
+                repayAmount,
                 MErc20(address(mToken))
             ),
             0,
@@ -676,7 +679,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         vm.stopPrank();
 
         MultiRewardDistributorCommon.RewardInfo[] memory rewardsPaid = mrd
-            .getOutstandingRewardsForUser(MToken(mToken), address(this));
+            .getOutstandingRewardsForUser(MToken(mToken), user);
 
         for (uint256 j = 0; j < rewardsPaid.length; j++) {
             if (
@@ -724,7 +727,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
         uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
 
-        _mintMToken(address(mToken), mintAmount);
+        _mintMToken(address(this), address(mToken), mintAmount);
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(
@@ -781,7 +784,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
         uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
 
-        _mintMToken(address(mToken), mintAmount);
+        _mintMToken(address(this), address(mToken), mintAmount);
 
         uint256 expectedCollateralFactor = 0.5e18;
         (, uint256 collateralFactorMantissa) = comptroller.markets(
@@ -912,7 +915,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             return;
         }
 
-        _mintMToken(address(mToken), mintAmount);
+        _mintMToken(address(this), address(mToken), mintAmount);
 
         address[] memory _mTokens = new address[](1);
         _mTokens[0] = address(mToken);
