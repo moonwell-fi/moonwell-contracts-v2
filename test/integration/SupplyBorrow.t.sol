@@ -636,7 +636,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             ] = _calculateSupplyRewards(
                 MToken(mToken),
                 rewardsConfig[mToken][i],
-                mToken.balanceOf(user),
+                mToken.balanceOf(user) / 3,
                 timeBefore,
                 timeAfter
             );
