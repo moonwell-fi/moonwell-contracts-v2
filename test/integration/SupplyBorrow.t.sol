@@ -911,7 +911,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         MErc20Delegator(payable(address(mToken))).mint(amount);
     }
 
-    function test_SupplyingOverSupplyCapFails() public {
+    function testSupplyingOverSupplyCapFails() public {
         for (uint256 i = 0; i < mTokens.length; i++) {
             _supplyingOverSupplyCapFails(i);
         }
