@@ -3,27 +3,70 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {Address} from "@utils/Address.sol";
 import {ProposalView} from "@protocol/views/ProposalView.sol";
+import {MockWormholeCore} from "@test/mock/MockWormholeCore.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 
 contract ProposalViewUnitTest is Test {
+    using Address for address;
+
     event ProposalStateChanged(
         uint256 indexed proposalId,
         ProposalView.ProposalState state
     );
 
     ProposalView public proposalView;
+    MockWormholeCore public mockCore;
 
     function setUp() public {
+        uint16 trustedChainid = 10_000;
+        address admin = address(100_000_000);
+
         ITemporalGovernor.TrustedSender[]
-            memory trustedSenders = new ITemporalGovernor.TrustedSender[](0);
+            memory trustedSenders = new ITemporalGovernor.TrustedSender[](1);
+        trustedSenders[0] = ITemporalGovernor.TrustedSender({
+            chainId: trustedChainid,
+            addr: admin
+        });
+
+        mockCore = new MockWormholeCore();
 
         ITemporalGovernor temporalGovernor = new TemporalGovernor(
-            address(0),
+            address(mockCore),
             1 days,
-            1 days,
+            30 days,
             trustedSenders
+        );
+
+        address[] memory targets = new address[](1);
+        targets[0] = address(temporalGovernor);
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory payloads = new bytes[](1);
+
+        payloads[0] = abi.encodeWithSignature( /// if issues use encode with selector
+                "setTrustedSenders((uint16,address)[])",
+                trustedSenders
+            );
+
+        /// to be unbundled by the temporal governor
+        bytes memory payload = abi.encode(
+            address(temporalGovernor),
+            targets,
+            values,
+            payloads
+        );
+
+        mockCore.setStorage(
+            true,
+            trustedChainid,
+            admin.toBytes(),
+            "reason",
+            payload
         );
 
         proposalView = new ProposalView(address(this), temporalGovernor);
@@ -53,6 +96,10 @@ contract ProposalViewUnitTest is Test {
     }
 
     function testUpdateProposalStateExecuted() public {
+        testUpdateProposalStateQueued();
+
+        vm.warp(2 days);
+
         proposalView.updateProposalState(
             1,
             ProposalView.ProposalState.Executed,
