@@ -4,8 +4,6 @@ pragma solidity 0.8.19;
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 
 contract ProposalView {
-    address public immutable relayer;
-
     ITemporalGovernor public temporalGovernor;
 
     /// Uknown can be used to represent a non-existent proposal,
@@ -20,8 +18,7 @@ contract ProposalView {
 
     event ProposalStateChanged(uint256 indexed proposalId, ProposalState state);
 
-    constructor(address _relayer, ITemporalGovernor _temporalGovernor) {
-        relayer = _relayer;
+    constructor(ITemporalGovernor _temporalGovernor) {
         temporalGovernor = _temporalGovernor;
     }
 
@@ -31,11 +28,6 @@ contract ProposalView {
         ProposalState state,
         bytes memory VAA
     ) external {
-        require(
-            msg.sender == relayer,
-            "ProposalView: only relayer can update state"
-        );
-
         if (state == ProposalState.Queued) {
             temporalGovernor.queueProposal(VAA);
         } else if (state == ProposalState.Executed) {

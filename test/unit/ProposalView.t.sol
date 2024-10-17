@@ -69,18 +69,7 @@ contract ProposalViewUnitTest is Test {
             payload
         );
 
-        proposalView = new ProposalView(address(this), temporalGovernor);
-    }
-
-    function testOnlyOwnerCanUpdateState() public {
-        vm.startPrank(address(1));
-
-        vm.expectRevert("ProposalView: only relayer can update state");
-        proposalView.updateProposalState(
-            1,
-            ProposalView.ProposalState.Queued,
-            ""
-        );
+        proposalView = new ProposalView(temporalGovernor);
     }
 
     function testUpdateProposalStateQueued() public {

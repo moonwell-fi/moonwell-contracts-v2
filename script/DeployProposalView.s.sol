@@ -22,14 +22,12 @@ contract DeployProposalView is Script {
     function run() public {
         Addresses addresses = new Addresses();
 
-        address relayer = addresses.getAddress("DEFENDER_RELAYER");
         ITemporalGovernor temporalGovernor = ITemporalGovernor(
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
 
         vm.startBroadcast();
         ProposalView proposalView = new ProposalView{salt: salt}(
-            relayer,
             temporalGovernor
         );
 
