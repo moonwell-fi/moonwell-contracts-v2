@@ -120,4 +120,13 @@ contract ProposalViewUnitTest is Test {
             ""
         );
     }
+
+    function testRevertInvalidState() public {
+        vm.expectRevert("ProposalView: invalid state");
+        proposalView.updateProposalState(
+            1,
+            ProposalView.ProposalState.Unknown,
+            ""
+        );
+    }
 }
