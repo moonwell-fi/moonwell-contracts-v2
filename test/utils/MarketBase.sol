@@ -52,11 +52,22 @@ contract MarketBase is ExponentialNoError {
     ) public view returns (uint256) {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = mToken.totalBorrows();
-        (, uint256 usdLiquidity, ) = comptroller.getAccountLiquidity(user);
+
+        (, uint256 mTokenBalance, , uint256 exchangeRate) = mToken
+            .getAccountSnapshot(user);
 
         uint256 oraclePrice = comptroller.oracle().getUnderlyingPrice(mToken);
 
-        uint256 maxUserBorrow = (usdLiquidity * 1e18) / oraclePrice;
+        (, uint256 collateralFactor) = comptroller.markets(address(mToken));
+
+        uint256 tokenToDenom = mul_(
+            mul_(collateralFactor, exchangeRate) / 1e18,
+            oraclePrice
+        ) / 1e18;
+
+        uint256 usdLiquidity = mul_(tokenToDenom, mTokenBalance);
+
+        uint256 maxUserBorrow = usdLiquidity / oraclePrice;
 
         uint256 borrowableAmount = borrowCap > 0
             ? borrowCap - totalBorrows

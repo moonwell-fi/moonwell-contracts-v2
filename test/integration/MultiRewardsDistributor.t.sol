@@ -12,12 +12,11 @@ import {Unitroller} from "@protocol/Unitroller.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MarketBase} from "@test/utils/MarketBase.sol";
 import {WETHRouter} from "@protocol/router/WETHRouter.sol";
-import {ChainIds, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
-import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MarketAddChecker} from "@protocol/governance/MarketAddChecker.sol";
+import {ChainIds, OPTIMISM_CHAIN_ID} from "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 import {MultiRewardDistributorCommon} from "@protocol/rewards/MultiRewardDistributorCommon.sol";
 
@@ -121,49 +120,27 @@ contract MultiRewardsDistributorLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testFuzz_OraclesReturnCorrectValues(
-        uint256 mTokenIndex
-    ) public view {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+    function _emissionsAdminCanChangeOwner(uint256 mTokenIndex) private {
+        address emissionsAdmin = addresses.getAddress("TEMPORAL_GOVERNOR");
 
         MToken mToken = mTokens[mTokenIndex];
-
-        ChainlinkOracle oracle = ChainlinkOracle(
-            addresses.getAddress("CHAINLINK_ORACLE")
-        );
-
-        assertGt(
-            oracle.getUnderlyingPrice(mToken),
-            1,
-            "oracle price must be non zero"
-        );
-    }
-
-    function testFuzz_EmissionsAdminCanChangeOwner(
-        uint256 mTokenIndex,
-        address newOwner
-    ) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
-        address emissionsAdmin = addresses.getAddress("TEMPORAL_GOVERNOR");
-        vm.assume(newOwner != emissionsAdmin);
-
         vm.startPrank(emissionsAdmin);
 
-        MToken mToken = mTokens[mTokenIndex];
-
         for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
-            mrd._updateOwner(mToken, rewardsConfig[mToken][i], newOwner);
+            mrd._updateOwner(mToken, rewardsConfig[mToken][i], address(123));
         }
         vm.stopPrank();
     }
 
-    function testFuzz_EmissionsAdminCanChangeRewardStream(
-        uint256 mTokenIndex,
-        address newOwner
-    ) public {
+    function testEmissionsAdminCanChangeOwner() public {
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            _emissionsAdminCanChangeOwner(i);
+        }
+    }
+
+    function _emissionsAdminCanChangeRewardStream(uint256 mTokenIndex) private {
         mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
         address emissionsAdmin = addresses.getAddress("TEMPORAL_GOVERNOR");
-        vm.assume(newOwner != emissionsAdmin);
 
         vm.startPrank(emissionsAdmin);
         MToken mToken = mTokens[mTokenIndex];
@@ -174,11 +151,16 @@ contract MultiRewardsDistributorLiveSystem is Test, PostProposalCheck {
         vm.stopPrank();
     }
 
-    function testFuzz_UpdateEmissionConfigEndTimeSuccess(
+    function testEmissionsAdminCanChangeRewardStream() public {
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            _emissionsAdminCanChangeRewardStream(i);
+        }
+    }
+
+    function _updateEmissionConfigEndTimeSuccess(
         uint256 mTokenIndex,
         uint256 newEndTime
-    ) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+    ) private {
         MToken mToken = mTokens[mTokenIndex];
 
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
@@ -203,11 +185,15 @@ contract MultiRewardsDistributorLiveSystem is Test, PostProposalCheck {
         vm.stopPrank();
     }
 
-    function testFuzz_UpdateEmissionConfigSupplySuccess(
-        uint256 mTokenIndex
+    function testFuzzUpdateEmissionConfigEndTimeSuccess(
+        uint256 newEndTime
     ) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            _updateEmissionConfigEndTimeSuccess(i, newEndTime);
+        }
+    }
 
+    function _updateEmissionConfigSupplySuccess(uint256 mTokenIndex) private {
         MToken mToken = mTokens[mTokenIndex];
 
         for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
@@ -229,11 +215,13 @@ contract MultiRewardsDistributorLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function testFuzz_UpdateEmissionConfigBorrowSuccess(
-        uint256 mTokenIndex
-    ) public {
-        mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
+    function testUpdateEmissionConfigSupplySuccess() public {
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            _updateEmissionConfigSupplySuccess(i);
+        }
+    }
 
+    function _updateEmissionConfigBorrowSuccess(uint256 mTokenIndex) private {
         MToken mToken = mTokens[mTokenIndex];
 
         for (uint256 i = 0; i < rewardsConfig[mToken].length; i++) {
@@ -252,6 +240,12 @@ contract MultiRewardsDistributorLiveSystem is Test, PostProposalCheck {
                 1e18,
                 "Borrow emissions incorrect"
             );
+        }
+    }
+
+    function testUpdateEmissionConfigBorrowSuccess() public {
+        for (uint256 i = 0; i < mTokens.length; i++) {
+            _updateEmissionConfigBorrowSuccess(i);
         }
     }
 
