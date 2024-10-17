@@ -6,6 +6,7 @@ import {console} from "@forge-std/console.sol";
 
 import {ProposalView} from "@protocol/views/ProposalView.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 
 /*
 How to use:
@@ -22,9 +23,15 @@ contract DeployProposalView is Script {
         Addresses addresses = new Addresses();
 
         address relayer = addresses.getAddress("DEFENDER_RELAYER");
+        ITemporalGovernor temporalGovernor = ITemporalGovernor(
+            addresses.getAddress("TEMPORAL_GOVERNOR")
+        );
 
         vm.startBroadcast();
-        ProposalView proposalView = new ProposalView{salt: salt}(relayer);
+        ProposalView proposalView = new ProposalView{salt: salt}(
+            relayer,
+            temporalGovernor
+        );
 
         vm.stopBroadcast();
 
