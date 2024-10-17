@@ -665,7 +665,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
         }
 
         {
-            uint256 repayAmount = (mintAmount / 3) / 2;
+            uint256 repayAmount = mintAmount / 6;
             deal(
                 MErc20(address(mToken)).underlying(),
                 address(100_000_000),

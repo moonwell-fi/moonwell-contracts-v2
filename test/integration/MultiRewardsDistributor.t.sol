@@ -138,7 +138,7 @@ contract MultiRewardsDistributorLiveSystem is Test, PostProposalCheck {
         }
     }
 
-    function _emissionsAdminCanChangeRewardStream(uint256 mTokenIndex) public {
+    function _emissionsAdminCanChangeRewardStream(uint256 mTokenIndex) private {
         mTokenIndex = _bound(mTokenIndex, 0, mTokens.length - 1);
         address emissionsAdmin = addresses.getAddress("TEMPORAL_GOVERNOR");
 
