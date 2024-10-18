@@ -48,6 +48,9 @@ contract PostProposalCheck is LiveProposalCheck {
         // execute proposals that are in the vote or vote collection period
         executeLiveProposals(addresses, governor);
 
+        // execute proposals that are queued in the temporal governor but not executed yet
+        executeTemporalGovernorQueuedProposals(addresses, governor);
+
         // execute proposals that are not on chain yet
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
             .getAllProposalsInDevelopment();

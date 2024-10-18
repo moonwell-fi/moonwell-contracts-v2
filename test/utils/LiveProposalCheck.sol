@@ -12,22 +12,26 @@ import {String} from "@utils/String.sol";
 import {Address} from "@utils/Address.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
-import {ProposalMap} from "@test/utils/ProposalMap.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
+import {ProposalMap} from "@test/utils/ProposalMap.sol";
+import {ProposalView} from "@protocol/views/ProposalView.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 contract LiveProposalCheck is Test, ProposalChecker, Networks {
     using String for string;
-
-    using Bytes for bytes;
     using Address for *;
+    using Bytes for bytes;
     using ChainIds for uint256;
+    using ProposalActions for *;
 
     /// @notice proposal to file map contract
     ProposalMap proposalMap;
@@ -71,6 +75,79 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
             proposalId--;
             count++;
+        }
+    }
+
+    function executeTemporalGovernorQueuedProposals(
+        Addresses addresses,
+        MultichainGovernor governor
+    ) public {
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+
+            // skip moonbeam
+            if (block.chainid == block.chainid.toMoonbeamChainId()) {
+                continue;
+            }
+
+            vm.selectFork(chainId.toForkId());
+
+            ProposalView proposalView = ProposalView(
+                addresses.getAddress("PROPOSAL_VIEW")
+            );
+
+            uint256 proposalId = governor.proposalCount();
+
+            uint256 count = 0;
+
+            while (count < 10) {
+                if (
+                    proposalView.proposalStates(proposalId) ==
+                    ProposalView.ProposalState.Queued
+                ) {
+                    (
+                        string memory proposalPath,
+                        string memory envPath
+                    ) = proposalMap.getProposalById(proposalId);
+
+                    proposalMap.setEnv(envPath);
+                    HybridProposal proposal = HybridProposal(
+                        deployCode(proposalPath)
+                    );
+
+                    vm.selectFork(proposal.primaryForkId());
+
+                    proposal.initProposal(addresses);
+                    proposal.build(addresses);
+
+                    bytes memory temporalGovCalldata = proposal
+                        .getTemporalGovCalldata(
+                            addresses.getAddress("TEMPORAL_GOVERNOR"),
+                            proposal.getActionsByType(
+                                ActionType(vm.activeFork())
+                            )
+                        );
+
+                    (, bytes memory payload, ) = abi.decode(
+                        /// 1. strip off function selector
+                        /// 2. decode the call to publishMessage payload
+                        temporalGovCalldata.slice(
+                            4,
+                            temporalGovCalldata.length - 4
+                        ),
+                        (uint32, bytes, uint8)
+                    );
+
+                    _execExtChain(addresses, governor, payload, proposalId);
+
+                    proposalId--;
+                    count++;
+                }
+            }
+        }
+
+        if (vm.activeFork() != MOONBEAM_FORK_ID) {
+            vm.selectFork(MOONBEAM_FORK_ID);
         }
     }
 
