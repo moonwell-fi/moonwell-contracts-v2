@@ -105,7 +105,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
             while (count < 10) {
                 if (
-                    proposalView.proposalStates(proposalId) ==
+                    proposalView.proposalStates(proposalStart) ==
                     ProposalView.ProposalState.Queued
                 ) {
                     (
