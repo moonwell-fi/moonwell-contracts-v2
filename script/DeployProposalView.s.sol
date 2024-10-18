@@ -10,10 +10,10 @@ import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 
 /*
 How to use:
-forge script script/DeployProposalView .s.sol:DeployProposalView \
+forge script script/DeployProposalView.s.sol:DeployProposalView \
     -vvvv \
-    --rpc-url base \
-    --etherscan-api-key base --verify --broadcast 
+    --rpc-url base --etherscan-api-key base \
+    --verify --broadcast --always-use-create-2-factory
 Remove --broadcast if you want to try locally first, without paying any gas.
 */
 contract DeployProposalView is Script {
