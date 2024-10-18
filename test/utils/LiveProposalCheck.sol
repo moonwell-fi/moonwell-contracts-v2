@@ -151,11 +151,11 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                     );
 
                     _execExtChain(addresses, governor, payload, proposalStart);
-
-                    proposalId--;
-                    count++;
                 }
             }
+
+            proposalStart--;
+            count++;
         }
 
         if (vm.activeFork() != MOONBEAM_FORK_ID) {
