@@ -448,5 +448,10 @@
         "addr": "0xBbC63D697077e06Da3830Bd1238886Ab6313e77d",
         "isContract": false,
         "name": "DEFENDER_RELAYER"
+    },
+    {
+        "addr": "0xBD1439Fe95FC03E2791FA5dd7e251187CF6bCba8",
+        "isContract": true,
+        "name": "PROPOSAL_VIEW"
     }
 ]
