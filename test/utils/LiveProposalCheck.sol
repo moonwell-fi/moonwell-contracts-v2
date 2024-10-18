@@ -16,13 +16,13 @@ import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
 import {ProposalView} from "@protocol/views/ProposalView.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
+import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
-
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
@@ -120,12 +120,20 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                     proposal.initProposal(addresses);
                     proposal.build(addresses);
 
+                    ProposalAction[] memory actions = proposal.getActionsByType(
+                        ActionType(chainId.toForkId())
+                    );
+
+                    if (actions.length == 0) {
+                        proposalId--;
+                        count++;
+                        continue;
+                    }
+
                     bytes memory temporalGovCalldata = proposal
                         .getTemporalGovCalldata(
                             addresses.getAddress("TEMPORAL_GOVERNOR"),
-                            proposal.getActionsByType(
-                                ActionType(vm.activeFork())
-                            )
+                            actions
                         );
 
                     (, bytes memory payload, ) = abi.decode(
