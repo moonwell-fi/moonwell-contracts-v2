@@ -82,6 +82,11 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         Addresses addresses,
         MultichainGovernor governor
     ) public {
+        if (vm.activeFork() != MOONBEAM_FORK_ID) {
+            vm.selectFork(MOONBEAM_FORK_ID);
+        }
+
+        uint256 proposalId = governor.proposalCount();
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
 
@@ -95,8 +100,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                 addresses.getAddress("PROPOSAL_VIEW")
             );
 
-            uint256 proposalId = governor.proposalCount();
-
+            uint256 proposalStart = proposalId;
             uint256 count = 0;
 
             while (count < 10) {
@@ -107,7 +111,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                     (
                         string memory proposalPath,
                         string memory envPath
-                    ) = proposalMap.getProposalById(proposalId);
+                    ) = proposalMap.getProposalById(proposalStart);
 
                     proposalMap.setEnv(envPath);
                     HybridProposal proposal = HybridProposal(
@@ -145,7 +149,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                         (uint32, bytes, uint8)
                     );
 
-                    _execExtChain(addresses, governor, payload, proposalId);
+                    _execExtChain(addresses, governor, payload, proposalStart);
 
                     proposalId--;
                     count++;
