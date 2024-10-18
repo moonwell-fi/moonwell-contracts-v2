@@ -136,7 +136,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
                     bytes memory temporalGovCalldata = proposal
                         .getTemporalGovCalldata(
-                            addresses.getAddress("TEMPORAL_GOVERNOR"),
+                            addresses.getAddress("TEMPORAL_GOVERNOR", chainId),
                             actions
                         );
 
