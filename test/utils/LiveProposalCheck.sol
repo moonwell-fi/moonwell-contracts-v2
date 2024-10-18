@@ -86,12 +86,11 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             uint256 chainId = networks[i].chainId;
 
             // skip moonbeam
-            if (block.chainid == block.chainid.toMoonbeamChainId()) {
+            if (chainId == block.chainid.toMoonbeamChainId()) {
                 continue;
             }
 
             vm.selectFork(chainId.toForkId());
-
             ProposalView proposalView = ProposalView(
                 addresses.getAddress("PROPOSAL_VIEW")
             );
