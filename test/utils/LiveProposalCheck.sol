@@ -117,6 +117,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                     HybridProposal proposal = HybridProposal(
                         deployCode(proposalPath)
                     );
+                    vm.makePersistent(address(proposal));
 
                     vm.selectFork(proposal.primaryForkId());
 
