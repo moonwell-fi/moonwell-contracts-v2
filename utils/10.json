@@ -443,5 +443,10 @@
         "addr": "0x181bA797ccF779D8aB339721ED6ee827E758668e",
         "isContract": true,
         "name": "MOONWELL_wrsETH"
+    },
+    {
+        "addr": "0xBbC63D697077e06Da3830Bd1238886Ab6313e77d",
+        "isContract": false,
+        "name": "DEFENDER_RELAYER"
     }
 ]
