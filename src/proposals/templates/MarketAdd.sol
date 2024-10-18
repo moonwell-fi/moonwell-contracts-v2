@@ -381,7 +381,6 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
         }
 
         vm.selectFork(chainId.toForkId());
-        vm.startBroadcast(deployer);
 
         for (uint256 i = 0; i < _mTokens.length; i++) {
             MTokenConfiguration memory config = _mTokens[i];
@@ -398,6 +397,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                     )
                 )
             ) {
+                vm.startBroadcast(deployer);
                 JumpRateModel irModel = new JumpRateModel(
                     config.jrm.baseRatePerYear,
                     config.jrm.multiplierPerYear,
@@ -405,6 +405,7 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                     config.jrm.kink
                 );
 
+                vm.stopBroadcast();
                 addresses.addAddress(
                     string(
                         abi.encodePacked(
@@ -428,6 +429,8 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                     (IERC20(addresses.getAddress(config.tokenAddressName))
                         .decimals() + 8)) * 2;
 
+                vm.startBroadcast(deployer);
+
                 MErc20Delegator mToken = new MErc20Delegator(
                     addresses.getAddress(config.tokenAddressName),
                     ComptrollerInterface(addresses.getAddress("UNITROLLER")),
@@ -450,10 +453,11 @@ contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
                     ""
                 );
 
+                vm.stopBroadcast();
+
                 addresses.addAddress(config.addressesString, address(mToken));
             }
         }
-        vm.stopBroadcast();
     }
 
     function _afterDeployToChain(
