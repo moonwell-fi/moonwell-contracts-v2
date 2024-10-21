@@ -840,4 +840,10 @@ abstract contract HybridProposal is
             payload
         );
     }
+
+    function getActionsByType(
+        ActionType actionType
+    ) public view returns (ProposalAction[] memory) {
+        return actions.filter(actionType);
+    }
 }
