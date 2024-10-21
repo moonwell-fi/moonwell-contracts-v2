@@ -653,5 +653,10 @@
         "addr": "0x84eAF5e855514685927B75876e0C9798895C249A",
         "isContract": true,
         "name": "PROPOSAL_VIEW"
+    },
+    {
+        "addr": "0x7CEEf5D34448E127252f621EDfFCb57DCDBac5b1",
+        "isContract": true,
+        "name": "FOUNDATION_AERO_MULTISIG"
     }
 ]
