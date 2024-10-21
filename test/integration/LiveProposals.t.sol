@@ -63,6 +63,11 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
         executeLiveProposals(addresses, governor);
     }
 
+    function testExecutingTemporalGovernorQueuedProposals() public {
+        // execute proposals that are queued in the temporal governor but not executed yet
+        executeTemporalGovernorQueuedProposals(addresses, governor);
+    }
+
     // check that all live proposals execute successfully
     // mock wormhole to simulate the queue step
     function testExecutingLiveProposalsMockWormhole() public {
