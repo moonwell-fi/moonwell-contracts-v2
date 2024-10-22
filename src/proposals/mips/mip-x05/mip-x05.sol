@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import "@utils/ChainIds.sol";
+import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 
@@ -19,7 +20,7 @@ contract mipx05 is HybridProposal {
     }
 
     function primaryForkId() public pure override returns (uint256) {
-        return MOONBEAM_FORK_ID;
+        return BASE_FORK_ID;
     }
 
     function build(Addresses addresses) public override {
@@ -44,5 +45,21 @@ contract mipx05 is HybridProposal {
         );
     }
 
-    function validate(Addresses addresses, address) public override {}
+    function validate(Addresses addresses, address) public override {
+        vm.selectFork(OPTIMISM_FORK_ID);
+
+        IStakedWell stakedWellOptimism = IStakedWell(
+            addresses.getAddress("STK_GOVTOKEN_PROXY")
+        );
+
+        vm.assertEq(stakedWellOptimism.COOLDOWN_SECONDS() == COOLDOWN_SECONDS);
+
+        vm.selectFork(BASE_FORK_ID);
+
+        IStakedWell stakedWellBase = IStakedWell(
+            addresses.getAddress("STK_GOVTOKEN_PROXY")
+        );
+
+        vm.assertEq(stakedWellBase.COOLDOWN_SECONDS() == COOLDOWN_SECONDS);
+    }
 }
