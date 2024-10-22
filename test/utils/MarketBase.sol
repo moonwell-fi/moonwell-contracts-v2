@@ -72,9 +72,15 @@ contract MarketBase is ExponentialNoError {
 
         uint256 maxUserBorrow = div_(usdLiquidity, oraclePrice);
 
-        uint256 borrowableAmount = borrowCap > 0
-            ? borrowCap - totalBorrows
-            : type(uint128).max;
+        uint256 borrowableAmount;
+
+        if (borrowCap == 0) {
+            borrowableAmount = type(uint128).max;
+        } else if (borrowCap < totalBorrows) {
+            borrowableAmount = 0;
+        } else {
+            borrowableAmount = borrowCap - totalBorrows;
+        }
 
         if (maxUserBorrow == 0 || borrowableAmount == 0) {
             return 0;
