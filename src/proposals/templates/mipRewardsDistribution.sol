@@ -1307,17 +1307,19 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         );
                     }
 
-                    assertEq(
-                        int256(_config.endTime),
-                        setRewardSpeed.newEndTime,
-                        string(
-                            abi.encodePacked(
-                                "End time for ",
-                                vm.getLabel(market),
-                                " is incorrect"
+                    if (setRewardSpeed.newEndTime != -1) {
+                        assertEq(
+                            int256(_config.endTime),
+                            setRewardSpeed.newEndTime,
+                            string(
+                                abi.encodePacked(
+                                    "End time for ",
+                                    vm.getLabel(market),
+                                    " is incorrect"
+                                )
                             )
-                        )
-                    );
+                        );
+                    }
                 }
             }
         }
