@@ -303,13 +303,13 @@
             },
             {
                 "market": "MOONWELL_mWBTC",
-                "newBorrowSpeed": -1,
+                "newBorrowSpeed": 1,
                 "newSupplySpeed": 0,
                 "rewardType": 0
             },
             {
                 "market": "MOONWELL_mWBTC",
-                "newBorrowSpeed": -1,
+                "newBorrowSpeed": 1,
                 "newSupplySpeed": 0,
                 "rewardType": 1
             },
