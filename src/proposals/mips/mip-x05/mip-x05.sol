@@ -52,7 +52,11 @@ contract mipx05 is HybridProposal {
             addresses.getAddress("STK_GOVTOKEN_PROXY")
         );
 
-        vm.assertEq(stakedWellOptimism.COOLDOWN_SECONDS() == COOLDOWN_SECONDS);
+        vm.assertEq(
+            stakedWellOptimism.COOLDOWN_SECONDS(),
+            COOLDOWN_SECONDS,
+            "Optimism cooldown period not set correctly"
+        );
 
         vm.selectFork(BASE_FORK_ID);
 
@@ -60,6 +64,10 @@ contract mipx05 is HybridProposal {
             addresses.getAddress("STK_GOVTOKEN_PROXY")
         );
 
-        vm.assertEq(stakedWellBase.COOLDOWN_SECONDS() == COOLDOWN_SECONDS);
+        vm.assertEq(
+            stakedWellBase.COOLDOWN_SECONDS(),
+            COOLDOWN_SECONDS,
+            "Base cooldown period not set correctly"
+        );
     }
 }
