@@ -43,7 +43,13 @@ contract MarketBase is ExponentialNoError {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = mToken.totalBorrows();
 
-        return borrowCap > 0 ? borrowCap - totalBorrows : type(uint128).max;
+        if (borrowCap == 0) {
+            return type(uint128).max;
+        } else if (borrowCap < totalBorrows) {
+            return 0;
+        } else {
+            return borrowCap - totalBorrows;
+        }
     }
 
     function getMaxUserBorrowAmount(
