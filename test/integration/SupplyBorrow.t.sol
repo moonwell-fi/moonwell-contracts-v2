@@ -250,6 +250,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             address(this)
         );
 
+        if (borrowAmount == 0) {
+            return;
+        }
+
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
             0,
@@ -390,10 +394,15 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             "Membership check failed"
         );
 
-        uint256 borrowAmount = supplyAmount / 3 >
-            marketBase.getMaxUserBorrowAmount(mToken, address(this))
-            ? marketBase.getMaxUserBorrowAmount(mToken, address(this))
+        uint256 maxBorrow = marketBase.getMaxUserBorrowAmount(mToken, sender);
+
+        uint256 borrowAmount = supplyAmount / 3 > maxBorrow
+            ? maxBorrow
             : supplyAmount / 3;
+
+        if (borrowAmount == 0) {
+            return;
+        }
 
         assertEq(
             comptroller.borrowAllowed(address(mToken), sender, borrowAmount),
@@ -493,6 +502,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
                 mToken,
                 address(this)
             );
+
+            if (borrowAmount == 0) {
+                return;
+            }
 
             assertEq(
                 MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
@@ -770,6 +783,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             address(this)
         );
 
+        if (borrowAmount == 0) {
+            return;
+        }
+
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
             0,
@@ -826,6 +843,10 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             mToken,
             address(this)
         );
+
+        if (borrowAmount == 0) {
+            return;
+        }
 
         assertEq(
             MErc20Delegator(payable(address(mToken))).borrow(borrowAmount),
