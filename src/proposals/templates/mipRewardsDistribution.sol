@@ -257,7 +257,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     );
                     IERC20(addresses.getAddress("OP")).approve(
                         addresses.getAddress("TEMPORAL_GOVERNOR"),
-                        18_000e18
+                        3.1494539665363914e22
                     );
                     vm.stopPrank();
                 }
