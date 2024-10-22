@@ -43,7 +43,13 @@ contract MarketBase is ExponentialNoError {
         uint256 borrowCap = comptroller.borrowCaps(address(mToken));
         uint256 totalBorrows = mToken.totalBorrows();
 
-        return borrowCap > 0 ? borrowCap - totalBorrows : type(uint128).max;
+        if (borrowCap == 0) {
+            return type(uint128).max;
+        } else if (borrowCap < totalBorrows) {
+            return 0;
+        } else {
+            return borrowCap - totalBorrows;
+        }
     }
 
     function getMaxUserBorrowAmount(
@@ -55,23 +61,32 @@ contract MarketBase is ExponentialNoError {
 
         (, uint256 mTokenBalance, , uint256 exchangeRate) = mToken
             .getAccountSnapshot(user);
+        Exp memory exchangeRateExp = Exp({mantissa: exchangeRate});
 
         uint256 oraclePrice = comptroller.oracle().getUnderlyingPrice(mToken);
+        Exp memory oraclePriceExp = Exp({mantissa: oraclePrice});
 
         (, uint256 collateralFactor) = comptroller.markets(address(mToken));
+        Exp memory collateralFactorExp = Exp({mantissa: collateralFactor});
 
-        uint256 tokenToDenom = mul_(
-            mul_(collateralFactor, exchangeRate) / 1e18,
-            oraclePrice
-        ) / 1e18;
+        Exp memory tokenToDenom = mul_(
+            mul_(collateralFactorExp, exchangeRateExp),
+            oraclePriceExp
+        );
 
-        uint256 usdLiquidity = mul_(tokenToDenom, mTokenBalance);
+        uint256 usdLiquidity = mul_ScalarTruncate(tokenToDenom, mTokenBalance);
 
-        uint256 maxUserBorrow = usdLiquidity / oraclePrice;
+        uint256 maxUserBorrow = div_(usdLiquidity, oraclePrice);
 
-        uint256 borrowableAmount = borrowCap > 0
-            ? borrowCap - totalBorrows
-            : type(uint128).max;
+        uint256 borrowableAmount;
+
+        if (borrowCap == 0) {
+            borrowableAmount = type(uint128).max;
+        } else if (borrowCap < totalBorrows) {
+            borrowableAmount = 0;
+        } else {
+            borrowableAmount = borrowCap - totalBorrows;
+        }
 
         if (maxUserBorrow == 0 || borrowableAmount == 0) {
             return 0;

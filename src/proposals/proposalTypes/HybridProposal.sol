@@ -38,9 +38,8 @@ abstract contract HybridProposal is
     using ChainIds for uint256;
     using ProposalActions for *;
 
-    uint256 public constant defaultNonce = 0;
     /// @notice nonce for wormhole, unused by Temporal Governor
-    uint32 public nonce = uint32(vm.envOr("NONCE", defaultNonce));
+    uint32 public nonce = uint32(vm.envOr("NONCE", uint256(0)));
 
     /// @notice instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
     uint8 public constant consistencyLevel = 200;
