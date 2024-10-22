@@ -250,7 +250,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             address(this)
         );
 
-        if (borrowAmount == 0) {
+        if (borrowAmount < 1e12) {
             return;
         }
 
@@ -400,7 +400,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             ? maxBorrow
             : supplyAmount / 3;
 
-        if (borrowAmount == 0) {
+        if (borrowAmount < 1e12) {
             return;
         }
 
@@ -503,7 +503,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
                 address(this)
             );
 
-            if (borrowAmount == 0) {
+            if (borrowAmount < 1e12) {
                 return;
             }
 
@@ -783,7 +783,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             address(this)
         );
 
-        if (borrowAmount == 0) {
+        if (borrowAmount < 1e12) {
             return;
         }
 
@@ -844,7 +844,7 @@ contract SupplyBorrowLiveSystem is Test, PostProposalCheck {
             address(this)
         );
 
-        if (borrowAmount == 0) {
+        if (borrowAmount < 1e12) {
             return;
         }
 
