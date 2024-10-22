@@ -46,6 +46,9 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
+      - name: Give write permission
+        run: chmod -R +x src/proposals/mips/
+
       - name: Run Integration Test
         uses: nick-fields/retry@v3
         with:
