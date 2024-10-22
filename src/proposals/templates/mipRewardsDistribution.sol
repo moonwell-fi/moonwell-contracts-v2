@@ -362,45 +362,26 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                 );
             }
 
-            console.log(
-                "setRewardSpeed.newSupplySpeed: ",
-                uint256(setRewardSpeed.newSupplySpeed)
+            assertGe(
+                setRewardSpeed.newBorrowSpeed,
+                1,
+                "Borrow speed must be greater or equal to 1"
             );
-            console.log(
-                "setRewardSpeed.newBorrowSpeed: ",
-                uint256(setRewardSpeed.newBorrowSpeed)
-            );
-            console.log(
-                "setRewardSpeed.rewardType: ",
-                uint256(setRewardSpeed.rewardType)
-            );
-            console.log("setRewardSpeed.market: ", setRewardSpeed.market);
-
-            int256 supplySpeed = setRewardSpeed.newSupplySpeed;
-            int256 borrowSpeed = setRewardSpeed.newBorrowSpeed;
-
-            if (borrowSpeed != int256(-1)) {
-                assertGe(
-                    borrowSpeed,
-                    1,
-                    "Borrow speed must be greater or equal to 1"
-                );
-            }
 
             if (setRewardSpeed.rewardType == 0) {
                 assertLe(
-                    supplySpeed,
+                    setRewardSpeed.newSupplySpeed,
                     10e18,
                     "Supply speed must be less than 10 WELL per second"
                 );
 
-                uint256 supplyAmount = supplySpeed != int256(-1)
-                    ? uint256(supplySpeed) * (endTimeStamp - startTimeStamp)
-                    : 0;
+                uint256 supplyAmount = uint256(
+                    spec.setRewardSpeed[i].newSupplySpeed
+                ) * (endTimeStamp - startTimeStamp);
 
-                uint256 borrowAmount = borrowSpeed != int256(-1)
-                    ? uint256(borrowSpeed) * (endTimeStamp - startTimeStamp)
-                    : 0;
+                uint256 borrowAmount = uint256(
+                    spec.setRewardSpeed[i].newBorrowSpeed
+                ) * (endTimeStamp - startTimeStamp);
 
                 totalEpochRewards += supplyAmount + borrowAmount;
             }
