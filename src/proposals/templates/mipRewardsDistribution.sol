@@ -847,14 +847,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             address from = addresses.getAddress(transferFrom.from);
             address to = addresses.getAddress(transferFrom.to);
 
-            if (
-                chainId == OPTIMISM_CHAIN_ID &&
-                from ==
-                addresses.getAddress(
-                    "FOUNDATION_OP_MULTISIG",
-                    OPTIMISM_CHAIN_ID
-                )
-            ) {
+            if (from != addresses.getAddress("TEMPORAL_GOVERNOR")) {
                 _pushAction(
                     token,
                     abi.encodeWithSignature(
