@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import "@utils/ChainIds.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 
 contract mipx05 is HybridProposal {
@@ -42,4 +43,6 @@ contract mipx05 is HybridProposal {
             ActionType.Optimism
         );
     }
+
+    function validate(Addresses addresses, address) public override {}
 }
