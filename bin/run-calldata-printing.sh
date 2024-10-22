@@ -3,7 +3,7 @@
 
 touch output.txt
 
-forge script script/CalldataPrinting.s.sol -vv --ffi --block-gas-limit "18446744073709551615" --gas-limit "18446744073709551615" --fork-retries 3 --fork-retry-backoff10000 > output.txt
+forge script script/CalldataPrinting.s.sol -vv --ffi --block-gas-limit "18446744073709551615" --gas-limit "18446744073709551615" --fork-retries 3 --fork-retry-backoff 10000 > output.txt
 
 echo "Printing calldata"
 cat output.txt
