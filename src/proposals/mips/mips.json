@@ -2,7 +2,7 @@
     {
         "envPath": "src/proposals/mips/mip-x04/x04.sh",
         "governor": "MultichainGovernor",
-        "id": 0,
+        "id": 60,
         "path": "src/proposals/templates/mipRewardsDistribution.sol",
         "proposalType": "HybridProposal"
     },
