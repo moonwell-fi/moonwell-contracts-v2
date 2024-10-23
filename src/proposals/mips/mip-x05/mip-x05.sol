@@ -40,7 +40,7 @@ contract mipx05 is HybridProposal {
                 "setCoolDownSeconds(uint256)",
                 COOLDOWN_SECONDS
             ),
-            "Set the cooldown period for stkWELL on Base",
+            "Set the cooldown period for stkWELL on Optimism",
             ActionType.Optimism
         );
     }
