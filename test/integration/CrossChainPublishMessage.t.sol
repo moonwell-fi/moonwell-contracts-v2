@@ -81,15 +81,8 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                 addresses
             );
 
-            console.log("artemis governor queue governance calldata");
+            console.log("MultichainGovernor queue governance calldata");
             emit log_bytes(multichainGovernorQueuePayload);
-
-            /// iterate over and execute all proposals consecutively
-            (
-                address[] memory targets,
-                uint256[] memory values,
-                bytes[] memory payloads
-            ) = proposal.getTargetsPayloadsValues(addresses);
 
             vm.selectFork(MOONBEAM_FORK_ID);
 
