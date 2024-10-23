@@ -609,84 +609,17 @@ abstract contract HybridProposal is
                 block.chainid.toMoonbeamChainId()
             );
 
-            bytes memory temporalGovExecDataBase;
-            {
-                if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
-                    ProposalAction[] memory baseActions = actions.filter(
-                        ActionType.Base
-                    );
-                    address[] memory targets = new address[](
-                        baseActions.length
-                    );
-                    uint256[] memory values = new uint256[](baseActions.length);
-                    bytes[] memory calldatas = new bytes[](baseActions.length);
-
-                    for (uint256 i = 0; i < baseActions.length; i++) {
-                        targets[i] = baseActions[i].target;
-                        values[i] = baseActions[i].value;
-                        calldatas[i] = baseActions[i].data;
-                    }
-
-                    addresses.addRestriction(block.chainid.toBaseChainId());
-                    address temporalGov = addresses.getAddress(
-                        "TEMPORAL_GOVERNOR",
-                        block.chainid.toBaseChainId()
-                    );
-                    addresses.removeRestriction();
-
-                    temporalGovExecDataBase = abi.encode(
-                        temporalGov,
-                        targets,
-                        values,
-                        calldatas
-                    );
-                }
-            }
-
-            bytes memory temporalGovExecDataOptimism;
-            {
-                if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
-                    ProposalAction[] memory optimismActions = actions.filter(
-                        ActionType.Optimism
-                    );
-                    address[] memory targets = new address[](
-                        optimismActions.length
-                    );
-                    uint256[] memory values = new uint256[](
-                        optimismActions.length
-                    );
-                    bytes[] memory calldatas = new bytes[](
-                        optimismActions.length
-                    );
-
-                    for (uint256 i = 0; i < optimismActions.length; i++) {
-                        targets[i] = optimismActions[i].target;
-                        values[i] = optimismActions[i].value;
-                        calldatas[i] = optimismActions[i].data;
-                    }
-
-                    addresses.addRestriction(block.chainid.toOptimismChainId());
-                    address temporalGov = addresses.getAddress(
-                        "TEMPORAL_GOVERNOR",
-                        block.chainid.toOptimismChainId()
-                    );
-                    addresses.removeRestriction();
-
-                    temporalGovExecDataOptimism = abi.encode(
-                        temporalGov,
-                        targets,
-                        values,
-                        calldatas
-                    );
-                }
-            }
-
             /// increments each time the Multichain Governor publishes a message
             uint64 nextSequence = IWormhole(wormholeCoreMoonbeam).nextSequence(
                 address(governor)
             );
 
             if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
+                bytes
+                    memory temporalGovExecDataBase = getTemporalGovPayloadByChain(
+                        addresses,
+                        block.chainid.toBaseChainId()
+                    );
                 /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
                 vm.expectEmit(true, true, true, true, wormholeCoreMoonbeam);
 
@@ -700,6 +633,12 @@ abstract contract HybridProposal is
             }
 
             if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
+                bytes
+                    memory temporalGovExecDataOptimism = getTemporalGovPayloadByChain(
+                        addresses,
+                        block.chainid.toOptimismChainId()
+                    );
+
                 /// expect emitting of events to Wormhole Core on Moonbeam if Optimism actions exist
                 vm.expectEmit(true, true, true, true, wormholeCoreMoonbeam);
 
@@ -845,5 +784,44 @@ abstract contract HybridProposal is
         ActionType actionType
     ) public view returns (ProposalAction[] memory) {
         return actions.filter(actionType);
+    }
+
+    function getTemporalGovPayloadByChain(
+        Addresses addresses,
+        uint256 chainId
+    ) public returns (bytes memory payload) {
+        uint256 forkId = chainId.toForkId();
+        ProposalAction[] memory proposalActions = actions.filter(
+            ActionType(forkId)
+        );
+
+        require(
+            proposalActions.length > 0,
+            string(
+                abi.encodePacked(
+                    "No actions found for chain %s",
+                    chainId.chainIdToName()
+                )
+            )
+        );
+
+        address[] memory targets = new address[](proposalActions.length);
+        uint256[] memory values = new uint256[](proposalActions.length);
+        bytes[] memory calldatas = new bytes[](proposalActions.length);
+
+        for (uint256 i = 0; i < proposalActions.length; i++) {
+            targets[i] = proposalActions[i].target;
+            values[i] = proposalActions[i].value;
+            calldatas[i] = proposalActions[i].data;
+        }
+
+        addresses.addRestriction(chainId);
+        payload = abi.encode(
+            addresses.getAddress("TEMPORAL_GOVERNOR", chainId),
+            targets,
+            values,
+            calldatas
+        );
+        addresses.removeRestriction();
     }
 }
