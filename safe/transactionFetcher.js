@@ -147,9 +147,6 @@ function decodeData(hexString) {
 
 async function fetchTransactions() {
     try {
-        // let transactions = await apiKit.getMultisigTransactions()
-        // let abiCoder = new ethers.utils.AbiCoder();
-
         const transactions = await apiKit.getPendingTransactions(
             addresses.treasuryMultisig,
         );
