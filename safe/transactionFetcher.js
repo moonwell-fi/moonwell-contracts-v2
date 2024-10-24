@@ -211,7 +211,7 @@ async function fetchTransactions() {
                         transactions.results[i].data,
                     );
                     console.log(
-                        `Recipient: ${recipient}, Amount: ${prettyPrintScaledNumber(amount)}\n`,
+                        `Recipient: ${recipient}\nAmount: ${prettyPrintScaledNumber(amount)}\n\n`,
                     );
                 } else {
                     console.log(
