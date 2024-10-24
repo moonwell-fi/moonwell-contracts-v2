@@ -3,6 +3,8 @@ pragma solidity 0.8.19;
 
 import {Script, stdJson} from "@forge-std/Script.sol";
 
+import {console} from "@forge-std/console.sol";
+
 import {Proposal} from "@proposals/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
@@ -62,7 +64,7 @@ contract ProposalMap is Script {
             keccak256(abi.encodePacked(proposal.governor)) ==
             keccak256(abi.encodePacked("MultichainGovernor"))
         ) {
-            proposalIdToIndex[proposal.id] = index;
+            proposalIdToIndex[proposal.id] = index + 1;
             proposalPathToIndex[proposal.path] = index;
         }
     }
@@ -70,7 +72,11 @@ contract ProposalMap is Script {
     function getProposalById(
         uint256 id
     ) public view returns (string memory path, string memory envPath) {
-        ProposalFields memory proposal = proposals[proposalIdToIndex[id]];
+        if (proposalIdToIndex[id] == 0) {
+            return ("", "");
+        }
+
+        ProposalFields memory proposal = proposals[proposalIdToIndex[id] - 1];
         return (proposal.path, proposal.envPath);
     }
 
