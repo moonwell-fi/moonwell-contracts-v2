@@ -5,11 +5,11 @@ import "./interfaces/IERC20.sol";
 import {StakedToken} from "./StakedToken.sol";
 
 /**
- * @title StakedWell
+ * @title StakedWellMoonbeam
  * @notice StakedToken with WELL token as staked token
  * @author Moonwell
  **/
-contract StakedWell is StakedToken {
+contract StakedWellMoonbeam is StakedToken {
     string internal constant NAME = "Staked WELL";
     string internal constant SYMBOL = "stkWELL";
     uint8 internal constant DECIMALS = 18;
