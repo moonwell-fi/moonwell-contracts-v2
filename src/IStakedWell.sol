@@ -24,6 +24,9 @@ interface IStakedWell {
 
     function EMISSION_MANAGER() external view returns (address);
 
+    function STAKED_TOKEN() external view returns (address);
+    function REWARDS_VAULT() external view returns (address);
+
     function getPriorVotes(
         address account,
         uint256 blockNumber
