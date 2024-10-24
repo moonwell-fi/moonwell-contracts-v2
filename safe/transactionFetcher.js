@@ -167,7 +167,7 @@ async function fetchTransactions() {
                     `\n--------------------------------------------------------------------------------------`,
                 );
                 console.log(
-                    `\nTransaction Hash: ${transactions.results[i].transactionHash}\n to ${toAddress}`,
+                    `\nTransaction Hash: ${transactions.results[i].transactionHash}\nTo ${toAddress}`,
                 );
                 console.log(
                     `--------------------------------------------------------------------------------------\n`,
