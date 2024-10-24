@@ -47,12 +47,6 @@ contract mipm40 is HybridProposal, ParameterValidation {
         return MOONBEAM_FORK_ID;
     }
 
-    function beforeSimulationHook(Addresses addresses) public override {
-        if (block.chainid != MOONBASE_CHAIN_ID) {
-            etch(vm, addresses);
-        }
-    }
-
     function deploy(Addresses addresses, address) public override {
         address implementation = deployCode(
             "artifacts/foundry/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
