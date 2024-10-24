@@ -171,7 +171,14 @@ contract mipm40 is HybridProposal, ParameterValidation {
                 .totalSupply(),
             "total supply not the same after upgrade"
         );
-
+        assertEq(
+            stakedToken,
+            address(
+                IStakedWell(addresses.getAddress("STK_GOVTOKEN_PROXY"))
+                    .STAKED_TOKEN()
+            ),
+            "staked token not the same after upgrade"
+        );
         assertEq(
             rewardsVault,
             address(
