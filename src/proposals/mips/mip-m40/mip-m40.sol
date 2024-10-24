@@ -3,14 +3,13 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
+import {MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {MOONBEAM_FORK_ID, MOONBASE_CHAIN_ID} from "@utils/ChainIds.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-m40/mip-m40.sol:mipm40
