@@ -4,7 +4,6 @@ pragma solidity 0.6.12;
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IStakedToken} from "./interfaces/IStakedToken.sol";
 import {ITransferHook} from "./interfaces/ITransferHook.sol";
-import {IEcosystemReserve} from "./interfaces/IEcosystemReserve.sol";
 import {ERC20WithSnapshot} from "./libraries/ERC20WithSnapshot.sol";
 import {SafeERC20} from "./libraries/SafeERC20.sol";
 import {DistributionTypes} from "./libraries/DistributionTypes.sol";
