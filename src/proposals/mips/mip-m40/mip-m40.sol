@@ -77,7 +77,7 @@ contract mipm40 is HybridProposal, ParameterValidation {
                 addresses.getAddress("STK_GOVTOKEN_PROXY"),
                 addresses.getAddress("STK_GOVTOKEN_IMPL")
             ),
-            "Upgrade Safety Module Impl",
+            "Upgrade Safety Module Implementation",
             ActionType.Moonbeam
         );
 
