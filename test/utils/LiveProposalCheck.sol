@@ -113,6 +113,15 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
                         string memory envPath
                     ) = proposalMap.getProposalById(proposalStart);
 
+                    if (
+                        keccak256(abi.encodePacked(proposalPath)) ==
+                        keccak256(abi.encodePacked(""))
+                    ) {
+                        proposalId--;
+                        count++;
+                        continue;
+                    }
+
                     proposalMap.setEnv(envPath);
                     HybridProposal proposal = HybridProposal(
                         deployCode(proposalPath)
@@ -232,6 +241,13 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
         (string memory proposalPath, string memory envPath) = proposalMap
             .getProposalById(proposalId);
+
+        if (
+            keccak256(abi.encodePacked(proposalPath)) ==
+            keccak256(abi.encodePacked(""))
+        ) {
+            return;
+        }
 
         proposalMap.setEnv(envPath);
 
@@ -372,6 +388,13 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
             (string memory proposalPath, string memory envPath) = proposalMap
                 .getProposalById(proposalId);
+
+            if (
+                keccak256(abi.encodePacked(proposalPath)) ==
+                keccak256(abi.encodePacked(""))
+            ) {
+                return;
+            }
 
             proposalMap.setEnv(envPath);
 
