@@ -31,7 +31,7 @@ jobs:
            retry_wait_seconds: 60
            timeout_minutes: 15
            max_attempts: 3
-           command: time forge test --match-contract MultichainProposalTest -vvvvv --ffi 
+           command: time forge test --match-contract MultichainProposalTest --ffi 
 
   run-cross-chain-tests:
     name: Cross Chain Publish Message Test
