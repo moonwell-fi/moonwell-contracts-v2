@@ -259,6 +259,11 @@
         "name": "JUMP_RATE_IRM_MOONWELL_DAI_MIP_B14",
         "isContract": true
     },
+    {   
+        "addr": "0x8781110995cBdC58EFf7425D4A31BDc9DB8B3Cdd",
+        "name": "JUMP_RATE_IRM_MOONWELL_DAI_MIP_B34",
+        "isContract": true
+    },
     {
         "addr": "0x0568a3aeb8E78262dEFf75ee68fAC20ae35ffA91",
         "name": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_B14",
@@ -272,6 +277,11 @@
     {
         "addr": "0x822d0b61d7d79d0AC2170D0A5bd634d7E11df06e",
         "name": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_B22",
+        "isContract": true
+    },
+    {
+        "addr": "0x0FC39BF0dEA1ce1bEE4Be77680f4F55f4ef3f8eF",
+        "name": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_B34",
         "isContract": true
     },
     {
