@@ -1213,6 +1213,7 @@ contract MultichainProposalTest is PostProposalCheck {
         vm.warp(initialTimestamp);
 
         vm.selectFork(BASE_FORK_ID);
+        vm.warp(initialTimestamp - 5);
 
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
         uint256 xwellMintAmount = xwell.buffer(
