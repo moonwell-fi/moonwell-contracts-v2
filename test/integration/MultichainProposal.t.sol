@@ -1197,6 +1197,8 @@ contract MultichainProposalTest is PostProposalCheck {
     function testVotingOnBasestkWellSucceeds() public {
         vm.selectFork(MOONBEAM_FORK_ID);
 
+        uint256 initialTimestamp = block.timestamp + 1 days;
+
         /// mint whichever is greater, the proposal threshold or the quorum
         uint256 mintAmount = governor.proposalThreshold() > governor.quorum()
             ? governor.proposalThreshold()
@@ -1207,13 +1209,10 @@ contract MultichainProposalTest is PostProposalCheck {
         well.delegate(address(this));
 
         vm.roll(block.number + 1);
-        uint256 timestamp = block.timestamp + 1;
 
-        vm.warp(timestamp);
+        vm.warp(initialTimestamp);
 
         vm.selectFork(BASE_FORK_ID);
-
-        vm.warp(timestamp - 1);
 
         xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
         uint256 xwellMintAmount = xwell.buffer(
@@ -1226,7 +1225,7 @@ contract MultichainProposalTest is PostProposalCheck {
 
         stakedWellBase.stake(address(this), xwellMintAmount);
 
-        vm.warp(timestamp);
+        vm.warp(initialTimestamp);
 
         vm.selectFork(MOONBEAM_FORK_ID);
 
