@@ -12,14 +12,16 @@ import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposa
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
-/// src/proposals/mips/mip-m40/mip-m40.sol:mipm40
-contract mipm40 is HybridProposal, ParameterValidation {
+/// src/proposals/mips/mip-m41/mip-m41.sol:mipm41
+contract mipm41 is HybridProposal, ParameterValidation {
     using ProposalActions for *;
 
-    string public constant override name = "MIP-M40";
+    string public constant override name = "MIP-M41";
     uint256 public constant COOLDOWN_SECONDS = 7 days;
+    uint256 public constant CHAIN_HEIGHT = 8086955;
 
     mapping(address => uint256) public startingBalances;
+    mapping(address => uint256) public startingVotingPower;
 
     address[] public users;
 
@@ -30,7 +32,7 @@ contract mipm40 is HybridProposal, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m40/MIP-M40.md")
+            vm.readFile("./src/proposals/mips/mip-m41/MIP-M41.md")
         );
         _setProposalDescription(proposalDescription);
 
@@ -53,7 +55,7 @@ contract mipm40 is HybridProposal, ParameterValidation {
 
         require(
             implementation != address(0),
-            "MIP-M40: failed to deploy STK_GOVTOKEN_IMPL"
+            "MIP-M41: failed to deploy STK_GOVTOKEN_IMPL"
         );
 
         addresses.addAddress("STK_GOVTOKEN_IMPL", implementation);
@@ -89,23 +91,27 @@ contract mipm40 is HybridProposal, ParameterValidation {
         /// safety check to ensure no base actions are run
         require(
             actions.proposalActionTypeCount(ActionType.Base) == 0,
-            "MIP-M40: should have no base actions"
+            "MIP-M41: should have no base actions"
         );
 
         require(
             actions.proposalActionTypeCount(ActionType.Optimism) == 0,
-            "MIP-M40: should have no optimism actions"
+            "MIP-M41: should have no optimism actions"
         );
 
         require(
             actions.proposalActionTypeCount(ActionType.Moonbeam) == 2,
-            "MIP-M40: should have one moonbeam action"
+            "MIP-M41: should have one moonbeam action"
         );
 
         for (uint256 i = 0; i < users.length; i++) {
             startingBalances[users[i]] = IStakedWell(
                 addresses.getAddress("STK_GOVTOKEN_PROXY")
             ).balanceOf(users[i]);
+
+            startingVotingPower[users[i]] = IStakedWell(
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
+            ).getPriorVotes(users[i], CHAIN_HEIGHT);
         }
 
         startingTotalSupply = IStakedWell(
@@ -155,6 +161,12 @@ contract mipm40 is HybridProposal, ParameterValidation {
                 IStakedWell(addresses.getAddress("STK_GOVTOKEN_PROXY"))
                     .balanceOf(users[i]),
                 "balances not the same after ugprade"
+            );
+            assertEq(
+                startingVotingPower[users[i]],
+                IStakedWell(addresses.getAddress("STK_GOVTOKEN_PROXY"))
+                    .getPriorVotes(users[i], CHAIN_HEIGHT),
+                "votes changed after upgrade"
             );
         }
 
