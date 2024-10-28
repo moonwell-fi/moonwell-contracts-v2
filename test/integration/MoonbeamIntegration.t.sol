@@ -1,6 +1,8 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+
 import "@forge-std/Test.sol";
 
 import {IStakedWell} from "@protocol/IStakedWell.sol";
@@ -26,12 +28,18 @@ contract MoonbeamTestSafetyModule is Test, PostProposalCheck {
     }
 
     function testRewardsBalanceIncreasing() public {
-        address account = 0x98952d189C6FFB802A7292180aFcb33Cc618D0a0;
-        uint256 balance = well.getTotalRewardsBalance(account);
+        uint256 stakeAmount = 100_000_000e18;
+
+        deal(address(this), well.STAKED_TOKEN(), stakeAmount);
+
+        IERC20(well.STAKED_TOKEN()).approve(address(well), stakeAmount);
+        well.stake(address(this), stakeAmount);
+
+        uint256 balance = well.getTotalRewardsBalance(address(this));
 
         vm.warp(block.timestamp + 1 days);
 
-        uint256 balancePostWarp = well.getTotalRewardsBalance(account);
+        uint256 balancePostWarp = well.getTotalRewardsBalance(address(this));
 
         assertGt(
             balancePostWarp,
