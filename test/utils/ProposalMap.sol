@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import "@forge-std/Test.sol";
-import {String} from "@utils/String.sol";
+import {Script, stdJson} from "@forge-std/Script.sol";
+
+import {console} from "@forge-std/console.sol";
+
 import {Proposal} from "@proposals/Proposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-contract ProposalMap is Test {
+contract ProposalMap is Script {
     using stdJson for string;
-    using String for string;
 
     struct ProposalFields {
         string envPath;
@@ -57,14 +58,25 @@ contract ProposalMap is Test {
         proposals[index].path = proposal.path;
         proposals[index].proposalType = proposal.proposalType;
 
-        proposalIdToIndex[proposal.id] = index;
-        proposalPathToIndex[proposal.path] = index;
+        // only includes multichain governor proposals to mapping
+        // to avoid ids conflict
+        if (
+            keccak256(abi.encodePacked(proposal.governor)) ==
+            keccak256(abi.encodePacked("MultichainGovernor"))
+        ) {
+            proposalIdToIndex[proposal.id] = index + 1;
+            proposalPathToIndex[proposal.path] = index;
+        }
     }
 
     function getProposalById(
         uint256 id
     ) public view returns (string memory path, string memory envPath) {
-        ProposalFields memory proposal = proposals[proposalIdToIndex[id]];
+        if (proposalIdToIndex[id] == 0) {
+            return ("", "");
+        }
+
+        ProposalFields memory proposal = proposals[proposalIdToIndex[id] - 1];
         return (proposal.path, proposal.envPath);
     }
 
@@ -156,20 +168,38 @@ contract ProposalMap is Test {
     }
 
     // function to execute shell file to set env variables
-    function executeShellFile(string memory shellPath) public {
+    function setEnv(
+        string memory shellPath
+    ) public returns (string[] memory envs) {
         if (bytes32(bytes(shellPath)) != bytes32("")) {
             string[] memory inputs = new string[](1);
             inputs[0] = string.concat("./", shellPath);
 
             string memory output = string(vm.ffi(inputs));
-            string[] memory envs = output.split("\n");
+            envs = split(output, "\n");
 
             // call setEnv for each env variable
             // so we can later call vm.envString
             for (uint256 k = 0; k < envs.length; k++) {
-                string memory key = envs[k].split("=")[0];
-                string memory value = envs[k].split("=")[1];
+                string memory key = split(envs[k], "=")[0];
+                string memory value = split(envs[k], "=")[1];
                 vm.setEnv(key, value);
+            }
+        }
+    }
+
+    // function to clean env variables after proposal execution
+    function cleanEnv(string memory shellPath) public {
+        if (bytes32(bytes(shellPath)) != bytes32("")) {
+            string[] memory inputs = new string[](1);
+            inputs[0] = string.concat("./", shellPath);
+
+            string memory output = string(vm.ffi(inputs));
+            string[] memory envs = split(output, "\n");
+
+            for (uint256 k = 0; k < envs.length; k++) {
+                string memory key = split(envs[k], "=")[0];
+                vm.setEnv(key, "");
             }
         }
     }
@@ -187,10 +217,96 @@ contract ProposalMap is Test {
         proposal.initProposal(addresses);
         proposal.deploy(addresses, deployer);
         proposal.afterDeploy(addresses, deployer);
-        proposal.preBuildMock(addresses);
         proposal.build(addresses);
         proposal.teardown(addresses, deployer);
         proposal.run(addresses, deployer);
         proposal.validate(addresses, deployer);
+    }
+
+    /// had to copy the function below because forge script is not working with
+    /// this library, it's revert without any error message
+    /// script failed: <empty revert data>
+    /// the same function works in forge test
+
+    /// @notice returns an array of strings split by the delimiter
+    /// @param str the string to split
+    /// @param delimiter the delimiter to split the string by
+    function split(
+        string memory str,
+        bytes1 delimiter
+    ) private pure returns (string[] memory) {
+        // Check if the input string is empty
+        if (bytes(str).length == 0) {
+            return new string[](0);
+        }
+
+        uint256 stringCount = countWords(str, delimiter);
+
+        string[] memory splitStrings = new string[](stringCount);
+        bytes memory strBytes = bytes(str);
+        uint256 startIndex = 0;
+        uint256 splitIndex = 0;
+
+        uint256 i = 0;
+
+        while (i < strBytes.length) {
+            if (strBytes[i] == delimiter) {
+                splitStrings[splitIndex] = new string(i - startIndex);
+
+                for (uint256 j = startIndex; j < i; j++) {
+                    bytes(splitStrings[splitIndex])[j - startIndex] = strBytes[
+                        j
+                    ];
+                }
+
+                while (i < strBytes.length && strBytes[i] == delimiter) {
+                    i++;
+                }
+
+                splitIndex++;
+                startIndex = i;
+            }
+            i++;
+        }
+
+        /// handle final word
+
+        while (i < strBytes.length && strBytes[i] == delimiter) {
+            i++;
+            startIndex++;
+        }
+
+        /// handle the last word
+        splitStrings[splitIndex] = new string(strBytes.length - startIndex);
+
+        for (
+            uint256 j = startIndex;
+            j < strBytes.length && strBytes[j] != delimiter;
+            j++
+        ) {
+            bytes(splitStrings[splitIndex])[j - startIndex] = strBytes[j];
+        }
+
+        return splitStrings;
+    }
+
+    function countWords(
+        string memory str,
+        bytes1 delimiter
+    ) private pure returns (uint256) {
+        bytes memory strBytes = bytes(str);
+        uint256 ctr = 0;
+
+        for (uint256 i = 0; i < strBytes.length; i++) {
+            if (
+                /// bounds check on i + 1, want to prevent revert on trying to access index that isn't allocated
+                (strBytes[i] != delimiter && i + 1 == strBytes.length) ||
+                (strBytes[i] != delimiter && strBytes[i + 1] == delimiter)
+            ) {
+                ctr++;
+            }
+        }
+
+        return (ctr);
     }
 }

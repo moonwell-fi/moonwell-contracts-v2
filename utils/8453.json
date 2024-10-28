@@ -245,6 +245,11 @@
         "isContract": true
     },
     {
+        "addr": "0x6182b94bF494eb796C476a4Cf549f2bDD249Bf09",
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32",
+        "isContract": true
+    },
+    {
         "addr": "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22",
         "name": "MOONWELL_USDC",
         "isContract": true
@@ -580,6 +585,11 @@
         "name": "JUMP_RATE_IRM_MOONWELL_cbBTC"
     },
     {
+        "addr": "0x61e0dEC383Ef2E4be7e198F0e33605A553Da281d",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_B32"
+    },
+    {
         "addr": "0xF877ACaFA28c19b96727966690b2f44d35aD5976",
         "isContract": true,
         "name": "MOONWELL_cbBTC"
@@ -603,5 +613,50 @@
         "addr": "0xb682c840B5F4FC58B20769E691A6fa1305A501a2",
         "isContract": true,
         "name": "MOONWELL_EURC"
+    },
+    {
+        "addr": "0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0",
+        "isContract": true,
+        "name": "GAUNTLET_MULTISIG"
+    },
+    {
+        "addr": "0xEDfa23602D0EC14714057867A78d01e94176BEA0",
+        "isContract": true,
+        "name": "wrsETH"
+    },
+    {
+        "addr": "0xd7221b10FBBC1e1ba95Fd0B4D031C15f7F365296",
+        "name": "CHAINLINK_rsETH_ETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x79C613B4f07080963C3B0CA58Eb2745dD4C744A5",
+        "name": "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x63f9f904CE2912853C2F7bb43dD1c1A6136F09b1",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_wrsETH"
+    },
+    {
+        "addr": "0xfC41B49d064Ac646015b459C522820DB9472F4B5",
+        "isContract": true,
+        "name": "MOONWELL_wrsETH"
+    },
+    {
+        "addr": "0xAf3642bAc06cDA85340ECf18D40b8Bf89958B69E",
+        "isContract": false,
+        "name": "DEFENDER_RELAYER"
+    },
+    {
+        "addr": "0x84eAF5e855514685927B75876e0C9798895C249A",
+        "isContract": true,
+        "name": "PROPOSAL_VIEW"
+    },
+    {
+        "addr": "0x7CEEf5D34448E127252f621EDfFCb57DCDBac5b1",
+        "isContract": true,
+        "name": "FOUNDATION_AERO_MULTISIG"
     }
 ]

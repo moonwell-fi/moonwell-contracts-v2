@@ -13,7 +13,7 @@ import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {FeeSplitter as Splitter} from "@protocol/morpho/FeeSplitter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
-/// DO_PRE_BUILD_MOCK=true DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
+/// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
 /// src/proposals/mips/mip-b21/mip-b21.sol:mipb21
 contract mipb21 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B21";
@@ -39,9 +39,7 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
 
     function deploy(Addresses addresses, address) public override {}
 
-    function afterDeploy(Addresses addresses, address) public override {}
-
-    function preBuildMock(Addresses addresses) public override {
+    function beforeSimulationHook(Addresses addresses) public override {
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
         startingWellAllowance = ERC20Upgradeable(
             addresses.getAddress("xWELL_PROXY")

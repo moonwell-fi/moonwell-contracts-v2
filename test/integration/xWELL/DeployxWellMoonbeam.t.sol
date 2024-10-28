@@ -17,7 +17,7 @@ import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {ChainIds} from "@utils/ChainIds.sol";
 import {Address} from "@utils/Address.sol";
 
-contract DeployxWellLiveSystemMoonbeamTest is xwellDeployMoonbeam {
+contract DeployxWellMoonbeamTest is xwellDeployMoonbeam {
     using ChainIds for uint256;
     using Address for address;
     /// @notice all addresses

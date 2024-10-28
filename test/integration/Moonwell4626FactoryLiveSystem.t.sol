@@ -18,7 +18,7 @@ import {Factory4626Eth} from "@protocol/4626/Factory4626Eth.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
 import {deployFactory, deployFactoryEth} from "@protocol/4626/4626FactoryDeploy.sol";
 
-contract Moonwell4626FactoryLiveSystemBaseTest is Configs {
+contract ERC4626FactoryIntegrationTest is Configs {
     /// @notice WETH9 contract
     WETH9 weth;
 

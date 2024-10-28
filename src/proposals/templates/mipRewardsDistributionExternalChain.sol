@@ -141,13 +141,6 @@ contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
         _saveMoonbeamActions(addresses, encodedJson);
     }
 
-    function run(
-        Addresses addresses,
-        address
-    ) public virtual override mockHook(addresses) {
-        super.run(addresses, address(0));
-    }
-
     function build(Addresses addresses) public override {
         _buildMoonbeamActions(addresses);
         _buildExternalChainActions(addresses, chainId);

@@ -14,7 +14,7 @@ import {MErc20Immutable} from "@test/mock/MErc20Immutable.sol";
 import {SimplePriceOracle} from "@test/helper/SimplePriceOracle.sol";
 import {InterestRateModel} from "@protocol/irm/InterestRateModel.sol";
 import {WhitePaperInterestRateModel} from "@protocol/irm/WhitePaperInterestRateModel.sol";
-import {ComptrollerErrorReporter} from "@protocol/ErrorReporter.sol";
+import {ComptrollerErrorReporter} from "@protocol/TokenErrorReporter.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";
 
 interface InstrumentedExternalEvents {

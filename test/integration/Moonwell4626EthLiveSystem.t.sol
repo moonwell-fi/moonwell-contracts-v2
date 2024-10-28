@@ -7,28 +7,29 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import "@forge-std/Test.sol";
 
-import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
 import {MToken} from "@protocol/MToken.sol";
 import {Configs} from "@proposals/Configs.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {WETHRouter} from "@protocol/router/WETHRouter.sol";
+import {WETH9} from "@protocol/router/IWETH.sol";
+import {MarketBase} from "@test/utils/MarketBase.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
+import {WETHRouter} from "@protocol/router/WETHRouter.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
-import {ERC4626EthRouter} from "@protocol/router/ERC4626EthRouter.sol";
 import {deploy4626Router} from "@protocol/4626/4626FactoryDeploy.sol";
-import {MoonwellERC4626Eth} from "@protocol/4626/MoonwellERC4626Eth.sol";
+import {ERC4626EthRouter} from "@protocol/router/ERC4626EthRouter.sol";
 import {Malicious4626Minter} from "@test/mock/Malicious4626Minter.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+import {MoonwellERC4626Eth} from "@protocol/4626/MoonwellERC4626Eth.sol";
 
-contract Moonwell4626EthLiveSystemBaseTest is Configs {
+contract ERC4626EthLiveIntegrationTest is Configs {
     Comptroller comptroller;
     Addresses addresses;
     WETH9 weth;
     MoonwellERC4626Eth ethVault;
     MoonwellERC4626 vault;
     ERC4626EthRouter router;
+    MarketBase public marketBase;
 
     function setUp() public {
         addresses = new Addresses();
@@ -50,6 +51,7 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         );
 
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
+        marketBase = new MarketBase(comptroller);
         weth = WETH9(addresses.getAddress("WETH"));
     }
 
@@ -116,7 +118,9 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         amount = _bound(
             amount,
             1_000e18,
-            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_WETH")) - 100e18
+            marketBase.getMaxSupplyAmount(
+                MToken(addresses.getAddress("MOONWELL_WETH"))
+            )
         );
 
         _innerMintTest(amount);
@@ -237,8 +241,8 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
     }
 
     function testMintcbEth4626Shares(uint256 amount) public {
-        uint256 maxSupplyAmount = _getMaxSupplyAmount(
-            addresses.getAddress("MOONWELL_cbETH")
+        uint256 maxSupplyAmount = marketBase.getMaxSupplyAmount(
+            MToken(addresses.getAddress("MOONWELL_cbETH"))
         );
         maxSupplyAmount = maxSupplyAmount > 1.0000001e18
             ? maxSupplyAmount - 1e18
@@ -265,7 +269,9 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         amount = _bound(
             0,
             10 * 1e18,
-            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_WETH")) - 100e18
+            marketBase.getMaxSupplyAmount(
+                MToken(addresses.getAddress("MOONWELL_WETH"))
+            )
         );
         vm.deal(address(this), amount);
 
@@ -279,7 +285,9 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         amount = _bound(
             0,
             10 * 1e18,
-            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_WETH")) - 100e18
+            marketBase.getMaxSupplyAmount(
+                MToken(addresses.getAddress("MOONWELL_WETH"))
+            )
         );
         vm.deal(address(this), amount);
 
@@ -298,7 +306,9 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
         amount = _bound(
             0,
             10 * 1e18,
-            _getMaxSupplyAmount(addresses.getAddress("MOONWELL_WETH")) - 100e18
+            marketBase.getMaxSupplyAmount(
+                MToken(addresses.getAddress("MOONWELL_WETH"))
+            )
         );
         uint256 startingTotalSupply = ethVault.totalSupply();
 
@@ -446,21 +456,6 @@ contract Moonwell4626EthLiveSystemBaseTest is Configs {
 
         /// weth balance
         assertEq(weth.balanceOf(address(router)), 0, "router weth balance");
-    }
-
-    function _getMaxSupplyAmount(
-        address mToken
-    ) internal view returns (uint256) {
-        uint256 supplyCap = comptroller.supplyCaps(address(mToken));
-
-        uint256 totalCash = MToken(mToken).getCash();
-        uint256 totalBorrows = MToken(mToken).totalBorrows();
-        uint256 totalReserves = MToken(mToken).totalReserves();
-
-        // totalSupplies = totalCash + totalBorrows - totalReserves
-        uint256 totalSupplies = (totalCash + totalBorrows) - totalReserves;
-
-        return supplyCap - totalSupplies - 1_000e6;
     }
 
     receive() external payable {}

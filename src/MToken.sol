@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "./ComptrollerInterface.sol";
 import "./MTokenInterfaces.sol";
-import "./ErrorReporter.sol";
+import "./TokenErrorReporter.sol";
 import "./Exponential.sol";
 import "./EIP20Interface.sol";
 import "./irm/InterestRateModel.sol";

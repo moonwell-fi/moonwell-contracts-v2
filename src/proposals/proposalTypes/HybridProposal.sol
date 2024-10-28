@@ -39,7 +39,7 @@ abstract contract HybridProposal is
     using ProposalActions for *;
 
     /// @notice nonce for wormhole, unused by Temporal Governor
-    uint32 public nonce = 0;
+    uint32 public nonce = uint32(vm.envOr("NONCE", uint256(0)));
 
     /// @notice instant finality on moonbeam https://book.wormhole.com/wormhole/3_coreLayerContracts.html?highlight=consiste#consistency-levels
     uint8 public constant consistencyLevel = 200;
@@ -432,8 +432,6 @@ abstract contract HybridProposal is
 
     function afterDeploy(Addresses, address) public virtual override {}
 
-    function preBuildMock(Addresses) public virtual override {}
-
     function build(Addresses) public virtual override {}
 
     function teardown(Addresses, address) public virtual override {}
@@ -555,18 +553,19 @@ abstract contract HybridProposal is
             uint256 cost = governor.bridgeCostAll();
             vm.deal(caller, cost * 2);
 
-            // Execute the proposal
             uint256 gasStart = gasleft();
+
+            // Execute the proposal
             vm.prank(caller);
             (bool success, bytes memory returndata) = address(
                 payable(governorAddress)
-            ).call{value: cost, gas: 14_500_000}(proposeCalldata);
+            ).call{value: cost, gas: 52_000_000}(proposeCalldata);
             data = returndata;
 
             require(success, "propose multichain governor failed");
 
             require(
-                gasStart - gasleft() <= 13_000_000,
+                gasStart - gasleft() <= 60_000_000,
                 "Proposal propose gas limit exceeded"
             );
         }
@@ -610,86 +609,17 @@ abstract contract HybridProposal is
                 block.chainid.toMoonbeamChainId()
             );
 
-            bytes memory temporalGovExecDataBase;
-            {
-                if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
-                    ProposalAction[] memory baseActions = actions.filter(
-                        ActionType.Base
-                    );
-                    address[] memory targets = new address[](
-                        baseActions.length
-                    );
-                    uint256[] memory values = new uint256[](baseActions.length);
-                    bytes[] memory calldatas = new bytes[](baseActions.length);
-
-                    for (uint256 i = 0; i < baseActions.length; i++) {
-                        targets[i] = baseActions[i].target;
-                        values[i] = baseActions[i].value;
-                        calldatas[i] = baseActions[i].data;
-                    }
-
-                    addresses.addRestriction(block.chainid.toBaseChainId());
-                    address temporalGov = addresses.getAddress(
-                        "TEMPORAL_GOVERNOR",
-                        block.chainid.toBaseChainId()
-                    );
-                    addresses.removeRestriction();
-
-                    temporalGovExecDataBase = abi.encode(
-                        temporalGov,
-                        targets,
-                        values,
-                        calldatas
-                    );
-                }
-            }
-
-            bytes memory temporalGovExecDataOptimism;
-            {
-                if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
-                    ProposalAction[] memory optimismActions = actions.filter(
-                        ActionType.Optimism
-                    );
-                    address[] memory targets = new address[](
-                        optimismActions.length
-                    );
-                    uint256[] memory values = new uint256[](
-                        optimismActions.length
-                    );
-                    bytes[] memory calldatas = new bytes[](
-                        optimismActions.length
-                    );
-
-                    for (uint256 i = 0; i < optimismActions.length; i++) {
-                        targets[i] = optimismActions[i].target;
-                        values[i] = optimismActions[i].value;
-                        calldatas[i] = optimismActions[i].data;
-                    }
-
-                    addresses.addRestriction(block.chainid.toOptimismChainId());
-                    address temporalGov = addresses.getAddress(
-                        "TEMPORAL_GOVERNOR",
-                        block.chainid.toOptimismChainId()
-                    );
-                    addresses.removeRestriction();
-
-                    temporalGovExecDataOptimism = abi.encode(
-                        temporalGov,
-                        targets,
-                        values,
-                        calldatas
-                    );
-                }
-            }
-
-            uint256 gasStart = gasleft();
-
             /// increments each time the Multichain Governor publishes a message
             uint64 nextSequence = IWormhole(wormholeCoreMoonbeam).nextSequence(
                 address(governor)
             );
 
             if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
+                bytes
+                    memory temporalGovExecDataBase = getTemporalGovPayloadByChain(
+                        addresses,
+                        block.chainid.toBaseChainId()
+                    );
                 /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
                 vm.expectEmit(true, true, true, true, wormholeCoreMoonbeam);
 
@@ -703,6 +633,12 @@ abstract contract HybridProposal is
             }
 
             if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
+                bytes
+                    memory temporalGovExecDataOptimism = getTemporalGovPayloadByChain(
+                        addresses,
+                        block.chainid.toOptimismChainId()
+                    );
+
                 /// expect emitting of events to Wormhole Core on Moonbeam if Optimism actions exist
                 vm.expectEmit(true, true, true, true, wormholeCoreMoonbeam);
 
@@ -715,12 +651,19 @@ abstract contract HybridProposal is
                 );
             }
 
-            /// Execute the proposal
-            governor.execute{value: actions.sumTotalValue()}(proposalId);
+            vm.deal(caller, actions.sumTotalValue());
+
+            uint256 gasStart = gasleft();
+
+            // Execute the proposal
+            vm.prank(caller);
+            governor.execute{value: actions.sumTotalValue(), gas: 52_000_000}(
+                proposalId
+            );
 
             require(
-                gasStart - gasleft() <= 13_000_000,
-                "Proposal execute gas limit exceeded"
+                gasStart - gasleft() <= 60_000_000,
+                "Proposal propose gas limit exceeded"
             );
         }
 
@@ -835,5 +778,50 @@ abstract contract HybridProposal is
             consistencyLevel,
             payload
         );
+    }
+
+    function getActionsByType(
+        ActionType actionType
+    ) public view returns (ProposalAction[] memory) {
+        return actions.filter(actionType);
+    }
+
+    function getTemporalGovPayloadByChain(
+        Addresses addresses,
+        uint256 chainId
+    ) public returns (bytes memory payload) {
+        uint256 forkId = chainId.toForkId();
+        ProposalAction[] memory proposalActions = actions.filter(
+            ActionType(forkId)
+        );
+
+        require(
+            proposalActions.length > 0,
+            string(
+                abi.encodePacked(
+                    "No actions found for chain %s",
+                    chainId.chainIdToName()
+                )
+            )
+        );
+
+        address[] memory targets = new address[](proposalActions.length);
+        uint256[] memory values = new uint256[](proposalActions.length);
+        bytes[] memory calldatas = new bytes[](proposalActions.length);
+
+        for (uint256 i = 0; i < proposalActions.length; i++) {
+            targets[i] = proposalActions[i].target;
+            values[i] = proposalActions[i].value;
+            calldatas[i] = proposalActions[i].data;
+        }
+
+        addresses.addRestriction(chainId);
+        payload = abi.encode(
+            addresses.getAddress("TEMPORAL_GOVERNOR", chainId),
+            targets,
+            values,
+            calldatas
+        );
+        addresses.removeRestriction();
     }
 }

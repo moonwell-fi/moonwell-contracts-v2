@@ -1,4 +1,4 @@
-name: Moonbeam Integration Tests
+name: Moonbeam 
 
 on: [pull_request]
 
@@ -8,7 +8,7 @@ env:
 
 jobs:
   run-moonbeam-tests:
-    name: moonbeam-integration-tests
+    name: Moonbeam Integration Test
     runs-on: ubuntu-latest
 
     steps:
@@ -20,9 +20,11 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Integration Tests Moonbeam Mainnet
+      - name: Run Integration Test
         uses: nick-fields/retry@v3
         with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
            timeout_minutes: 10
            max_attempts: 3
            command: time forge test --match-contract MoonbeamTest --fork-url moonbeam -vvv

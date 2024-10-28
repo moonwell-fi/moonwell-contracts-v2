@@ -6,19 +6,17 @@ import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/Pr
 
 import {Configs} from "@proposals/Configs.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {_IMPLEMENTATION_SLOT, _ADMIN_SLOT} from "@proposals/utils/ProxyUtils.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 
-contract SystemUpgradeLiveSystemBasePostProposalTest is
-    PostProposalCheck,
-    Configs
-{
+contract SystemUpgradeLiveSystemTest is PostProposalCheck, Configs {
     function setUp() public override {
+        uint256 primaryForkId = vm.envUint("PRIMARY_FORK_ID");
+
         super.setUp();
 
-        vm.selectFork(BASE_FORK_ID);
+        vm.selectFork(primaryForkId);
     }
     function testSystemUpgradeAsTemporalGovernorSucceeds() public {
         address newProxyImplementation = address(this);

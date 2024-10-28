@@ -2,10 +2,10 @@
 pragma solidity 0.8.19;
 import {console} from "forge-std/console.sol";
 
+import "@utils/ChainIds.sol";
 import {String} from "@utils/String.sol";
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Proposal} from "@proposals/Proposal.sol";
-import {MOONBEAM_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
@@ -33,6 +33,11 @@ contract PostProposalCheck is LiveProposalCheck {
         addresses = new Addresses();
         vm.makePersistent(address(addresses));
 
+        // do not run proposals on moonbase
+        if (block.chainid == MOONBASE_CHAIN_ID) {
+            return;
+        }
+
         governor = MultichainGovernor(
             payable(addresses.getAddress("MULTICHAIN_GOVERNOR_PROXY"))
         );
@@ -42,6 +47,9 @@ contract PostProposalCheck is LiveProposalCheck {
 
         // execute proposals that are in the vote or vote collection period
         executeLiveProposals(addresses, governor);
+
+        // execute proposals that are queued in the temporal governor but not executed yet
+        executeTemporalGovernorQueuedProposals(addresses, governor);
 
         // execute proposals that are not on chain yet
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
@@ -53,7 +61,7 @@ contract PostProposalCheck is LiveProposalCheck {
 
         // execute in the inverse order so that the lowest id is executed first
         for (uint256 i = devProposals.length; i > 0; i--) {
-            proposalMap.executeShellFile(devProposals[i - 1].envPath);
+            proposalMap.setEnv(devProposals[i - 1].envPath);
             Proposal proposal = proposalMap.runProposal(
                 addresses,
                 devProposals[i - 1].path

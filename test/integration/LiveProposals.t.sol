@@ -63,6 +63,11 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
         executeLiveProposals(addresses, governor);
     }
 
+    function testExecutingTemporalGovernorQueuedProposals() public {
+        // execute proposals that are queued in the temporal governor but not executed yet
+        executeTemporalGovernorQueuedProposals(addresses, governor);
+    }
+
     // check that all live proposals execute successfully
     // mock wormhole to simulate the queue step
     function testExecutingLiveProposalsMockWormhole() public {
@@ -139,7 +144,7 @@ contract LiveProposalsIntegrationTest is LiveProposalCheck {
 
         // execute in the inverse order so that the lowest id is executed first
         for (uint256 i = devProposals.length; i > 0; i--) {
-            proposalMap.executeShellFile(devProposals[i - 1].envPath);
+            proposalMap.setEnv(devProposals[i - 1].envPath);
             proposalMap.runProposal(addresses, devProposals[i - 1].path);
         }
     }

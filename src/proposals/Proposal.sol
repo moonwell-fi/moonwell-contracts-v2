@@ -5,21 +5,20 @@ import {console} from "@forge-std/console.sol";
 import {Script} from "@forge-std/Script.sol";
 import {Test} from "@forge-std/Test.sol";
 
-import {ChainIds} from "@utils/ChainIds.sol";
+import "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 abstract contract Proposal is Script, Test {
     using ChainIds for uint256;
 
-    bool private DEBUG;
-    bool private DO_DEPLOY;
-    bool private DO_AFTER_DEPLOY;
-    bool private DO_PRE_BUILD_MOCK;
-    bool private DO_BUILD;
-    bool private DO_RUN;
-    bool private DO_TEARDOWN;
-    bool private DO_VALIDATE;
-    bool private DO_PRINT;
+    bool internal DEBUG;
+    bool internal DO_DEPLOY;
+    bool internal DO_AFTER_DEPLOY;
+    bool internal DO_BUILD;
+    bool internal DO_RUN;
+    bool internal DO_TEARDOWN;
+    bool internal DO_VALIDATE;
+    bool internal DO_PRINT;
 
     modifier mockHook(Addresses addresses) {
         beforeSimulationHook(addresses);
@@ -31,7 +30,6 @@ abstract contract Proposal is Script, Test {
         DEBUG = vm.envOr("DEBUG", true);
         DO_DEPLOY = vm.envOr("DO_DEPLOY", true);
         DO_AFTER_DEPLOY = vm.envOr("DO_AFTER_DEPLOY", true);
-        DO_PRE_BUILD_MOCK = vm.envOr("DO_PRE_BUILD_MOCK", true);
         DO_BUILD = vm.envOr("DO_BUILD", true);
         DO_RUN = vm.envOr("DO_RUN", true);
         DO_TEARDOWN = vm.envOr("DO_TEARDOWN", true);
@@ -57,7 +55,6 @@ abstract contract Proposal is Script, Test {
         if (DO_AFTER_DEPLOY) afterDeploy(addresses, deployerAddress);
         vm.stopBroadcast();
 
-        if (DO_PRE_BUILD_MOCK) preBuildMock(addresses);
         if (DO_BUILD) build(addresses);
         if (DO_RUN) run(addresses, deployerAddress);
         if (DO_TEARDOWN) teardown(addresses, deployerAddress);
@@ -83,8 +80,6 @@ abstract contract Proposal is Script, Test {
 
     function afterDeploy(Addresses, address) public virtual;
 
-    function preBuildMock(Addresses) public virtual;
-
     function build(Addresses) public virtual;
 
     function run(Addresses, address) public virtual;
@@ -106,7 +101,7 @@ abstract contract Proposal is Script, Test {
     function initProposal(Addresses) public virtual {}
 
     /// @dev Print recorded addresses
-    function _printAddressesChanges(Addresses addresses) private view {
+    function _printAddressesChanges(Addresses addresses) internal view {
         bytes
             memory printedAddress = hex"7b0A20202020202020202261646472223a2022257322";
         bytes
@@ -116,22 +111,74 @@ abstract contract Proposal is Script, Test {
 
         (
             string[] memory recordedNames,
-            ,
+            uint256[] memory chainIds,
             address[] memory recordedAddresses
         ) = addresses.getRecordedAddresses();
 
         if (recordedNames.length > 0) {
             console.log(
-                "\n-------- Addresses added after running proposal --------"
+                "\n------- Addresses added after running proposal -------"
+            );
+
+            // print all addresses beloging to OPTIMISM_CHAIN_ID
+            console.log(
+                "\n----------- Addresses added for Optimism -----------"
             );
             for (uint256 j = 0; j < recordedNames.length; j++) {
-                console.log(string(printedAddress), recordedAddresses[j], ",");
-                console.log(string(printedContract), true, ",");
-                console.log(
-                    string(printedName),
-                    recordedNames[j],
-                    j < recordedNames.length - 1 ? "," : ""
-                );
+                if (chainIds[j] == OPTIMISM_CHAIN_ID) {
+                    console.log(
+                        string(printedAddress),
+                        recordedAddresses[j],
+                        ","
+                    );
+                    console.log(string(printedContract), true, ",");
+                    console.log(
+                        string(printedName),
+                        recordedNames[j],
+                        j < recordedNames.length - 1 ? "," : ""
+                    );
+                }
+            }
+
+            // print all addresses beloging to BASE_CHAIND_ID
+            console.log(
+                "\n------------- Addresses added for Base -------------"
+            );
+            for (uint256 j = 0; j < recordedNames.length; j++) {
+                if (chainIds[j] == BASE_CHAIN_ID) {
+                    console.log(
+                        string(printedAddress),
+                        recordedAddresses[j],
+                        ","
+                    );
+                    console.log(string(printedContract), true, ",");
+                    console.log(
+                        string(printedName),
+                        recordedNames[j],
+                        j < recordedNames.length - 1 ? "," : ""
+                    );
+                }
+            }
+
+            // print all addresses beloging to MOONBEAM_CHAIN_ID
+            console.log(
+                "\n----------- Addresses added for Moonbeam -----------"
+            );
+
+            for (uint256 j = 0; j < recordedNames.length; j++) {
+                if (chainIds[j] == MOONBEAM_CHAIN_ID) {
+                    console.log(
+                        string(printedAddress),
+                        recordedAddresses[j],
+                        ","
+                    );
+                    console.log(string(printedContract), true, ",");
+                    console.log(
+                        string(printedName),
+                        recordedNames[j],
+                        j < recordedNames.length - 1 ? "," : ""
+                    );
+                }
             }
         }
 

@@ -400,8 +400,58 @@
         "name": "JUMP_RATE_IRM_MOONWELL_MIP_O08"
     },
     {
+        "addr": "0xF5C73A4198941b49831cc95C5E407571851fbA4b",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_O10"
+    },
+    {
+        "addr": "0x54dC357F7461BcEEE5BdbA80996f5CB7d7512445",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDT_MIP_O10"
+    },
+    {
+        "addr": "0x0A72A4c3c9FC1345C1Cdaf52E0195367F8b688d0",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_DAI_MIP_O10"
+    },
+    {
         "addr": "0xe9ffd686ca83ceb308962f4e50c5fd7f2e3c037e",
         "isContract": true,
         "name": "MARKET_ADD_CHECKER"
+    },
+    {
+        "addr": "0x87eEE96D50Fb761AD85B1c982d28A042169d61b1",
+        "isContract": true,
+        "name": "wrsETH"
+    },
+    {
+        "addr": "0x03fe94a215E3842deD931769F913d93FF33d0051",
+        "isContract": true,
+        "name": "CHAINLINK_rsETH_ETH"
+    },
+    {
+        "addr": "0x0738483Add6ab8620B731aEc0121d1d3A70BD6EA",
+        "name": "CHAINLINK_wrsETH_COMPOSITE_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x9008f34b1abeA057B625917A97BC546D88404425",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_wrsETH"
+    },
+    {
+        "addr": "0x181bA797ccF779D8aB339721ED6ee827E758668e",
+        "isContract": true,
+        "name": "MOONWELL_wrsETH"
+    },
+    {
+        "addr": "0xBbC63D697077e06Da3830Bd1238886Ab6313e77d",
+        "isContract": false,
+        "name": "DEFENDER_RELAYER"
+    },
+    {
+        "addr": "0xBD1439Fe95FC03E2791FA5dd7e251187CF6bCba8",
+        "isContract": true,
+        "name": "PROPOSAL_VIEW"
     }
 ]

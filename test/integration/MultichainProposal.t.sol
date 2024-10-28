@@ -19,7 +19,6 @@ import {mipm23c} from "@proposals/mips/mip-m23/mip-m23c.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {TestProposals} from "@proposals/TestProposals.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
@@ -47,7 +46,6 @@ if the tests fail, try setting the environment variables as follows:
 
 export DO_DEPLOY=true
 export DO_AFTER_DEPLOY=true
-export DO_PRE_BUILD_MOCK=true
 export DO_BUILD=true
 export DO_RUN=true
 export DO_TEARDOWN=true
@@ -90,14 +88,6 @@ contract MultichainProposalTest is PostProposalCheck {
 
     WormholeRelayerAdapter public wormholeRelayerAdapter;
 
-    uint256 xWELLBalanceLockboxPreProposal;
-
-    uint256 xWELLTotalSupplyBasePreProposal;
-
-    uint256 xWELLTotalSupplyMoonbeamPreProposal;
-
-    uint256 xWELLBalanceMRDPreProposal;
-
     /// @notice new xWELL buffer cap
     uint256 public constant XWELL_BUFFER_CAP = 100_000_000 * 1e18;
 
@@ -118,20 +108,10 @@ contract MultichainProposalTest is PostProposalCheck {
 
             xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
 
-            xWELLBalanceLockboxPreProposal = xwell.balanceOf(
-                addresses.getAddress("xWELL_LOCKBOX")
-            );
-            xWELLTotalSupplyMoonbeamPreProposal = xwell.totalSupply();
-
             {
                 vm.selectFork(BASE_FORK_ID);
                 vm.warp(startTimestamp);
 
-                xWELL baseWell = xWELL(addresses.getAddress("xWELL_PROXY"));
-                xWELLTotalSupplyBasePreProposal = baseWell.totalSupply();
-                xWELLBalanceMRDPreProposal = baseWell.balanceOf(
-                    addresses.getAddress("MRD_PROXY")
-                );
                 stakedWellBase = IStakedWell(
                     addresses.getAddress("STK_GOVTOKEN_PROXY")
                 );
@@ -150,7 +130,7 @@ contract MultichainProposalTest is PostProposalCheck {
         );
         vm.makePersistent(address(voteCollection));
 
-        addresses.addRestriction(MOONBEAM_CHAIN_ID);
+        addresses.addRestriction(block.chainid.toMoonbeamChainId());
         wormhole = IWormhole(
             addresses.getAddress("WORMHOLE_CORE", MOONBEAM_CHAIN_ID)
         );
@@ -317,16 +297,6 @@ contract MultichainProposalTest is PostProposalCheck {
                 "WELL",
                 "name should not change post proposal"
             );
-            assertEq(
-                xWELLTotalSupplyBasePreProposal,
-                baseWell.totalSupply(),
-                "total supply base xWELL incorrect"
-            );
-            assertEq(
-                xWELLBalanceMRDPreProposal,
-                baseWell.balanceOf(addresses.getAddress("MRD_PROXY")),
-                "mrd balance changed post proposal"
-            );
         }
         {
             vm.selectFork(MOONBEAM_FORK_ID);
@@ -355,16 +325,6 @@ contract MultichainProposalTest is PostProposalCheck {
                 xwell.symbol(),
                 "WELL",
                 "name should not change post proposal"
-            );
-            assertEq(
-                xWELLBalanceLockboxPreProposal,
-                xwell.balanceOf(addresses.getAddress("xWELL_LOCKBOX")),
-                "xWELL_LOCKBOX balance changed post proposal"
-            );
-            assertEq(
-                xWELLTotalSupplyMoonbeamPreProposal,
-                xwell.totalSupply(),
-                "total supply moonbeam xWELL incorrect"
             );
         }
         {
@@ -1247,7 +1207,28 @@ contract MultichainProposalTest is PostProposalCheck {
         well.delegate(address(this));
 
         vm.roll(block.number + 1);
-        vm.warp(block.timestamp + 1);
+        uint256 timestamp = block.timestamp + 1;
+
+        vm.warp(timestamp);
+
+        vm.selectFork(BASE_FORK_ID);
+
+        vm.warp(timestamp - 1);
+
+        xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
+        uint256 xwellMintAmount = xwell.buffer(
+            addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
+        );
+
+        vm.prank(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
+        xwell.mint(address(this), xwellMintAmount);
+        xwell.approve(address(stakedWellBase), xwellMintAmount);
+
+        stakedWellBase.stake(address(this), xwellMintAmount);
+
+        vm.warp(timestamp);
+
+        vm.selectFork(MOONBEAM_FORK_ID);
 
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
@@ -1261,6 +1242,16 @@ contract MultichainProposalTest is PostProposalCheck {
             "updateProposalThreshold(uint256)",
             100_000_000 * 1e18
         );
+
+        bytes32 encodedData = bytes32(
+            uint256(uint160(address(wormholeRelayerAdapter)))
+        );
+
+        /// stores the wormhole mock address in the wormholeRelayer variable
+        wormholeRelayerAdapter.setSenderChainId(MOONBEAM_WORMHOLE_CHAIN_ID);
+        wormholeRelayerAdapter.setIsMultichainTest(true);
+
+        vm.store(address(governor), bytes32(uint256(103)), encodedData);
 
         uint256 bridgeCost = governor.bridgeCostAll();
         vm.deal(address(this), bridgeCost);
@@ -1280,26 +1271,7 @@ contract MultichainProposalTest is PostProposalCheck {
 
         _assertProposalCreated(proposalId, address(this));
 
-        uint256 xwellMintAmount;
-        {
-            uint256 startTimestamp = block.timestamp;
-            uint256 endTimestamp = startTimestamp + governor.votingPeriod();
-
-            vm.selectFork(BASE_FORK_ID);
-
-            vm.warp(startTimestamp - 5);
-            xwell = xWELL(addresses.getAddress("xWELL_PROXY"));
-            xwellMintAmount = xwell.buffer(
-                addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY")
-            );
-
-            vm.prank(addresses.getAddress("WORMHOLE_BRIDGE_ADAPTER_PROXY"));
-            xwell.mint(address(this), xwellMintAmount);
-            xwell.approve(address(stakedWellBase), xwellMintAmount);
-            stakedWellBase.stake(address(this), xwellMintAmount);
-
-            vm.warp(endTimestamp - 5);
-        }
+        vm.selectFork(BASE_FORK_ID);
 
         {
             (

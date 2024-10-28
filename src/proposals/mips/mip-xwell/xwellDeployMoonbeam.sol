@@ -148,9 +148,7 @@ contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
         }
     }
 
-    function afterDeploy(Addresses addresses, address) public override {}
-
-    function preBuildMock(Addresses addresses) public override {}
+    function afterDeploy(Addresses, address) public virtual override {}
 
     /// ------------ MTOKEN MARKET ACTIVIATION BUILD ------------
 

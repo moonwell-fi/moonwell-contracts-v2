@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "./MToken.sol";
-import "./ErrorReporter.sol";
+import "./TokenErrorReporter.sol";
 import "./oracles/PriceOracle.sol";
 import "./ComptrollerInterface.sol";
 import "./ComptrollerStorage.sol";

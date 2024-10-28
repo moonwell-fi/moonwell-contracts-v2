@@ -318,5 +318,10 @@
         "addr": "0x1C55649f73CDA2f72CEf3DD6C5CA3d49EFcF484C",
         "name": "MOONWELL_mFRAX",
         "isContract": true
+    },
+    {
+        "addr": "0xe9ffd686ca83ceb308962f4e50c5fd7f2e3c037e",
+        "name": "MARKET_ADD_CHECKER",
+        "isContract": true
     }
 ]

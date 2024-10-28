@@ -12,22 +12,26 @@ import {String} from "@utils/String.sol";
 import {Address} from "@utils/Address.sol";
 import {Proposal} from "@proposals/Proposal.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
-import {ProposalMap} from "@test/utils/ProposalMap.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
+import {ProposalMap} from "@test/utils/ProposalMap.sol";
+import {ProposalView} from "@protocol/views/ProposalView.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
+import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
+import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
+import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 
 contract LiveProposalCheck is Test, ProposalChecker, Networks {
     using String for string;
-
-    using Bytes for bytes;
     using Address for *;
+    using Bytes for bytes;
     using ChainIds for uint256;
+    using ProposalActions for *;
 
     /// @notice proposal to file map contract
     ProposalMap proposalMap;
@@ -74,6 +78,99 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         }
     }
 
+    function executeTemporalGovernorQueuedProposals(
+        Addresses addresses,
+        MultichainGovernor governor
+    ) public {
+        if (vm.activeFork() != MOONBEAM_FORK_ID) {
+            vm.selectFork(MOONBEAM_FORK_ID);
+        }
+
+        uint256 proposalId = governor.proposalCount();
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+
+            // skip moonbeam
+            if (chainId == block.chainid.toMoonbeamChainId()) {
+                continue;
+            }
+
+            vm.selectFork(chainId.toForkId());
+            ProposalView proposalView = ProposalView(
+                addresses.getAddress("PROPOSAL_VIEW")
+            );
+
+            uint256 proposalStart = proposalId;
+            uint256 count = 0;
+
+            while (count < 10) {
+                if (
+                    proposalView.proposalStates(proposalStart) ==
+                    ProposalView.ProposalState.Queued
+                ) {
+                    (
+                        string memory proposalPath,
+                        string memory envPath
+                    ) = proposalMap.getProposalById(proposalStart);
+
+                    if (
+                        keccak256(abi.encodePacked(proposalPath)) ==
+                        keccak256(abi.encodePacked(""))
+                    ) {
+                        proposalId--;
+                        count++;
+                        continue;
+                    }
+
+                    proposalMap.setEnv(envPath);
+                    HybridProposal proposal = HybridProposal(
+                        deployCode(proposalPath)
+                    );
+                    vm.makePersistent(address(proposal));
+
+                    vm.selectFork(proposal.primaryForkId());
+
+                    proposal.initProposal(addresses);
+                    proposal.build(addresses);
+
+                    ProposalAction[] memory actions = proposal.getActionsByType(
+                        ActionType(chainId.toForkId())
+                    );
+
+                    if (actions.length == 0) {
+                        proposalId--;
+                        count++;
+                        continue;
+                    }
+
+                    bytes memory temporalGovCalldata = proposal
+                        .getTemporalGovCalldata(
+                            addresses.getAddress("TEMPORAL_GOVERNOR", chainId),
+                            actions
+                        );
+
+                    (, bytes memory payload, ) = abi.decode(
+                        /// 1. strip off function selector
+                        /// 2. decode the call to publishMessage payload
+                        temporalGovCalldata.slice(
+                            4,
+                            temporalGovCalldata.length - 4
+                        ),
+                        (uint32, bytes, uint8)
+                    );
+
+                    _execExtChain(addresses, governor, payload, proposalStart);
+                }
+                proposalStart--;
+                count++;
+            }
+        }
+
+        if (vm.activeFork() != MOONBEAM_FORK_ID) {
+            vm.selectFork(MOONBEAM_FORK_ID);
+        }
+    }
+
     function executeLiveProposals(
         Addresses addresses,
         MultichainGovernor governor
@@ -97,7 +194,7 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         uint256 proposalId
     ) public {
         /// add restriction for moonbeam actions
-        addresses.addRestriction(MOONBEAM_CHAIN_ID);
+        addresses.addRestriction(block.chainid.toMoonbeamChainId());
 
         (
             address[] memory targets,
@@ -139,6 +236,24 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
 
         address wormholeCore = addresses.getAddress("WORMHOLE_CORE");
 
+        /// remove restriction for moonbeam actions
+        addresses.removeRestriction();
+
+        (string memory proposalPath, string memory envPath) = proposalMap
+            .getProposalById(proposalId);
+
+        if (
+            keccak256(abi.encodePacked(proposalPath)) ==
+            keccak256(abi.encodePacked(""))
+        ) {
+            return;
+        }
+
+        proposalMap.setEnv(envPath);
+
+        Proposal proposal = Proposal(deployCode(proposalPath));
+        proposal.beforeSimulationHook(addresses);
+
         uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
             address(governor)
         );
@@ -167,9 +282,6 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         }
 
         governor.execute{value: totalValue}(proposalId);
-
-        /// remove restriction for moonbeam actions
-        addresses.removeRestriction();
 
         {
             /// supports as many destination networks as needed
@@ -202,6 +314,8 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
         if (vm.activeFork() != MOONBEAM_FORK_ID) {
             vm.selectFork(MOONBEAM_FORK_ID);
         }
+
+        proposal.afterSimulationHook(addresses);
     }
 
     function _execExtChain(
@@ -275,13 +389,23 @@ contract LiveProposalCheck is Test, ProposalChecker, Networks {
             (string memory proposalPath, string memory envPath) = proposalMap
                 .getProposalById(proposalId);
 
-            proposalMap.executeShellFile(envPath);
+            if (
+                keccak256(abi.encodePacked(proposalPath)) ==
+                keccak256(abi.encodePacked(""))
+            ) {
+                return;
+            }
+
+            proposalMap.setEnv(envPath);
 
             Proposal proposal = Proposal(deployCode(proposalPath));
 
-            proposal.preBuildMock(addresses);
+            proposal.initProposal(addresses);
+            proposal.beforeSimulationHook(addresses);
 
             temporalGovernor.executeProposal(vaa);
+
+            proposal.afterSimulationHook(addresses);
         }
     }
 

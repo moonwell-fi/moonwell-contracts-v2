@@ -4,7 +4,7 @@ on: [pull_request]
 
 jobs:
   unit-tests:
-    name: unit-tests
+    name: Unit Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -16,9 +16,11 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions
 
-      - name: Unit Test Contracts
+      - name: Run Unit Tests
         uses: nick-fields/retry@v3
         with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
            timeout_minutes: 10
            max_attempts: 3
            command: time forge test -vvv --match-contract UnitTest
