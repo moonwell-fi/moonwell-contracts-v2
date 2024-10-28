@@ -73,4 +73,8 @@ interface IStakedWell {
     /// @notice update the cooldown seconds
     /// @param cooldownSeconds the new cooldown seconds
     function setCoolDownSeconds(uint256 cooldownSeconds) external;
+
+    function getTotalRewardsBalance(
+        address staker
+    ) external view returns (uint256);
 }
