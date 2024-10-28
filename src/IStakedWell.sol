@@ -24,6 +24,9 @@ interface IStakedWell {
 
     function EMISSION_MANAGER() external view returns (address);
 
+    function STAKED_TOKEN() external view returns (address);
+    function REWARDS_VAULT() external view returns (address);
+
     function getPriorVotes(
         address account,
         uint256 blockNumber
@@ -70,4 +73,8 @@ interface IStakedWell {
     /// @notice update the cooldown seconds
     /// @param cooldownSeconds the new cooldown seconds
     function setCoolDownSeconds(uint256 cooldownSeconds) external;
+
+    function getTotalRewardsBalance(
+        address staker
+    ) external view returns (uint256);
 }

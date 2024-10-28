@@ -243,6 +243,48 @@ contract MultichainGovernorDeploy is Test {
         );
     }
 
+    function deployStakedWellMoonbeam(
+        address stakedToken,
+        address rewardToken,
+        uint256 cooldownSeconds,
+        uint256 unstakeWindow,
+        address rewardsVault,
+        address emissionManager,
+        uint128 distributionDuration,
+        address governance,
+        address proxyAdmin
+    ) public returns (address proxy, address implementation) {
+        // deploy actual stkWELL implementation for Moonbeam
+        implementation = deployCode(
+            "artifacts/foundry/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
+        );
+
+        // generate init calldata
+        bytes memory initData = abi.encodeWithSignature(
+            "initialize(address,address,uint256,uint256,address,address,uint128,address)",
+            stakedToken,
+            rewardToken,
+            cooldownSeconds,
+            unstakeWindow,
+            rewardsVault,
+            emissionManager,
+            distributionDuration,
+            governance
+        );
+
+        console.log("proxy constructor calldata mock staked well: ");
+        console.logBytes(abi.encode(implementation, proxyAdmin, initData));
+
+        // deploy proxy
+        proxy = address(
+            new TransparentUpgradeableProxy(
+                implementation,
+                proxyAdmin,
+                initData
+            )
+        );
+    }
+
     function deployEcosystemReserve(
         address proxyAdmin
     )
