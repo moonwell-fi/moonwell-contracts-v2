@@ -8,7 +8,7 @@ import "@forge-std/Test.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
-contract MoonbeamTestSafetyModule is Test, PostProposalCheck {
+contract MoonbeamSafetyModulePostProposalTest is Test, PostProposalCheck {
     IStakedWell well;
 
     function setUp() public override {
@@ -29,8 +29,9 @@ contract MoonbeamTestSafetyModule is Test, PostProposalCheck {
 
     function testRewardsBalanceIncreasing() public {
         uint256 stakeAmount = 100_000_000e18;
+        address wellToken = well.STAKED_TOKEN();
 
-        deal(address(this), well.STAKED_TOKEN(), stakeAmount);
+        deal(wellToken, address(this), stakeAmount);
 
         IERC20(well.STAKED_TOKEN()).approve(address(well), stakeAmount);
         well.stake(address(this), stakeAmount);
