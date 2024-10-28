@@ -1,4 +1,5 @@
 {
+    "type": "module",
     "name": "moonwell-contracts-v2",
     "version": "1.0.0",
     "description": "The Moonwell Protocol is a cross-chain lending and borrowing protocol.",
@@ -10,7 +11,8 @@
     "scripts": {
         "prepare": "husky",
         "lint": "npx solhint --config ./.solhintrc --ignore-path .solhintignore 'src/**/*.sol'",
-        "prettier": "npx prettier --ignore-path .prettierignore --write ."
+        "prettier": "npx prettier --ignore-path .prettierignore --write .",
+        "start": "node safe/transactionFetcher.js"
     },
     "repository": {
         "type": "git",
@@ -22,9 +24,15 @@
     },
     "homepage": "https://github.com/moonwell-fi/moonwell-contracts-v2#readme",
     "devDependencies": {
-        "husky": "^9.0.10",
-        "prettier": "^3.2.4",
-        "prettier-plugin-solidity": "^1.3.1",
-        "solhint": "^4.5.2"
+        "husky": "9.0.10",
+        "prettier": "3.2.4",
+        "prettier-plugin-solidity": "1.3.1",
+        "solhint": "4.5.2",
+        "tsx": "4.19.1"
+    },
+    "dependencies": {
+        "@safe-global/api-kit": "2.5.3",
+        "ethers": "5.7.0",
+        "ts-node": "10.9.2"
     }
 }
