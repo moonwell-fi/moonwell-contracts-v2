@@ -259,7 +259,7 @@
         "name": "JUMP_RATE_IRM_MOONWELL_DAI_MIP_B14",
         "isContract": true
     },
-    {   
+    {
         "addr": "0x8781110995cBdC58EFf7425D4A31BDc9DB8B3Cdd",
         "name": "JUMP_RATE_IRM_MOONWELL_DAI_MIP_B34",
         "isContract": true

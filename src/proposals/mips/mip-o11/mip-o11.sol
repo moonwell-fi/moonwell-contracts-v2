@@ -42,10 +42,7 @@ contract mipo11 is HybridProposal, ParameterValidation {
 
         _pushAction(
             addresses.getAddress("MOONWELL_WBTC"),
-            abi.encodeWithSignature(
-                "_setReserveFactor(uint256)",
-                WBTC_NEW_RF
-            ),
+            abi.encodeWithSignature("_setReserveFactor(uint256)", WBTC_NEW_RF),
             "Set reserve factor for Moonwell WBTC to updated reserve factor",
             ActionType.Optimism
         );
@@ -124,10 +121,7 @@ contract mipo11 is HybridProposal, ParameterValidation {
             WBTC_NEW_CF
         );
 
-        _validateRF(
-            addresses.getAddress("MOONWELL_WBTC"),
-            WBTC_NEW_RF
-        );
+        _validateRF(addresses.getAddress("MOONWELL_WBTC"), WBTC_NEW_RF);
 
         _validateCF(
             addresses,
