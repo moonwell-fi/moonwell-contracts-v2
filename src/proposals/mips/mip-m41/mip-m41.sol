@@ -77,16 +77,18 @@ contract mipm41 is HybridProposal, ParameterValidation {
     }
 
     function deploy(Addresses addresses, address) public override {
-        address implementation = deployCode(
-            "artifacts/foundry/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
-        );
+        if (!addresses.isAddressSet("STK_GOVTOKEN_IMPL")) {
+            address implementation = deployCode(
+                "artifacts/foundry/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
+            );
 
-        require(
-            implementation != address(0),
-            "MIP-M41: failed to deploy STK_GOVTOKEN_IMPL"
-        );
+            require(
+                implementation != address(0),
+                "MIP-M41: failed to deploy STK_GOVTOKEN_IMPL"
+            );
 
-        addresses.addAddress("STK_GOVTOKEN_IMPL", implementation);
+            addresses.addAddress("STK_GOVTOKEN_IMPL", implementation);
+        }
     }
 
     /// run this action through the Multichain Governor
