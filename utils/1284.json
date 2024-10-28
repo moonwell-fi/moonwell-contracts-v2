@@ -190,6 +190,11 @@
         "isContract": true
     },
     {
+        "addr": "0xc095cb1A6B41A5Cd7dAaF993a904afDD74758D71",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_IMPL"
+    },
+    {
         "addr": "0x298f2E346b82D69a473BF25f329BDF869e17dEc8",
         "name": "MOONWELL_mBUSD",
         "isContract": true
