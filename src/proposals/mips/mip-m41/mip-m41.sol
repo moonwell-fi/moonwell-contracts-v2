@@ -48,6 +48,34 @@ contract mipm41 is HybridProposal, ParameterValidation {
         return MOONBEAM_FORK_ID;
     }
 
+    function beforeSimulationHook(Addresses addresses) public override {
+        for (uint256 i = 0; i < users.length; i++) {
+            startingBalances[users[i]] = IStakedWell(
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
+            ).balanceOf(users[i]);
+
+            startingVotingPower[users[i]] = IStakedWell(
+                addresses.getAddress("STK_GOVTOKEN_PROXY")
+            ).getPriorVotes(users[i], CHAIN_HEIGHT);
+        }
+
+        startingTotalSupply = IStakedWell(
+            addresses.getAddress("STK_GOVTOKEN_PROXY")
+        ).totalSupply();
+
+        stakedToken = address(
+            IStakedWell(addresses.getAddress("STK_GOVTOKEN_PROXY"))
+                .STAKED_TOKEN()
+        );
+        rewardsVault = address(
+            IStakedWell(addresses.getAddress("STK_GOVTOKEN_PROXY"))
+                .REWARDS_VAULT()
+        );
+        emissionsManager = IStakedWell(
+            addresses.getAddress("STK_GOVTOKEN_PROXY")
+        ).EMISSION_MANAGER();
+    }
+
     function deploy(Addresses addresses, address) public override {
         address implementation = deployCode(
             "artifacts/foundry/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
@@ -87,7 +115,10 @@ contract mipm41 is HybridProposal, ParameterValidation {
         );
     }
 
-    function run(Addresses addresses, address) public override {
+    function run(
+        Addresses addresses,
+        address
+    ) public override mockHook(addresses) {
         /// safety check to ensure no base actions are run
         require(
             actions.proposalActionTypeCount(ActionType.Base) == 0,
@@ -103,32 +134,6 @@ contract mipm41 is HybridProposal, ParameterValidation {
             actions.proposalActionTypeCount(ActionType.Moonbeam) == 2,
             "MIP-M41: should have one moonbeam action"
         );
-
-        for (uint256 i = 0; i < users.length; i++) {
-            startingBalances[users[i]] = IStakedWell(
-                addresses.getAddress("STK_GOVTOKEN_PROXY")
-            ).balanceOf(users[i]);
-
-            startingVotingPower[users[i]] = IStakedWell(
-                addresses.getAddress("STK_GOVTOKEN_PROXY")
-            ).getPriorVotes(users[i], CHAIN_HEIGHT);
-        }
-
-        startingTotalSupply = IStakedWell(
-            addresses.getAddress("STK_GOVTOKEN_PROXY")
-        ).totalSupply();
-
-        stakedToken = address(
-            IStakedWell(addresses.getAddress("STK_GOVTOKEN_PROXY"))
-                .STAKED_TOKEN()
-        );
-        rewardsVault = address(
-            IStakedWell(addresses.getAddress("STK_GOVTOKEN_PROXY"))
-                .REWARDS_VAULT()
-        );
-        emissionsManager = IStakedWell(
-            addresses.getAddress("STK_GOVTOKEN_PROXY")
-        ).EMISSION_MANAGER();
 
         /// only run actions on moonbeam
         _runMoonbeamMultichainGovernor(addresses, address(1000000000));
