@@ -3,8 +3,6 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import "@utils/ChainIds.sol";
-
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
 
@@ -14,7 +12,6 @@ contract MoonbeamTestSafetyModule is Test, PostProposalCheck {
     function setUp() public override {
         super.setUp();
 
-        vm.selectFork(MOONBEAM_FORK_ID);
         well = IStakedWell(addresses.getAddress("STK_GOVTOKEN_PROXY"));
     }
 
