@@ -36,7 +36,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
     }
 
     function name() external pure override returns (string memory) {
-        return "MIP Market Recommendations Update";
+        return "MIP Market Update";
     }
 
     function primaryForkId() public pure override returns (uint256) {
