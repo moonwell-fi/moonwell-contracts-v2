@@ -249,18 +249,6 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                     bytes32(uint256(153)),
                     encodedData
                 );
-
-                // TODO remove this once we have the approval
-                if (chainId == OPTIMISM_CHAIN_ID) {
-                    vm.startPrank(
-                        addresses.getAddress("FOUNDATION_OP_MULTISIG")
-                    );
-                    IERC20(addresses.getAddress("OP")).approve(
-                        addresses.getAddress("TEMPORAL_GOVERNOR"),
-                        18_000e18
-                    );
-                    vm.stopPrank();
-                }
             }
         }
 
@@ -828,14 +816,7 @@ contract mipRewardsDistribution is HybridProposal, Networks {
             address from = addresses.getAddress(transferFrom.from);
             address to = addresses.getAddress(transferFrom.to);
 
-            if (
-                chainId == OPTIMISM_CHAIN_ID &&
-                from ==
-                addresses.getAddress(
-                    "FOUNDATION_OP_MULTISIG",
-                    OPTIMISM_CHAIN_ID
-                )
-            ) {
+            if (from != addresses.getAddress("TEMPORAL_GOVERNOR")) {
                 _pushAction(
                     token,
                     abi.encodeWithSignature(
@@ -1295,17 +1276,19 @@ contract mipRewardsDistribution is HybridProposal, Networks {
                         );
                     }
 
-                    assertEq(
-                        int256(_config.endTime),
-                        setRewardSpeed.newEndTime,
-                        string(
-                            abi.encodePacked(
-                                "End time for ",
-                                vm.getLabel(market),
-                                " is incorrect"
+                    if (setRewardSpeed.newEndTime != -1) {
+                        assertEq(
+                            int256(_config.endTime),
+                            setRewardSpeed.newEndTime,
+                            string(
+                                abi.encodePacked(
+                                    "End time for ",
+                                    vm.getLabel(market),
+                                    " is incorrect"
+                                )
                             )
-                        )
-                    );
+                        );
+                    }
                 }
             }
         }

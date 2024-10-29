@@ -70,9 +70,6 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
             vm.selectFork(uint256(proposal.primaryForkId()));
             proposal.build(addresses);
 
-            // returns the correct address as block.chainid is base/base sepolia
-            address temporalGov = addresses.getAddress("TEMPORAL_GOVERNOR");
-
             /// this returns the moonbeam wormhole core address as
             /// block.chainid is base/base sepolia optimism/optimism sepolia
             address wormholeCore = addresses.getAddress(
@@ -84,15 +81,8 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                 addresses
             );
 
-            console.log("artemis governor queue governance calldata");
+            console.log("MultichainGovernor queue governance calldata");
             emit log_bytes(multichainGovernorQueuePayload);
-
-            /// iterate over and execute all proposals consecutively
-            (
-                address[] memory targets,
-                uint256[] memory values,
-                bytes[] memory payloads
-            ) = proposal.getTargetsPayloadsValues(addresses);
 
             vm.selectFork(MOONBEAM_FORK_ID);
 
@@ -118,16 +108,8 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                 wormholeCore != address(0),
                 "invalid temporal governor address"
             );
-            require(
-                temporalGov != address(0),
-                "invalid temporal governor address"
-            );
 
             uint256 proposalId = governor.proposalCount();
-
-            uint64 nextSequence = IWormhole(wormhole).nextSequence(
-                address(governor)
-            );
 
             vm.prank(voter);
             governor.castVote(proposalId, 0); /// VOTE YES
@@ -139,23 +121,48 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                     1
             );
 
-            bytes memory temporalGovExecData = abi.encode(
-                temporalGov,
-                targets,
-                values,
-                payloads
+            /// increments each time the Multichain Governor publishes a message
+            uint64 nextSequence = IWormhole(wormholeCore).nextSequence(
+                address(governor)
             );
 
-            vm.expectEmit(true, true, true, true, wormholeCore);
+            if (proposal.getActionsByType(ActionType.Base).length != 0) {
+                bytes memory temporalGovExecDataBase = proposal
+                    .getTemporalGovPayloadByChain(
+                        addresses,
+                        block.chainid.toBaseChainId()
+                    );
 
-            /// event LogMessagePublished(address indexed sender, uint64 sequence, uint32 nonce, bytes payload, uint8 consistencyLevel)
-            emit LogMessagePublished(
-                address(governor),
-                nextSequence,
-                0, /// nonce is hardcoded at 0 in HybridProposal.sol
-                temporalGovExecData,
-                200 /// consistency level is hardcoded at 200 in HybridProposal.sol
-            );
+                /// expect emitting of events to Wormhole Core on Moonbeam if Base actions exist
+                vm.expectEmit(true, true, true, true, wormholeCore);
+
+                emit LogMessagePublished(
+                    address(governor),
+                    nextSequence++,
+                    0,
+                    temporalGovExecDataBase,
+                    200
+                );
+            }
+
+            if (proposal.getActionsByType(ActionType.Optimism).length != 0) {
+                bytes memory temporalGovExecDataOptimism = proposal
+                    .getTemporalGovPayloadByChain(
+                        addresses,
+                        block.chainid.toOptimismChainId()
+                    );
+                /// expect emitting of events to Wormhole Core on Moonbeam if Optimism actions exist
+                vm.expectEmit(true, true, true, true, wormholeCore);
+
+                emit LogMessagePublished(
+                    address(governor),
+                    nextSequence,
+                    0,
+                    temporalGovExecDataOptimism,
+                    200
+                );
+            }
+
             governor.execute(proposalId);
         }
     }

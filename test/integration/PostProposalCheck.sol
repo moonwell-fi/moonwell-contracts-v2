@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-late
 pragma solidity 0.8.19;
-import {console} from "forge-std/console.sol";
 
 import "@utils/ChainIds.sol";
-import {String} from "@utils/String.sol";
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Proposal} from "@proposals/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {String} from "@utils/String.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
 import {LiveProposalCheck} from "@test/utils/LiveProposalCheck.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract PostProposalCheck is LiveProposalCheck {
     using String for string;
@@ -47,6 +47,9 @@ contract PostProposalCheck is LiveProposalCheck {
 
         // execute proposals that are in the vote or vote collection period
         executeLiveProposals(addresses, governor);
+
+        // execute proposals that are queued in the temporal governor but not executed yet
+        executeTemporalGovernorQueuedProposals(addresses, governor);
 
         // execute proposals that are not on chain yet
         ProposalMap.ProposalFields[] memory devProposals = proposalMap
