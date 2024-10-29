@@ -112,22 +112,14 @@ contract mipm40 is HybridProposal, ParameterValidation {
             WBTCWH_NEW_CF
         );
 
-        _validateRF(
-            addresses.getAddress("MOONWELL_mWBTC"),
-            WBTCWH_NEW_RF
-        );
+        _validateRF(addresses.getAddress("MOONWELL_mWBTC"), WBTCWH_NEW_RF);
 
-        _validateCF(
-            addresses,
-            addresses.getAddress("mUSDCwh"),
-            USDCWH_NEW_CF
-        );
+        _validateCF(addresses, addresses.getAddress("mUSDCwh"), USDCWH_NEW_CF);
 
         _validateCF(
             addresses,
             addresses.getAddress("MOONWELL_mETH"),
             WETHWH_NEW_CF
         );
-
     }
 }

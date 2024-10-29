@@ -3,7 +3,7 @@
 A proposal to adjust 6 total risk parameters:
 
 | Parameter                 | Current Value | Recommended Value |
-|---------------------------|---------------|-------------------|
+| ------------------------- | ------------- | ----------------- |
 | xcUSDC Borrow Cap         | 230,000       | 750,000           |
 | xcUSDT Borrow Cap         | 400,000       | 750,000           |
 | USDC.wh Collateral Factor | 50%           | 45%               |
