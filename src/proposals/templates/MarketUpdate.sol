@@ -60,6 +60,10 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
     ) internal {
         string memory chain = string.concat(".", vm.toString(chainId));
 
+        if (!vm.keyExistsJson(data, chain)) {
+            return;
+        }
+
         bytes memory parsedJson = vm.parseJson(data, chain);
 
         MarketUpdate[] memory updates = abi.decode(
@@ -90,6 +94,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
     function _buildChainActions(Addresses addresses, uint256 chainId) public {
         vm.selectFork(chainId.toForkId());
+
         MarketUpdate[] memory updates = marketUpdates[chainId];
 
         for (uint256 i = 0; i < updates.length; i++) {
