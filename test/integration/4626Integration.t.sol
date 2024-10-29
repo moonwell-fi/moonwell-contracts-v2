@@ -131,6 +131,12 @@ contract ERC4626LiveIntegrationTest is Test {
     function testSucceedRedeemWithCorrectShareAmount() public {
         uint256 mintAmount = 1_000e6;
 
+        uint256 maxMint = marketBase.getMaxSupplyAmount(mToken);
+
+        if (maxMint < mintAmount) {
+            vm.skip(true);
+        }
+
         deal(address(underlying), address(this), mintAmount);
         underlying.approve(address(vault), mintAmount);
 
