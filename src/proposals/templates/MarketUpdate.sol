@@ -128,10 +128,9 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
             if (rec.reserveFactor != -1) {
                 _pushAction(
-                    unitroller,
+                    addresses.getAddress(rec.market),
                     abi.encodeWithSignature(
-                        "_setReserveFactor(address,uint256)",
-                        addresses.getAddress(rec.market),
+                        "_setReserveFactor(uint256)",
                         rec.reserveFactor.toUint256()
                     ),
                     string(
