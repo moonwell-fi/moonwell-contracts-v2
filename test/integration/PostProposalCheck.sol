@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-late
 pragma solidity 0.8.19;
-import {console} from "forge-std/console.sol";
 
 import "@utils/ChainIds.sol";
-import {String} from "@utils/String.sol";
-import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {Proposal} from "@proposals/Proposal.sol";
-import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
+
 import {etch} from "@proposals/utils/PrecompileEtching.sol";
+import {xWELL} from "@protocol/xWELL/xWELL.sol";
+import {String} from "@utils/String.sol";
+import {Proposal} from "@proposals/Proposal.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
 import {LiveProposalCheck} from "@test/utils/LiveProposalCheck.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 contract PostProposalCheck is LiveProposalCheck {
     using String for string;
