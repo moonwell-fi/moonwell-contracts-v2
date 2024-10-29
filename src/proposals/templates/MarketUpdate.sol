@@ -53,6 +53,13 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
         }
     }
 
+    function build(Addresses addresses) public override {
+        for (uint256 i = 0; i < networks.length; i++) {
+            uint256 chainId = networks[i].chainId;
+            _buildChainActions(addresses, chainId);
+        }
+    }
+
     function _saveChainMarketUpdate(
         Addresses addresses,
         uint256 chainId,
@@ -63,6 +70,8 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
         if (!vm.keyExistsJson(data, chain)) {
             return;
         }
+
+        vm.selectFork(chainId.toForkId());
 
         bytes memory parsedJson = vm.parseJson(data, chain);
 
