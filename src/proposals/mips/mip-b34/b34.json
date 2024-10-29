@@ -1,0 +1,10 @@
+{
+    "8453": [
+        {
+            "collateralFactor": 0.76e18,
+            "irm": "",
+            "market": "MOONWELL_USDBC",
+            "reserveFactor": 0.9e18
+        }
+    ]
+}
