@@ -105,14 +105,16 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
         vm.selectFork(chainId.toForkId());
 
         MarketUpdate[] memory updates = marketUpdates[chainId];
+        address unitroller = addresses.getAddress("UNITROLLER");
 
         for (uint256 i = 0; i < updates.length; i++) {
             MarketUpdate memory rec = updates[i];
             if (rec.collateralFactor != -1) {
                 _pushAction(
-                    addresses.getAddress(rec.market),
+                    unitroller,
                     abi.encodeWithSignature(
-                        "_setCollateralFactor(uint256)",
+                        "_setCollateralFactor(address,uint256)",
+                        addresses.getAddress(rec.market),
                         rec.collateralFactor.toUint256()
                     ),
                     string(
@@ -126,9 +128,10 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
             if (rec.reserveFactor != -1) {
                 _pushAction(
-                    addresses.getAddress(rec.market),
+                    unitroller,
                     abi.encodeWithSignature(
-                        "_setReserveFactor(uint256)",
+                        "_setReserveFactor(address,uint256)",
+                        addresses.getAddress(rec.market),
                         rec.reserveFactor.toUint256()
                     ),
                     string(
