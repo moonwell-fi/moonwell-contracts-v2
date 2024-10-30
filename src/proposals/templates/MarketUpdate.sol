@@ -59,6 +59,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
             uint256 chainId = networks[i].chainId;
 
             _saveChainMarketUpdate(addresses, chainId, encodedJson);
+            _saveIRModels(addresses, chainId, encodedJson);
         }
     }
 
@@ -137,6 +138,9 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
         for (uint256 i = 0; i < models.length; i++) {
             JRM memory model = models[i];
+
+            console.log("kink", model.kink);
+            console.log("name", model.name);
 
             require(
                 addresses.getAddress(model.name) != address(0),
