@@ -1,3 +1,4 @@
+
 #!/bin/bash
 export MTOKENS_PATH=src/proposals/mips/mip-b17/MTokens.json
 echo "MTOKENS_PATH=$MTOKENS_PATH"
@@ -15,4 +16,7 @@ export EXCLUDE_MARKET_ADD_CHECKER=true
 echo "EXCLUDE_MARKET_ADD_CHECKER=$EXCLUDE_MARKET_ADD_CHECKER"
 
 export NONCE=0
+echo "NONCE=$NONCE"
+
+
 
