@@ -39,8 +39,6 @@ contract mipb36 is HybridProposal, Configs {
 
     function teardown(Addresses addresses, address) public pure override {}
 
-    /// @notice assert that the new interest rate model is set correctly
-    /// and that the interest rate model parameters are set correctly
     function validate(Addresses addresses, address) public view override {
         IMetaMorpho vault = IMetaMorpho(
             addresses.getAddress("EURC_METAMORPHO_VAULT")
