@@ -33,7 +33,7 @@ contract mipb36 is HybridProposal, Configs {
                 "setIsAllocator",
                 addresses.getAddress("MORPHO_PUBLIC_ALLOCATOR")
             ),
-            "Set interest rate model for Moonwell WETH to updated rate model"
+            "Set allocator for EURC Vault to Morpho Public Allocator"
         );
     }
 
