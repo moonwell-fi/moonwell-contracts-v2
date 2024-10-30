@@ -3,11 +3,38 @@
         "markets": [
             {
                 "collateralFactor": 0.76e18,
-                "irm": "",
+                "irm": "JUMP_RATE_IRM_MOONWELL_DAI_MIP_B34",
                 "market": "MOONWELL_USDBC",
                 "reserveFactor": 0.9e18
+            },
+            {
+                "collateralFactor": 0.8e18,
+                "irm": "JUMP_RATE_IRM_MOONWELL_DAI_MIP_B34",
+                "market": "MOONWELL_DAI",
+                "reserveFactor": 0.4e18
+            },
+            {
+                "collateralFactor": null,
+                "irm": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_B34",
+                "market": "MOONWELL_WETH",
+                "reserveFactor": 0.05e18
             }
         ],
-        "irModels": []
+        "irModels": [
+            {
+                "baseRatePerTimestamp": 0,
+                "jumpMultiplierPerTimestamp": 4e18,
+                "kink": 0.6e18,
+                "multiplierPerTimestamp": 0.04e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_DAI_MIP_B34"
+            },
+            {
+                "baseRatePerTimestamp": 0,
+                "jumpMultiplierPerTimestamp": 8e18,
+                "kink": 0.9e18,
+                "multiplierPerTimestamp": 0.01e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_WETH_MIP_B34"
+            }
+        ]
     }
 }
