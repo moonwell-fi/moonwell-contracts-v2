@@ -37,7 +37,7 @@ contract mipb35 is HybridProposal, Configs {
                 addresses.getAddress("USDC"),
                 NEW_CBBTC_REWARD_SPEED
             ),
-            "Set supply side USDC emissions for Moonwell USDC"
+            "Set supply side USDC emissions for Moonwell cbBTC"
         );
 
         _pushAction(
@@ -48,7 +48,7 @@ contract mipb35 is HybridProposal, Configs {
                 addresses.getAddress("USDC"),
                 NEW_CBBTC_REWARD_SPEED
             ),
-            "Set borrow USDC emissions for Moonwell USDC"
+            "Set borrow USDC emissions for Moonwell cbBTC"
         );
 
         _pushAction(
@@ -59,7 +59,7 @@ contract mipb35 is HybridProposal, Configs {
                 addresses.getAddress("USDC"),
                 NEW_END_TIME
             ),
-            "Set USDC emission end time for Moonwell USDC"
+            "Set USDC emission end time for Moonwell cbBTC"
         );
 
         _pushAction(
@@ -70,7 +70,7 @@ contract mipb35 is HybridProposal, Configs {
                 addresses.getAddress("USDC"),
                 addresses.getAddress("GAUNTLET_MULTISIG")
             ),
-            "Set Gauntlet as the owner of USDC emissions for Moonwell USDC"
+            "Set Gauntlet as the owner of USDC emissions for Moonwell cbBTC"
         );
     }
 
