@@ -20,12 +20,21 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
     struct MarketUpdate {
         int256 collateralFactor;
-        string irm;
+        string jrm;
         string market;
         int256 reserveFactor;
     }
 
+    struct JRM {
+        uint256 baseRatePerTimestamp;
+        uint256 jumpMultiplierPerTimestamp;
+        uint256 kink;
+        uint256 multiplierPerTimestamp;
+        string name;
+    }
+
     mapping(uint256 chainId => MarketUpdate[]) public marketUpdates;
+    mapping(uint256 chainId => mapping(string name => JRM)) public irParams;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -91,10 +100,10 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
             console.log("Updating market %s on chain %s", rec.market, chain);
 
             console.log(
-                "Reserve factor: %s, collateral factor: %s, IRM: %s",
+                "Reserve factor: %s, collateral factor: %s, JRM: %s",
                 vm.toString(rec.reserveFactor),
                 vm.toString(rec.collateralFactor),
-                rec.irm
+                rec.jrm
             );
 
             marketUpdates[chainId].push(rec);
@@ -139,28 +148,28 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
                 );
             }
 
-            if (keccak256(abi.encodePacked(rec.irm)) != keccak256("")) {
+            if (keccak256(abi.encodePacked(rec.jrm)) != keccak256("")) {
                 _pushAction(
                     addresses.getAddress(rec.market),
                     abi.encodeWithSignature(
-                        "_setInterestRateModel(string)",
-                        rec.irm
+                        "_setInterestRateModel(address)",
+                        addresses.getAddress(rec.jrm)
                     ),
-                    string(abi.encodePacked("Set IRM for ", rec.market))
+                    string(abi.encodePacked("Set JRM for ", rec.market))
                 );
             }
         }
     }
 
-    function validate(Addresses addresses, address) public view override {
+    function validate(Addresses addresses, address) public override {
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
-
-            //_validateChain(addresses, chainId);
+            _validateChain(addresses, chainId);
         }
     }
 
-    function _validateChain(Addresses addresses, uint256 chainId) private view {
+    function _validateChain(Addresses addresses, uint256 chainId) private {
+        vm.selectFork(chainId);
         MarketUpdate[] memory updates = marketUpdates[chainId];
 
         for (uint256 i = 0; i < updates.length; i++) {
@@ -181,7 +190,20 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
                 );
             }
 
-            if (keccak256(abi.encodePacked(rec.irm)) != keccak256("")) {}
+            if (keccak256(abi.encodePacked(rec.jrm)) != keccak256("")) {
+                JRM memory params = irParams[chainId][rec.jrm];
+                _validateJRM(
+                    addresses.getAddress(rec.jrm),
+                    addresses.getAddress(rec.market),
+                    IRParams({
+                        baseRatePerTimestamp: params.baseRatePerTimestamp,
+                        kink: params.kink,
+                        multiplierPerTimestamp: params.multiplierPerTimestamp,
+                        jumpMultiplierPerTimestamp: params
+                            .jumpMultiplierPerTimestamp
+                    })
+                );
+            }
         }
     }
 }
