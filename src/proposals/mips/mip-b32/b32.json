@@ -1,0 +1,40 @@
+{
+    "8453": {
+        "markets": [
+            {
+                "collateralFactor": -1,
+                "irm": "",
+                "market": "MOONWELL_USDBC",
+                "reserveFactor": 0.75e18
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32",
+                "market": "MOONWELL_USDC",
+                "reserveFactor": null
+            },
+            {
+                "collateralFactor": -1,
+                "irm": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_B32",
+                "market": "MOONWELL_cbBTC",
+                "reserveFactor": -1
+            }
+        ],
+        "irModels": [
+            {
+                "baseRatePerTimestamp": 0,
+                "jumpMultiplierPerTimestamp": 9e18,
+                "kink": 0.9e18,
+                "multiplierPerTimestamp": 0.05e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32"
+            },
+            {
+                "baseRatePerTimestamp": 0,
+                "jumpMultiplierPerTimestamp": 3e18,
+                "kink": 0.6e18,
+                "multiplierPerTimestamp": 0.067e18,
+                "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_B32"
+            }
+        ]
+    }
+}
