@@ -64,6 +64,8 @@ contract TestProposalCalldataGeneration is ProposalMap, Test {
                 multichainGovernorProposals[i - 1].envPath
             );
 
+            console.log("PROPOSAL NONCE", vm.envString("NONCE"));
+
             HybridProposal proposal = HybridProposal(deployCode(proposalPath));
             vm.makePersistent(address(proposal));
 
