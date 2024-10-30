@@ -34,7 +34,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
     }
 
     mapping(uint256 chainId => MarketUpdate[]) public marketUpdates;
-    mapping(uint256 chainId => mapping(string name => JRM)) public irParams;
+    mapping(uint256 chainId => mapping(string name => JRM)) public irModels;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -74,7 +74,11 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
         uint256 chainId,
         string memory data
     ) internal {
-        string memory chain = string.concat(".", vm.toString(chainId));
+        string memory chain = string.concat(
+            ".",
+            vm.toString(chainId),
+            ".markets"
+        );
 
         if (!vm.keyExistsJson(data, chain)) {
             return;
@@ -107,6 +111,39 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
             );
 
             marketUpdates[chainId].push(rec);
+        }
+    }
+
+    function _saveIRModels(
+        Addresses addresses,
+        uint256 chainId,
+        string memory data
+    ) internal {
+        string memory chain = string.concat(
+            ".",
+            vm.toString(chainId),
+            ".irModels"
+        );
+
+        if (!vm.keyExistsJson(data, chain)) {
+            return;
+        }
+
+        vm.selectFork(chainId.toForkId());
+
+        bytes memory parsedJson = vm.parseJson(data, chain);
+
+        JRM[] memory models = abi.decode(parsedJson, (JRM[]));
+
+        for (uint256 i = 0; i < models.length; i++) {
+            JRM memory model = models[i];
+
+            require(
+                addresses.getAddress(model.name) != address(0),
+                "JRM address is not set"
+            );
+
+            irModels[chainId][model.name] = model;
         }
     }
 
@@ -169,7 +206,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
     }
 
     function _validateChain(Addresses addresses, uint256 chainId) private {
-        vm.selectFork(chainId);
+        vm.selectFork(chainId.toForkId());
         MarketUpdate[] memory updates = marketUpdates[chainId];
 
         for (uint256 i = 0; i < updates.length; i++) {
@@ -191,7 +228,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
             }
 
             if (keccak256(abi.encodePacked(rec.jrm)) != keccak256("")) {
-                JRM memory params = irParams[chainId][rec.jrm];
+                JRM memory params = irModels[chainId][rec.jrm];
                 _validateJRM(
                     addresses.getAddress(rec.jrm),
                     addresses.getAddress(rec.market),
