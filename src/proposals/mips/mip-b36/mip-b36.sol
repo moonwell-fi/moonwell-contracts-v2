@@ -31,7 +31,8 @@ contract mipb36 is HybridProposal, Configs {
             addresses.getAddress("EURC_METAMORPHO_VAULT"),
             abi.encodeWithSignature(
                 "setIsAllocator(address,bool)",
-                addresses.getAddress("MORPHO_PUBLIC_ALLOCATOR", true)
+                addresses.getAddress("MORPHO_PUBLIC_ALLOCATOR"),
+                true
             ),
             "Set allocator for EURC Vault to Morpho Public Allocator"
         );
