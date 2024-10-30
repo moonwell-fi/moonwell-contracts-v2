@@ -10,7 +10,7 @@ import "@protocol/utils/ChainIds.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
+import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 
 contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
     using SafeCast for *;
