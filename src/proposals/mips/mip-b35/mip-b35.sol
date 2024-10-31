@@ -12,8 +12,8 @@ import {MultiRewardDistributor, MultiRewardDistributorCommon} from "@protocol/re
 
 contract mipb35 is HybridProposal, Configs {
     string public constant override name = "MIP-B35";
-    uint256 public constant NEW_CBBTC_REWARD_SPEED = 0; // TBD
-    uint256 public constant NEW_END_TIME = 0; //TBD
+    uint256 public constant NEW_CBBTC_REWARD_SPEED = 33068;
+    uint256 public constant NEW_END_TIME = 1733241600;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
