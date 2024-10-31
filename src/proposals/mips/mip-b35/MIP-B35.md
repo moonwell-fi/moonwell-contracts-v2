@@ -27,9 +27,8 @@ The following actions will be executed as part of this proposal:
      (Gauntlet)
 
 2. **Set Supply Reward Speed for cbBTC Market:**
-
-Set supply speed to **33068** rewards per second for suppliers by calling
-`_updateSupplySpeed` on the MultiRewardDistributor contract.
+   - Set supply speed to **33068** rewards per second for suppliers by calling
+  `_updateSupplySpeed` on the MultiRewardDistributor contract.
 
 3. **Update Emissions End Time:** Configures the reward stream duration by
    setting the end timestamp on the MultiRewardDistributor contract:
