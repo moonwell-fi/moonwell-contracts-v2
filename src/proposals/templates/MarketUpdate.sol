@@ -159,6 +159,19 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
         for (uint256 i = 0; i < updates.length; i++) {
             MarketUpdate memory rec = updates[i];
+            if (rec.reserveFactor != -1) {
+                _pushAction(
+                    addresses.getAddress(rec.market),
+                    abi.encodeWithSignature(
+                        "_setReserveFactor(uint256)",
+                        rec.reserveFactor.toUint256()
+                    ),
+                    string(
+                        abi.encodePacked("Set reserve factor for ", rec.market)
+                    )
+                );
+            }
+
             if (rec.collateralFactor != -1) {
                 _pushAction(
                     unitroller,
@@ -172,19 +185,6 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
                             "Set collateral factor for ",
                             rec.market
                         )
-                    )
-                );
-            }
-
-            if (rec.reserveFactor != -1) {
-                _pushAction(
-                    addresses.getAddress(rec.market),
-                    abi.encodeWithSignature(
-                        "_setReserveFactor(uint256)",
-                        rec.reserveFactor.toUint256()
-                    ),
-                    string(
-                        abi.encodePacked("Set reserve factor for ", rec.market)
                     )
                 );
             }
