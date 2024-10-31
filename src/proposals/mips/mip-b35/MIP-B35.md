@@ -26,12 +26,10 @@ The following actions will be executed as part of this proposal:
      [0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0](https://basescan.org/address/0x5a4e19842e09000a582c20a4f524c26fb48dd4d0)
      (Gauntlet)
 
-2. **Set Reward Speeds for cbBTC Market:**
+2. **Set Supply Reward Speed for cbBTC Market:**
 
-   - **Supply Speed:** Set to **33068** rewards per second for suppliers by
-     calling `_updateSupplySpeed` on the MultiRewardDistributor contract.
-   - **Borrow Speed:** Set to **1** rewards per second for borrowers by calling
-     `_updateBorrowSpeed` on the MultiRewardDistributor contract.
+Set supply speed to **33068** rewards per second for suppliers by
+calling `_updateSupplySpeed` on the MultiRewardDistributor contract.
 
 3. **Update Emissions End Time:** Configures the reward stream duration by
    setting the end timestamp on the MultiRewardDistributor contract:
