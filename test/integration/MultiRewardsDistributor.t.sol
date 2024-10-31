@@ -110,9 +110,9 @@ contract MultiRewardsDistributorLiveSystem is Test, PostProposalCheck {
                         "Gautlet not admin"
                     );
                 } else if (
+                    block.chainid == block.chainid.toBaseChainId() &&
                     address(markets[i]) ==
                     addresses.getAddress("MOONWELL_cbBTC") &&
-                    block.chainid == block.chainid.toBaseChainId() &&
                     allConfigs[j].emissionToken == addresses.getAddress("USDC")
                 ) {
                     assertEq(
