@@ -12,7 +12,8 @@ import {MultiRewardDistributor, MultiRewardDistributorCommon} from "@protocol/re
 
 contract mipb35 is HybridProposal, Configs {
     string public constant override name = "MIP-B35";
-    uint256 public constant NEW_CBBTC_REWARD_SPEED = 33068;
+    uint256 public constant NEW_CBBTC_SUPPLY_REWARD_SPEED = 33068;
+    uint256 public constant NEW_CBBTC_BORROW_REWARD_SPEED = 1;
     uint256 public constant NEW_END_TIME = 1733241600;
 
     constructor() {
@@ -35,7 +36,7 @@ contract mipb35 is HybridProposal, Configs {
                 "_updateSupplySpeed(address,address,uint256)",
                 addresses.getAddress("MOONWELL_cbBTC"),
                 addresses.getAddress("USDC"),
-                NEW_CBBTC_REWARD_SPEED
+                NEW_CBBTC_SUPPLY_REWARD_SPEED
             ),
             "Set supply side USDC emissions for Moonwell cbBTC"
         );
@@ -46,7 +47,7 @@ contract mipb35 is HybridProposal, Configs {
                 "_updateBorrowSpeed(address,address,uint256)",
                 addresses.getAddress("MOONWELL_cbBTC"),
                 addresses.getAddress("USDC"),
-                NEW_CBBTC_REWARD_SPEED
+                NEW_CBBTC_BORROW_REWARD_SPEED
             ),
             "Set borrow USDC emissions for Moonwell cbBTC"
         );
@@ -87,12 +88,12 @@ contract mipb35 is HybridProposal, Configs {
 
         assertEq(
             marketConfig.supplyEmissionsPerSec,
-            NEW_CBBTC_REWARD_SPEED,
+            NEW_CBBTC_SUPPLY_REWARD_SPEED,
             "Supply speed not set correctly"
         );
         assertEq(
             marketConfig.borrowEmissionsPerSec,
-            NEW_CBBTC_REWARD_SPEED,
+            NEW_CBBTC_BORROW_REWARD_SPEED,
             "Borrow speed not set correctly"
         );
         assertEq(
