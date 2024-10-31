@@ -1,22 +1,19 @@
+#!/usr/bin/env bash
 
-#!/bin/bash
+# Set paths for MIP-B17 related files
 export MTOKENS_PATH=src/proposals/mips/mip-b17/MTokens.json
-echo "MTOKENS_PATH=$MTOKENS_PATH"
-
 export EMISSION_CONFIGURATIONS_PATH=src/proposals/mips/mip-b17/RewardStreams.json
-echo "EMISSION_CONFIGURATIONS_PATH=$EMISSION_CONFIGURATIONS_PATH"
-
 export DESCRIPTION_PATH=src/proposals/mips/mip-b17/MIP-B17.md
-echo "DESCRIPTION_PATH=$DESCRIPTION_PATH"
 
+# Set configuration parameters
 export PRIMARY_FORK_ID=1
-echo "PRIMARY_FORK_ID=$PRIMARY_FORK_ID"
-
 export EXCLUDE_MARKET_ADD_CHECKER=true
-echo "EXCLUDE_MARKET_ADD_CHECKER=$EXCLUDE_MARKET_ADD_CHECKER"
-
 export NONCE=0
+
+# Echo all set variables for confirmation
+echo "MTOKENS_PATH=$MTOKENS_PATH"
+echo "EMISSION_CONFIGURATIONS_PATH=$EMISSION_CONFIGURATIONS_PATH"
+echo "DESCRIPTION_PATH=$DESCRIPTION_PATH"
+echo "PRIMARY_FORK_ID=$PRIMARY_FORK_ID"
+echo "EXCLUDE_MARKET_ADD_CHECKER=$EXCLUDE_MARKET_ADD_CHECKER"
 echo "NONCE=$NONCE"
-
-
-
