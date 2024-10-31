@@ -109,6 +109,17 @@ contract MultiRewardsDistributorLiveSystem is Test, PostProposalCheck {
                         addresses.getAddress("GAUNTLET_MULTISIG"),
                         "Gautlet not admin"
                     );
+                } else if (
+                    address(markets[i]) ==
+                    addresses.getAddress("MOONWELL_cbBTC") &&
+                    block.chainid == block.chainid.toBaseChainId() &&
+                    allConfigs[j].emissionToken == addresses.getAddress("USDC")
+                ) {
+                    assertEq(
+                        allConfigs[j].owner,
+                        addresses.getAddress("GAUNTLET_MULTISIG"),
+                        "Gautlet not admin"
+                    );
                 } else {
                     assertEq(
                         allConfigs[j].owner,
