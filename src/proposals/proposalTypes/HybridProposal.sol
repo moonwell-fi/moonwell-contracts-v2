@@ -651,8 +651,6 @@ abstract contract HybridProposal is
                 );
             }
 
-            console.log("PROPOSAL NONCE", nonce);
-
             vm.deal(caller, actions.sumTotalValue());
 
             uint256 gasStart = gasleft();

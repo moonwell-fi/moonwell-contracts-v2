@@ -11,7 +11,7 @@
                 "collateralFactor": -1,
                 "irm": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32",
                 "market": "MOONWELL_USDC",
-                "reserveFactor": null
+                "reserveFactor": -1
             },
             {
                 "collateralFactor": -1,
