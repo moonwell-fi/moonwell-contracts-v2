@@ -13,7 +13,6 @@ import {MultiRewardDistributor, MultiRewardDistributorCommon} from "@protocol/re
 contract mipb35 is HybridProposal, Configs {
     string public constant override name = "MIP-B35";
     uint256 public constant NEW_CBBTC_SUPPLY_REWARD_SPEED = 33068;
-    uint256 public constant NEW_CBBTC_BORROW_REWARD_SPEED = 1;
     uint256 public constant NEW_END_TIME = 1733241600;
 
     constructor() {
@@ -39,17 +38,6 @@ contract mipb35 is HybridProposal, Configs {
                 NEW_CBBTC_SUPPLY_REWARD_SPEED
             ),
             "Set supply side USDC emissions for Moonwell cbBTC"
-        );
-
-        _pushAction(
-            addresses.getAddress("MRD_PROXY"),
-            abi.encodeWithSignature(
-                "_updateBorrowSpeed(address,address,uint256)",
-                addresses.getAddress("MOONWELL_cbBTC"),
-                addresses.getAddress("USDC"),
-                NEW_CBBTC_BORROW_REWARD_SPEED
-            ),
-            "Set borrow USDC emissions for Moonwell cbBTC"
         );
 
         _pushAction(
@@ -93,7 +81,7 @@ contract mipb35 is HybridProposal, Configs {
         );
         assertEq(
             marketConfig.borrowEmissionsPerSec,
-            NEW_CBBTC_BORROW_REWARD_SPEED,
+            1,
             "Borrow speed not set correctly"
         );
         assertEq(
