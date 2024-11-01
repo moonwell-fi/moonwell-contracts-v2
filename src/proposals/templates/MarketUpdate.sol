@@ -102,15 +102,6 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
                 "Market address is not set"
             );
 
-            console.log("Updating market %s on chain %s", rec.market, chain);
-
-            console.log(
-                "Reserve factor: %s, collateral factor: %s, JRM: %s",
-                vm.toString(rec.reserveFactor),
-                vm.toString(rec.collateralFactor),
-                rec.jrm
-            );
-
             marketUpdates[chainId].push(rec);
         }
     }
@@ -138,9 +129,6 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
         for (uint256 i = 0; i < models.length; i++) {
             JRM memory model = models[i];
-
-            console.log("kink", model.kink);
-            console.log("name", model.name);
 
             require(
                 addresses.getAddress(model.name) != address(0),
