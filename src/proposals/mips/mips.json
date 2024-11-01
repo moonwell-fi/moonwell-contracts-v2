@@ -14,10 +14,10 @@
         "proposalType": "HybridProposal"
     },
     {
-        "envpath": "src/proposals/mips/mip-b34/b34.sh",
+        "envpath": "",
         "governor": "MultichainGovernor",
         "id": 62,
-        "path": "src/proposals/templates/MarketUpdate.sol",
+        "path": "src/proposals/mips/mip-b34/mip-b34.sol",
         "proposalType": "HybridProposal"
     },
     {
