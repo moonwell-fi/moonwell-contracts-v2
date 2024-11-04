@@ -209,7 +209,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
         }
     }
 
-    function _buildChainActions(Addresses addresses, uint256 chainId) public {
+    function _buildChainActions(Addresses addresses, uint256 chainId) internal {
         vm.selectFork(chainId.toForkId());
 
         MarketUpdate[] memory updates = marketUpdates[chainId];
@@ -274,7 +274,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
         }
     }
 
-    function _validateChain(Addresses addresses, uint256 chainId) private {
+    function _validateChain(Addresses addresses, uint256 chainId) internal {
         vm.selectFork(chainId.toForkId());
         MarketUpdate[] memory updates = marketUpdates[chainId];
 
