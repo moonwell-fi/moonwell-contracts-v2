@@ -16,8 +16,7 @@ If you have already deployed the IRM contracts, you should first add them to the
 chain addresses file located in the `/utils/` folder. For example, if the
 proposal includes an IRM update on Base network and you have deployed the
 contract externally, add the contract with a descriptive name like
-`JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32` to `/utils/8453.json` (where 8453 is the
-chain ID for Base mainnet).
+`JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32` to [/utils/8453.json](/utils/8453.json).
 
 If you haven't deployed the contracts yet and prefer to use the script for
 deployment, please follow the instructions in the
