@@ -19,9 +19,9 @@ outlined below
     last proposal. For proposals that touch multiple chains, use the letter `x`.
     For example, if the last multichain proposal is `mip-x09`, the next should
     be `mip-x10`.
-2.  **File Name:** Inside the folder, create a file named `mip-yXX.md`.
+2.  **Markdown File Name:** Inside the folder, create a file named `MIP-YXX.md`.
 3.  **Contract Name:** If the proposal includes a smart contract, name it
-    `contract MIPyXX` inside the corresponding Solidity file.
+    `contract mipyxx` inside the corresponding Solidity file.
 4.  **Folders and Solidity Files:** Use lowercase letters.
 5.  **Markdown Files:** Use uppercase letters, e.g., `MIP-BXX.md`.
 

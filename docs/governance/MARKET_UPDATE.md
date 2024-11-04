@@ -4,15 +4,28 @@ This document explains how to update parametrs to Moonwell markets, leveraging
 existing tooling in a way that allows integration and governance testing both
 pre and post-deploy.
 
-## 1. Setup
-
-### Directory Structure
+## Setup
 
 All MIPS should be placed in the `proposals/mips/` folder. The proposal
 [naming convention](./docs/governance/CONTRIBUTING.md#naming-convention) should
 be respected. The market update proposal must include the following three files:
 
-1. A json file with the following structure:
+### 1. Markets and IRMs JSON File
+
+If you have already deployed the IRM contracts, you should first add them to the
+chain addresses file located in the `/utils/` folder. For example, if the
+proposal includes an IRM update on Base network and you have deployed the
+contract externally, add the contract with a descriptive name like
+`JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32` to `/utils/8453.json` (where 8453 is the
+chain ID for Base mainnet).
+
+If you haven't deployed the contracts yet and prefer to use the script for
+deployment, please follow the instructions in the
+[Running Locally](#running-locally) section below.
+
+Once you've handled the contract deployment and address addition, create a new
+file named `yxx.json` in the newly created `mip-yxx` folder, where `yxx`
+represents your MIP number.
 
 ```JSON
 {
@@ -77,208 +90,81 @@ Optimism, it should look like this:
 }
 ```
 
-### MTokens
-
-Go to `mainnetMTokensExample.json` to see what an example mToken JSON
-configuration looks like. Copy the file
-[`MTokens.json`](./src/proposals/mips/examples/mip-market-listing/MTokens.json)
-in the `proposals/mips/examples/mip-market-listing` folder to a new `mip-bxx`
-folder, replacing all of the values with the correct values for those markets.
-Initial mint amount, collateral factor, should be set to the correct values and
-replaced with the actual values the market should have once deployed.
-
-```
-        "initialMintAmount": 1e12,
-        "collateralFactor": 0.75e18,
-        "reserveFactor": 0.25e18,
-        "seizeShare": 0.03e18,
-        "supplyCap": 10500e18,
-        "borrowCap": 6300e18,
-        "priceFeedName": "ETH_ORACLE",
-        "tokenAddressName": "WETH",
-        "name": "Moonwell WETH",
-        "symbol": "mWETH",
-        "addressesString": "MOONWELL_WETH",
-        "jrm": {
-            "baseRatePerYear": 0.02e18,
-            "multiplierPerYear": 0.15e18,
-            "jumpMultiplierPerYear": 3e18,
-            "kink": 0.6e18
-        }
-```
-
-- `initialMintAmount` amount of tokens to mint during gov proposal, if token has
-  18 decimals, should be `1e12`, if token has 6 decimals, should be `1e6`. If
-  token has greater than 18 decimals, decimals should be token decimals - 6
-  decimals. Temporal Governor must be funded with the initialMintAmount of said
-  tokens before the proposal is executed in order for the proposal to succeed.
-- `collateralFactor` the percentage of value of supplied assets that is counted
-  towards an account's collateral value, scaled up by `1e18`. Must be less than
-  `1e18` to ensure system solvency.
-- `reserveFactor` percentage of interest accrued that goes to the Moonwell DAO
-  reserves, scaled up by `1e18`.
-- `seizeShare` percentage of seized collateral that goes to protocol reserves
-  when a liquidation occurs, scaled up by `1e18`.
-- `supplyCap` cap of amount of assets that can be supplied for a given market.
-- `borrowCap` cap of amount of assets that can be borrowed for a given market.
-- `priceFeedName` name of the chainlink aggregator address in `Addresses.json`.
-  **Note user must add the address to Addresses.json on the proper network
-  pre-deployment in order for the price feed to be set correctly**
-- `tokenAddressName` name of the underlying token address name for the new
-  market, set in `Addresses.json`. **Note user must add the underlying token
-  address to Addresses.json on the proper network pre-deployment in order for
-  the MToken's underlying address to be set correctly**
-- `name` name of the Moonwell MToken. Prefixed with `Moonwell`.
-- `symbol` symbol of the Moonwell MToken. Prefixed with `m`.
-- `addressesString` name of the address string set in `Addresses.json`.
-- `jrm` parameters for the configuration of a JumpRateModel for each MToken.
-- `baseRatePerYear` cost to borrow per year as a percentage, scaled by `1e18`.
-- `multiplierPerYear` multiplier on the base rate, which creates the curve of
-  the rate before kink is hit, as a percentage, scaled by `1e18`.
-- `jumpMultiplierPerYear` rate multiplier as a percentage, scaled by `1e18`
-  after kink is hit.
-- `kink` the point on the utilization curve after which the interest rate spikes
-  using `jumpMultiplierPerYear` as a percentage, scaled by `1e18`
-
-If there are no MTokens being added, the file is still needed, but it should
-contain an empty array.
-
-### RewardStreams
-
-Go to `mainnetRewardStreams.json` to see what an example reward JSON
-configuration looks like. Copy the file
-[`RewardStreams.json`](./src/proposals/mips/examples/mip-market-listing/RewardStreams.json)
-in the `proposals/mips/examples/mip-market-listing` folder into the new
-`mip-bxx` folder, replacing all of the values with the correct values for those
-markets.
-
-If there are no reward streams, the file is still needed, but it should contain
-an empty array.
-
-## 2. Proposal Description
+### 2. Proposal Description
 
 Once the proposal description has been created, copy and paste it into a file
-named `MIP-Bxx.md` in the new `mip-bxx` folder.
+named `MIP-YXX.md` in the new `mip-yxx` folder.
 
-## 3. Environment Variables
+### 3. Create the shell script
 
-Once both the `MIP-Bxx.md`, `MTokens.json`, and `RewardStreams.json` files have
-the necessary contents, environment variables must be set for the script to read
-in their path. Export the following environment variables pointing to the
-correct paths:
-
-```
-export LISTING_PATH="./src/proposals/mips/mip-bxx/MIP-Bxx.md"
-export MTOKENS_PATH="./src/proposals/mips/mip-bxx/MTokens.json"
-export EMISSION_PATH="./src/proposals/mips/mip-bxx/RewardStreams.json"
-```
-
-If deploying and generating calldata for the first time, environment variable
-`DO_AFTER_DEPLOY_MTOKEN_BROADCAST` should be set to true. After doing deploy and
-setting the addresses in `Addresses.json`, this variable should be set to false.
-This variable is used to determine whether or not to broadcast the after deploy
-transactions that configure the MToken, which are not needed after the tokens
-are deployed.
-
-If any errors show up relating to not being able to read in a file, double check
-the environment variables and make sure the paths are correct.
-
-## 4. Deployment
-
-To deploy these new markets, run
-[`mip-market-listing.sol`](./src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol)
-using command:
+Once both the markdown and json files have been created, add a new file `yxx.sh`
+to the same folder. On this file you should export the following environment
+variables
 
 ```
-forge script src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol:mip0x \
-    -vvvv \
-    --rpc-url base \
-    --broadcast
-```
+export JSON_PATH="./src/proposals/mips/mip-yxx/yxx.json"
+export DESCRIPTION_PATH="./src/proposals/mips/mip-yxx/MIP-YXX.md"
+export PRIMARY_FORK_ID=1
 
-Once the contracts are deployed, copy and paste the JSON the deployment script
-outputted into the `Addresses.json` file. Now, save these changes and proceed to
-the next step. DO NOT DELETE EXISTING JSON, JUST ADD TO IT.
-
-## 5. Governance Proposal
-
-Now that the contracts are deployed, it's time to generate the calldata. If the
-contracts have not been deployed and added to Addresses.json yet, go back to
-previous steps and do that first:
-
-then, generate the calldata by running:
+echo "JSON_PATH=$JSON_PATH"
+echo "DESCRIPTION_PATH=$DESCRIPTION_PATH"
+echo "PRIMARY_FORK_ID=$PRIMARY_FORK_ID"
 
 ```
-forge test --match-test testPrintNewMarketCalldataAlreadyDeployedMToken -vvv --fork-url base
+
+- Uses 0 for the `PRIMARY_FORK_ID` env if it's a Moonbeam-only or multi-chain
+  proposal.
+- Uses 1 for Base-only proposals.
+- Uses 2 for Optimism-only proposals.
+
+**Note:** If any errors show up relating to not being able to read in a file,
+double-check the environment variables and make sure the paths are correct.
+
+## Running Locally
+
+```bash
+source src/proposals/mips/mip-yxx/yxx.sh && forge script src/proposals/templates/MarketUpdate.sol`
 ```
 
-If you encounter errors, ensure the environment variables are set correctly and
-the paths are correct.
+If you want to use the script to deploy the IRM contracts run this instead:
 
-Environment variable `DO_AFTER_DEPLOY_MTOKEN_BROADCAST` should be set to false
-as this step should only be used to generate calldata. This variable is used to
-determine whether or not to broadcast the after deploy transactions that
-configure the MToken, which are not needed after the tokens are deployed as that
-should have been done in the deployment step.
-
-Recommend referring to the [CONTRIBUTING.md](./CONTRIBUTING.md) file for more
-information on how to generate calldata and deploy contracts. Then run the forge
-script command with the proper environment variables after the contracts have
-been deployed and addresses added to Addresses.json. Using this output, double
-check the calldata generated by the test is correct by comparing it to the
-calldata generated by running the commands in the
-[CONTRIBUTING.md](./CONTRIBUTING.md) file.
-
-Scroll up the logs from the step above to get the calldata after section
-"multichain governor queue governance calldata"", and send the calldata to the
-governance contract on moonbeam or moonbase by going to metamask and submitting
-a transaction to the MultichainGovernor contract with the calldata the raw hex
-copied.
-
-Once the calldata is sent, vote and wait for the proposal to finish the voting
-period, then execute it.
-
-## 6. Testing
-
-Integration tests can be created which ensure the proposal is working as
-expected. The integration tests must inherit from
-[PostProposalCheck](../../test/integration/PostProposalCheck.sol). This contract
-will execute the new mip-[b or m]xx as xx corresponds to the greatest MIP number
-in the `proposals/mips` folder.
-
-Copy the [HundredFinanceExploit](./test/unit/HundredFinanceExploit.t.sol)
-example file, and replicate the structure where the PostProposalCheck contract
-is imported and inherited, then write the necessary tests for these newly added
-markets, ensuring supplying, borrowing, repaying all work.
-
-## 7. Safety Checks
-
-This framework is designed to ensure that the system is safe and that the
-parameters look to be correct. In the market-listing solidity file, there are
-checks that the parameters are within sane values. There are checks around the
-supply and borrow cap, and if these values are set to 0, no checks will run,
-however, if these values are non zero, the checks will ensure that the supply
-and borrow cap are not set to values that are too high. If the value of a supply
-or borrow cap exceed 120m tokens adjusted for decimals, then a warning will fire
-when running the script and the script will not continue. If these values are
-correct, you can override the warnings by setting:
-
-```
-export OVERRIDE_SUPPLY_CAP=true
-export OVERRIDE_BORROW_CAP=true
+```bash
+source src/proposals/mips/mip-yxx/yxx.sh && forge script
+src/proposals/templates/MarketUpdate.sol` --broadcast --ledger/account
 ```
 
-If you set these variables to true, make sure to set them back to false after
-running the proposal to ensure no errors are missed in the future.
+After running, copy the new IRM contracts and add to the corresponding chain
+json file inside [/utils/](/utils/)
 
-If the borrow cap is not equal to 0, and there is no supply cap, this is invalid
-for a governance proposal and the creation of the proposal will revert with an
-appropriate message.
+## Creating the Pull Request
 
-If the supply cap is set, but the borrow cap is greater than or equal to the
-supply cap, this is invalid for a governance proposal and the creation of the
-proposal will revert with an appropriate message.
+Before opening a PR, you should add a new object to the
+[src/proposals/mips/mips.json](src/proposals/mips/mips.json) file. For example:
 
-If the collateral factor of a market is set to greater than 95%, then the
-creation of the proposal will revert with an appropriate message as it is
-assumed that no collateral will ever have a collateral factor higher than 95%.
+```JSON
+    {
+        "envpath": "src/proposals/mips/mip-yxx/yxx.json",
+        "governor": "MultichainGovernor",
+        "id": 0,
+        "path": "src/proposals/templates/MarketUpdate.sol",
+        "proposalType": "HybridProposal"
+    },
+```
+
+When adding the new entry:
+
+1. The `governor`, `path`, and `proposalType` fields should always remain the
+   same as shown in the example.
+2. Set the `id` to 0 while the proposal is not yet on-chain.
+3. Once the proposal is on-chain, update the `id` with the transaction ID from
+   the blockchain.
+
+Important notes:
+
+- The PR will only be merged after the `id` has been properly set.
+- Adding this new entry to `mips.json` is mandatory as it ensures: a.
+  Integration tests run against the new proposal. b. CI will print the calldata
+  in the PR comments.
+
+Please follow the [Pull Requests Guideline](/docs/GUIDELINES#pull-requests) when
+submitting your PR.
