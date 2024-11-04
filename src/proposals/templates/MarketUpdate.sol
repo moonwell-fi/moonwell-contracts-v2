@@ -5,6 +5,7 @@ import "@forge-std/Test.sol";
 import "@forge-std/StdJson.sol";
 
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 
 import "@protocol/utils/ChainIds.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
@@ -17,6 +18,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
     using stdJson for string;
     using ChainIds for uint256;
     using stdStorage for StdStorage;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     struct MarketUpdate {
         int256 collateralFactor;
@@ -35,6 +37,8 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
     mapping(uint256 chainId => MarketUpdate[]) public marketUpdates;
     mapping(uint256 chainId => mapping(string name => JRM)) public irModels;
+    mapping(uint256 chainId => EnumerableSet.AddressSet markets)
+        private _markets;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -97,10 +101,10 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
         for (uint256 i = 0; i < updates.length; i++) {
             MarketUpdate memory rec = updates[i];
 
-            require(
-                addresses.getAddress(rec.market) != address(0),
-                "Market address is not set"
-            );
+            address market = addresses.getAddress(rec.market);
+            require(market != address(0), "Market address is not set");
+
+            require(!_markets[chainId].contains(market), "Market already set");
 
             marketUpdates[chainId].push(rec);
         }
@@ -155,7 +159,12 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
                         rec.reserveFactor.toUint256()
                     ),
                     string(
-                        abi.encodePacked("Set reserve factor for ", rec.market)
+                        abi.encodePacked(
+                            "Set reserve factor to ",
+                            vm.toString(rec.reserveFactor),
+                            " for ",
+                            rec.market
+                        )
                     )
                 );
             }
@@ -170,7 +179,9 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
                     ),
                     string(
                         abi.encodePacked(
-                            "Set collateral factor for ",
+                            "Set collateral factor to ",
+                            vm.toString(rec.collateralFactor),
+                            " for ",
                             rec.market
                         )
                     )
@@ -184,7 +195,14 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
                         "_setInterestRateModel(address)",
                         addresses.getAddress(rec.jrm)
                     ),
-                    string(abi.encodePacked("Set JRM for ", rec.market))
+                    string(
+                        abi.encodePacked(
+                            "Set JRM for ",
+                            vm.toString(addresses.getAddress(rec.jrm)),
+                            " for ",
+                            rec.market
+                        )
+                    )
                 );
             }
         }
