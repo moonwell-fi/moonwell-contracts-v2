@@ -1,16 +1,16 @@
 # Overview
 
-This document explains how to update parametrs to Moonwell markets, leveraging
+This document explains how to update parameters to Moonwell markets, leveraging
 existing tooling in a way that allows integration and governance testing both
 pre and post-deploy.
 
 ## Setup
 
 All MIPS should be placed in the `proposals/mips/` folder. The proposal
-[naming convention](./docs/governance/CONTRIBUTING.md#naming-convention) should
-be respected. The market update proposal must include the following three files:
+[naming convention](./CONTRIBUTING.md#naming-convention) should be respected.
+The market update proposal must include the following three files:
 
-### 1. Markets and IRMs JSON File
+### 1. JSON File
 
 If you have already deployed the IRM contracts, you should first add them to the
 chain addresses file located in the `/utils/` folder. For example, if the
@@ -22,8 +22,8 @@ If you haven't deployed the contracts yet and prefer to use the script for
 deployment, please follow the instructions in the
 [Running Locally](#running-locally) section below.
 
-Once you've handled the contract deployment and address addition, create a new
-file named `yxx.json` in the newly created `mip-yxx` folder, where `yxx`
+Once you've handled the contracts deployment and addresses addition, create a
+new file named `yxx.json` in the newly created `mip-yxx` folder, where `yxx`
 represents your MIP number.
 
 ```JSON
@@ -94,11 +94,11 @@ Optimism, it should look like this:
 Once the proposal description has been created, copy and paste it into a file
 named `MIP-YXX.md` in the new `mip-yxx` folder.
 
-### 3. Create the shell script
+### 3. Shell Script
 
 Once both the markdown and json files have been created, add a new file `yxx.sh`
 to the same folder. On this file you should export the following environment
-variables
+variables:
 
 ```
 export JSON_PATH="./src/proposals/mips/mip-yxx/yxx.json"
@@ -138,7 +138,8 @@ json file inside [/utils/](/utils/)
 ## Creating the Pull Request
 
 Before opening a PR, you should add a new object to the
-[src/proposals/mips/mips.json](src/proposals/mips/mips.json) file. For example:
+[/src/proposals/mips/mips.json](/src/proposals/mips/mips.json) file. For
+example:
 
 ```JSON
     {
@@ -155,15 +156,15 @@ When adding the new entry:
 1. The `governor`, `path`, and `proposalType` fields should always remain the
    same as shown in the example.
 2. Set the `id` to 0 while the proposal is not yet on-chain.
-3. Once the proposal is on-chain, update the `id` with the transaction ID from
-   the blockchain.
+3. Once the proposal is on-chain, update the `id` with the proposal id from the
+   transaction `ProposalCreated` event emisison.
 
 Important notes:
 
 - The PR will only be merged after the `id` has been properly set.
-- Adding this new entry to `mips.json` is mandatory as it ensures: a.
-  Integration tests run against the new proposal. b. CI will print the calldata
-  in the PR comments.
+- Adding this new entry to `mips.json` is mandatory as it ensures:
+  1. Integration tests run against the new proposal.
+  2. CI will print the calldata in the PR comments.
 
-Please follow the [Pull Requests Guideline](/docs/GUIDELINES#pull-requests) when
-submitting your PR.
+Please follow the [Pull Requests Guideline](/docs/GUIDELINES.md#pull-requests)
+when submitting your PR.
