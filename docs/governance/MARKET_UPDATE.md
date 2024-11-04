@@ -132,8 +132,16 @@ source src/proposals/mips/mip-yxx/yxx.sh && forge script
 src/proposals/templates/MarketUpdate.sol` --broadcast --ledger/account
 ```
 
-After running, copy the new IRM contracts and add to the corresponding chain
-json file inside [/utils/](/utils/)
+After running, follow these steps:
+
+1. Copy the new IRM contracts addresses and add them to the corresponding chain
+   JSON file inside the [/utils/](/utils/) directory.
+
+2. Copy the calldata from the output and paste it in the PR comments after the
+   next section.
+
+3. Check if the pasted calldata matches the calldata that CI will print in the
+   comments.
 
 ## Creating the Pull Request
 
