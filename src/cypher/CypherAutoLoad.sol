@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin-contracts/contracts/security/Pausable.sol";
+import "@openzeppelin-contracts/contracts/access/AccessControl.sol";
 
-import {IAllowanceTransfer} from "./IAllowanceTransfer.sol";
+import {IAllowanceTransfer} from "./interfaces/IAllowanceTransfer.sol";
 
 contract CypherAutoLoad is Pausable, AccessControl, ReentrancyGuard {
     bytes32 public constant EXECUTIONER_ROLE = keccak256("EXECUTIONER_ROLE");

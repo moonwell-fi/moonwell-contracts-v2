@@ -8,3 +8,4 @@
 @proposals=src/proposals/
 @utils/=src/utils/
 @zelt/=lib/zelt/
+@solmate/
