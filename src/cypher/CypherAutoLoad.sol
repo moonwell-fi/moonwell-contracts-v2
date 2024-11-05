@@ -29,20 +29,12 @@ contract CypherAutoLoad is Pausable, AccessControl, ReentrancyGuard {
         _setRoleAdmin(EXECUTIONER_ROLE, DEFAULT_ADMIN_ROLE);
     }
 
-    modifier anyPrivilegedUser() {
-        bool authorized = false;
-
-        if (hasRole(EXECUTIONER_ROLE, _msgSender())) {
-            authorized = true;
-        } else if (hasRole(DEFAULT_ADMIN_ROLE, _msgSender())) {
-            authorized = true;
-        }
-
-        require(authorized, "AccessControl: sender does not have permission");
-        _;
-    }
-
     function pause() external whenNotPaused anyPrivilegedUser {
+        require(
+            hasrole(executionerRole, msg.sender) ||
+                hasrole(adminRole, msg.sender),
+            "AccessControl: sender does not have permission"
+        );
         _pause();
     }
 
