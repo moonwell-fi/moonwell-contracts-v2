@@ -6,7 +6,7 @@ import "@openzeppelin-contracts/contracts/access/AccessControl.sol";
 
 import {IAllowanceTransfer} from "./interfaces/IAllowanceTransfer.sol";
 
-contract CypherAutoLoad is Pausable, AccessControl, ReentrancyGuard {
+contract CypherAutoLoad is Pausable, AccessControl {
     bytes32 public constant EXECUTIONER_ROLE = keccak256("EXECUTIONER_ROLE");
     address public beneficiary;
     IAllowanceTransfer public moonwellAllowanceTransfer;
@@ -25,10 +25,10 @@ contract CypherAutoLoad is Pausable, AccessControl, ReentrancyGuard {
         _setRoleAdmin(EXECUTIONER_ROLE, DEFAULT_ADMIN_ROLE);
     }
 
-    function pause() external whenNotPaused anyPrivilegedUser {
+    function pause() external whenNotPaused {
         require(
-            hasrole(executionerRole, msg.sender) ||
-                hasrole(adminRole, msg.sender),
+            hasRole(EXECUTIONER_ROLE, msg.sender) ||
+                hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
             "AccessControl: sender does not have permission"
         );
         _pause();
@@ -49,12 +49,10 @@ contract CypherAutoLoad is Pausable, AccessControl, ReentrancyGuard {
     function debit(
         address tokenAddress,
         address userAddress,
-        uint amount
+        uint160 amount
     ) external whenNotPaused onlyRole(EXECUTIONER_ROLE) returns (bool) {
         require(userAddress != address(0), "Invalid user address");
         require(tokenAddress != address(0), "Invalid token address");
-
-        IERC20 token = IERC20(tokenAddress);
 
         moonwellAllowanceTransfer.transferFrom(
             userAddress,
