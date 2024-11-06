@@ -57,6 +57,17 @@ abstract contract RateLimitedAllowance {
         _transfer(from, to, amount, token);
     }
 
+    function getRateLimitedAllowance(
+        address owner,
+        address token,
+        address spender
+    ) returns (uint128 rateLimitPerSecond, uint128 bufferCap) {
+        RateLimit memory limit = limitedAllowance[owner][token][spender];
+
+        rateLimitPerSecond = limit.rateLimitPerSecond;
+        bufferCap = limit.bufferCap;
+    }
+
     function _transfer(
         address from,
         address to,
