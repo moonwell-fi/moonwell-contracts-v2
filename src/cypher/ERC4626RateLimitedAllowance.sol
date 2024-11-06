@@ -3,8 +3,6 @@ pragma solidity 0.8.19;
 
 import {IERC4626} from "@forge-std/interfaces/IERC4626.sol";
 import {RateLimitedAllowance} from "./RateLimitedAllowance.sol";
-import {RateLimitCommonLibrary} from "@zelt/src/lib/RateLimitCommonLibrary.sol";
-import {RateLimitedLibrary, RateLimit} from "@zelt/src/lib/RateLimitedLibrary.sol";
 
 contract ERC4626RateLimitedAllowance is RateLimitedAllowance {
     function _transfer(

@@ -4,8 +4,6 @@ pragma solidity 0.8.19;
 import {RateLimitedLibrary, RateLimit} from "@zelt/src/lib/RateLimitedLibrary.sol";
 import {RateLimitCommonLibrary} from "@zelt/src/lib/RateLimitCommonLibrary.sol";
 
-import {IRateLimitedAllowance} from "./IRateLimitedAllowance.sol";
-
 abstract contract RateLimitedAllowance {
     using RateLimitedLibrary for RateLimit;
     using RateLimitCommonLibrary for RateLimit;
@@ -61,7 +59,7 @@ abstract contract RateLimitedAllowance {
         address owner,
         address token,
         address spender
-    ) public returns (uint128 rateLimitPerSecond, uint128 bufferCap) {
+    ) public view returns (uint128 rateLimitPerSecond, uint128 bufferCap) {
         RateLimit memory limit = limitedAllowance[owner][token][spender];
 
         rateLimitPerSecond = limit.rateLimitPerSecond;
