@@ -27,9 +27,14 @@ abstract contract RateLimitedAllowance {
     ) external {
         RateLimit storage limit = limitedAllowance[msg.sender][token][spender];
 
-        limit.lastBufferUsedTime = uint32(block.timestamp);
+        uint256 lastBufferUsedTime = limit.lastBufferUsedTime;
+
         limit.setBufferCap(bufferCap);
-        limit.bufferStored = bufferCap;
+
+        // manually set bufferCap this as first call to setBufferCap sets it to 0
+        if (lastBufferUsedTime == 0) {
+            limit.bufferStored = bufferCap;
+        }
 
         limit.setRateLimitPerSecond(rateLimitPerSecond);
 
