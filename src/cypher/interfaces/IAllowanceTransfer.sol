@@ -180,6 +180,20 @@ interface IAllowanceTransfer is IEIP712 {
         AllowanceTransferDetails[] calldata transferDetails
     ) external;
 
+    /// @notice Withdraw tokens from vault to receiver
+    /// @param amount The amount of the underlying token to transfer
+    /// @param receiver The address of the recipient
+    /// @param owner The address to withdraw from
+    /// @param vault The vault address to withdraw from
+    /// @dev Requires the owner address to have approved at least the desired amount
+    /// of tokens to msg.sender.
+    function withdraw(
+        uint160 amount,
+        address receiver,
+        address owner,
+        address vault
+    ) external;
+
     /// @notice Enables performing a "lockdown" of the sender's Permit2 identity
     /// by batch revoking approvals
     /// @param approvals Array of approvals to revoke.

@@ -102,12 +102,12 @@ contract MoonwellAllowanceTransfer is IAllowanceTransfer, EIP712 {
     }
 
     function withdraw(
-        uint256 assets,
+        uint160 amount,
         address receiver,
         address owner,
         address vault
     ) external {
-        PackedAllowance storage allowed = allowance[vault][token][msg.sender];
+        PackedAllowance storage allowed = allowance[owner][vault][msg.sender];
 
         if (block.timestamp > allowed.expiration)
             revert AllowanceExpired(allowed.expiration);
@@ -123,7 +123,7 @@ contract MoonwellAllowanceTransfer is IAllowanceTransfer, EIP712 {
             }
         }
 
-        IERC4626(vault).withdraw(assets, receiver, owner);
+        IERC4626(vault).withdraw(uint256(amount), receiver, owner);
     }
 
     /// @notice Internal function for transferring tokens using stored allowances

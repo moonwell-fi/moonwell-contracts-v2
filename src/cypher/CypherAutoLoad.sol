@@ -38,19 +38,24 @@ contract CypherAutoLoad is Pausable, AccessControl {
         _unpause();
     }
 
+    function setBeneficiary(
+        address _beneficiary
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        beneficiary = _beneficiary;
+    }
+
     /**
      * @notice Debit tokens from a user's account and transfer to a beneficiary.
      * @dev Only the EXECUTIONER_ROLE can call this function.
      * @param tokenAddress The address of the token to be debited.
      * @param userAddress The address of the user from whom tokens will be debited.
      * @param amount The amount of tokens to debit and transfer.
-     * @return A boolean indicating the success of the transfer.
      */
     function debit(
         address tokenAddress,
         address userAddress,
         uint160 amount
-    ) external whenNotPaused onlyRole(EXECUTIONER_ROLE) returns (bool) {
+    ) external whenNotPaused onlyRole(EXECUTIONER_ROLE) {
         require(userAddress != address(0), "Invalid user address");
         require(tokenAddress != address(0), "Invalid token address");
 
@@ -60,7 +65,25 @@ contract CypherAutoLoad is Pausable, AccessControl {
             amount,
             tokenAddress
         );
+
         emit Withdraw(tokenAddress, userAddress, beneficiary, amount);
-        return true;
+    }
+
+    function debitFromVault(
+        address vaultAddress,
+        address userAddress,
+        uint160 amount
+    ) external whenNotPaused onlyRole(EXECUTIONER_ROLE) {
+        require(userAddress != address(0), "Invalid user address");
+        require(vaultAddress != address(0), "Invalid vault address");
+
+        moonwellAllowanceTransfer.withdraw(
+            amount,
+            beneficiary,
+            userAddress,
+            vaultAddress
+        );
+
+        emit Withdraw(vaultAddress, userAddress, beneficiary, amount);
     }
 }
