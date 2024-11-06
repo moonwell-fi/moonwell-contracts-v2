@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
+import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin-contracts/contracts/security/Pausable.sol";
+
 import {RateLimitedLibrary, RateLimit} from "@zelt/src/lib/RateLimitedLibrary.sol";
 import {RateLimitCommonLibrary} from "@zelt/src/lib/RateLimitCommonLibrary.sol";
 
-abstract contract RateLimitedAllowance {
+abstract contract RateLimitedAllowance is Pausable, Ownable {
     using RateLimitedLibrary for RateLimit;
     using RateLimitCommonLibrary for RateLimit;
 
@@ -15,6 +18,10 @@ abstract contract RateLimitedAllowance {
         uint128 rateLimitPerSecond,
         uint128 bufferCap
     );
+
+    constructor(address owner) Ownable() {
+        _transferOwnership(owner);
+    }
 
     mapping(address owner => mapping(address token => mapping(address spender => RateLimit)))
         public limitedAllowance;
@@ -52,7 +59,7 @@ abstract contract RateLimitedAllowance {
         address to,
         uint256 amount,
         address token
-    ) external {
+    ) external whenNotPaused {
         RateLimit storage limit = limitedAllowance[from][token][msg.sender];
 
         limit.depleteBuffer(amount);
@@ -69,6 +76,14 @@ abstract contract RateLimitedAllowance {
 
         rateLimitPerSecond = limit.rateLimitPerSecond;
         bufferCap = limit.bufferCap;
+    }
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     function _transfer(
