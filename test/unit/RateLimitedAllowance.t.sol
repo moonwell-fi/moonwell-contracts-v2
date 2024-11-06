@@ -52,4 +52,33 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
             bufferCap
         );
     }
+
+    function testApproveSetsToStorage() public {
+        address spender = address(1234);
+        uint128 rateLimitPerSecond = 1.5e16.toUint128();
+        uint128 bufferCap = 1000e18.toUint128();
+
+        rateLimitedAllowance.approve(
+            address(vault),
+            spender,
+            rateLimitPerSecond,
+            bufferCap
+        );
+
+        (
+            uint128 rateLimitPerSecondStored,
+            uint128 bufferCapStored
+        ) = rateLimitedAllowance.getRateLimitedAllowance(
+                address(this),
+                address(vault),
+                spender
+            );
+
+        vm.assertEq(
+            rateLimitPerSecondStored,
+            rateLimitPerSecond,
+            "Wrong rateLimitPerSecond"
+        );
+        vm.assertEq(bufferCapStored, bufferCap, "Wrong bufferCap");
+    }
 }

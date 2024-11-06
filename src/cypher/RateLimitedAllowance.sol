@@ -61,7 +61,7 @@ abstract contract RateLimitedAllowance {
         address owner,
         address token,
         address spender
-    ) returns (uint128 rateLimitPerSecond, uint128 bufferCap) {
+    ) public returns (uint128 rateLimitPerSecond, uint128 bufferCap) {
         RateLimit memory limit = limitedAllowance[owner][token][spender];
 
         rateLimitPerSecond = limit.rateLimitPerSecond;
