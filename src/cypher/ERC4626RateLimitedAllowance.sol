@@ -10,9 +10,9 @@ contract ERC4626RateLimitedAllowance is RateLimitedAllowance {
     function _transfer(
         address from,
         address to,
-        uint160 amount,
+        uint256 amount,
         address vault
     ) internal override {
-        IERC4626(vault).withdraw(uint256(amount), to, from);
+        IERC4626(vault).withdraw(amount, to, from);
     }
 }
