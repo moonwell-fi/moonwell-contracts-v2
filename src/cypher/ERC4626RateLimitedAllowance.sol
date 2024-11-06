@@ -6,7 +6,7 @@ import {RateLimitedAllowance} from "./RateLimitedAllowance.sol";
 import {RateLimitCommonLibrary} from "@zelt/src/lib/RateLimitCommonLibrary.sol";
 import {RateLimitedLibrary, RateLimit} from "@zelt/src/lib/RateLimitedLibrary.sol";
 
-contract VaultRateLimitedAllowance is RateLimitedAllowance {
+contract ERC4626RateLimitedAllowance is RateLimitedAllowance {
     function _transfer(
         address from,
         address to,
