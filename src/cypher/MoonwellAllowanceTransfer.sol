@@ -7,11 +7,11 @@ import {SafeTransferLib} from "@solmate/src/utils/SafeTransferLib.sol";
 import {PermitHash} from "./libraries/PermitHash.sol";
 import {SignatureVerification} from "./libraries/SignatureVerification.sol";
 import {EIP712} from "./EIP712.sol";
-import {IAllowanceTransfer} from "./interfaces/IAllowanceTransfer.sol";
+import {IRateLimitAllowance} from "./interfaces/IRateLimitAllowance.sol";
 import {SignatureExpired, InvalidNonce} from "./PermitErrors.sol";
 import {Allowance} from "./libraries/Allowance.sol";
 
-contract MoonwellAllowanceTransfer is IAllowanceTransfer, EIP712 {
+abstract contract RateLimitedAllowance is IRateLimitAllowance, EIP712 {
     using SignatureVerification for bytes;
     using SafeTransferLib for ERC20;
     using PermitHash for PermitSingle;
@@ -24,52 +24,29 @@ contract MoonwellAllowanceTransfer is IAllowanceTransfer, EIP712 {
     mapping(address => mapping(address => mapping(address => PackedAllowance)))
         public allowance;
 
-    /// @inheritdoc IAllowanceTransfer
+    mapping(address => mapping(address => mapping(address => PackedAllowance)))
+        public allowance;
+
+
+
+    /// @inheritdoc IRateLimitAllowance
     function approve(
         address token,
         address spender,
         uint160 amount,
-        uint48 expiration
+        uint48 expiration,
+        uint48 period
     ) external {
         PackedAllowance storage allowed = allowance[msg.sender][token][spender];
-        allowed.updateAmountAndExpiration(amount, expiration);
+        // If the inputted expiration is 0, the allowance only lasts the duration of the block.
+        allowed.expiration = expiration == 0
+            ? uint48(block.timestamp)
+            : expiration;
+        allowed.amount = amount;
+        allowed.period = period;
+        allowed.lastUpdatedTimestamp = block.timestamp;
+
         emit Approval(msg.sender, token, spender, amount, expiration);
-    }
-
-    /// @inheritdoc IAllowanceTransfer
-    function permit(
-        address owner,
-        PermitSingle memory permitSingle,
-        bytes calldata signature
-    ) external {
-        if (block.timestamp > permitSingle.sigDeadline)
-            revert SignatureExpired(permitSingle.sigDeadline);
-
-        // Verify the signer address from the signature.
-        signature.verify(_hashTypedData(permitSingle.hash()), owner);
-
-        _updateApproval(permitSingle.details, owner, permitSingle.spender);
-    }
-
-    /// @inheritdoc IAllowanceTransfer
-    function permit(
-        address owner,
-        PermitBatch memory permitBatch,
-        bytes calldata signature
-    ) external {
-        if (block.timestamp > permitBatch.sigDeadline)
-            revert SignatureExpired(permitBatch.sigDeadline);
-
-        // Verify the signer address from the signature.
-        signature.verify(_hashTypedData(permitBatch.hash()), owner);
-
-        address spender = permitBatch.spender;
-        unchecked {
-            uint256 length = permitBatch.details.length;
-            for (uint256 i = 0; i < length; ++i) {
-                _updateApproval(permitBatch.details[i], owner, spender);
-            }
-        }
     }
 
     /// @inheritdoc IAllowanceTransfer
@@ -80,25 +57,6 @@ contract MoonwellAllowanceTransfer is IAllowanceTransfer, EIP712 {
         address token
     ) external {
         _transfer(from, to, amount, token);
-    }
-
-    /// @inheritdoc IAllowanceTransfer
-    function transferFrom(
-        AllowanceTransferDetails[] calldata transferDetails
-    ) external {
-        unchecked {
-            uint256 length = transferDetails.length;
-            for (uint256 i = 0; i < length; ++i) {
-                AllowanceTransferDetails
-                    memory transferDetail = transferDetails[i];
-                _transfer(
-                    transferDetail.from,
-                    transferDetail.to,
-                    transferDetail.amount,
-                    transferDetail.token
-                );
-            }
-        }
     }
 
     function withdraw(
@@ -140,15 +98,20 @@ contract MoonwellAllowanceTransfer is IAllowanceTransfer, EIP712 {
             revert AllowanceExpired(allowed.expiration);
 
         uint256 maxAmount = allowed.amount;
-        if (maxAmount != type(uint160).max) {
-            if (amount > maxAmount) {
-                revert InsufficientAllowance(maxAmount);
-            } else {
-                unchecked {
-                    allowed.amount = uint160(maxAmount) - amount;
+        uint256 period = allowed.period;
+
+        if (allowed.lastUpdatedTimestamp + period > block.timestamp) {
+            allowed.lastUpdatedTimestamp
+        }
+            if (maxAmount != type(uint160).max) {
+                if (amount > maxAmount) {
+                    revert InsufficientAllowance(maxAmount);
+                } else {
+                    unchecked {
+                        allowed.amount = uint160(maxAmount) - amount;
+                    }
                 }
             }
-        }
 
         // Transfer the tokens from the from address to the recipient.
         ERC20(token).safeTransferFrom(from, to, amount);

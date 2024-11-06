@@ -3,10 +3,10 @@ pragma solidity 0.8.19;
 
 import {IEIP712} from "./IEIP712.sol";
 
-/// @title AllowanceTransfer
-/// @notice Handles ERC20 token permissions through signature based allowance setting and ERC20 token transfers by checking allowed amounts
-/// @dev Requires user's token approval on the Permit2 contract
-interface IAllowanceTransfer is IEIP712 {
+/// @title IRateLimitApproval
+/// @notice Handles token permissions through signature based allowance setting
+/// @dev Requires user's approval for the RateLimitApproval contract
+interface IRateLimitApproval is IEIP712 {
     /// @notice Thrown when an allowance on a token has expired.
     /// @param deadline The timestamp at which the allowed amount is no longer valid
     error AllowanceExpired(uint256 deadline);
@@ -33,7 +33,8 @@ interface IAllowanceTransfer is IEIP712 {
         address indexed token,
         address indexed spender,
         uint160 amount,
-        uint48 expiration
+        uint48 expiration,
+        uint48 period
     );
 
     /// @notice Emits an event when the owner successfully sets permissions using a permit signature on a token for the spender.
@@ -85,12 +86,14 @@ interface IAllowanceTransfer is IEIP712 {
     /// @dev This info is saved per owner, per token, per spender and all signed over in the permit message
     /// @dev Setting amount to type(uint160).max sets an unlimited approval
     struct PackedAllowance {
-        // amount allowed
+        // amount allowed per period
         uint160 amount;
         // permission expiry
         uint48 expiration;
-        // an incrementing value indexed per owner,token,and spender for each signature
+        // an incrementing value indexed per owner, contract,and spender for each signature
         uint48 nonce;
+        /// the period duration
+        uint48 period;
     }
 
     /// @notice A token spender pair.

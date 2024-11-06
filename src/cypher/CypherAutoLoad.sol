@@ -4,12 +4,11 @@ pragma solidity 0.8.19;
 import "@openzeppelin-contracts/contracts/security/Pausable.sol";
 import "@openzeppelin-contracts/contracts/access/AccessControl.sol";
 
-import {IAllowanceTransfer} from "./interfaces/IAllowanceTransfer.sol";
+import {IRateLimitedAllowance} from "./IRateLimitedAllowance.sol";
 
 contract CypherAutoLoad is Pausable, AccessControl {
     bytes32 public constant EXECUTIONER_ROLE = keccak256("EXECUTIONER_ROLE");
     address public beneficiary;
-    IAllowanceTransfer public moonwellAllowanceTransfer;
 
     event Withdraw(
         address indexed token,
@@ -47,19 +46,25 @@ contract CypherAutoLoad is Pausable, AccessControl {
     /**
      * @notice Debit tokens from a user's account and transfer to a beneficiary.
      * @dev Only the EXECUTIONER_ROLE can call this function.
+     * @param allowanceContract The rate limited contract that holds the user allowance.
      * @param tokenAddress The address of the token to be debited.
      * @param userAddress The address of the user from whom tokens will be debited.
      * @param amount The amount of tokens to debit and transfer.
      */
     function debit(
+        address allowedContract,
         address tokenAddress,
         address userAddress,
         uint160 amount
     ) external whenNotPaused onlyRole(EXECUTIONER_ROLE) {
+        require(
+            allowedContract != address(0),
+            "Invalid rate limited allowance contract"
+        );
         require(userAddress != address(0), "Invalid user address");
         require(tokenAddress != address(0), "Invalid token address");
 
-        moonwellAllowanceTransfer.transferFrom(
+        IRateLimitedAllowance(allowedContract).transferFrom(
             userAddress,
             beneficiary,
             amount,
@@ -67,23 +72,5 @@ contract CypherAutoLoad is Pausable, AccessControl {
         );
 
         emit Withdraw(tokenAddress, userAddress, beneficiary, amount);
-    }
-
-    function debitFromVault(
-        address vaultAddress,
-        address userAddress,
-        uint160 amount
-    ) external whenNotPaused onlyRole(EXECUTIONER_ROLE) {
-        require(userAddress != address(0), "Invalid user address");
-        require(vaultAddress != address(0), "Invalid vault address");
-
-        moonwellAllowanceTransfer.withdraw(
-            amount,
-            beneficiary,
-            userAddress,
-            vaultAddress
-        );
-
-        emit Withdraw(vaultAddress, userAddress, beneficiary, amount);
     }
 }
