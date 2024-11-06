@@ -14,17 +14,16 @@ abstract contract RateLimitedAllowance {
     function approve(
         address token,
         address spender,
-        uint160 amount,
         uint48 rateLimitPerSecond,
         uint48 bufferCap
     ) external {
         RateLimit storage limit = limitedAllowance[msg.sender][token][spender];
 
-        rateLimit.lastBufferUsedTime = uint32(block.timestamp);
-        rateLimit.setBufferCap(_bufferCap);
-        rateLimit.bufferStored = _bufferCap;
+        limit.lastBufferUsedTime = uint32(block.timestamp);
+        limit.setBufferCap(bufferCap);
+        limit.bufferStored = bufferCap;
 
-        rateLimit.setRateLimitPerSecond(_rateLimitPerSecond);
+        limit.setRateLimitPerSecond(rateLimitPerSecond);
     }
 
     function transferFrom(

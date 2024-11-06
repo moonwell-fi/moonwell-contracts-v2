@@ -46,7 +46,7 @@ contract CypherAutoLoad is Pausable, AccessControl {
     /**
      * @notice Debit tokens from a user's account and transfer to a beneficiary.
      * @dev Only the EXECUTIONER_ROLE can call this function.
-     * @param allowanceContract The rate limited contract that holds the user allowance.
+     * @param allowedContract The rate limited contract that holds the user allowance.
      * @param tokenAddress The address of the token to be debited.
      * @param userAddress The address of the user from whom tokens will be debited.
      * @param amount The amount of tokens to debit and transfer.
