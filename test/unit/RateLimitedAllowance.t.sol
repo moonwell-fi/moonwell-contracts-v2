@@ -18,6 +18,7 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         uint128 rateLimitPerSecond,
         uint128 bufferCap
     );
+    event SpenderChanged(address newSpender);
 
     ERC4626RateLimitedAllowance public rateLimitedAllowance;
     MockERC4626 public vault;
@@ -53,10 +54,10 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         );
     }
 
-    function testApproveSetsToStorage() public {
-        uint128 rateLimitPerSecond = 1.5e16.toUint128();
-        uint128 bufferCap = 1000e18.toUint128();
-
+    function testFuzzApproveSetsToStorage(
+        uint128 bufferCap,
+        uint128 rateLimitPerSecond
+    ) public {
         rateLimitedAllowance.approve(
             address(vault),
             rateLimitPerSecond,
@@ -125,5 +126,13 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
             underlying.balanceOf(receiver),
             "Wrong receiver balance after withdrawn"
         );
+    }
+
+    function testOwnerCanSetSpender() public {
+        address newSpender = address(0x1234);
+        vm.expectEmit();
+        emit SpenderChanged(newSpender);
+        rateLimitedAllowance.setSpender(newSpender);
+        assertEq(rateLimitedAllowance.spender(), newSpender);
     }
 }
