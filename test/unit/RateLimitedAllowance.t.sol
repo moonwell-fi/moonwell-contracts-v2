@@ -55,6 +55,38 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         );
     }
 
+    function testApproveAgainUpdateStorage() public {
+        rateLimitedAllowance.approve(
+            address(vault),
+            1.5e16.toUint128(),
+            1000e18.toUint128()
+        );
+
+        uint128 newRateLimitPerSecond = 2e16.toUint128();
+        uint128 newBufferCap = 2000e18.toUint128();
+
+        rateLimitedAllowance.approve(
+            address(vault),
+            newRateLimitPerSecond,
+            newBufferCap
+        );
+
+        (
+            uint128 rateLimitPerSecondStored,
+            uint128 bufferCapStored
+        ) = rateLimitedAllowance.getRateLimitedAllowance(
+                address(this),
+                address(vault)
+            );
+
+        vm.assertEq(
+            rateLimitPerSecondStored,
+            newRateLimitPerSecond,
+            "Wrong rateLimitPerSecond"
+        );
+        vm.assertEq(bufferCapStored, newBufferCap, "Wrong bufferCap");
+    }
+
     function testFuzzApproveSetsToStorage(
         uint128 bufferCap,
         uint128 rateLimitPerSecond
@@ -169,11 +201,23 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         rateLimitedAllowance.pause();
     }
 
-    function testOnlyOwnerCanUnause() public {
+    function testOnlyOwnerCanUnpause() public {
         testOwnerCanPause();
 
         vm.prank(address(0x1234));
         vm.expectRevert("Ownable: caller is not the owner");
         rateLimitedAllowance.pause();
+    }
+
+    function testTransferFromRevertsIfPaused() public {
+        testOwnerCanPause();
+
+        vm.expectRevert("Pausable: paused");
+        rateLimitedAllowance.transferFrom(
+            address(this),
+            address(0x1234),
+            1,
+            address(vault)
+        );
     }
 }
