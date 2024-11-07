@@ -8,7 +8,9 @@ import {IRateLimitedAllowance} from "./IRateLimitedAllowance.sol";
 
 contract CypherAutoLoad is Pausable, AccessControlEnumerable {
     bytes32 public constant EXECUTIONER_ROLE = keccak256("EXECUTIONER_ROLE");
+
     address public beneficiary;
+    IRateLimitedAllowance public rateLimitedAllowance;
 
     event Withdraw(
         address indexed token,
@@ -22,6 +24,31 @@ contract CypherAutoLoad is Pausable, AccessControlEnumerable {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(EXECUTIONER_ROLE, _executioner);
         _setRoleAdmin(EXECUTIONER_ROLE, DEFAULT_ADMIN_ROLE);
+    }
+
+    /**
+     * @notice Debit tokens from a user's account and transfer to a beneficiary.
+     * @dev Only the EXECUTIONER_ROLE can call this function.
+     * @param tokenAddress The address of the token to be debited.
+     * @param userAddress The address of the user from whom tokens will be debited.
+     * @param amount The amount of tokens to debit and transfer.
+     */
+    function debit(
+        address tokenAddress,
+        address userAddress,
+        uint256 amount
+    ) external whenNotPaused onlyRole(EXECUTIONER_ROLE) {
+        require(userAddress != address(0), "Invalid user address");
+        require(tokenAddress != address(0), "Invalid token address");
+
+        (rateLimitedAllowance).transferFrom(
+            userAddress,
+            beneficiary,
+            amount,
+            tokenAddress
+        );
+
+        emit Withdraw(tokenAddress, userAddress, beneficiary, amount);
     }
 
     function pause() external whenNotPaused {
@@ -43,34 +70,9 @@ contract CypherAutoLoad is Pausable, AccessControlEnumerable {
         beneficiary = _beneficiary;
     }
 
-    /**
-     * @notice Debit tokens from a user's account and transfer to a beneficiary.
-     * @dev Only the EXECUTIONER_ROLE can call this function.
-     * @param allowedContract The rate limited contract that holds the user allowance.
-     * @param tokenAddress The address of the token to be debited.
-     * @param userAddress The address of the user from whom tokens will be debited.
-     * @param amount The amount of tokens to debit and transfer.
-     */
-    function debit(
-        address allowedContract,
-        address tokenAddress,
-        address userAddress,
-        uint256 amount
-    ) external whenNotPaused onlyRole(EXECUTIONER_ROLE) {
-        require(
-            allowedContract != address(0),
-            "Invalid rate limited allowance contract"
-        );
-        require(userAddress != address(0), "Invalid user address");
-        require(tokenAddress != address(0), "Invalid token address");
-
-        IRateLimitedAllowance(allowedContract).transferFrom(
-            userAddress,
-            beneficiary,
-            amount,
-            tokenAddress
-        );
-
-        emit Withdraw(tokenAddress, userAddress, beneficiary, amount);
+    function setRateLimitedAllowance(
+        IRateLimitedAllowance _rateLimitedAllowance
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        rateLimitedAllowance = _rateLimitedAllowance;
     }
 }
