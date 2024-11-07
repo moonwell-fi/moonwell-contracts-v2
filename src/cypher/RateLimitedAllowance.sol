@@ -75,7 +75,7 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
         bufferCap = limit.bufferCap;
     }
 
-    function pause() external onlyOwner {
+    function pause() external whenNotPaused onlyOwner {
         _pause();
     }
 
@@ -93,5 +93,5 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
         address to,
         uint256 amount,
         address token
-    ) internal virtual {}
+    ) internal virtual;
 }

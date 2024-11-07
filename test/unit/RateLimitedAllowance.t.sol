@@ -194,6 +194,12 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         vm.expectRevert("Pausable: not paused");
         rateLimitedAllowance.unpause();
     }
+    function testRevertIfPauseWhenPaused() public {
+        testOwnerCanPause();
+
+        vm.expectRevert("Pausable: paused");
+        rateLimitedAllowance.pause();
+    }
 
     function testOnlyOwnerCanPause() public {
         vm.prank(address(0x1234));

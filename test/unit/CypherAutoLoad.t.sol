@@ -166,6 +166,13 @@ contract CypherAutoLoadUnitTest is Test {
         autoLoad.unpause();
     }
 
+    function testRevertIfPauseWhenPaused() public {
+        testAdminCanPause();
+
+        vm.expectRevert("Pausable: paused");
+        autoLoad.pause();
+    }
+
     function testOnlyAdminCanPause() public {
         vm.prank(address(0x1234));
         vm.expectRevert("AccessControl: sender does not have permission");
