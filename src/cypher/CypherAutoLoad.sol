@@ -10,7 +10,6 @@ contract CypherAutoLoad is Pausable, AccessControlEnumerable {
     bytes32 public constant EXECUTIONER_ROLE = keccak256("EXECUTIONER_ROLE");
 
     address public beneficiary;
-    IRateLimitedAllowance public rateLimitedAllowance;
 
     event Withdraw(
         address indexed token,
@@ -31,19 +30,25 @@ contract CypherAutoLoad is Pausable, AccessControlEnumerable {
     /**
      * @notice Debit tokens from a user's account and transfer to a beneficiary.
      * @dev Only the EXECUTIONER_ROLE can call this function.
+     * *param rateLimitedAllowance The rate limited allowance contract.
      * @param tokenAddress The address of the token to be debited.
      * @param userAddress The address of the user from whom tokens will be debited.
      * @param amount The amount of tokens to debit and transfer.
      */
     function debit(
+        address rateLimitedAllowance,
         address tokenAddress,
         address userAddress,
         uint256 amount
     ) external whenNotPaused onlyRole(EXECUTIONER_ROLE) {
+        require(
+            rateLimitedAllowance != address(0),
+            "Invalid rate limited contract"
+        );
         require(tokenAddress != address(0), "Invalid token address");
         require(userAddress != address(0), "Invalid user address");
 
-        (rateLimitedAllowance).transferFrom(
+        IRateLimitedAllowance(rateLimitedAllowance).transferFrom(
             userAddress,
             beneficiary,
             amount,
@@ -72,11 +77,5 @@ contract CypherAutoLoad is Pausable, AccessControlEnumerable {
         beneficiary = _beneficiary;
 
         emit BeneficiaryChanged(_beneficiary);
-    }
-
-    function setRateLimitedAllowance(
-        IRateLimitedAllowance _rateLimitedAllowance
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        rateLimitedAllowance = _rateLimitedAllowance;
     }
 }

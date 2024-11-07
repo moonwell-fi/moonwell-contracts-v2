@@ -44,8 +44,6 @@ contract CypherAutoLoadUnitTest is Test {
             )
         );
 
-        autoLoad.setRateLimitedAllowance(rateLimitedAllowance);
-
         underlying = new MockERC20("Mock Token", "TKN", 18);
         vault = new MockERC4626(underlying, "Vault Mock", "VAULT");
     }
@@ -81,7 +79,12 @@ contract CypherAutoLoadUnitTest is Test {
         uint256 beneficiaryBalanceBefore = underlying.balanceOf(beneficiary);
 
         vm.prank(executor);
-        autoLoad.debit(address(vault), address(this), underlyingAmount);
+        autoLoad.debit(
+            address(rateLimitedAllowance),
+            address(vault),
+            address(this),
+            underlyingAmount
+        );
 
         assertEq(
             beneficiaryBalanceBefore + underlyingAmount,
@@ -114,7 +117,12 @@ contract CypherAutoLoadUnitTest is Test {
             address(beneficiary),
             underlyingAmount
         );
-        autoLoad.debit(address(vault), address(this), underlyingAmount);
+        autoLoad.debit(
+            address(rateLimitedAllowance),
+            address(vault),
+            address(this),
+            underlyingAmount
+        );
     }
 
     function testOnlyExecutorCanCallDebit() public {
@@ -126,19 +134,34 @@ contract CypherAutoLoadUnitTest is Test {
                 Strings.toHexString(uint256(autoLoad.EXECUTIONER_ROLE()), 32)
             )
         );
-        autoLoad.debit(address(vault), address(this), 1);
+        autoLoad.debit(
+            address(rateLimitedAllowance),
+            address(vault),
+            address(this),
+            1
+        );
     }
 
     function testDebitRevertIfUserAdressIsZero() public {
         vm.prank(executor);
         vm.expectRevert("Invalid user address");
-        autoLoad.debit(address(vault), address(0), 1);
+        autoLoad.debit(
+            address(rateLimitedAllowance),
+            address(vault),
+            address(0),
+            1
+        );
     }
 
     function testDebitRevertIfTokenAdressIsZero() public {
         vm.prank(executor);
         vm.expectRevert("Invalid token address");
-        autoLoad.debit(address(0), address(this), 1);
+        autoLoad.debit(
+            address(rateLimitedAllowance),
+            address(0),
+            address(this),
+            1
+        );
     }
 
     function testAdminCanPause() public {
@@ -199,7 +222,12 @@ contract CypherAutoLoadUnitTest is Test {
 
         vm.prank(executor);
         vm.expectRevert("Pausable: paused");
-        autoLoad.debit(address(vault), address(this), 1);
+        autoLoad.debit(
+            address(rateLimitedAllowance),
+            address(vault),
+            address(this),
+            1
+        );
     }
 
     function testOwnerCanSetBeneficiary() public {
