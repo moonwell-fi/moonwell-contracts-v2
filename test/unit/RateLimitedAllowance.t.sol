@@ -79,11 +79,24 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         vm.assertEq(bufferCapStored, bufferCap, "Wrong bufferCap");
     }
 
-    function testSpenderCanTransferBufferCap() public {
+    function testFuzzSpenderCanTransfer(
+        uint128 bufferCap,
+        uint128 rateLimitPerSecond,
+        uint256 underlyingAmount
+    ) public {
+        bufferCap = _bound(
+            bufferCap,
+            1.toUint128(),
+            (type(uint128).max).toUint128()
+        ).toUint128();
+        rateLimitPerSecond = _bound(
+            rateLimitPerSecond,
+            1.toUint128(),
+            type(uint128).max.toUint128()
+        ).toUint128();
+        underlyingAmount = _bound(underlyingAmount, 1, bufferCap);
+
         address receiver = address(0xADBC);
-        uint128 rateLimitPerSecond = 1.5e16.toUint128();
-        uint128 bufferCap = 1000e18.toUint128();
-        uint256 underlyingAmount = 10_000e18;
 
         underlying.mint(address(this), underlyingAmount);
         underlying.approve(address(vault), underlyingAmount);
@@ -97,12 +110,20 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
             bufferCap
         );
 
+        uint256 receiverBalanceBefore = underlying.balanceOf(receiver);
+
         vm.prank(spender);
         rateLimitedAllowance.transferFrom(
             address(this),
             receiver,
-            uint256(bufferCap),
+            underlyingAmount,
             address(vault)
+        );
+
+        assertEq(
+            receiverBalanceBefore + underlyingAmount,
+            underlying.balanceOf(receiver),
+            "Wrong receiver balance after withdrawn"
         );
     }
 }
