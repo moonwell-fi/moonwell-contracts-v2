@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
+import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {MockERC4626} from "solmate/test/utils/mocks/MockERC4626.sol";
@@ -47,7 +48,7 @@ contract CypherAutoLoadUnitTest is Test {
         vault = new MockERC4626(underlying, "Vault Mock", "VAULT");
     }
 
-    function testFuzzSpenderCanTransfer(
+    function testFuzzExecutorCanCallDebit(
         uint128 bufferCap,
         uint128 rateLimitPerSecond,
         uint256 underlyingAmount
@@ -86,5 +87,17 @@ contract CypherAutoLoadUnitTest is Test {
             underlying.balanceOf(beneficiary),
             "Wrong beneficiary balance after withdrawn"
         );
+    }
+
+    function testOnlyExecutorCanCallDebit() public {
+        vm.expectRevert(
+            abi.encodePacked(
+                "AccessControl: account ",
+                Strings.toHexString(address(this)),
+                " is missing role ",
+                Strings.toHexString(uint256(autoLoad.EXECUTIONER_ROLE()), 32)
+            )
+        );
+        autoLoad.debit(address(vault), address(this), 1);
     }
 }
