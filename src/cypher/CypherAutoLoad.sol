@@ -38,8 +38,8 @@ contract CypherAutoLoad is Pausable, AccessControlEnumerable {
         address userAddress,
         uint256 amount
     ) external whenNotPaused onlyRole(EXECUTIONER_ROLE) {
-        require(userAddress != address(0), "Invalid user address");
         require(tokenAddress != address(0), "Invalid token address");
+        require(userAddress != address(0), "Invalid user address");
 
         (rateLimitedAllowance).transferFrom(
             userAddress,

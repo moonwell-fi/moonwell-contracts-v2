@@ -70,7 +70,6 @@ contract CypherAutoLoadUnitTest is Test {
         vault.deposit(underlyingAmount, address(this));
 
         vault.approve(address(rateLimitedAllowance), type(uint256).max);
-
         rateLimitedAllowance.approve(
             address(vault),
             rateLimitPerSecond,
@@ -89,6 +88,33 @@ contract CypherAutoLoadUnitTest is Test {
         );
     }
 
+    function testDebitEmitWithdrawEvent() public {
+        uint128 rateLimitPerSecond = 1.5e16.toUint128();
+        uint128 bufferCap = 1000e18.toUint128();
+        uint256 underlyingAmount = 100e18;
+
+        underlying.mint(address(this), underlyingAmount);
+        underlying.approve(address(vault), underlyingAmount);
+        vault.deposit(underlyingAmount, address(this));
+
+        vault.approve(address(rateLimitedAllowance), type(uint256).max);
+        rateLimitedAllowance.approve(
+            address(vault),
+            rateLimitPerSecond,
+            bufferCap
+        );
+
+        vm.prank(executor);
+        vm.expectEmit();
+        emit Withdraw(
+            address(vault),
+            address(this),
+            address(beneficiary),
+            underlyingAmount
+        );
+        autoLoad.debit(address(vault), address(this), underlyingAmount);
+    }
+
     function testOnlyExecutorCanCallDebit() public {
         vm.expectRevert(
             abi.encodePacked(
@@ -98,6 +124,65 @@ contract CypherAutoLoadUnitTest is Test {
                 Strings.toHexString(uint256(autoLoad.EXECUTIONER_ROLE()), 32)
             )
         );
+        autoLoad.debit(address(vault), address(this), 1);
+    }
+
+    function testDebitRevertIfUserAdressIsZero() public {
+        vm.prank(executor);
+        vm.expectRevert("Invalid user address");
+        autoLoad.debit(address(vault), address(0), 1);
+    }
+
+    function testDebitRevertIfTokenAdressIsZero() public {
+        vm.prank(executor);
+        vm.expectRevert("Invalid token address");
+        autoLoad.debit(address(0), address(this), 1);
+    }
+
+    function testOwnerCanPause() public {
+        autoLoad.pause();
+
+        vm.assertEq(autoLoad.paused(), true);
+    }
+
+    function testOwnerCanUnpause() public {
+        testOwnerCanPause();
+
+        autoLoad.unpause();
+        vm.assertEq(autoLoad.paused(), false);
+    }
+
+    function testRevertIfUnpauseWhenNotPaused() public {
+        vm.expectRevert("Pausable: not paused");
+        autoLoad.unpause();
+    }
+
+    function testOnlyOwnerCanPause() public {
+        vm.prank(address(0x1234));
+        vm.expectRevert("AccessControl: sender does not have permission");
+        autoLoad.pause();
+    }
+
+    function testOnlyOwnerCanUnpause() public {
+        testOwnerCanPause();
+
+        vm.expectRevert(
+            abi.encodePacked(
+                "AccessControl: account ",
+                Strings.toHexString(address(0x1234)),
+                " is missing role ",
+                Strings.toHexString(uint256(autoLoad.DEFAULT_ADMIN_ROLE()), 32)
+            )
+        );
+        vm.prank(address(0x1234));
+        autoLoad.unpause();
+    }
+
+    function testDebitRevertsIfPaused() public {
+        testOwnerCanPause();
+
+        vm.prank(executor);
+        vm.expectRevert("Pausable: paused");
         autoLoad.debit(address(vault), address(this), 1);
     }
 }
