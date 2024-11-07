@@ -15,12 +15,14 @@ import {ERC4626RateLimitedAllowance} from "@protocol/cypher/ERC4626RateLimitedAl
 
 contract CypherAutoLoadUnitTest is Test {
     using SafeCast for *;
+
     event Withdraw(
         address indexed token,
         address indexed user,
         address indexed beneficiary,
         uint amount
     );
+    event BeneficiaryChanged(address _beneficiary);
 
     MockERC20 underlying;
     MockERC4626 public vault;
@@ -139,14 +141,21 @@ contract CypherAutoLoadUnitTest is Test {
         autoLoad.debit(address(0), address(this), 1);
     }
 
-    function testOwnerCanPause() public {
+    function testAdminCanPause() public {
         autoLoad.pause();
 
         vm.assertEq(autoLoad.paused(), true);
     }
 
-    function testOwnerCanUnpause() public {
-        testOwnerCanPause();
+    function testExecutorCanPause() public {
+        vm.prank(executor);
+        autoLoad.pause();
+
+        vm.assertEq(autoLoad.paused(), true);
+    }
+
+    function testAdminCanUnpause() public {
+        testAdminCanPause();
 
         autoLoad.unpause();
         vm.assertEq(autoLoad.paused(), false);
@@ -157,14 +166,14 @@ contract CypherAutoLoadUnitTest is Test {
         autoLoad.unpause();
     }
 
-    function testOnlyOwnerCanPause() public {
+    function testOnlyAdminCanPause() public {
         vm.prank(address(0x1234));
         vm.expectRevert("AccessControl: sender does not have permission");
         autoLoad.pause();
     }
 
-    function testOnlyOwnerCanUnpause() public {
-        testOwnerCanPause();
+    function testOnlyAdminCanUnpause() public {
+        testAdminCanPause();
 
         vm.expectRevert(
             abi.encodePacked(
@@ -179,10 +188,29 @@ contract CypherAutoLoadUnitTest is Test {
     }
 
     function testDebitRevertsIfPaused() public {
-        testOwnerCanPause();
+        testAdminCanPause();
 
         vm.prank(executor);
         vm.expectRevert("Pausable: paused");
         autoLoad.debit(address(vault), address(this), 1);
+    }
+
+    function testOwnerCanSetBeneficiary() public {
+        vm.expectEmit();
+        emit BeneficiaryChanged(address(0xCAFE));
+        autoLoad.setBeneficiary(address(0xCAFE));
+    }
+
+    function testOnlyAdminCanSetBeneficiary() public {
+        vm.expectRevert(
+            abi.encodePacked(
+                "AccessControl: account ",
+                Strings.toHexString(address(0xCAFE)),
+                " is missing role ",
+                Strings.toHexString(uint256(autoLoad.DEFAULT_ADMIN_ROLE()), 32)
+            )
+        );
+        vm.prank(address(0xCAFE));
+        autoLoad.setBeneficiary(address(0xCAFE));
     }
 }

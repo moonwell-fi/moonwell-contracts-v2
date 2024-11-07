@@ -19,6 +19,8 @@ contract CypherAutoLoad is Pausable, AccessControlEnumerable {
         uint amount
     );
 
+    event BeneficiaryChanged(address _beneficiary);
+
     constructor(address _executioner, address _beneficiary) {
         beneficiary = _beneficiary;
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -68,6 +70,8 @@ contract CypherAutoLoad is Pausable, AccessControlEnumerable {
         address _beneficiary
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         beneficiary = _beneficiary;
+
+        emit BeneficiaryChanged(_beneficiary);
     }
 
     function setRateLimitedAllowance(
