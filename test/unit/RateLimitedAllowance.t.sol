@@ -135,4 +135,10 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         rateLimitedAllowance.setSpender(newSpender);
         assertEq(rateLimitedAllowance.spender(), newSpender);
     }
+
+    function testOnlyOwnerCanSetSpender() public {
+        vm.prank(address(0x1234));
+        vm.expectRevert("Ownable: caller is not the owner");
+        rateLimitedAllowance.setSpender(address(0x1234));
+    }
 }
