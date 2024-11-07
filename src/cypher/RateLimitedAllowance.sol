@@ -41,8 +41,8 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
 
         limit.setBufferCap(bufferCap);
 
-        // manually set bufferCap this as first call to setBufferCap sets it to 0
         if (lastBufferUsedTime == 0) {
+            // manually set bufferCap as first call to setBufferCap sets it to 0
             limit.bufferStored = bufferCap;
         }
 
@@ -79,7 +79,7 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
         _pause();
     }
 
-    function unpause() external onlyOwner {
+    function unpause() external whenPaused onlyOwner {
         _unpause();
     }
 

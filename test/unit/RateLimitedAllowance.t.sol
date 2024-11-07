@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
+
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {MockERC4626} from "solmate/test/utils/mocks/MockERC4626.sol";
@@ -130,9 +131,11 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
 
     function testOwnerCanSetSpender() public {
         address newSpender = address(0x1234);
+
         vm.expectEmit();
         emit SpenderChanged(newSpender);
         rateLimitedAllowance.setSpender(newSpender);
+
         assertEq(rateLimitedAllowance.spender(), newSpender);
     }
 
@@ -140,5 +143,37 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         vm.prank(address(0x1234));
         vm.expectRevert("Ownable: caller is not the owner");
         rateLimitedAllowance.setSpender(address(0x1234));
+    }
+
+    function testOwnerCanPause() public {
+        rateLimitedAllowance.pause();
+
+        vm.assertEq(rateLimitedAllowance.paused(), true);
+    }
+
+    function testOwnerCanUnpause() public {
+        testOwnerCanPause();
+
+        rateLimitedAllowance.unpause();
+        vm.assertEq(rateLimitedAllowance.paused(), false);
+    }
+
+    function testRevertIfUnpauseWhenNotPaused() public {
+        vm.expectRevert("Pausable: not paused");
+        rateLimitedAllowance.unpause();
+    }
+
+    function testOnlyOwnerCanPause() public {
+        vm.prank(address(0x1234));
+        vm.expectRevert("Ownable: caller is not the owner");
+        rateLimitedAllowance.pause();
+    }
+
+    function testOnlyOwnerCanUnause() public {
+        testOwnerCanPause();
+
+        vm.prank(address(0x1234));
+        vm.expectRevert("Ownable: caller is not the owner");
+        rateLimitedAllowance.pause();
     }
 }
