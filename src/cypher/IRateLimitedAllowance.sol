@@ -4,8 +4,6 @@ pragma solidity 0.8.19;
 interface IRateLimitedAllowance {
     function approve(
         address token,
-        address spender,
-        uint256 amount,
         uint128 rateLimitPerSecond,
         uint128 bufferCap
     ) external;

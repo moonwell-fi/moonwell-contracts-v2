@@ -21,9 +21,9 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
     );
     event SpenderChanged(address newSpender);
 
-    ERC4626RateLimitedAllowance public rateLimitedAllowance;
     MockERC4626 public vault;
-    MockERC20 underlying;
+    MockERC20 public underlying;
+    ERC4626RateLimitedAllowance public rateLimitedAllowance;
     address spender = address(0xABCD);
 
     function setUp() public {
