@@ -2,11 +2,11 @@
 pragma solidity 0.8.19;
 
 import "@openzeppelin-contracts/contracts/security/Pausable.sol";
-import "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import "@openzeppelin-contracts/contracts/access/AccessControlEnumerable.sol";
 
 import {IRateLimitedAllowance} from "./IRateLimitedAllowance.sol";
 
-contract CypherAutoLoad is Pausable, AccessControl {
+contract CypherAutoLoad is Pausable, AccessControlEnumerable {
     bytes32 public constant EXECUTIONER_ROLE = keccak256("EXECUTIONER_ROLE");
     address public beneficiary;
 
@@ -55,7 +55,7 @@ contract CypherAutoLoad is Pausable, AccessControl {
         address allowedContract,
         address tokenAddress,
         address userAddress,
-        uint160 amount
+        uint256 amount
     ) external whenNotPaused onlyRole(EXECUTIONER_ROLE) {
         require(
             allowedContract != address(0),

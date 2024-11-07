@@ -14,7 +14,6 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
     using SafeCast for *;
     event Approved(
         address indexed token,
-        address indexed spender,
         address indexed owner,
         uint128 rateLimitPerSecond,
         uint128 bufferCap
@@ -23,9 +22,13 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
     ERC4626RateLimitedAllowance public rateLimitedAllowance;
     MockERC4626 public vault;
     MockERC20 underlying;
+    address spender = address(0xABCD);
 
     function setUp() public {
-        rateLimitedAllowance = new ERC4626RateLimitedAllowance(address(this));
+        rateLimitedAllowance = new ERC4626RateLimitedAllowance(
+            address(this),
+            spender
+        );
 
         underlying = new MockERC20("Mock Token", "TKN", 18);
 
@@ -38,34 +41,29 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
     }
 
     function testApproveEmitsApprovedEvent() public {
-        address spender = address(0xABCD);
         uint128 rateLimitPerSecond = 1.5e16.toUint128();
         uint128 bufferCap = 1000e18.toUint128();
 
         vm.expectEmit();
         emit Approved(
             address(vault),
-            spender,
             address(this),
             rateLimitPerSecond,
             bufferCap
         );
         rateLimitedAllowance.approve(
             address(vault),
-            spender,
             rateLimitPerSecond,
             bufferCap
         );
     }
 
     function testApproveSetsToStorage() public {
-        address spender = address(0xABCD);
         uint128 rateLimitPerSecond = 1.5e16.toUint128();
         uint128 bufferCap = 1000e18.toUint128();
 
         rateLimitedAllowance.approve(
             address(vault),
-            spender,
             rateLimitPerSecond,
             bufferCap
         );
@@ -75,8 +73,7 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
             uint128 bufferCapStored
         ) = rateLimitedAllowance.getRateLimitedAllowance(
                 address(this),
-                address(vault),
-                spender
+                address(vault)
             );
 
         vm.assertEq(

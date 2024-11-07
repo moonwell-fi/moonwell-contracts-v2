@@ -13,26 +13,29 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
 
     event Approved(
         address indexed token,
-        address indexed spender,
         address indexed owner,
         uint128 rateLimitPerSecond,
         uint128 bufferCap
     );
 
-    constructor(address owner) Ownable() {
+    event SpenderChanged(address newSpender);
+
+    address public spender;
+
+    mapping(address owner => mapping(address token => RateLimit))
+        public limitedAllowance;
+
+    constructor(address owner, address _spender) Ownable() {
+        spender = _spender;
         _transferOwnership(owner);
     }
 
-    mapping(address owner => mapping(address token => mapping(address spender => RateLimit)))
-        public limitedAllowance;
-
     function approve(
         address token,
-        address spender,
         uint128 rateLimitPerSecond,
         uint128 bufferCap
     ) external {
-        RateLimit storage limit = limitedAllowance[msg.sender][token][spender];
+        RateLimit storage limit = limitedAllowance[msg.sender][token];
 
         uint256 lastBufferUsedTime = limit.lastBufferUsedTime;
 
@@ -45,13 +48,7 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
 
         limit.setRateLimitPerSecond(rateLimitPerSecond);
 
-        emit Approved(
-            token,
-            spender,
-            msg.sender,
-            rateLimitPerSecond,
-            bufferCap
-        );
+        emit Approved(token, msg.sender, rateLimitPerSecond, bufferCap);
     }
 
     function transferFrom(
@@ -60,7 +57,8 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
         uint256 amount,
         address token
     ) external whenNotPaused {
-        RateLimit storage limit = limitedAllowance[from][token][msg.sender];
+        require(msg.sender == spender, "Caller is not the authorized spender");
+        RateLimit storage limit = limitedAllowance[from][token];
 
         limit.depleteBuffer(amount);
 
@@ -69,10 +67,9 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
 
     function getRateLimitedAllowance(
         address owner,
-        address token,
-        address spender
+        address token
     ) public view returns (uint128 rateLimitPerSecond, uint128 bufferCap) {
-        RateLimit memory limit = limitedAllowance[owner][token][spender];
+        RateLimit memory limit = limitedAllowance[owner][token];
 
         rateLimitPerSecond = limit.rateLimitPerSecond;
         bufferCap = limit.bufferCap;
@@ -84,6 +81,11 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
 
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    function setSpender(address _spender) external onlyOwner {
+        spender = _spender;
+        emit SpenderChanged(_spender);
     }
 
     function _transfer(

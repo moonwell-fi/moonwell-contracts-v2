@@ -5,7 +5,10 @@ import {IERC4626} from "@forge-std/interfaces/IERC4626.sol";
 import {RateLimitedAllowance} from "./RateLimitedAllowance.sol";
 
 contract ERC4626RateLimitedAllowance is RateLimitedAllowance {
-    constructor(address owner) RateLimitedAllowance(owner) {}
+    constructor(
+        address owner,
+        address spender
+    ) RateLimitedAllowance(owner, spender) {}
 
     function _transfer(
         address from,
