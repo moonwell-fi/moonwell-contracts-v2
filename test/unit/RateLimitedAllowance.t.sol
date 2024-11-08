@@ -306,7 +306,7 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
 
         vm.prank(address(0x1234));
         vm.expectRevert("Ownable: caller is not the owner");
-        rateLimitedAllowance.pause();
+        rateLimitedAllowance.unpause();
     }
 
     function testTransferFromRevertsIfPaused() public {
