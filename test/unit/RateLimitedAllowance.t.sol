@@ -161,6 +161,100 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         );
     }
 
+    function testTransferFailIfHitRateLimitBufferCap(
+        uint128 bufferCap,
+        uint128 rateLimitPerSecond
+    ) public {
+        bufferCap = _bound(
+            bufferCap,
+            1.toUint128(),
+            (type(uint128).max).toUint128()
+        ).toUint128();
+        rateLimitPerSecond = _bound(
+            rateLimitPerSecond,
+            1.toUint128(),
+            type(uint128).max.toUint128()
+        ).toUint128();
+
+        underlying.mint(address(this), bufferCap);
+        underlying.approve(address(vault), bufferCap);
+        vault.deposit(bufferCap, address(this));
+
+        vault.approve(address(rateLimitedAllowance), type(uint256).max);
+
+        rateLimitedAllowance.approve(
+            address(vault),
+            rateLimitPerSecond,
+            bufferCap
+        );
+
+        address receiver = address(0xADBC);
+
+        vm.prank(spender);
+        rateLimitedAllowance.transferFrom(
+            address(this),
+            receiver,
+            bufferCap,
+            address(vault)
+        );
+
+        vm.prank(spender);
+        vm.expectRevert("RateLimited: no rate limit buffer");
+        rateLimitedAllowance.transferFrom(
+            address(this),
+            receiver,
+            bufferCap,
+            address(vault)
+        );
+    }
+
+    function testTransferFailIfHitRateLimit(
+        uint128 bufferCap,
+        uint128 rateLimitPerSecond
+    ) public {
+        bufferCap = _bound(
+            bufferCap,
+            2.toUint128(),
+            (type(uint128).max).toUint128()
+        ).toUint128();
+        rateLimitPerSecond = _bound(
+            rateLimitPerSecond,
+            1.toUint128(),
+            type(uint128).max.toUint128()
+        ).toUint128();
+
+        underlying.mint(address(this), bufferCap);
+        underlying.approve(address(vault), bufferCap);
+        vault.deposit(bufferCap, address(this));
+
+        vault.approve(address(rateLimitedAllowance), type(uint256).max);
+
+        rateLimitedAllowance.approve(
+            address(vault),
+            rateLimitPerSecond,
+            bufferCap
+        );
+
+        address receiver = address(0xADBC);
+
+        vm.prank(spender);
+        rateLimitedAllowance.transferFrom(
+            address(this),
+            receiver,
+            bufferCap - 1,
+            address(vault)
+        );
+
+        vm.prank(spender);
+        vm.expectRevert("RateLimited: rate limit hit");
+        rateLimitedAllowance.transferFrom(
+            address(this),
+            receiver,
+            bufferCap,
+            address(vault)
+        );
+    }
+
     function testOwnerCanSetSpender() public {
         address newSpender = address(0x1234);
 
