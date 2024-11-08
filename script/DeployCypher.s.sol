@@ -29,6 +29,8 @@ contract DeployCypher is Script, Test {
             address(rateLimitedAllowance)
         );
 
+        validate(addresses, autoLoad, rateLimitedAllowance);
+
         addresses.printAddresses();
     }
 
@@ -55,5 +57,49 @@ contract DeployCypher is Script, Test {
         Addresses addresses,
         CypherAutoLoad autoLoad,
         ERC4626RateLimitedAllowance limitedAllowance
-    ) public {}
+    ) public view {
+        assertEq(
+            address(autoLoad),
+            addresses.getAddress("CHYPHER_AUTO_LOAD"),
+            "CypherAutoLoad not deployed"
+        );
+        assertEq(
+            address(limitedAllowance),
+            addresses.getAddress("CYPHER_ERC4626_RATE_LIMITED_ALLOWANCE")
+        );
+
+        assertEq(
+            autoLoad.beneficiary(),
+            addresses.getAddress("CYPHER_BENEFICIARY"),
+            "Wrong beneficiary"
+        );
+
+        assertTrue(
+            autoLoad.hasRole(
+                autoLoad.EXECUTIONER_ROLE(),
+                addresses.getAddress("CYPHER_EXECUTOR")
+            ),
+            "Wrong executor"
+        );
+
+        assertTrue(
+            autoLoad.hasRole(
+                autoLoad.DEFAULT_ADMIN_ROLE(),
+                addresses.getAddress("CYPHER_EXECUTOR")
+            ),
+            "Wrong admin"
+        );
+
+        assertEq(
+            limitedAllowance.spender(),
+            address(autoLoad),
+            "Wrong spender"
+        );
+
+        assertEq(
+            limitedAllowance.owner(),
+            address(addresses.getAddress("SECURITY_COUNCIL")),
+            "Wrong owner"
+        );
+    }
 }
