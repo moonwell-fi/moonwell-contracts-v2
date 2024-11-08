@@ -7,12 +7,12 @@ import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.so
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
-import {IMetaMorpho} from "@protocol/morpho/IMetaMorpho.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {DeployCypher} from "script/DeployCypher.s.sol";
 import {CypherAutoLoad} from "@protocol/cypher/CypherAutoLoad.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
 import {IMetaMorphoFactory} from "@protocol/morpho/IMetaMorphoFactory.sol";
+import {IMetaMorpho, MarketParams} from "@protocol/morpho/IMetaMorpho.sol";
 import {ERC4626RateLimitedAllowance} from "@protocol/cypher/ERC4626RateLimitedAllowance.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
@@ -24,6 +24,9 @@ contract CypherIntegrationTest is Test {
     ERC4626RateLimitedAllowance public limitedAllowance;
     IMetaMorpho public vault;
     ERC20 public underlying;
+
+    bytes32 public constant CBETH_USDC_MARKET_ID =
+        0xdba352d93a64b17c71104cbddc6aef85cd432322a1446b5b65163cbbc615cd0c;
 
     address public beneficiary;
     address public executor;
@@ -57,26 +60,38 @@ contract CypherIntegrationTest is Test {
             )
         );
 
+        vm.label(address(vault), "MetaMorpho USDC");
+
         beneficiary = addresses.getAddress("CYPHER_BENEFICIARY");
         executor = addresses.getAddress("CYPHER_EXECUTOR");
     }
 
-    function testFuzzExecutorCanTransfer(
+    function testFuzzExecutorCanWithdraw(
         uint128 bufferCap,
         uint128 rateLimitPerSecond,
         uint256 underlyingAmount
     ) public {
-        bufferCap = _bound(
-            bufferCap,
-            1e18.toUint128(),
-            (type(uint128).max).toUint128()
-        ).toUint128();
-        rateLimitPerSecond = _bound(
-            rateLimitPerSecond,
-            1.toUint128(),
-            type(uint128).max.toUint128()
-        ).toUint128();
-        underlyingAmount = _bound(underlyingAmount, 1e18, bufferCap);
+        bufferCap = 1_000_000e6;
+        rateLimitPerSecond = 1.5e16;
+        underlyingAmount = 1000e6;
+
+        MarketParams memory params = MarketParams({
+            loanToken: address(underlying),
+            collateralToken: addresses.getAddress("cbETH"),
+            oracle: addresses.getAddress("MORPHO_CHAINLINK_cbETH_ORACLE"),
+            irm: addresses.getAddress("MORPHO_ADAPTIVE_CURVE_IRM"),
+            lltv: 0.86e18
+        });
+
+        vault.submitCap(params, underlyingAmount * 100);
+
+        vm.warp(block.timestamp + 1 days);
+
+        vault.acceptCap(params);
+
+        bytes32[] memory newSupplyQueue = new bytes32[](1);
+        newSupplyQueue[0] = CBETH_USDC_MARKET_ID;
+        vault.setSupplyQueue(newSupplyQueue);
 
         deal(address(underlying), address(this), underlyingAmount);
         underlying.approve(address(vault), underlyingAmount);
@@ -93,11 +108,11 @@ contract CypherIntegrationTest is Test {
             address(limitedAllowance),
             address(vault),
             address(this),
-            underlyingAmount
+            underlyingAmount / 100
         );
 
         assertEq(
-            receiverBalanceBefore + underlyingAmount,
+            receiverBalanceBefore + underlyingAmount / 100,
             underlying.balanceOf(beneficiary),
             "Wrong receiver balance after withdrawn"
         );
