@@ -112,12 +112,18 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
 
     /// @notice Unpauses the contract
     /// @dev Can only be called by the contract owner when the contract is paused
-    function unpause() external whenPaused onlyOwner {}
+    function unpause() external whenPaused onlyOwner {
+        _unpause();
+    }
 
     /// @notice Sets a new authorized spender address
     /// @dev Can only be called by the contract owner
     /// @param _spender The address of the new spender
-    function setSpender(address _spender) external onlyOwner {}
+    function setSpender(address _spender) external onlyOwner {
+        spender = _spender;
+
+        emit SpenderChanged(_spender);
+    }
 
     /// @notice Internal function to transfer tokens
     /// @dev This function should be implemented by the inheriting contract
