@@ -3,7 +3,11 @@ pragma solidity 0.8.19;
 
 import "@forge-std/Test.sol";
 
-import {DeployChyper} from "scripts/DeployChyper.s.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+
+import {MErc20} from "@protocol/MErc20.sol";
+import {Comptroller} from "@protocol/Comptroller.sol";
+import {DeployCypher} from "script/DeployCypher.s.sol";
 import {CypherAutoLoad} from "@protocol/cypher/CypherAutoLoad.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
@@ -16,13 +20,16 @@ contract CypherIntegration is Test {
     MoonwellERC4626 public vault;
 
     function setUp() public {
-        Addresses addresses = new Addresses();
+        addresses = new Addresses();
 
-        DeployCypher cypherDeployer = new DeployChyper();
+        DeployCypher cypherDeployer = new DeployCypher();
 
-        CypherAutoLoad autoLoad = cypherDeployer.autoLoad(addresses);
+        autoLoad = cypherDeployer.deployAutoLoad(addresses);
 
-        limitedAllowance = new ERC4626RateLimitedAllowance(addresses);
+        limitedAllowance = cypherDeployer.deployERC4626RateLimitedAllowance(
+            addresses,
+            address(autoLoad)
+        );
 
         vault = new MoonwellERC4626(
             ERC20(addresses.getAddress("USDC")),
@@ -32,5 +39,5 @@ contract CypherIntegration is Test {
         );
     }
 
-    function testUserApproves();
+    function testUserApproves() public {}
 }
