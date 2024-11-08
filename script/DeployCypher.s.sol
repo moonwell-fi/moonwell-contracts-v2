@@ -46,8 +46,14 @@ contract DeployCypher is Script, Test {
         address autoLoad
     ) public returns (ERC4626RateLimitedAllowance rateLimitedAllowance) {
         rateLimitedAllowance = new ERC4626RateLimitedAllowance(
-            address(addresses.getAddress("SECURITY_COUNCI")),
+            address(addresses.getAddress("SECURITY_COUNCIL")),
             autoLoad
         );
     }
+
+    function validate(
+        Addresses addresses,
+        CypherAutoLoad autoLoad,
+        ERC4626RateLimitedAllowance limitedAllowance
+    ) public {}
 }
