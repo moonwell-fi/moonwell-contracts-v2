@@ -28,6 +28,8 @@ contract ERC4626RateLimitedAllowance is RateLimitedAllowance {
         uint256 amount,
         address vault
     ) internal override {
-        IERC4626(vault).withdraw(amount, to, from);
+        uint256 shares = IERC4626(vault).withdraw(amount, to, from);
+
+        require(shares > 0, "No shares burned");
     }
 }

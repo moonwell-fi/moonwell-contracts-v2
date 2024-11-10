@@ -56,15 +56,8 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
     ) external {
         RateLimit storage limit = limitedAllowance[msg.sender][token];
 
-        uint256 lastBufferUsedTime = limit.lastBufferUsedTime;
-
         limit.setBufferCap(bufferCap);
-
-        if (lastBufferUsedTime == 0) {
-            // manually set bufferCap as first call to setBufferCap sets it to 0
-            limit.bufferStored = bufferCap;
-        }
-
+        limit.bufferStored = bufferCap;
         limit.setRateLimitPerSecond(rateLimitPerSecond);
 
         emit Approved(token, msg.sender, rateLimitPerSecond, bufferCap);
@@ -97,11 +90,23 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
     function getRateLimitedAllowance(
         address owner,
         address token
-    ) public view returns (uint128 rateLimitPerSecond, uint128 bufferCap) {
-        RateLimit memory limit = limitedAllowance[owner][token];
+    )
+        public
+        view
+        returns (
+            uint128 rateLimitPerSecond,
+            uint128 bufferCap,
+            uint256 buffer,
+            uint256 lastBufferUsedTime
+        )
+    {
+        // has to be storage to call buffer()
+        RateLimit storage limit = limitedAllowance[owner][token];
 
         rateLimitPerSecond = limit.rateLimitPerSecond;
         bufferCap = limit.bufferCap;
+        buffer = limit.buffer();
+        lastBufferUsedTime = limit.lastBufferUsedTime;
     }
 
     /// @notice Pauses the contract

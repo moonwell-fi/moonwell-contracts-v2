@@ -153,7 +153,7 @@ contract CypherAutoLoadUnitTest is Test {
         );
     }
 
-    function testDebitRevertIfTokenAdressIsZero() public {
+    function testDebitRevertIfTokenAddressIsZero() public {
         vm.prank(executor);
         vm.expectRevert("Invalid token address");
         autoLoad.debit(

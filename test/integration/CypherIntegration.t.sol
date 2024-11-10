@@ -66,14 +66,10 @@ contract CypherIntegrationTest is Test {
         executor = addresses.getAddress("CYPHER_EXECUTOR");
     }
 
-    function testFuzzExecutorCanWithdraw(
-        uint128 bufferCap,
-        uint128 rateLimitPerSecond,
-        uint256 underlyingAmount
-    ) public {
-        bufferCap = 1_000_000e6;
-        rateLimitPerSecond = 1.5e16;
-        underlyingAmount = 1000e6;
+    function testExecutorCanWithdraw() public {
+        uint128 bufferCap = 1_000_000e6;
+        uint128 rateLimitPerSecond = 0.01e6;
+        uint256 underlyingAmount = 1000e6;
 
         MarketParams memory params = MarketParams({
             loanToken: address(underlying),

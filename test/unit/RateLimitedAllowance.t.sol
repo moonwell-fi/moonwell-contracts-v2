@@ -62,8 +62,33 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
             1000e18.toUint128()
         );
 
+        (
+            uint128 rateLimitPerSecondStoredBefore,
+            uint128 bufferCapStoredBefore,
+            uint256 bufferBefore,
+            uint256 lastBufferUsedTimeBefore
+        ) = rateLimitedAllowance.getRateLimitedAllowance(
+                address(this),
+                address(vault)
+            );
+
+        vm.assertEq(
+            rateLimitPerSecondStoredBefore,
+            1.5e16,
+            "Wrong rateLimitPerSecond"
+        );
+        vm.assertEq(bufferCapStoredBefore, 1000e18, "Wrong bufferCap before");
+        vm.assertEq(bufferBefore, bufferCapStoredBefore, "Wrong buffer before");
+        vm.assertEq(
+            lastBufferUsedTimeBefore,
+            block.timestamp,
+            "Wrong last buffer used time"
+        );
+
         uint128 newRateLimitPerSecond = 2e16.toUint128();
         uint128 newBufferCap = 2000e18.toUint128();
+
+        vm.warp(1 days);
 
         rateLimitedAllowance.approve(
             address(vault),
@@ -73,7 +98,9 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
 
         (
             uint128 rateLimitPerSecondStored,
-            uint128 bufferCapStored
+            uint128 bufferCapStored,
+            uint256 buffer,
+            uint256 lastBufferUsedTime
         ) = rateLimitedAllowance.getRateLimitedAllowance(
                 address(this),
                 address(vault)
@@ -85,6 +112,12 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
             "Wrong rateLimitPerSecond"
         );
         vm.assertEq(bufferCapStored, newBufferCap, "Wrong bufferCap");
+        vm.assertEq(buffer, newBufferCap, "Wrong buffer");
+        vm.assertEq(
+            lastBufferUsedTime,
+            block.timestamp,
+            "Wrong last buffer used time"
+        );
     }
 
     function testFuzzApproveSetsToStorage(
@@ -99,7 +132,9 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
 
         (
             uint128 rateLimitPerSecondStored,
-            uint128 bufferCapStored
+            uint128 bufferCapStored,
+            uint256 buffer,
+            uint256 lastBufferUsedTime
         ) = rateLimitedAllowance.getRateLimitedAllowance(
                 address(this),
                 address(vault)
@@ -111,6 +146,14 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
             "Wrong rateLimitPerSecond"
         );
         vm.assertEq(bufferCapStored, bufferCap, "Wrong bufferCap");
+
+        vm.assertEq(buffer, bufferCap, "Wrong buffer");
+
+        vm.assertEq(
+            lastBufferUsedTime,
+            block.timestamp,
+            "Wrong last buffer used time"
+        );
     }
 
     function testFuzzSpenderCanTransfer(
@@ -214,7 +257,7 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
     ) public {
         bufferCap = _bound(
             bufferCap,
-            2.toUint128(),
+            1e6.toUint128(),
             (type(uint128).max).toUint128()
         ).toUint128();
         rateLimitPerSecond = _bound(
@@ -250,7 +293,7 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         rateLimitedAllowance.transferFrom(
             address(this),
             receiver,
-            bufferCap,
+            2,
             address(vault)
         );
     }
