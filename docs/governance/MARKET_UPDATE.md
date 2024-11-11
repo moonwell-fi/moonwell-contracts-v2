@@ -166,6 +166,8 @@ When adding the new entry:
 2. Set the `id` to 0 while the proposal is not yet on-chain.
 3. Once the proposal is on-chain, update the `id` with the proposal id from the
    transaction `ProposalCreated` event emisison.
+4. The proposal id must be set immediately after going on chain to veirfy that
+   calldata is matching and correct.
 
 Important notes:
 
