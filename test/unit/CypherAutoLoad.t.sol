@@ -20,6 +20,7 @@ contract CypherAutoLoadUnitTest is Test {
         address indexed token,
         address indexed user,
         address indexed beneficiary,
+        address allowedContract,
         uint amount
     );
     event BeneficiaryChanged(address _beneficiary);
@@ -115,6 +116,7 @@ contract CypherAutoLoadUnitTest is Test {
             address(vault),
             address(this),
             address(beneficiary),
+            address(rateLimitedAllowance),
             underlyingAmount
         );
         autoLoad.debit(

@@ -20,11 +20,13 @@ contract CypherAutoLoad is Pausable, AccessControlEnumerable {
     /// @param token The address of the token being withdrawn
     /// @param user The address of the user from whom tokens are withdrawn
     /// @param beneficiary The address receiving the withdrawn tokens
+    /// @param allowedContract The contract which holds the allowance
     /// @param amount The amount of tokens withdrawn
     event Withdraw(
         address indexed token,
         address indexed user,
         address indexed beneficiary,
+        address allowedContract,
         uint amount
     );
 
@@ -68,7 +70,13 @@ contract CypherAutoLoad is Pausable, AccessControlEnumerable {
             tokenAddress
         );
 
-        emit Withdraw(tokenAddress, userAddress, beneficiary, amount);
+        emit Withdraw(
+            tokenAddress,
+            userAddress,
+            beneficiary,
+            rateLimitedAllowance,
+            amount
+        );
     }
 
     /// @notice Pause the contract
