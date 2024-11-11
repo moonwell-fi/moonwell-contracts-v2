@@ -23,6 +23,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
     using ChainIds for uint256;
     using stdStorage for StdStorage;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     struct MarketUpdate {
         int256 collateralFactor;
@@ -44,6 +45,8 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
     mapping(uint256 chainId => string[] names) private _irmNames;
     mapping(uint256 chainId => EnumerableSet.AddressSet markets)
         private _markets;
+    mapping(uint256 chainId => EnumerableSet.Bytes32Set models)
+        private _irModels;
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -150,10 +153,10 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
             MarketUpdate memory rec = updates[i];
 
             address market = addresses.getAddress(rec.market);
-            require(market != address(0), "Market address is not set");
 
             require(!_markets[chainId].contains(market), "Market already set");
 
+            _markets[chainId].add(market);
             marketUpdates[chainId].push(rec);
         }
     }
@@ -177,8 +180,16 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
         for (uint256 i = 0; i < models.length; i++) {
             JRM memory model = models[i];
-            _irmNames[chainId].push(model.name);
+
+            require(
+                !_irModels[chainId].contains(
+                    bytes32(abi.encodePacked(model.name))
+                )
+            );
+            _irModels[chainId].add(bytes32(abi.encodePacked(model.name)));
+
             irModels[chainId][model.name] = model;
+            _irmNames[chainId].push(model.name);
         }
     }
 
