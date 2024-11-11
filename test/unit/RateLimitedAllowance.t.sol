@@ -343,6 +343,64 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         assertEq(buffer, 0, "Buffer is not depleted");
     }
 
+    function testBufferIncreasesAtRateLimitPerSecondUpToBufferCap(
+        uint128 bufferCap,
+        uint128 rateLimitPerSecond
+    ) public {
+        bufferCap = _bound(
+            bufferCap,
+            1e6.toUint128(),
+            (type(uint128).max).toUint128()
+        ).toUint128();
+        rateLimitPerSecond = _bound(
+            rateLimitPerSecond,
+            1.toUint128(),
+            type(uint128).max.toUint128()
+        ).toUint128();
+
+        underlying.mint(address(this), bufferCap);
+        underlying.approve(address(vault), bufferCap);
+        vault.deposit(bufferCap, address(this));
+
+        vault.approve(address(rateLimitedAllowance), type(uint256).max);
+
+        rateLimitedAllowance.approve(
+            address(vault),
+            rateLimitPerSecond,
+            bufferCap
+        );
+
+        address receiver = address(0xADBC);
+
+        vm.prank(spender);
+        rateLimitedAllowance.transferFrom(
+            address(this),
+            receiver,
+            bufferCap,
+            address(vault)
+        );
+
+        (, , uint256 buffer, ) = rateLimitedAllowance.getRateLimitedAllowance(
+            address(this),
+            address(vault)
+        );
+
+        assertEq(buffer, 0, "Buffer is not depleted");
+
+        vm.warp(block.timestamp + 1 days);
+
+        (, , uint256 newBuffer, ) = rateLimitedAllowance
+            .getRateLimitedAllowance(address(this), address(vault));
+
+        uint256 expectedNewBuffer = 1 days * uint256(rateLimitPerSecond);
+
+        assertEq(
+            newBuffer,
+            expectedNewBuffer > bufferCap ? bufferCap : expectedNewBuffer,
+            "Buffer is wrong"
+        );
+    }
+
     function testOwnerCanSetSpender() public {
         address newSpender = address(0x1234);
 
