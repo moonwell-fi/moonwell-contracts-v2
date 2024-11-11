@@ -113,4 +113,80 @@ contract CypherIntegrationTest is Test {
             "Wrong receiver balance after withdrawn"
         );
     }
+
+    function testUserApprovalAndDebit() public {
+        uint128 bufferCap = 1_000_000e6;
+        uint128 rateLimitPerSecond = 0.01e6;
+        uint256 underlyingAmount = 1000e6;
+
+        MarketParams memory params = MarketParams({
+            loanToken: address(underlying),
+            collateralToken: addresses.getAddress("cbETH"),
+            oracle: addresses.getAddress("MORPHO_CHAINLINK_cbETH_ORACLE"),
+            irm: addresses.getAddress("MORPHO_ADAPTIVE_CURVE_IRM"),
+            lltv: 0.86e18
+        });
+
+        vault.submitCap(params, underlyingAmount * 100);
+        vm.warp(block.timestamp + 1 days);
+        vault.acceptCap(params);
+
+        bytes32[] memory newSupplyQueue = new bytes32[](1);
+        newSupplyQueue[0] = CBETH_USDC_MARKET_ID;
+        vault.setSupplyQueue(newSupplyQueue);
+
+        // User deposits into the vault
+        address user = address(0x1234);
+        deal(address(underlying), user, underlyingAmount);
+        vm.startPrank(user);
+        underlying.approve(address(vault), underlyingAmount);
+        vault.deposit(underlyingAmount, user);
+        uint256 initialShares = vault.balanceOf(user);
+
+        // User approves the rate-limited allowance contract
+        vault.approve(address(limitedAllowance), type(uint256).max);
+
+        // Set up the rate-limited allowance
+        limitedAllowance.approve(address(vault), rateLimitPerSecond, bufferCap);
+        vm.stopPrank();
+
+        // Record initial states
+        uint256 initialUnderlyingBalance = underlying.balanceOf(beneficiary);
+        (, , uint256 initialBuffer, ) = limitedAllowance
+            .getRateLimitedAllowance(user, address(vault));
+
+        uint256 debitAmount = underlyingAmount / 10;
+        vm.prank(executor);
+        autoLoad.debit(
+            address(limitedAllowance),
+            address(vault),
+            user,
+            debitAmount
+        );
+
+        assertEq(
+            initialUnderlyingBalance + debitAmount,
+            underlying.balanceOf(beneficiary),
+            "Incorrect beneficiary balance after debit"
+        );
+
+        assertLt(
+            vault.balanceOf(user),
+            initialShares,
+            "User vault shares should decrease"
+        );
+
+        (, , uint256 buffer, ) = limitedAllowance.getRateLimitedAllowance(
+            user,
+            address(vault)
+        );
+
+        assertLt(buffer, initialBuffer, "Buffer should decrease after debit");
+
+        assertEq(
+            buffer,
+            initialBuffer - debitAmount,
+            "Incorrect buffer decrease"
+        );
+    }
 }
