@@ -58,6 +58,11 @@ contract MarketCreationHook {
             if (detector == bytesToBytes4(datas[i])) {
                 comptroller = targets[i];
 
+                require(
+                    datas.length >= 3,
+                    "MarketCreationHook: missing actions"
+                );
+
                 /// --------------- FUNCTION SIGNATURE VERIFICATION ---------------
 
                 require(
