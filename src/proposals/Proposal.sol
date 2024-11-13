@@ -125,7 +125,7 @@ abstract contract Proposal is Script, Test {
                 BASE_CHAIN_ID,
                 MOONBEAM_CHAIN_ID
             ];
-            string[3] memory chainNames = ["Optimism", "Base", "Moonbeam"];
+            string[3] memory chainNames;
 
             for (uint256 i = 0; i < chainIdsToCheck.length; i++) {
                 uint256 currentChainId = chainIdsToCheck[i];
@@ -133,7 +133,7 @@ abstract contract Proposal is Script, Test {
                     string(
                         abi.encodePacked(
                             "\n----------- Addresses added for ",
-                            chainNames[i],
+                            currentChainId.chainIdToName(),
                             " -----------"
                         )
                     )
