@@ -16,7 +16,7 @@ import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ComptrollerInterfaceV1} from "@protocol/views/ComptrollerInterfaceV1.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-contract mipRewardsDistributionMoonbeam is HybridProposal, Networks {
+contract RewardsDistributionMoonbeamTemplate is HybridProposal, Networks {
     using String for string;
     using stdJson for string;
     using ChainIds for uint256;
