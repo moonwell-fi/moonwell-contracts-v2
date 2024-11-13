@@ -77,3 +77,24 @@ jobs:
            # since 'ERC4626' matches 4 contracts, they will run concurrently
            command: time forge test --match-contract ERC4626 --fork-url base -vvv --ffi
 
+  cypher-integration-tests:
+    name: Cypher Integration Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Run Integration Test
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 10
+           max_attempts: 3
+           command: time forge test --match-contract CypherIntegrationTest --fork-url base -vvv 
+
