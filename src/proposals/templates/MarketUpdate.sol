@@ -154,9 +154,8 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
             address market = addresses.getAddress(rec.market);
 
-            require(!_markets[chainId].contains(market), "Market already set");
+            require(_markets[chainId].add(market), "Duplication in Markets");
 
-            _markets[chainId].add(market);
             marketUpdates[chainId].push(rec);
         }
     }
@@ -182,11 +181,9 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
             JRM memory model = models[i];
 
             require(
-                !_irModels[chainId].contains(
-                    bytes32(abi.encodePacked(model.name))
-                )
+                _irModels[chainId].add(bytes32(abi.encodePacked(model.name))),
+                "Duplicate IR model"
             );
-            _irModels[chainId].add(bytes32(abi.encodePacked(model.name)));
 
             irModels[chainId][model.name] = model;
             _irmNames[chainId].push(model.name);
