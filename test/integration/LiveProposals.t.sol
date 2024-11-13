@@ -14,7 +14,7 @@ import {Networks} from "@proposals/utils/Networks.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {ProposalMap} from "@test/utils/ProposalMap.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
-import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
+import {ProposalChecker} from "@proposals/utils/ProposalChecker.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";

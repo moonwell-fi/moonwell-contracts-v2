@@ -18,7 +18,7 @@ import {ProposalView} from "@protocol/views/ProposalView.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {ProposalAction} from "@proposals/proposalTypes/IProposal.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
+import {ProposalChecker} from "@proposals/utils/ProposalChecker.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {WormholeBridgeAdapter} from "@protocol/xWELL/WormholeBridgeAdapter.sol";
 import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
