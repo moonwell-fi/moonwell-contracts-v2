@@ -52,7 +52,7 @@ All pull requests must adhere to the style guidelines detailed in
 ### Set the `PRIMARY_FORK_ID` environment variable
 
 For example, to test a proposal on the base network, set the `PRIMARY_FORK_ID`
-to `1`. Find the corresponding fork ID in the `utils/mainnetchains.json` file.
+to `1`. Find the corresponding fork ID in the `chains/mainnetchains.json` file.
 
 ```bash
     export PRIMARY_FORK_ID=1

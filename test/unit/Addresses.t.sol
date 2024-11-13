@@ -26,7 +26,7 @@ contract UnitTestAddresses is Test {
         addresses = new Addresses(addressesPath);
 
         string memory addressesData = string(
-            abi.encodePacked(vm.readFile("./utils/31337.json"))
+            abi.encodePacked(vm.readFile("./chains/31337.json"))
         );
         parsedJson = vm.parseJson(addressesData);
     }
