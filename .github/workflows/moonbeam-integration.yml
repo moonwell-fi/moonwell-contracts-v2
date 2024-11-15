@@ -5,6 +5,7 @@ on: [pull_request]
 env:
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+  FOUNDRY_PROFILE: ci
 
 jobs:
   run-moonbeam-tests:

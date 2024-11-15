@@ -3,6 +3,7 @@ on: [pull_request]
 
 env:
     ARB_RPC_URL: ${{secrets.ARB_RPC_URL}}
+    FOUNDRY_PROFILE: ci
 
 jobs:
   run-arb-tests:

@@ -51,3 +51,4 @@ slither:
 # Proxy requests to the local node, useful for debugging opaque failures
 mitmproxy:
     docker run --rm -it --net=host mitmproxy/mitmproxy mitmproxy --mode reverse:http://host.docker.internal:8545@8081
+

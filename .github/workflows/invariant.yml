@@ -2,6 +2,9 @@ name: Invariant
 
 on: [pull_request]
 
+env:
+  FOUNDRY_PROFILE: ci
+
 jobs:
   invariant-tests:
     name: Invariant Test

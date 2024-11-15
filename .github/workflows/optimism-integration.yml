@@ -7,6 +7,7 @@ env:
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
   PRIMARY_FORK_ID: 2
+  FOUNDRY_PROFILE: ci
 
 jobs:
   live-system-integration-tests:

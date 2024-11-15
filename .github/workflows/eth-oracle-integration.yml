@@ -4,6 +4,7 @@ on: [pull_request]
 
 env:
   ETH_RPC_URL: ${{secrets.ETH_RPC_URL}}
+  FOUNDRY_PROFILE: ci
 
 jobs:
   run-eth-mainnet-tests:
