@@ -168,7 +168,7 @@ contract MultichainGovernorDeploy is Test {
     ) public returns (address proxy, address implementation) {
         // deploy mock implementation
         implementation = deployCode(
-            "artifacts/foundry/MockStakedWell.sol/MockStakedWell.json"
+            "deprecated/artifacts/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
         );
 
         // generate init calldata
@@ -214,7 +214,7 @@ contract MultichainGovernorDeploy is Test {
     ) public returns (address proxy, address implementation) {
         // deploy actual stkWELL implementation for Base
         implementation = deployCode(
-            "artifacts/foundry/StakedWell.sol/StakedWell.json"
+            "depecated/aritfacts/StakedWell.sol/StakedWell.json"
         );
 
         // generate init calldata
