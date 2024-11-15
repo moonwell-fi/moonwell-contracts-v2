@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity 0.6.12;
 
-import {IERC20} from "@protocol/stkWell/IERC20.sol";
-import {SafeMath} from "@protocol/stkWell/SafeMath.sol";
-import {DistributionTypes} from "@protocol/stkWell/DistributionTypes.sol";
-import {IDistributionManager} from "@protocol/stkWell/IDistributionManager.sol";
+import {IERC20} from "@deprecated/stkWell/IERC20.sol";
+import {SafeMath} from "@deprecated/stkWell/SafeMath.sol";
+import {DistributionTypes} from "@deprecated/stkWell/DistributionTypes.sol";
+import {IDistributionManager} from "@deprecated/stkWell/IDistributionManager.sol";
 
 /**
  * @title DistributionManager

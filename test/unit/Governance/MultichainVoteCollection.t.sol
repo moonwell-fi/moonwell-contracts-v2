@@ -5,7 +5,7 @@ import "@protocol/utils/ChainIds.sol";
 
 import {BASE_WORMHOLE_CHAIN_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
 import {IMultichainGovernor, MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
 import {xWELLDeploy} from "@protocol/xWELL/xWELLDeploy.sol";

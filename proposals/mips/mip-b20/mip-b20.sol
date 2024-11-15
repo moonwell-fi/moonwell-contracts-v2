@@ -6,7 +6,7 @@ import "@forge-std/Test.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
+import {IStakedWellUplift} from "@deprecated/stkWell/IStakedWellUplift.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 

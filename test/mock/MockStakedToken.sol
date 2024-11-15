@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity 0.6.12;
 
-import {IERC20} from "@protocol/stkWell/IERC20.sol";
-import {SafeERC20} from "@protocol/stkWell/SafeERC20.sol";
-import {IStakedToken} from "@protocol/stkWell/IStakedToken.sol";
-import {Initializable} from "@protocol/stkWell/Initializable.sol";
-import {ITransferHook} from "@protocol/stkWell/ITransferHook.sol";
-import {IEcosystemReserve} from "@protocol/stkWell/IEcosystemReserve.sol";
-import {DistributionTypes} from "@protocol/stkWell/DistributionTypes.sol";
+import {IERC20} from "@deprecated/stkWell/IERC20.sol";
+import {SafeERC20} from "@deprecated/stkWell/SafeERC20.sol";
+import {IStakedToken} from "@deprecated/stkWell/IStakedToken.sol";
+import {Initializable} from "@deprecated/stkWell/Initializable.sol";
+import {ITransferHook} from "@deprecated/stkWell/ITransferHook.sol";
+import {IEcosystemReserve} from "@deprecated/stkWell/IEcosystemReserve.sol";
+import {DistributionTypes} from "@deprecated/stkWell/DistributionTypes.sol";
 import {MockERC20WithSnapshot} from "@test/mock/MockERC20WithSnapshot.sol";
 import {MockDistributionManager} from "@test/mock/MockDistributionManager.sol";
-import {ReentrancyGuardUpgradeable} from "@protocol/stkWell/ReentrancyGuardUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@deprecated/stkWell/ReentrancyGuardUpgradeable.sol";
 
 /**
  * @title StakedToken

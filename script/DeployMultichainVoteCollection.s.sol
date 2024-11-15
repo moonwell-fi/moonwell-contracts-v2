@@ -6,7 +6,7 @@ import {Script} from "@forge-std/Script.sol";
 import "@utils/ChainIds.sol";
 
 import {MultichainVoteCollection} from "@protocol/governance/multichain/MultichainVoteCollection.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /*

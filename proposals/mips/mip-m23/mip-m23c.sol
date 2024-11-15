@@ -9,7 +9,7 @@ import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {WormholeTrustedSender} from "@protocol/governance/WormholeTrustedSender.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {MOONBEAM_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/ChainIds.sol";
 

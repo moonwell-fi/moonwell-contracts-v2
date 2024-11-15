@@ -8,7 +8,7 @@ import "@forge-std/Test.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";

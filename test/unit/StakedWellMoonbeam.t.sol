@@ -7,7 +7,7 @@ import "@test/helper/BaseTest.t.sol";
 
 import {ProxyAdmin} from "@openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 
 contract StakedWellMoonbeamUnitTest is BaseTest, MultichainGovernorDeploy {
     IStakedWell stakedWell;

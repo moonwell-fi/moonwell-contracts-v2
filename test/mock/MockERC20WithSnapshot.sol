@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity 0.6.12;
 
-import {ERC20} from "@protocol/stkWell/ERC20.sol";
-import {ITransferHook} from "@protocol/stkWell/ITransferHook.sol";
+import {ERC20} from "@deprecated/stkWell/ERC20.sol";
+import {ITransferHook} from "@deprecated/stkWell/ITransferHook.sol";
 
 /**
  * @title ERC20WithSnapshot

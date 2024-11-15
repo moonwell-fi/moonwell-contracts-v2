@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity 0.6.12;
 
-import {IERC20} from "@protocol/stkWell/IERC20.sol";
+import {IERC20} from "@deprecated/stkWell/IERC20.sol";
 import {MockStakedToken} from "@test/mock/MockStakedToken.sol";
 
 /// NOT TO BE USED IN PRODUCTION

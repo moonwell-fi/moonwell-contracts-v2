@@ -11,7 +11,7 @@ import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} from "@utils/ChainIds.sol";
