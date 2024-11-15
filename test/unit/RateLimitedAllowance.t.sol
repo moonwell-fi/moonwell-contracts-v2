@@ -130,6 +130,11 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         uint128 bufferCap,
         uint128 rateLimitPerSecond
     ) public {
+        rateLimitPerSecond = _bound(
+            rateLimitPerSecond,
+            1.toUint128(),
+            type(uint128).max.toUint128()
+        ).toUint128();
         rateLimitedAllowance.approve(
             address(vault),
             rateLimitPerSecond,
