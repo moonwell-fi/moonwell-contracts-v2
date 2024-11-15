@@ -3,7 +3,7 @@ pragma solidity 0.6.12;
 
 import {IERC20} from "./IERC20.sol";
 import {SafeMath} from "./SafeMath.sol";
-import {DistributionTypes} from "@protocol/stkWell/DistributionTypes.sol";
+import {DistributionTypes} from "@deprecated/stkWell/DistributionTypes.sol";
 import {IDistributionManager} from "./IDistributionManager.sol";
 
 /**
