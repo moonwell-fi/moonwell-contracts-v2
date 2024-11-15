@@ -23,7 +23,7 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permissions
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3
@@ -50,7 +50,7 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permission
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3
@@ -76,7 +76,7 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permissions
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3
@@ -112,7 +112,7 @@ jobs:
           echo "PR_CHANGED_FILES=${{ steps.files.outputs.added_modified }}" >> $GITHUB_ENV
 
       - name: Give write permissions
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Make the script executable
         run: chmod +x bin/run-onchain-calldata-check.sh
@@ -154,7 +154,7 @@ jobs:
         run: echo "DEBUG=true" >> $GITHUB_ENV
 
       - name: Set PROPOSALS_FOLDER
-        run: echo "PROPOSALS_FOLDER=src/proposals/mips" >> $GITHUB_ENV
+        run: echo "PROPOSALS_FOLDER=proposals/mips" >> $GITHUB_ENV
 
       - name: List and Delete Previous Comments
         uses: actions/github-script@v6
@@ -182,7 +182,7 @@ jobs:
             }
 
       - name: Give write permissions
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Run Calldata Printing
         uses: nick-fields/retry@v3
@@ -223,7 +223,7 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permissions
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3
