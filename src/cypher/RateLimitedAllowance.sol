@@ -30,6 +30,18 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
     /// @param newSpender The address of the new spender
     event SpenderChanged(address newSpender);
 
+    /// @notice Emitted when tokens are transferred
+    /// @param token The address of the token being transferred
+    /// @param from The address sending the tokens
+    /// @param to The address receiving the tokens
+    /// @param amount The amount of tokens transferred
+    event TokenTransferred(
+        address indexed token,
+        address indexed from,
+        address indexed to,
+        uint256 amount
+    );
+
     /// @notice The address of the authorized spender
     address public spender;
 
@@ -54,6 +66,8 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
         uint128 rateLimitPerSecond,
         uint128 bufferCap
     ) external {
+        require(rateLimitPerSecond > 0, "Rate limit must be positive");
+
         RateLimit storage limit = limitedAllowance[msg.sender][token];
 
         limit.setBufferCap(bufferCap);
@@ -80,6 +94,8 @@ abstract contract RateLimitedAllowance is Pausable, Ownable {
         limit.depleteBuffer(amount);
 
         _transfer(from, to, amount, token);
+
+        emit TokenTransferred(token, from, to, amount);
     }
 
     /// @notice Gets the rate-limited allowance for a token

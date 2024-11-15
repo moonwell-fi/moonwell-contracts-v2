@@ -20,6 +20,12 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
         uint128 bufferCap
     );
     event SpenderChanged(address newSpender);
+    event TokenTransferred(
+        address indexed token,
+        address indexed from,
+        address indexed to,
+        uint256 amount
+    );
 
     MockERC4626 public vault;
     MockERC20 public underlying;
@@ -153,6 +159,34 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
             lastBufferUsedTime,
             block.timestamp,
             "Wrong last buffer used time"
+        );
+    }
+
+    function testTransferFromEmitEvent() public {
+        testApproveEmitsApprovedEvent();
+
+        address receiver = address(0xADBC);
+
+        uint256 underlyingAmount = 1e8;
+        underlying.mint(address(this), underlyingAmount);
+        underlying.approve(address(vault), underlyingAmount);
+        vault.deposit(underlyingAmount, address(this));
+
+        vault.approve(address(rateLimitedAllowance), type(uint256).max);
+
+        vm.prank(spender);
+        vm.expectEmit();
+        emit TokenTransferred(
+            address(vault),
+            address(this),
+            receiver,
+            underlyingAmount
+        );
+        rateLimitedAllowance.transferFrom(
+            address(this),
+            receiver,
+            underlyingAmount,
+            address(vault)
         );
     }
 
@@ -465,5 +499,10 @@ contract ERC4626RateLimitedAllowanceUnitTest is Test {
             1,
             address(vault)
         );
+    }
+
+    function testRevertsIfRatelimiteIsZero() public {
+        vm.expectRevert("Rate limit must be positive");
+        rateLimitedAllowance.approve(address(vault), 0, 1000e18.toUint128());
     }
 }
