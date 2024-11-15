@@ -15,8 +15,6 @@ block_gas_limit = "18446744073709551615"
 revert_strings = "debug"
 sparse_mode = true # compiles files that match filter criteria
 
-# We want to optimise via the new optimiser backend for better results.
-via_ir = true
 
 # We can have quite some control over the optimiser when using the new IR one.
 [profile.default.optimizer_details]
