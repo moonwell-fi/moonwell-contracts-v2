@@ -54,6 +54,7 @@ mitmproxy:
 
 coverage:
 	forge coverage --skip script \
-         --out artifacts/coverage \
-         --skip "Integration.t.sol"
+        --out artifacts/coverage \
+        --skip "Integration.t.sol" \
+		--summary --report lcov
 
