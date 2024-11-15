@@ -53,8 +53,11 @@ mitmproxy:
     docker run --rm -it --net=host mitmproxy/mitmproxy mitmproxy --mode reverse:http://host.docker.internal:8545@8081
 
 coverage:
-	forge coverage --skip script \
+	time forge coverage --skip script \
         --out artifacts/coverage \
         --skip "Integration.t.sol" \
 		--summary --report lcov
+
+test-unit:
+	time forge test --match-contract UnitTest -vvv
 
