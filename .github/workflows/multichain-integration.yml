@@ -83,7 +83,7 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 15
+           timeout_minutes: 20
            max_attempts: 3
            command: time forge test --mc LiveProposalsIntegrationTest -vvvvv --ffi
                     
