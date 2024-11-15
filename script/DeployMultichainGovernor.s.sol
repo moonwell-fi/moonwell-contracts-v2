@@ -213,9 +213,7 @@ contract MultichainGovernorDeploy is Test {
         address proxyAdmin
     ) public returns (address proxy, address implementation) {
         // deploy actual stkWELL implementation for Base
-        implemdepecated /
-            aritfacts /
-            entation = deployCode(
+        implementation = deployCode(
             "depecated/artifacts/StakedWell.sol/StakedWell.json"
         );
 
