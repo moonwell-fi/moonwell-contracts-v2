@@ -79,7 +79,7 @@ contract mipm41 is HybridProposal, ParameterValidation {
     function deploy(Addresses addresses, address) public override {
         if (!addresses.isAddressSet("STK_GOVTOKEN_IMPL")) {
             address implementation = deployCode(
-                "artifacts/foundry/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
+                "deprecated/artifacts/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
             );
 
             require(
