@@ -22,7 +22,7 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permissions
-        run: chmod -R +x proposals/mips/
+        run: chmod -R +x src/proposals/mips/
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3
@@ -49,7 +49,7 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permission
-        run: chmod -R +x proposals/mips/
+        run: chmod -R +x src/proposals/mips/
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3
@@ -75,7 +75,7 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permissions
-        run: chmod -R +x proposals/mips/
+        run: chmod -R +x src/proposals/mips/
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3
@@ -111,7 +111,7 @@ jobs:
           echo "PR_CHANGED_FILES=${{ steps.files.outputs.added_modified }}" >> $GITHUB_ENV
 
       - name: Give write permissions
-        run: chmod -R +x proposals/mips/
+        run: chmod -R +x src/proposals/mips/
 
       - name: Make the script executable
         run: chmod +x bin/run-onchain-calldata-check.sh
@@ -181,7 +181,7 @@ jobs:
             }
 
       - name: Give write permissions
-        run: chmod -R +x proposals/mips/
+        run: chmod -R +x src/proposals/mips/
 
       - name: Run Calldata Printing
         uses: nick-fields/retry@v3
@@ -222,7 +222,7 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permissions
-        run: chmod -R +x proposals/mips/
+        run: chmod -R +x src/proposals/mips/
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3
