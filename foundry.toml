@@ -12,6 +12,9 @@ rpc_storage_caching = { chains = "all", endpoints = "all" }
 ignored_warnings_from = ["src/MErc20Delegator.sol", "src/tokensale/TokenSaleDistributorProxy.sol"]
 gas_limit = "18446744073709551615" # u64::MAX
 block_gas_limit = "18446744073709551615"
+revert_strings = "debug"
+sparse_mode = true # compiles files that match filter criteria
+
 
 [rpc_endpoints]
 localhost = "http://127.0.0.1:8545"
