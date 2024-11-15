@@ -22,7 +22,7 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permissions
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Live System Integration Tests
         uses: nick-fields/retry@v3
