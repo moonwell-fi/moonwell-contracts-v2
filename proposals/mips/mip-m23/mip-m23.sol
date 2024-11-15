@@ -14,7 +14,7 @@ import {Configs} from "@proposals/Configs.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
 import {TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {IStakedWellUplift} from "@deprecated/stkWell/IStakedWellUplift.sol";
+import {IStakedWellUplift} from "@protocol/interfaces/IStakedWellUplift.sol";
 import {ITemporalGovernor} from "@protocol/governance/ITemporalGovernor.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
 import {MultiRewardDistributor} from "@protocol/rewards/MultiRewardDistributor.sol";

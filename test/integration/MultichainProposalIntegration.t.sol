@@ -21,7 +21,7 @@ import {Constants} from "@protocol/governance/multichain/Constants.sol";
 import {IStakedWell} from "@protocol/IStakedWell.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
-import {IStakedWellUplift} from "@deprecated/stkWell/IStakedWellUplift.sol";
+import {IStakedWellUplift} from "@protocol/interfaces/IStakedWellUplift.sol";
 import {MockVoteCollection} from "@test/mock/MockVoteCollection.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
 import {ITimelock as Timelock} from "@protocol/interfaces/ITimelock.sol";
@@ -35,7 +35,7 @@ import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposa
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {TokenSaleDistributorInterfaceV1} from "@protocol/views/TokenSaleDistributorInterfaceV1.sol";
 import {ITemporalGovernor, TemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
-import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@deprecated/stkWell/IEcosystemReserveUplift.sol";
+import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/interfaces/IEcosystemReserveUplift.sol";
 
 /// @notice run this on a chainforked moonbeam node.
 /// then switch over to base network to generate the calldata,

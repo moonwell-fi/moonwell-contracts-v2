@@ -197,10 +197,6 @@ contract MultichainGovernorDeploy is Test {
         );
     }
 
-    function deployStkWellImpl() public returns (address) {
-        return deployCode("StakedWell.sol:StakedWell");
-    }
-
     function deployStakedWell(
         address stakedToken,
         address rewardToken,
