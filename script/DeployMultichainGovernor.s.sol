@@ -213,8 +213,10 @@ contract MultichainGovernorDeploy is Test {
         address proxyAdmin
     ) public returns (address proxy, address implementation) {
         // deploy actual stkWELL implementation for Base
-        implementation = deployCode(
-            "depecated/aritfacts/StakedWell.sol/StakedWell.json"
+        implemdepecated /
+            aritfacts /
+            entation = deployCode(
+            "depecated/artifacts/StakedWell.sol/StakedWell.json"
         );
 
         // generate init calldata
@@ -256,7 +258,7 @@ contract MultichainGovernorDeploy is Test {
     ) public returns (address proxy, address implementation) {
         // deploy actual stkWELL implementation for Moonbeam
         implementation = deployCode(
-            "artifacts/foundry/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
+            "depecated/artifacts/StakedWellMoonbeam.sol/StakedWellMoonbeam.json"
         );
 
         // generate init calldata
@@ -296,11 +298,11 @@ contract MultichainGovernorDeploy is Test {
         )
     {
         ecosystemReserveImplementation = deployCode(
-            "artifacts/foundry/EcosystemReserve.sol/EcosystemReserve.json"
+            "depecated/artifacts/EcosystemReserve.sol/EcosystemReserve.json"
         );
 
         ecosystemReserveController = deployCode(
-            "artifacts/foundry/EcosystemReserveController.sol/EcosystemReserveController.json"
+            "depecated/artifacts/EcosystemReserveController.sol/EcosystemReserveController.json"
         );
 
         ecosystemReserveProxy = address(
