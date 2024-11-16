@@ -143,7 +143,7 @@ contract mipb00 is HybridProposal, Configs {
             addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
         }
 
-        _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
+        _setMTokenConfiguration("./src/proposals/mips/mip-b00/mTokens.json");
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         uint256 cTokenConfigsLength = cTokenConfigs.length;
