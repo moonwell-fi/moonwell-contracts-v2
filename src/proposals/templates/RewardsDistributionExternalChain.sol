@@ -23,7 +23,7 @@ import {WormholeRelayerAdapter} from "@test/mock/WormholeRelayerAdapter.sol";
 import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-contract mipRewardsDistributionExternalChain is HybridProposal, Networks {
+contract RewardsDistributionExternalChainTemplate is HybridProposal, Networks {
     using SafeCast for *;
     using String for string;
     using stdJson for string;

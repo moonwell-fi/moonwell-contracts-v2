@@ -2,7 +2,7 @@
 
 The `ChainlinkOracle` contract functions as a price oracle, retrieving prices
 from Chainlink and allowing for admin price overrides. The after deploy function
-in mip00 will set the TemporalGovenor as the admin.
+in ProtocolDeploymentTemplate will set the TemporalGovenor as the admin.
 
 ## Contract Variables
 

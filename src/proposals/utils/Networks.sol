@@ -19,7 +19,7 @@ abstract contract Networks is Test {
         string memory data = vm.readFile(
             VMSafe(address(vm)).envOr(
                 "NETWORK_PATH",
-                "./utils/mainnetchains.json"
+                "./chains/mainnetchains.json"
             )
         );
         bytes memory parsedJson = vm.parseJson(data);

@@ -59,7 +59,7 @@ export MTOKENS_PATH=src/proposals/mips/mip-o00/mTokens.json
 
 */
 
-contract mip00 is HybridProposal, Configs {
+contract ProtocolDeplloymentTemplate is HybridProposal, Configs {
     using Address for address;
     using ChainIds for uint256;
     using ProposalActions for *;

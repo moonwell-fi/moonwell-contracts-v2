@@ -14,7 +14,7 @@ import {Proposal} from "@proposals/Proposal.sol";
 import {IWormhole} from "@protocol/wormhole/IWormhole.sol";
 import {Implementation} from "@test/mock/wormhole/Implementation.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {ProposalChecker} from "@proposals/proposalTypes/ProposalChecker.sol";
+import {ProposalChecker} from "@proposals/utils/ProposalChecker.sol";
 import {ITemporalGovernor} from "@protocol/governance/TemporalGovernor.sol";
 import {MarketCreationHook} from "@proposals/hooks/MarketCreationHook.sol";
 import {ProposalAction, ActionType} from "@proposals/proposalTypes/IProposal.sol";
