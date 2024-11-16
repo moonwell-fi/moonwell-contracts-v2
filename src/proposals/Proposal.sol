@@ -120,64 +120,47 @@ abstract contract Proposal is Script, Test {
                 "\n------- Addresses added after running proposal -------"
             );
 
-            // print all addresses beloging to OPTIMISM_CHAIN_ID
-            console.log(
-                "\n----------- Addresses added for Optimism -----------"
-            );
-            for (uint256 j = 0; j < recordedNames.length; j++) {
-                if (chainIds[j] == OPTIMISM_CHAIN_ID) {
-                    console.log(
-                        string(printedAddress),
-                        recordedAddresses[j],
-                        ","
-                    );
-                    console.log(string(printedContract), true, ",");
-                    console.log(
-                        string(printedName),
-                        recordedNames[j],
-                        j < recordedNames.length - 1 ? "," : ""
-                    );
+            uint256[3] memory chainIdsToCheck = [
+                OPTIMISM_CHAIN_ID,
+                BASE_CHAIN_ID,
+                MOONBEAM_CHAIN_ID
+            ];
+
+            for (uint256 i = 0; i < chainIdsToCheck.length; i++) {
+                uint256 currentChainId = chainIdsToCheck[i];
+                console.log(
+                    string(
+                        abi.encodePacked(
+                            "\n----------- Addresses added for ",
+                            currentChainId.chainIdToName(),
+                            " -----------"
+                        )
+                    )
+                );
+
+                uint256 addressCount = 0;
+                for (uint256 j = 0; j < recordedNames.length; j++) {
+                    if (chainIds[j] == currentChainId) {
+                        addressCount++;
+                    }
                 }
-            }
 
-            // print all addresses beloging to BASE_CHAIND_ID
-            console.log(
-                "\n------------- Addresses added for Base -------------"
-            );
-            for (uint256 j = 0; j < recordedNames.length; j++) {
-                if (chainIds[j] == BASE_CHAIN_ID) {
-                    console.log(
-                        string(printedAddress),
-                        recordedAddresses[j],
-                        ","
-                    );
-                    console.log(string(printedContract), true, ",");
-                    console.log(
-                        string(printedName),
-                        recordedNames[j],
-                        j < recordedNames.length - 1 ? "," : ""
-                    );
-                }
-            }
-
-            // print all addresses beloging to MOONBEAM_CHAIN_ID
-            console.log(
-                "\n----------- Addresses added for Moonbeam -----------"
-            );
-
-            for (uint256 j = 0; j < recordedNames.length; j++) {
-                if (chainIds[j] == MOONBEAM_CHAIN_ID) {
-                    console.log(
-                        string(printedAddress),
-                        recordedAddresses[j],
-                        ","
-                    );
-                    console.log(string(printedContract), true, ",");
-                    console.log(
-                        string(printedName),
-                        recordedNames[j],
-                        j < recordedNames.length - 1 ? "," : ""
-                    );
+                uint256 printedCount = 0;
+                for (uint256 j = 0; j < recordedNames.length; j++) {
+                    if (chainIds[j] == currentChainId) {
+                        console.log(
+                            string(printedAddress),
+                            recordedAddresses[j],
+                            ","
+                        );
+                        console.log(string(printedContract), true, ",");
+                        console.log(
+                            string(printedName),
+                            recordedNames[j],
+                            printedCount < addressCount - 1 ? "," : ""
+                        );
+                        printedCount++;
+                    }
                 }
             }
         }

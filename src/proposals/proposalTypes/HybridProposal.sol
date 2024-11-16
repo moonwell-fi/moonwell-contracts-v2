@@ -341,6 +341,7 @@ abstract contract HybridProposal is
                 temporalGovernorOptimism,
                 actions.filter(ActionType.Optimism)
             );
+            currIndex++;
         }
 
         return (targets, values, payloads);

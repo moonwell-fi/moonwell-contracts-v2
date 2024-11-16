@@ -23,7 +23,6 @@ abstract contract ProposalChecker {
 
         for (uint256 i = 0; i < targets.length; i++) {
             /// there's no reason for any proposal actions to call addresses with 0 bytecode
-
             require(
                 targets[i].code.length > 0,
                 string(
