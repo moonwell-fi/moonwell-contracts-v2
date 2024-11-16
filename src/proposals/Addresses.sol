@@ -66,7 +66,7 @@ contract Addresses is IAddresses, Test {
                 string(
                     abi.encodePacked(
                         projectRoot,
-                        "/utils/",
+                        "/chains/",
                         vm.toString(chainids[j]),
                         ".json"
                     )

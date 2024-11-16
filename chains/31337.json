@@ -1,0 +1,12 @@
+[
+    {
+        "addr": "0xD791292655A1d382FcC1a6Cb9171476cf91F2caa",
+        "name": "EMISSIONS_ADMIN",
+        "isContract": false
+    },
+    {
+        "addr": "0xc191A4db4E05e478778eDB6a201cb7F13A257C23",
+        "name": "SECURITY_COUNCIL",
+        "isContract": false
+    }
+]

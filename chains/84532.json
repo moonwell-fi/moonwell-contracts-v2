@@ -1,0 +1,217 @@
+[
+    {
+        "addr": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+        "isContract": true,
+        "name": "MORPHO_BLUE"
+    },
+    {
+        "addr": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "isContract": true,
+        "name": "USDC"
+    },
+    {
+        "addr": "0x79A1027a6A159502049F10906D333EC57E95F083",
+        "name": "WORMHOLE_CORE",
+        "isContract": true
+    },
+    {
+        "addr": "0x4616975f7E6045FD9737e95bC527e9e14c727BD2",
+        "name": "USDBC",
+        "isContract": true
+    },
+    {
+        "addr": "0xdbc885569E711262926803184eC9Ff73816fc953",
+        "name": "cbETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x663A6F02d547dFd639BF689FED298712f2FB69Fb",
+        "name": "WETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x21A36dE5734BE165f7bFa42a086a51C466Cb90EE",
+        "name": "USDC_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0xbf7491f119bCC33E5a697D3528e7d8D64E35b3F2",
+        "name": "ETH_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x3E4589Ca47F41f6DEFC78929D210976678960754",
+        "name": "cbETH_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x8967d9F9fdD2be7A712d83dD15D79123BdAe872e",
+        "name": "PAUSE_GUARDIAN",
+        "isContract": false
+    },
+    {
+        "addr": "0x8967d9F9fdD2be7A712d83dD15D79123BdAe872e",
+        "name": "EMISSIONS_ADMIN",
+        "isContract": false
+    },
+    {
+        "addr": "0x8967d9F9fdD2be7A712d83dD15D79123BdAe872e",
+        "name": "SECURITY_COUNCIL",
+        "isContract": false
+    },
+    {
+        "addr": "0x35b3314EA652899154BbfE937E3cCC2775ba712e",
+        "name": "BORROW_SUPPLY_GUARDIAN",
+        "isContract": false
+    },
+    {
+        "addr": "0x93BAD53DDfB6132b0aC8E37f6029163E63372cEE",
+        "name": "WORMHOLE_BRIDGE_RELAYER_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0xDbFACEfA114f79B7aAa8676A9cae9dF6edb76e11",
+        "name": "MRD_PROXY_ADMIN",
+        "isContract": true
+    },
+    {
+        "addr": "0xc01EA381A64F8BE3bDBb01A7c34D809f80783662",
+        "name": "TEMPORAL_GOVERNOR",
+        "isContract": true
+    },
+    {
+        "addr": "0x778F1bc4865F60201Dd0adAb2a57e9495bA9B80f",
+        "name": "MRD_IMPL",
+        "isContract": true
+    },
+    {
+        "addr": "0xE193BE0A14D86BA554b11075b4235ab2Bd4F7D16",
+        "name": "COMPTROLLER",
+        "isContract": true
+    },
+    {
+        "addr": "0xC72ba45f2Ae134F21DAEb2b7B5fd5De0064Ee9bB",
+        "name": "UNITROLLER",
+        "isContract": true
+    },
+    {
+        "addr": "0xcdC49088c040f1209F1aa548b2Ae40d8E24B53A5",
+        "name": "MRD_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0x1c7b1689809F9f572e3DF9c1e063473549bdf37c",
+        "name": "MTOKEN_IMPLEMENTATION",
+        "isContract": true
+    },
+    {
+        "addr": "0x7073814cfF6c183010df4D2BEC895a04bdB7f8cd",
+        "name": "JUMP_RATE_IRM_MOONWELL_USDBC",
+        "isContract": true
+    },
+    {
+        "addr": "0x876852425331a113d8E432eFFB3aC5BEf38f033a",
+        "name": "MOONWELL_USDBC",
+        "isContract": true
+    },
+    {
+        "addr": "0x2fdF038b9D09F7fA5E775cEF6787cdf0C780961c",
+        "name": "JUMP_RATE_IRM_MOONWELL_WETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x2F39a349A79492a70E152760ce7123A1933eCf28",
+        "name": "MOONWELL_WETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x38D292Adf50f0cceb12e06e1303d875F553D9b29",
+        "name": "JUMP_RATE_IRM_MOONWELL_cbETH",
+        "isContract": true
+    },
+    {
+        "addr": "0x5302EbD8BC32435C823c2e22B04Cd6c45f593e89",
+        "name": "MOONWELL_cbETH",
+        "isContract": true
+    },
+    {
+        "addr": "0xB7eAfB1B503c189CA4E5f19bCe272029cD98Cf1F",
+        "name": "WETH_ROUTER",
+        "isContract": true
+    },
+    {
+        "addr": "0x13C0d0a89E7c3C747cc3A15234AB6942238d2ECb",
+        "name": "GOVTOKEN",
+        "isContract": true
+    },
+    {
+        "addr": "0x1AbEA09b07276669de5BC3a11F820fdC4ba529d1",
+        "name": "CHAINLINK_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x6bD7f004Dda748dB47Eb764a816eD2AA26EB4e40",
+        "name": "WORMHOLE_BRIDGE_ADAPTER_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0xF81d39f4F2f98B5D804FCCF3Db194D17c78145Ff",
+        "name": "WORMHOLE_BRIDGE_ADAPTER_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0xC18f4443e92D62Df803aA267E3117A1F244f09E3",
+        "name": "xWELL_LOGIC",
+        "isContract": true
+    },
+    {
+        "addr": "0xE8F339C51cb2700113ec6ef552eE1D6cCA3BfB95",
+        "name": "xWELL_PROXY",
+        "isContract": true
+    },
+    {
+        "addr": "0x9AC4520143F86538CdF325Ec9141e060e5896d7a",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_PROXY"
+    },
+    {
+        "addr": "0x4462233cA8899316540ffE976990D77D486A3f9c",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_IMPL"
+    },
+    {
+        "addr": "0xCEdb41D3D274326a6a72F03215BA2E8aA0fA0A6a",
+        "isContract": true,
+        "name": "ECOSYSTEM_RESERVE_CONTROLLER"
+    },
+    {
+        "addr": "0x136b89Fc7e52493AadC7710a64603793a857dAfA",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_PROXY"
+    },
+    {
+        "addr": "0xa48382Da31A70EFecDF0a77d454cdE07b25b4B8D",
+        "isContract": true,
+        "name": "STK_GOVTOKEN_IMPL"
+    },
+    {
+        "addr": "0xBdD86164da753C1a25e72603d266Dc1CC32e8acf",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_PROXY"
+    },
+    {
+        "addr": "0xb6cbE1de9878547BbC8DdB7288A668AbF9F43d16",
+        "isContract": true,
+        "name": "VOTE_COLLECTION_IMPL"
+    },
+    {
+        "addr": "0x2dF0598Caa354D546dac1aAa0716553cEB81E8D8",
+        "isContract": false,
+        "name": "DEX_RELAYER"
+    },
+    {
+        "addr": "0xE9fFd686Ca83CeB308962f4e50c5Fd7F2E3c037e",
+        "isContract": true,
+        "name": "MARKET_ADD_CHECKER"
+    }
+]

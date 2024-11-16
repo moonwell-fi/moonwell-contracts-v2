@@ -153,7 +153,7 @@ jobs:
         run: echo "DEBUG=true" >> $GITHUB_ENV
 
       - name: Set PROPOSALS_FOLDER
-        run: echo "PROPOSALS_FOLDER=src/proposals/mips" >> $GITHUB_ENV
+        run: echo "PROPOSALS_FOLDER=proposals/mips" >> $GITHUB_ENV
 
       - name: List and Delete Previous Comments
         uses: actions/github-script@v6
