@@ -15,7 +15,7 @@ contract mipm21 is GovernanceProposal {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m21/MIP-M21.md")
+            vm.readFile("proposals/mips/mip-m21/MIP-M21.md")
         );
         _setProposalDescription(proposalDescription);
     }
