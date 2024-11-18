@@ -14,25 +14,16 @@ outlined below
 
 ### Naming Convention
 
-1. **Base Proposals:**
-
-   - **Folder Name:** Use the format `mip-bXX`, where `XX` is the proposal
-     number, incremented by 1 from the last base proposal.
-   - **File Name:** Inside the folder, create a file named `mip-bXX.sol`.
-   - **Contract Name:** Inside the file, the proposal should be named
-     `contract mipbXX`
-
-2. **Moonbeam Proposals:**
-
-   - **Folder Name:** Use the format `mip-mXX`, where `XX` is the proposal
-     number, incremented by 1 from the last moonbeam proposal.
-   - **File Name:** Inside the folder, create a file named `mip-mXX.sol`.
-   - **Contract Name:** Inside the file, the proposal should be named
-     `contract mipmXX`
-
-3. **Case Sensitivity:**
-   - **Folders and Solidity Files:** Use lowercase letters.
-   - **Markdown Files:** Use uppercase letters, e.g., `MIP-BXX.md`.
+1.  **Folder Name:** Use the format `mip-yXX`, where `y` is the first letter of
+    the chain name and `XX` is the proposal number, incremented by 1 from the
+    last proposal. For proposals that touch multiple chains, use the letter `x`.
+    For example, if the last multichain proposal is `mip-x09`, the next should
+    be `mip-x10`.
+2.  **Markdown File Name:** Inside the folder, create a file named `MIP-YXX.md`.
+3.  **Contract Name:** If the proposal includes a smart contract, name it
+    `contract mipyxx` inside the corresponding Solidity file.
+4.  **Folders and Solidity Files:** Use lowercase letters.
+5.  **Markdown Files:** Use uppercase letters, e.g., `MIP-BXX.md`.
 
 ### Guidelines for Pull Requests and Branches
 
