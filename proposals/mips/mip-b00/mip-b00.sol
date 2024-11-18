@@ -61,7 +61,7 @@ contract mipb00 is HybridProposal, Configs {
                 string(
                     abi.encodePacked(
                         vm.projectRoot(),
-                        "/src/proposals/mips/mip-b00/MIP-B00.md"
+                        "proposals/mips/mip-b00/mTokens.json"
                     )
                 )
             )
@@ -143,7 +143,7 @@ contract mipb00 is HybridProposal, Configs {
             addresses.addAddress("MTOKEN_IMPLEMENTATION", address(mTokenLogic));
         }
 
-        _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
+        _setMTokenConfiguration("proposals/mips/mip-b00/mTokens.json");
         Configs.CTokenConfiguration[]
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
         uint256 cTokenConfigsLength = cTokenConfigs.length;
@@ -211,7 +211,7 @@ contract mipb00 is HybridProposal, Configs {
         // If deploying to mainnet again these values must be adjust
         // endTime must be in the future
         // mock values are set on initEmissions function for test executions
-        //_setEmissionConfiguration("./src/proposals/mainnetRewardStreams.json");
+        //_setEmissionConfiguration("proposals/mips/mip-b00/mTokens.json");
 
         initEmissions(addresses, deployer);
         WETHRouter router = new WETHRouter(
@@ -391,7 +391,7 @@ contract mipb00 is HybridProposal, Configs {
     }
 
     function build(Addresses addresses) public override {
-        _setMTokenConfiguration("./src/proposals/mainnetMTokensExample.json");
+        _setMTokenConfiguration("proposals/mips/mip-b00/mTokens.json");
 
         /// ------------ UNITROLLER ACCEPT ADMIN ------------
 
