@@ -3,7 +3,7 @@
         "envPath": "proposals/mips/mip-x06/x06.sh",
         "governor": "MultichainGovernor",
         "id": 0,
-        "path": "proposals/templates/RewardsDistribution.sol",
+        "path": "artifacts/foundry/RewardsDistribution.sol/RewardsDistribution.json",
         "proposalType": "HybridProposal"
     },
     {
