@@ -26,6 +26,10 @@ runs:
       run: forge clean
       shell: bash
 
+    - name: Compile Proposals
+      run: forge compile --contracts proposals/
+      shell: bash
+
     - name: Compile Contracts
       run: forge build
       shell: bash
