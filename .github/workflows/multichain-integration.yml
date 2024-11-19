@@ -29,6 +29,7 @@ jobs:
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
+           timeout_minutes: 20
            retry_wait_seconds: 60
            max_attempts: 3
            command: >
@@ -56,6 +57,7 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
+           timeout_minutes: 20
            max_attempts: 3
            command: time forge test --match-contract CrossChainPublishMessageTest -vvv --ffi
 
@@ -80,6 +82,7 @@ jobs:
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
+           timeout_minutes: 20
            retry_wait_seconds: 60
            max_attempts: 3
            command: time forge test --mc LiveProposalsIntegrationTest -vvvvv --ffi
@@ -119,6 +122,7 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
+           timeout_minutes: 20
            max_attempts: 3
            command: bin/run-onchain-calldata-check.sh
 
@@ -185,6 +189,7 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
+           timeout_minutes: 20
            max_attempts: 3
            command: bin/run-calldata-printing.sh
 
