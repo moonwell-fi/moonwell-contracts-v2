@@ -25,7 +25,7 @@ import {IMultiRewardDistributor} from "@protocol/rewards/IMultiRewardDistributor
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IERC20Metadata as IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-contract RewardsDistributionTemplate is HybridProposal, Networks {
+contract RewardsDistribution is HybridProposal, Networks {
     using SafeCast for *;
     using String for string;
     using stdJson for string;
