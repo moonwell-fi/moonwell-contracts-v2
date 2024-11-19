@@ -225,10 +225,6 @@ jobs:
       - name: Give write permissions
         run: chmod -R +x proposals/mips/
 
-      - name: Debug 
-        run: ls artifacts/foundry
-        shell: bash
-
       - name: Run Integration Test
         uses: nick-fields/retry@v3
         with:
