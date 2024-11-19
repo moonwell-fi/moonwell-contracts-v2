@@ -56,7 +56,8 @@ coverage:
 	time forge coverage --skip script \
         --out artifacts/coverage \
         --skip "Integration.t.sol" \
-		--summary --report lcov
+		--summary --report lcov \
+        --match-contract UnitTest
 
 test-unit:
 	time forge test --match-contract UnitTest -vvv
