@@ -175,4 +175,4 @@ as they might affect the mutation output.
 
 ## Running All Tests
 
-Run [run.sh](./run.sh) to execute all the different tests
+Run [run.sh](bin/run.sh) to execute all the different tests
