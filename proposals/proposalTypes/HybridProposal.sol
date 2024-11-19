@@ -615,6 +615,12 @@ abstract contract HybridProposal is
                 address(governor)
             );
 
+            bytes
+                memory temporalGovExecDataOptimism = getTemporalGovPayloadByChain(
+                    addresses,
+                    block.chainid.toOptimismChainId()
+                );
+
             if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
                 bytes
                     memory temporalGovExecDataBase = getTemporalGovPayloadByChain(
@@ -634,12 +640,6 @@ abstract contract HybridProposal is
             }
 
             if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
-                bytes
-                    memory temporalGovExecDataOptimism = getTemporalGovPayloadByChain(
-                        addresses,
-                        block.chainid.toOptimismChainId()
-                    );
-
                 /// expect emitting of events to Wormhole Core on Moonbeam if Optimism actions exist
                 vm.expectEmit(true, true, true, true, wormholeCoreMoonbeam);
 
