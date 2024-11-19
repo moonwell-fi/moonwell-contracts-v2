@@ -33,3 +33,7 @@ runs:
     - name: Compile Contracts
       run: forge build
       shell: bash
+
+    - name: Debug 
+      run: ls artifacts/foundry
+
