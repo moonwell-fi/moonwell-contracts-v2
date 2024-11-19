@@ -107,15 +107,10 @@ dist
 
 .devcontainer
 
+broadcast
+
 artifacts/
-
-broadcast/
-
-typescript/node_modules/
-
-typescript/package-lock.json
-
-typescript/yarn.lock
+!/deprecated/artifacts/
 
 .certora_internal/
 
