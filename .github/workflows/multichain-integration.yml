@@ -227,6 +227,7 @@ jobs:
 
       - name: Debug 
         run: ls artifacts/foundry
+        shell: bash
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3
