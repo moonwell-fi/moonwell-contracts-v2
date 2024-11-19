@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "@forge-std/Test.sol";
 
 import {xWELL} from "@protocol/xWELL/xWELL.sol";
-import {validateProxy} from "@protocol/proposals/utils/ProxyUtils.sol";
+import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
 import {IStakedWellUplift} from "@protocol/interfaces/IStakedWellUplift.sol";
 import {BASE_FORK_ID, ChainIds} from "@utils/ChainIds.sol";
