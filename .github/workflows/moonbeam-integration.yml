@@ -5,6 +5,7 @@ on: [pull_request]
 env:
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
+  FOUNDRY_PROFILE: ci
 
 jobs:
   run-moonbeam-tests:
@@ -25,6 +26,6 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 10
+           timeout_minutes: 20
            max_attempts: 3
            command: time forge test --match-contract MoonbeamTest --fork-url moonbeam -vvv

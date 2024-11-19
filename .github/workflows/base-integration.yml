@@ -7,6 +7,7 @@ env:
     BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
     MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
     PRIMARY_FORK_ID: 1
+    FOUNDRY_PROFILE: ci
 
 jobs:
   live-system-integration-tests:
@@ -22,14 +23,14 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permissions
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Live System Integration Tests
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 10
+           timeout_minutes: 20
            max_attempts: 3
            command: time forge test --match-contract LiveSystem -vvv --ffi
 
@@ -50,7 +51,7 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 10
+           timeout_minutes: 20
            max_attempts: 3
            # matches 2 contracts, they will run concurrently
            command: time forge test --match-contract 'xWellIntegrationTest|FeeSplitterIntegrationTest' --fork-url base -vvv --ffi
@@ -72,7 +73,7 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 10
+           timeout_minutes: 20
            max_attempts: 3
            # since 'ERC4626' matches 4 contracts, they will run concurrently
            command: time forge test --match-contract ERC4626 --fork-url base -vvv --ffi
@@ -94,7 +95,7 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 10
+           timeout_minutes: 20
            max_attempts: 3
            command: time forge test --match-contract CypherIntegrationTest --fork-url base -vvv 
 

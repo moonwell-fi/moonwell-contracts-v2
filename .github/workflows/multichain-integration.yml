@@ -6,6 +6,7 @@ env:
   OP_RPC_URL: ${{secrets.OP_RPC_URL}}
   BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
   MOONBEAM_RPC_URL: ${{secrets.MOONBEAM_RPC_URL}}
+  FOUNDRY_PROFILE: ci
 
 jobs:
   run-proposal-tests:
@@ -22,14 +23,14 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permissions
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
+           timeout_minutes: 20
            retry_wait_seconds: 60
-           timeout_minutes: 15
            max_attempts: 3
            command: >
                     time forge test --match-contract MultichainProposalTest
@@ -49,14 +50,14 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permission
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 10
+           timeout_minutes: 20
            max_attempts: 3
            command: time forge test --match-contract CrossChainPublishMessageTest -vvv --ffi
 
@@ -75,14 +76,14 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permissions
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3
         with:
            polling_interval_seconds: 30
+           timeout_minutes: 20
            retry_wait_seconds: 60
-           timeout_minutes: 15
            max_attempts: 3
            command: time forge test --mc LiveProposalsIntegrationTest -vvvvv --ffi
                     
@@ -111,7 +112,7 @@ jobs:
           echo "PR_CHANGED_FILES=${{ steps.files.outputs.added_modified }}" >> $GITHUB_ENV
 
       - name: Give write permissions
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Make the script executable
         run: chmod +x bin/run-onchain-calldata-check.sh
@@ -181,7 +182,7 @@ jobs:
             }
 
       - name: Give write permissions
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Run Calldata Printing
         uses: nick-fields/retry@v3
@@ -222,7 +223,7 @@ jobs:
         uses: ./.github/actions
 
       - name: Give write permissions
-        run: chmod -R +x src/proposals/mips/
+        run: chmod -R +x proposals/mips/
 
       - name: Run Integration Test
         uses: nick-fields/retry@v3

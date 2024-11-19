@@ -10,11 +10,12 @@ import {xWELL} from "@protocol/xWELL/xWELL.sol";
 import {Configs} from "@proposals/Configs.sol";
 import {validateProxy} from "@proposals/utils/ProxyUtils.sol";
 import {ProposalActions} from "@proposals/utils/ProposalActions.sol";
-import {IStakedWellUplift} from "@protocol/stkWell/IStakedWellUplift.sol";
-import {MultichainGovernorDeploy} from "@protocol/governance/multichain/MultichainGovernorDeploy.sol";
+import {IStakedWellUplift} from "@protocol/interfaces/IStakedWellUplift.sol";
+import {MultichainGovernorDeploy} from "@script/DeployMultichainGovernor.s.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/stkWell/IEcosystemReserveUplift.sol";
+import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@protocol/interfaces/IEcosystemReserveUplift.sol";
 
 contract DeploySafetyModule is Script, MultichainGovernorDeploy {
     /// @notice cooldown window to withdraw staked WELL to xWELL

@@ -2,6 +2,9 @@ name: Unit Tests
 
 on: [pull_request]
 
+env:
+  FOUNDRY_PROFILE: ci
+ 
 jobs:
   unit-tests:
     name: Unit Tests
@@ -21,7 +24,7 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 10
+           timeout_minutes: 20
            max_attempts: 3
            command: time forge test -vvv --match-contract UnitTest
 

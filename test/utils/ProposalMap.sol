@@ -28,10 +28,7 @@ contract ProposalMap is Script {
     constructor() {
         string memory data = vm.readFile(
             string(
-                abi.encodePacked(
-                    vm.projectRoot(),
-                    "/src/proposals/mips/mips.json"
-                )
+                abi.encodePacked(vm.projectRoot(), "/proposals/mips/mips.json")
             )
         );
 

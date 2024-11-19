@@ -7,6 +7,7 @@ env:
     OP_RPC_URL: ${{secrets.OP_SEPOLIA_RPC_URL}}
     MOONBEAM_RPC_URL: ${{secrets.MOONBASE_RPC_URL}}
     PRIMARY_FORK_ID: 1
+    FOUNDRY_PROFILE: ci
 
 jobs:
   live-system-integration-tests:
@@ -26,7 +27,7 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 10
+           timeout_minutes: 20
            max_attempts: 3
            command: time forge test --match-contract BaseSepoliaTest -vvv --ffi --rpc-url base
 
@@ -47,6 +48,6 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 10
+           timeout_minutes: 20
            max_attempts: 3
            command: time forge test --match-contract 'xWellIntegrationTest' --fork-url base -vvv --ffi
