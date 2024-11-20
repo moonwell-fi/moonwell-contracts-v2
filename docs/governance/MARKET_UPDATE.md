@@ -13,10 +13,10 @@ The market update proposal must include the following three files:
 ### 1. JSON File
 
 If you have already deployed the IRM contracts, you should first add them to the
-chain addresses file located in the `/utils/` folder. For example, if the
+chain addresses file located in the `/chains/` folder. For example, if the
 proposal includes an IRM update on Base network and you have deployed the
 contract externally, add the contract with a descriptive name like
-`JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32` to [/utils/8453.json](/utils/8453.json).
+`JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32` to [/chains/8453.json](/chains/8453.json).
 
 If you haven't deployed the contracts yet and prefer to use the script for
 deployment, please follow the instructions in the
@@ -51,17 +51,17 @@ represents your MIP number.
         ],
         "irModels": [
             {
-                "baseRatePerTimestamp": 0,
-                "jumpMultiplierPerTimestamp": 9e18,
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 9e18,
                 "kink": 0.9e18,
-                "multiplierPerTimestamp": 0.05e18,
+                "multiplierPerYear": 0.05e18,
                 "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32"
             },
 
-                "baseRatePerTimestamp": 0,
-                "jumpMultiplierPerTimestamp": 3e18,
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 3e18,
                 "kink": 0.6e18,
-                "multiplierPerTimestamp": 0.067e18,
+                "multiplierPerYear": 0.067e18,
                 "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_B32"
             }
         ]
