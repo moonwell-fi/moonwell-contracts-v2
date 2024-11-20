@@ -26,7 +26,7 @@ contract mipo08 is HybridProposal, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-o08/MIP-O08.md")
+            vm.readFile("./proposals/mips/mip-o08/MIP-O08.md")
         );
         _setProposalDescription(proposalDescription);
     }

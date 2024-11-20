@@ -18,7 +18,7 @@ contract mipb34 is HybridProposal, Configs, ParameterValidation {
     uint256 public constant WETH_NEW_RF = 0.05e18;
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b34/MIP-B34.md")
+            vm.readFile("./proposals/mips/mip-b34/MIP-B34.md")
         );
         _setProposalDescription(proposalDescription);
     }

@@ -11,7 +11,7 @@ import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposa
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
-/// src/proposals/mips/mip-m39/mip-m39.sol:mipm39
+/// proposals/mips/mip-m39/mip-m39.sol:mipm39
 contract mipm39 is HybridProposal, ParameterValidation {
     using ProposalActions for *;
 
@@ -24,7 +24,7 @@ contract mipm39 is HybridProposal, ParameterValidation {
     uint256 public constant NEW_M_WBTCWH_RESERVE_FACTOR = 0.4e18;
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m39/MIP-M39.md")
+            vm.readFile("./proposals/mips/mip-m39/MIP-M39.md")
         );
         _setProposalDescription(proposalDescription);
     }

@@ -14,7 +14,7 @@ contract mipb32 is HybridProposal, Configs, ParameterValidation {
     uint256 public constant USDbC_NEW_RF = 0.75e18;
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b32/MIP-B32.md")
+            vm.readFile("./proposals/mips/mip-b32/MIP-B32.md")
         );
         _setProposalDescription(proposalDescription);
     }

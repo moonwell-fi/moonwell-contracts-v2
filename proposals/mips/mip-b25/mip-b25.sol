@@ -48,7 +48,7 @@ contract mipb25 is HybridProposal, Configs {
         address unitroller;
     }
 
-    string constant descriptionPath = "./src/proposals/mips/mip-b25/MIP-B25.md";
+    string constant descriptionPath = "./proposals/mips/mip-b25/MIP-B25.md";
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
@@ -67,11 +67,9 @@ contract mipb25 is HybridProposal, Configs {
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
         if (cTokenConfigs.length == 0) {
-            _setMTokenConfiguration(
-                "./src/proposals/mips/mip-b25/MTokens.json"
-            );
+            _setMTokenConfiguration("./proposals/mips/mip-b25/MTokens.json");
             _setEmissionConfiguration(
-                "./src/proposals/mips/mip-b25/RewardStreams.json"
+                "./proposals/mips/mip-b25/RewardStreams.json"
             );
 
             cTokenConfigs = getCTokenConfigurations(block.chainid);
@@ -215,11 +213,9 @@ contract mipb25 is HybridProposal, Configs {
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
         if (cTokenConfigs.length == 0) {
-            _setMTokenConfiguration(
-                "./src/proposals/mips/mip-b25/MTokens.json"
-            );
+            _setMTokenConfiguration("./proposals/mips/mip-b25/MTokens.json");
             _setEmissionConfiguration(
-                "./src/proposals/mips/mip-b25/RewardStreams.json"
+                "./proposals/mips/mip-b25/RewardStreams.json"
             );
 
             cTokenConfigs = getCTokenConfigurations(block.chainid);
@@ -243,11 +239,9 @@ contract mipb25 is HybridProposal, Configs {
             memory cTokenConfigs = getCTokenConfigurations(block.chainid);
 
         if (cTokenConfigs.length == 0) {
-            _setMTokenConfiguration(
-                "./src/proposals/mips/mip-b25/MTokens.json"
-            );
+            _setMTokenConfiguration("./proposals/mips/mip-b25/MTokens.json");
             _setEmissionConfiguration(
-                "./src/proposals/mips/mip-b25/RewardStreams.json"
+                "./proposals/mips/mip-b25/RewardStreams.json"
             );
 
             cTokenConfigs = getCTokenConfigurations(block.chainid);

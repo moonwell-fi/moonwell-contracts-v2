@@ -19,7 +19,7 @@ contract mipb27 is HybridProposal, Configs, ParameterValidation {
     uint256 public constant USDbC_NEW_CF = 0.78e18;
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b27/MIP-B27.md")
+            vm.readFile("./proposals/mips/mip-b27/MIP-B27.md")
         );
         _setProposalDescription(proposalDescription);
     }

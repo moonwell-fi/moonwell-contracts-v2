@@ -33,10 +33,10 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
     }
 
     struct JRM {
-        uint256 baseRatePerTimestamp;
-        uint256 jumpMultiplierPerTimestamp;
+        uint256 baseRatePerYear;
+        uint256 jumpMultiplierPerYear;
         uint256 kink;
-        uint256 multiplierPerTimestamp;
+        uint256 multiplierPerYear;
         string name;
     }
 
@@ -204,9 +204,9 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
                 vm.startBroadcast(deployer);
                 address irModel = address(
                     new JumpRateModel(
-                        model.baseRatePerTimestamp,
-                        model.multiplierPerTimestamp,
-                        model.jumpMultiplierPerTimestamp,
+                        model.baseRatePerYear,
+                        model.multiplierPerYear,
+                        model.jumpMultiplierPerYear,
                         model.kink
                     )
                 );
@@ -290,6 +290,12 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
         vm.selectFork(chainId.toForkId());
 
+        if (updates.length == 0) {
+            return;
+        }
+
+        vm.selectFork(chainId.toForkId());
+
         for (uint256 i = 0; i < updates.length; i++) {
             MarketUpdate memory rec = updates[i];
 
@@ -314,11 +320,10 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
                     addresses.getAddress(rec.jrm),
                     addresses.getAddress(rec.market),
                     IRParams({
-                        baseRatePerTimestamp: params.baseRatePerTimestamp,
+                        baseRatePerTimestamp: params.baseRatePerYear,
                         kink: params.kink,
-                        multiplierPerTimestamp: params.multiplierPerTimestamp,
-                        jumpMultiplierPerTimestamp: params
-                            .jumpMultiplierPerTimestamp
+                        multiplierPerTimestamp: params.multiplierPerYear,
+                        jumpMultiplierPerTimestamp: params.jumpMultiplierPerYear
                     })
                 );
             }

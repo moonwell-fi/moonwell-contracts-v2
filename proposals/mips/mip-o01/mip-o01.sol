@@ -24,13 +24,13 @@ to deploy:
 
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_BUILD=true \
 DO_RUN=true DO_VALIDATE=true forge script \
-src/proposals/mips/mip-o01/mip-o01.sol:mipo01 -vvv --broadcast --account ~/.foundry/keystores/<your-account-keystore-name>
+proposals/mips/mip-o01/mip-o01.sol:mipo01 -vvv --broadcast --account ~/.foundry/keystores/<your-account-keystore-name>
 
 to dry-run:
 
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_BUILD=true \
   DO_RUN=true DO_VALIDATE=true forge script \
-  src/proposals/mips/mip-o01/mip-o01.sol:mipo01 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
+  proposals/mips/mip-o01/mip-o01.sol:mipo01 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
 */
 contract mipo01 is HybridProposal, Configs {
     using Address for address;
@@ -61,14 +61,14 @@ contract mipo01 is HybridProposal, Configs {
     ITemporalGovernor.TrustedSender[] public temporalGovernanceTrustedSenders;
 
     function initProposal(Addresses) public override {
-        string memory path = "src/proposals/mips/mip-o01/MIP-O01.md";
+        string memory path = "proposals/mips/mip-o01/MIP-O01.md";
 
         bytes memory proposalDescription = abi.encodePacked(vm.readFile(path));
 
         _setProposalDescription(proposalDescription);
 
         /// MToken/Emission configurations
-        _setMTokenConfiguration("src/proposals/mips/mip-o00/mTokens.json");
+        _setMTokenConfiguration("proposals/mips/mip-o00/mTokens.json");
     }
 
     function primaryForkId() public pure override returns (uint256) {

@@ -15,7 +15,7 @@ contract mipm30 is Configs, GovernanceProposal, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m30/MIP-M30.md")
+            vm.readFile("./proposals/mips/mip-m30/MIP-M30.md")
         );
         _setProposalDescription(proposalDescription);
     }

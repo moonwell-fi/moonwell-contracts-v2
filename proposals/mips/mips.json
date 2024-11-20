@@ -3,455 +3,455 @@
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 67,
-        "path": "proposals/mips/mip-b36/mip-b36.sol",
+        "path": "mip-b36.sol/mipb36.json",
         "proposalType": "HybridProposal"
     },
     {
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 66,
-        "path": "proposals/mips/mip-b35/mip-b35.sol",
+        "path": "mip-b35.sol/mipb35.json",
         "proposalType": "HybridProposal"
     },
     {
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 65,
-        "path": "proposals/mips/mip-m41/mip-m41.sol",
+        "path": "mip-m41.sol/mipm41.json",
         "proposalType": "HybridProposal"
     },
     {
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 64,
-        "path": "proposals/mips/mip-m40/mip-m40.sol",
+        "path": "mip-m40.sol/mipm40.json",
         "proposalType": "HybridProposal"
     },
     {
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 63,
-        "path": "proposals/mips/mip-o11/mip-o11.sol",
+        "path": "mip-o11.sol/mipo11.json",
         "proposalType": "HybridProposal"
     },
     {
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 62,
-        "path": "proposals/mips/mip-b34/mip-b34.sol",
+        "path": "mip-b34.sol/mipb34.json",
         "proposalType": "HybridProposal"
     },
     {
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 61,
-        "path": "proposals/mips/mip-x05/mip-x05.sol",
+        "path": "mip-x05.sol/mipx05.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-x04/x04.sh",
         "governor": "MultichainGovernor",
         "id": 60,
-        "path": "artifacts/folder/RewardsDistribution.sol/RewardsDistributionTemplate.json",
+        "path": "RewardsDistribution.sol/RewardsDistributionTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envpath": "proposals/mips/mip-x03/x03.sh",
         "governor": "MultichainGovernor",
         "id": 59,
-        "path": "artifacts/foundry/MarketAdd.sol/MarketAddTemplate.json",
+        "path": "MarketAdd.sol/MarketAddTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 58,
-        "path": "proposals/mips/mip-b33/mip-b33.sol",
+        "path": "mip-b33.sol/mipb33.json",
         "proposalType": "HybridProposal"
     },
     {
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 57,
-        "path": "proposals/mips/mip-m39/mip-m39.sol",
+        "path": "mip-m39.sol/mipm39.json",
         "proposalType": "HybridProposal"
     },
     {
         "envpath": "",
         "governor": "MultichainGovernor",
         "id": 56,
-        "path": "proposals/mips/mip-o10/mip-o10.sol",
+        "path": "mip-o10.sol/mipo10.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-b32/b32.sh",
         "governor": "MultichainGovernor",
         "id": 55,
-        "path": "artifacts/foundry/MarketUpdate.sol/MarketUpdateTemplate.json",
+        "path": "MarketUpdate.sol/MarketUpdateTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-x02/x02.sh",
         "governor": "MultichainGovernor",
         "id": 54,
-        "path": "artifacts/foundry/RewardsDistribution.sol/RewardsDistributionTemplate.json",
+        "path": "RewardsDistribution.sol/RewardsDistributionTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 53,
-        "path": "proposals/mips/mip-b31/mip-b31.sol",
+        "path": "mip-b31.sol/mipb31.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 52,
-        "path": "proposals/mips/mip-b30/mip-b30.sol",
+        "path": "mip-b30.sol/mipb30.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 51,
-        "path": "proposals/mips/mip-b29/mip-b29.sol",
+        "path": "mip-b29.sol/mipb29.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 50,
-        "path": "proposals/mips/mip-b28/mip-b28.sol",
+        "path": "mip-b28.sol/mipb28.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 47,
-        "path": "proposals/mips/mip-b27/mip-b27.sol",
+        "path": "mip-b27.sol/mipb27.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 46,
-        "path": "proposals/mips/mip-m38/mip-m38.sol",
+        "path": "mip-m38.sol/mipm38.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-m37/m37.sh",
         "governor": "MultichainGovernor",
         "id": 45,
-        "path": "artifacts/foundry/RewardsDistributionMoonbeam.sol/RewardsDistributionMoonbeamTemplate.json",
+        "path": "RewardsDistributionMoonbeam.sol/RewardsDistributionMoonbeamTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-b26/b26.sh",
         "governor": "MultichainGovernor",
         "id": 44,
-        "path": "artifacts/foundry/RewardsDistributionExternalChain.sol/RewardsDistributionExternalChainTemplate.json",
+        "path": "RewardsDistributionExternalChain.sol/RewardsDistributionExternalChainTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-o07/o07.sh",
         "governor": "MultichainGovernor",
         "id": 43,
-        "path": "artifacts/foundry/RewardsDistributionExternalChain.sol/RewardsDistributionExternalChainTemplate.json",
+        "path": "RewardsDistributionExternalChain.sol/RewardsDistributionExternalChainTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-o06/o06.sh",
         "governor": "MultichainGovernor",
         "id": 42,
-        "path": "artifacts/foundry/RewardsDistributionExternalChain.sol/RewardsDistributionExternalChainTemplate.json",
+        "path": "RewardsDistributionExternalChain.sol/RewardsDistributionExternalChainTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 41,
-        "path": "proposals/mips/mip-b25/mip-b25.sol",
+        "path": "mip-b25.sol/mipb25.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-o05/o05.sh",
         "governor": "MultichainGovernor",
         "id": 40,
-        "path": "artifacts/foundry/MarketAdd.sol/MarketAddTemplate.json",
+        "path": "MarketAdd.sol/MarketAddTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-o04/o04.sh",
         "governor": "MultichainGovernor",
         "id": 39,
-        "path": "artifacts/foundry/MarketAdd.sol/MarketAddTemplate.json",
+        "path": "MarketAdd.sol/MarketAddTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 37,
-        "path": "proposals/mips/mip-o03/mip-o03.sol",
+        "path": "mip-o03.sol/mipo03.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 36,
-        "path": "proposals/mips/mip-m36/mip-m36.sol",
+        "path": "mip-m36.sol/mipm36.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 35,
-        "path": "proposals/mips/mip-b24/mip-b24.sol",
+        "path": "mip-b24.sol/mipb24.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-o02/o02.sh",
         "governor": "MultichainGovernor",
         "id": 34,
-        "path": "artifacts/foundry/RewardsDistributionExternalChain.sol/RewardsDistributionExternalChainTemplate.json",
+        "path": "RewardsDistributionExternalChain.sol/RewardsDistributionExternalChainTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-b23/b23.sh",
         "governor": "MultichainGovernor",
         "id": 33,
-        "path": "artifacts/foundry/RewardsDistributionExternalChain.sol/RewardsDistributionExternalChainTemplate.json",
+        "path": "RewardsDistributionExternalChain.sol/RewardsDistributionExternalChainTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-m35/m35.sh",
         "governor": "MultichainGovernor",
         "id": 29,
-        "path": "artifacts/foundry/RewardsDistributionMoonbeam.sol/RewardsDistributionMoonbeam/RewardsDistributionMoonbeamTemplate.json",
+        "path": "RewardsDistributionMoonbeam.sol/RewardsDistributionMoonbeamTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 26,
-        "path": "proposals/mips/mip-x01/mip-x01.sol",
+        "path": "mip-x01.sol/mipx01.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 22,
-        "path": "proposals/mips/mip-b22/mip-b22.sol",
+        "path": "mip-b22.sol/mipb22.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 21,
-        "path": "proposals/mips/mip-b21/mip-b21.sol",
+        "path": "mip-b21.sol/mipb21.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 20,
-        "path": "proposals/mips/mip-m32/mip-m32.sol",
+        "path": "mip-m32.sol/mipm32.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 19,
-        "path": "proposals/mips/mip-b20/mip-b20.sol",
+        "path": "mip-b20.sol/mipb20.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 16,
-        "path": "proposals/mips/mip-b19/mip-b19.sol",
+        "path": "mip-b19.sol/mipb19.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 15,
-        "path": "proposals/mips/mip-m29/mip-m29.sol",
+        "path": "mip-m29.sol/mipm29.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 13,
-        "path": "proposals/mips/mip-m27/mip-m27.sol",
+        "path": "mip-m27.sol/mipm27.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 12,
-        "path": "proposals/mips/mip-b18/mip-b18.sol",
+        "path": "mip-b18.sol/mipb18.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-b17/b17.sh",
         "governor": "MultichainGovernor",
         "id": 11,
-        "path": "artifacts/foundry/MarketAdd.sol/MarketAddTemplate.json",
+        "path": "MarketAdd.sol/MarketAddTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 5,
-        "path": "proposals/mips/mip-b16/mip-b16.sol",
+        "path": "mip-b16.sol/mipb16.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 3,
-        "path": "proposals/mips/mip-b15/mip-b15.sol",
+        "path": "mip-b15.sol/mipb15.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 2,
-        "path": "proposals/mips/mip-m25/mip-m25.sol",
+        "path": "mip-m25.sol/mipm25.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "MultichainGovernor",
         "id": 1,
-        "path": "proposals/mips/mip-m24/mip-m24.sol",
+        "path": "mip-m24.sol/mipm24.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 80,
-        "path": "proposals/mips/mip-m30/mip-m30.sol",
+        "path": "mip-m30.sol/mipm30.json",
         "proposalType": "GovernanceProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 79,
-        "path": "proposals/mips/mip-m23/mip-m23.sol",
+        "path": "mip-m23.sol/mipm23.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 77,
-        "path": "proposals/mips/mip-m21/mip-m21.sol",
+        "path": "mip-m21.sol/mipm21.json",
         "proposalType": "GovernanceProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 74,
-        "path": "proposals/mips/mip-b14/mip-b14.sol",
+        "path": "mip-b14.sol/mipb14.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 71,
-        "path": "proposals/mips/mip-b13/mip-b13.sol",
+        "path": "mip-b13.sol/mipb13.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 70,
-        "path": "proposals/mips/mip-m16/mip-m16.sol",
+        "path": "mip-m16.sol/mipm16.json",
         "proposalType": "GovernanceProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 67,
-        "path": "proposals/mips/mip-b12/mip-b12.sol",
+        "path": "mip-b12.sol/mipb12.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 64,
-        "path": "proposals/mips/mip-b11/mip-b11.sol",
+        "path": "mip-b11.sol/mipb11.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-b10/b10.sh",
         "governor": "ArtemisGovernor",
         "id": 61,
-        "path": "artifacts/foundry/MarketAdd.sol/MarketAddTemplate.json",
+        "path": "MarketAdd.sol/MarketAddTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 59,
-        "path": "proposals/mips/mip-b09/mip-b09.sol",
+        "path": "mip-b09.sol/mipb09.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-b08/b08.sh",
         "governor": "ArtemisGovernor",
         "id": 58,
-        "path": "artifacts/foundry/MarketAdd.sol/MarketAddTemplate.json",
+        "path": "MarketAdd.sol/MarketAddTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-b07/b07.sh",
         "governor": "ArtemisGovernor",
         "id": 55,
-        "path": "artifacts/foundry/MarketAdd.sol/MarketAddTemplate.json",
+        "path": "MarketAdd.sol/MarketAddTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 54,
-        "path": "proposals/mips/mip-b06/mip-b06.sol",
+        "path": "mip-b06.sol/mipb06.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 51,
-        "path": "proposals/mips/mip-b05/mip-b05.sol",
+        "path": "mip-b05.sol/mipb05.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "proposals/mips/mip-b03/b03.sh",
         "governor": "ArtemisGovernor",
         "id": 43,
-        "path": "artifacts/foundry/MarketAdd.sol/MarketAddTemplate.json",
+        "path": "MarketAdd.sol/MarketAddTemplate.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 42,
-        "path": "proposals/mips/mip-b02/mip-b02.sol",
+        "path": "mip-b02.sol/mipb02.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 41,
-        "path": "proposals/mips/mip-b01/mip-b01.sol",
+        "path": "mip-b01.sol/mipb01.json",
         "proposalType": "HybridProposal"
     },
     {
         "envPath": "",
         "governor": "ArtemisGovernor",
         "id": 39,
-        "path": "proposals/mips/mip-b00/mip-b00.sol",
+        "path": "mip-b00.sol/mipb00.json",
         "proposalType": "HybridProposal"
     }
 ]

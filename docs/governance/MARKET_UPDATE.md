@@ -13,10 +13,10 @@ The market update proposal must include the following three files:
 ### 1. JSON File
 
 If you have already deployed the IRM contracts, you should first add them to the
-chain addresses file located in the `/utils/` folder. For example, if the
+chain addresses file located in the `/chains/` folder. For example, if the
 proposal includes an IRM update on Base network and you have deployed the
 contract externally, add the contract with a descriptive name like
-`JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32` to [/utils/8453.json](/utils/8453.json).
+`JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32` to [/chains/8453.json](/chains/8453.json).
 
 If you haven't deployed the contracts yet and prefer to use the script for
 deployment, please follow the instructions in the
@@ -51,17 +51,17 @@ represents your MIP number.
         ],
         "irModels": [
             {
-                "baseRatePerTimestamp": 0,
-                "jumpMultiplierPerTimestamp": 9e18,
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 9e18,
                 "kink": 0.9e18,
-                "multiplierPerTimestamp": 0.05e18,
+                "multiplierPerYear": 0.05e18,
                 "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_B32"
             },
 
-                "baseRatePerTimestamp": 0,
-                "jumpMultiplierPerTimestamp": 3e18,
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 3e18,
                 "kink": 0.6e18,
-                "multiplierPerTimestamp": 0.067e18,
+                "multiplierPerYear": 0.067e18,
                 "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_B32"
             }
         ]
@@ -101,8 +101,8 @@ to the same folder. On this file you should export the following environment
 variables:
 
 ```
-export JSON_PATH="./src/proposals/mips/mip-yxx/yxx.json"
-export DESCRIPTION_PATH="./src/proposals/mips/mip-yxx/MIP-YXX.md"
+export JSON_PATH="./proposals/mips/mip-yxx/yxx.json"
+export DESCRIPTION_PATH="./proposals/mips/mip-yxx/MIP-YXX.md"
 export PRIMARY_FORK_ID=1
 
 echo "JSON_PATH=$JSON_PATH"
@@ -122,14 +122,14 @@ double-check the environment variables and make sure the paths are correct.
 ## Running Locally
 
 ```bash
-source src/proposals/mips/mip-yxx/yxx.sh && forge script src/proposals/templates/MarketUpdate.sol`
+source proposals/mips/mip-yxx/yxx.sh && forge script proposals/templates/MarketUpdate.sol`
 ```
 
 If you want to use the script to deploy the IRM contracts run this instead:
 
 ```bash
-source src/proposals/mips/mip-yxx/yxx.sh && forge script
-src/proposals/templates/MarketUpdate.sol` --broadcast --ledger/account
+source proposals/mips/mip-yxx/yxx.sh && forge script
+proposals/templates/MarketUpdate.sol` --broadcast --ledger/account
 ```
 
 After running, follow these steps:
@@ -146,15 +146,14 @@ After running, follow these steps:
 ## Creating the Pull Request
 
 Before opening a PR, you should add a new object to the
-[/src/proposals/mips/mips.json](/src/proposals/mips/mips.json) file. For
-example:
+[/proposals/mips/mips.json](/proposals/mips/mips.json) file. For example:
 
 ```JSON
     {
-        "envpath": "src/proposals/mips/mip-yxx/yxx.json",
+        "envpath": "proposals/mips/mip-yxx/yxx.json",
         "governor": "MultichainGovernor",
         "id": 0,
-        "path": "src/proposals/templates/MarketUpdate.sol",
+        "path": "proposals/templates/MarketUpdate.sol",
         "proposalType": "HybridProposal"
     },
 ```

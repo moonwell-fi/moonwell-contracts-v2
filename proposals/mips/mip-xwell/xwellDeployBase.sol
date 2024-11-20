@@ -17,7 +17,7 @@ import {ChainIds, BASE_FORK_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// how to run locally:
-///       DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployBase.sol:xwellDeployBase --fork-url base
+///       DO_DEPLOY=true DO_VALIDATE=true forge script proposals/mips/mip-xwell/xwellDeployBase.sol:xwellDeployBase --fork-url base
 /// @dev do not use MIP as a base to fork off of, it will not work
 contract xwellDeployBase is HybridProposal, Configs, xWELLDeploy {
     using ChainIds for uint256;

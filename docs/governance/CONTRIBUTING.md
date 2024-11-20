@@ -6,7 +6,7 @@ is still operating normally.
 
 ## How to add a new proposal
 
-[IProposal.sol](../../src/proposals/proposalTypes/IProposal.sol) defines the
+[IProposal.sol](../../proposals/proposalTypes/IProposal.sol) defines the
 interface for a Moonwell Improvement Proposal.
 
 When creating new proposals, please follow the naming conventions and guidelines
@@ -35,8 +35,8 @@ All pull requests must adhere to the style guidelines detailed in
 - Ensure that each step of the proposal is thoroughly documented within the
   Solidity file.
 - Inherit from
-  [HybridProposal](../../src/proposals/proposalTypes/HybridProposal.sol) and
-  include all necessary details.
+  [HybridProposal](../../proposals/proposalTypes/HybridProposal.sol) and include
+  all necessary details.
 
 ## How to test a proposal
 
@@ -87,7 +87,7 @@ this proposal. The following environment variables are available:
   you would like to run.
 - **DO_AFTER_DEPLOY_MTOKEN_BROADCAST** - Whether or not to do the after deploy
   mtoken broadcast. Defaults to true. Only used when using the
-  [`mip-market-listing.sol`](./src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol)
+  [`mip-market-listing.sol`](./proposals/mips/examples/mip-market-listing/mip-market-listing.sol)
   proposal.
 
 ### Sample Environment Variables For Deploying and Building Calldata for a Market Listing Proposal
@@ -152,11 +152,11 @@ export DO_VALIDATE=false
 export DO_PRINT=true
 ```
 
-`forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv`
+`forge script proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv`
 
 add the following flags to deploy and verify against the base network:
 
-`forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify --slow`
+`forge script proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv --broadcast --etherscan-api-key base --verify --slow`
 
 ### Debugging
 

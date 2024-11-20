@@ -11,9 +11,9 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// Proposal to run on Moonbeam to create the Multichain Governor contract
 /// to simulate: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
-/// src/proposals/mips/mip-m23/mip-m23a.sol:mipm23a --fork-url moonbeam
+/// proposals/mips/mip-m23/mip-m23a.sol:mipm23a --fork-url moonbeam
 /// to execute: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script \
-/// src/proposals/mips/mip-m23/mip-m23a.sol:mipm23a
+/// proposals/mips/mip-m23/mip-m23a.sol:mipm23a
 /// --broadcast --slow --fork-url moonbeam
 /// Once the proposal is execute, MULTICHAIN_GOVERNOR_PROXY and
 /// MULTICHAIN_GOVERNOR_IMPL must be added to the addresses.json file

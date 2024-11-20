@@ -20,7 +20,7 @@ contract mipo10 is HybridProposal, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-o10/MIP-O10.md")
+            vm.readFile("./proposals/mips/mip-o10/MIP-O10.md")
         );
         _setProposalDescription(proposalDescription);
     }
