@@ -61,7 +61,7 @@ contract mipb00 is HybridProposal, Configs {
                 string(
                     abi.encodePacked(
                         vm.projectRoot(),
-                        "proposals/mips/mip-b00/mTokens.json"
+                        "/proposals/mips/mip-b00/mTokens.json"
                     )
                 )
             )
