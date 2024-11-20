@@ -22,7 +22,7 @@ export DO_TEARDOWN=false
 export DO_VALIDATE=true
 */
 
-/// forge script src/proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv
+/// forge script proposals/mips/mip-b02/mip-b02.sol:mipb02 --rpc-url base -vvvvv
 
 contract mipb02 is HybridProposal, Configs {
     string public constant override name = "MIP-B02";
@@ -31,7 +31,7 @@ contract mipb02 is HybridProposal, Configs {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b02/MIP-B02.md")
+            vm.readFile("./proposals/mips/mip-b02/MIP-B02.md")
         );
 
         _setProposalDescription(proposalDescription);

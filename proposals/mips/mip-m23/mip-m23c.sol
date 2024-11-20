@@ -15,9 +15,9 @@ import {MOONBEAM_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID, ChainIds} from "@utils/Cha
 
 /// Proposal to run on Moonbeam to initialize the Multichain Governor contract
 /// to simulate: DO_BUILD=true DO_AFTER_DEPLOY=true DO_VALIDATE=true DO_PRINT=true
-/// forge script src/proposals/mips/mip-m23/mip-m23c.sol:mipm23c --fork-url moonbeam
+/// forge script proposals/mips/mip-m23/mip-m23c.sol:mipm23c --fork-url moonbeam
 /// to execute: DO_BUILD=true DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
-/// src/proposals/mips/mip-m23/mip-m23c.sol:mipm23c --broadcast --slow --fork-url moonbeam
+/// proposals/mips/mip-m23/mip-m23c.sol:mipm23c --broadcast --slow --fork-url moonbeam
 contract mipm23c is HybridProposal, MultichainGovernorDeploy {
     using ChainIds for uint256;
 

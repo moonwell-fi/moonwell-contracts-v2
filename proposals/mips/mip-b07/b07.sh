@@ -1,8 +1,8 @@
 #!/bin/bash
-export EMISSION_CONFIGURATIONS_PATH=src/proposals/mips/mip-b07/RewardStreams.json
+export EMISSION_CONFIGURATIONS_PATH=proposals/mips/mip-b07/RewardStreams.json
 echo "EMISSION_CONFIGURATIONS_PATH=$EMISSION_CONFIGURATIONS_PATH"
 
-export DESCRIPTION_PATH=src/proposals/mips/mip-b07/MIP-B07.md
+export DESCRIPTION_PATH=proposals/mips/mip-b07/MIP-B07.md
 echo "DESCRIPTION_PATH=$DESCRIPTION_PATH"
 
 export PRIMARY_FORK_ID=1

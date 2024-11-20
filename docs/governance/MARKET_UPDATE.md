@@ -101,8 +101,8 @@ to the same folder. On this file you should export the following environment
 variables:
 
 ```
-export JSON_PATH="./src/proposals/mips/mip-yxx/yxx.json"
-export DESCRIPTION_PATH="./src/proposals/mips/mip-yxx/MIP-YXX.md"
+export JSON_PATH="./proposals/mips/mip-yxx/yxx.json"
+export DESCRIPTION_PATH="./proposals/mips/mip-yxx/MIP-YXX.md"
 export PRIMARY_FORK_ID=1
 
 echo "JSON_PATH=$JSON_PATH"
@@ -122,14 +122,14 @@ double-check the environment variables and make sure the paths are correct.
 ## Running Locally
 
 ```bash
-source src/proposals/mips/mip-yxx/yxx.sh && forge script src/proposals/templates/MarketUpdate.sol`
+source proposals/mips/mip-yxx/yxx.sh && forge script proposals/templates/MarketUpdate.sol`
 ```
 
 If you want to use the script to deploy the IRM contracts run this instead:
 
 ```bash
-source src/proposals/mips/mip-yxx/yxx.sh && forge script
-src/proposals/templates/MarketUpdate.sol` --broadcast --ledger/account
+source proposals/mips/mip-yxx/yxx.sh && forge script
+proposals/templates/MarketUpdate.sol` --broadcast --ledger/account
 ```
 
 After running, follow these steps:
@@ -146,15 +146,14 @@ After running, follow these steps:
 ## Creating the Pull Request
 
 Before opening a PR, you should add a new object to the
-[/src/proposals/mips/mips.json](/src/proposals/mips/mips.json) file. For
-example:
+[/proposals/mips/mips.json](/proposals/mips/mips.json) file. For example:
 
 ```JSON
     {
-        "envpath": "src/proposals/mips/mip-yxx/yxx.json",
+        "envpath": "proposals/mips/mip-yxx/yxx.json",
         "governor": "MultichainGovernor",
         "id": 0,
-        "path": "src/proposals/templates/MarketUpdate.sol",
+        "path": "proposals/templates/MarketUpdate.sol",
         "proposalType": "HybridProposal"
     },
 ```

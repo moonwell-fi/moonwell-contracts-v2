@@ -19,7 +19,7 @@ contract mipb01 is HybridProposal, Configs {
 
     constructor() {
         _setProposalDescription(
-            bytes(vm.readFile("./src/proposals/mips/mip-b01/MIP-B01.md"))
+            bytes(vm.readFile("./proposals/mips/mip-b01/MIP-B01.md"))
         );
 
         nonce = 2;

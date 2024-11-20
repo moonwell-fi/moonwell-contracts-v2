@@ -23,7 +23,7 @@ import {Comptroller, ComptrollerInterface} from "@protocol/Comptroller.sol";
 
 /**
  * After setting up the shell file, execute the proposal with the following command:
- * source path/to/env.sh && forge script src/proposals/templates/MarketAdd.sol -vvv
+ * source path/to/env.sh && forge script proposals/templates/MarketAdd.sol -vvv
  */
 contract MarketAddTemplate is HybridProposal, Networks, ParameterValidation {
     using String for string;

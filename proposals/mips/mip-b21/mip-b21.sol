@@ -14,7 +14,7 @@ import {FeeSplitter as Splitter} from "@protocol/morpho/FeeSplitter.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
-/// src/proposals/mips/mip-b21/mip-b21.sol:mipb21
+/// proposals/mips/mip-b21/mip-b21.sol:mipb21
 contract mipb21 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B21";
 
@@ -27,7 +27,7 @@ contract mipb21 is HybridProposal, Configs, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b21/MIP-B21.md")
+            vm.readFile("./proposals/mips/mip-b21/MIP-B21.md")
         );
 
         _setProposalDescription(proposalDescription);

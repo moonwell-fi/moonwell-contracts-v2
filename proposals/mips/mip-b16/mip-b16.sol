@@ -14,7 +14,7 @@ import {BASE_FORK_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
-/// src/proposals/mips/mip-b16/mip-b16.sol:mipb16
+/// proposals/mips/mip-b16/mip-b16.sol:mipb16
 contract mipb16 is
     HybridProposal,
     MultichainGovernorDeploy,
@@ -33,7 +33,7 @@ contract mipb16 is
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b16/MIP-B16.md")
+            vm.readFile("./proposals/mips/mip-b16/MIP-B16.md")
         );
 
         _setProposalDescription(proposalDescription);
