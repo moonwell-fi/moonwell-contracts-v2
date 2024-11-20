@@ -23,7 +23,7 @@ contract mipm32 is Configs, HybridProposal, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m32/MIP-M32.md")
+            vm.readFile("./proposals/mips/mip-m32/MIP-M32.md")
         );
         _setProposalDescription(proposalDescription);
     }

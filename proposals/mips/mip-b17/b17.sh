@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 # Set paths for MIP-B17 related files
-export MTOKENS_PATH=src/proposals/mips/mip-b17/MTokens.json
-export EMISSION_CONFIGURATIONS_PATH=src/proposals/mips/mip-b17/RewardStreams.json
-export DESCRIPTION_PATH=src/proposals/mips/mip-b17/MIP-B17.md
+export MTOKENS_PATH=proposals/mips/mip-b17/MTokens.json
+export EMISSION_CONFIGURATIONS_PATH=proposals/mips/mip-b17/RewardStreams.json
+export DESCRIPTION_PATH=proposals/mips/mip-b17/MIP-B17.md
 
 # Set configuration parameters
 export PRIMARY_FORK_ID=1

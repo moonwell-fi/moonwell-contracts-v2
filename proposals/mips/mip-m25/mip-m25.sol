@@ -11,7 +11,7 @@ import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposa
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_DEPLOY=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
-/// src/proposals/mips/mip-m25/mip-m25.sol:mipm25
+/// proposals/mips/mip-m25/mip-m25.sol:mipm25
 contract mipm25 is HybridProposal, ParameterValidation {
     using ProposalActions for *;
 
@@ -25,7 +25,7 @@ contract mipm25 is HybridProposal, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m25/MIP-M25.md")
+            vm.readFile("./proposals/mips/mip-m25/MIP-M25.md")
         );
         _setProposalDescription(proposalDescription);
     }

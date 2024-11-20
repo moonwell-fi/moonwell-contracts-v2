@@ -52,7 +52,9 @@ contract ProposalMap is Script {
         proposals[index].envPath = proposal.envPath;
         proposals[index].governor = proposal.governor;
         proposals[index].id = proposal.id;
-        proposals[index].path = proposal.path;
+        proposals[index].path = string(
+            abi.encodePacked("artifacts/foundry/", proposal.path)
+        );
         proposals[index].proposalType = proposal.proposalType;
 
         // only includes multichain governor proposals to mapping

@@ -20,7 +20,7 @@ import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} fr
 /// the transfer of admin and owner from the current Artemis Timelock to the
 /// new Multichain Governor.
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
-/// src/proposals/mips/mip-m24/mip-m24.sol:mipm24
+/// proposals/mips/mip-m24/mip-m24.sol:mipm24
 contract mipm24 is HybridProposal, MultichainGovernorDeploy {
     using ChainIds for uint256;
     using ProposalActions for *;
@@ -29,7 +29,7 @@ contract mipm24 is HybridProposal, MultichainGovernorDeploy {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m24/MIP-M24.md")
+            vm.readFile("./proposals/mips/mip-m24/MIP-M24.md")
         );
         _setProposalDescription(proposalDescription);
     }

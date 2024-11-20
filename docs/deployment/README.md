@@ -31,7 +31,7 @@ deployment of the contracts that already have an address in the
 
 ### Running the Deployment Script
 
-`forge script src/proposals/mip-b00.sol -vvv --rpc-url ${chainName} --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key ${keyName} --verify`
+`forge script proposals/mip-b00.sol -vvv --rpc-url ${chainName} --with-gas-price 100000000 --skip-simulation --slow --gas-estimate-multiplier 200 --broadcast --etherscan-api-key ${keyName} --verify`
 
 Substitute out the rpc-url and etherscan-api-key with the correct values for the
 chain you are deploying to.

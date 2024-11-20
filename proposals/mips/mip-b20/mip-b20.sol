@@ -11,7 +11,7 @@ import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 
 /// DO_VALIDATE=true DO_PRINT=true DO_BUILD=true DO_RUN=true forge script
-/// src/proposals/mips/mip-b20/mip-b20.sol:mipb20
+/// proposals/mips/mip-b20/mip-b20.sol:mipb20
 contract mipb20 is HybridProposal, Configs, ParameterValidation {
     string public constant override name = "MIP-B20";
 
@@ -19,7 +19,7 @@ contract mipb20 is HybridProposal, Configs, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b20/MIP-B20.md")
+            vm.readFile("./proposals/mips/mip-b20/MIP-B20.md")
         );
 
         _setProposalDescription(proposalDescription);

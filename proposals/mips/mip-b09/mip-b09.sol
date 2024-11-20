@@ -25,7 +25,7 @@ contract mipb09 is HybridProposal, Configs {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b09/MIP-B09.md")
+            vm.readFile("./proposals/mips/mip-b09/MIP-B09.md")
         );
         _setProposalDescription(proposalDescription);
     }

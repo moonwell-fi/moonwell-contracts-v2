@@ -19,7 +19,7 @@ added, and the `RewardStreams.json` file is the configuration for the reward
 streams being added.
 
 Please also copy the
-[`mip-market-listing.sol`](./src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol)
+[`mip-market-listing.sol`](./proposals/mips/examples/mip-market-listing/mip-market-listing.sol)
 file into the new `mip-bxx` folder and rename it to `mip-bxx.sol`. This file is
 the Solidity script that will deploy the new markets and generate the calldata
 for the governance proposal. Even though you won't be executing it from this
@@ -30,8 +30,8 @@ the market.
 
 Go to `mainnetMTokensExample.json` to see what an example mToken JSON
 configuration looks like. Copy the file
-[`MTokens.json`](./src/proposals/mips/examples/mip-market-listing/MTokens.json)
-in the `proposals/mips/examples/mip-market-listing` folder to a new `mip-bxx`
+[`MTokens.json`](./proposals/mips/examples/mip-market-listing/MTokens.json) in
+the `proposals/mips/examples/mip-market-listing` folder to a new `mip-bxx`
 folder, replacing all of the values with the correct values for those markets.
 Initial mint amount, collateral factor, should be set to the correct values and
 replaced with the actual values the market should have once deployed.
@@ -96,7 +96,7 @@ contain an empty array.
 
 Go to `mainnetRewardStreams.json` to see what an example reward JSON
 configuration looks like. Copy the file
-[`RewardStreams.json`](./src/proposals/mips/examples/mip-market-listing/RewardStreams.json)
+[`RewardStreams.json`](./proposals/mips/examples/mip-market-listing/RewardStreams.json)
 in the `proposals/mips/examples/mip-market-listing` folder into the new
 `mip-bxx` folder, replacing all of the values with the correct values for those
 markets.
@@ -117,9 +117,9 @@ in their path. Export the following environment variables pointing to the
 correct paths:
 
 ```
-export LISTING_PATH="./src/proposals/mips/mip-bxx/MIP-Bxx.md"
-export MTOKENS_PATH="./src/proposals/mips/mip-bxx/MTokens.json"
-export EMISSION_PATH="./src/proposals/mips/mip-bxx/RewardStreams.json"
+export LISTING_PATH="./proposals/mips/mip-bxx/MIP-Bxx.md"
+export MTOKENS_PATH="./proposals/mips/mip-bxx/MTokens.json"
+export EMISSION_PATH="./proposals/mips/mip-bxx/RewardStreams.json"
 ```
 
 If deploying and generating calldata for the first time, environment variable
@@ -135,11 +135,11 @@ the environment variables and make sure the paths are correct.
 ## 4. Deployment
 
 To deploy these new markets, run
-[`mip-market-listing.sol`](./src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol)
+[`mip-market-listing.sol`](./proposals/mips/examples/mip-market-listing/mip-market-listing.sol)
 using command:
 
 ```
-forge script src/proposals/mips/examples/mip-market-listing/mip-market-listing.sol:mip0x \
+forge script proposals/mips/examples/mip-market-listing/mip-market-listing.sol:mip0x \
     -vvvv \
     --rpc-url base \
     --broadcast

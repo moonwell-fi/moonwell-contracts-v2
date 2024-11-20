@@ -18,7 +18,7 @@ contract mipb12 is HybridProposal, Configs, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b12/MIP-B12.md")
+            vm.readFile("./proposals/mips/mip-b12/MIP-B12.md")
         );
         _setProposalDescription(proposalDescription);
     }

@@ -83,7 +83,7 @@ both moonbeam and base. The following scripts will be used:
 **base deployment:**
 
 ```
-DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployBase.sol:xwellDeployBase --fork-url base
+DO_DEPLOY=true DO_VALIDATE=true forge script proposals/mips/mip-xwell/xwellDeployBase.sol:xwellDeployBase --fork-url base
 ```
 
 Once the base system has been deployed, add all the newly deployed addresses to
@@ -93,7 +93,7 @@ and then run the following script to deploy the system on moonbeam:
 **moonbeam deployment:**
 
 ```
-DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployMoonbeam.sol:xwellDeployMoonbeam --fork-url moonbeam
+DO_DEPLOY=true DO_VALIDATE=true forge script proposals/mips/mip-xwell/xwellDeployMoonbeam.sol:xwellDeployMoonbeam --fork-url moonbeam
 ```
 
 Once the moonbeam system has been deployed, add all the newly deployed addresses

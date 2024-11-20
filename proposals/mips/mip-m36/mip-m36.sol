@@ -18,7 +18,7 @@ contract mipm36 is HybridProposal, ParameterValidation {
     uint256 public constant NEW_MFRAX_RESERVE_FACTOR = 0.3e18;
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m36/MIP-M36.md")
+            vm.readFile("./proposals/mips/mip-m36/MIP-M36.md")
         );
         _setProposalDescription(proposalDescription);
     }
