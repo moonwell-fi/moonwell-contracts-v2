@@ -224,7 +224,7 @@
         "proposalType": "HybridProposal"
     },
     {
-        "envPath": "proposals/mips/mip-m35.sol/m35.sh",
+        "envPath": "proposals/mips/mip-m35/m35.sh",
         "governor": "MultichainGovernor",
         "id": 29,
         "path": "artifacts/foundry/RewardsDistributionMoonbeam.json/RewardsDistributionMoonbeam.sol/RewardsDistributionMoonbeamTemplate.json",
