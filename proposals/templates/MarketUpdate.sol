@@ -204,9 +204,9 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
                 vm.startBroadcast(deployer);
                 address irModel = address(
                     new JumpRateModel(
-                        model.baseRatePerTimestamp * timestampsPerYear,
-                        model.multiplierPerTimestamp * timestampsPerYear,
-                        model.jumpMultiplierPerTimestamp * timestampsPerYear,
+                        model.baseRatePerTimestamp,
+                        model.multiplierPerTimestamp,
+                        model.jumpMultiplierPerTimestamp,
                         model.kink
                     )
                 );
@@ -283,8 +283,13 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
     }
 
     function _validateChain(Addresses addresses, uint256 chainId) internal {
-        vm.selectFork(chainId.toForkId());
         MarketUpdate[] memory updates = marketUpdates[chainId];
+
+        if (updates.length == 0) {
+            return;
+        }
+
+        vm.selectFork(chainId.toForkId());
 
         for (uint256 i = 0; i < updates.length; i++) {
             MarketUpdate memory rec = updates[i];
