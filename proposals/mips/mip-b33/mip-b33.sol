@@ -17,7 +17,7 @@ contract mipb33 is HybridProposal, Configs {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b33/MIP-B33.md")
+            vm.readFile("./proposals/mips/mip-b33/MIP-B33.md")
         );
         _setProposalDescription(proposalDescription);
     }

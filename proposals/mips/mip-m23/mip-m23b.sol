@@ -20,9 +20,9 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 /// the safety module (stkWELL).
 /// All contracts deployed are proxies.
 /// to simulate: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
-/// src/proposals/mips/mip-m23/mip-m23b.sol:mipm23b --fork-url base
+/// proposals/mips/mip-m23/mip-m23b.sol:mipm23b --fork-url base
 /// to deploy: DO_DEPLOY=true DO_VALIDATE=true DO_PRINT=true forge script
-/// src/proposals/mips/mip-m23/mip-m23b.sol:mipm23b
+/// proposals/mips/mip-m23/mip-m23b.sol:mipm23b
 /// --broadcast --slow --fork-url base
 /// Once the proposal is execute, VOTE_COLLECTION_PROXY, VOTE_COLLECTION_IMPL,
 /// ECOSYSTEM_RESERVE_PROXY, ECOSYSTEM_RESERVE_IMPL, STK_GOVTOKEN_PROXY, STK_GOVTOKEN_IMPL

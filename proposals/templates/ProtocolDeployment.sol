@@ -39,21 +39,21 @@ to deploy:
 
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_BUILD=true \
 DO_RUN=true DO_VALIDATE=true forge script \
-src/proposals/mips/mip00.sol:mip00 -vvv --broadcast --account ~/.foundry/keystores/<your-account-keystore-name>
+proposals/mips/mip00.sol:mip00 -vvv --broadcast --account ~/.foundry/keystores/<your-account-keystore-name>
 
 to dry-run:
 
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_BUILD=true \
   DO_RUN=true DO_VALIDATE=true forge script \
-  src/proposals/mips/mip00.sol:mip00 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
+  proposals/mips/mip00.sol:mip00 -vvv --account ~/.foundry/keystores/<your-account-keystore-name>
 
 MIP-O00 deployment environment variables:
 
 ```
-export DESCRIPTION_PATH=src/proposals/mips/mip-o00/MIP-O00.md
+export DESCRIPTION_PATH=proposals/mips/mip-o00/MIP-O00.md
 export PRIMARY_FORK_ID=2
-export EMISSIONS_PATH=src/proposals/mips/mip-o00/emissionConfigWell.json
-export MTOKENS_PATH=src/proposals/mips/mip-o00/mTokens.json
+export EMISSIONS_PATH=proposals/mips/mip-o00/emissionConfigWell.json
+export MTOKENS_PATH=proposals/mips/mip-o00/mTokens.json
 ```
 
 

@@ -29,7 +29,7 @@ were found, and a single variable `lockbox` was added to the
 
 ### Wormhole Adapter Unwrapper
 
-`slither src/xWELL/WormholeUnwrapperAdapter.sol  --print variable-order  --solc-remaps '@openzeppelin-contracts/=lib/openzeppelin-contracts/OpenZeppelin Defender/=lib/openzeppelin-contracts/ @openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/ @protocol=src/ @proposals=src/proposals/'`
+`slither src/xWELL/WormholeUnwrapperAdapter.sol  --print variable-order  --solc-remaps '@openzeppelin-contracts/=lib/openzeppelin-contracts/OpenZeppelin Defender/=lib/openzeppelin-contracts/ @openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/ @protocol=src/ @proposals=proposals/'`
 
 ```
 WormholeUnwrapperAdapter:
@@ -57,7 +57,7 @@ WormholeUnwrapperAdapter:
 ### Original Wormhole Bridge Adapter
 
 ```
-slither src/xWELL/WormholeBridgeAdapter.sol  --print variable-order  --solc-remaps '@openzeppelin-contracts/=lib/openzeppelin-contracts/ @OpenZeppelin Defender/=lib/openzeppelin-contracts/ @openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/ @protocol=src/ @proposals=src/proposals/'
+slither src/xWELL/WormholeBridgeAdapter.sol  --print variable-order  --solc-remaps '@openzeppelin-contracts/=lib/openzeppelin-contracts/ @OpenZeppelin Defender/=lib/openzeppelin-contracts/ @openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/ @protocol=src/ @proposals=proposals/'
 ```
 
 ```

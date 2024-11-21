@@ -28,7 +28,7 @@ import {ChainIds, MOONBEAM_FORK_ID, BASE_FORK_ID, MOONBEAM_WORMHOLE_CHAIN_ID} fr
 /// After this proposal, the Temporal Governor will have 2 admins, the
 /// Multichain Governor and the Artemis Timelock
 /// DO_BUILD=true DO_VALIDATE=true DO_RUN=true DO_PRINT=true forge script
-/// src/proposals/mips/mip-m23/mip-m23.sol:mipm23
+/// proposals/mips/mip-m23/mip-m23.sol:mipm23
 contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
     using ChainIds for uint256;
     using ProposalActions for *;
@@ -43,7 +43,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-m23/MIP-M23.md")
+            vm.readFile("./proposals/mips/mip-m23/MIP-M23.md")
         );
         _setProposalDescription(proposalDescription);
     }
@@ -338,9 +338,7 @@ contract mipm23 is Configs, HybridProposal, MultichainGovernorDeploy {
         delete emissions[block.chainid]; /// wipe existing reward loaded in Configs.sol
 
         {
-            _setEmissionConfiguration(
-                "./src/proposals/mips/mip-m23/mip-m23.json"
-            );
+            _setEmissionConfiguration("./proposals/mips/mip-m23/mip-m23.json");
         }
 
         /// -------------- EMISSION CONFIGURATION --------------

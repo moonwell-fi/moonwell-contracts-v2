@@ -20,7 +20,7 @@ import {IEcosystemReserveUplift, IEcosystemReserveControllerUplift} from "@proto
 
 /*
 DO_DEPLOY=true DO_AFTER_DEPLOY=true DO_BUILD=true \
-DO_RUN=true DO_VALIDATE=true forge script src/proposals/mips/mip-x01/mip-x01.sol:mipx01 \
+DO_RUN=true DO_VALIDATE=true forge script proposals/mips/mip-x01/mip-x01.sol:mipx01 \
  -vvv
 */
 contract mipx01 is HybridProposal, Configs {
@@ -48,7 +48,7 @@ contract mipx01 is HybridProposal, Configs {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-x01/MIP-X01.md")
+            vm.readFile("./proposals/mips/mip-x01/MIP-X01.md")
         );
 
         _setProposalDescription(proposalDescription);
