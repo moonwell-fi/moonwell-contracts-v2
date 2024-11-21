@@ -37,13 +37,6 @@ even without bids.
    - If conditions are met, fetch latest price from Chainlink and update cache
    - Transfer tax amount to treasury address
 
-## Bidding Mechanism
-
-- Require liquidation bots to send ETH multiplied by priority fee
-- Only the highest priority fee transaction succeeds in updating cached price
-  early
-- Other bids in the dutch auction fail or revert
-
 ## References
 
 1. [Priority Is All You Need](https://www.paradigm.xyz/2024/06/priority-is-all-you-need)
