@@ -28,10 +28,10 @@
         ],
         "irModels": [
             {
-                "baseRatePerTimestamp": 0,
-                "jumpMultiplierPerTimestamp": 9e18,
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 9e18,
                 "kink": 0.9e18,
-                "multiplierPerTimestamp": 0.056e18,
+                "multiplierPerYear": 0.056e18,
                 "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_X07"
             }
         ]
@@ -77,17 +77,17 @@
         ],
         "irModels": [
             {
-                "baseRatePerTimestamp": 0,
-                "jumpMultiplierPerTimestamp": 9e18,
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 9e18,
                 "kink": 0.9e18,
-                "multiplierPerTimestamp": 0.056e18,
+                "multiplierPerYear": 0.056e18,
                 "name": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_DAI_MIP_X07"
             },
             {
-                "baseRatePerTimestamp": 0,
-                "jumpMultiplierPerTimestamp": 3.5e18,
+                "baseRatePerYear": 0,
+                "jumpMultiplierPerYear": 3.5e18,
                 "kink": 0.35e18,
-                "multiplierPerTimestamp": 0.061e18,
+                "multiplierPerYear": 0.061e18,
                 "name": "JUMP_RATE_IRM_MOONWELL_WSTETH_RETH_MIP_X07"
             }
         ]
