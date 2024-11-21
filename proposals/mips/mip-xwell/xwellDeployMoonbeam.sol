@@ -14,7 +14,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ChainIds, BASE_CHAIN_ID, MOONBEAM_FORK_ID} from "@utils/ChainIds.sol";
 
 /// to run locally:
-///     DO_DEPLOY=true DO_VALIDATE=true forge script src/proposals/mips/mip-xwell/xwellDeployMoonbeam.sol:xwellDeployMoonbeam --fork-url moonbeam
+///     DO_DEPLOY=true DO_VALIDATE=true forge script proposals/mips/mip-xwell/xwellDeployMoonbeam.sol:xwellDeployMoonbeam --fork-url moonbeam
 /// @dev do not use MIP as a base to fork off of, it will not work
 contract xwellDeployMoonbeam is Proposal, Configs, xWELLDeploy {
     using ChainIds for uint256;

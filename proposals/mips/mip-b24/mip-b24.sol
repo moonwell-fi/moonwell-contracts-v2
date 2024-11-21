@@ -19,7 +19,7 @@ contract mipb24 is HybridProposal, Configs, ParameterValidation {
     uint256 public constant AERO_NEW_RF = 0.3e18;
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b24/MIP-B24.md")
+            vm.readFile("./proposals/mips/mip-b24/MIP-B24.md")
         );
         _setProposalDescription(proposalDescription);
     }

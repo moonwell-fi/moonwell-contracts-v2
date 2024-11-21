@@ -37,7 +37,7 @@ contract mipo03 is HybridProposal, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-o03/MIP-O03.md")
+            vm.readFile("./proposals/mips/mip-o03/MIP-O03.md")
         );
         _setProposalDescription(proposalDescription);
     }

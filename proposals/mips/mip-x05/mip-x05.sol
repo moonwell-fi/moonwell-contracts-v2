@@ -13,7 +13,7 @@ contract mipx05 is HybridProposal {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-x05/x05.md")
+            vm.readFile("./proposals/mips/mip-x05/x05.md")
         );
 
         _setProposalDescription(proposalDescription);

@@ -19,7 +19,7 @@ contract mipb14 is HybridProposal, Configs, ParameterValidation {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./src/proposals/mips/mip-b14/mip-b14.md")
+            vm.readFile("./proposals/mips/mip-b14/mip-b14.md")
         );
         _setProposalDescription(proposalDescription);
     }
