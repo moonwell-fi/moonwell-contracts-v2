@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import "./AggregatorV3Interface.sol";
 
-contract ChainlinkFeedOEVWrapper is AggregatorV3Interface {
+contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
+    event FeeMultiplierChanged(uint16 newFee);
+    event EarlyUpdateWindowChanged(uint256 newWindow);
+
     AggregatorV3Interface public immutable originalFeed;
 
     uint16 public feeMultiplier = 99;
@@ -14,7 +18,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface {
     constructor(
         address _originalFeed,
         uint256 _earlyUpdateWindow,
-        uint16 _feeMultiplier
+        uint16 _feeMultiplier,
+        address _owner
     ) {
         originalFeed = AggregatorV3Interface(_originalFeed);
 
@@ -27,6 +32,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface {
 
         earlyUpdateWindow = _earlyUpdateWindow;
         feeMultiplier = _feeMultiplier;
+
+        transferOwnership(_owner);
     }
 
     function latestRoundData()
@@ -86,6 +93,16 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface {
         )
     {
         return originalFeed.getRoundData(_roundId);
+    }
+
+    function setFeeMultiplier(uint16 newMultiplier) public onlyOwner {
+        feeMultiplier = newMultiplier;
+        emit FeeMultiplierChanged(newMultiplier);
+    }
+
+    function setEarlyUpdateWindow(uint256 newWindow) public onlyOwner {
+        earlyUpdateWindow = newWindow;
+        emit EarlyUpdateWindowChanged(newWindow);
     }
 
     /// @notice Returns the current priority fee per gas.
