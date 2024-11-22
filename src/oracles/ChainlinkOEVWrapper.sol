@@ -13,8 +13,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface {
 
     constructor(
         address _originalFeed,
-        uint256 earlyUpdateWindow,
-        uint16 feeMultiplier
+        uint256 _earlyUpdateWindow,
+        uint16 _feeMultiplier
     ) {
         originalFeed = AggregatorV3Interface(_originalFeed);
 
@@ -24,6 +24,9 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface {
 
         cachedPrice = price;
         cachedTimestamp = timestamp;
+
+        earlyUpdateWindow = _earlyUpdateWindow;
+        feeMultiplier = _feeMultiplier;
     }
 
     function latestRoundData()
