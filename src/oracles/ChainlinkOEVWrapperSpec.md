@@ -35,7 +35,7 @@ even without bids.
 4. Implement `updatePriceEarly` function:
    - Use the `applyTax` modifier
    - If conditions are met, fetch latest price from Chainlink and update cache
-   - Transfer tax amount to treasury address
+   - Tax is wrapped to WETH and added to Moonwell ETH Market reserves
 
 ## References
 
