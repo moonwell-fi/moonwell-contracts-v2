@@ -28,7 +28,7 @@ contract mipx08 is HybridProposal {
     function beforeSimulationHook(Addresses addresses) public override {
         vm.selectFork(BASE_FORK_ID);
 
-        vm.startPrank(addresses.getAddress("FOUNDATION_MULTISIG"));
+        vm.startPrank(addresses.getAddress("WELL_FOUNDATION_MULTISIG"));
         IERC20(addresses.getAddress("WELL")).approve(
             addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID),
             WELL_AMOUNT
@@ -50,7 +50,7 @@ contract mipx08 is HybridProposal {
             addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID),
             abi.encodeWithSignature(
                 "transferFrom(address,address,uint256)",
-                addresses.getAddress("FOUNDATION_MULTISIG"),
+                addresses.getAddress("WELL_FOUNDATION_MULTISIG"),
                 addresses.getAddress("MOONWELL_METAMORPHO_URD"),
                 WELL_AMOUNT
             ),
@@ -64,10 +64,7 @@ contract mipx08 is HybridProposal {
 
         MultichainGovernor governor = MultichainGovernor(
             payable(
-                addresses.getAddress(
-                    "MULTICHAIN_GOVERNOR_PROXY",
-                    MOONBEAM_CHAIN_ID
-                )
+                addresses.getAddress("MULTICHAIN_GOVERNOR", MOONBEAM_CHAIN_ID)
             )
         );
 
