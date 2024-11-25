@@ -24,10 +24,7 @@ contract mipx08 is HybridProposal {
     function build(Addresses addresses) public override {
         _pushAction(
             addresses.getAddress("MULTICHAIN_GOVERNOR", MOONBEAM_CHAIN_ID),
-            abi.encodeWithSignature(
-                "updateMaxUserLiveProposals(uint256)",
-                2
-            ),
+            abi.encodeWithSignature("updateMaxUserLiveProposals(uint256)", 2),
             "Set the maximum number of live proposals to 2",
             ActionType.Moonbeam
         );
@@ -36,14 +33,12 @@ contract mipx08 is HybridProposal {
             abi.encodeWithSignature(
                 "transferFrom(address,address,uint256)",
                 addresses.getAddress("FOUNDATION_MULTISIG"),
-    addresses.getAddress("MOONWELL_METAMORPHO_URD"), 
-    16_000_000e18
+                addresses.getAddress("MOONWELL_METAMORPHO_URD"),
+                16_000_000e18
             ),
             "Send 16M WELL to Morpho URD contract",
             ActionType.Base
         );
-
-
     }
 
     function validate(Addresses addresses, address) public override {
@@ -53,12 +48,22 @@ contract mipx08 is HybridProposal {
             addresses.getAddress("MULTICHAIN_GOVERNOR", MOONBEAM_CHAIN_ID)
         );
 
-        vm.assertEq(governor.maxUserLiveProposals(), 2, "Max user live proposals not set correctly");
+        vm.assertEq(
+            governor.maxUserLiveProposals(),
+            2,
+            "Max user live proposals not set correctly"
+        );
 
         vm.selectFork(BASE_FORK_ID);
 
-        IERC20 well = IERC20(addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID));
+        IERC20 well = IERC20(
+            addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID)
+        );
 
-        vm.assertEq(well.balanceOf(addresses.getAddress("MOONWELL_METAMORPHO_URD")), 16_000_000e18, "16M WELL not sent to Morpho URD");
+        vm.assertEq(
+            well.balanceOf(addresses.getAddress("MOONWELL_METAMORPHO_URD")),
+            16_000_000e18,
+            "16M WELL not sent to Morpho URD"
+        );
     }
 }
