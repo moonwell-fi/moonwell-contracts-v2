@@ -38,7 +38,10 @@ contract mipx08 is HybridProposal {
 
     function build(Addresses addresses) public override {
         _pushAction(
-            addresses.getAddress("MULTICHAIN_GOVERNOR", MOONBEAM_CHAIN_ID),
+            addresses.getAddress(
+                "MULTICHAIN_GOVERNOR_PROXY",
+                MOONBEAM_CHAIN_ID
+            ),
             abi.encodeWithSignature("updateMaxUserLiveProposals(uint256)", 2),
             "Set the maximum number of live proposals to 2",
             ActionType.Moonbeam
@@ -61,7 +64,10 @@ contract mipx08 is HybridProposal {
 
         MultichainGovernor governor = MultichainGovernor(
             payable(
-                addresses.getAddress("MULTICHAIN_GOVERNOR", MOONBEAM_CHAIN_ID)
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    MOONBEAM_CHAIN_ID
+                )
             )
         );
 
