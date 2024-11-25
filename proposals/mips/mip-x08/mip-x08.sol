@@ -10,6 +10,8 @@ import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposa
 contract mipx08 is HybridProposal {
     string public constant override name = "MIP-X07";
 
+    uint256 public constant WELL_AMOUNT = 16_000_000e18;
+
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile("./proposals/mips/mip-x08/x08.md")
@@ -22,7 +24,19 @@ contract mipx08 is HybridProposal {
         return MOONBEAM_FORK_ID;
     }
 
-    function build(Addresses addresses) public override {
+    // TODO remove this once we have the approval
+    function beforeSimulationHook(Addresses addresses) public override {
+        vm.selectFork(BASE_FORK_ID);
+
+        vm.startPrank(addresses.getAddress("FOUNDATION_MULTISIG"));
+        IERC20(addresses.getAddress("WELL")).approve(
+            addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID),
+            WELL_AMOUNT
+        );
+        vm.stopPrank();
+    }
+
+    function build(Addresses addresses) public override mockHook(addresses) {
         _pushAction(
             addresses.getAddress("MULTICHAIN_GOVERNOR", MOONBEAM_CHAIN_ID),
             abi.encodeWithSignature("updateMaxUserLiveProposals(uint256)", 2),
@@ -35,7 +49,7 @@ contract mipx08 is HybridProposal {
                 "transferFrom(address,address,uint256)",
                 addresses.getAddress("FOUNDATION_MULTISIG"),
                 addresses.getAddress("MOONWELL_METAMORPHO_URD"),
-                16_000_000e18
+                WELL_AMOUNT
             ),
             "Send 16M WELL to Morpho URD contract",
             ActionType.Base
@@ -65,7 +79,7 @@ contract mipx08 is HybridProposal {
 
         vm.assertEq(
             well.balanceOf(addresses.getAddress("MOONWELL_METAMORPHO_URD")),
-            16_000_000e18,
+            WELL_AMOUNT,
             "16M WELL not sent to Morpho URD"
         );
     }
