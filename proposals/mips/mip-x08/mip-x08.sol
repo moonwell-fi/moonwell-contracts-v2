@@ -12,7 +12,7 @@ contract mipx08 is HybridProposal {
 
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
-            vm.readFile("./proposals/mips/mip-x07/x07.md")
+            vm.readFile("./proposals/mips/mip-x08/x08.md")
         );
 
         _setProposalDescription(proposalDescription);
