@@ -8,14 +8,28 @@ import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 /// @notice A wrapper for Chainlink price feeds that allows early updates with a fee
 /// @dev This contract implements the AggregatorV3Interface and adds OEV (Oracle Extractable Value) functionality
 contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
+    /// @notice Emitted when the fee multiplier is changed
+    /// @param newFee The new fee multiplier value
     event FeeMultiplierChanged(uint16 newFee);
+
+    /// @notice Emitted when the early update window is changed
+    /// @param newWindow The new early update window value
     event EarlyUpdateWindowChanged(uint256 newWindow);
 
+    /// @notice The original Chainlink price feed contract
     AggregatorV3Interface public immutable originalFeed;
 
+    /// @notice The fee multiplier applied to the original feed's fee
+    /// @dev Represented as a percentage
     uint16 public feeMultiplier = 99;
+
+    /// @notice The time window before the next update where early updates are allowed
     uint256 public earlyUpdateWindow = 30 seconds;
+
+    /// @notice The timestamp of the last cached price update
     uint256 private cachedTimestamp;
+
+    /// @notice The last cached price value
     int256 private cachedPrice;
 
     /// @notice Constructor to initialize the wrapper
@@ -31,15 +45,15 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     ) {
         originalFeed = AggregatorV3Interface(_originalFeed);
 
+        earlyUpdateWindow = _earlyUpdateWindow;
+        feeMultiplier = _feeMultiplier;
+
         // Initialize cache with current data
         (, int256 price, , uint256 timestamp, ) = originalFeed
             .latestRoundData();
 
         cachedPrice = price;
         cachedTimestamp = timestamp;
-
-        earlyUpdateWindow = _earlyUpdateWindow;
-        feeMultiplier = _feeMultiplier;
 
         transferOwnership(_owner);
     }
