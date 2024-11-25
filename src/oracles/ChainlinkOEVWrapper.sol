@@ -2,6 +2,9 @@
 pragma solidity 0.8.19;
 
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
+
+import {WETH9} from "@protocol/router/IWETH.sol";
+import {MErc20} from "@protocol/MErc20.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 
 /// @title ChainlinkFeedOEVWrapper
@@ -16,8 +19,18 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @param newWindow The new early update window value
     event EarlyUpdateWindowChanged(uint256 newWindow);
 
+    /// @notice Emitted when the price is updated
+    /// @param newPrice The new price
+    event PriceUpdated(int256 newPrice);
+
     /// @notice The original Chainlink price feed contract
     AggregatorV3Interface public immutable originalFeed;
+
+    /// @notice The address of the WETH contract
+    WETH9 public immutable WETH;
+
+    /// @notice The address of the ETH market
+    MErc20 public ETHMarket;
 
     /// @notice The fee multiplier applied to the original feed's fee
     /// @dev Represented as a percentage
@@ -37,13 +50,19 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @param _earlyUpdateWindow Time window for early updates
     /// @param _feeMultiplier Multiplier for the fee calculation
     /// @param _owner Address of the contract owner
+    /// @param _ethMarket Address of the ETH market
+    /// @param _weth Address of the WETH contract
     constructor(
         address _originalFeed,
         uint256 _earlyUpdateWindow,
         uint16 _feeMultiplier,
-        address _owner
+        address _owner,
+        address _ethMarket,
+        address _weth
     ) {
         originalFeed = AggregatorV3Interface(_originalFeed);
+        ETHMarket = MErc20(_ethMarket);
+        WETH = WETH9(_weth);
 
         earlyUpdateWindow = _earlyUpdateWindow;
         feeMultiplier = _feeMultiplier;
@@ -100,6 +119,12 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
         cachedPrice = price;
         cachedTimestamp = block.timestamp;
+
+        // wrap the ETH send into WETH and add to ETH market reserves
+        WETH.deposit{value: msg.value}();
+        ETHMarket._addReserves(msg.value);
+
+        emit PriceUpdated(price);
     }
 
     /// @notice Get the number of decimals in the feed
@@ -158,5 +183,12 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     function setEarlyUpdateWindow(uint256 newWindow) public onlyOwner {
         earlyUpdateWindow = newWindow;
         emit EarlyUpdateWindowChanged(newWindow);
+    }
+
+    /// @notice Set a new ETH market
+    /// @param newMarket The new ETH market to set
+    /// @dev Only callable by the contract owner
+    function setETHMarket(address newMarket) public onlyOwner {
+        ETHMarket = MErc20(newMarket);
     }
 }
