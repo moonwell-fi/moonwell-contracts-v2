@@ -36,7 +36,7 @@ contract mipx08 is HybridProposal {
         vm.stopPrank();
     }
 
-    function build(Addresses addresses) public override mockHook(addresses) {
+    function build(Addresses addresses) public override {
         _pushAction(
             addresses.getAddress("MULTICHAIN_GOVERNOR", MOONBEAM_CHAIN_ID),
             abi.encodeWithSignature("updateMaxUserLiveProposals(uint256)", 2),
