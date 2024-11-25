@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity 0.8.19;
 
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
-import "./AggregatorV3Interface.sol";
+import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 
 contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     event FeeMultiplierChanged(uint16 newFee);
@@ -55,12 +55,17 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         }
     }
 
-    function updatePriceEarly(int256 price) external payable {
-        require(msg.value >= _currentPriorityFeePerGas() * feeMultiplier);
+    function updatePriceEarly() external payable {
+        require(
+            msg.value >= (tx.gasprice - block.basefee) * uint256(feeMultiplier),
+            "Insufficient tax"
+        );
         require(
             block.timestamp > cachedTimestamp,
             "New timestamp must be greather than current"
         );
+
+        (, int256 price, , , ) = originalFeed.latestRoundData();
 
         cachedPrice = price;
         cachedTimestamp = block.timestamp;
@@ -103,11 +108,5 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     function setEarlyUpdateWindow(uint256 newWindow) public onlyOwner {
         earlyUpdateWindow = newWindow;
         emit EarlyUpdateWindowChanged(newWindow);
-    }
-
-    /// @notice Returns the current priority fee per gas.
-    /// @return Priority fee per gas.
-    function _currentPriorityFeePerGas() internal view returns (uint256) {
-        return tx.gasprice - block.basefee;
     }
 }
