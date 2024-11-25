@@ -105,7 +105,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
     /// @notice Update the price earlier than the standard update interval
     /// @dev Requires payment of a fee based on gas price and fee multiplier
-    function updatePriceEarly() external payable {
+    function updatePriceEarly() external payable returns (int256) {
         require(
             msg.value >= (tx.gasprice - block.basefee) * uint256(feeMultiplier),
             "Insufficient tax"
@@ -125,6 +125,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         ETHMarket._addReserves(msg.value);
 
         emit PriceUpdated(price);
+
+        return price;
     }
 
     /// @notice Get the number of decimals in the feed

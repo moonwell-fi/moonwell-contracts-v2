@@ -3,22 +3,22 @@ pragma solidity 0.8.19;
 import {Script} from "@forge-std/Script.sol";
 
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-import {ChainlinkOEVWrapper} from "@protocol/oracles/ChainlinkOEVWrapper.sol";
+import {ChainlinkFeedOEVWrapper} from "@protocol/oracles/ChainlinkFeedOEVWrapper.sol";
 
 contract DeployChainlinkOEVWrapper is Script {
     function run() public {
         Addresses addresses = new Addresses();
         vm.startBroadcast();
-        deployChainlinkOEVWrapper(addresses);
+        deployChainlinkOEVWrapper(addresses, address(this));
         vm.stopBroadcast();
     }
 
     function deployChainlinkOEVWrapper(
         Addresses addresses,
         address deployer
-    ) public {
+    ) public returns (ChainlinkFeedOEVWrapper wrapper) {
         vm.startBroadcast(deployer);
-        new ChainlinkOEVWrapper(
+        wrapper = new ChainlinkFeedOEVWrapper(
             addresses.getAddress("CHAINLINK_ETH_USD"),
             30 seconds,
             99,
