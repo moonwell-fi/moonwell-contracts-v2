@@ -51,7 +51,7 @@ contract mipx08 is HybridProposal {
             abi.encodeWithSignature(
                 "transferFrom(address,address,uint256)",
                 addresses.getAddress("WELL_FOUNDATION_MULTISIG"),
-                addresses.getAddress("MOONWELL_METAMORPHO_URD"),
+                addresses.getAddress("MOONWELL_METAMORPHO_URD", BASE_CHAIN_ID),
                 WELL_AMOUNT
             ),
             "Send 16M WELL to Morpho URD contract",
