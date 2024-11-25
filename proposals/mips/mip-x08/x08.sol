@@ -46,7 +46,9 @@ contract mipx08 is HybridProposal {
         vm.selectFork(MOONBEAM_FORK_ID);
 
         MultichainGovernor governor = MultichainGovernor(
-            addresses.getAddress("MULTICHAIN_GOVERNOR", MOONBEAM_CHAIN_ID)
+            payable(
+                addresses.getAddress("MULTICHAIN_GOVERNOR", MOONBEAM_CHAIN_ID)
+            )
         );
 
         vm.assertEq(
