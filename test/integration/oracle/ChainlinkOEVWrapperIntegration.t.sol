@@ -12,6 +12,8 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
     ChainlinkFeedOEVWrapper public wrapper;
 
+    uint256 public constant multiplier = 99;
+
     function setUp() public override {
         uint256 primaryForkId = vm.envUint("PRIMARY_FORK_ID");
 
@@ -39,11 +41,12 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             abi.encode(mockPrice)
         );
 
-        vm.deal(address(this), 25 gwei);
+        uint256 tax = 25 gwei * multiplier;
+        vm.deal(address(this), tax);
         vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
         vm.fee(25 gwei);
         // that means that priorityFee is 25 gwei (gasPrice - baseFee)
-        int256 price = wrapper.updatePriceEarly{value: 25 gwei}();
+        int256 price = wrapper.updatePriceEarly{value: tax}();
 
         vm.expectEmit(address(wrapper));
         emit PriceUpdated(mockPrice);
@@ -54,11 +57,12 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testRevertIfInsufficientTax() public {
-        vm.deal(address(this), 20 gwei);
+        uint256 tax = 25 gwei * multiplier;
+        vm.deal(address(this), tax - 1);
 
         vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
         vm.fee(25 gwei);
         vm.expectRevert("ChainlinkOEVWrapper: Insufficient tax");
-        wrapper.updatePriceEarly{value: 20 gwei}();
+        wrapper.updatePriceEarly{value: tax - 1}();
     }
 }
