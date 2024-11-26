@@ -29,10 +29,7 @@ contract mipx08 is HybridProposal {
         vm.selectFork(BASE_FORK_ID);
 
         vm.startPrank(addresses.getAddress("FOUNDATION_MULTISIG"));
-        IERC20(addresses.getAddress("WELL")).approve(
-            addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID),
-            WELL_AMOUNT
-        );
+        IERC20(addresses.getAddress("xWELL_PROXY")).approve(WELL_AMOUNT);
         vm.stopPrank();
     }
 
