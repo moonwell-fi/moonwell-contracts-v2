@@ -11,6 +11,8 @@ contract mipx08 is HybridProposal {
     string public constant override name = "MIP-X07";
 
     uint256 public constant WELL_AMOUNT = 16e24;
+    uint256 public urdBalanceBefore;
+
     constructor() {
         bytes memory proposalDescription = abi.encodePacked(
             vm.readFile("./proposals/mips/mip-x08/x08.md")
@@ -39,6 +41,10 @@ contract mipx08 is HybridProposal {
             addresses.getAddress("FOUNDATION_MULTISIG", BASE_CHAIN_ID),
             WELL_AMOUNT
         );
+
+        urdBalanceBefore = IERC20(
+            addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID)
+        ).balanceOf(addresses.getAddress("MOONWELL_METAMORPHO_URD"));
     }
 
     function build(Addresses addresses) public override {
@@ -89,8 +95,8 @@ contract mipx08 is HybridProposal {
         );
 
         vm.assertEq(
+            urdBalanceBefore + WELL_AMOUNT,
             well.balanceOf(addresses.getAddress("MOONWELL_METAMORPHO_URD")),
-            WELL_AMOUNT,
             "16M WELL not sent to Morpho URD"
         );
     }
