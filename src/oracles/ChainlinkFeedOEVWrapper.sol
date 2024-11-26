@@ -40,10 +40,10 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     uint256 public earlyUpdateWindow;
 
     /// @notice The timestamp of the last cached price update
-    uint256 private cachedTimestamp;
+    uint256 public cachedTimestamp;
 
     /// @notice The last cached price value
-    int256 private cachedPrice;
+    int256 public cachedPrice;
 
     /// @notice Constructor to initialize the wrapper
     /// @param _originalFeed Address of the original Chainlink feed
@@ -108,7 +108,11 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     function updatePriceEarly() external payable returns (int256) {
         require(
             msg.value >= (tx.gasprice - block.basefee) * uint256(feeMultiplier),
-            "Insufficient tax"
+            "ChainlinkOEVWrapper: Insufficient tax"
+        );
+        require(
+            block.timestamp > cachedTimestamp,
+            "ChainlinkOEVWrapper: New timestamp must be greater than current"
         );
         (, int256 price, , , ) = originalFeed.latestRoundData();
 
@@ -119,7 +123,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         WETH.deposit{value: msg.value}();
         WETH.approve(address(WETHMarket), msg.value);
         uint256 success = WETHMarket._addReserves(msg.value);
-        require(success == 0, "Failed to add reserves");
+        require(success == 0, "ChainlinkOEVWrapper: Failed to add reserves");
 
         emit PriceUpdated(price);
 
