@@ -688,5 +688,15 @@
         "addr": "0xDE9255FB1A82dAAaCEFCE845dAdAf6635734FC58",
         "name": "CYPHER_ADMIN",
         "isContract": true
+    },
+    {
+        "addr": "0x9E3ca32B18316f022fdFae503edA7E788e112AC6",
+        "isContract": true,
+        "name": "CHYPHER_AUTO_LOAD"
+    },
+    {
+        "addr": "0xF08CEF2EE2e5BE584a581209637B02637F312072",
+        "isContract": true,
+        "name": "CYPHER_ERC4626_RATE_LIMITED_ALLOWANCE"
     }
 ]

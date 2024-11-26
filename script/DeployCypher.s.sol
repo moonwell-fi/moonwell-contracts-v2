@@ -1,3 +1,4 @@
+//SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
 import {Script} from "@forge-std/Script.sol";
@@ -8,6 +9,7 @@ import {CypherAutoLoad} from "@protocol/cypher/CypherAutoLoad.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ERC4626RateLimitedAllowance} from "@protocol/cypher/ERC4626RateLimitedAllowance.sol";
 
+// forge script script/DeployCypher.s.sol:DeployCypher --rpc-url base --broadcast --ledger --verify  --chain 8453 -vvv
 contract DeployCypher is Script, Test {
     function run() public {
         Addresses addresses = new Addresses();
