@@ -27,8 +27,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testCanUpdatePriceEarly() public {
-        vm.deal(address(this), 1 ether);
-
         vm.warp(vm.getBlockTimestamp() + 1 days);
 
         int256 mockPrice = 3_000e8; // chainlink oracle uses 8 decimals
@@ -40,9 +38,11 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             ),
             abi.encode(mockPrice)
         );
+
+        vm.deal(address(this), 25 gwei);
         vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
         vm.fee(25 gwei);
-        // that means that priorityFee is 25 gwei
+        // that means that priorityFee is 25 gwei (gasPrice - baseFee)
         int256 price = wrapper.updatePriceEarly{value: 25 gwei}();
 
         vm.expectEmit(address(wrapper));
@@ -51,5 +51,14 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         assertEq(mockPrice, answer, "Price should be the same as answer");
         assertEq(mockPrice, price, "Price should be the same as price");
+    }
+
+    function testRevertIfInsufficientTax() public {
+        vm.deal(address(this), 20 gwei);
+
+        vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
+        vm.fee(25 gwei);
+        vm.expectRevert("ChainlinkOEVWrapper: Insufficient tax");
+        wrapper.updatePriceEarly{value: 20 gwei}();
     }
 }
