@@ -9,17 +9,22 @@ contract DeployChainlinkOEVWrapper is Script {
     function run() public {
         Addresses addresses = new Addresses();
         vm.startBroadcast();
-        deployChainlinkOEVWrapper(addresses, address(this));
+        deployChainlinkOEVWrapper(
+            addresses,
+            address(this),
+            "CHAINLINK_ETH_USD"
+        );
         vm.stopBroadcast();
     }
 
     function deployChainlinkOEVWrapper(
         Addresses addresses,
-        address deployer
+        address deployer,
+        string memory feed
     ) public returns (ChainlinkFeedOEVWrapper wrapper) {
         vm.startBroadcast(deployer);
         wrapper = new ChainlinkFeedOEVWrapper(
-            addresses.getAddress("CHAINLINK_ETH_USD"),
+            addresses.getAddress(feed),
             30 seconds,
             99,
             addresses.getAddress("TEMPORAL_GOVERNOR"),
@@ -27,5 +32,10 @@ contract DeployChainlinkOEVWrapper is Script {
             addresses.getAddress("WETH")
         );
         vm.stopBroadcast();
+
+        addresses.addAddress(
+            string(abi.encodePacked(feed, "_OEV_WRAPPER")),
+            address(wrapper)
+        );
     }
 }
