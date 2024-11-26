@@ -20,6 +20,14 @@ contract DeployCypher is Script, Test {
                 address(autoLoad)
             );
 
+        // transfer admin role to cypher admin
+        autoLoad.grantRole(
+            autoLoad.DEFAULT_ADMIN_ROLE(),
+            addresses.getAddress("CYPHER_ADMIN")
+        );
+        // renounce admin role
+        autoLoad.renounceRole(autoLoad.DEFAULT_ADMIN_ROLE(), msg.sender);
+
         vm.stopBroadcast();
 
         addresses.addAddress("CHYPHER_AUTO_LOAD", address(autoLoad));
@@ -85,8 +93,13 @@ contract DeployCypher is Script, Test {
         assertTrue(
             autoLoad.hasRole(
                 autoLoad.DEFAULT_ADMIN_ROLE(),
-                addresses.getAddress("CYPHER_EXECUTOR")
+                addresses.getAddress("CYPHER_ADMIN")
             ),
+            "Wrong admin"
+        );
+
+        assertFalse(
+            autoLoad.hasRole(autoLoad.DEFAULT_ADMIN_ROLE(), msg.sender),
             "Wrong admin"
         );
 

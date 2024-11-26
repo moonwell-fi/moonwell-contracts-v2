@@ -687,6 +687,6 @@
     {
         "addr": "0xDE9255FB1A82dAAaCEFCE845dAdAf6635734FC58",
         "name": "CYPHER_ADMIN",
-        "isContract": false
+        "isContract": true
     }
 ]
