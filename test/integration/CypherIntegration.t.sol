@@ -36,12 +36,22 @@ contract CypherIntegrationTest is Test {
 
         DeployCypher cypherDeployer = new DeployCypher();
 
-        autoLoad = cypherDeployer.deployAutoLoad(addresses);
+        if (addresses.isAddressSet("CYPHER_AUTOLOAD")) {
+            autoLoad = CypherAutoLoad(addresses.getAddress("CYPHER_AUTOLOAD"));
+        } else {
+            autoLoad = cypherDeployer.deployAutoLoad(addresses);
+        }
 
-        limitedAllowance = cypherDeployer.deployERC4626RateLimitedAllowance(
-            addresses,
-            address(autoLoad)
-        );
+        if (addresses.isAddressSet("CYPHER_ERC4626_RATE_LIMITED_ALLOWANCE")) {
+            limitedAllowance = ERC4626RateLimitedAllowance(
+                addresses.getAddress("CYPHER_ERC4626_RATE_LIMITED_ALLOWANCE")
+            );
+        } else {
+            limitedAllowance = cypherDeployer.deployERC4626RateLimitedAllowance(
+                addresses,
+                address(autoLoad)
+            );
+        }
 
         underlying = ERC20(addresses.getAddress("USDC"));
 
