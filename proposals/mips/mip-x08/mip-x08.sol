@@ -33,6 +33,12 @@ contract mipx08 is HybridProposal {
             WELL_AMOUNT
         );
         vm.stopPrank();
+
+        deal(
+            addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID),
+            addresses.getAddress("FOUNDATION_MULTISIG", BASE_CHAIN_ID),
+            WELL_AMOUNT
+        );
     }
 
     function build(Addresses addresses) public override {

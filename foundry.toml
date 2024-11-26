@@ -46,12 +46,12 @@ optimism = "${OP_RPC_URL}"
 opSepolia = "${OP_SEPOLIA_RPC_URL}"
 
 # comment out the following lines so that CI passes fast and doesn't throw errors related to connecting to CI
-#[etherscan]
+[etherscan]
 #moonriver = { key = "${MOONRIVER_API_KEY}", url= "https://api-moonriver.moonscan.io/api" }
 #moonbeam = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbeam.moonscan.io/api" }
 #moonbase = { key = "${MOONBEAM_API_KEY}", url= "https://api-moonbase.moonscan.io/api" }
 #goerli = { key = "${ETHERSCAN_API_KEY}", url= "https://api-goerli.etherscan.io/api" }
 #sepolia = { key = "${ETHERSCAN_API_KEY}", url= "https://api-sepolia.etherscan.io/api" }
-#base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
+base = { key = "${BASESCAN_API_KEY}", url= "https://api.basescan.org/api" }
 #baseSepolia = { key = "${BASESCAN_API_KEY}", url= "https://sepolia.basescan.org/api" }
 #opSepolia = { key = "${OPSCAN_API_KEY}", url= "https://api.optimistic.etherscan.io/api" }
