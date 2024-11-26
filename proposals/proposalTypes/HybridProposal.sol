@@ -615,11 +615,14 @@ abstract contract HybridProposal is
                 address(governor)
             );
 
-            bytes
-                memory temporalGovExecDataOptimism = getTemporalGovPayloadByChain(
+            bytes memory temporalGovExecDataOptimism;
+
+            if (actions.proposalActionTypeCount(ActionType.Optimism) != 0) {
+                temporalGovExecDataOptimism = getTemporalGovPayloadByChain(
                     addresses,
                     block.chainid.toOptimismChainId()
                 );
+            }
 
             if (actions.proposalActionTypeCount(ActionType.Base) != 0) {
                 bytes
