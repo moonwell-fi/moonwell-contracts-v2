@@ -30,14 +30,14 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     WETH9 public immutable WETH;
 
     /// @notice The address of the ETH market
-    MErc20 public ETHMarket;
+    MErc20 public immutable WETHMarket;
 
     /// @notice The fee multiplier applied to the original feed's fee
     /// @dev Represented as a percentage
-    uint16 public feeMultiplier = 99;
+    uint16 public feeMultiplier;
 
     /// @notice The time window before the next update where early updates are allowed
-    uint256 public earlyUpdateWindow = 30 seconds;
+    uint256 public earlyUpdateWindow;
 
     /// @notice The timestamp of the last cached price update
     uint256 private cachedTimestamp;
@@ -61,7 +61,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         address _weth
     ) {
         originalFeed = AggregatorV3Interface(_originalFeed);
-        ETHMarket = MErc20(_ethMarket);
+        WETHMarket = MErc20(_ethMarket);
         WETH = WETH9(_weth);
 
         earlyUpdateWindow = _earlyUpdateWindow;
@@ -110,11 +110,6 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             msg.value >= (tx.gasprice - block.basefee) * uint256(feeMultiplier),
             "Insufficient tax"
         );
-        require(
-            block.timestamp > cachedTimestamp,
-            "New timestamp must be greater than current"
-        );
-
         (, int256 price, , , ) = originalFeed.latestRoundData();
 
         cachedPrice = price;
@@ -122,7 +117,9 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
         // wrap the ETH send into WETH and add to ETH market reserves
         WETH.deposit{value: msg.value}();
-        ETHMarket._addReserves(msg.value);
+        WETH.approve(address(WETHMarket), msg.value);
+        uint256 success = WETHMarket._addReserves(msg.value);
+        require(success == 0, "Failed to add reserves");
 
         emit PriceUpdated(price);
 
@@ -185,12 +182,5 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     function setEarlyUpdateWindow(uint256 newWindow) public onlyOwner {
         earlyUpdateWindow = newWindow;
         emit EarlyUpdateWindowChanged(newWindow);
-    }
-
-    /// @notice Set a new ETH market
-    /// @param newMarket The new ETH market to set
-    /// @dev Only callable by the contract owner
-    function setETHMarket(address newMarket) public onlyOwner {
-        ETHMarket = MErc20(newMarket);
     }
 }
