@@ -38,14 +38,20 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             abi.encodeWithSelector(
                 wrapper.originalFeed().latestRoundData.selector
             ),
-            abi.encode(mockPrice)
+            abi.encode(
+                uint80(1), // roundId
+                mockPrice, // answer
+                uint256(0), // startedAt
+                uint256(block.timestamp), // updatedAt
+                uint80(1) // answeredInRound
+            )
         );
 
-        uint256 tax = 25 gwei * multiplier;
+        uint256 tax = (50 gwei - 25 gwei) * multiplier; // (gasPrice - baseFee) * multiplier
         vm.deal(address(this), tax);
         vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
-        vm.fee(25 gwei);
-        // that means that priorityFee is 25 gwei (gasPrice - baseFee)
+        vm.fee(25 gwei); // Set base fee to 25 gwei
+
         int256 price = wrapper.updatePriceEarly{value: tax}();
 
         vm.expectEmit(address(wrapper));
