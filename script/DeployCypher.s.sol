@@ -32,7 +32,7 @@ contract DeployCypher is Script, Test {
 
         vm.stopBroadcast();
 
-        addresses.addAddress("CHYPHER_AUTO_LOAD", address(autoLoad));
+        addresses.addAddress("CYPHER_AUTO_LOAD", address(autoLoad));
 
         addresses.addAddress(
             "CYPHER_ERC4626_RATE_LIMITED_ALLOWANCE",
@@ -70,7 +70,7 @@ contract DeployCypher is Script, Test {
     ) public view {
         assertEq(
             address(autoLoad),
-            addresses.getAddress("CHYPHER_AUTO_LOAD"),
+            addresses.getAddress("CYPHER_AUTO_LOAD"),
             "CypherAutoLoad not deployed"
         );
         assertEq(
