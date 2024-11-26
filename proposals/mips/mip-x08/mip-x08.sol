@@ -69,7 +69,10 @@ contract mipx08 is HybridProposal {
 
         MultichainGovernor governor = MultichainGovernor(
             payable(
-                addresses.getAddress("MULTICHAIN_GOVERNOR", MOONBEAM_CHAIN_ID)
+                addresses.getAddress(
+                    "MULTICHAIN_GOVERNOR_PROXY",
+                    MOONBEAM_CHAIN_ID
+                )
             )
         );
 
