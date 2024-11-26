@@ -33,7 +33,7 @@ contract CypherIntegrationTest is Test {
     function setUp() public {
         addresses = new Addresses();
 
-        autoLoad = CypherAutoLoad(addresses.getAddress("CYPHER_AUTOLOAD"));
+        autoLoad = CypherAutoLoad(addresses.getAddress("CYPHER_AUTO_LOAD"));
 
         limitedAllowance = ERC4626RateLimitedAllowance(
             addresses.getAddress("CYPHER_ERC4626_RATE_LIMITED_ALLOWANCE")
