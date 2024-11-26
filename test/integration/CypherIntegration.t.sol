@@ -8,7 +8,6 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import {MErc20} from "@protocol/MErc20.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
-import {DeployCypher} from "script/DeployCypher.s.sol";
 import {CypherAutoLoad} from "@protocol/cypher/CypherAutoLoad.sol";
 import {MoonwellERC4626} from "@protocol/4626/MoonwellERC4626.sol";
 import {IMetaMorphoFactory} from "@protocol/morpho/IMetaMorphoFactory.sol";
@@ -34,23 +33,11 @@ contract CypherIntegrationTest is Test {
     function setUp() public {
         addresses = new Addresses();
 
-        DeployCypher cypherDeployer = new DeployCypher();
+        autoLoad = CypherAutoLoad(addresses.getAddress("CYPHER_AUTOLOAD"));
 
-        if (addresses.isAddressSet("CYPHER_AUTOLOAD")) {
-            autoLoad = CypherAutoLoad(addresses.getAddress("CYPHER_AUTOLOAD"));
-
-            limitedAllowance = ERC4626RateLimitedAllowance(
-                addresses.getAddress("CYPHER_ERC4626_RATE_LIMITED_ALLOWANCE")
-            );
-        } else {
-            autoLoad = cypherDeployer.deployAutoLoad(addresses);
-
-            limitedAllowance = cypherDeployer.deployERC4626RateLimitedAllowance(
-                addresses,
-                address(autoLoad)
-            );
-        }
-
+        limitedAllowance = ERC4626RateLimitedAllowance(
+            addresses.getAddress("CYPHER_ERC4626_RATE_LIMITED_ALLOWANCE")
+        );
         underlying = ERC20(addresses.getAddress("USDC"));
 
         IMetaMorphoFactory factory = IMetaMorphoFactory(
