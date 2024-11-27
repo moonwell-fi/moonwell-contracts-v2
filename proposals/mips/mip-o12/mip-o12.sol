@@ -29,13 +29,9 @@ contract mipo12 is HybridProposal {
         return OPTIMISM_FORK_ID;
     }
 
-    function deploy(Addresses addresses, address deployer) public override {
+    function deploy(Addresses addresses, address) public override {
         DeployChainlinkOEVWrapper deployScript = new DeployChainlinkOEVWrapper();
-        deployScript.deployChainlinkOEVWrapper(
-            addresses,
-            deployer,
-            "CHAINLINK_ETH_USD"
-        );
+        deployScript.deployChainlinkOEVWrapper(addresses, "CHAINLINK_ETH_USD");
     }
 
     function build(Addresses addresses) public override {

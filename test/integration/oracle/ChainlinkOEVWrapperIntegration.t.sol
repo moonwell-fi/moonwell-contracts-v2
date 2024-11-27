@@ -23,7 +23,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         DeployChainlinkOEVWrapper deployScript = new DeployChainlinkOEVWrapper();
         wrapper = deployScript.deployChainlinkOEVWrapper(
             addresses,
-            address(this),
             "CHAINLINK_ETH_USD"
         );
     }
@@ -96,9 +95,11 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         uint256 tax = 25 gwei * multiplier;
         vm.deal(address(this), tax - 1);
 
-        vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
+        vm.txGasPrice(50 gwei);
         vm.fee(25 gwei);
         vm.expectRevert("ChainlinkOEVWrapper: Insufficient tax");
         wrapper.updatePriceEarly{value: tax - 1}();
     }
+
+    function testLiquidationOpportunity() public {}
 }
