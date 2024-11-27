@@ -155,7 +155,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         (, int256 priceBefore, , , ) = wrapper.latestRoundData();
 
         console.log("priceBefore", uint256(priceBefore));
-        uint256 tax = (50 gwei - 25 gwei) * wrapper.feeMultiplier();
+        uint256 tax = (50 gwei - 25 gwei) * uint256(wrapper.feeMultiplier());
         vm.deal(address(this), tax);
         vm.txGasPrice(50 gwei);
         vm.fee(25 gwei);
