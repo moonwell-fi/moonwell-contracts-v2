@@ -51,11 +51,10 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         vm.deal(address(this), tax);
         vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
         vm.fee(25 gwei); // Set base fee to 25 gwei
-
-        int256 price = wrapper.updatePriceEarly{value: tax}();
-
         vm.expectEmit(address(wrapper));
         emit PriceUpdated(mockPrice);
+        int256 price = wrapper.updatePriceEarly{value: tax}();
+
         (, int256 answer, , , ) = wrapper.latestRoundData();
 
         assertEq(mockPrice, answer, "Price should be the same as answer");
