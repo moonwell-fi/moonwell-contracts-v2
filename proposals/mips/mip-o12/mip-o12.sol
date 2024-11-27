@@ -78,7 +78,7 @@ contract mipo12 is HybridProposal {
         // Validate WETH market
         assertEq(
             address(wrapper.WETHMarket()),
-            addresses.getAddress("WETH_MARKET"),
+            addresses.getAddress("MOONWELL_WETH"),
             "Wrong WETH market"
         );
 
