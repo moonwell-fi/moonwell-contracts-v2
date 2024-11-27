@@ -55,10 +55,41 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         emit PriceUpdated(mockPrice);
         int256 price = wrapper.updatePriceEarly{value: tax}();
 
-        (, int256 answer, , , ) = wrapper.latestRoundData();
+        (, int256 answer, , uint256 timestamp, ) = wrapper.latestRoundData();
+
+        vm.warp(vm.getBlockTimestamp() + 1);
 
         assertEq(mockPrice, answer, "Price should be the same as answer");
         assertEq(mockPrice, price, "Price should be the same as price");
+        assertEq(
+            timestamp,
+            block.timestamp - 1,
+            "Timestamp should be the same as block.timestamp - 1"
+        );
+    }
+
+    function testReturnOriginalFeedPriceIfEarlyUpdateWindowHasPassed() public {
+        testCanUpdatePriceEarly();
+
+        vm.warp(vm.getBlockTimestamp() + wrapper.earlyUpdateWindow());
+
+        int256 mockPrice = 3_3333e8; // chainlink oracle uses 8 decimals
+        uint256 mockTimestamp = block.timestamp - 1;
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(uint80(1), mockPrice, 0, mockTimestamp, uint80(1))
+        );
+        (, int256 answer, , uint256 timestamp, ) = wrapper.latestRoundData();
+
+        assertEq(mockPrice, answer, "Price should be the same as answer");
+        assertEq(
+            timestamp,
+            mockTimestamp,
+            "Timestamp should be the same as block.timestamp"
+        );
     }
 
     function testRevertIfInsufficientTax() public {
