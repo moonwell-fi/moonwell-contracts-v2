@@ -147,33 +147,70 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         comptroller.enterMarkets(markets);
         vm.stopPrank();
 
-        // Borrow maximum allowed amount
-        uint256 borrowAmount = marketBase.getMaxUserBorrowAmount(mToken, user);
-        vm.prank(user);
-        MErc20Delegator(payable(address(mToken))).borrow(borrowAmount);
+        uint256 borrowAmount;
 
-        (, int256 priceBefore, , , ) = wrapper.latestRoundData();
+        // borrow usdc
+        {
+            // before borrowing, increase borrow cap to make sure we borrow a significant amount
+            vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+            MToken[] memory mTokens = new MToken[](1);
+            mTokens[0] = MToken(addresses.getAddress("MOONWELL_USDC"));
+            uint256[] memory newBorrowCaps = new uint256[](1);
+            uint256 currentBorrowCap = comptroller.borrowCaps(
+                address(mTokens[0])
+            );
+            newBorrowCaps[0] = currentBorrowCap + mintAmount;
+            comptroller._setMarketBorrowCaps(mTokens, newBorrowCaps);
+            vm.stopPrank();
 
-        console.log("priceBefore", uint256(priceBefore));
-        uint256 tax = (50 gwei - 25 gwei) * uint256(wrapper.feeMultiplier());
-        vm.deal(address(this), tax);
-        vm.txGasPrice(50 gwei);
-        vm.fee(25 gwei);
+            // Borrow maximum allowed amount
+            (, uint256 liquidity, ) = comptroller.getAccountLiquidity(
+                address(this)
+            );
 
-        // Update price to make position underwater (50% price drop)
-        int256 newPrice = priceBefore / 2;
-        console.log("new price", uint256(newPrice));
-        vm.mockCall(
-            address(wrapper.originalFeed()),
-            abi.encodeWithSelector(
-                wrapper.originalFeed().latestRoundData.selector
-            ),
-            abi.encode(uint80(1), newPrice, 0, block.timestamp, uint80(1))
-        );
-        wrapper.updatePriceEarly{value: tax}();
+            (, uint256 collateralFactor) = comptroller.markets(address(mToken));
+
+            borrowAmount = collateralFactor * liquidity;
+            vm.prank(user);
+            MErc20Delegator(payable(address(mTokens[0]))).borrow(borrowAmount);
+        }
 
         {
-            // Verify user is now underwater
+            // Print initial state
+            (
+                ,
+                uint256 mTokenBalance,
+                uint256 borrowBalance,
+                uint256 exchangeRate
+            ) = mToken.getAccountSnapshot(user);
+            console.log("Initial mToken Balance:", mTokenBalance);
+            console.log("Initial Borrow Balance:", borrowBalance);
+            console.log("Exchange Rate:", exchangeRate);
+            (, uint256 collateralFactor) = comptroller.markets(address(mToken));
+            console.log("Collateral Factor:", collateralFactor);
+        }
+        {
+            (, int256 priceBefore, , , ) = wrapper.latestRoundData();
+            console.log("Price Before:", uint256(priceBefore));
+            // Drop price by 80%
+            int256 newPrice = (priceBefore * 20) / 100;
+
+            console.log("New Price:", uint256(newPrice));
+
+            uint256 tax = (50 gwei - 25 gwei) *
+                uint256(wrapper.feeMultiplier());
+            vm.deal(address(this), tax);
+            vm.txGasPrice(50 gwei);
+            vm.fee(25 gwei);
+            vm.mockCall(
+                address(wrapper.originalFeed()),
+                abi.encodeWithSelector(
+                    wrapper.originalFeed().latestRoundData.selector
+                ),
+                abi.encode(uint80(1), newPrice, 0, block.timestamp, uint80(1))
+            );
+            wrapper.updatePriceEarly{value: tax}();
+
             (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
                 .getHypotheticalAccountLiquidity(user, address(mToken), 0, 0);
 
@@ -181,7 +218,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             assertEq(liquidity, 0, "Liquidity should be 0");
             assertGt(shortfall, 0, "Position should be underwater");
         }
-
         // Setup liquidator
         address liquidator = address(0x5678);
         uint256 repayAmount = borrowAmount / 2;
