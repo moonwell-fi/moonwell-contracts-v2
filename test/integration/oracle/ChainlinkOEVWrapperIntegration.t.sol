@@ -132,29 +132,28 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testUpdatePriceEarlyOnLiquidationOpportunity() public {
-        // Setup test user and initial conditions
         address user = address(0x1234);
+        // Supply weth
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
 
-        // Get max supply amount and supply collateral
         uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
         _mintMToken(user, address(mToken), mintAmount);
-
-        // Enter markets for the user
-        vm.startPrank(user);
-        address[] memory markets = new address[](1);
-        markets[0] = address(mToken);
-        comptroller.enterMarkets(markets);
-        vm.stopPrank();
+        {
+            // Enter WETH and USDC markets
+            vm.startPrank(user);
+            address[] memory markets = new address[](2);
+            markets[0] = address(mToken);
+            markets[1] = addresses.getAddress("MOONWELL_USDC");
+            comptroller.enterMarkets(markets);
+            vm.stopPrank();
+        }
 
         uint256 borrowAmount;
-
-        // borrow usdc
         {
             // before borrowing, increase borrow cap to make sure we borrow a significant amount
             vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
             MToken[] memory mTokens = new MToken[](1);
-            mTokens[0] = MToken(addresses.getAddress("MOONWELL_USDC"));
+            mTokens[0] = MToken(addresses.getAddress("MOONWELL_USDC")); // borrow USDC
             uint256[] memory newBorrowCaps = new uint256[](1);
             uint256 currentBorrowCap = comptroller.borrowCaps(
                 address(mTokens[0])
@@ -163,39 +162,23 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             comptroller._setMarketBorrowCaps(mTokens, newBorrowCaps);
             vm.stopPrank();
 
-            // Borrow maximum allowed amount
-            (, uint256 liquidity, ) = comptroller.getAccountLiquidity(
-                address(this)
-            );
+            // Calculate maximum borrow amount
+            (, uint256 liquidity, ) = comptroller.getAccountLiquidity(user);
+            console.log("Liquidity:", liquidity);
 
             (, uint256 collateralFactor) = comptroller.markets(address(mToken));
+            console.log("Collateral factor:", collateralFactor);
 
             borrowAmount = collateralFactor * liquidity;
+            console.log("Borrow amount:", borrowAmount);
             vm.prank(user);
             MErc20Delegator(payable(address(mTokens[0]))).borrow(borrowAmount);
         }
 
         {
-            // Print initial state
-            (
-                ,
-                uint256 mTokenBalance,
-                uint256 borrowBalance,
-                uint256 exchangeRate
-            ) = mToken.getAccountSnapshot(user);
-            console.log("Initial mToken Balance:", mTokenBalance);
-            console.log("Initial Borrow Balance:", borrowBalance);
-            console.log("Exchange Rate:", exchangeRate);
-            (, uint256 collateralFactor) = comptroller.markets(address(mToken));
-            console.log("Collateral Factor:", collateralFactor);
-        }
-        {
             (, int256 priceBefore, , , ) = wrapper.latestRoundData();
-            console.log("Price Before:", uint256(priceBefore));
             // Drop price by 80%
             int256 newPrice = (priceBefore * 20) / 100;
-
-            console.log("New Price:", uint256(newPrice));
 
             uint256 tax = (50 gwei - 25 gwei) *
                 uint256(wrapper.feeMultiplier());
@@ -218,6 +201,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             assertEq(liquidity, 0, "Liquidity should be 0");
             assertGt(shortfall, 0, "Position should be underwater");
         }
+
         // Setup liquidator
         address liquidator = address(0x5678);
         uint256 repayAmount = borrowAmount / 2;
