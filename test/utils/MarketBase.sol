@@ -61,25 +61,35 @@ contract MarketBase is ExponentialNoError {
 
         (, uint256 mTokenBalance, , uint256 exchangeRate) = mToken
             .getAccountSnapshot(user);
-        Exp memory exchangeRateExp = Exp({mantissa: exchangeRate});
 
         uint256 oraclePrice = comptroller.oracle().getUnderlyingPrice(mToken);
-        Exp memory oraclePriceExp = Exp({mantissa: oraclePrice});
-
+        console.log("Oracle Price", oraclePrice);
         (, uint256 collateralFactor) = comptroller.markets(address(mToken));
-        Exp memory collateralFactorExp = Exp({mantissa: collateralFactor});
 
-        Exp memory tokenToDenom = mul_(
-            mul_(collateralFactorExp, exchangeRateExp),
-            oraclePriceExp
+        // First convert mTokens to underlying
+        uint256 underlyingAmount = mul_ScalarTruncate(
+            Exp({mantissa: exchangeRate}),
+            mTokenBalance
         );
 
-        uint256 usdLiquidity = mul_ScalarTruncate(tokenToDenom, mTokenBalance);
+        // Scale up the calculations to preserve precision
+        underlyingAmount = underlyingAmount * 1e18;
 
-        uint256 maxUserBorrow = div_(usdLiquidity, oraclePrice);
+        // Convert to USD value with scaling
+        uint256 usdValue = mul_ScalarTruncate(
+            Exp({mantissa: oraclePrice}),
+            underlyingAmount
+        );
+
+        // Apply collateral factor
+        uint256 maxBorrowUSD = mul_ScalarTruncate(
+            Exp({mantissa: collateralFactor}),
+            usdValue
+        );
+
+        uint256 maxUserBorrow = div_(maxBorrowUSD, oraclePrice);
 
         uint256 borrowableAmount;
-
         if (borrowCap == 0) {
             borrowableAmount = type(uint128).max;
         } else if (borrowCap < totalBorrows) {
@@ -92,10 +102,11 @@ contract MarketBase is ExponentialNoError {
             return 0;
         }
 
-        return (
-            borrowableAmount > maxUserBorrow
-                ? maxUserBorrow - 1
-                : borrowableAmount - 1
-        );
+        return
+            (
+                borrowableAmount > maxUserBorrow
+                    ? maxUserBorrow
+                    : borrowableAmount
+            ) - 1;
     }
 }
