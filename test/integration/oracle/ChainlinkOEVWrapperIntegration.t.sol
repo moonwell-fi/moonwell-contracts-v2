@@ -155,9 +155,10 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             (, uint256 liquidity, ) = comptroller.getAccountLiquidity(user);
             console.log("Liquidity:", liquidity);
 
+            // Use 80% of max liquidity to leave room for price movement
             // usdc is 6 decimals, liquidity is in 18 decimals
             // so we need to convert borrow amount to 6 decimals
-            borrowAmount = liquidity / 1e12;
+            borrowAmount = ((liquidity * 80) / 100) / 1e12; // Changed from full amount
 
             // before borrowing, increase borrow cap to make sure we borrow a significant amount
             vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
@@ -187,7 +188,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         {
             (, int256 priceBefore, , , ) = wrapper.latestRoundData();
-            int256 newPrice = (priceBefore * 5) / 100; // Only 5% of original price
+            int256 newPrice = (priceBefore * 70) / 100; // 30% drop
 
             uint256 tax = (50 gwei - 25 gwei) *
                 uint256(wrapper.feeMultiplier());
@@ -213,7 +214,8 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         // Setup liquidator
         address liquidator = address(0x5678);
-        uint256 repayAmount = borrowAmount / 2;
+        uint256 repayAmount = borrowAmount / 4;
+
         deal(
             MErc20(address(mTokenBorrowed)).underlying(),
             liquidator,
@@ -230,7 +232,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             MErc20Delegator(payable(address(mTokenBorrowed))).liquidateBorrow(
                 user,
                 repayAmount,
-                MErc20(address(mTokenBorrowed))
+                MErc20(address(mToken))
             ),
             0,
             "Liquidation failed"
