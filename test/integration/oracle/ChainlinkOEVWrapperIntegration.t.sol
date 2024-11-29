@@ -135,6 +135,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         address user = address(0x1234);
         // Supply weth
         MToken mToken = MToken(addresses.getAddress("MOONWELL_WETH"));
+        MToken mTokenBorrowed = MToken(addresses.getAddress("MOONWELL_USDC"));
 
         uint256 mintAmount = marketBase.getMaxSupplyAmount(mToken);
         _mintMToken(user, address(mToken), mintAmount);
@@ -143,7 +144,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             vm.startPrank(user);
             address[] memory markets = new address[](2);
             markets[0] = address(mToken);
-            markets[1] = addresses.getAddress("MOONWELL_USDC");
+            markets[1] = address(mTokenBorrowed);
             comptroller.enterMarkets(markets);
             vm.stopPrank();
         }
@@ -158,24 +159,30 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             // so we need to convert borrow amount to 6 decimals
             borrowAmount = liquidity / 1e12;
 
-            console.log("Borrow amount:", borrowAmount);
-
             // before borrowing, increase borrow cap to make sure we borrow a significant amount
             vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
             MToken[] memory mTokens = new MToken[](1);
-            mTokens[0] = MToken(addresses.getAddress("MOONWELL_USDC")); // borrow USDC
+            mTokens[0] = mTokenBorrowed;
             uint256[] memory newBorrowCaps = new uint256[](1);
             uint256 currentBorrowCap = comptroller.borrowCaps(
                 address(mTokens[0])
             );
 
-            newBorrowCaps[0] = currentBorrowCap + liquidity;
+            newBorrowCaps[0] = currentBorrowCap + borrowAmount;
             comptroller._setMarketBorrowCaps(mTokens, newBorrowCaps);
             vm.stopPrank();
 
+            // make sure the mToken has enough underlying to borrow
+            deal(
+                MErc20(address(mTokenBorrowed)).underlying(),
+                address(mTokenBorrowed),
+                borrowAmount
+            );
+
             vm.warp(block.timestamp + 1 days);
             vm.prank(user);
-            MErc20Delegator(payable(address(mTokens[0]))).borrow(liquidity);
+            uint256 err = MErc20(address(mTokenBorrowed)).borrow(borrowAmount);
+            assertEq(err, 0, "Borrow failed");
         }
 
         {
@@ -207,19 +214,23 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         // Setup liquidator
         address liquidator = address(0x5678);
         uint256 repayAmount = borrowAmount / 2;
-        deal(MErc20(address(mToken)).underlying(), liquidator, repayAmount);
+        deal(
+            MErc20(address(mTokenBorrowed)).underlying(),
+            liquidator,
+            repayAmount
+        );
 
         // Execute liquidation
         vm.startPrank(liquidator);
-        IERC20(MErc20(address(mToken)).underlying()).approve(
-            address(mToken),
+        IERC20(MErc20(address(mTokenBorrowed)).underlying()).approve(
+            address(mTokenBorrowed),
             repayAmount
         );
         assertEq(
-            MErc20Delegator(payable(address(mToken))).liquidateBorrow(
+            MErc20Delegator(payable(address(mTokenBorrowed))).liquidateBorrow(
                 user,
                 repayAmount,
-                MErc20(address(mToken))
+                MErc20(address(mTokenBorrowed))
             ),
             0,
             "Liquidation failed"
