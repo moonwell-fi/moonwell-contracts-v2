@@ -150,6 +150,16 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         uint256 borrowAmount;
         {
+            // Calculate maximum borrow amount
+            (, uint256 liquidity, ) = comptroller.getAccountLiquidity(user);
+            console.log("Liquidity:", liquidity);
+
+            // usdc is 6 decimals, liquidity is in 18 decimals
+            // so we need to convert borrow amount to 6 decimals
+            borrowAmount = liquidity / 1e12;
+
+            console.log("Borrow amount:", borrowAmount);
+
             // before borrowing, increase borrow cap to make sure we borrow a significant amount
             vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
             MToken[] memory mTokens = new MToken[](1);
@@ -158,27 +168,19 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             uint256 currentBorrowCap = comptroller.borrowCaps(
                 address(mTokens[0])
             );
-            newBorrowCaps[0] = currentBorrowCap + mintAmount;
+
+            newBorrowCaps[0] = currentBorrowCap + liquidity;
             comptroller._setMarketBorrowCaps(mTokens, newBorrowCaps);
             vm.stopPrank();
 
-            // Calculate maximum borrow amount
-            (, uint256 liquidity, ) = comptroller.getAccountLiquidity(user);
-            console.log("Liquidity:", liquidity);
-
-            (, uint256 collateralFactor) = comptroller.markets(address(mToken));
-            console.log("Collateral factor:", collateralFactor);
-
-            borrowAmount = collateralFactor * liquidity;
-            console.log("Borrow amount:", borrowAmount);
+            vm.warp(block.timestamp + 1 days);
             vm.prank(user);
-            MErc20Delegator(payable(address(mTokens[0]))).borrow(borrowAmount);
+            MErc20Delegator(payable(address(mTokens[0]))).borrow(liquidity);
         }
 
         {
             (, int256 priceBefore, , , ) = wrapper.latestRoundData();
-            // Drop price by 80%
-            int256 newPrice = (priceBefore * 20) / 100;
+            int256 newPrice = (priceBefore * 5) / 100; // Only 5% of original price
 
             uint256 tax = (50 gwei - 25 gwei) *
                 uint256(wrapper.feeMultiplier());
