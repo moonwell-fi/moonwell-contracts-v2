@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {console} from "@forge-std/console.sol";
-
 import {MToken} from "@protocol/MToken.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {ExponentialNoError} from "@protocol/ExponentialNoError.sol";
@@ -63,7 +61,6 @@ contract MarketBase is ExponentialNoError {
             .getAccountSnapshot(user);
 
         uint256 oraclePrice = comptroller.oracle().getUnderlyingPrice(mToken);
-        console.log("Oracle Price", oraclePrice);
         (, uint256 collateralFactor) = comptroller.markets(address(mToken));
 
         // First convert mTokens to underlying
