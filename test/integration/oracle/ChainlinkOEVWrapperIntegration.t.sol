@@ -14,6 +14,8 @@ import {ChainlinkFeedOEVWrapper} from "@protocol/oracles/ChainlinkFeedOEVWrapper
 
 contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     event PriceUpdated(int256 newPrice);
+    event FeeMultiplierChanged(uint16 newFee);
+    event EarlyUpdateWindowChanged(uint256 newWindow);
 
     ChainlinkFeedOEVWrapper public wrapper;
     Comptroller comptroller;
@@ -238,5 +240,83 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             "Liquidation failed"
         );
         vm.stopPrank();
+    }
+
+    function testSetFeeMultiplier() public {
+        uint16 newMultiplier = 1;
+
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.expectEmit(address(wrapper));
+        emit FeeMultiplierChanged(newMultiplier);
+        wrapper.setFeeMultiplier(newMultiplier);
+
+        assertEq(
+            wrapper.feeMultiplier(),
+            newMultiplier,
+            "Fee multiplier not updated"
+        );
+    }
+
+    function testSetFeeMultiplierRevertNonOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper.setFeeMultiplier(1);
+    }
+
+    function testSetEarlyUpdateWindow() public {
+        uint256 newWindow = 15;
+
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.expectEmit(address(wrapper));
+        emit EarlyUpdateWindowChanged(newWindow);
+        wrapper.setEarlyUpdateWindow(newWindow);
+
+        assertEq(
+            wrapper.earlyUpdateWindow(),
+            newWindow,
+            "Early update window not updated"
+        );
+    }
+
+    function testSetEarlyUpdateWindowRevertNonOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper.setEarlyUpdateWindow(15);
+    }
+
+    function testGetRoundData() public {
+        uint80 roundId = 1;
+        int256 mockPrice = 3_000e8;
+        uint256 mockTimestamp = block.timestamp;
+
+        // Mock the original feed's getRoundData response
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().getRoundData.selector,
+                roundId
+            ),
+            abi.encode(roundId, mockPrice, uint256(0), mockTimestamp, roundId)
+        );
+
+        (
+            uint80 returnedRoundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        ) = wrapper.getRoundData(roundId);
+
+        assertEq(returnedRoundId, roundId, "Round ID should be the same");
+        assertEq(answer, mockPrice, "Price should be the same");
+        assertEq(startedAt, 0, "StartedAt should be 0");
+        assertEq(
+            updatedAt,
+            mockTimestamp,
+            "UpdatedAt should be the same as block.timestamp"
+        );
+        assertEq(
+            answeredInRound,
+            roundId,
+            "AnsweredInRound should be the same as round ID"
+        );
     }
 }
