@@ -14,9 +14,12 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ChainlinkFeedOEVWrapper} from "@protocol/oracles/ChainlinkFeedOEVWrapper.sol";
 
 contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
-    event PriceUpdated(int256 newPrice);
     event FeeMultiplierChanged(uint16 newFee);
     event EarlyUpdateWindowChanged(uint256 newWindow);
+    event ProtocolOEVRevenueUpdated(
+        address indexed receiver,
+        int256 revenueAdded
+    );
 
     ChainlinkFeedOEVWrapper public wrapper;
     Comptroller comptroller;
@@ -84,7 +87,10 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
         vm.fee(25 gwei); // Set base fee to 25 gwei
         vm.expectEmit(address(wrapper));
-        emit PriceUpdated(mockPrice);
+        emit ProtocolOEVRevenueUpdated(
+            addresses.getAddress("MOONWELL_WETH"),
+            tax
+        );
         int256 price = wrapper.updatePriceEarly{value: tax}();
 
         (, int256 answer, , uint256 timestamp, ) = wrapper.latestRoundData();

@@ -21,7 +21,10 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
     /// @notice Emitted when the price is updated
     /// @param newPrice The new price
-    event PriceUpdated(int256 newPrice);
+    event ProtocolOEVRevenueUpdated(
+        address indexed receiver,
+        int256 revenueAdded
+    );
 
     /// @notice The original Chainlink price feed contract
     AggregatorV3Interface public immutable originalFeed;
@@ -125,7 +128,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         uint256 success = WETHMarket._addReserves(msg.value);
         require(success == 0, "ChainlinkOEVWrapper: Failed to add reserves");
 
-        emit PriceUpdated(price);
+        emit ProtocolOEVRevenueUpdated(price);
 
         return price;
     }
