@@ -20,10 +20,11 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     event EarlyUpdateWindowChanged(uint256 newWindow);
 
     /// @notice Emitted when the price is updated
-    /// @param newPrice The new price
+    /// @param receiver The address that received the update
+    /// @param revenueAdded The amount of ETH added to the ETH market
     event ProtocolOEVRevenueUpdated(
         address indexed receiver,
-        int256 revenueAdded
+        uint256 revenueAdded
     );
 
     /// @notice The original Chainlink price feed contract
@@ -128,7 +129,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         uint256 success = WETHMarket._addReserves(msg.value);
         require(success == 0, "ChainlinkOEVWrapper: Failed to add reserves");
 
-        emit ProtocolOEVRevenueUpdated(price);
+        emit ProtocolOEVRevenueUpdated(address(WETHMarket), msg.value);
 
         return price;
     }

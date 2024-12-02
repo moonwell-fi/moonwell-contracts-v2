@@ -18,7 +18,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     event EarlyUpdateWindowChanged(uint256 newWindow);
     event ProtocolOEVRevenueUpdated(
         address indexed receiver,
-        int256 revenueAdded
+        uint256 revenueAdded
     );
 
     ChainlinkFeedOEVWrapper public wrapper;
@@ -328,8 +328,13 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testFeeAmountIsAdddedToEthReserves() public {
+        // accrue interest
+        MErc20(addresses.getAddress("MOONWELL_WETH")).accrueInterest();
         uint256 wethBalanceBefore = IERC20(addresses.getAddress("WETH"))
             .balanceOf(addresses.getAddress("MOONWELL_WETH"));
+        uint256 totalReservesBefore = MErc20(
+            addresses.getAddress("MOONWELL_WETH")
+        ).totalReserves();
 
         uint256 tax = 25 gwei * multiplier;
         vm.deal(address(this), tax);
@@ -338,6 +343,15 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         vm.fee(25 gwei);
         wrapper.updatePriceEarly{value: tax}();
 
+        uint256 totalReservesAfter = MErc20(
+            addresses.getAddress("MOONWELL_WETH")
+        ).totalReserves();
+
+        assertEq(
+            totalReservesBefore + tax,
+            totalReservesAfter,
+            "Total reserves should be increased by tax"
+        );
         assertEq(
             wethBalanceBefore + tax,
             IERC20(addresses.getAddress("WETH")).balanceOf(
