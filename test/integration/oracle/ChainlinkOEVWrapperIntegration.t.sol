@@ -319,4 +319,24 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             "AnsweredInRound should be the same as round ID"
         );
     }
+
+    function testFeeAmountIsAdddedToEthReserves() public {
+        uint256 wethBalanceBefore = IERC20(addresses.getAddress("WETH"))
+            .balanceOf(addresses.getAddress("MOONWELL_WETH"));
+
+        uint256 tax = 25 gwei * multiplier;
+        vm.deal(address(this), tax);
+
+        vm.txGasPrice(50 gwei);
+        vm.fee(25 gwei);
+        wrapper.updatePriceEarly{value: tax}();
+
+        assertEq(
+            wethBalanceBefore + tax,
+            IERC20(addresses.getAddress("WETH")).balanceOf(
+                addresses.getAddress("MOONWELL_WETH")
+            ),
+            "WETH balance should be increased by tax"
+        );
+    }
 }
