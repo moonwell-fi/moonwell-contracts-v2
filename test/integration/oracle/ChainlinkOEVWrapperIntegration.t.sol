@@ -9,6 +9,7 @@ import {MarketBase} from "@test/utils/MarketBase.sol";
 import {Comptroller} from "@protocol/Comptroller.sol";
 import {MErc20Delegator} from "@protocol/MErc20Delegator.sol";
 import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {ChainlinkOracle} from "@protocol/oracles/ChainlinkOracle.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ChainlinkFeedOEVWrapper} from "@protocol/oracles/ChainlinkFeedOEVWrapper.sol";
 
@@ -338,5 +339,111 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             ),
             "WETH balance should be increased by tax"
         );
+    }
+
+    function testAllChainlinkOraclesAreSet() public view {
+        // Get all markets from the comptroller
+        MToken[] memory allMarkets = comptroller.getAllMarkets();
+
+        // Get the oracle from the comptroller
+        ChainlinkOracle oracle = ChainlinkOracle(address(comptroller.oracle()));
+
+        for (uint i = 0; i < allMarkets.length; i++) {
+            address underlying = MErc20(address(allMarkets[i])).underlying();
+
+            // Get token symbol
+            string memory symbol = IERC20(underlying).symbol();
+
+            // Try to get price - this will revert if oracle is not set
+            uint price = oracle.getUnderlyingPrice(MToken(allMarkets[i]));
+
+            // Price should not be 0
+            assertTrue(
+                price > 0,
+                string(abi.encodePacked("Oracle not set for ", symbol))
+            );
+        }
+    }
+
+    function testMultipleAccountHealthChecks() public {
+        MToken[] memory allMarkets = comptroller.getAllMarkets();
+
+        // Test 10 different accounts
+        for (uint accountId = 0; accountId < 10; accountId++) {
+            address account = address(uint160(0x1000 + accountId));
+
+            // first enter all markets
+            address[] memory markets = new address[](allMarkets.length);
+            for (uint i = 0; i < allMarkets.length; i++) {
+                markets[i] = address(allMarkets[i]);
+            }
+            vm.prank(account);
+            comptroller.enterMarkets(markets);
+
+            // Supply different amounts of each asset
+            for (uint marketId = 0; marketId < allMarkets.length; marketId++) {
+                MToken mToken = allMarkets[marketId];
+                address underlying = MErc20(address(mToken)).underlying();
+
+                // check max mint allowed
+                uint256 maxMint = marketBase.getMaxSupplyAmount(mToken);
+
+                if (maxMint == 0) {
+                    continue;
+                }
+
+                // Mint different amounts based on account and market
+                uint256 amount = 1000 *
+                    (accountId + 1) *
+                    (marketId + 1) *
+                    (10 ** IERC20(underlying).decimals());
+
+                if (amount > maxMint) {
+                    amount = maxMint;
+                }
+
+                _mintMToken(account, address(mToken), amount);
+            }
+
+            // Check account liquidity
+            (uint err, uint liquidity, uint shortfall) = comptroller
+                .getAccountLiquidity(account);
+            assertEq(err, 0, "Error getting account liquidity");
+            assertGt(liquidity, 0, "Account should have positive liquidity");
+            assertEq(shortfall, 0, "Account should have no shortfall");
+
+            // Test hypothetical liquidity for each asset
+            for (uint marketId = 0; marketId < allMarkets.length; marketId++) {
+                MToken mToken = allMarkets[marketId];
+
+                uint256 mTokenBalance = mToken.balanceOf(account);
+                if (mTokenBalance == 0) {
+                    continue;
+                }
+
+                uint redeemAmount = mTokenBalance / 2;
+
+                (err, liquidity, shortfall) = comptroller
+                    .getHypotheticalAccountLiquidity(
+                        account,
+                        address(mToken),
+                        redeemAmount,
+                        0
+                    );
+                assertEq(err, 0, "Error getting hypothetical liquidity");
+                assertGt(
+                    liquidity,
+                    0,
+                    "Account should maintain positive liquidity after hypothetical redemption"
+                );
+                assertEq(
+                    shortfall,
+                    0,
+                    "Account should have no shortfall after hypothetical redemption"
+                );
+            }
+
+            vm.stopPrank();
+        }
     }
 }
