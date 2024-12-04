@@ -121,7 +121,7 @@ contract mipx08 is HybridProposal {
             Ownable2StepUpgradeable(
                 addresses.getAddress("cbBTC_METAMORPHO_VAULT")
             ).owner(),
-            address(governor),
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
             "cbBTC_METAMORPHO_VAULT owner incorrect"
         );
     }
