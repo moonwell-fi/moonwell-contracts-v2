@@ -1,6 +1,8 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
+import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+
 import "@utils/ChainIds.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
@@ -57,6 +59,7 @@ contract mipx08 is HybridProposal {
             "Set the maximum number of live proposals to 2",
             ActionType.Moonbeam
         );
+
         _pushAction(
             addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID),
             abi.encodeWithSignature(
@@ -66,6 +69,13 @@ contract mipx08 is HybridProposal {
                 WELL_AMOUNT
             ),
             "Send 16M WELL to Morpho URD contract",
+            ActionType.Base
+        );
+
+        _pushAction(
+            addresses.getAddress("cbBTC_METAMORPHO_VAULT"),
+            abi.encodeWithSignature("acceptOwnership()"),
+            "Accept ownership of the Moonwell Frontier cbBTC Metamorpho Vault",
             ActionType.Base
         );
     }
@@ -98,6 +108,21 @@ contract mipx08 is HybridProposal {
             urdBalanceBefore + WELL_AMOUNT,
             well.balanceOf(addresses.getAddress("MOONWELL_METAMORPHO_URD")),
             "16M WELL not sent to Morpho URD"
+        );
+
+        assertEq(
+            Ownable2StepUpgradeable(
+                addresses.getAddress("cbBTC_METAMORPHO_VAULT")
+            ).pendingOwner(),
+            address(0),
+            "cbBTC_METAMORPHO_VAULT pending owner incorrect"
+        );
+        assertEq(
+            Ownable2StepUpgradeable(
+                addresses.getAddress("cbBTC_METAMORPHO_VAULT")
+            ).owner(),
+            address(governor),
+            "cbBTC_METAMORPHO_VAULT owner incorrect"
         );
     }
 }
