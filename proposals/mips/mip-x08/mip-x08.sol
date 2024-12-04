@@ -10,7 +10,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 
 contract mipx08 is HybridProposal {
-    string public constant override name = "MIP-X07";
+    string public constant override name = "MIP-X08";
 
     uint256 public constant WELL_AMOUNT = 18_000_000e18;
     uint256 public urdBalanceBefore;
