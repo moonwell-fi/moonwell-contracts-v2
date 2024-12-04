@@ -68,7 +68,7 @@ contract mipx08 is HybridProposal {
                 addresses.getAddress("MOONWELL_METAMORPHO_URD", BASE_CHAIN_ID),
                 WELL_AMOUNT
             ),
-            "Send 16M WELL to Morpho URD contract",
+            "Send 18M WELL to Morpho URD contract",
             ActionType.Base
         );
 
@@ -107,7 +107,7 @@ contract mipx08 is HybridProposal {
         vm.assertEq(
             urdBalanceBefore + WELL_AMOUNT,
             well.balanceOf(addresses.getAddress("MOONWELL_METAMORPHO_URD")),
-            "16M WELL not sent to Morpho URD"
+            "18M WELL not sent to Morpho URD"
         );
 
         assertEq(
