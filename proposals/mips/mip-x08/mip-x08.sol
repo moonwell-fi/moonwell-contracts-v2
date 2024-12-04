@@ -12,7 +12,7 @@ import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposa
 contract mipx08 is HybridProposal {
     string public constant override name = "MIP-X07";
 
-    uint256 public constant WELL_AMOUNT = 16_000_000e18;
+    uint256 public constant WELL_AMOUNT = 18_000_000e18;
     uint256 public urdBalanceBefore;
 
     constructor() {
