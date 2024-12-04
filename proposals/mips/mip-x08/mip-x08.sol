@@ -73,7 +73,7 @@ contract mipx08 is HybridProposal {
         );
 
         _pushAction(
-            addresses.getAddress("cbBTC_METAMORPHO_VAULT"),
+            addresses.getAddress("cbBTC_METAMORPHO_VAULT", BASE_CHAIN_ID),
             abi.encodeWithSignature("acceptOwnership()"),
             "Accept ownership of the Moonwell Frontier cbBTC Metamorpho Vault",
             ActionType.Base
