@@ -1,6 +1,8 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
+import {Ownable2StepUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+
 import "@utils/ChainIds.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MultichainGovernor} from "@protocol/governance/multichain/MultichainGovernor.sol";
@@ -8,9 +10,9 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {HybridProposal, ActionType} from "@proposals/proposalTypes/HybridProposal.sol";
 
 contract mipx08 is HybridProposal {
-    string public constant override name = "MIP-X07";
+    string public constant override name = "MIP-X08";
 
-    uint256 public constant WELL_AMOUNT = 16_000_000e18;
+    uint256 public constant WELL_AMOUNT = 18_000_000e18;
     uint256 public urdBalanceBefore;
 
     constructor() {
@@ -57,6 +59,7 @@ contract mipx08 is HybridProposal {
             "Set the maximum number of live proposals to 2",
             ActionType.Moonbeam
         );
+
         _pushAction(
             addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID),
             abi.encodeWithSignature(
@@ -65,7 +68,14 @@ contract mipx08 is HybridProposal {
                 addresses.getAddress("MOONWELL_METAMORPHO_URD", BASE_CHAIN_ID),
                 WELL_AMOUNT
             ),
-            "Send 16M WELL to Morpho URD contract",
+            "Send 18M WELL to Morpho URD contract",
+            ActionType.Base
+        );
+
+        _pushAction(
+            addresses.getAddress("cbBTC_METAMORPHO_VAULT", BASE_CHAIN_ID),
+            abi.encodeWithSignature("acceptOwnership()"),
+            "Accept ownership of the Moonwell Frontier cbBTC Metamorpho Vault",
             ActionType.Base
         );
     }
@@ -97,7 +107,22 @@ contract mipx08 is HybridProposal {
         vm.assertEq(
             urdBalanceBefore + WELL_AMOUNT,
             well.balanceOf(addresses.getAddress("MOONWELL_METAMORPHO_URD")),
-            "16M WELL not sent to Morpho URD"
+            "18M WELL not sent to Morpho URD"
+        );
+
+        assertEq(
+            Ownable2StepUpgradeable(
+                addresses.getAddress("cbBTC_METAMORPHO_VAULT")
+            ).pendingOwner(),
+            address(0),
+            "cbBTC_METAMORPHO_VAULT pending owner incorrect"
+        );
+        assertEq(
+            Ownable2StepUpgradeable(
+                addresses.getAddress("cbBTC_METAMORPHO_VAULT")
+            ).owner(),
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
+            "cbBTC_METAMORPHO_VAULT owner incorrect"
         );
     }
 }
