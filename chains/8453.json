@@ -260,6 +260,11 @@
         "isContract": true
     },
     {
+        "addr": "0x22aD8a160e4785223cD03A86d02c3ccc2838E9FF",
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_MIP_X07",
+        "isContract": true
+    },
+    {
         "addr": "0xfC7b55cc7C5BD3aE89aC679c7250AB30754C5cC5",
         "name": "JUMP_RATE_IRM_MOONWELL_DAI_MIP_B14",
         "isContract": true
@@ -680,13 +685,28 @@
         "name": "MORPHO_PUBLIC_ALLOCATOR"
     },
     {
-        "addr": "0xD791292655A1d382FcC1a6Cb9171476cf91F2caa",
+        "addr": "0x996a5b8d983FA76A1555730E01c6117D90A4E6a3",
         "name": "CYPHER_EXECUTOR",
         "isContract": false
     },
     {
-        "addr": "0xD791292655A1d382FcC1a6Cb9171476cf91F2caa",
+        "addr": "0x3cb7367aC1E6a439dA1f1717f8055f02E3C9d56e",
         "name": "CYPHER_BENEFICIARY",
         "isContract": false
+    },
+    {
+        "addr": "0xDE9255FB1A82dAAaCEFCE845dAdAf6635734FC58",
+        "name": "CYPHER_ADMIN",
+        "isContract": true
+    },
+    {
+        "addr": "0x9E3ca32B18316f022fdFae503edA7E788e112AC6",
+        "isContract": true,
+        "name": "CYPHER_AUTO_LOAD"
+    },
+    {
+        "addr": "0xF08CEF2EE2e5BE584a581209637B02637F312072",
+        "isContract": true,
+        "name": "CYPHER_ERC4626_RATE_LIMITED_ALLOWANCE"
     }
 ]

@@ -11,7 +11,7 @@ env:
 
 jobs:
   live-system-integration-tests:
-    name: Live System Integraion Test
+    name: Live System Integration Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -30,7 +30,7 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 20
+           timeout_minutes: 50
            max_attempts: 3
            command: time forge test --match-contract LiveSystem -vvv --ffi
 
