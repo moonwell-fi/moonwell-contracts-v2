@@ -467,7 +467,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         }
     }
 
-    function testUpdatePriceEarlyChainlinkPriceIsZero() public {
+    function testUpdatePriceEarlyRevertOnChainlinkPriceIsZero() public {
         vm.mockCall(
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(
@@ -475,11 +475,18 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             ),
             abi.encode(uint80(1), 0, 0, 0, uint80(1))
         );
+
+        uint256 tax = (50 gwei - 25 gwei) * multiplier; // (gasPrice - baseFee) * multiplier
+        vm.deal(address(this), tax);
+
+        vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
+        vm.fee(25 gwei); // Set base fee to 25 gwei
+
         vm.expectRevert("Chainlink price cannot be lower than 0");
-        wrapper.updatePriceEarly();
+        wrapper.updatePriceEarly{value: tax}();
     }
 
-    function testRevertOnIncompleteRoundState() public {
+    function testUpdatePriceEearlyRevertOnIncompleteRoundState() public {
         vm.mockCall(
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(
@@ -494,11 +501,16 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             )
         );
 
+        uint256 tax = (50 gwei - 25 gwei) * multiplier; // (gasPrice - baseFee) * multiplier
+        vm.deal(address(this), tax);
+        vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
+        vm.fee(25 gwei); // Set base fee to 25 gwei
+
         vm.expectRevert("Round is in incompleted state");
-        wrapper.latestRoundData();
+        wrapper.updatePriceEarly{value: tax}();
     }
 
-    function testRevertOnStalePriceData() public {
+    function testUpdatePriceEarlyRevertOnStalePriceData() public {
         vm.mockCall(
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(
@@ -513,7 +525,12 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             )
         );
 
+        uint256 tax = (50 gwei - 25 gwei) * multiplier; // (gasPrice - baseFee) * multiplier
+        vm.deal(address(this), tax);
+        vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
+        vm.fee(25 gwei); // Set base fee to 25 gwei
+
         vm.expectRevert("Stale price");
-        wrapper.latestRoundData();
+        wrapper.updatePriceEarly{value: tax}();
     }
 }
