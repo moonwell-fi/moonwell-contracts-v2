@@ -466,4 +466,54 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             vm.stopPrank();
         }
     }
+
+    function testUpdatePriceEarlyChainlinkPriceIsZero() public {
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(uint80(1), 0, 0, 0, uint80(1))
+        );
+        vm.expectRevert("Chainlink price cannot be lower than 0");
+        wrapper.updatePriceEarly();
+    }
+
+    function testRevertOnIncompleteRoundState() public {
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                uint80(1), // roundId
+                int256(3_000e8), // answer
+                uint256(0), // startedAt
+                uint256(0), // updatedAt - set to 0 to simulate incomplete state
+                uint80(1) // answeredInRound
+            )
+        );
+
+        vm.expectRevert("Round is in incompleted state");
+        wrapper.latestRoundData();
+    }
+
+    function testRevertOnStalePriceData() public {
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                uint80(2), // roundId
+                int256(3_000e8), // answer
+                uint256(0), // startedAt
+                uint256(block.timestamp), // updatedAt
+                uint80(1) // answeredInRound - less than roundId to simulate stale price
+            )
+        );
+
+        vm.expectRevert("Stale price");
+        wrapper.latestRoundData();
+    }
 }
