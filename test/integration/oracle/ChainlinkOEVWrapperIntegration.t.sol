@@ -466,4 +466,143 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             vm.stopPrank();
         }
     }
+
+    function testUpdatePriceEarlyRevertOnChainlinkPriceIsZero() public {
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                uint80(1), // roundId
+                int256(0), // answer
+                uint256(0), // startedAt
+                uint256(block.timestamp), // updatedAt
+                uint80(1) // answeredInRound
+            )
+        );
+
+        uint256 tax = (50 gwei - 25 gwei) * multiplier; // (gasPrice - baseFee) * multiplier
+        vm.deal(address(this), tax);
+
+        vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
+        vm.fee(25 gwei); // Set base fee to 25 gwei
+
+        vm.expectRevert("Chainlink price cannot be lower than 0");
+        wrapper.updatePriceEarly{value: tax}();
+    }
+
+    function testUpdatePriceEearlyRevertOnIncompleteRoundState() public {
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                uint80(1), // roundId
+                int256(3_000e8), // answer
+                uint256(0), // startedAt
+                uint256(0), // updatedAt - set to 0 to simulate incomplete state
+                uint80(1) // answeredInRound
+            )
+        );
+
+        uint256 tax = (50 gwei - 25 gwei) * multiplier; // (gasPrice - baseFee) * multiplier
+        vm.deal(address(this), tax);
+        vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
+        vm.fee(25 gwei); // Set base fee to 25 gwei
+
+        vm.expectRevert("Round is in incompleted state");
+        wrapper.updatePriceEarly{value: tax}();
+    }
+
+    function testUpdatePriceEarlyRevertOnStalePriceData() public {
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                uint80(2), // roundId
+                int256(3_000e8), // answer
+                uint256(0), // startedAt
+                uint256(block.timestamp), // updatedAt
+                uint80(1) // answeredInRound - less than roundId to simulate stale price
+            )
+        );
+
+        uint256 tax = (50 gwei - 25 gwei) * multiplier; // (gasPrice - baseFee) * multiplier
+        vm.deal(address(this), tax);
+        vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
+        vm.fee(25 gwei); // Set base fee to 25 gwei
+
+        vm.expectRevert("Stale price");
+        wrapper.updatePriceEarly{value: tax}();
+    }
+
+    function testLatestRoundDataRevertOnChainlinkPriceIsZero() public {
+        // Ensure we're outside the early update window to force fetching from original feed
+        vm.warp(block.timestamp + wrapper.earlyUpdateWindow() + 1);
+
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                uint80(1), // roundId
+                int256(0), // answer
+                uint256(0), // startedAt
+                uint256(block.timestamp), // updatedAt
+                uint80(1) // answeredInRound
+            )
+        );
+
+        vm.expectRevert("Chainlink price cannot be lower than 0");
+        wrapper.latestRoundData();
+    }
+
+    function testLatestRoundDataRevertOnIncompleteRoundState() public {
+        // Ensure we're outside the early update window to force fetching from original feed
+        vm.warp(block.timestamp + wrapper.earlyUpdateWindow() + 1);
+
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                uint80(1), // roundId
+                int256(3_000e8), // answer
+                uint256(0), // startedAt
+                uint256(0), // updatedAt - set to 0 to simulate incomplete state
+                uint80(1) // answeredInRound
+            )
+        );
+
+        vm.expectRevert("Round is in incompleted state");
+        wrapper.latestRoundData();
+    }
+
+    function testLatestRoundDataRevertOnStalePriceData() public {
+        // Ensure we're outside the early update window to force fetching from original feed
+        vm.warp(block.timestamp + wrapper.earlyUpdateWindow() + 1);
+
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                uint80(2), // roundId
+                int256(3_000e8), // answer
+                uint256(0), // startedAt
+                uint256(block.timestamp), // updatedAt
+                uint80(1) // answeredInRound - less than roundId to simulate stale price
+            )
+        );
+
+        vm.expectRevert("Stale price");
+        wrapper.latestRoundData();
+    }
 }

@@ -101,7 +101,16 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         )
     {
         if (block.timestamp >= cachedTimestamp + earlyUpdateWindow) {
-            return originalFeed.latestRoundData();
+            (
+                roundId,
+                answer,
+                startedAt,
+                updatedAt,
+                answeredInRound
+            ) = originalFeed.latestRoundData();
+            require(answer > 0, "Chainlink price cannot be lower than 0");
+            require(updatedAt != 0, "Round is in incompleted state");
+            require(answeredInRound >= roundId, "Stale price");
         } else {
             return (0, cachedPrice, 0, cachedTimestamp, 0);
         }
@@ -118,7 +127,17 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             block.timestamp > cachedTimestamp,
             "ChainlinkOEVWrapper: New timestamp must be greater than current"
         );
-        (, int256 price, , , ) = originalFeed.latestRoundData();
+        (
+            uint80 roundId,
+            int256 price,
+            ,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        ) = originalFeed.latestRoundData();
+
+        require(price > 0, "Chainlink price cannot be lower than 0");
+        require(updatedAt != 0, "Round is in incompleted state");
+        require(answeredInRound >= roundId, "Stale price");
 
         cachedPrice = price;
         cachedTimestamp = block.timestamp;
