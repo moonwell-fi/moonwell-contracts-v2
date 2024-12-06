@@ -74,5 +74,7 @@ contract PostProposalCheck is LiveProposalCheck {
         if (vm.activeFork() != MOONBEAM_FORK_ID) {
             vm.selectFork(MOONBEAM_FORK_ID);
         }
+
+        addresses.removeAllRestrictions();
     }
 }
