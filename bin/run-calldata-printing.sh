@@ -3,7 +3,7 @@
 
 touch output.txt
 
-forge script script/CalldataPrinting.s.sol -vv --ffi --block-gas-limit "18446744073709551615" --gas-limit "18446744073709551615" > output.txt
+forge script script/CalldataPrinting.s.sol -vv --ffi --block-gas-limit "18446744073709551615"  > output.txt
 
 if grep -q "Could not instantiate forked environment with fork url" output.txt; then
     echo "Error forking RPC. Please try again"
