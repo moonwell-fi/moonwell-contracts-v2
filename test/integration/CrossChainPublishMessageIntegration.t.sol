@@ -66,6 +66,7 @@ contract CrossChainPublishMessageTest is Test, PostProposalCheck {
                 return;
             }
 
+            addresses.removeAllRestrictions();
             // At this point the primaryForkId should not be moonbeam
             vm.selectFork(uint256(proposal.primaryForkId()));
             proposal.build(addresses);

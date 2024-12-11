@@ -65,6 +65,11 @@
         "name": "EURC_METAMORPHO_FEE_SPLITTER"
     },
     {
+        "addr": "0x543257eF2161176D7C8cD90BA65C2d4CaEF5a796",
+        "isContract": true,
+        "name": "cbBTC_METAMORPHO_VAULT"
+    },
+    {
         "addr": "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca",
         "isContract": true,
         "name": "USDC_METAMORPHO_VAULT"
