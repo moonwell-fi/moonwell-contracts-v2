@@ -360,6 +360,16 @@
         "isContract": true
     },
     {
+        "addr": "0x1E6c22AAA11F507af12034A5Dc4126A6A25DC8d2",
+        "name": "CHAINLINK_LBTC_MARKET",
+        "isContract": true
+    },
+    {
+        "addr": "0x5C4c8d6f6Bf79B718F3e8399AaBdFEd01cB7e48f",
+        "name": "REDSTONE_LBTC_BTC",
+        "isContract": true
+    },
+    {
         "addr": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
         "name": "wstETH",
         "isContract": true
