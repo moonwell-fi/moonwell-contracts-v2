@@ -47,6 +47,8 @@ contract mipx08 is HybridProposal {
         urdBalanceBefore = IERC20(
             addresses.getAddress("xWELL_PROXY", BASE_CHAIN_ID)
         ).balanceOf(addresses.getAddress("MOONWELL_METAMORPHO_URD"));
+
+        vm.selectFork(primaryForkId());
     }
 
     function build(Addresses addresses) public override {
