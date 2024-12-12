@@ -86,6 +86,48 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
         assertEq(oracle.owner(), addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
+    function testInvalidBounds() public {
+        // Store addresses in variables for better readability
+        address redStoneLbtcBtc = addresses.getAddress("REDSTONE_LBTC_BTC");
+        address chainlinkBtcUsd = addresses.getAddress("CHAINLINK_BTC_USD");
+        address chainlinkLbtcMarket = addresses.getAddress(
+            "CHAINLINK_LBTC_MARKET"
+        );
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        address moonwellWeth = addresses.getAddress("MOONWELL_WETH");
+        address weth = addresses.getAddress("WETH");
+
+        // Test equal bounds
+        vm.expectRevert("ChainlinkBoundedCompositeOracle: Invalid bounds");
+        new ChainlinkBoundedCompositeOracle(
+            redStoneLbtcBtc,
+            chainlinkBtcUsd,
+            chainlinkLbtcMarket,
+            1e18, // lower bound equal to upper bound
+            1e18, // upper bound
+            30 seconds, // early update window
+            99, // fee multiplier
+            temporalGovernor,
+            moonwellWeth,
+            weth
+        );
+
+        // Test lower bound greater than upper bound
+        vm.expectRevert("ChainlinkBoundedCompositeOracle: Invalid bounds");
+        new ChainlinkBoundedCompositeOracle(
+            redStoneLbtcBtc,
+            chainlinkBtcUsd,
+            chainlinkLbtcMarket,
+            1.1e18, // lower bound greater than upper bound
+            1e18, // upper bound
+            30 seconds, // early update window
+            99, // fee multiplier
+            temporalGovernor,
+            moonwellWeth,
+            weth
+        );
+    }
+
     function testLatestRoundDataWithinBounds() public {
         // Mock primary oracle response within bounds
         vm.mockCall(
