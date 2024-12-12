@@ -22,7 +22,7 @@ contract DeployChainlinkBoundedCompositeOracle is Script {
             addresses.getAddress("CHAINLINK_BTC_USD"),
             addresses.getAddress("CHAINLINK_LBTC_MARKET"),
             9.9e17, // lowerBound: 0.99
-            1.05e17, // upperBound: 1.05
+            1.05e18, // upperBound: 1.05
             30 seconds,
             99,
             addresses.getAddress("TEMPORAL_GOVERNOR"),

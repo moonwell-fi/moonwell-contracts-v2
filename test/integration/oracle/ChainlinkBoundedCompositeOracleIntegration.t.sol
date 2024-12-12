@@ -10,6 +10,7 @@ import {ChainlinkBoundedCompositeOracle} from "@protocol/oracles/ChainlinkBounde
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {DeployChainlinkBoundedCompositeOracle} from "@script/DeployChainlinkBoundedCompositeOracle.sol";
 
+/// TODO remove post proposal check as this contract does not fit into the broader system
 contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
     event BoundsUpdated(
         int256 oldLower,
@@ -42,8 +43,10 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
     function setUp() public override {
         uint256 primaryForkId = vm.envUint("PRIMARY_FORK_ID");
         super.setUp();
-        vm.selectFork(primaryForkId);
 
+        vm.selectFork(primaryForkId);
+        vm.warp(block.timestamp - 1 days);
+        console.log("block timestamp: ", block.timestamp);
         deployer = new DeployChainlinkBoundedCompositeOracle();
         oracle = deployer.deployChainlinkBoundedCompositeOracle(addresses);
     }
@@ -65,7 +68,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
 
         // Bounds
         assertEq(oracle.lowerBound(), 9.9e17);
-        assertEq(oracle.upperBound(), 1.05e17);
+        assertEq(oracle.upperBound(), 1.05e18);
 
         // Early update config
         assertEq(oracle.earlyUpdateWindow(), 30 seconds);
@@ -90,7 +93,13 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
             abi.encodeWithSelector(
                 AggregatorV3Interface.latestRoundData.selector
             ),
-            abi.encode(uint80(1), 1e18, uint256(0), block.timestamp, uint80(1))
+            abi.encode(
+                uint80(1),
+                1.005e8,
+                uint256(0),
+                block.timestamp,
+                uint80(1)
+            )
         );
 
         // Mock BTC/USD price
@@ -116,7 +125,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
             uint80 answeredInRound
         ) = oracle.latestRoundData();
 
-        assertEq(answer, 50_000e18, "Price should be 50,000 USD");
+        assertEq(answer, 50_250e18, "Price should be 50,250 USD");
         assertEq(roundId, 0, "Round ID should be 0");
         assertEq(startedAt, 0, "Started at should be 0");
         assertEq(
@@ -184,7 +193,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectEmit(address(oracle));
-        emit BoundsUpdated(oldLower, oldUpper, newLower, newUpper);
+        emit BoundsUpdated(oldLower, newLower, oldUpper, newUpper);
         oracle.setBounds(newLower, newUpper);
 
         assertEq(oracle.lowerBound(), newLower);
@@ -195,9 +204,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
         vm.startPrank(addresses.getAddress("TEMPORAL_GOVERNOR"));
 
         // Test lower bound greater than upper bound
-        vm.expectRevert(
-            "ChainlinkBoundedCompositeOracle: Lower bound must be less than upper bound"
-        );
+        vm.expectRevert("ChainlinkBoundedCompositeOracle: Invalid bounds");
         oracle.setBounds(12e17, 11e17);
 
         vm.stopPrank();
