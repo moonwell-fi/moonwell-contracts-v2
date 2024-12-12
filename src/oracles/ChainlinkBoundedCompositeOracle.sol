@@ -119,6 +119,11 @@ contract ChainlinkBoundedCompositeOracle is AggregatorV3Interface, Ownable {
         btcChainlinkOracle = AggregatorV3Interface(_secondaryOracle);
         fallbackLBTCOracle = AggregatorV3Interface(_fallbackOracle);
 
+        require(
+            _lowerBound < _upperBound,
+            "ChainlinkBoundedCompositeOracle: Invalid bounds"
+        );
+
         lowerBound = _lowerBound;
         upperBound = _upperBound;
 
