@@ -143,12 +143,21 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
             abi.encodeWithSelector(
                 AggregatorV3Interface.latestRoundData.selector
             ),
-            abi.encode(uint80(1), 12e17, uint256(0), block.timestamp, uint80(1))
+            abi.encode(uint80(1), 1.2e8, uint256(0), block.timestamp, uint80(1))
         );
 
         // Mock fallback oracle response
         vm.mockCall(
             address(oracle.fallbackLBTCOracle()),
+            abi.encodeWithSelector(
+                AggregatorV3Interface.latestRoundData.selector
+            ),
+            abi.encode(uint80(1), 1.1e8, uint256(0), block.timestamp, uint80(1))
+        );
+
+        // Mock BTC/USD price
+        vm.mockCall(
+            address(oracle.btcChainlinkOracle()),
             abi.encodeWithSelector(
                 AggregatorV3Interface.latestRoundData.selector
             ),
@@ -170,7 +179,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
         ) = oracle.latestRoundData();
 
         assertEq(roundId, 0, "Round ID should be 0");
-        assertEq(answer, 50_000e18, "Should use fallback price");
+        assertEq(answer, 55_000e18, "Should use fallback price");
         assertEq(startedAt, 0, "Started at should be 0");
         assertEq(
             updatedAt,
@@ -284,7 +293,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
             abi.encodeWithSelector(
                 AggregatorV3Interface.latestRoundData.selector
             ),
-            abi.encode(uint80(1), 8e17, uint256(0), block.timestamp, uint80(1))
+            abi.encode(uint80(1), 8e7, uint256(0), block.timestamp, uint80(1))
         );
 
         // Mock fallback oracle response
@@ -295,7 +304,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
             ),
             abi.encode(
                 uint80(1),
-                50_000e8,
+                0.75e8,
                 uint256(0),
                 block.timestamp,
                 uint80(1)
@@ -327,7 +336,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
 
         // Assert all returned values
         assertEq(roundId, 0, "Round ID should be 0");
-        assertEq(answer, 50_000e18, "Should use fallback price");
+        assertEq(answer, 37_500e18, "Should use fallback price");
         assertEq(startedAt, 0, "Started at should be 0");
         assertEq(
             updatedAt,
