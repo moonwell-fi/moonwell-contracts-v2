@@ -1,17 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
+
 import "@forge-std/Test.sol";
+
+import "@utils/ChainIds.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
-import {PostProposalCheck} from "@test/integration/PostProposalCheck.sol";
+import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ChainlinkBoundedCompositeOracle} from "@protocol/oracles/ChainlinkBoundedCompositeOracle.sol";
-import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 import {DeployChainlinkBoundedCompositeOracle} from "@script/DeployChainlinkBoundedCompositeOracle.sol";
 
-/// TODO remove post proposal check as this contract does not fit into the broader system
-contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
+contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
+    using ChainIds for uint256;
+
+    /// @notice addresses contract
+    Addresses public addresses;
+
     event BoundsUpdated(
         int256 oldLower,
         int256 newLower,
@@ -40,13 +47,13 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
     ChainlinkBoundedCompositeOracle public oracle;
     DeployChainlinkBoundedCompositeOracle public deployer;
 
-    function setUp() public override {
-        uint256 primaryForkId = vm.envUint("PRIMARY_FORK_ID");
-        super.setUp();
+    function setUp() public {
+        MOONBEAM_FORK_ID.createForksAndSelect();
 
-        vm.selectFork(primaryForkId);
-        vm.warp(block.timestamp - 1 days);
-        console.log("block timestamp: ", block.timestamp);
+        vm.selectFork(BASE_FORK_ID);
+
+        addresses = new Addresses();
+
         deployer = new DeployChainlinkBoundedCompositeOracle();
         oracle = deployer.deployChainlinkBoundedCompositeOracle(addresses);
     }
@@ -58,10 +65,6 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
             addresses.getAddress("REDSTONE_LBTC_BTC")
         );
         assertEq(
-            address(oracle.btcChainlinkOracle()),
-            addresses.getAddress("CHAINLINK_BTC_USD")
-        );
-        assertEq(
             address(oracle.fallbackLBTCOracle()),
             addresses.getAddress("CHAINLINK_LBTC_MARKET")
         );
@@ -69,17 +72,6 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
         // Bounds
         assertEq(oracle.lowerBound(), 9.9e17);
         assertEq(oracle.upperBound(), 1.05e18);
-
-        // Early update config
-        assertEq(oracle.earlyUpdateWindow(), 30 seconds);
-        assertEq(oracle.feeMultiplier(), 99);
-
-        // Protocol addresses
-        assertEq(address(oracle.WETH()), addresses.getAddress("WETH"));
-        assertEq(
-            address(oracle.WETHMarket()),
-            addresses.getAddress("MOONWELL_WETH")
-        );
 
         // Other config
         assertEq(oracle.decimals(), 18);
@@ -89,7 +81,6 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
     function testInvalidBounds() public {
         // Store addresses in variables for better readability
         address redStoneLbtcBtc = addresses.getAddress("REDSTONE_LBTC_BTC");
-        address chainlinkBtcUsd = addresses.getAddress("CHAINLINK_BTC_USD");
         address chainlinkLbtcMarket = addresses.getAddress(
             "CHAINLINK_LBTC_MARKET"
         );
@@ -101,30 +92,24 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
         vm.expectRevert("ChainlinkBoundedCompositeOracle: Invalid bounds");
         new ChainlinkBoundedCompositeOracle(
             redStoneLbtcBtc,
-            chainlinkBtcUsd,
             chainlinkLbtcMarket,
             1e18, // lower bound equal to upper bound
             1e18, // upper bound
             30 seconds, // early update window
             99, // fee multiplier
-            temporalGovernor,
-            moonwellWeth,
-            weth
+            temporalGovernor
         );
 
         // Test lower bound greater than upper bound
         vm.expectRevert("ChainlinkBoundedCompositeOracle: Invalid bounds");
         new ChainlinkBoundedCompositeOracle(
             redStoneLbtcBtc,
-            chainlinkBtcUsd,
             chainlinkLbtcMarket,
             1.1e18, // lower bound greater than upper bound
             1e18, // upper bound
             30 seconds, // early update window
             99, // fee multiplier
-            temporalGovernor,
-            moonwellWeth,
-            weth
+            temporalGovernor
         );
     }
 
@@ -144,21 +129,6 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
             )
         );
 
-        // Mock BTC/USD price
-        vm.mockCall(
-            address(oracle.btcChainlinkOracle()),
-            abi.encodeWithSelector(
-                AggregatorV3Interface.latestRoundData.selector
-            ),
-            abi.encode(
-                uint80(1),
-                50_000e8,
-                uint256(0),
-                block.timestamp,
-                uint80(1)
-            )
-        );
-
         (
             uint80 roundId,
             int256 answer,
@@ -167,7 +137,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
             uint80 answeredInRound
         ) = oracle.latestRoundData();
 
-        assertEq(answer, 50_250e18, "Price should be 50,250 USD");
+        assertEq(answer, 1.005e18, "Price should be 1.005 LBTC/BTC");
         assertEq(roundId, 0, "Round ID should be 0");
         assertEq(startedAt, 0, "Started at should be 0");
         assertEq(
@@ -197,21 +167,6 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
             abi.encode(uint80(1), 1.1e8, uint256(0), block.timestamp, uint80(1))
         );
 
-        // Mock BTC/USD price
-        vm.mockCall(
-            address(oracle.btcChainlinkOracle()),
-            abi.encodeWithSelector(
-                AggregatorV3Interface.latestRoundData.selector
-            ),
-            abi.encode(
-                uint80(1),
-                50_000e8,
-                uint256(0),
-                block.timestamp,
-                uint80(1)
-            )
-        );
-
         (
             uint80 roundId,
             int256 answer,
@@ -221,7 +176,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
         ) = oracle.latestRoundData();
 
         assertEq(roundId, 0, "Round ID should be 0");
-        assertEq(answer, 55_000e18, "Should use fallback price");
+        assertEq(answer, 1.1e18, "Should use fallback price");
         assertEq(startedAt, 0, "Started at should be 0");
         assertEq(
             updatedAt,
@@ -338,7 +293,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
             abi.encode(uint80(1), 8e7, uint256(0), block.timestamp, uint80(1))
         );
 
-        // Mock fallback oracle response
+        // Mock fallback oracle response to 0.75
         vm.mockCall(
             address(oracle.fallbackLBTCOracle()),
             abi.encodeWithSelector(
@@ -347,21 +302,6 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
             abi.encode(
                 uint80(1),
                 0.75e8,
-                uint256(0),
-                block.timestamp,
-                uint80(1)
-            )
-        );
-
-        // Mock BTC/USD price
-        vm.mockCall(
-            address(oracle.btcChainlinkOracle()),
-            abi.encodeWithSelector(
-                AggregatorV3Interface.latestRoundData.selector
-            ),
-            abi.encode(
-                uint80(1),
-                50_000e8,
                 uint256(0),
                 block.timestamp,
                 uint80(1)
@@ -378,7 +318,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
 
         // Assert all returned values
         assertEq(roundId, 0, "Round ID should be 0");
-        assertEq(answer, 37_500e18, "Should use fallback price");
+        assertEq(answer, 0.75e18, "Should use fallback price");
         assertEq(startedAt, 0, "Started at should be 0");
         assertEq(
             updatedAt,
@@ -403,24 +343,6 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
             address(oracle.primaryLBTCOracle()),
             newOracle,
             "Primary oracle not updated"
-        );
-    }
-
-    function testSetBTCOracle() public {
-        address newOracle = makeAddr("newBTCOracle");
-        // Mock contract check
-        vm.etch(newOracle, "dummy code");
-        address oldBTCOracle = address(oracle.btcChainlinkOracle());
-
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vm.expectEmit(address(oracle));
-        emit BTCOracleUpdated(oldBTCOracle, newOracle);
-        oracle.setBTCOracle(newOracle);
-
-        assertEq(
-            address(oracle.btcChainlinkOracle()),
-            newOracle,
-            "BTC oracle not updated"
         );
     }
 
@@ -452,16 +374,6 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
         oracle.setPrimaryOracle(nonContract);
     }
 
-    function testSetBTCOracleRevertNonContract() public {
-        address nonContract = makeAddr("nonContract");
-
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vm.expectRevert(
-            "ChainlinkBoundedCompositeOracle: BTC oracle must be a contract"
-        );
-        oracle.setBTCOracle(nonContract);
-    }
-
     function testSetFallbackOracleRevertNonContract() public {
         address nonContract = makeAddr("nonContract");
 
@@ -480,53 +392,11 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is PostProposalCheck {
         oracle.setPrimaryOracle(newOracle);
     }
 
-    function testSetBTCOracleRevertNonOwner() public {
-        address newOracle = makeAddr("newOracle");
-        vm.etch(newOracle, "dummy code");
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        oracle.setBTCOracle(newOracle);
-    }
-
     function testSetFallbackOracleRevertNonOwner() public {
         address newOracle = makeAddr("newOracle");
         vm.etch(newOracle, "dummy code");
 
         vm.expectRevert("Ownable: caller is not the owner");
         oracle.setFallbackOracle(newOracle);
-    }
-
-    function testSetFeeMultiplierRevertNonOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
-        oracle.setFeeMultiplier(100);
-    }
-
-    function testSetEarlyUpdateWindowRevertNonOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
-        oracle.setEarlyUpdateWindow(1 hours);
-    }
-
-    function testSetFeeMultiplier() public {
-        uint16 newMultiplier = 100;
-        uint16 oldMultiplier = oracle.feeMultiplier();
-
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vm.expectEmit(address(oracle));
-        emit FeeMultiplierUpdated(oldMultiplier, newMultiplier);
-        oracle.setFeeMultiplier(newMultiplier);
-
-        assertEq(oracle.feeMultiplier(), newMultiplier);
-    }
-
-    function testSetEarlyUpdateWindow() public {
-        uint256 newWindow = 1 hours;
-        uint256 oldWindow = oracle.earlyUpdateWindow();
-
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vm.expectEmit(address(oracle));
-        emit EarlyUpdateWindowUpdated(oldWindow, newWindow);
-        oracle.setEarlyUpdateWindow(newWindow);
-
-        assertEq(oracle.earlyUpdateWindow(), newWindow);
     }
 }
