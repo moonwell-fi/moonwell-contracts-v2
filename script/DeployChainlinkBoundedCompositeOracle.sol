@@ -20,8 +20,8 @@ contract DeployChainlinkBoundedCompositeOracle is Script {
         oracle = new ChainlinkBoundedCompositeOracle(
             addresses.getAddress("REDSTONE_LBTC_BTC"), // primary oracle
             addresses.getAddress("CHAINLINK_LBTC_MARKET"), // secondary oracle
-            9.9e17, // lowerBound: 0.99
-            1.05e18, // upperBound: 1.05
+            9.9e7, // lowerBound: 0.99
+            1.05e8, // upperBound: 1.05
             addresses.getAddress("TEMPORAL_GOVERNOR")
         );
 

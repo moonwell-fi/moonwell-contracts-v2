@@ -12,7 +12,7 @@ import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 /// - If within bounds: Combines it with a second price feed
 /// - If out of bounds: Falls back to a backup price feed
 /// @dev Includes OEV (Oracle Extractable Value) functionality for early updates
-contract ChainlinkBoundedCompositeOracle is AggregatorV3Interface, Ownable {
+contract ChainlinkBoundedCompositeOracle is Ownable {
     using Address for address;
     using SafeCast for *;
 
@@ -24,23 +24,11 @@ contract ChainlinkBoundedCompositeOracle is AggregatorV3Interface, Ownable {
         int256 newUpper
     );
 
-    /// @notice Emitted when the fee multiplier is updated
-    event FeeMultiplierUpdated(
-        uint16 oldFeeMultiplier,
-        uint16 newFeeMultiplier
-    );
-
-    /// @notice Emitted when the early update window is updated
-    event EarlyUpdateWindowUpdated(uint256 oldWindow, uint256 newWindow);
-
     /// @notice Emitted when primary oracle address is updated
     event PrimaryOracleUpdated(
         address oldPrimaryOracle,
         address newPrimaryOracle
     );
-
-    /// @notice Emitted when BTC oracle address is updated
-    event BTCOracleUpdated(address oldBTCOracle, address newBTCOracle);
 
     /// @notice Emitted when fallback oracle address is updated
     event FallbackOracleUpdated(
@@ -61,7 +49,7 @@ contract ChainlinkBoundedCompositeOracle is AggregatorV3Interface, Ownable {
     int256 public upperBound;
 
     /// @notice Scaling factor for price calculations
-    uint8 public constant decimals = 18;
+    uint8 public constant decimals = 8;
 
     /// @notice constructor to initialize the oracle with price feeds and configuration
     /// @param _primaryOracle The address of the primary oracle to check bounds against
@@ -100,7 +88,6 @@ contract ChainlinkBoundedCompositeOracle is AggregatorV3Interface, Ownable {
     function latestRoundData()
         external
         view
-        override
         returns (
             uint80 roundId,
             int256 answer,
@@ -132,30 +119,6 @@ contract ChainlinkBoundedCompositeOracle is AggregatorV3Interface, Ownable {
         }
 
         return (0, primaryPrice, 0, primaryTimestamp, 0);
-    }
-
-    /// @notice Get data about a specific round from the fallback oracle
-    /// @param _roundId The round ID to retrieve data for
-    /// @return roundId The round ID
-    /// @return answer The price
-    /// @return startedAt The timestamp when the round started
-    /// @return updatedAt The timestamp when the round was updated
-    /// @return answeredInRound The round ID in which the answer was computed
-    function getRoundData(
-        uint80 _roundId
-    )
-        external
-        view
-        override
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
-    {
-        return fallbackLBTCOracle.getRoundData(_roundId);
     }
 
     /// @notice Set new primary LBTC/BTC oracle address
@@ -204,13 +167,13 @@ contract ChainlinkBoundedCompositeOracle is AggregatorV3Interface, Ownable {
 
     /// @notice Get the description of this oracle
     /// @return A string describing this oracle
-    function description() external pure override returns (string memory) {
+    function description() external pure returns (string memory) {
         return "Moonwell Bounded Composite Oracle";
     }
 
     /// @notice Get the version number of this oracle
     /// @return The version number
-    function version() external pure override returns (uint256) {
+    function version() external pure returns (uint256) {
         return 1;
     }
 

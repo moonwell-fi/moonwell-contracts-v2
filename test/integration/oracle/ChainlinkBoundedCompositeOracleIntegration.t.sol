@@ -25,24 +25,14 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
         int256 oldUpper,
         int256 newUpper
     );
-    event ProtocolOEVRevenueUpdated(
-        address indexed receiver,
-        uint256 revenueAdded
-    );
     event PrimaryOracleUpdated(
         address oldPrimaryOracle,
         address newPrimaryOracle
     );
-    event BTCOracleUpdated(address oldBTCOracle, address newBTCOracle);
     event FallbackOracleUpdated(
         address oldFallbackOracle,
         address newFallbackOracle
     );
-    event FeeMultiplierUpdated(
-        uint16 oldFeeMultiplier,
-        uint16 newFeeMultiplier
-    );
-    event EarlyUpdateWindowUpdated(uint256 oldWindow, uint256 newWindow);
 
     ChainlinkBoundedCompositeOracle public oracle;
     DeployChainlinkBoundedCompositeOracle public deployer;
@@ -70,11 +60,11 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
         );
 
         // Bounds
-        assertEq(oracle.lowerBound(), 9.9e17);
-        assertEq(oracle.upperBound(), 1.05e18);
+        assertEq(oracle.lowerBound(), 9.9e7);
+        assertEq(oracle.upperBound(), 1.05e8);
 
         // Other config
-        assertEq(oracle.decimals(), 18);
+        assertEq(oracle.decimals(), 8, "should be 8 decimals");
         assertEq(oracle.owner(), addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
@@ -131,7 +121,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
             uint80 answeredInRound
         ) = oracle.latestRoundData();
 
-        assertEq(answer, 1.005e18, "Price should be 1.005 LBTC/BTC");
+        assertEq(answer, 1.005e8, "Price should be 1.005 LBTC/BTC");
         assertEq(roundId, 0, "Round ID should be 0");
         assertEq(startedAt, 0, "Started at should be 0");
         assertEq(
@@ -170,7 +160,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
         ) = oracle.latestRoundData();
 
         assertEq(roundId, 0, "Round ID should be 0");
-        assertEq(answer, 1.1e18, "Should use fallback price");
+        assertEq(answer, 1.1e8, "Should use fallback price");
         assertEq(startedAt, 0, "Started at should be 0");
         assertEq(
             updatedAt,
@@ -312,7 +302,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
 
         // Assert all returned values
         assertEq(roundId, 0, "Round ID should be 0");
-        assertEq(answer, 0.75e18, "Should use fallback price");
+        assertEq(answer, 0.75e8, "Should use fallback price");
         assertEq(startedAt, 0, "Started at should be 0");
         assertEq(
             updatedAt,
