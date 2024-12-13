@@ -5,8 +5,6 @@ import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.so
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
 
-import {WETH9} from "@protocol/router/IWETH.sol";
-import {MErc20} from "@protocol/MErc20.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 
 /// @title ChainlinkBoundedCompositeOracle
