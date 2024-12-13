@@ -68,16 +68,12 @@ contract ChainlinkBoundedCompositeOracle is AggregatorV3Interface, Ownable {
     /// @param _fallbackOracle The address of the fallback oracle to use if primary is out of bounds
     /// @param _lowerBound The lower bound for the primary oracle price
     /// @param _upperBound The upper bound for the primary oracle price
-    /// @param _earlyUpdateWindow The time window before next update where early updates are allowed
-    /// @param _feeMultiplier The multiplier for early update fees
     /// @param _governor The address of the governor to own the oracle
     constructor(
         address _primaryOracle,
         address _fallbackOracle,
         int256 _lowerBound,
         int256 _upperBound,
-        uint256 _earlyUpdateWindow,
-        uint16 _feeMultiplier,
         address _governor
     ) {
         primaryLBTCOracle = AggregatorV3Interface(_primaryOracle);

@@ -99,8 +99,8 @@ jobs:
            max_attempts: 3
            command: time forge test --match-contract CypherIntegrationTest --fork-url base -vvv 
 
-  bounded-composite-chainlink-oev-wrapper:
-    name: Bounded Composite Chainlink OEV Wrapper Test
+  bounded-chainlink-composite-oracle:
+    name: Bounded Chainlink Composite Oracle Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

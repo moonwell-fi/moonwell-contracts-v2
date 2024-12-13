@@ -85,8 +85,6 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
             "CHAINLINK_LBTC_MARKET"
         );
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
-        address moonwellWeth = addresses.getAddress("MOONWELL_WETH");
-        address weth = addresses.getAddress("WETH");
 
         // Test equal bounds
         vm.expectRevert("ChainlinkBoundedCompositeOracle: Invalid bounds");
@@ -95,8 +93,6 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
             chainlinkLbtcMarket,
             1e18, // lower bound equal to upper bound
             1e18, // upper bound
-            30 seconds, // early update window
-            99, // fee multiplier
             temporalGovernor
         );
 
@@ -107,8 +103,6 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
             chainlinkLbtcMarket,
             1.1e18, // lower bound greater than upper bound
             1e18, // upper bound
-            30 seconds, // early update window
-            99, // fee multiplier
             temporalGovernor
         );
     }
