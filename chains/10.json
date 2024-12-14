@@ -425,6 +425,11 @@
         "name": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_DAI_MIP_X07"
     },
     {
+        "addr": "0x9c3431faf6aF953815893ca4661B8F437ce0Ee22",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_USDT_DAI_MIP_X09"
+    },
+    {
         "addr": "0x6147Be7E92242B9119Da9aE81a6a14e64caCe094",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_WSTETH_RETH_MIP_X07"
