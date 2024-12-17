@@ -68,7 +68,6 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
         Addresses addresses = new Addresses();
         vm.makePersistent(address(addresses));
-        etch(vm, addresses);
 
         initProposal(addresses);
 
@@ -95,6 +94,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
     function initProposal(Addresses addresses) public override {
         string memory encodedJson = vm.readFile(vm.envString("JSON_PATH"));
+        etch(vm, addresses);
 
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
