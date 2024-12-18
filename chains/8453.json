@@ -266,7 +266,7 @@
     },
     {
         "addr": "0x01635c141C070944EAE7919443ff61dB2a6a4597",
-        "name": "JUMP_RATE_IRM_MOONWELL_USDC_EURC_MIP_X09",
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_EURC_MIP_X10",
         "isContract": true
     },
     {
@@ -617,7 +617,7 @@
     {
         "addr": "0x2B42e79f46e4E5d8966b098140915d1E7355E1E6",
         "isContract": true,
-        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_X09"
+        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_X10"
     },
     {
         "addr": "0xF877ACaFA28c19b96727966690b2f44d35aD5976",
