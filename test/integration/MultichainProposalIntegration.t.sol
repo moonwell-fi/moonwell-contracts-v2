@@ -1344,9 +1344,6 @@ contract MultichainProposalTest is PostProposalCheck {
             100_000_000 * 1e18
         );
 
-        uint256 bridgeCost = governor.bridgeCostAll();
-        vm.deal(address(this), bridgeCost);
-
         bytes32 encodedData = bytes32(
             uint256(uint160(address(wormholeRelayerAdapter)))
         );
@@ -1354,6 +1351,8 @@ contract MultichainProposalTest is PostProposalCheck {
         /// stores the wormhole mock address in the wormholeRelayer variable
         vm.store(address(governor), bytes32(uint256(103)), encodedData);
 
+        uint256 bridgeCost = governor.bridgeCostAll();
+        vm.deal(address(this), bridgeCost);
         proposalId = governor.propose{value: bridgeCost}(
             targets,
             values,
