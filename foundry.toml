@@ -35,15 +35,15 @@ verbosity = 4
 
 [rpc_endpoints]
 localhost = "http://127.0.0.1:8545"
-moonriver = "${MOONRIVER_RPC_URL}"
-moonbeam = "${MOONBEAM_RPC_URL}"
-moonbase = "${MOONBASE_RPC_URL}"
-ethereum = "${ETH_RPC_URL}"
-base = "${BASE_RPC_URL}"
-baseSepolia = "${BASE_SEPOLIA_RPC_URL}"
-arbitrum = "${ARB_RPC_URL}"
-optimism = "${OP_RPC_URL}"
-opSepolia = "${OP_SEPOLIA_RPC_URL}"
+moonriver = { endpoint= "${MOONRIVER_RPC_URL}", retries = 3, retry_backoff = 1000 }
+moonbeam = { endpoint= "${MOONBEAM_RPC_URL}", retries = 3, retry_backoff = 1000 }
+moonbase = { endpoint= "${MOONBASE_RPC_URL}", retries = 3, retry_backoff = 1000 }
+ethereum = { endpoint= "${ETH_RPC_URL}", retries = 3, retry_backoff = 1000 }
+base = { endpoint= "${BASE_RPC_URL}", retries = 3, retry_backoff = 1000 }
+baseSepolia = { endpoint= "${BASE_SEPOLIA_RPC_URL}", retries = 3, retry_backoff = 1000 }
+arbitrum = { endpoint= "${ARB_RPC_URL}", retries = 3, retry_backoff = 1000 }
+optimism = { endpoint= "${OP_RPC_URL}", retries = 3, retry_backoff = 1000 }
+opSepolia = { endpoint= "${OP_SEPOLIA_RPC_URL}", retries = 2, retry_backoff = 1000 }
 
 # comment out the following lines so that CI passes fast and doesn't throw errors related to connecting to CI
 [etherscan]
