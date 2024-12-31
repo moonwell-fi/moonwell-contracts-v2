@@ -101,16 +101,33 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         )
     {
         if (block.timestamp >= cachedTimestamp + earlyUpdateWindow) {
-            (
-                roundId,
-                answer,
-                startedAt,
-                updatedAt,
-                answeredInRound
-            ) = originalFeed.latestRoundData();
-            require(answer > 0, "Chainlink price cannot be lower than 0");
-            require(updatedAt != 0, "Round is in incompleted state");
-            require(answeredInRound >= roundId, "Stale price");
+            uint256 latestRoundId = originalFeed.latestRound();
+            // loop and get the price of the previous round
+            for (uint256 i = latestRoundId - 0; i > 0; i--) {
+                try originalFeed.getRoundData(uint80(i)) returns (
+                    uint80 _roundId,
+                    int256 _answer,
+                    uint256 _startedAt,
+                    uint256 _updatedAt,
+                    uint80 _answeredInRound
+                ) {
+                    require(
+                        _answer > 0,
+                        "Chainlink price cannot be lower than 0"
+                    );
+                    require(_updatedAt != 0, "Round is in incompleted state");
+                    require(_answeredInRound >= _roundId, "Stale price");
+
+                    roundId = _roundId;
+                    answer = _answer;
+                    startedAt = _startedAt;
+                    updatedAt = _updatedAt;
+                    answeredInRound = _answeredInRound;
+                    break;
+                } catch {
+                    continue;
+                }
+            }
         } else {
             return (0, cachedPrice, 0, cachedTimestamp, 0);
         }
@@ -193,6 +210,12 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         )
     {
         return originalFeed.getRoundData(_roundId);
+    }
+
+    /// @notice Get the latest round ID
+    /// @return The latest round ID
+    function latestRound() external view override returns (uint256) {
+        return originalFeed.latestRound();
     }
 
     /// @notice Set a new fee multiplier for early updates
