@@ -1,21 +1,20 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
+import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+
 import "@forge-std/Test.sol";
 import "@forge-std/StdJson.sol";
 
-import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import {EnumerableSet} from "@openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
-
 import "@protocol/utils/ChainIds.sol";
+
+import {etch} from "@proposals/utils/PrecompileEtching.sol";
 import {Networks} from "@proposals/utils/Networks.sol";
-
+import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 import {HybridProposal} from "@proposals/proposalTypes/HybridProposal.sol";
-
 import {ParameterValidation} from "@proposals/utils/ParameterValidation.sol";
 import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
-
-import {JumpRateModel} from "@protocol/irm/JumpRateModel.sol";
 
 contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
     using SafeCast for *;
@@ -95,6 +94,7 @@ contract MarketUpdateTemplate is HybridProposal, Networks, ParameterValidation {
 
     function initProposal(Addresses addresses) public override {
         string memory encodedJson = vm.readFile(vm.envString("JSON_PATH"));
+        etch(vm, addresses);
 
         for (uint256 i = 0; i < networks.length; i++) {
             uint256 chainId = networks[i].chainId;
