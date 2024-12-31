@@ -27,7 +27,7 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 20
+           timeout_minutes: 30
            max_attempts: 3
            command: time forge test --match-contract BaseSepoliaTest -vvv --ffi --rpc-url base
 
@@ -48,6 +48,6 @@ jobs:
         with:
            polling_interval_seconds: 30
            retry_wait_seconds: 60
-           timeout_minutes: 20
+           timeout_minutes: 30
            max_attempts: 3
            command: time forge test --match-contract 'xWellIntegrationTest' --fork-url base -vvv --ffi
