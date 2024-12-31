@@ -605,4 +605,61 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         vm.expectRevert("Stale price");
         wrapper.latestRoundData();
     }
+
+    function testNoUpdateEarlyReturnsPreviousRound() public {
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
+            abi.encode(uint256(2))
+        );
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                uint80(2), // roundId
+                int256(3_000e8), // answer
+                uint256(0), // startedAt
+                uint256(block.timestamp), // updatedAt
+                uint80(3) // answeredInRound
+            )
+        );
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().getRoundData.selector
+            ),
+            abi.encode(
+                uint80(1),
+                int256(3_001e8),
+                uint256(0),
+                uint256(block.timestamp - 1),
+                uint80(2)
+            )
+        );
+        // Call latestRoundData on the wrapper
+        (
+            uint80 roundId,
+            int256 price,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        ) = wrapper.latestRoundData();
+
+        // Assert that the round data matches the initial round data
+        assertEq(roundId, 1, "Round ID should remain the same");
+        assertEq(price, 3_001e8, "Price should remain the same");
+        assertEq(startedAt, 0, "Started at timestamp should remain the same");
+        assertEq(
+            updatedAt,
+            block.timestamp - 1,
+            "Updated at timestamp should remain the same"
+        );
+        assertEq(
+            answeredInRound,
+            1,
+            "Answered in round should remain the same"
+        );
+    }
 }
