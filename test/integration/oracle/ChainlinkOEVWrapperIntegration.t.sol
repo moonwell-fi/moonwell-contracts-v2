@@ -647,19 +647,23 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             uint80 answeredInRound
         ) = wrapper.latestRoundData();
 
-        // Assert that the round data matches the initial round data
-        assertEq(roundId, 1, "Round ID should remain the same");
-        assertEq(price, 3_001e8, "Price should remain the same");
-        assertEq(startedAt, 0, "Started at timestamp should remain the same");
+        // Assert that the round data matches the previous round data
+        assertEq(roundId, 1, "Round ID should be the previous round");
+        assertEq(price, 3_001e8, "Price should be the previous price");
+        assertEq(
+            startedAt,
+            0,
+            "Started at timestamp should be the previous timestamp"
+        );
         assertEq(
             updatedAt,
             block.timestamp - 1,
-            "Updated at timestamp should remain the same"
+            "Updated at timestamp should be the previous timestamp"
         );
         assertEq(
             answeredInRound,
             1,
-            "Answered in round should remain the same"
+            "Answered in round should be the previous round"
         );
     }
 }
