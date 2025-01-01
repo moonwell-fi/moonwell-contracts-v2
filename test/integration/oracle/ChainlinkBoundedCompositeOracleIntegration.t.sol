@@ -96,7 +96,7 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
             "initialize(address,address,int256,int256,address)",
             redStoneLbtcBtc,
             chainlinkLbtcMarket,
-            1e18, // lower bound
+            1e18, // lower bound equal to upper bound
             1e18, // upper bound
             temporalGovernor
         );
