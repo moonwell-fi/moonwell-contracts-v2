@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+import {Initializable} from "@openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import {SafeCast} from "@openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Address} from "@openzeppelin-contracts/contracts/utils/Address.sol";
@@ -11,8 +12,7 @@ import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 /// @notice Oracle that checks if a primary price feed is within bounds, then either:
 /// - If within bounds: Combines it with a second price feed
 /// - If out of bounds: Falls back to a backup price feed
-/// @dev Includes OEV (Oracle Extractable Value) functionality for early updates
-contract ChainlinkBoundedCompositeOracle is Ownable {
+contract ChainlinkBoundedCompositeOracle is Ownable, Initializable {
     using Address for address;
     using SafeCast for *;
 
@@ -51,19 +51,23 @@ contract ChainlinkBoundedCompositeOracle is Ownable {
     /// @notice Scaling factor for price calculations
     uint8 public constant decimals = 8;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @notice constructor to initialize the oracle with price feeds and configuration
     /// @param _primaryOracle The address of the primary oracle to check bounds against
     /// @param _fallbackOracle The address of the fallback oracle to use if primary is out of bounds
     /// @param _lowerBound The lower bound for the primary oracle price
     /// @param _upperBound The upper bound for the primary oracle price
     /// @param _governor The address of the governor to own the oracle
-    constructor(
+    function initialize(
         address _primaryOracle,
         address _fallbackOracle,
         int256 _lowerBound,
         int256 _upperBound,
         address _governor
-    ) {
+    ) external initializer {
         primaryLBTCOracle = AggregatorV3Interface(_primaryOracle);
         fallbackLBTCOracle = AggregatorV3Interface(_fallbackOracle);
 
