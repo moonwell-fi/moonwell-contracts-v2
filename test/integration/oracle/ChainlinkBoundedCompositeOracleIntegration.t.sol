@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+import {TransparentUpgradeableProxy} from "@openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 
 import "@forge-std/Test.sol";
@@ -68,6 +69,21 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
         assertEq(oracle.owner(), addresses.getAddress("TEMPORAL_GOVERNOR"));
     }
 
+    function testInitializeLogicContractFails() public {
+        oracle = ChainlinkBoundedCompositeOracle(
+            addresses.getAddress(
+                "CHAINLINK_BOUNDED_LBTC_COMPOSITE_ORACLE_LOGIC"
+            )
+        );
+        vm.expectRevert("Initializable: contract is already initialized");
+        oracle.initialize(address(0), address(0), 9.9e7, 1.05e8, address(0));
+    }
+
+    function testReInitializeProxyContractFails() public {
+        vm.expectRevert("Initializable: contract is already initialized");
+        oracle.initialize(address(0), address(0), 9.9e7, 1.05e8, address(0));
+    }
+
     function testInvalidBounds() public {
         // Store addresses in variables for better readability
         address redStoneLbtcBtc = addresses.getAddress("REDSTONE_LBTC_BTC");
@@ -76,24 +92,44 @@ contract ChainlinkBoundedCompositeOracleIntegrationTest is Test {
         );
         address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
 
-        // Test equal bounds
-        vm.expectRevert("ChainlinkBoundedCompositeOracle: Invalid bounds");
-        new ChainlinkBoundedCompositeOracle(
+        bytes memory failureInitData1 = abi.encodeWithSignature(
+            "initialize(address,address,int256,int256,address)",
             redStoneLbtcBtc,
             chainlinkLbtcMarket,
-            1e18, // lower bound equal to upper bound
+            1e18, // lower bound
+            1e18, // upper bound
+            temporalGovernor
+        );
+
+        address mrdProxyAdmin = addresses.getAddress("MRD_PROXY_ADMIN");
+
+        address oracleImplementation = addresses.getAddress(
+            "CHAINLINK_BOUNDED_LBTC_COMPOSITE_ORACLE_LOGIC"
+        );
+
+        // Test equal bounds
+        vm.expectRevert("ChainlinkBoundedCompositeOracle: Invalid bounds");
+        new TransparentUpgradeableProxy(
+            oracleImplementation,
+            mrdProxyAdmin,
+            failureInitData1
+        );
+
+        bytes memory failureInitData2 = abi.encodeWithSignature(
+            "initialize(address,address,int256,int256,address)",
+            redStoneLbtcBtc,
+            chainlinkLbtcMarket,
+            1.1e18, // lower bound greater than upper bound
             1e18, // upper bound
             temporalGovernor
         );
 
         // Test lower bound greater than upper bound
         vm.expectRevert("ChainlinkBoundedCompositeOracle: Invalid bounds");
-        new ChainlinkBoundedCompositeOracle(
-            redStoneLbtcBtc,
-            chainlinkLbtcMarket,
-            1.1e18, // lower bound greater than upper bound
-            1e18, // upper bound
-            temporalGovernor
+        new TransparentUpgradeableProxy(
+            oracleImplementation,
+            mrdProxyAdmin,
+            failureInitData2
         );
     }
 
