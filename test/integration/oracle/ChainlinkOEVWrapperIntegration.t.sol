@@ -119,6 +119,12 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         vm.warp(vm.getBlockTimestamp() + wrapper.earlyUpdateWindow());
 
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
+            abi.encode(uint256(1))
+        );
+
         int256 mockPrice = 3_3333e8; // chainlink oracle uses 8 decimals
         uint256 mockTimestamp = block.timestamp - 1;
         vm.mockCall(
@@ -554,6 +560,12 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         vm.mockCall(
             address(wrapper.originalFeed()),
+            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
+            abi.encode(uint256(1))
+        );
+
+        vm.mockCall(
+            address(wrapper.originalFeed()),
             abi.encodeWithSelector(
                 wrapper.originalFeed().latestRoundData.selector
             ),
@@ -576,6 +588,12 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         vm.mockCall(
             address(wrapper.originalFeed()),
+            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
+            abi.encode(uint256(1))
+        );
+
+        vm.mockCall(
+            address(wrapper.originalFeed()),
             abi.encodeWithSelector(
                 wrapper.originalFeed().latestRoundData.selector
             ),
@@ -595,6 +613,12 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     function testLatestRoundDataRevertOnStalePriceData() public {
         // Ensure we're outside the early update window to force fetching from original feed
         vm.warp(block.timestamp + wrapper.earlyUpdateWindow() + 1);
+
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
+            abi.encode(uint256(1))
+        );
 
         vm.mockCall(
             address(wrapper.originalFeed()),
