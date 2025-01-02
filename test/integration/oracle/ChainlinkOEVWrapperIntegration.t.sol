@@ -716,7 +716,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         vm.mockCall(
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(
-                wrapper.originalFeed().getRoundData.selector,
+                wrapper.originalFeed().latestRoundData.selector,
                 uint80(latestRound)
             ),
             abi.encode(
@@ -727,24 +727,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
                 uint80(latestRound)
             )
         );
-
-        // Mock invalid price data for rounds 99-96
-        for (uint256 i = latestRound - 1; i >= latestRound - 4; i--) {
-            vm.mockCall(
-                address(wrapper.originalFeed()),
-                abi.encodeWithSelector(
-                    wrapper.originalFeed().getRoundData.selector,
-                    uint80(i)
-                ),
-                abi.encode(
-                    uint80(i),
-                    int256(0),
-                    uint256(0),
-                    uint256(0),
-                    uint80(i)
-                )
-            );
-        }
 
         // Mock valid price data for round 95
         vm.mockCall(
