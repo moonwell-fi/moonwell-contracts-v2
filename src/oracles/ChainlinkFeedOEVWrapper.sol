@@ -210,4 +210,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         earlyUpdateWindow = newWindow;
         emit EarlyUpdateWindowChanged(newWindow);
     }
+
+    function latestRound() external view override returns (uint256) {
+        return originalFeed.latestRound();
+    }
 }

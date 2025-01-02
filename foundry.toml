@@ -4,7 +4,7 @@ out = 'artifacts/foundry'
 libs = ['node_modules', 'lib']
 test = 'test'
 cache_path  = 'artifacts/forge-cache'
-fs_permissions = [{ access = "read", path = "./"}]
+fs_permissions = [{ access = "read-write", path = "./"}]
 auto_detect_solc = true
 evm_version = 'shanghai' # lock to shanghai to use push0 opcode which is live on base, optimism and Moonbeam
 optimizer_runs = 1
