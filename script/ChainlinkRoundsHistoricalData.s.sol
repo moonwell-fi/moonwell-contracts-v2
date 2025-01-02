@@ -5,8 +5,9 @@ import {Script, console2} from "@forge-std/Script.sol";
 import "@forge-std/StdJson.sol";
 import {IMulticall3} from "@forge-std/interfaces/IMulticall3.sol";
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
+import {Vm} from "@forge-std/Vm.sol";
 
-contract RoundDataHelper {
+contract RoundDataHelper is Script {
     function createMulticallBatch(
         address priceFeedAddress,
         uint80 startRound,
@@ -31,9 +32,8 @@ contract RoundDataHelper {
         uint80 roundId,
         int256 answer,
         uint256 updatedAt,
-        bool needsComma,
-        Vm vm
-    ) public pure returns (string memory) {
+        bool needsComma
+    ) public view returns (string memory) {
         return
             string.concat(
                 needsComma ? "," : "",
@@ -98,13 +98,7 @@ contract ChainlinkRoundsHistoricalData is Script {
 
             json = string.concat(
                 json,
-                helper.formatRoundData(
-                    roundId,
-                    answer,
-                    updatedAt,
-                    needsComma,
-                    vm
-                )
+                helper.formatRoundData(roundId, answer, updatedAt, needsComma)
             );
 
             needsComma = true;
@@ -152,29 +146,39 @@ contract ChainlinkRoundsHistoricalData is Script {
         );
         console2.log("Output file:", jsonPath);
 
+        uint80 currentRoundId;
         try vm.readFile(jsonPath) returns (string memory content) {
             if (bytes(content).length > 0) {
+                // Get the last round ID from the file
+                bytes memory parsed = vm.parseJson(content, ".[-1].roundId");
+                currentRoundId = uint80(abi.decode(parsed, (uint256)));
                 existingJson = substring(content, 0, bytes(content).length - 1);
                 hasExistingData = true;
                 console2.log(
-                    "Found existing data. Length:",
-                    bytes(existingJson).length
+                    "Found existing data. Last roundId:",
+                    currentRoundId
                 );
+            } else {
+                existingJson = "[";
+                hasExistingData = false;
+                console2.log("Starting fresh - no existing data");
+                currentRoundId = uint80(
+                    AggregatorV3Interface(priceFeedAddress).latestRound()
+                );
+                console2.log("Starting from latest round ID:", currentRoundId);
             }
         } catch {
             existingJson = "[";
             hasExistingData = false;
-            console2.log("Starting fresh - no existing data");
+            console2.log("Starting fresh - no existing data (file not found)");
+            currentRoundId = uint80(
+                AggregatorV3Interface(priceFeedAddress).latestRound()
+            );
+            console2.log("Starting from latest round ID:", currentRoundId);
         }
 
         IMulticall3 multicall = IMulticall3(MULTICALL3);
-        uint80 currentRoundId = uint80(
-            AggregatorV3Interface(priceFeedAddress).latestRound()
-        );
-        console2.log("Latest round ID:", currentRoundId);
-
         bool reachedTarget = false;
-
         while (!reachedTarget && currentRoundId > 0) {
             console2.log("Processing batch from round:", currentRoundId);
 
