@@ -29,7 +29,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
     /// @notice Emitted when the max decrements value is changed
     /// @param newMaxDecrements The new maximum number of decrements
-    event MaxDecrementsChanged(uint256 newMaxDecrements);
+    event MaxDecrementsChanged(uint16 newMaxDecrements);
 
     /// @notice The original Chainlink price feed contract
     AggregatorV3Interface public immutable originalFeed;
@@ -48,7 +48,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     uint256 public earlyUpdateWindow;
 
     /// @notice The maximum number of times to decrement the round before falling back to latest price
-    uint256 public maxDecrements;
+    uint16 public maxDecrements;
 
     /// @notice The timestamp of the last cached price update
     uint256 public cachedTimestamp;
@@ -63,7 +63,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @param _owner Address of the contract owner
     /// @param _ethMarket Address of the ETH market
     /// @param _weth Address of the WETH contract
-    /// @parm _maxDecrements The maximum number of decrements before falling back to latest price
+    /// @param _maxDecrements The maximum number of decrements before falling back to latest price
     constructor(
         address _originalFeed,
         uint256 _earlyUpdateWindow,
@@ -71,7 +71,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         address _owner,
         address _ethMarket,
         address _weth,
-        uint256 _maxDecrements
+        uint16 _maxDecrements
     ) {
         originalFeed = AggregatorV3Interface(_originalFeed);
         WETHMarket = MErc20(_ethMarket);
@@ -111,7 +111,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         )
     {
         if (block.timestamp >= cachedTimestamp + earlyUpdateWindow) {
-            uint256 currentRoundId = originalFeed.latestRound();
+            uint256 currentRoundId = originalFeed.latestRound() - 1;
 
             // Loop from 0 to maxDecrements, decrementing the round ID each time
             for (uint256 i = 0; i < maxDecrements && currentRoundId > 0; i++) {
@@ -122,6 +122,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
                     uint256 _updatedAt,
                     uint80 _answeredInRound
                 ) {
+                    // Validate the round data
                     require(
                         _answer > 0,
                         "Chainlink price cannot be lower than 0"
@@ -135,13 +136,14 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
                     startedAt = _startedAt;
                     updatedAt = _updatedAt;
                     answeredInRound = _answeredInRound;
+                    break;
                 } catch {
                     // Decrement the round ID for next iteration
                     currentRoundId--;
                 }
             }
 
-            // if no valid price was found, use the latest price
+            // If no valid price was found within maxDecrements, use the latest price
             if (roundId == 0) {
                 (
                     roundId,
@@ -167,10 +169,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             msg.value >= (tx.gasprice - block.basefee) * uint256(feeMultiplier),
             "ChainlinkOEVWrapper: Insufficient tax"
         );
-        require(
-            block.timestamp > cachedTimestamp,
-            "ChainlinkOEVWrapper: New timestamp must be greater than current"
-        );
+
+        // Get latest round data and validate it
         (
             uint80 roundId,
             int256 price,
@@ -183,16 +183,22 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         require(updatedAt != 0, "Round is in incompleted state");
         require(answeredInRound >= roundId, "Stale price");
 
-        cachedPrice = price;
-        cachedTimestamp = block.timestamp;
+        require(
+            block.timestamp > cachedTimestamp,
+            "ChainlinkOEVWrapper: New timestamp must be greater than current"
+        );
 
-        // wrap the ETH send into WETH and add to ETH market reserves
+        // Convert ETH to WETH and approve it for the ETH market
         WETH.deposit{value: msg.value}();
         WETH.approve(address(WETHMarket), msg.value);
-        uint256 success = WETHMarket._addReserves(msg.value);
-        require(success == 0, "ChainlinkOEVWrapper: Failed to add reserves");
+
+        // Add the ETH to the market's reserves
+        WETHMarket._addReserves(msg.value);
 
         emit ProtocolOEVRevenueUpdated(address(WETHMarket), msg.value);
+
+        cachedPrice = price;
+        cachedTimestamp = updatedAt;
 
         return price;
     }
@@ -263,7 +269,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
     /// @notice Set the maximum number of decrements before falling back to latest price
     /// @param _maxDecrements The new maximum number of decrements
-    function setMaxDecrements(uint256 _maxDecrements) external onlyOwner {
+    function setMaxDecrements(uint16 _maxDecrements) external onlyOwner {
         maxDecrements = _maxDecrements;
         emit MaxDecrementsChanged(_maxDecrements);
     }

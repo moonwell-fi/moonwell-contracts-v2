@@ -36,8 +36,15 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         comptroller = Comptroller(addresses.getAddress("UNITROLLER"));
         marketBase = new MarketBase(comptroller);
 
-        wrapper = ChainlinkFeedOEVWrapper(
-            addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER")
+        // Deploy a new wrapper for testing
+        wrapper = new ChainlinkFeedOEVWrapper(
+            addresses.getAddress("CHAINLINK_ETH_USD"),
+            30, // 30 second early update window
+            99, // 99x fee multiplier
+            addresses.getAddress("TEMPORAL_GOVERNOR"),
+            addresses.getAddress("MOONWELL_WETH"),
+            addresses.getAddress("WETH"),
+            uint16(10) // Default maxDecrements
         );
     }
 
@@ -663,7 +670,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         );
         assertEq(
             answeredInRound,
-            1,
+            2,
             "Answered in round should be the previous round"
         );
     }
