@@ -19,10 +19,12 @@ contract RoundDataHelper is Script {
         for (uint256 i = 0; i < batchSize; i++) {
             calls[i].target = priceFeedAddress;
             calls[i].allowFailure = true;
-            calls[i].callData = abi.encodeWithSelector(
-                selector,
-                uint80(startRound - i)
-            );
+            unchecked {
+                calls[i].callData = abi.encodeWithSelector(
+                    selector,
+                    uint80(startRound - i) // Use unchecked for round decrement
+                );
+            }
         }
 
         return calls;
@@ -33,7 +35,7 @@ contract RoundDataHelper is Script {
         int256 answer,
         uint256 updatedAt,
         bool needsComma
-    ) public view returns (string memory) {
+    ) public pure returns (string memory) {
         return
             string.concat(
                 needsComma ? "," : "",
@@ -67,6 +69,7 @@ contract ChainlinkRoundsHistoricalData is Script {
         IMulticall3.Result[] memory results
     )
         private
+        view
         returns (string memory batchJson, bool reachedTarget, uint80 lastRound)
     {
         string memory json = "";
@@ -86,12 +89,8 @@ contract ChainlinkRoundsHistoricalData is Script {
             );
 
             if (updatedAt < sixMonthsAgo) {
-                console2.log(
-                    "Reached target timestamp. Current:",
-                    updatedAt,
-                    "Target:",
-                    sixMonthsAgo
-                );
+                console2.log("Reached target timestamp. Current:", updatedAt);
+                console2.log("Target:", sixMonthsAgo);
                 reachedTarget = true;
                 break;
             }
@@ -119,29 +118,41 @@ contract ChainlinkRoundsHistoricalData is Script {
     }
 
     function saveToFile(string memory batchJson) private {
-        string memory fullJson = string.concat(existingJson, batchJson, "]");
-        vm.writeFile(jsonPath, fullJson);
-        console2.log(
-            "Saved progress to file. Current JSON length:",
-            bytes(fullJson).length
+        string memory filePath = string.concat(
+            vm.projectRoot(),
+            "/output/chainlink_historical_data_",
+            vm.toString(BATCH_SIZE),
+            ".json"
         );
 
-        existingJson = string.concat(existingJson, batchJson);
+        string memory content;
+        if (hasExistingData) {
+            // If we have existing data, add a comma after the last object and append the new batch
+            content = string.concat(existingJson, ",", batchJson, "]");
+        } else {
+            // If this is a new file, create a fresh JSON array
+            content = string.concat("[", batchJson, "]");
+        }
+
+        vm.writeFile(filePath, content);
         hasExistingData = true;
+        existingJson = substring(content, 0, bytes(content).length - 1);
     }
 
     function run(address priceFeedAddress) external {
         console2.log("Starting script with price feed:", priceFeedAddress);
 
         helper = new RoundDataHelper();
-        sixMonthsAgo = block.timestamp - (6 * 30 days);
+        unchecked {
+            sixMonthsAgo = block.timestamp - (180 days); // Use unchecked for timestamp subtraction
+        }
         console2.log("Current time:", block.timestamp);
         console2.log("Target time (6 months ago):", sixMonthsAgo);
 
         jsonPath = string.concat(
             vm.projectRoot(),
             "/output/chainlink_historical_data_",
-            vm.toString(block.chainid),
+            vm.toString(BATCH_SIZE),
             ".json"
         );
         console2.log("Output file:", jsonPath);
@@ -149,35 +160,107 @@ contract ChainlinkRoundsHistoricalData is Script {
         uint80 currentRoundId;
         try vm.readFile(jsonPath) returns (string memory content) {
             if (bytes(content).length > 0) {
-                // Get the last round ID from the file
-                bytes memory parsed = vm.parseJson(content, ".[-1].roundId");
-                currentRoundId = uint80(abi.decode(parsed, (uint256)));
-                existingJson = substring(content, 0, bytes(content).length - 1);
-                hasExistingData = true;
-                console2.log(
-                    "Found existing data. Last roundId:",
-                    currentRoundId
-                );
+                // Find the last valid JSON object
+                bytes memory contentBytes = bytes(content);
+                uint256 closingBracketPos = 0;
+                uint256 lastValidObjectEnd = 0;
+
+                // First find the closing bracket of the array
+                for (uint i = 0; i < contentBytes.length; i++) {
+                    if (contentBytes[i] == "]") {
+                        closingBracketPos = i;
+                        break;
+                    }
+                }
+
+                if (closingBracketPos > 0) {
+                    // Now find the last complete object before the closing bracket
+                    uint256 openBraces = 0;
+                    for (uint i = 0; i < closingBracketPos; i++) {
+                        if (contentBytes[i] == "{") {
+                            openBraces++;
+                        } else if (contentBytes[i] == "}") {
+                            openBraces--;
+                            if (openBraces == 0) {
+                                lastValidObjectEnd = i + 1;
+                            }
+                        }
+                    }
+
+                    if (lastValidObjectEnd > 0) {
+                        // Get the content up to the last valid object
+                        content = substring(content, 0, lastValidObjectEnd);
+                        existingJson = content;
+                        hasExistingData = true;
+
+                        // Parse the last object to get the roundId
+                        uint256 lastObjectStart = 0;
+                        for (uint i = 0; i < lastValidObjectEnd; i++) {
+                            if (contentBytes[i] == "{") {
+                                lastObjectStart = i;
+                            }
+                        }
+
+                        string memory lastObject = substring(
+                            content,
+                            lastObjectStart,
+                            lastValidObjectEnd
+                        );
+                        try vm.parseJson(lastObject, ".roundId") returns (
+                            bytes memory roundIdBytes
+                        ) {
+                            currentRoundId = abi.decode(roundIdBytes, (uint80));
+                            console2.log(
+                                "Continuing from round ID:",
+                                currentRoundId
+                            );
+                        } catch {
+                            console2.log(
+                                "Failed to parse last round ID, starting fresh"
+                            );
+                            currentRoundId = uint80(
+                                AggregatorV3Interface(priceFeedAddress)
+                                    .latestRound()
+                            );
+                        }
+                    } else {
+                        console2.log("No valid objects found, starting fresh");
+                        existingJson = "[";
+                        hasExistingData = false;
+                        currentRoundId = uint80(
+                            AggregatorV3Interface(priceFeedAddress)
+                                .latestRound()
+                        );
+                    }
+                } else {
+                    console2.log("No closing bracket found, starting fresh");
+                    existingJson = "[";
+                    hasExistingData = false;
+                    currentRoundId = uint80(
+                        AggregatorV3Interface(priceFeedAddress).latestRound()
+                    );
+                }
             } else {
+                console2.log("Empty file, starting fresh");
                 existingJson = "[";
                 hasExistingData = false;
-                console2.log("Starting fresh - no existing data");
                 currentRoundId = uint80(
                     AggregatorV3Interface(priceFeedAddress).latestRound()
                 );
-                console2.log("Starting from latest round ID:", currentRoundId);
             }
         } catch {
+            console2.log("File doesn't exist, starting fresh");
             existingJson = "[";
             hasExistingData = false;
-            console2.log("Starting fresh - no existing data (file not found)");
             currentRoundId = uint80(
                 AggregatorV3Interface(priceFeedAddress).latestRound()
             );
+        }
+
+        if (!hasExistingData) {
             console2.log("Starting from latest round ID:", currentRoundId);
         }
 
-        IMulticall3 multicall = IMulticall3(MULTICALL3);
         bool reachedTarget = false;
         while (!reachedTarget && currentRoundId > 0) {
             console2.log("Processing batch from round:", currentRoundId);
@@ -188,26 +271,53 @@ contract ChainlinkRoundsHistoricalData is Script {
                 BATCH_SIZE
             );
 
-            IMulticall3.Result[] memory results = multicall.aggregate3(calls);
-            console2.log("Got multicall results. Length:", results.length);
+            (bool success, bytes memory returnData) = MULTICALL3.call(
+                abi.encodeWithSelector(IMulticall3.aggregate3.selector, calls)
+            );
+
+            if (!success) {
+                console2.log("Multicall failed");
+                break;
+            }
+
+            IMulticall3.Result[] memory results = abi.decode(
+                returnData,
+                (IMulticall3.Result[])
+            );
 
             (
                 string memory batchJson,
-                bool batchReachedTarget,
-                uint80 lastProcessedRound
+                bool targetReached,
+                uint80 lastRound
             ) = processResults(results);
 
             if (bytes(batchJson).length > 0) {
                 saveToFile(batchJson);
-            } else {
-                console2.log("No data in this batch");
             }
 
-            reachedTarget = batchReachedTarget;
-            currentRoundId = uint80(currentRoundId - BATCH_SIZE);
+            if (targetReached) {
+                console2.log("Reached target timestamp");
+                reachedTarget = true;
+                break;
+            }
+
+            if (lastRound > 0) {
+                unchecked {
+                    currentRoundId = lastRound - 1; // Use unchecked for round ID decrement
+                }
+            } else {
+                // If we didn't get any valid results in this batch, try the next batch
+                if (currentRoundId > BATCH_SIZE) {
+                    unchecked {
+                        currentRoundId -= uint80(BATCH_SIZE); // Use unchecked for batch size subtraction
+                    }
+                } else {
+                    break; // Prevent underflow
+                }
+            }
         }
 
-        console2.log("Completed processing all rounds");
+        console2.log("Script completed");
     }
 
     function substring(
