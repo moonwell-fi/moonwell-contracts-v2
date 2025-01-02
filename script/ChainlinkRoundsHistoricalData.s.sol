@@ -121,7 +121,7 @@ contract ChainlinkRoundsHistoricalData is Script {
         string memory filePath = string.concat(
             vm.projectRoot(),
             "/output/chainlink_historical_data_",
-            vm.toString(BATCH_SIZE),
+            vm.toString(block.chainid),
             ".json"
         );
 
