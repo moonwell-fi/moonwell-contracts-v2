@@ -712,6 +712,10 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             abi.encode(latestRound)
         );
 
+        // Set maxDecrements to 3 (shouldn't reach round 95)
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        wrapper.setMaxDecrements(3);
+
         // Mock valid price data for round 100 (latest)
         vm.mockCall(
             address(wrapper.originalFeed()),
@@ -727,26 +731,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
                 uint80(latestRound)
             )
         );
-
-        // Mock valid price data for round 95
-        vm.mockCall(
-            address(wrapper.originalFeed()),
-            abi.encodeWithSelector(
-                wrapper.originalFeed().getRoundData.selector,
-                uint80(latestRound - 5)
-            ),
-            abi.encode(
-                uint80(latestRound - 5),
-                int256(950),
-                uint256(block.timestamp - 1 hours),
-                uint256(block.timestamp - 1 hours),
-                uint80(latestRound - 5)
-            )
-        );
-
-        // Set maxDecrements to 3 (shouldn't reach round 95)
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        wrapper.setMaxDecrements(3);
 
         // Should return latest price since we can't find valid price within 3 decrements
         (uint80 roundId, int256 answer, , , uint80 answeredInRound) = wrapper
@@ -766,6 +750,22 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         // Set maxDecrements to 6 (should reach round 95)
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         wrapper.setMaxDecrements(6);
+
+        // Mock valid price data for round 95
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().getRoundData.selector,
+                uint80(latestRound - 5)
+            ),
+            abi.encode(
+                uint80(latestRound - 5),
+                int256(950),
+                uint256(block.timestamp - 1 hours),
+                uint256(block.timestamp - 1 hours),
+                uint80(latestRound - 5)
+            )
+        );
 
         // Should return price from round 95
         (roundId, answer, , , answeredInRound) = wrapper.latestRoundData();
