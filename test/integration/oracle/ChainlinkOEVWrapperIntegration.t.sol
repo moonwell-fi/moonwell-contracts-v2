@@ -720,8 +720,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         vm.mockCall(
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(
-                wrapper.originalFeed().latestRoundData.selector,
-                uint80(latestRound)
+                wrapper.originalFeed().latestRoundData.selector
             ),
             abi.encode(
                 uint80(latestRound),
