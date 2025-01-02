@@ -265,6 +265,11 @@
         "isContract": true
     },
     {
+        "addr": "0x01635c141C070944EAE7919443ff61dB2a6a4597",
+        "name": "JUMP_RATE_IRM_MOONWELL_USDC_EURC_MIP_X10",
+        "isContract": true
+    },
+    {
         "addr": "0xfC7b55cc7C5BD3aE89aC679c7250AB30754C5cC5",
         "name": "JUMP_RATE_IRM_MOONWELL_DAI_MIP_B14",
         "isContract": true
@@ -357,6 +362,16 @@
     {
         "addr": "0xa5A5892bCfca4642c6bD789Ca75f27774309Dcb7",
         "name": "CHAINLINK_WSTETH_STETH_COMPOSITE_ORACLE",
+        "isContract": true
+    },
+    {
+        "addr": "0x1E6c22AAA11F507af12034A5Dc4126A6A25DC8d2",
+        "name": "CHAINLINK_LBTC_MARKET",
+        "isContract": true
+    },
+    {
+        "addr": "0x5C4c8d6f6Bf79B718F3e8399AaBdFEd01cB7e48f",
+        "name": "REDSTONE_LBTC_BTC",
         "isContract": true
     },
     {
@@ -608,6 +623,11 @@
         "addr": "0x61e0dEC383Ef2E4be7e198F0e33605A553Da281d",
         "isContract": true,
         "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_B32"
+    },
+    {
+        "addr": "0x2B42e79f46e4E5d8966b098140915d1E7355E1E6",
+        "isContract": true,
+        "name": "JUMP_RATE_IRM_MOONWELL_cbBTC_MIP_X10"
     },
     {
         "addr": "0xF877ACaFA28c19b96727966690b2f44d35aD5976",
