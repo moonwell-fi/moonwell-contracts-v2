@@ -20,6 +20,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         address indexed receiver,
         uint256 revenueAdded
     );
+    event MaxDecrementsChanged(uint16 newMaxDecrements);
 
     ChainlinkFeedOEVWrapper public wrapper;
     Comptroller comptroller;
@@ -664,6 +665,131 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             answeredInRound,
             1,
             "Answered in round should be the previous round"
+        );
+    }
+
+    function testSetMaxDecrements() public {
+        uint16 newMaxDecrements = 15;
+        uint16 originalMaxDecrements = wrapper.maxDecrements();
+
+        // Non-owner should not be able to change maxDecrements
+        vm.prank(address(0x1234));
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper.setMaxDecrements(newMaxDecrements);
+
+        // Owner should be able to change maxDecrements
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.expectEmit(address(wrapper));
+        emit MaxDecrementsChanged(newMaxDecrements);
+        wrapper.setMaxDecrements(newMaxDecrements);
+
+        assertEq(
+            wrapper.maxDecrements(),
+            newMaxDecrements,
+            "maxDecrements should be updated"
+        );
+        assertNotEq(
+            wrapper.maxDecrements(),
+            originalMaxDecrements,
+            "maxDecrements should be different from original"
+        );
+    }
+
+    function testMaxDecrementsLimit() public {
+        // Mock the feed to return valid data for specific rounds
+        uint256 latestRound = 100;
+
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
+            abi.encode(latestRound)
+        );
+
+        // Mock valid price data for round 100 (latest)
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().getRoundData.selector,
+                uint80(latestRound)
+            ),
+            abi.encode(
+                uint80(latestRound),
+                int256(1000),
+                uint256(block.timestamp),
+                uint256(block.timestamp),
+                uint80(latestRound)
+            )
+        );
+
+        // Mock invalid price data for rounds 99-96
+        for (uint256 i = latestRound - 1; i >= latestRound - 4; i--) {
+            vm.mockCall(
+                address(wrapper.originalFeed()),
+                abi.encodeWithSelector(
+                    wrapper.originalFeed().getRoundData.selector,
+                    uint80(i)
+                ),
+                abi.encode(
+                    uint80(i),
+                    int256(0),
+                    uint256(0),
+                    uint256(0),
+                    uint80(i)
+                )
+            );
+        }
+
+        // Mock valid price data for round 95
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().getRoundData.selector,
+                uint80(latestRound - 5)
+            ),
+            abi.encode(
+                uint80(latestRound - 5),
+                int256(950),
+                uint256(block.timestamp - 1 hours),
+                uint256(block.timestamp - 1 hours),
+                uint80(latestRound - 5)
+            )
+        );
+
+        // Set maxDecrements to 3 (shouldn't reach round 95)
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        wrapper.setMaxDecrements(3);
+
+        // Should return latest price since we can't find valid price within 3 decrements
+        (uint80 roundId, int256 answer, , , uint80 answeredInRound) = wrapper
+            .latestRoundData();
+        assertEq(
+            answer,
+            1000,
+            "Should return latest price when valid price not found within maxDecrements"
+        );
+        assertEq(roundId, uint80(latestRound), "Should return latest round ID");
+        assertEq(
+            answeredInRound,
+            uint80(latestRound),
+            "Should return latest answered round"
+        );
+
+        // Set maxDecrements to 6 (should reach round 95)
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        wrapper.setMaxDecrements(6);
+
+        // Should return price from round 95
+        (roundId, answer, , , answeredInRound) = wrapper.latestRoundData();
+        assertEq(
+            answer,
+            950,
+            "Should return price from round 95 when maxDecrements allows reaching it"
+        );
+        assertEq(roundId, uint80(latestRound - 5), "Should return round 95 ID");
+        assertEq(
+            answeredInRound,
+            uint80(latestRound - 5),
+            "Should return round 95 as answered round"
         );
     }
 }

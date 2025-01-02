@@ -23,7 +23,8 @@ contract DeployChainlinkOEVWrapper is Script {
             99,
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             addresses.getAddress("MOONWELL_WETH"),
-            addresses.getAddress("WETH")
+            addresses.getAddress("WETH"),
+            uint16(10)
         );
 
         addresses.addAddress(
