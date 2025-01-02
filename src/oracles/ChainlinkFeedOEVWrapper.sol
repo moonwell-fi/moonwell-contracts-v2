@@ -27,6 +27,10 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         uint256 revenueAdded
     );
 
+    /// @notice Emitted when the max decrements value is changed
+    /// @param newMaxDecrements The new maximum number of decrements
+    event MaxDecrementsChanged(uint256 newMaxDecrements);
+
     /// @notice The original Chainlink price feed contract
     AggregatorV3Interface public immutable originalFeed;
 
@@ -43,6 +47,9 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @notice The time window before the next update where early updates are allowed
     uint256 public earlyUpdateWindow;
 
+    /// @notice The maximum number of times to decrement the round before falling back to latest price
+    uint256 public maxDecrements;
+
     /// @notice The timestamp of the last cached price update
     uint256 public cachedTimestamp;
 
@@ -56,13 +63,15 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @param _owner Address of the contract owner
     /// @param _ethMarket Address of the ETH market
     /// @param _weth Address of the WETH contract
+    /// @parm _maxDecrements The maximum number of decrements before falling back to latest price
     constructor(
         address _originalFeed,
         uint256 _earlyUpdateWindow,
         uint16 _feeMultiplier,
         address _owner,
         address _ethMarket,
-        address _weth
+        address _weth,
+        uint256 _maxDecrements
     ) {
         originalFeed = AggregatorV3Interface(_originalFeed);
         WETHMarket = MErc20(_ethMarket);
@@ -70,6 +79,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
         earlyUpdateWindow = _earlyUpdateWindow;
         feeMultiplier = _feeMultiplier;
+        maxDecrements = _maxDecrements;
 
         // Initialize cache with current data
         (, int256 price, , uint256 timestamp, ) = originalFeed
@@ -101,10 +111,11 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         )
     {
         if (block.timestamp >= cachedTimestamp + earlyUpdateWindow) {
-            uint256 latestRoundId = originalFeed.latestRound();
-            // loop and get the price of the previous round
-            for (uint256 i = latestRoundId - 0; i > 0; i--) {
-                try originalFeed.getRoundData(uint80(i)) returns (
+            uint256 currentRoundId = originalFeed.latestRound();
+
+            // Loop from 0 to maxDecrements, decrementing the round ID each time
+            for (uint256 i = 0; i < maxDecrements && currentRoundId > 0; i++) {
+                try originalFeed.getRoundData(uint80(currentRoundId)) returns (
                     uint80 _roundId,
                     int256 _answer,
                     uint256 _startedAt,
@@ -118,15 +129,31 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
                     require(_updatedAt != 0, "Round is in incompleted state");
                     require(_answeredInRound >= _roundId, "Stale price");
 
+                    // Store the current valid values
                     roundId = _roundId;
                     answer = _answer;
                     startedAt = _startedAt;
                     updatedAt = _updatedAt;
                     answeredInRound = _answeredInRound;
-                    break;
                 } catch {
-                    continue;
+                    // Decrement the round ID for next iteration
+                    currentRoundId--;
                 }
+            }
+
+            // if no valid price was found, use the latest price
+            if (roundId == 0) {
+                (
+                    roundId,
+                    answer,
+                    startedAt,
+                    updatedAt,
+                    answeredInRound
+                ) = originalFeed.latestRoundData();
+
+                require(answer > 0, "Chainlink price cannot be lower than 0");
+                require(updatedAt != 0, "Round is in incompleted state");
+                require(answeredInRound >= roundId, "Stale price");
             }
         } else {
             return (0, cachedPrice, 0, cachedTimestamp, 0);
@@ -232,5 +259,12 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     function setEarlyUpdateWindow(uint256 newWindow) public onlyOwner {
         earlyUpdateWindow = newWindow;
         emit EarlyUpdateWindowChanged(newWindow);
+    }
+
+    /// @notice Set the maximum number of decrements before falling back to latest price
+    /// @param _maxDecrements The new maximum number of decrements
+    function setMaxDecrements(uint256 _maxDecrements) external onlyOwner {
+        maxDecrements = _maxDecrements;
+        emit MaxDecrementsChanged(_maxDecrements);
     }
 }
