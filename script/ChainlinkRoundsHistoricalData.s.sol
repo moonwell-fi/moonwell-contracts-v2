@@ -4,145 +4,218 @@ pragma solidity ^0.8.19;
 import {Script, console2} from "@forge-std/Script.sol";
 import "@forge-std/StdJson.sol";
 import {IMulticall3} from "@forge-std/interfaces/IMulticall3.sol";
-
 import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
 
-//time forge script script/ChainlinkRoundsHistoricalData.s.sol:ChainlinkRoundsHistoricalData \
-//    --rpc-url optimism \
-//    --sig "run(address)" \
-//    0x13e3Ee699D1909E989722E753853AE30b17e08c5
-contract ChainlinkRoundsHistoricalData is Script {
-    using stdJson for string;
+contract RoundDataHelper {
+    function createMulticallBatch(
+        address priceFeedAddress,
+        uint80 startRound,
+        uint256 batchSize
+    ) public pure returns (IMulticall3.Call3[] memory) {
+        IMulticall3.Call3[] memory calls = new IMulticall3.Call3[](batchSize);
+        bytes4 selector = bytes4(keccak256("getRoundData(uint80)"));
 
-    // Optimism Multicall3 address
-    address constant MULTICALL3 = 0xcA11bde05977b3631167028862bE2a173976CA11;
-
-    function run(address priceFeedAddress) external {
-        IMulticall3 multicall = IMulticall3(MULTICALL3);
-        AggregatorV3Interface priceFeed = AggregatorV3Interface(
-            priceFeedAddress
-        );
-
-        uint256 sixMonthsAgo = block.timestamp - (6 * 30 days);
-
-        // Initialize JSON content
-        string memory jsonContent = "[";
-        bool isFirst = true;
-
-        // Get the latest round ID
-        uint80 currentRoundId = uint80(priceFeed.latestRound());
-        bool reachedTarget = false;
-        uint256 batchSize = 10_000;
-
-        while (!reachedTarget) {
-            // Prepare batch calls
-            IMulticall3.Call3[] memory calls = new IMulticall3.Call3[](
-                batchSize
-            );
-
-            // Prepare the getRoundData calls
-            bytes4 getRoundDataSelector = bytes4(
-                keccak256("getRoundData(uint80)")
-            );
-
-            for (uint256 i = 0; i < batchSize; i++) {
-                uint80 roundId = uint80(currentRoundId - i);
-                calls[i] = IMulticall3.Call3({
-                    target: priceFeedAddress,
-                    callData: abi.encodeWithSelector(
-                        getRoundDataSelector,
-                        roundId
-                    ),
-                    allowFailure: true
-                });
-            }
-
-            // Execute multicall
-            IMulticall3.Result[] memory results = multicall.aggregate3(calls);
-
-            // Process results
-            uint256 lastValidTimestamp = type(uint256).max;
-
-            for (uint256 i = 0; i < results.length; i++) {
-                if (!results[i].success) continue;
-
-                // Decode the result
-                (
-                    uint80 roundId,
-                    int256 answer,
-                    uint256 startedAt,
-                    uint256 updatedAt,
-                    uint80 answeredInRound
-                ) = abi.decode(
-                        results[i].returnData,
-                        (uint80, int256, uint256, uint256, uint80)
-                    );
-
-                // Update last valid timestamp
-                if (updatedAt < lastValidTimestamp) {
-                    lastValidTimestamp = updatedAt;
-                }
-
-                // Skip if older than 6 months
-                if (updatedAt < sixMonthsAgo) {
-                    reachedTarget = true;
-                    break;
-                }
-
-                // Add comma if not first entry
-                if (!isFirst) {
-                    jsonContent = string.concat(jsonContent, ",");
-                }
-                isFirst = false;
-
-                // Add object to JSON array
-                jsonContent = string.concat(
-                    jsonContent,
-                    "{",
-                    '"roundId":',
-                    vm.toString(roundId),
-                    ",",
-                    '"roundPrice":"',
-                    vm.toString(answer),
-                    '",',
-                    '"roundTimestamp":',
-                    vm.toString(updatedAt),
-                    "}"
-                );
-            }
-
-            // Update currentRoundId for next batch
-            currentRoundId = uint80(currentRoundId - batchSize);
-
-            // Break if we've processed all rounds or reached target
-            if (currentRoundId == 0 || reachedTarget) {
-                break;
-            }
-
-            // Log progress
-            console2.log(
-                "Processed batch. Last timestamp:",
-                lastValidTimestamp,
-                "Target:",
-                sixMonthsAgo
+        for (uint256 i = 0; i < batchSize; i++) {
+            calls[i].target = priceFeedAddress;
+            calls[i].allowFailure = true;
+            calls[i].callData = abi.encodeWithSelector(
+                selector,
+                uint80(startRound - i)
             );
         }
 
-        // Close JSON array
-        jsonContent = string.concat(jsonContent, "]");
+        return calls;
+    }
 
-        // Prepare JSON file path
-        string memory jsonPath = string.concat(
+    function formatRoundData(
+        uint80 roundId,
+        int256 answer,
+        uint256 updatedAt,
+        bool needsComma,
+        Vm vm
+    ) public pure returns (string memory) {
+        return
+            string.concat(
+                needsComma ? "," : "",
+                "{",
+                '"roundId":',
+                vm.toString(roundId),
+                ",",
+                '"roundPrice":"',
+                vm.toString(answer),
+                '",',
+                '"roundTimestamp":',
+                vm.toString(updatedAt),
+                "}"
+            );
+    }
+}
+
+contract ChainlinkRoundsHistoricalData is Script {
+    using stdJson for string;
+
+    address constant MULTICALL3 = 0xcA11bde05977b3631167028862bE2a173976CA11;
+    uint256 constant BATCH_SIZE = 1000;
+
+    RoundDataHelper helper;
+    string private jsonPath;
+    string private existingJson;
+    bool private hasExistingData;
+    uint256 private sixMonthsAgo;
+
+    function processResults(
+        IMulticall3.Result[] memory results
+    )
+        private
+        returns (string memory batchJson, bool reachedTarget, uint80 lastRound)
+    {
+        string memory json = "";
+        uint256 lastTimestamp = type(uint256).max;
+        bool needsComma = hasExistingData;
+        uint256 successCount = 0;
+
+        for (uint256 i = 0; i < results.length; i++) {
+            if (!results[i].success) {
+                console2.log("Failed call at index:", i);
+                continue;
+            }
+
+            (uint80 roundId, int256 answer, , uint256 updatedAt, ) = abi.decode(
+                results[i].returnData,
+                (uint80, int256, uint256, uint256, uint80)
+            );
+
+            if (updatedAt < sixMonthsAgo) {
+                console2.log(
+                    "Reached target timestamp. Current:",
+                    updatedAt,
+                    "Target:",
+                    sixMonthsAgo
+                );
+                reachedTarget = true;
+                break;
+            }
+
+            json = string.concat(
+                json,
+                helper.formatRoundData(
+                    roundId,
+                    answer,
+                    updatedAt,
+                    needsComma,
+                    vm
+                )
+            );
+
+            needsComma = true;
+            lastRound = roundId;
+            successCount++;
+
+            if (updatedAt < lastTimestamp) {
+                lastTimestamp = updatedAt;
+            }
+        }
+
+        console2.log("Processed batch. Successful calls:", successCount);
+        if (lastTimestamp != type(uint256).max) {
+            console2.log("Latest timestamp in batch:", lastTimestamp);
+        }
+
+        return (json, reachedTarget, lastRound);
+    }
+
+    function saveToFile(string memory batchJson) private {
+        string memory fullJson = string.concat(existingJson, batchJson, "]");
+        vm.writeFile(jsonPath, fullJson);
+        console2.log(
+            "Saved progress to file. Current JSON length:",
+            bytes(fullJson).length
+        );
+
+        existingJson = string.concat(existingJson, batchJson);
+        hasExistingData = true;
+    }
+
+    function run(address priceFeedAddress) external {
+        console2.log("Starting script with price feed:", priceFeedAddress);
+
+        helper = new RoundDataHelper();
+        sixMonthsAgo = block.timestamp - (6 * 30 days);
+        console2.log("Current time:", block.timestamp);
+        console2.log("Target time (6 months ago):", sixMonthsAgo);
+
+        jsonPath = string.concat(
             vm.projectRoot(),
             "/output/chainlink_historical_data_",
             vm.toString(block.chainid),
             ".json"
         );
+        console2.log("Output file:", jsonPath);
 
-        // Write complete JSON to file
-        vm.writeFile(jsonPath, jsonContent);
+        try vm.readFile(jsonPath) returns (string memory content) {
+            if (bytes(content).length > 0) {
+                existingJson = substring(content, 0, bytes(content).length - 1);
+                hasExistingData = true;
+                console2.log(
+                    "Found existing data. Length:",
+                    bytes(existingJson).length
+                );
+            }
+        } catch {
+            existingJson = "[";
+            hasExistingData = false;
+            console2.log("Starting fresh - no existing data");
+        }
 
-        // Log the file location
-        console2.log("Data written to:", jsonPath);
+        IMulticall3 multicall = IMulticall3(MULTICALL3);
+        uint80 currentRoundId = uint80(
+            AggregatorV3Interface(priceFeedAddress).latestRound()
+        );
+        console2.log("Latest round ID:", currentRoundId);
+
+        bool reachedTarget = false;
+
+        while (!reachedTarget && currentRoundId > 0) {
+            console2.log("Processing batch from round:", currentRoundId);
+
+            IMulticall3.Call3[] memory calls = helper.createMulticallBatch(
+                priceFeedAddress,
+                currentRoundId,
+                BATCH_SIZE
+            );
+
+            IMulticall3.Result[] memory results = multicall.aggregate3(calls);
+            console2.log("Got multicall results. Length:", results.length);
+
+            (
+                string memory batchJson,
+                bool batchReachedTarget,
+                uint80 lastProcessedRound
+            ) = processResults(results);
+
+            if (bytes(batchJson).length > 0) {
+                saveToFile(batchJson);
+            } else {
+                console2.log("No data in this batch");
+            }
+
+            reachedTarget = batchReachedTarget;
+            currentRoundId = uint80(currentRoundId - BATCH_SIZE);
+        }
+
+        console2.log("Completed processing all rounds");
+    }
+
+    function substring(
+        string memory str,
+        uint256 start,
+        uint256 end
+    ) private pure returns (string memory) {
+        bytes memory strBytes = bytes(str);
+        bytes memory result = new bytes(end - start);
+        for (uint256 i = start; i < end; i++) {
+            result[i - start] = strBytes[i];
+        }
+        return string(result);
     }
 }
