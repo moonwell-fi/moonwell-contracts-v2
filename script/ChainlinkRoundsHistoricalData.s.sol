@@ -2,17 +2,22 @@
 pragma solidity ^0.8.19;
 
 import {Script, console2} from "@forge-std/Script.sol";
-import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
-import {IMulticall3} from "@forge-std/interfaces/IMulticall3.sol";
 import "@forge-std/StdJson.sol";
+import {IMulticall3} from "@forge-std/interfaces/IMulticall3.sol";
 
+import {AggregatorV3Interface} from "@protocol/oracles/AggregatorV3Interface.sol";
+
+//time forge script script/ChainlinkRoundsHistoricalData.s.sol:ChainlinkRoundsHistoricalData \
+//    --rpc-url optimism \
+//    --sig "run(address)" \
+//    0x13e3Ee699D1909E989722E753853AE30b17e08c5
 contract ChainlinkRoundsHistoricalData is Script {
     using stdJson for string;
 
     // Optimism Multicall3 address
     address constant MULTICALL3 = 0xcA11bde05977b3631167028862bE2a173976CA11;
 
-    function run(address priceFeedAddress, uint256 chainId) external {
+    function run(address priceFeedAddress) external {
         IMulticall3 multicall = IMulticall3(MULTICALL3);
         AggregatorV3Interface priceFeed = AggregatorV3Interface(
             priceFeedAddress
@@ -130,7 +135,7 @@ contract ChainlinkRoundsHistoricalData is Script {
         string memory jsonPath = string.concat(
             vm.projectRoot(),
             "/output/chainlink_historical_data_",
-            vm.toString(chainId),
+            vm.toString(block.chainid),
             ".json"
         );
 
