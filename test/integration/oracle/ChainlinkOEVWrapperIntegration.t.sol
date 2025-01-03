@@ -26,6 +26,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     MarketBase public marketBase;
 
     uint256 public constant multiplier = 99;
+    uint256 latestRoundOnChain;
 
     function setUp() public override {
         uint256 primaryForkId = vm.envUint("PRIMARY_FORK_ID");
@@ -40,7 +41,8 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER")
         );
 
-        vm.warp(block.timestamp + 1);
+        // get latest round
+        latestRoundOnChain = wrapper.originalFeed().latestRound();
     }
 
     function _mintMToken(
@@ -71,20 +73,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         int256 mockPrice = 3_000e8; // chainlink oracle uses 8 decimals
 
-        vm.mockCall(
-            address(wrapper.originalFeed()),
-            abi.encodeWithSelector(
-                wrapper.originalFeed().latestRoundData.selector
-            ),
-            abi.encode(
-                uint80(1), // roundId
-                mockPrice, // answer
-                uint256(0), // startedAt
-                uint256(block.timestamp), // updatedAt
-                uint80(1) // answeredInRound
-            )
-        );
-
         uint256 tax = (50 gwei - 25 gwei) * multiplier; // (gasPrice - baseFee) * multiplier
         vm.deal(address(this), tax);
         vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
@@ -94,6 +82,13 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             addresses.getAddress("MOONWELL_WETH"),
             tax
         );
+
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
+            abi.encode(uint256(latestRoundOnChain + 1))
+        );
+
         wrapper.updatePriceEarly{value: tax}();
 
         (, int256 answer, , uint256 timestamp, ) = wrapper.latestRoundData();
@@ -214,11 +209,24 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             vm.mockCall(
                 address(wrapper.originalFeed()),
                 abi.encodeWithSelector(
-                    wrapper.originalFeed().latestRoundData.selector
+                    wrapper.originalFeed().latestRound.selector
                 ),
-                abi.encode(uint80(1), newPrice, 0, block.timestamp, uint80(1))
+                abi.encode(uint256(latestRoundOnChain + 1))
             );
             wrapper.updatePriceEarly{value: tax}();
+            vm.mockCall(
+                address(wrapper.originalFeed()),
+                abi.encodeWithSelector(
+                    wrapper.originalFeed().latestRoundData.selector
+                ),
+                abi.encode(
+                    uint80(latestRoundOnChain + 1),
+                    newPrice,
+                    0,
+                    block.timestamp,
+                    uint80(1)
+                )
+            );
 
             (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
                 .getHypotheticalAccountLiquidity(user, address(mToken), 0, 0);
@@ -329,6 +337,12 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         vm.txGasPrice(50 gwei);
         vm.fee(25 gwei);
+
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
+            abi.encode(latestRoundOnChain + 1)
+        );
         wrapper.updatePriceEarly{value: tax}();
 
         uint256 totalReservesAfter = MErc20(
@@ -453,79 +467,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
             vm.stopPrank();
         }
-    }
-
-    function testUpdatePriceEarlyRevertOnChainlinkPriceIsZero() public {
-        vm.mockCall(
-            address(wrapper.originalFeed()),
-            abi.encodeWithSelector(
-                wrapper.originalFeed().latestRoundData.selector
-            ),
-            abi.encode(
-                uint80(1), // roundId
-                int256(0), // answer
-                uint256(0), // startedAt
-                uint256(block.timestamp), // updatedAt
-                uint80(1) // answeredInRound
-            )
-        );
-
-        uint256 tax = (50 gwei - 25 gwei) * multiplier; // (gasPrice - baseFee) * multiplier
-        vm.deal(address(this), tax);
-
-        vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
-        vm.fee(25 gwei); // Set base fee to 25 gwei
-
-        vm.expectRevert("Chainlink price cannot be lower than 0");
-        wrapper.updatePriceEarly{value: tax}();
-    }
-
-    function testUpdatePriceEearlyRevertOnIncompleteRoundState() public {
-        vm.mockCall(
-            address(wrapper.originalFeed()),
-            abi.encodeWithSelector(
-                wrapper.originalFeed().latestRoundData.selector
-            ),
-            abi.encode(
-                uint80(1), // roundId
-                int256(3_000e8), // answer
-                uint256(0), // startedAt
-                uint256(0), // updatedAt - set to 0 to simulate incomplete state
-                uint80(1) // answeredInRound
-            )
-        );
-
-        uint256 tax = (50 gwei - 25 gwei) * multiplier; // (gasPrice - baseFee) * multiplier
-        vm.deal(address(this), tax);
-        vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
-        vm.fee(25 gwei); // Set base fee to 25 gwei
-
-        vm.expectRevert("Round is in incompleted state");
-        wrapper.updatePriceEarly{value: tax}();
-    }
-
-    function testUpdatePriceEarlyRevertOnStalePriceData() public {
-        vm.mockCall(
-            address(wrapper.originalFeed()),
-            abi.encodeWithSelector(
-                wrapper.originalFeed().latestRoundData.selector
-            ),
-            abi.encode(
-                uint80(2), // roundId
-                int256(3_000e8), // answer
-                uint256(0), // startedAt
-                uint256(block.timestamp), // updatedAt
-                uint80(1) // answeredInRound - less than roundId to simulate stale price
-            )
-        );
-
-        uint256 tax = (50 gwei - 25 gwei) * multiplier; // (gasPrice - baseFee) * multiplier
-        vm.deal(address(this), tax);
-        vm.txGasPrice(50 gwei); // Set gas price to 50 gwei
-        vm.fee(25 gwei); // Set base fee to 25 gwei
-
-        vm.expectRevert("Stale price");
-        wrapper.updatePriceEarly{value: tax}();
     }
 
     function testLatestRoundDataRevertOnChainlinkPriceIsZero() public {
@@ -786,6 +727,11 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         uint256 payment = (tx.gasprice - block.basefee) *
             uint256(wrapper.feeMultiplier());
 
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
+            abi.encode(uint256(latestRoundOnChain + 1))
+        );
         vm.expectRevert("ChainlinkOEVWrapper: Failed to add reserves");
         wrapper.updatePriceEarly{value: payment}();
     }
