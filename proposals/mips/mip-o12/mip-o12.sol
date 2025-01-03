@@ -103,6 +103,9 @@ contract mipo12 is HybridProposal {
             "Wrong version"
         );
 
+        // get last roun
+        uint256 lastRoundId = wrapper.originalFeed().latestRound();
+
         // Validate latestRoundData returns original feed data
 
         (
@@ -111,7 +114,7 @@ contract mipo12 is HybridProposal {
             uint256 expectedStartedAt,
             uint256 expectedUpdatedAt,
             uint80 expectedAnsweredInRound
-        ) = wrapper.originalFeed().latestRoundData();
+        ) = wrapper.originalFeed().getRoundData(lastRoundId - 1);
 
         (
             uint80 actualRoundId,
