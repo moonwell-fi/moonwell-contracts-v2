@@ -91,6 +91,21 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         wrapper.updatePriceEarly{value: tax}();
 
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().getRoundData.selector,
+                uint80(latestRoundOnChain + 1)
+            ),
+            abi.encode(
+                uint80(latestRoundOnChain + 1),
+                mockPrice,
+                0,
+                block.timestamp,
+                uint80(latestRoundOnChain + 1)
+            )
+        );
+
         (, int256 answer, , uint256 timestamp, ) = wrapper.latestRoundData();
 
         vm.warp(vm.getBlockTimestamp() + 1);
@@ -103,13 +118,11 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         );
     }
 
-    function testReturnOriginalFeedPriceIfEarlyUpdateWindowHasPassed() public {
-        testCanUpdatePriceEarly();
-
+    function testReturnPreviousRoundIfNoOneHasPaidForCurrentRound() public {
         vm.mockCall(
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
-            abi.encode(uint256(1))
+            abi.encode(uint256(latestRoundOnChain + 1))
         );
 
         int256 mockPrice = 3_3333e8; // chainlink oracle uses 8 decimals
@@ -118,9 +131,15 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(
                 wrapper.originalFeed().getRoundData.selector,
-                uint80(latestRoundOnChain + 1)
+                uint80(latestRoundOnChain)
             ),
-            abi.encode(uint80(1), mockPrice, 0, mockTimestamp, uint80(1))
+            abi.encode(
+                uint80(latestRoundOnChain),
+                mockPrice,
+                0,
+                mockTimestamp,
+                uint80(latestRoundOnChain)
+            )
         );
 
         (, int256 answer, , uint256 timestamp, ) = wrapper.latestRoundData();
@@ -227,7 +246,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
                     newPrice,
                     0,
                     block.timestamp,
-                    uint80(1)
+                    uint80(latestRoundOnChain + 1)
                 )
             );
 
