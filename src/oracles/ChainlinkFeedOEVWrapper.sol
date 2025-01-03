@@ -93,40 +93,47 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         external
         view
         override
-        returns (uint80, int256, uint256, uint256, uint80)
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
     {
         uint256 currentRoundId = originalFeed.latestRound();
 
         // If no valid price was found within maxDecrements, use the latest price
         if (currentRoundId == cachedRoundId) {
             (
-                uint80 roundId,
-                int256 answer,
-                uint256 startedAt,
-                uint256 updatedAt,
-                uint80 answeredInRound
+                roundId,
+                answer,
+                startedAt,
+                updatedAt,
+                answeredInRound
             ) = originalFeed.getRoundData(uint80(currentRoundId));
 
-            require(answer > 0, "Chainlink price cannot be lower than 0");
-            require(updatedAt != 0, "Round is in incompleted state");
-            require(answeredInRound >= roundId, "Stale price");
+            _validateRoundData(roundId, answer, updatedAt, answeredInRound);
             return (roundId, answer, startedAt, updatedAt, answeredInRound);
         }
 
         // Loop from 0 to maxDecrements, decrementing the round ID each time
         for (uint256 i = 0; i < maxDecrements && --currentRoundId > 0; i++) {
             try originalFeed.getRoundData(uint80(currentRoundId)) returns (
-                uint80 roundId,
-                int256 answer,
-                uint256 startedAt,
-                uint256 updatedAt,
-                uint80 answeredInRound
+                uint80 r,
+                int256 a,
+                uint256 s,
+                uint256 u,
+                uint80 ar
             ) {
                 // Validate the round data
-                require(answer > 0, "Chainlink price cannot be lower than 0");
-                require(updatedAt != 0, "Round is in incompleted state");
-                require(answeredInRound >= roundId, "Stale price");
+                _validateRoundData(r, a, u, ar);
 
+                roundId = r;
+                answer = a;
+                startedAt = s;
+                updatedAt = u;
+                answeredInRound = ar;
                 return (roundId, answer, startedAt, updatedAt, answeredInRound);
             } catch {
                 // Decrement the round ID for next iteration
@@ -134,17 +141,10 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             }
         }
         // If no valid price was found within maxDecrements, use the latest price
-        (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        ) = originalFeed.latestRoundData();
+        (roundId, answer, startedAt, updatedAt, answeredInRound) = originalFeed
+            .latestRoundData();
 
-        require(answer > 0, "Chainlink price cannot be lower than 0");
-        require(updatedAt != 0, "Round is in incompleted state");
-        require(answeredInRound >= roundId, "Stale price");
+        _validateRoundData(roundId, answer, updatedAt, answeredInRound);
         return (roundId, answer, startedAt, updatedAt, answeredInRound);
     }
 
@@ -219,15 +219,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             uint80 answeredInRound
         )
     {
-        uint80 r;
-        int256 a;
-        uint256 s;
-        uint256 u;
-        uint80 ar;
-
-        (r, a, s, u, ar) = originalFeed.getRoundData(_roundId);
-
-        return (r, a, s, u, ar);
+        (roundId, answer, startedAt, updatedAt, answeredInRound) = originalFeed
+            .getRoundData(_roundId);
     }
 
     /// @notice Get the latest round ID
@@ -249,5 +242,21 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     function setMaxDecrements(uint8 _maxDecrements) external onlyOwner {
         maxDecrements = _maxDecrements;
         emit MaxDecrementsChanged(_maxDecrements);
+    }
+
+    /// @notice Validate the round data from Chainlink
+    /// @param roundId The round ID to validate
+    /// @param answer The price to validate
+    /// @param updatedAt The timestamp when the round was updated
+    /// @param answeredInRound The round ID in which the answer was computed
+    function _validateRoundData(
+        uint80 roundId,
+        int256 answer,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    ) internal pure {
+        require(answer > 0, "Chainlink price cannot be lower than 0");
+        require(updatedAt != 0, "Round is in incompleted state");
+        require(answeredInRound >= roundId, "Stale price");
     }
 }
