@@ -55,15 +55,12 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
     /// @notice Constructor to initialize the wrapper
     /// @param _originalFeed Address of the original Chainlink feed
-    /// @param _earlyUpdateWindow Time window for early updates
-    /// @param _feeMultiplier Multiplier for the fee calculation
     /// @param _owner Address of the contract owner
     /// @param _ethMarket Address of the ETH market
     /// @param _weth Address of the WETH contract
     /// @param _maxDecrements The maximum number of decrements before falling back to latest price
     constructor(
         address _originalFeed,
-        uint256 _earlyUpdateWindow,
         uint16 _feeMultiplier,
         address _owner,
         address _ethMarket,
@@ -140,7 +137,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
                 currentRoundId--;
             }
         }
-        // If no valid price was found within maxDecrements, use the latest price
+        // If no valid round was found within maxDecrements, use the latest price
         (roundId, answer, startedAt, updatedAt, answeredInRound) = originalFeed
             .latestRoundData();
 
@@ -149,6 +146,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     }
 
     /// @notice Update the price earlier than the standard update interval
+    /// @return The latest round ID
     /// @dev Requires payment of a fee based on gas price and fee multiplier
     function updatePriceEarly() external payable returns (uint256) {
         require(
