@@ -112,7 +112,7 @@ contract mipo12 is HybridProposal {
             uint256 expectedStartedAt,
             uint256 expectedUpdatedAt,
             uint80 expectedAnsweredInRound
-        ) = wrapper.originalFeed().getRoundData(uint80(lastRoundId - 1));
+        ) = wrapper.originalFeed().getRoundData(uint80(lastRoundId));
 
         (
             uint80 actualRoundId,
