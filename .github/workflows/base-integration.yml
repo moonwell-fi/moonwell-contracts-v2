@@ -99,3 +99,27 @@ jobs:
            max_attempts: 3
            command: time forge test --match-contract CypherIntegrationTest --fork-url base -vvv 
 
+  bounded-chainlink-composite-oracle:
+    name: Bounded Chainlink Composite Oracle Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup Environment
+        uses: ./.github/actions
+
+      - name: Give write permissions
+        run: chmod -R +x proposals/mips/
+
+      - name: Run Integration Tests
+        uses: nick-fields/retry@v3
+        with:
+           polling_interval_seconds: 30
+           retry_wait_seconds: 60
+           timeout_minutes: 20
+           max_attempts: 3
+           command: time forge test --mc "ChainlinkBoundedCompositeOracleIntegrationTest" -vvv --ffi
+
