@@ -20,7 +20,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         address indexed receiver,
         uint256 revenueAdded
     );
-    event MaxDecrementsChanged(uint16 newMaxDecrements);
+    event MaxDecrementsChanged(uint8 newMaxDecrements);
 
     ChainlinkFeedOEVWrapper public wrapper;
     Comptroller comptroller;
@@ -44,7 +44,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             addresses.getAddress("TEMPORAL_GOVERNOR"),
             addresses.getAddress("MOONWELL_WETH"),
             addresses.getAddress("WETH"),
-            uint16(10) // Default maxDecrements
+            uint8(10) // Default maxDecrements
         );
     }
 
@@ -264,7 +264,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testSetFeeMultiplier() public {
-        uint16 newMultiplier = 1;
+        uint8 newMultiplier = 1;
 
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectEmit(address(wrapper));
@@ -700,8 +700,8 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testSetMaxDecrements() public {
-        uint16 newMaxDecrements = 15;
-        uint16 originalMaxDecrements = wrapper.maxDecrements();
+        uint8 newMaxDecrements = 15;
+        uint8 originalMaxDecrements = wrapper.maxDecrements();
 
         // Non-owner should not be able to change maxDecrements
         vm.prank(address(0x1234));

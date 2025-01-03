@@ -29,7 +29,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
     /// @notice Emitted when the max decrements value is changed
     /// @param newMaxDecrements The new maximum number of decrements
-    event MaxDecrementsChanged(uint16 newMaxDecrements);
+    event MaxDecrementsChanged(uint8 newMaxDecrements);
 
     /// @notice The original Chainlink price feed contract
     AggregatorV3Interface public immutable originalFeed;
@@ -42,13 +42,13 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
     /// @notice The fee multiplier applied to the original feed's fee
     /// @dev Represented as a percentage
-    uint16 public feeMultiplier;
+    uint8 public feeMultiplier;
 
     /// @notice The time window before the next update where early updates are allowed
     uint256 public earlyUpdateWindow;
 
     /// @notice The maximum number of times to decrement the round before falling back to latest price
-    uint16 public maxDecrements;
+    uint8 public maxDecrements;
 
     /// @notice The timestamp of the last cached price update
     uint256 public cachedTimestamp;
@@ -71,14 +71,14 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         address _owner,
         address _ethMarket,
         address _weth,
-        uint16 _maxDecrements
+        uint8 _maxDecrements
     ) {
         originalFeed = AggregatorV3Interface(_originalFeed);
         WETHMarket = MErc20(_ethMarket);
         WETH = WETH9(_weth);
 
         earlyUpdateWindow = _earlyUpdateWindow;
-        feeMultiplier = _feeMultiplier;
+        feeMultiplier = uint8(_feeMultiplier);
         maxDecrements = _maxDecrements;
 
         // Initialize cache with current data
@@ -255,7 +255,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @param newMultiplier The new fee multiplier to set
     /// @dev Only callable by the contract owner
     function setFeeMultiplier(uint16 newMultiplier) public onlyOwner {
-        feeMultiplier = newMultiplier;
+        feeMultiplier = uint8(newMultiplier);
         emit FeeMultiplierChanged(newMultiplier);
     }
 
@@ -269,7 +269,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
     /// @notice Set the maximum number of decrements before falling back to latest price
     /// @param _maxDecrements The new maximum number of decrements
-    function setMaxDecrements(uint16 _maxDecrements) external onlyOwner {
+    function setMaxDecrements(uint8 _maxDecrements) external onlyOwner {
         maxDecrements = _maxDecrements;
         emit MaxDecrementsChanged(_maxDecrements);
     }
