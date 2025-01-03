@@ -221,7 +221,15 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             vm.mockCall(
                 address(wrapper.originalFeed()),
                 abi.encodeWithSelector(
-                    wrapper.originalFeed().latestRoundData.selector
+                    wrapper.originalFeed().latestRound.selector
+                ),
+                abi.encode(uint256(1))
+            );
+            vm.mockCall(
+                address(wrapper.originalFeed()),
+                abi.encodeWithSelector(
+                    wrapper.originalFeed().getRoundData.selector,
+                    uint80(1)
                 ),
                 abi.encode(uint80(1), newPrice, 0, block.timestamp, uint80(1))
             );
@@ -803,5 +811,25 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             uint80(latestRound - 5),
             "Should return round 95 as answered round"
         );
+    }
+
+    function testUpdatePriceEarlyFailsOnAddReserves() public {
+        // Mock _addReserves to return error code 1 (failure)
+        vm.mockCall(
+            address(addresses.getAddress("MOONWELL_WETH")),
+            abi.encodeWithSelector(MErc20._addReserves.selector),
+            abi.encode(uint256(1))
+        );
+
+        // Set gas price higher than base fee to avoid underflow
+        vm.fee(1 gwei);
+        vm.txGasPrice(2 gwei);
+
+        // Calculate required payment
+        uint256 payment = (tx.gasprice - block.basefee) *
+            uint256(wrapper.feeMultiplier());
+
+        vm.expectRevert("ChainlinkOEVWrapper: Failed to add reserves");
+        wrapper.updatePriceEarly{value: payment}();
     }
 }

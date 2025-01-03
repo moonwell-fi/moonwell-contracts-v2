@@ -193,7 +193,10 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         WETH.approve(address(WETHMarket), msg.value);
 
         // Add the ETH to the market's reserves
-        WETHMarket._addReserves(msg.value);
+        require(
+            WETHMarket._addReserves(msg.value) == 0,
+            "ChainlinkOEVWrapper: Failed to add reserves"
+        );
 
         emit ProtocolOEVRevenueUpdated(address(WETHMarket), msg.value);
 
