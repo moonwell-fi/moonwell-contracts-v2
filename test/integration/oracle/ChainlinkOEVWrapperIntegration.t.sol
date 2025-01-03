@@ -512,7 +512,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             )
         );
 
-        vm.expectRevert("Chainlink price cannot be lower than 0");
+        vm.expectRevert("Chainlink price cannot be lower or equal to 0");
         wrapper.latestRoundData();
     }
 
