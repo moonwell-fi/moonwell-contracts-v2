@@ -39,6 +39,8 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         wrapper = ChainlinkFeedOEVWrapper(
             addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER")
         );
+
+        vm.warp(block.timestamp + 1);
     }
 
     function _mintMToken(
