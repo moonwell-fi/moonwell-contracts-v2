@@ -37,14 +37,8 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         marketBase = new MarketBase(comptroller);
 
         // Deploy a new wrapper for testing
-        wrapper = new ChainlinkFeedOEVWrapper(
-            addresses.getAddress("CHAINLINK_ETH_USD"),
-            30, // 30 second early update window
-            99, // 99x fee multiplier
-            addresses.getAddress("TEMPORAL_GOVERNOR"),
-            addresses.getAddress("MOONWELL_WETH"),
-            addresses.getAddress("WETH"),
-            uint8(10) // Default maxDecrements
+        wrapper = ChainlinkFeedOEVWrapper(
+            addresses.getAddress("CHAINLINK_ETH_USD_OEV_WRAPPER")
         );
     }
 
@@ -218,18 +212,11 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             vm.deal(address(this), tax);
             vm.txGasPrice(50 gwei);
             vm.fee(25 gwei);
+
             vm.mockCall(
                 address(wrapper.originalFeed()),
                 abi.encodeWithSelector(
-                    wrapper.originalFeed().latestRound.selector
-                ),
-                abi.encode(uint256(1))
-            );
-            vm.mockCall(
-                address(wrapper.originalFeed()),
-                abi.encodeWithSelector(
-                    wrapper.originalFeed().getRoundData.selector,
-                    uint80(1)
+                    wrapper.originalFeed().latestRoundData.selector
                 ),
                 abi.encode(uint80(1), newPrice, 0, block.timestamp, uint80(1))
             );
