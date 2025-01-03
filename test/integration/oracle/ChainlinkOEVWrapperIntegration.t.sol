@@ -93,14 +93,13 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             addresses.getAddress("MOONWELL_WETH"),
             tax
         );
-        int256 price = wrapper.updatePriceEarly{value: tax}();
+        wrapper.updatePriceEarly{value: tax}();
 
         (, int256 answer, , uint256 timestamp, ) = wrapper.latestRoundData();
 
         vm.warp(vm.getBlockTimestamp() + 1);
 
         assertEq(mockPrice, answer, "Price should be the same as answer");
-        assertEq(mockPrice, price, "Price should be the same as price");
         assertEq(
             timestamp,
             block.timestamp - 1,
@@ -110,8 +109,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
     function testReturnOriginalFeedPriceIfEarlyUpdateWindowHasPassed() public {
         testCanUpdatePriceEarly();
-
-        vm.warp(vm.getBlockTimestamp() + wrapper.earlyUpdateWindow());
 
         vm.mockCall(
             address(wrapper.originalFeed()),
@@ -276,26 +273,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     function testSetFeeMultiplierRevertNonOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
         wrapper.setFeeMultiplier(1);
-    }
-
-    function testSetEarlyUpdateWindow() public {
-        uint256 newWindow = 15;
-
-        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
-        vm.expectEmit(address(wrapper));
-        emit EarlyUpdateWindowChanged(newWindow);
-        wrapper.setEarlyUpdateWindow(newWindow);
-
-        assertEq(
-            wrapper.earlyUpdateWindow(),
-            newWindow,
-            "Early update window not updated"
-        );
-    }
-
-    function testSetEarlyUpdateWindowRevertNonOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
-        wrapper.setEarlyUpdateWindow(15);
     }
 
     function testGetRoundData() public {
@@ -550,9 +527,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testLatestRoundDataRevertOnChainlinkPriceIsZero() public {
-        // Ensure we're outside the early update window to force fetching from original feed
-        vm.warp(block.timestamp + wrapper.earlyUpdateWindow() + 1);
-
         vm.mockCall(
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
@@ -578,9 +552,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testLatestRoundDataRevertOnIncompleteRoundState() public {
-        // Ensure we're outside the early update window to force fetching from original feed
-        vm.warp(block.timestamp + wrapper.earlyUpdateWindow() + 1);
-
         vm.mockCall(
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
@@ -606,9 +577,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testLatestRoundDataRevertOnStalePriceData() public {
-        // Ensure we're outside the early update window to force fetching from original feed
-        vm.warp(block.timestamp + wrapper.earlyUpdateWindow() + 1);
-
         vm.mockCall(
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),

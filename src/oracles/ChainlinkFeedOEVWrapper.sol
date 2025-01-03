@@ -44,14 +44,11 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @dev Represented as a percentage
     uint8 public feeMultiplier;
 
-    /// @notice The time window before the next update where early updates are allowed
-    uint256 public earlyUpdateWindow;
-
     /// @notice The maximum number of times to decrement the round before falling back to latest price
     uint8 public maxDecrements;
 
-    /// @notice The timestamp of the last cached price update
-    uint256 public cachedTimestamp;
+    /// @notice The last cached round id
+    uint256 public cachedRoundId;
 
     /// @notice The last cached price value
     int256 public cachedPrice;
@@ -77,16 +74,10 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         WETHMarket = MErc20(_ethMarket);
         WETH = WETH9(_weth);
 
-        earlyUpdateWindow = _earlyUpdateWindow;
         feeMultiplier = uint8(_feeMultiplier);
         maxDecrements = _maxDecrements;
 
-        // Initialize cache with current data
-        (, int256 price, , uint256 timestamp, ) = originalFeed
-            .latestRoundData();
-
-        cachedPrice = price;
-        cachedTimestamp = timestamp;
+        cachedRoundId = originalFeed.latestRound();
 
         transferOwnership(_owner);
     }
@@ -102,90 +93,75 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         external
         view
         override
-        returns (
+        returns (uint80, int256, uint256, uint256, uint80)
+    {
+        uint256 currentRoundId = originalFeed.latestRound();
+
+        // If no valid price was found within maxDecrements, use the latest price
+        if (currentRoundId == cachedRoundId) {
+            (
+                uint80 roundId,
+                int256 answer,
+                uint256 startedAt,
+                uint256 updatedAt,
+                uint80 answeredInRound
+            ) = originalFeed.getRoundData(uint80(currentRoundId));
+
+            require(answer > 0, "Chainlink price cannot be lower than 0");
+            require(updatedAt != 0, "Round is in incompleted state");
+            require(answeredInRound >= roundId, "Stale price");
+            return (roundId, answer, startedAt, updatedAt, answeredInRound);
+        }
+
+        // Loop from 0 to maxDecrements, decrementing the round ID each time
+        for (uint256 i = 0; i < maxDecrements && --currentRoundId > 0; i++) {
+            try originalFeed.getRoundData(uint80(currentRoundId)) returns (
+                uint80 roundId,
+                int256 answer,
+                uint256 startedAt,
+                uint256 updatedAt,
+                uint80 answeredInRound
+            ) {
+                // Validate the round data
+                require(answer > 0, "Chainlink price cannot be lower than 0");
+                require(updatedAt != 0, "Round is in incompleted state");
+                require(answeredInRound >= roundId, "Stale price");
+
+                return (roundId, answer, startedAt, updatedAt, answeredInRound);
+            } catch {
+                // Decrement the round ID for next iteration
+                currentRoundId--;
+            }
+        }
+        // If no valid price was found within maxDecrements, use the latest price
+        (
             uint80 roundId,
             int256 answer,
             uint256 startedAt,
             uint256 updatedAt,
             uint80 answeredInRound
-        )
-    {
-        if (block.timestamp >= cachedTimestamp + earlyUpdateWindow) {
-            uint256 currentRoundId = originalFeed.latestRound() - 1;
+        ) = originalFeed.latestRoundData();
 
-            // Loop from 0 to maxDecrements, decrementing the round ID each time
-            for (uint256 i = 0; i < maxDecrements && currentRoundId > 0; i++) {
-                try originalFeed.getRoundData(uint80(currentRoundId)) returns (
-                    uint80 _roundId,
-                    int256 _answer,
-                    uint256 _startedAt,
-                    uint256 _updatedAt,
-                    uint80 _answeredInRound
-                ) {
-                    // Validate the round data
-                    require(
-                        _answer > 0,
-                        "Chainlink price cannot be lower than 0"
-                    );
-                    require(_updatedAt != 0, "Round is in incompleted state");
-                    require(_answeredInRound >= _roundId, "Stale price");
-
-                    // Store the current valid values
-                    roundId = _roundId;
-                    answer = _answer;
-                    startedAt = _startedAt;
-                    updatedAt = _updatedAt;
-                    answeredInRound = _answeredInRound;
-                    break;
-                } catch {
-                    // Decrement the round ID for next iteration
-                    currentRoundId--;
-                }
-            }
-
-            // If no valid price was found within maxDecrements, use the latest price
-            if (roundId == 0) {
-                (
-                    roundId,
-                    answer,
-                    startedAt,
-                    updatedAt,
-                    answeredInRound
-                ) = originalFeed.latestRoundData();
-
-                require(answer > 0, "Chainlink price cannot be lower than 0");
-                require(updatedAt != 0, "Round is in incompleted state");
-                require(answeredInRound >= roundId, "Stale price");
-            }
-        } else {
-            return (0, cachedPrice, 0, cachedTimestamp, 0);
-        }
+        require(answer > 0, "Chainlink price cannot be lower than 0");
+        require(updatedAt != 0, "Round is in incompleted state");
+        require(answeredInRound >= roundId, "Stale price");
+        return (roundId, answer, startedAt, updatedAt, answeredInRound);
     }
 
     /// @notice Update the price earlier than the standard update interval
     /// @dev Requires payment of a fee based on gas price and fee multiplier
-    function updatePriceEarly() external payable returns (int256) {
+    function updatePriceEarly() external payable returns (uint256) {
         require(
             msg.value >= (tx.gasprice - block.basefee) * uint256(feeMultiplier),
             "ChainlinkOEVWrapper: Insufficient tax"
         );
 
         // Get latest round data and validate it
-        (
-            uint80 roundId,
-            int256 price,
-            ,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        ) = originalFeed.latestRoundData();
-
-        require(price > 0, "Chainlink price cannot be lower than 0");
-        require(updatedAt != 0, "Round is in incompleted state");
-        require(answeredInRound >= roundId, "Stale price");
+        uint256 latestRoundId = originalFeed.latestRound();
 
         require(
-            block.timestamp > cachedTimestamp,
-            "ChainlinkOEVWrapper: New timestamp must be greater than current"
+            latestRoundId > cachedRoundId,
+            "ChainlinkOEVWrapper: New round is not higher than cached"
         );
 
         // Convert ETH to WETH and approve it for the ETH market
@@ -200,10 +176,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
         emit ProtocolOEVRevenueUpdated(address(WETHMarket), msg.value);
 
-        cachedPrice = price;
-        cachedTimestamp = updatedAt;
-
-        return price;
+        cachedRoundId = latestRoundId;
+        return cachedRoundId;
     }
 
     /// @notice Get the number of decimals in the feed
@@ -245,7 +219,15 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             uint80 answeredInRound
         )
     {
-        return originalFeed.getRoundData(_roundId);
+        uint80 r;
+        int256 a;
+        uint256 s;
+        uint256 u;
+        uint80 ar;
+
+        (r, a, s, u, ar) = originalFeed.getRoundData(_roundId);
+
+        return (r, a, s, u, ar);
     }
 
     /// @notice Get the latest round ID
@@ -260,14 +242,6 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     function setFeeMultiplier(uint16 newMultiplier) public onlyOwner {
         feeMultiplier = uint8(newMultiplier);
         emit FeeMultiplierChanged(newMultiplier);
-    }
-
-    /// @notice Set a new early update window
-    /// @param newWindow The new early update window duration in seconds
-    /// @dev Only callable by the contract owner
-    function setEarlyUpdateWindow(uint256 newWindow) public onlyOwner {
-        earlyUpdateWindow = newWindow;
-        emit EarlyUpdateWindowChanged(newWindow);
     }
 
     /// @notice Set the maximum number of decrements before falling back to latest price
