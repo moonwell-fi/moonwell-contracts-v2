@@ -49727,5 +49727,2005 @@
         "roundId": 18446744073709788619,
         "roundPrice": "387386000000",
         "roundTimestamp": 1733344843
+    },
+    {
+        "roundId": 18446744073709788620,
+        "roundPrice": "386791687200",
+        "roundTimestamp": 1733344965
+    },
+    {
+        "roundId": 18446744073709788619,
+        "roundPrice": "387386000000",
+        "roundTimestamp": 1733344843
+    },
+    {
+        "roundId": 18446744073709788618,
+        "roundPrice": "388104474800",
+        "roundTimestamp": 1733344635
+    },
+    {
+        "roundId": 18446744073709788617,
+        "roundPrice": "387379495400",
+        "roundTimestamp": 1733344105
+    },
+    {
+        "roundId": 18446744073709788616,
+        "roundPrice": "388291507600",
+        "roundTimestamp": 1733344061
+    },
+    {
+        "roundId": 18446744073709788615,
+        "roundPrice": "389094948217",
+        "roundTimestamp": 1733343907
+    },
+    {
+        "roundId": 18446744073709788614,
+        "roundPrice": "388509000000",
+        "roundTimestamp": 1733343697
+    },
+    {
+        "roundId": 18446744073709788613,
+        "roundPrice": "387866114100",
+        "roundTimestamp": 1733343477
+    },
+    {
+        "roundId": 18446744073709788612,
+        "roundPrice": "388557000000",
+        "roundTimestamp": 1733343345
+    },
+    {
+        "roundId": 18446744073709788611,
+        "roundPrice": "387599000000",
+        "roundTimestamp": 1733343191
+    },
+    {
+        "roundId": 18446744073709788610,
+        "roundPrice": "387000000000",
+        "roundTimestamp": 1733343125
+    },
+    {
+        "roundId": 18446744073709788609,
+        "roundPrice": "386403016150",
+        "roundTimestamp": 1733343069
+    },
+    {
+        "roundId": 18446744073709788608,
+        "roundPrice": "385683000000",
+        "roundTimestamp": 1733343037
+    },
+    {
+        "roundId": 18446744073709788607,
+        "roundPrice": "385058000000",
+        "roundTimestamp": 1733342795
+    },
+    {
+        "roundId": 18446744073709788606,
+        "roundPrice": "384438000000",
+        "roundTimestamp": 1733342707
+    },
+    {
+        "roundId": 18446744073709788605,
+        "roundPrice": "383723845800",
+        "roundTimestamp": 1733342617
+    },
+    {
+        "roundId": 18446744073709788604,
+        "roundPrice": "384413000000",
+        "roundTimestamp": 1733342221
+    },
+    {
+        "roundId": 18446744073709788603,
+        "roundPrice": "383817934100",
+        "roundTimestamp": 1733342111
+    },
+    {
+        "roundId": 18446744073709788602,
+        "roundPrice": "383234272713",
+        "roundTimestamp": 1733341737
+    },
+    {
+        "roundId": 18446744073709788601,
+        "roundPrice": "383815460000",
+        "roundTimestamp": 1733341627
+    },
+    {
+        "roundId": 18446744073709788600,
+        "roundPrice": "383066384423",
+        "roundTimestamp": 1733341175
+    },
+    {
+        "roundId": 18446744073709788599,
+        "roundPrice": "383690295800",
+        "roundTimestamp": 1733340847
+    },
+    {
+        "roundId": 18446744073709788598,
+        "roundPrice": "384327082606",
+        "roundTimestamp": 1733340635
+    },
+    {
+        "roundId": 18446744073709788597,
+        "roundPrice": "383705524315",
+        "roundTimestamp": 1733340095
+    },
+    {
+        "roundId": 18446744073709788596,
+        "roundPrice": "384329000000",
+        "roundTimestamp": 1733339919
+    },
+    {
+        "roundId": 18446744073709788595,
+        "roundPrice": "383745366038",
+        "roundTimestamp": 1733339887
+    },
+    {
+        "roundId": 18446744073709788594,
+        "roundPrice": "383161379335",
+        "roundTimestamp": 1733339787
+    },
+    {
+        "roundId": 18446744073709788593,
+        "roundPrice": "383780616900",
+        "roundTimestamp": 1733339611
+    },
+    {
+        "roundId": 18446744073709788592,
+        "roundPrice": "383107640000",
+        "roundTimestamp": 1733339479
+    },
+    {
+        "roundId": 18446744073709788591,
+        "roundPrice": "383720000000",
+        "roundTimestamp": 1733339369
+    },
+    {
+        "roundId": 18446744073709788590,
+        "roundPrice": "384299000000",
+        "roundTimestamp": 1733339303
+    },
+    {
+        "roundId": 18446744073709788589,
+        "roundPrice": "383660000000",
+        "roundTimestamp": 1733339259
+    },
+    {
+        "roundId": 18446744073709788588,
+        "roundPrice": "383070000000",
+        "roundTimestamp": 1733339127
+    },
+    {
+        "roundId": 18446744073709788587,
+        "roundPrice": "382361000000",
+        "roundTimestamp": 1733338851
+    },
+    {
+        "roundId": 18446744073709788586,
+        "roundPrice": "382963006059",
+        "roundTimestamp": 1733338531
+    },
+    {
+        "roundId": 18446744073709788585,
+        "roundPrice": "382177031547",
+        "roundTimestamp": 1733338035
+    },
+    {
+        "roundId": 18446744073709788584,
+        "roundPrice": "381453421929",
+        "roundTimestamp": 1733337605
+    },
+    {
+        "roundId": 18446744073709788583,
+        "roundPrice": "380821330000",
+        "roundTimestamp": 1733337265
+    },
+    {
+        "roundId": 18446744073709788582,
+        "roundPrice": "381436000000",
+        "roundTimestamp": 1733337077
+    },
+    {
+        "roundId": 18446744073709788581,
+        "roundPrice": "382026167895",
+        "roundTimestamp": 1733336593
+    },
+    {
+        "roundId": 18446744073709788580,
+        "roundPrice": "382605419218",
+        "roundTimestamp": 1733336471
+    },
+    {
+        "roundId": 18446744073709788579,
+        "roundPrice": "383241000000",
+        "roundTimestamp": 1733336195
+    },
+    {
+        "roundId": 18446744073709788578,
+        "roundPrice": "383855606014",
+        "roundTimestamp": 1733335975
+    },
+    {
+        "roundId": 18446744073709788577,
+        "roundPrice": "383131820000",
+        "roundTimestamp": 1733335933
+    },
+    {
+        "roundId": 18446744073709788576,
+        "roundPrice": "382511180000",
+        "roundTimestamp": 1733335601
+    },
+    {
+        "roundId": 18446744073709788575,
+        "roundPrice": "381827600000",
+        "roundTimestamp": 1733335569
+    },
+    {
+        "roundId": 18446744073709788574,
+        "roundPrice": "381173000000",
+        "roundTimestamp": 1733335479
+    },
+    {
+        "roundId": 18446744073709788573,
+        "roundPrice": "381800028290",
+        "roundTimestamp": 1733335337
+    },
+    {
+        "roundId": 18446744073709788572,
+        "roundPrice": "382413229978",
+        "roundTimestamp": 1733335271
+    },
+    {
+        "roundId": 18446744073709788571,
+        "roundPrice": "381717754865",
+        "roundTimestamp": 1733334885
+    },
+    {
+        "roundId": 18446744073709788570,
+        "roundPrice": "381136000000",
+        "roundTimestamp": 1733334765
+    },
+    {
+        "roundId": 18446744073709788569,
+        "roundPrice": "381805000000",
+        "roundTimestamp": 1733334697
+    },
+    {
+        "roundId": 18446744073709788568,
+        "roundPrice": "381201000000",
+        "roundTimestamp": 1733334621
+    },
+    {
+        "roundId": 18446744073709788567,
+        "roundPrice": "380623430000",
+        "roundTimestamp": 1733334533
+    },
+    {
+        "roundId": 18446744073709788566,
+        "roundPrice": "379931573995",
+        "roundTimestamp": 1733334489
+    },
+    {
+        "roundId": 18446744073709788565,
+        "roundPrice": "379174003300",
+        "roundTimestamp": 1733334445
+    },
+    {
+        "roundId": 18446744073709788564,
+        "roundPrice": "379758667100",
+        "roundTimestamp": 1733334401
+    },
+    {
+        "roundId": 18446744073709788563,
+        "roundPrice": "380461821200",
+        "roundTimestamp": 1733334335
+    },
+    {
+        "roundId": 18446744073709788562,
+        "roundPrice": "379834000000",
+        "roundTimestamp": 1733334181
+    },
+    {
+        "roundId": 18446744073709788561,
+        "roundPrice": "379060496500",
+        "roundTimestamp": 1733334081
+    },
+    {
+        "roundId": 18446744073709788560,
+        "roundPrice": "379650010000",
+        "roundTimestamp": 1733333849
+    },
+    {
+        "roundId": 18446744073709788559,
+        "roundPrice": "379053142642",
+        "roundTimestamp": 1733333685
+    },
+    {
+        "roundId": 18446744073709788558,
+        "roundPrice": "378415000000",
+        "roundTimestamp": 1733333607
+    },
+    {
+        "roundId": 18446744073709788557,
+        "roundPrice": "377828340018",
+        "roundTimestamp": 1733333221
+    },
+    {
+        "roundId": 18446744073709788556,
+        "roundPrice": "378526139000",
+        "roundTimestamp": 1733333111
+    },
+    {
+        "roundId": 18446744073709788555,
+        "roundPrice": "379278000000",
+        "roundTimestamp": 1733332913
+    },
+    {
+        "roundId": 18446744073709788554,
+        "roundPrice": "380090209400",
+        "roundTimestamp": 1733332837
+    },
+    {
+        "roundId": 18446744073709788553,
+        "roundPrice": "379368000000",
+        "roundTimestamp": 1733332815
+    },
+    {
+        "roundId": 18446744073709788552,
+        "roundPrice": "378743000000",
+        "roundTimestamp": 1733332727
+    },
+    {
+        "roundId": 18446744073709788551,
+        "roundPrice": "378157000000",
+        "roundTimestamp": 1733332693
+    },
+    {
+        "roundId": 18446744073709788550,
+        "roundPrice": "377536000000",
+        "roundTimestamp": 1733332651
+    },
+    {
+        "roundId": 18446744073709788549,
+        "roundPrice": "378347840000",
+        "roundTimestamp": 1733332605
+    },
+    {
+        "roundId": 18446744073709788548,
+        "roundPrice": "377746000000",
+        "roundTimestamp": 1733332439
+    },
+    {
+        "roundId": 18446744073709788547,
+        "roundPrice": "377009000000",
+        "roundTimestamp": 1733332297
+    },
+    {
+        "roundId": 18446744073709788546,
+        "roundPrice": "377582000000",
+        "roundTimestamp": 1733332009
+    },
+    {
+        "roundId": 18446744073709788545,
+        "roundPrice": "378533791993",
+        "roundTimestamp": 1733331747
+    },
+    {
+        "roundId": 18446744073709788544,
+        "roundPrice": "377653000000",
+        "roundTimestamp": 1733331691
+    },
+    {
+        "roundId": 18446744073709788543,
+        "roundPrice": "377061370000",
+        "roundTimestamp": 1733331647
+    },
+    {
+        "roundId": 18446744073709788542,
+        "roundPrice": "376449000000",
+        "roundTimestamp": 1733331625
+    },
+    {
+        "roundId": 18446744073709788541,
+        "roundPrice": "375734396500",
+        "roundTimestamp": 1733331613
+    },
+    {
+        "roundId": 18446744073709788540,
+        "roundPrice": "376321561368",
+        "roundTimestamp": 1733331471
+    },
+    {
+        "roundId": 18446744073709788539,
+        "roundPrice": "375567203700",
+        "roundTimestamp": 1733331415
+    },
+    {
+        "roundId": 18446744073709788538,
+        "roundPrice": "376227000000",
+        "roundTimestamp": 1733331271
+    },
+    {
+        "roundId": 18446744073709788537,
+        "roundPrice": "375469000000",
+        "roundTimestamp": 1733331239
+    },
+    {
+        "roundId": 18446744073709788536,
+        "roundPrice": "374793220000",
+        "roundTimestamp": 1733331217
+    },
+    {
+        "roundId": 18446744073709788535,
+        "roundPrice": "374131910000",
+        "roundTimestamp": 1733331107
+    },
+    {
+        "roundId": 18446744073709788534,
+        "roundPrice": "374888561500",
+        "roundTimestamp": 1733331085
+    },
+    {
+        "roundId": 18446744073709788533,
+        "roundPrice": "375598000000",
+        "roundTimestamp": 1733331019
+    },
+    {
+        "roundId": 18446744073709788532,
+        "roundPrice": "376590000000",
+        "roundTimestamp": 1733330931
+    },
+    {
+        "roundId": 18446744073709788531,
+        "roundPrice": "377263000000",
+        "roundTimestamp": 1733330875
+    },
+    {
+        "roundId": 18446744073709788530,
+        "roundPrice": "376423691000",
+        "roundTimestamp": 1733330579
+    },
+    {
+        "roundId": 18446744073709788529,
+        "roundPrice": "377063000000",
+        "roundTimestamp": 1733330445
+    },
+    {
+        "roundId": 18446744073709788528,
+        "roundPrice": "377631000000",
+        "roundTimestamp": 1733330413
+    },
+    {
+        "roundId": 18446744073709788527,
+        "roundPrice": "378200620000",
+        "roundTimestamp": 1733330369
+    },
+    {
+        "roundId": 18446744073709788526,
+        "roundPrice": "378950000000",
+        "roundTimestamp": 1733330149
+    },
+    {
+        "roundId": 18446744073709788525,
+        "roundPrice": "379609481100",
+        "roundTimestamp": 1733330061
+    },
+    {
+        "roundId": 18446744073709788524,
+        "roundPrice": "378744943500",
+        "roundTimestamp": 1733329917
+    },
+    {
+        "roundId": 18446744073709788523,
+        "roundPrice": "377765900600",
+        "roundTimestamp": 1733329895
+    },
+    {
+        "roundId": 18446744073709788522,
+        "roundPrice": "378697000000",
+        "roundTimestamp": 1733329817
+    },
+    {
+        "roundId": 18446744073709788521,
+        "roundPrice": "379430000000",
+        "roundTimestamp": 1733329785
+    },
+    {
+        "roundId": 18446744073709788520,
+        "roundPrice": "378738000000",
+        "roundTimestamp": 1733329663
+    },
+    {
+        "roundId": 18446744073709788519,
+        "roundPrice": "378015203982",
+        "roundTimestamp": 1733329619
+    },
+    {
+        "roundId": 18446744073709788518,
+        "roundPrice": "377308000000",
+        "roundTimestamp": 1733329477
+    },
+    {
+        "roundId": 18446744073709788517,
+        "roundPrice": "378254000000",
+        "roundTimestamp": 1733329433
+    },
+    {
+        "roundId": 18446744073709788516,
+        "roundPrice": "379080214803",
+        "roundTimestamp": 1733329169
+    },
+    {
+        "roundId": 18446744073709788515,
+        "roundPrice": "378467460000",
+        "roundTimestamp": 1733329145
+    },
+    {
+        "roundId": 18446744073709788514,
+        "roundPrice": "379174340000",
+        "roundTimestamp": 1733329047
+    },
+    {
+        "roundId": 18446744073709788513,
+        "roundPrice": "379817561400",
+        "roundTimestamp": 1733328991
+    },
+    {
+        "roundId": 18446744073709788512,
+        "roundPrice": "380742730000",
+        "roundTimestamp": 1733328959
+    },
+    {
+        "roundId": 18446744073709788511,
+        "roundPrice": "380166380000",
+        "roundTimestamp": 1733328881
+    },
+    {
+        "roundId": 18446744073709788510,
+        "roundPrice": "380867240000",
+        "roundTimestamp": 1733328695
+    },
+    {
+        "roundId": 18446744073709788509,
+        "roundPrice": "381509000000",
+        "roundTimestamp": 1733328563
+    },
+    {
+        "roundId": 18446744073709788508,
+        "roundPrice": "382260000000",
+        "roundTimestamp": 1733328531
+    },
+    {
+        "roundId": 18446744073709788507,
+        "roundPrice": "383043394097",
+        "roundTimestamp": 1733328353
+    },
+    {
+        "roundId": 18446744073709788506,
+        "roundPrice": "382387164184",
+        "roundTimestamp": 1733328177
+    },
+    {
+        "roundId": 18446744073709788505,
+        "roundPrice": "383058068394",
+        "roundTimestamp": 1733328067
+    },
+    {
+        "roundId": 18446744073709788504,
+        "roundPrice": "382467285464",
+        "roundTimestamp": 1733327889
+    },
+    {
+        "roundId": 18446744073709788503,
+        "roundPrice": "381751311028",
+        "roundTimestamp": 1733327847
+    },
+    {
+        "roundId": 18446744073709788502,
+        "roundPrice": "382327000000",
+        "roundTimestamp": 1733327515
+    },
+    {
+        "roundId": 18446744073709788501,
+        "roundPrice": "383221013885",
+        "roundTimestamp": 1733327493
+    },
+    {
+        "roundId": 18446744073709788500,
+        "roundPrice": "384000379900",
+        "roundTimestamp": 1733327351
+    },
+    {
+        "roundId": 18446744073709788499,
+        "roundPrice": "384643282700",
+        "roundTimestamp": 1733327175
+    },
+    {
+        "roundId": 18446744073709788498,
+        "roundPrice": "383687090280",
+        "roundTimestamp": 1733327019
+    },
+    {
+        "roundId": 18446744073709788497,
+        "roundPrice": "384342000000",
+        "roundTimestamp": 1733326843
+    },
+    {
+        "roundId": 18446744073709788496,
+        "roundPrice": "383549100000",
+        "roundTimestamp": 1733326767
+    },
+    {
+        "roundId": 18446744073709788495,
+        "roundPrice": "384234000000",
+        "roundTimestamp": 1733326689
+    },
+    {
+        "roundId": 18446744073709788494,
+        "roundPrice": "385089000000",
+        "roundTimestamp": 1733326635
+    },
+    {
+        "roundId": 18446744073709788493,
+        "roundPrice": "385683000000",
+        "roundTimestamp": 1733326569
+    },
+    {
+        "roundId": 18446744073709788492,
+        "roundPrice": "384772755000",
+        "roundTimestamp": 1733326447
+    },
+    {
+        "roundId": 18446744073709788491,
+        "roundPrice": "384117865000",
+        "roundTimestamp": 1733326425
+    },
+    {
+        "roundId": 18446744073709788490,
+        "roundPrice": "384711000000",
+        "roundTimestamp": 1733326347
+    },
+    {
+        "roundId": 18446744073709788489,
+        "roundPrice": "383599172241",
+        "roundTimestamp": 1733326105
+    },
+    {
+        "roundId": 18446744073709788488,
+        "roundPrice": "382942000000",
+        "roundTimestamp": 1733326051
+    },
+    {
+        "roundId": 18446744073709788487,
+        "roundPrice": "383709000000",
+        "roundTimestamp": 1733326007
+    },
+    {
+        "roundId": 18446744073709788486,
+        "roundPrice": "382392000000",
+        "roundTimestamp": 1733325941
+    },
+    {
+        "roundId": 18446744073709788485,
+        "roundPrice": "381736193318",
+        "roundTimestamp": 1733325819
+    },
+    {
+        "roundId": 18446744073709788484,
+        "roundPrice": "382643417600",
+        "roundTimestamp": 1733325785
+    },
+    {
+        "roundId": 18446744073709788483,
+        "roundPrice": "381838000000",
+        "roundTimestamp": 1733325741
+    },
+    {
+        "roundId": 18446744073709788482,
+        "roundPrice": "381225513293",
+        "roundTimestamp": 1733325577
+    },
+    {
+        "roundId": 18446744073709788481,
+        "roundPrice": "380623500000",
+        "roundTimestamp": 1733325511
+    },
+    {
+        "roundId": 18446744073709788480,
+        "roundPrice": "380048000000",
+        "roundTimestamp": 1733325401
+    },
+    {
+        "roundId": 18446744073709788479,
+        "roundPrice": "380685000000",
+        "roundTimestamp": 1733325313
+    },
+    {
+        "roundId": 18446744073709788478,
+        "roundPrice": "381485000000",
+        "roundTimestamp": 1733325235
+    },
+    {
+        "roundId": 18446744073709788477,
+        "roundPrice": "380862118084",
+        "roundTimestamp": 1733325125
+    },
+    {
+        "roundId": 18446744073709788476,
+        "roundPrice": "381604000000",
+        "roundTimestamp": 1733324959
+    },
+    {
+        "roundId": 18446744073709788475,
+        "roundPrice": "380824000000",
+        "roundTimestamp": 1733324773
+    },
+    {
+        "roundId": 18446744073709788474,
+        "roundPrice": "380052234900",
+        "roundTimestamp": 1733324719
+    },
+    {
+        "roundId": 18446744073709788473,
+        "roundPrice": "380679940000",
+        "roundTimestamp": 1733324651
+    },
+    {
+        "roundId": 18446744073709788472,
+        "roundPrice": "379715173500",
+        "roundTimestamp": 1733324585
+    },
+    {
+        "roundId": 18446744073709788471,
+        "roundPrice": "378684000000",
+        "roundTimestamp": 1733324551
+    },
+    {
+        "roundId": 18446744073709788470,
+        "roundPrice": "377902490000",
+        "roundTimestamp": 1733324529
+    },
+    {
+        "roundId": 18446744073709788469,
+        "roundPrice": "377260000000",
+        "roundTimestamp": 1733324497
+    },
+    {
+        "roundId": 18446744073709788468,
+        "roundPrice": "377840000000",
+        "roundTimestamp": 1733324485
+    },
+    {
+        "roundId": 18446744073709788467,
+        "roundPrice": "378584240700",
+        "roundTimestamp": 1733324465
+    },
+    {
+        "roundId": 18446744073709788466,
+        "roundPrice": "377796873883",
+        "roundTimestamp": 1733324453
+    },
+    {
+        "roundId": 18446744073709788465,
+        "roundPrice": "377131000000",
+        "roundTimestamp": 1733324431
+    },
+    {
+        "roundId": 18446744073709788464,
+        "roundPrice": "377712892604",
+        "roundTimestamp": 1733324419
+    },
+    {
+        "roundId": 18446744073709788463,
+        "roundPrice": "378773950000",
+        "roundTimestamp": 1733324387
+    },
+    {
+        "roundId": 18446744073709788462,
+        "roundPrice": "379432255138",
+        "roundTimestamp": 1733324353
+    },
+    {
+        "roundId": 18446744073709788461,
+        "roundPrice": "378824523529",
+        "roundTimestamp": 1733324255
+    },
+    {
+        "roundId": 18446744073709788460,
+        "roundPrice": "379551711780",
+        "roundTimestamp": 1733324221
+    },
+    {
+        "roundId": 18446744073709788459,
+        "roundPrice": "378867128392",
+        "roundTimestamp": 1733324177
+    },
+    {
+        "roundId": 18446744073709788458,
+        "roundPrice": "379538000000",
+        "roundTimestamp": 1733324123
+    },
+    {
+        "roundId": 18446744073709788457,
+        "roundPrice": "378839000000",
+        "roundTimestamp": 1733324079
+    },
+    {
+        "roundId": 18446744073709788456,
+        "roundPrice": "377990000000",
+        "roundTimestamp": 1733324013
+    },
+    {
+        "roundId": 18446744073709788455,
+        "roundPrice": "377321000000",
+        "roundTimestamp": 1733323969
+    },
+    {
+        "roundId": 18446744073709788454,
+        "roundPrice": "376750322675",
+        "roundTimestamp": 1733323859
+    },
+    {
+        "roundId": 18446744073709788453,
+        "roundPrice": "377539000000",
+        "roundTimestamp": 1733323825
+    },
+    {
+        "roundId": 18446744073709788452,
+        "roundPrice": "378211000000",
+        "roundTimestamp": 1733323813
+    },
+    {
+        "roundId": 18446744073709788451,
+        "roundPrice": "377442440567",
+        "roundTimestamp": 1733323781
+    },
+    {
+        "roundId": 18446744073709788450,
+        "roundPrice": "376693257200",
+        "roundTimestamp": 1733323681
+    },
+    {
+        "roundId": 18446744073709788449,
+        "roundPrice": "376095000000",
+        "roundTimestamp": 1733323637
+    },
+    {
+        "roundId": 18446744073709788448,
+        "roundPrice": "375180586517",
+        "roundTimestamp": 1733323583
+    },
+    {
+        "roundId": 18446744073709788447,
+        "roundPrice": "374416277225",
+        "roundTimestamp": 1733323549
+    },
+    {
+        "roundId": 18446744073709788446,
+        "roundPrice": "375039294400",
+        "roundTimestamp": 1733323253
+    },
+    {
+        "roundId": 18446744073709788445,
+        "roundPrice": "374324423072",
+        "roundTimestamp": 1733323163
+    },
+    {
+        "roundId": 18446744073709788444,
+        "roundPrice": "373659750000",
+        "roundTimestamp": 1733322889
+    },
+    {
+        "roundId": 18446744073709788443,
+        "roundPrice": "373090000000",
+        "roundTimestamp": 1733322801
+    },
+    {
+        "roundId": 18446744073709788442,
+        "roundPrice": "372389201400",
+        "roundTimestamp": 1733322757
+    },
+    {
+        "roundId": 18446744073709788441,
+        "roundPrice": "371527213930",
+        "roundTimestamp": 1733322713
+    },
+    {
+        "roundId": 18446744073709788440,
+        "roundPrice": "372201000000",
+        "roundTimestamp": 1733322647
+    },
+    {
+        "roundId": 18446744073709788439,
+        "roundPrice": "371619000000",
+        "roundTimestamp": 1733322249
+    },
+    {
+        "roundId": 18446744073709788438,
+        "roundPrice": "370925149959",
+        "roundTimestamp": 1733321843
+    },
+    {
+        "roundId": 18446744073709788437,
+        "roundPrice": "370236934174",
+        "roundTimestamp": 1733321777
+    },
+    {
+        "roundId": 18446744073709788436,
+        "roundPrice": "369661140000",
+        "roundTimestamp": 1733321743
+    },
+    {
+        "roundId": 18446744073709788435,
+        "roundPrice": "370301012800",
+        "roundTimestamp": 1733321545
+    },
+    {
+        "roundId": 18446744073709788434,
+        "roundPrice": "369617730000",
+        "roundTimestamp": 1733321457
+    },
+    {
+        "roundId": 18446744073709788433,
+        "roundPrice": "370236000000",
+        "roundTimestamp": 1733320983
+    },
+    {
+        "roundId": 18446744073709788432,
+        "roundPrice": "370809342671",
+        "roundTimestamp": 1733320653
+    },
+    {
+        "roundId": 18446744073709788431,
+        "roundPrice": "370165520000",
+        "roundTimestamp": 1733320565
+    },
+    {
+        "roundId": 18446744073709788430,
+        "roundPrice": "369611000000",
+        "roundTimestamp": 1733320267
+    },
+    {
+        "roundId": 18446744073709788429,
+        "roundPrice": "370206000000",
+        "roundTimestamp": 1733320179
+    },
+    {
+        "roundId": 18446744073709788428,
+        "roundPrice": "370797000000",
+        "roundTimestamp": 1733319947
+    },
+    {
+        "roundId": 18446744073709788427,
+        "roundPrice": "370218000000",
+        "roundTimestamp": 1733319837
+    },
+    {
+        "roundId": 18446744073709788426,
+        "roundPrice": "370824000000",
+        "roundTimestamp": 1733319517
+    },
+    {
+        "roundId": 18446744073709788425,
+        "roundPrice": "370017000000",
+        "roundTimestamp": 1733319429
+    },
+    {
+        "roundId": 18446744073709788424,
+        "roundPrice": "370605000000",
+        "roundTimestamp": 1733319209
+    },
+    {
+        "roundId": 18446744073709788423,
+        "roundPrice": "369765750000",
+        "roundTimestamp": 1733319155
+    },
+    {
+        "roundId": 18446744073709788422,
+        "roundPrice": "370335108100",
+        "roundTimestamp": 1733319133
+    },
+    {
+        "roundId": 18446744073709788421,
+        "roundPrice": "369701000000",
+        "roundTimestamp": 1733319023
+    },
+    {
+        "roundId": 18446744073709788420,
+        "roundPrice": "370314826499",
+        "roundTimestamp": 1733318901
+    },
+    {
+        "roundId": 18446744073709788419,
+        "roundPrice": "370924000000",
+        "roundTimestamp": 1733318483
+    },
+    {
+        "roundId": 18446744073709788418,
+        "roundPrice": "371523155274",
+        "roundTimestamp": 1733318417
+    },
+    {
+        "roundId": 18446744073709788417,
+        "roundPrice": "372159000000",
+        "roundTimestamp": 1733317953
+    },
+    {
+        "roundId": 18446744073709788416,
+        "roundPrice": "372835470000",
+        "roundTimestamp": 1733317899
+    },
+    {
+        "roundId": 18446744073709788415,
+        "roundPrice": "373501257400",
+        "roundTimestamp": 1733317711
+    },
+    {
+        "roundId": 18446744073709788414,
+        "roundPrice": "372865372400",
+        "roundTimestamp": 1733317679
+    },
+    {
+        "roundId": 18446744073709788413,
+        "roundPrice": "372304000000",
+        "roundTimestamp": 1733317535
+    },
+    {
+        "roundId": 18446744073709788412,
+        "roundPrice": "371704456508",
+        "roundTimestamp": 1733316875
+    },
+    {
+        "roundId": 18446744073709788411,
+        "roundPrice": "371084000000",
+        "roundTimestamp": 1733316093
+    },
+    {
+        "roundId": 18446744073709788410,
+        "roundPrice": "371668000000",
+        "roundTimestamp": 1733315927
+    },
+    {
+        "roundId": 18446744073709788409,
+        "roundPrice": "371098334845",
+        "roundTimestamp": 1733315807
+    },
+    {
+        "roundId": 18446744073709788408,
+        "roundPrice": "371683000000",
+        "roundTimestamp": 1733315685
+    },
+    {
+        "roundId": 18446744073709788407,
+        "roundPrice": "371067000000",
+        "roundTimestamp": 1733315265
+    },
+    {
+        "roundId": 18446744073709788406,
+        "roundPrice": "371636003200",
+        "roundTimestamp": 1733315155
+    },
+    {
+        "roundId": 18446744073709788405,
+        "roundPrice": "370970000000",
+        "roundTimestamp": 1733314825
+    },
+    {
+        "roundId": 18446744073709788404,
+        "roundPrice": "370284458818",
+        "roundTimestamp": 1733314737
+    },
+    {
+        "roundId": 18446744073709788403,
+        "roundPrice": "370843000000",
+        "roundTimestamp": 1733314637
+    },
+    {
+        "roundId": 18446744073709788402,
+        "roundPrice": "371485000000",
+        "roundTimestamp": 1733314615
+    },
+    {
+        "roundId": 18446744073709788401,
+        "roundPrice": "372211950000",
+        "roundTimestamp": 1733314429
+    },
+    {
+        "roundId": 18446744073709788400,
+        "roundPrice": "372919000000",
+        "roundTimestamp": 1733314307
+    },
+    {
+        "roundId": 18446744073709788399,
+        "roundPrice": "373497300000",
+        "roundTimestamp": 1733314275
+    },
+    {
+        "roundId": 18446744073709788398,
+        "roundPrice": "374070000000",
+        "roundTimestamp": 1733314031
+    },
+    {
+        "roundId": 18446744073709788397,
+        "roundPrice": "373507040000",
+        "roundTimestamp": 1733313701
+    },
+    {
+        "roundId": 18446744073709788396,
+        "roundPrice": "372928000000",
+        "roundTimestamp": 1733312941
+    },
+    {
+        "roundId": 18446744073709788395,
+        "roundPrice": "373516000000",
+        "roundTimestamp": 1733312225
+    },
+    {
+        "roundId": 18446744073709788394,
+        "roundPrice": "374293431190",
+        "roundTimestamp": 1733312059
+    },
+    {
+        "roundId": 18446744073709788393,
+        "roundPrice": "374961000000",
+        "roundTimestamp": 1733311971
+    },
+    {
+        "roundId": 18446744073709788392,
+        "roundPrice": "374396800343",
+        "roundTimestamp": 1733311773
+    },
+    {
+        "roundId": 18446744073709788391,
+        "roundPrice": "373787000000",
+        "roundTimestamp": 1733311643
+    },
+    {
+        "roundId": 18446744073709788390,
+        "roundPrice": "373094349900",
+        "roundTimestamp": 1733311301
+    },
+    {
+        "roundId": 18446744073709788389,
+        "roundPrice": "372427890000",
+        "roundTimestamp": 1733310805
+    },
+    {
+        "roundId": 18446744073709788388,
+        "roundPrice": "373022283200",
+        "roundTimestamp": 1733310473
+    },
+    {
+        "roundId": 18446744073709788387,
+        "roundPrice": "372316948411",
+        "roundTimestamp": 1733310011
+    },
+    {
+        "roundId": 18446744073709788386,
+        "roundPrice": "371848000000",
+        "roundTimestamp": 1733308799
+    },
+    {
+        "roundId": 18446744073709788385,
+        "roundPrice": "372427000000",
+        "roundTimestamp": 1733308657
+    },
+    {
+        "roundId": 18446744073709788384,
+        "roundPrice": "373106043500",
+        "roundTimestamp": 1733307753
+    },
+    {
+        "roundId": 18446744073709788383,
+        "roundPrice": "373701329400",
+        "roundTimestamp": 1733307565
+    },
+    {
+        "roundId": 18446744073709788382,
+        "roundPrice": "374280731118",
+        "roundTimestamp": 1733307455
+    },
+    {
+        "roundId": 18446744073709788381,
+        "roundPrice": "373711000000",
+        "roundTimestamp": 1733307203
+    },
+    {
+        "roundId": 18446744073709788380,
+        "roundPrice": "373110000000",
+        "roundTimestamp": 1733307081
+    },
+    {
+        "roundId": 18446744073709788379,
+        "roundPrice": "372481258417",
+        "roundTimestamp": 1733307015
+    },
+    {
+        "roundId": 18446744073709788378,
+        "roundPrice": "372707000000",
+        "roundTimestamp": 1733305803
+    },
+    {
+        "roundId": 18446744073709788377,
+        "roundPrice": "373322617991",
+        "roundTimestamp": 1733305549
+    },
+    {
+        "roundId": 18446744073709788376,
+        "roundPrice": "372727092528",
+        "roundTimestamp": 1733305373
+    },
+    {
+        "roundId": 18446744073709788375,
+        "roundPrice": "372116642254",
+        "roundTimestamp": 1733304811
+    },
+    {
+        "roundId": 18446744073709788374,
+        "roundPrice": "371540934547",
+        "roundTimestamp": 1733304405
+    },
+    {
+        "roundId": 18446744073709788373,
+        "roundPrice": "372208000000",
+        "roundTimestamp": 1733303799
+    },
+    {
+        "roundId": 18446744073709788372,
+        "roundPrice": "371562000000",
+        "roundTimestamp": 1733303665
+    },
+    {
+        "roundId": 18446744073709788371,
+        "roundPrice": "370850733428",
+        "roundTimestamp": 1733303577
+    },
+    {
+        "roundId": 18446744073709788370,
+        "roundPrice": "370290033339",
+        "roundTimestamp": 1733303071
+    },
+    {
+        "roundId": 18446744073709788369,
+        "roundPrice": "370891740000",
+        "roundTimestamp": 1733302179
+    },
+    {
+        "roundId": 18446744073709788368,
+        "roundPrice": "370335500000",
+        "roundTimestamp": 1733301451
+    },
+    {
+        "roundId": 18446744073709788367,
+        "roundPrice": "370954431021",
+        "roundTimestamp": 1733300791
+    },
+    {
+        "roundId": 18446744073709788366,
+        "roundPrice": "370367000000",
+        "roundTimestamp": 1733300549
+    },
+    {
+        "roundId": 18446744073709788365,
+        "roundPrice": "370961000000",
+        "roundTimestamp": 1733299625
+    },
+    {
+        "roundId": 18446744073709788364,
+        "roundPrice": "371557978971",
+        "roundTimestamp": 1733299469
+    },
+    {
+        "roundId": 18446744073709788363,
+        "roundPrice": "372124687782",
+        "roundTimestamp": 1733299227
+    },
+    {
+        "roundId": 18446744073709788362,
+        "roundPrice": "371516030000",
+        "roundTimestamp": 1733298565
+    },
+    {
+        "roundId": 18446744073709788361,
+        "roundPrice": "372135000000",
+        "roundTimestamp": 1733298411
+    },
+    {
+        "roundId": 18446744073709788360,
+        "roundPrice": "371397949100",
+        "roundTimestamp": 1733298069
+    },
+    {
+        "roundId": 18446744073709788359,
+        "roundPrice": "370630568684",
+        "roundTimestamp": 1733296869
+    },
+    {
+        "roundId": 18446744073709788358,
+        "roundPrice": "369911500000",
+        "roundTimestamp": 1733296395
+    },
+    {
+        "roundId": 18446744073709788357,
+        "roundPrice": "369340000000",
+        "roundTimestamp": 1733296263
+    },
+    {
+        "roundId": 18446744073709788356,
+        "roundPrice": "368706500000",
+        "roundTimestamp": 1733295801
+    },
+    {
+        "roundId": 18446744073709788355,
+        "roundPrice": "369394546198",
+        "roundTimestamp": 1733295315
+    },
+    {
+        "roundId": 18446744073709788354,
+        "roundPrice": "368824000000",
+        "roundTimestamp": 1733295017
+    },
+    {
+        "roundId": 18446744073709788353,
+        "roundPrice": "368235454100",
+        "roundTimestamp": 1733293949
+    },
+    {
+        "roundId": 18446744073709788352,
+        "roundPrice": "367571907570",
+        "roundTimestamp": 1733293629
+    },
+    {
+        "roundId": 18446744073709788351,
+        "roundPrice": "366934000000",
+        "roundTimestamp": 1733293343
+    },
+    {
+        "roundId": 18446744073709788350,
+        "roundPrice": "367557000000",
+        "roundTimestamp": 1733293157
+    },
+    {
+        "roundId": 18446744073709788349,
+        "roundPrice": "367001000000",
+        "roundTimestamp": 1733292683
+    },
+    {
+        "roundId": 18446744073709788348,
+        "roundPrice": "367654000000",
+        "roundTimestamp": 1733292285
+    },
+    {
+        "roundId": 18446744073709788347,
+        "roundPrice": "368301493961",
+        "roundTimestamp": 1733291967
+    },
+    {
+        "roundId": 18446744073709788346,
+        "roundPrice": "367732000000",
+        "roundTimestamp": 1733290999
+    },
+    {
+        "roundId": 18446744073709788345,
+        "roundPrice": "368325000000",
+        "roundTimestamp": 1733290843
+    },
+    {
+        "roundId": 18446744073709788344,
+        "roundPrice": "368615673121",
+        "roundTimestamp": 1733289631
+    },
+    {
+        "roundId": 18446744073709788343,
+        "roundPrice": "367931536955",
+        "roundTimestamp": 1733289345
+    },
+    {
+        "roundId": 18446744073709788342,
+        "roundPrice": "367343689200",
+        "roundTimestamp": 1733288837
+    },
+    {
+        "roundId": 18446744073709788341,
+        "roundPrice": "367991408628",
+        "roundTimestamp": 1733288563
+    },
+    {
+        "roundId": 18446744073709788340,
+        "roundPrice": "367297000000",
+        "roundTimestamp": 1733288475
+    },
+    {
+        "roundId": 18446744073709788339,
+        "roundPrice": "366706000000",
+        "roundTimestamp": 1733287979
+    },
+    {
+        "roundId": 18446744073709788338,
+        "roundPrice": "367291000000",
+        "roundTimestamp": 1733287351
+    },
+    {
+        "roundId": 18446744073709788337,
+        "roundPrice": "367573000000",
+        "roundTimestamp": 1733286149
+    },
+    {
+        "roundId": 18446744073709788336,
+        "roundPrice": "366961500000",
+        "roundTimestamp": 1733285115
+    },
+    {
+        "roundId": 18446744073709788335,
+        "roundPrice": "366400750000",
+        "roundTimestamp": 1733284751
+    },
+    {
+        "roundId": 18446744073709788334,
+        "roundPrice": "366954000000",
+        "roundTimestamp": 1733284377
+    },
+    {
+        "roundId": 18446744073709788333,
+        "roundPrice": "367642000000",
+        "roundTimestamp": 1733283561
+    },
+    {
+        "roundId": 18446744073709788332,
+        "roundPrice": "366984170000",
+        "roundTimestamp": 1733283363
+    },
+    {
+        "roundId": 18446744073709788331,
+        "roundPrice": "367583000000",
+        "roundTimestamp": 1733282857
+    },
+    {
+        "roundId": 18446744073709788330,
+        "roundPrice": "367031877600",
+        "roundTimestamp": 1733282769
+    },
+    {
+        "roundId": 18446744073709788329,
+        "roundPrice": "366337234480",
+        "roundTimestamp": 1733282593
+    },
+    {
+        "roundId": 18446744073709788328,
+        "roundPrice": "366911109100",
+        "roundTimestamp": 1733282151
+    },
+    {
+        "roundId": 18446744073709788327,
+        "roundPrice": "366356000000",
+        "roundTimestamp": 1733281467
+    },
+    {
+        "roundId": 18446744073709788326,
+        "roundPrice": "365801000000",
+        "roundTimestamp": 1733281303
+    },
+    {
+        "roundId": 18446744073709788325,
+        "roundPrice": "365162000000",
+        "roundTimestamp": 1733280641
+    },
+    {
+        "roundId": 18446744073709788324,
+        "roundPrice": "364611906200",
+        "roundTimestamp": 1733280499
+    },
+    {
+        "roundId": 18446744073709788323,
+        "roundPrice": "364037000000",
+        "roundTimestamp": 1733280377
+    },
+    {
+        "roundId": 18446744073709788322,
+        "roundPrice": "364643236283",
+        "roundTimestamp": 1733280201
+    },
+    {
+        "roundId": 18446744073709788321,
+        "roundPrice": "365207000000",
+        "roundTimestamp": 1733280103
+    },
+    {
+        "roundId": 18446744073709788320,
+        "roundPrice": "364625949200",
+        "roundTimestamp": 1733279915
+    },
+    {
+        "roundId": 18446744073709788319,
+        "roundPrice": "365212000000",
+        "roundTimestamp": 1733279673
+    },
+    {
+        "roundId": 18446744073709788318,
+        "roundPrice": "364656000000",
+        "roundTimestamp": 1733279497
+    },
+    {
+        "roundId": 18446744073709788317,
+        "roundPrice": "363943500000",
+        "roundTimestamp": 1733279187
+    },
+    {
+        "roundId": 18446744073709788316,
+        "roundPrice": "364726000000",
+        "roundTimestamp": 1733278625
+    },
+    {
+        "roundId": 18446744073709788315,
+        "roundPrice": "364100000000",
+        "roundTimestamp": 1733278559
+    },
+    {
+        "roundId": 18446744073709788314,
+        "roundPrice": "363443000000",
+        "roundTimestamp": 1733278527
+    },
+    {
+        "roundId": 18446744073709788313,
+        "roundPrice": "364095000000",
+        "roundTimestamp": 1733278339
+    },
+    {
+        "roundId": 18446744073709788312,
+        "roundPrice": "364725000000",
+        "roundTimestamp": 1733278273
+    },
+    {
+        "roundId": 18446744073709788311,
+        "roundPrice": "364158000000",
+        "roundTimestamp": 1733278229
+    },
+    {
+        "roundId": 18446744073709788310,
+        "roundPrice": "364790427800",
+        "roundTimestamp": 1733278163
+    },
+    {
+        "roundId": 18446744073709788309,
+        "roundPrice": "365614760000",
+        "roundTimestamp": 1733278131
+    },
+    {
+        "roundId": 18446744073709788308,
+        "roundPrice": "366170240000",
+        "roundTimestamp": 1733278097
+    },
+    {
+        "roundId": 18446744073709788307,
+        "roundPrice": "366887840000",
+        "roundTimestamp": 1733277833
+    },
+    {
+        "roundId": 18446744073709788306,
+        "roundPrice": "367465512500",
+        "roundTimestamp": 1733277789
+    },
+    {
+        "roundId": 18446744073709788305,
+        "roundPrice": "368279100209",
+        "roundTimestamp": 1733277733
+    },
+    {
+        "roundId": 18446744073709788304,
+        "roundPrice": "368923000000",
+        "roundTimestamp": 1733277569
+    },
+    {
+        "roundId": 18446744073709788303,
+        "roundPrice": "369629000000",
+        "roundTimestamp": 1733277415
+    },
+    {
+        "roundId": 18446744073709788302,
+        "roundPrice": "370225000000",
+        "roundTimestamp": 1733277369
+    },
+    {
+        "roundId": 18446744073709788301,
+        "roundPrice": "369325020000",
+        "roundTimestamp": 1733277205
+    },
+    {
+        "roundId": 18446744073709788300,
+        "roundPrice": "368751045100",
+        "roundTimestamp": 1733276665
+    },
+    {
+        "roundId": 18446744073709788299,
+        "roundPrice": "369361000000",
+        "roundTimestamp": 1733276445
+    },
+    {
+        "roundId": 18446744073709788298,
+        "roundPrice": "369997000000",
+        "roundTimestamp": 1733276357
+    },
+    {
+        "roundId": 18446744073709788297,
+        "roundPrice": "369414000000",
+        "roundTimestamp": 1733276301
+    },
+    {
+        "roundId": 18446744073709788296,
+        "roundPrice": "368549092943",
+        "roundTimestamp": 1733276125
+    },
+    {
+        "roundId": 18446744073709788295,
+        "roundPrice": "367807590000",
+        "roundTimestamp": 1733276049
+    },
+    {
+        "roundId": 18446744073709788294,
+        "roundPrice": "368386324862",
+        "roundTimestamp": 1733275949
+    },
+    {
+        "roundId": 18446744073709788293,
+        "roundPrice": "369145000000",
+        "roundTimestamp": 1733275695
+    },
+    {
+        "roundId": 18446744073709788292,
+        "roundPrice": "368467320000",
+        "roundTimestamp": 1733275641
+    },
+    {
+        "roundId": 18446744073709788291,
+        "roundPrice": "369031327322",
+        "roundTimestamp": 1733275431
+    },
+    {
+        "roundId": 18446744073709788290,
+        "roundPrice": "369654500000",
+        "roundTimestamp": 1733275243
+    },
+    {
+        "roundId": 18446744073709788289,
+        "roundPrice": "370414000000",
+        "roundTimestamp": 1733275201
+    },
+    {
+        "roundId": 18446744073709788288,
+        "roundPrice": "369806811987",
+        "roundTimestamp": 1733275045
+    },
+    {
+        "roundId": 18446744073709788287,
+        "roundPrice": "370666000000",
+        "roundTimestamp": 1733274979
+    },
+    {
+        "roundId": 18446744073709788286,
+        "roundPrice": "370041000000",
+        "roundTimestamp": 1733274837
+    },
+    {
+        "roundId": 18446744073709788285,
+        "roundPrice": "369410000000",
+        "roundTimestamp": 1733274815
+    },
+    {
+        "roundId": 18446744073709788284,
+        "roundPrice": "370275959700",
+        "roundTimestamp": 1733274793
+    },
+    {
+        "roundId": 18446744073709788283,
+        "roundPrice": "369658566700",
+        "roundTimestamp": 1733274671
+    },
+    {
+        "roundId": 18446744073709788282,
+        "roundPrice": "369020500000",
+        "roundTimestamp": 1733274495
+    },
+    {
+        "roundId": 18446744073709788281,
+        "roundPrice": "369639000000",
+        "roundTimestamp": 1733274461
+    },
+    {
+        "roundId": 18446744073709788280,
+        "roundPrice": "368902849600",
+        "roundTimestamp": 1733274285
+    },
+    {
+        "roundId": 18446744073709788279,
+        "roundPrice": "369732730000",
+        "roundTimestamp": 1733274209
+    },
+    {
+        "roundId": 18446744073709788278,
+        "roundPrice": "370465000000",
+        "roundTimestamp": 1733274175
+    },
+    {
+        "roundId": 18446744073709788277,
+        "roundPrice": "369412127200",
+        "roundTimestamp": 1733274143
+    },
+    {
+        "roundId": 18446744073709788276,
+        "roundPrice": "370403861000",
+        "roundTimestamp": 1733274087
+    },
+    {
+        "roundId": 18446744073709788275,
+        "roundPrice": "369702000000",
+        "roundTimestamp": 1733274021
+    },
+    {
+        "roundId": 18446744073709788274,
+        "roundPrice": "369097583774",
+        "roundTimestamp": 1733273977
+    },
+    {
+        "roundId": 18446744073709788273,
+        "roundPrice": "368241000000",
+        "roundTimestamp": 1733273867
+    },
+    {
+        "roundId": 18446744073709788272,
+        "roundPrice": "367499185438",
+        "roundTimestamp": 1733273823
+    },
+    {
+        "roundId": 18446744073709788271,
+        "roundPrice": "366942000000",
+        "roundTimestamp": 1733273767
+    },
+    {
+        "roundId": 18446744073709788270,
+        "roundPrice": "366203000000",
+        "roundTimestamp": 1733273725
+    },
+    {
+        "roundId": 18446744073709788269,
+        "roundPrice": "365651610000",
+        "roundTimestamp": 1733273669
+    },
+    {
+        "roundId": 18446744073709788268,
+        "roundPrice": "364981000000",
+        "roundTimestamp": 1733273547
+    },
+    {
+        "roundId": 18446744073709788267,
+        "roundPrice": "364365000000",
+        "roundTimestamp": 1733273537
+    },
+    {
+        "roundId": 18446744073709788266,
+        "roundPrice": "363761654243",
+        "roundTimestamp": 1733273471
+    },
+    {
+        "roundId": 18446744073709788265,
+        "roundPrice": "363156424288",
+        "roundTimestamp": 1733273437
+    },
+    {
+        "roundId": 18446744073709788264,
+        "roundPrice": "362599762106",
+        "roundTimestamp": 1733272799
+    },
+    {
+        "roundId": 18446744073709788263,
+        "roundPrice": "363152000000",
+        "roundTimestamp": 1733272721
+    },
+    {
+        "roundId": 18446744073709788262,
+        "roundPrice": "363757500000",
+        "roundTimestamp": 1733272585
+    },
+    {
+        "roundId": 18446744073709788261,
+        "roundPrice": "364364000000",
+        "roundTimestamp": 1733272377
+    },
+    {
+        "roundId": 18446744073709788260,
+        "roundPrice": "363693928163",
+        "roundTimestamp": 1733272289
+    },
+    {
+        "roundId": 18446744073709788259,
+        "roundPrice": "363027970000",
+        "roundTimestamp": 1733271893
+    },
+    {
+        "roundId": 18446744073709788258,
+        "roundPrice": "362220709167",
+        "roundTimestamp": 1733271759
+    },
+    {
+        "roundId": 18446744073709788257,
+        "roundPrice": "362788000000",
+        "roundTimestamp": 1733271187
+    },
+    {
+        "roundId": 18446744073709788256,
+        "roundPrice": "362037040000",
+        "roundTimestamp": 1733270999
+    },
+    {
+        "roundId": 18446744073709788255,
+        "roundPrice": "362622490000",
+        "roundTimestamp": 1733270801
+    },
+    {
+        "roundId": 18446744073709788254,
+        "roundPrice": "362078000000",
+        "roundTimestamp": 1733270251
+    },
+    {
+        "roundId": 18446744073709788253,
+        "roundPrice": "362679293606",
+        "roundTimestamp": 1733269897
+    },
+    {
+        "roundId": 18446744073709788252,
+        "roundPrice": "362378000000",
+        "roundTimestamp": 1733268687
+    },
+    {
+        "roundId": 18446744073709788251,
+        "roundPrice": "361768881086",
+        "roundTimestamp": 1733268565
+    },
+    {
+        "roundId": 18446744073709788250,
+        "roundPrice": "362389170000",
+        "roundTimestamp": 1733268511
+    },
+    {
+        "roundId": 18446744073709788249,
+        "roundPrice": "362961208800",
+        "roundTimestamp": 1733268223
+    },
+    {
+        "roundId": 18446744073709788248,
+        "roundPrice": "363535070000",
+        "roundTimestamp": 1733268147
+    },
+    {
+        "roundId": 18446744073709788247,
+        "roundPrice": "362784000000",
+        "roundTimestamp": 1733267419
+    },
+    {
+        "roundId": 18446744073709788246,
+        "roundPrice": "362238000000",
+        "roundTimestamp": 1733267233
+    },
+    {
+        "roundId": 18446744073709788245,
+        "roundPrice": "362796740000",
+        "roundTimestamp": 1733266857
+    },
+    {
+        "roundId": 18446744073709788244,
+        "roundPrice": "363387000000",
+        "roundTimestamp": 1733266803
+    },
+    {
+        "roundId": 18446744073709788243,
+        "roundPrice": "362686086400",
+        "roundTimestamp": 1733266649
+    },
+    {
+        "roundId": 18446744073709788242,
+        "roundPrice": "362136000000",
+        "roundTimestamp": 1733266385
+    },
+    {
+        "roundId": 18446744073709788241,
+        "roundPrice": "361585565971",
+        "roundTimestamp": 1733265239
+    },
+    {
+        "roundId": 18446744073709788240,
+        "roundPrice": "360985431500",
+        "roundTimestamp": 1733264809
+    },
+    {
+        "roundId": 18446744073709788239,
+        "roundPrice": "361640119707",
+        "roundTimestamp": 1733264291
+    },
+    {
+        "roundId": 18446744073709788238,
+        "roundPrice": "361061500000",
+        "roundTimestamp": 1733264093
+    },
+    {
+        "roundId": 18446744073709788237,
+        "roundPrice": "361607228368",
+        "roundTimestamp": 1733263993
+    },
+    {
+        "roundId": 18446744073709788236,
+        "roundPrice": "360817481132",
+        "roundTimestamp": 1733263453
+    },
+    {
+        "roundId": 18446744073709788235,
+        "roundPrice": "360195000000",
+        "roundTimestamp": 1733263333
+    },
+    {
+        "roundId": 18446744073709788234,
+        "roundPrice": "360787010000",
+        "roundTimestamp": 1733263277
+    },
+    {
+        "roundId": 18446744073709788233,
+        "roundPrice": "361477150000",
+        "roundTimestamp": 1733262957
+    },
+    {
+        "roundId": 18446744073709788232,
+        "roundPrice": "362028000000",
+        "roundTimestamp": 1733262793
+    },
+    {
+        "roundId": 18446744073709788231,
+        "roundPrice": "362182650000",
+        "roundTimestamp": 1733261591
+    },
+    {
+        "roundId": 18446744073709788230,
+        "roundPrice": "362876474233",
+        "roundTimestamp": 1733261009
+    },
+    {
+        "roundId": 18446744073709788229,
+        "roundPrice": "362212854562",
+        "roundTimestamp": 1733260711
+    },
+    {
+        "roundId": 18446744073709788228,
+        "roundPrice": "361639000000",
+        "roundTimestamp": 1733260049
+    },
+    {
+        "roundId": 18446744073709788227,
+        "roundPrice": "361091355656",
+        "roundTimestamp": 1733259323
+    },
+    {
+        "roundId": 18446744073709788226,
+        "roundPrice": "360533849571",
+        "roundTimestamp": 1733259245
+    },
+    {
+        "roundId": 18446744073709788225,
+        "roundPrice": "359991577108",
+        "roundTimestamp": 1733259025
+    },
+    {
+        "roundId": 18446744073709788224,
+        "roundPrice": "359339000000",
+        "roundTimestamp": 1733258915
+    },
+    {
+        "roundId": 18446744073709788223,
+        "roundPrice": "359907000000",
+        "roundTimestamp": 1733258221
+    },
+    {
+        "roundId": 18446744073709788222,
+        "roundPrice": "359297932491",
+        "roundTimestamp": 1733257703
+    },
+    {
+        "roundId": 18446744073709788221,
+        "roundPrice": "358742000000",
+        "roundTimestamp": 1733257295
     }
 ]
