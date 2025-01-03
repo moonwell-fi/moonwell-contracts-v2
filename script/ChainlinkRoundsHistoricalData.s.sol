@@ -53,11 +53,17 @@ contract RoundDataHelper is Script {
     }
 }
 
+// time forge script script/ChainlinkRoundsHistoricalData.s.sol:ChainlinkRoundsHistoricalData \
+//    --rpc-url optimism \
+//    --sig "run(address)" \
+//    0x13e3Ee699D1909E989722E753853AE30b17e08c5 \
+//    --fork-retries 10
+//  --fork-retry-backoff 1000
 contract ChainlinkRoundsHistoricalData is Script {
     using stdJson for string;
 
     address constant MULTICALL3 = 0xcA11bde05977b3631167028862bE2a173976CA11;
-    uint256 constant BATCH_SIZE = 1000;
+    uint256 constant BATCH_SIZE = 200;
 
     RoundDataHelper helper;
     string private jsonPath;
@@ -127,8 +133,8 @@ contract ChainlinkRoundsHistoricalData is Script {
 
         string memory content;
         if (hasExistingData) {
-            // If we have existing data, add a comma after the last object and append the new batch
-            content = string.concat(existingJson, ",", batchJson, "]");
+            // If we have existing data, just append the new batch
+            content = string.concat(existingJson, batchJson, "]");
         } else {
             // If this is a new file, create a fresh JSON array
             content = string.concat("[", batchJson, "]");
@@ -152,7 +158,7 @@ contract ChainlinkRoundsHistoricalData is Script {
         jsonPath = string.concat(
             vm.projectRoot(),
             "/output/chainlink_historical_data_",
-            vm.toString(BATCH_SIZE),
+            vm.toString(block.chainid),
             ".json"
         );
         console2.log("Output file:", jsonPath);
@@ -209,7 +215,9 @@ contract ChainlinkRoundsHistoricalData is Script {
                         try vm.parseJson(lastObject, ".roundId") returns (
                             bytes memory roundIdBytes
                         ) {
-                            currentRoundId = abi.decode(roundIdBytes, (uint80));
+                            currentRoundId =
+                                abi.decode(roundIdBytes, (uint80)) +
+                                uint80(1);
                             console2.log(
                                 "Continuing from round ID:",
                                 currentRoundId
@@ -262,7 +270,7 @@ contract ChainlinkRoundsHistoricalData is Script {
         }
 
         bool reachedTarget = false;
-        while (!reachedTarget && currentRoundId > 0) {
+        while (!reachedTarget) {
             console2.log("Processing batch from round:", currentRoundId);
 
             IMulticall3.Call3[] memory calls = helper.createMulticallBatch(
