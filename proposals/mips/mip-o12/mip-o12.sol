@@ -83,7 +83,6 @@ contract mipo12 is HybridProposal {
         );
 
         // Validate initial parameters
-        assertEq(wrapper.earlyUpdateWindow(), 30, "Wrong early update window"); // Default 30 seconds
         assertEq(wrapper.feeMultiplier(), 99, "Wrong fee multiplier"); // Default 99
 
         // Validate interface implementation

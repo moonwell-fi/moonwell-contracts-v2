@@ -14,13 +14,12 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ChainlinkFeedOEVWrapper} from "@protocol/oracles/ChainlinkFeedOEVWrapper.sol";
 
 contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
-    event FeeMultiplierChanged(uint16 newFee);
-    event EarlyUpdateWindowChanged(uint256 newWindow);
+    event FeeMultiplierChanged(uint16 oldFee, uint16 newFee);
     event ProtocolOEVRevenueUpdated(
         address indexed receiver,
         uint256 revenueAdded
     );
-    event MaxDecrementsChanged(uint8 newMaxDecrements);
+    event MaxDecrementsChanged(uint8 oldMaxDecrements, uint8 newMaxDecrements);
 
     ChainlinkFeedOEVWrapper public wrapper;
     Comptroller comptroller;
@@ -258,9 +257,10 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     function testSetFeeMultiplier() public {
         uint8 newMultiplier = 1;
 
+        uint8 originalMultiplier = wrapper.feeMultiplier();
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectEmit(address(wrapper));
-        emit FeeMultiplierChanged(newMultiplier);
+        emit FeeMultiplierChanged(originalMultiplier, newMultiplier);
         wrapper.setFeeMultiplier(newMultiplier);
 
         assertEq(
@@ -674,7 +674,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         // Owner should be able to change maxDecrements
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectEmit(address(wrapper));
-        emit MaxDecrementsChanged(newMaxDecrements);
+        emit MaxDecrementsChanged(originalMaxDecrements, newMaxDecrements);
         wrapper.setMaxDecrements(newMaxDecrements);
 
         assertEq(

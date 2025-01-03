@@ -12,12 +12,9 @@ import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 /// @dev This contract implements the AggregatorV3Interface and adds OEV (Oracle Extractable Value) functionality
 contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @notice Emitted when the fee multiplier is changed
+    /// @param oldFee The old fee multiplier value
     /// @param newFee The new fee multiplier value
-    event FeeMultiplierChanged(uint16 newFee);
-
-    /// @notice Emitted when the early update window is changed
-    /// @param newWindow The new early update window value
-    event EarlyUpdateWindowChanged(uint256 newWindow);
+    event FeeMultiplierChanged(uint8 oldFee, uint8 newFee);
 
     /// @notice Emitted when the price is updated
     /// @param receiver The address that received the update
@@ -28,8 +25,9 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     );
 
     /// @notice Emitted when the max decrements value is changed
+    /// @param oldMaxDecrements The old maximum number of decrements
     /// @param newMaxDecrements The new maximum number of decrements
-    event MaxDecrementsChanged(uint8 newMaxDecrements);
+    event MaxDecrementsChanged(uint8 oldMaxDecrements, uint8 newMaxDecrements);
 
     /// @notice The original Chainlink price feed contract
     AggregatorV3Interface public immutable originalFeed;
@@ -230,16 +228,18 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @notice Set a new fee multiplier for early updates
     /// @param newMultiplier The new fee multiplier to set
     /// @dev Only callable by the contract owner
-    function setFeeMultiplier(uint16 newMultiplier) public onlyOwner {
-        feeMultiplier = uint8(newMultiplier);
-        emit FeeMultiplierChanged(newMultiplier);
+    function setFeeMultiplier(uint8 newMultiplier) public onlyOwner {
+        uint8 oldMultiplier = feeMultiplier;
+        feeMultiplier = newMultiplier;
+        emit FeeMultiplierChanged(oldMultiplier, newMultiplier);
     }
 
     /// @notice Set the maximum number of decrements before falling back to latest price
     /// @param _maxDecrements The new maximum number of decrements
     function setMaxDecrements(uint8 _maxDecrements) external onlyOwner {
+        uint8 oldMaxDecrements = maxDecrements;
         maxDecrements = _maxDecrements;
-        emit MaxDecrementsChanged(_maxDecrements);
+        emit MaxDecrementsChanged(oldMaxDecrements, _maxDecrements);
     }
 
     /// @notice Validate the round data from Chainlink
