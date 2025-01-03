@@ -14,7 +14,7 @@ import {AllChainAddresses as Addresses} from "@proposals/Addresses.sol";
 import {ChainlinkFeedOEVWrapper} from "@protocol/oracles/ChainlinkFeedOEVWrapper.sol";
 
 contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
-    event FeeMultiplierChanged(uint16 oldFee, uint16 newFee);
+    event FeeMultiplierChanged(uint8 oldFee, uint8 newFee);
     event ProtocolOEVRevenueUpdated(
         address indexed receiver,
         uint256 revenueAdded
@@ -117,10 +117,12 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         vm.mockCall(
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(
-                wrapper.originalFeed().latestRoundData.selector
+                wrapper.originalFeed().getRoundData.selector,
+                uint80(latestRoundOnChain + 1)
             ),
             abi.encode(uint80(1), mockPrice, 0, mockTimestamp, uint80(1))
         );
+
         (, int256 answer, , uint256 timestamp, ) = wrapper.latestRoundData();
 
         assertEq(mockPrice, answer, "Price should be the same as answer");
@@ -217,7 +219,8 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             vm.mockCall(
                 address(wrapper.originalFeed()),
                 abi.encodeWithSelector(
-                    wrapper.originalFeed().latestRoundData.selector
+                    wrapper.originalFeed().getRoundData.selector,
+                    uint80(latestRoundOnChain + 1)
                 ),
                 abi.encode(
                     uint80(latestRoundOnChain + 1),
