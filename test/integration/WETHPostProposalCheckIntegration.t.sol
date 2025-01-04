@@ -140,6 +140,23 @@ contract WETHPostProposalCheck is Configs, PostProposalCheck {
         );
     }
 
+    function testTransferReservesOutWethSucceeds() public {
+        address temporalGovernor = addresses.getAddress("TEMPORAL_GOVERNOR");
+        uint256 reduceAmount = mToken.totalReserves();
+        IERC20 token = IERC20(addresses.getAddress("WETH"));
+
+        uint256 startingTokenBalance = token.balanceOf(temporalGovernor);
+
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        mToken._reduceReserves(reduceAmount);
+
+        assertEq(
+            token.balanceOf(temporalGovernor) - startingTokenBalance,
+            reduceAmount,
+            "incorrect WETH balance after reducing reserves"
+        );
+    }
+
     receive() external payable {
         ethReceived = true;
     }
