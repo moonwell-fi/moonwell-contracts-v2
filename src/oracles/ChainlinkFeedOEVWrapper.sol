@@ -21,7 +21,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @param revenueAdded The amount of ETH added to the ETH market
     event ProtocolOEVRevenueUpdated(
         address indexed receiver,
-        uint256 revenueAdded
+        uint256 revenueAdded,
+        uint256 roundId
     );
 
     /// @notice Emitted when the max decrements value is changed
@@ -59,7 +60,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @param _maxDecrements The maximum number of decrements before falling back to latest price
     constructor(
         address _originalFeed,
-        uint16 _feeMultiplier,
+        uint8 _feeMultiplier,
         address _owner,
         address _ethMarket,
         address _weth,
@@ -69,7 +70,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         WETHMarket = MErc20(_ethMarket);
         WETH = WETH9(_weth);
 
-        feeMultiplier = uint8(_feeMultiplier);
+        feeMultiplier = _feeMultiplier;
         maxDecrements = _maxDecrements;
 
         cachedRoundId = originalFeed.latestRound();
@@ -98,7 +99,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     {
         uint256 currentRoundId = originalFeed.latestRound();
 
-        // If no valid price was found within maxDecrements, use the latest price
+        // if cached round is latest round, return current price
         if (currentRoundId == cachedRoundId) {
             (
                 roundId,
@@ -153,7 +154,20 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         );
 
         // Get latest round data and validate it
-        uint256 latestRoundId = originalFeed.latestRound();
+        (
+            uint256 latestRoundId,
+            int256 latestAnswer,
+            ,
+            uint256 latestUpdatedAt,
+            uint80 latestAnsweredInRound
+        ) = originalFeed.latestRoundData();
+
+        _validateRoundData(
+            uint80(latestRoundId),
+            latestAnswer,
+            latestUpdatedAt,
+            latestAnsweredInRound
+        );
 
         require(
             latestRoundId > cachedRoundId,
@@ -170,7 +184,11 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             "ChainlinkOEVWrapper: Failed to add reserves"
         );
 
-        emit ProtocolOEVRevenueUpdated(address(WETHMarket), msg.value);
+        emit ProtocolOEVRevenueUpdated(
+            address(WETHMarket),
+            msg.value,
+            latestRoundId
+        );
 
         cachedRoundId = latestRoundId;
         return cachedRoundId;

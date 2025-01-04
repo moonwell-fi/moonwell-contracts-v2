@@ -17,7 +17,8 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     event FeeMultiplierChanged(uint8 oldFee, uint8 newFee);
     event ProtocolOEVRevenueUpdated(
         address indexed receiver,
-        uint256 revenueAdded
+        uint256 revenueAdded,
+        uint256 roundId
     );
     event MaxDecrementsChanged(uint8 oldMaxDecrements, uint8 newMaxDecrements);
 
@@ -80,13 +81,22 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         vm.expectEmit(address(wrapper));
         emit ProtocolOEVRevenueUpdated(
             addresses.getAddress("MOONWELL_WETH"),
-            tax
+            tax,
+            uint256(latestRoundOnChain + 1)
         );
 
         vm.mockCall(
             address(wrapper.originalFeed()),
-            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
-            abi.encode(uint256(latestRoundOnChain + 1))
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                uint256(latestRoundOnChain + 1),
+                mockPrice,
+                0,
+                block.timestamp,
+                uint256(latestRoundOnChain + 1)
+            )
         );
 
         wrapper.updatePriceEarly{value: tax}();
@@ -230,9 +240,15 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             vm.mockCall(
                 address(wrapper.originalFeed()),
                 abi.encodeWithSelector(
-                    wrapper.originalFeed().latestRound.selector
+                    wrapper.originalFeed().latestRoundData.selector
                 ),
-                abi.encode(uint256(latestRoundOnChain + 1))
+                abi.encode(
+                    uint256(latestRoundOnChain + 1),
+                    newPrice,
+                    0,
+                    block.timestamp,
+                    uint256(latestRoundOnChain + 1)
+                )
             );
             wrapper.updatePriceEarly{value: tax}();
             vm.mockCall(
@@ -362,8 +378,16 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         vm.mockCall(
             address(wrapper.originalFeed()),
-            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
-            abi.encode(latestRoundOnChain + 1)
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                latestRoundOnChain + 1,
+                3_000e8,
+                0,
+                block.timestamp,
+                latestRoundOnChain + 1
+            )
         );
         wrapper.updatePriceEarly{value: tax}();
 
@@ -751,8 +775,16 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         vm.mockCall(
             address(wrapper.originalFeed()),
-            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
-            abi.encode(uint256(latestRoundOnChain + 1))
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                latestRoundOnChain + 1,
+                300e8,
+                0,
+                block.timestamp,
+                latestRoundOnChain + 1
+            )
         );
         vm.expectRevert("ChainlinkOEVWrapper: Failed to add reserves");
         wrapper.updatePriceEarly{value: payment}();
