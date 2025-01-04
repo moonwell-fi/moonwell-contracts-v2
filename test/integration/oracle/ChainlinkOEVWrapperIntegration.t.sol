@@ -116,6 +116,12 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             )
         );
 
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
+            abi.encode(uint256(latestRoundOnChain + 1))
+        );
+
         (, int256 answer, , uint256 timestamp, ) = wrapper.latestRoundData();
 
         vm.warp(vm.getBlockTimestamp() + 1);
@@ -194,7 +200,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         {
             // Calculate maximum borrow amount
             (, uint256 liquidity, ) = comptroller.getAccountLiquidity(user);
-            console.log("Liquidity:", liquidity);
 
             // Use 80% of max liquidity to leave room for price movement
             // usdc is 6 decimals, liquidity is in 18 decimals
@@ -264,6 +269,14 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
                     block.timestamp,
                     uint80(latestRoundOnChain + 1)
                 )
+            );
+
+            vm.mockCall(
+                address(wrapper.originalFeed()),
+                abi.encodeWithSelector(
+                    wrapper.originalFeed().latestRound.selector
+                ),
+                abi.encode(uint256(latestRoundOnChain + 1))
             );
 
             (uint256 err, uint256 liquidity, uint256 shortfall) = comptroller
