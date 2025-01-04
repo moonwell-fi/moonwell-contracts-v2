@@ -2035,8 +2035,8 @@ abstract contract MToken is MTokenInterface, Exponential, TokenErrorReporter {
         // Store reserves[n+1] = reserves[n] - reduceAmount
         totalReserves = totalReservesNew;
 
-        // doTransferOut reverts if anything goes wrong, since we can't be sure if side effects occurred.
-        doTransferOut(admin, reduceAmount);
+        // transferReservesOut reverts if anything goes wrong, since we can't be sure if side effects occurred.
+        transferReservesOut(admin, reduceAmount);
 
         emit ReservesReduced(admin, reduceAmount, totalReservesNew);
 
@@ -2207,6 +2207,13 @@ abstract contract MToken is MTokenInterface, Exponential, TokenErrorReporter {
      *  If caller has checked protocol's balance, and verified it is >= amount, this should not revert in normal conditions.
      */
     function doTransferOut(address payable to, uint amount) internal virtual;
+
+    function transferReservesOut(
+        address payable to,
+        uint amount
+    ) internal virtual {
+        doTransferOut(to, amount);
+    }
 
     /*** Reentrancy Guard ***/
 

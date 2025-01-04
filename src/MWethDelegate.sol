@@ -37,4 +37,14 @@ contract MWethDelegate is MErc20Delegate {
         weth.safeTransfer(wethUnwrapper, amount);
         WethUnwrapper(payable(wethUnwrapper)).send(to, amount); /// send to user through wethUnwrapper
     }
+
+    /// @notice transfer reserves out in ERC20 form
+    /// @param to the recipient address
+    /// @param amount the amount of reserves to transfer
+    function transferReservesOut(
+        address payable to,
+        uint256 amount
+    ) internal override {
+        IERC20(underlying).safeTransfer(to, amount);
+    }
 }
