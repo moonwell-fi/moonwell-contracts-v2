@@ -61,7 +61,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     uint256 public cachedRoundId;
 
     /// @notice The last cached timestamp
-    int256 public cachedTimestamp;
+    uint256 public cachedTimestamp;
 
     /// @notice Constructor to initialize the wrapper
     /// @param _originalFeed Address of the original Chainlink feed

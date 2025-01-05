@@ -131,5 +131,13 @@ contract mipo12 is HybridProposal {
             expectedAnsweredInRound,
             "Wrong answeredInRound"
         );
+
+        // Validate round id and timestamp are cached
+        assertEq(wrapper.cachedRoundId(), lastRoundId, "Wrong cachedRoundId");
+        assertEq(
+            wrapper.cachedTimestamp(),
+            block.timestamp,
+            "Wrong cachedTimestamp"
+        );
     }
 }
