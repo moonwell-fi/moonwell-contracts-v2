@@ -651,7 +651,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testLatestRoundDataRevertOnStalePriceData() public {
-        vm.warp(vm.getBlockTimestamp + wrapper.maxRoundDelay());
+        vm.warp(vm.getBlockTimestamp() + uint256(wrapper.maxRoundDelay()));
 
         vm.mockCall(
             address(wrapper.originalFeed()),
