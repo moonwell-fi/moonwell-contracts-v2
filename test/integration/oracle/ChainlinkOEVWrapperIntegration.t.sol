@@ -105,22 +105,15 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         vm.mockCall(
             address(wrapper.originalFeed()),
             abi.encodeWithSelector(
-                wrapper.originalFeed().getRoundData.selector,
-                uint80(latestRoundOnChain + 1)
+                wrapper.originalFeed().latestRoundData.selector
             ),
             abi.encode(
-                uint80(latestRoundOnChain + 1),
+                uint256(latestRoundOnChain + 1),
                 mockPrice,
                 0,
                 block.timestamp,
-                uint80(latestRoundOnChain + 1)
+                uint256(latestRoundOnChain + 1)
             )
-        );
-
-        vm.mockCall(
-            address(wrapper.originalFeed()),
-            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
-            abi.encode(uint256(latestRoundOnChain + 1))
         );
 
         (, int256 answer, , uint256 timestamp, ) = wrapper.latestRoundData();
@@ -140,14 +133,25 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         );
     }
 
-    function testReturnPreviousRoundIfNoOneHasPaidForCurrentRound() public {
+    function testReturnPreviousRoundIfNoOneHasPaidForCurrentRoundAndNewRoundIsWithinMaxRoundDelay()
+        public
+    {
+        int256 mockPrice = 3_3333e8; // chainlink oracle uses 8 decimals
+
         vm.mockCall(
             address(wrapper.originalFeed()),
-            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
-            abi.encode(uint256(latestRoundOnChain + 1))
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                uint256(latestRoundOnChain + 1),
+                mockPrice,
+                0,
+                block.timestamp,
+                uint256(latestRoundOnChain + 1)
+            )
         );
 
-        int256 mockPrice = 3_3333e8; // chainlink oracle uses 8 decimals
         uint256 mockTimestamp = block.timestamp - 1;
         vm.mockCall(
             address(wrapper.originalFeed()),
@@ -164,8 +168,10 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             )
         );
 
-        (, int256 answer, , uint256 timestamp, ) = wrapper.latestRoundData();
+        (uint256 roundId, int256 answer, , uint256 timestamp, ) = wrapper
+            .latestRoundData();
 
+        assertEq(roundId, latestRoundOnChain, "Round ID should be the same");
         assertEq(mockPrice, answer, "Price should be the same as answer");
         assertEq(
             timestamp,
@@ -174,46 +180,42 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         );
     }
 
-    function testReturnPreviousRoundIfCachedTimestmapPlusEarlyUpdateWindowIsEqualToCurrentTimestamp()
+    function testReturnLatestRoundIfBlockTimestampIsOlderThanBlockTImestampPlusMaxRoundDelay()
         public
     {
-        // current round after testCanUpdatePriceEarly is latestRoundOnChain + 1, get data for latestRoundOnChain
-        (
-            uint256 expectedRoundId,
-            int256 expectedAnswer,
-            ,
-            uint256 expectedTimestamp,
+        int256 mockPrice = 3_000e8; // chainlink oracle uses 8 decimals
 
-        ) = wrapper.getRoundData(uint80(latestRoundOnChain));
+        uint256 expectedTimestamp = block.timestamp;
 
-        testCanUpdatePriceEarly();
-
-        uint256 cachedRoundId = wrapper.cachedRoundId();
-
-        assertEq(
-            cachedRoundId,
-            latestRoundOnChain + 1,
-            "Round id should be the same"
+        vm.mockCall(
+            address(wrapper.originalFeed()),
+            abi.encodeWithSelector(
+                wrapper.originalFeed().latestRoundData.selector
+            ),
+            abi.encode(
+                uint256(latestRoundOnChain + 1),
+                mockPrice,
+                0,
+                block.timestamp,
+                uint256(latestRoundOnChain + 1)
+            )
         );
 
-        vm.warp(vm.getBlockTimestamp() + wrapper.maxRoundDelay());
-        (uint256 roundId, int256 answer, , uint256 timestamp, ) = wrapper
+        vm.warp(block.timestamp + wrapper.maxRoundDelay());
+
+        (uint256 roundID, int256 answer, , uint256 timestamp, ) = wrapper
             .latestRoundData();
 
         assertEq(
-            roundId,
-            expectedRoundId,
-            "Round id should be the same as expectedRoundId"
+            roundID,
+            latestRoundOnChain + 1,
+            "Round ID should be the same"
         );
-        assertEq(
-            answer,
-            expectedAnswer,
-            "Answer should be the same as expectedAnswer"
-        );
+        assertEq(mockPrice, answer, "Price should be the same as answer");
         assertEq(
             timestamp,
             expectedTimestamp,
-            "Timestamp should be the same as expectedTimestamp"
+            "Timestamp should be the same as block.timestamp"
         );
     }
 

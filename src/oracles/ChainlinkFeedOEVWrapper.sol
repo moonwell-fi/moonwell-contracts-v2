@@ -84,6 +84,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         maxRoundDelay = _maxRoundDelay;
 
         cachedRoundId = originalFeed.latestRound();
+
+        transferOwnership(_owner);
     }
 
     /// @notice Get the latest round data
