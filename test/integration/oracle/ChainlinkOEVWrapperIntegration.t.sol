@@ -651,11 +651,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testLatestRoundDataRevertOnStalePriceData() public {
-        vm.mockCall(
-            address(wrapper.originalFeed()),
-            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
-            abi.encode(uint256(1))
-        );
+        vm.warp(vm.getBlockTimestamp + wrapper.maxRoundDelay());
 
         vm.mockCall(
             address(wrapper.originalFeed()),
@@ -766,12 +762,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     function testMaxDecrementsLimit() public {
         // Mock the feed to return valid data for specific rounds
         uint256 latestRound = 100;
-
-        vm.mockCall(
-            address(wrapper.originalFeed()),
-            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
-            abi.encode(latestRound)
-        );
 
         // Set maxDecrements to 3 (shouldn't reach round 95)
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));

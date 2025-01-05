@@ -118,7 +118,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
         // Return the current round data if either:
         // 1. This round has already been cached (meaning someone paid for it)
-        // 2. The round is still within the acceptable delay window, or
+        // 2. The round is too old
         if (
             roundId == cachedRoundId ||
             block.timestamp >= updatedAt + maxRoundDelay
@@ -127,10 +127,12 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             return (roundId, answer, startedAt, updatedAt, answeredInRound);
         }
 
-        // If the current round is too old and hasn't been paid for,
+        uint256 startRoundId = roundId--;
+
+        // If the current round is not too old and hasn't been paid for,
         // attempt to find the most recent valid round by checking previous rounds
-        for (uint256 i = 0; i < maxDecrements && --roundId > 0; i++) {
-            try originalFeed.getRoundData(uint80(roundId)) returns (
+        for (uint256 i = 0; i < maxDecrements && startRoundId > 0; i++) {
+            try originalFeed.getRoundData(uint80(startRoundId)) returns (
                 uint80 r,
                 int256 a,
                 uint256 s,
@@ -147,7 +149,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
                 return (roundId, answer, startedAt, updatedAt, answeredInRound);
             } catch {
                 // Decrement the round ID for next iteration
-                roundId--;
+                startRoundId--;
             }
         }
     }
