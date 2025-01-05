@@ -127,11 +127,11 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             return (roundId, answer, startedAt, updatedAt, answeredInRound);
         }
 
-        uint256 startRoundId = roundId--;
+        uint256 startRoundId = roundId;
 
         // If the current round is not too old and hasn't been paid for,
         // attempt to find the most recent valid round by checking previous rounds
-        for (uint256 i = 0; i < maxDecrements && startRoundId > 0; i++) {
+        for (uint256 i = 0; i < maxDecrements && --startRoundId > 0; i++) {
             try originalFeed.getRoundData(uint80(startRoundId)) returns (
                 uint80 r,
                 int256 a,
