@@ -601,11 +601,8 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testLatestRoundDataRevertOnChainlinkPriceIsZero() public {
-        vm.mockCall(
-            address(wrapper.originalFeed()),
-            abi.encodeWithSelector(wrapper.originalFeed().latestRound.selector),
-            abi.encode(uint256(1))
-        );
+        uint256 timestampBefore = vm.getBlockTimestamp();
+        vm.warp(timestampBefore + uint256(wrapper.maxRoundDelay()));
 
         vm.mockCall(
             address(wrapper.originalFeed()),
@@ -616,7 +613,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
                 uint80(1), // roundId
                 int256(0), // answer
                 uint256(0), // startedAt
-                uint256(block.timestamp), // updatedAt
+                uint256(timestampBefore), // updatedAt
                 uint80(1) // answeredInRound
             )
         );

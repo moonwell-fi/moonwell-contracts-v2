@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
-import {console} from "@forge-std/console.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
@@ -109,13 +108,6 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     {
         (roundId, answer, startedAt, updatedAt, answeredInRound) = originalFeed
             .latestRoundData();
-
-        console.log("block.timestamp", block.timestamp);
-        console.log("updateAt", updatedAt);
-        console.log("max round delay", maxRoundDelay);
-        console.log("currentRoundId", roundId);
-        console.log("cachedRoundId", cachedRoundId);
-        console.log("answer", answer);
 
         // Return the current round data if either:
         // 1. This round has already been cached (meaning someone paid for it)
