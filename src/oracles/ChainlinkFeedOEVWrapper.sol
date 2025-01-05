@@ -112,15 +112,16 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
         console.log("block.timestamp", block.timestamp);
         console.log("updateAt", updatedAt);
+        console.log("max round delay", maxRoundDelay);
         console.log("currentRoundId", roundId);
         console.log("cachedRoundId", cachedRoundId);
 
         // Return the current round data if either:
-        // 1. The round is still within the acceptable delay window, or
-        // 2. This round has already been cached (meaning someone paid for it)
+        // 1. This round has already been cached (meaning someone paid for it)
+        // 2. The round is still within the acceptable delay window, or
         if (
-            updatedAt + maxRoundDelay > block.timestamp ||
-            roundId == cachedRoundId
+            roundId == cachedRoundId ||
+            block.timestamp >= updatedAt + maxRoundDelay
         ) {
             _validateRoundData(roundId, answer, updatedAt, answeredInRound);
             return (roundId, answer, startedAt, updatedAt, answeredInRound);
