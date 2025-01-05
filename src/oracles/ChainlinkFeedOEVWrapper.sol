@@ -31,10 +31,10 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @param newMaxDecrements The new maximum number of decrements
     event MaxDecrementsChanged(uint8 oldMaxDecrements, uint8 newMaxDecrements);
 
-    /// @notice Emitted when the early update window is changed
-    /// @param oldEarlyUpdateWindow The old early update window value
-    /// @param NewMaxRoundDelay The new early update window value
-    event NewMaxRoundDelay(uint8 oldEarlyUpdateWindow, uint8 NewMaxRoundDelay);
+    /// @notice Emitted when the max round delay is changed
+    /// @param oldMaxRoundDelay The old maximum round delay
+    /// @param newMaxRoundDelay The new maximum round delay
+    event NewMaxRoundDelay(uint8 oldMaxRoundDelay, uint8 newMaxRoundDelay);
 
     /// @notice The original Chainlink price feed contract
     AggregatorV3Interface public immutable originalFeed;
@@ -60,6 +60,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
     /// @notice Constructor to initialize the wrapper
     /// @param _originalFeed Address of the original Chainlink feed
+    /// @param _feeMultiplier The fee multiplier to apply to the original feed's fee
     /// @param _owner Address of the contract owner
     /// @param _ethMarket Address of the ETH market
     /// @param _weth Address of the WETH contract
@@ -72,7 +73,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         address _ethMarket,
         address _weth,
         uint8 _maxDecrements,
-        uint8 _earlyUpdateWindow
+        uint8 _maxRoundDelay
     ) {
         originalFeed = AggregatorV3Interface(_originalFeed);
         WETHMarket = MErc20(_ethMarket);
@@ -83,9 +84,6 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         maxRoundDelay = _maxRoundDelay;
 
         cachedRoundId = originalFeed.latestRound();
-        cachedTimestamp = block.timestamp;
-
-        transferOwnership(_owner);
     }
 
     /// @notice Get the latest round data
@@ -107,34 +105,28 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             uint80 answeredInRound
         )
     {
-        uint256 currentRoundId = originalFeed.latestRound();
+        (roundId, answer, startedAt, updatedAt, answeredInRound) = originalFeed
+            .latestRoundData();
 
         console.log("block.timestamp", block.timestamp);
-        console.log("cached timestemp", cachedTimestamp);
-        console.log("early update window", earlyUpdateWindow);
-        console.log("currentRoundId", currentRoundId);
+        console.log("currentRoundId", roundId);
         console.log("cachedRoundId", cachedRoundId);
 
-        // if cached timestamp is within early update window and current round is the same as the cached round return cached round data
+        // Return the current round data if either:
+        // 1. The round is still within the acceptable delay window, or
+        // 2. This round has already been cached (meaning someone paid for it)
         if (
-            cachedTimestamp + earlyUpdateWindow > block.timestamp &&
-            currentRoundId == cachedRoundId
+            updatedAt + maxRoundDelay > block.timestamp ||
+            roundId == cachedRoundId
         ) {
-            (
-                roundId,
-                answer,
-                startedAt,
-                updatedAt,
-                answeredInRound
-            ) = originalFeed.getRoundData(uint80(currentRoundId));
-
             _validateRoundData(roundId, answer, updatedAt, answeredInRound);
             return (roundId, answer, startedAt, updatedAt, answeredInRound);
         }
 
-        // try to find a valid round within maxDecrements
-        for (uint256 i = 0; i < maxDecrements && --currentRoundId > 0; i++) {
-            try originalFeed.getRoundData(uint80(currentRoundId)) returns (
+        // If the current round is too old and hasn't been paid for,
+        // attempt to find the most recent valid round by checking previous rounds
+        for (uint256 i = 0; i < maxDecrements && --roundId > 0; i++) {
+            try originalFeed.getRoundData(uint80(roundId)) returns (
                 uint80 r,
                 int256 a,
                 uint256 s,
@@ -151,15 +143,9 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
                 return (roundId, answer, startedAt, updatedAt, answeredInRound);
             } catch {
                 // Decrement the round ID for next iteration
-                currentRoundId--;
+                roundId--;
             }
         }
-        // If no valid round was found within maxDecrements, use the latest price
-        (roundId, answer, startedAt, updatedAt, answeredInRound) = originalFeed
-            .latestRoundData();
-
-        _validateRoundData(roundId, answer, updatedAt, answeredInRound);
-        return (roundId, answer, startedAt, updatedAt, answeredInRound);
     }
 
     /// @notice Update the price earlier than the standard update interval
@@ -209,7 +195,6 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         );
 
         cachedRoundId = latestRoundId;
-        cachedTimestamp = block.timestamp;
         return cachedRoundId;
     }
 
@@ -281,13 +266,13 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         emit MaxDecrementsChanged(oldMaxDecrements, _maxDecrements);
     }
 
-    /// @notice Set the early update window
-    /// @param _earlyUpdateWindow The new early update window
-    function maxRoundDelay(uint8 _earlyUpdateWindow) external onlyOwner {
-        uint8 oldEarlyUpdateWindow = earlyUpdateWindow;
-        earlyUpdateWindow = _earlyUpdateWindow;
+    /// @notice Set the maximum round delay
+    /// @param _maxRoundDelay The new maximum round delay
+    function setMaxRoundDelay(uint8 _maxRoundDelay) external onlyOwner {
+        uint8 oldMaxRoundDelay = maxRoundDelay;
+        maxRoundDelay = _maxRoundDelay;
 
-        emit NewMaxRoundDelay(oldEarlyUpdateWindow, earlyUpdateWindow);
+        emit NewMaxRoundDelay(oldMaxRoundDelay, maxRoundDelay);
     }
 
     /// @notice Validate the round data from Chainlink

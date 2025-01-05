@@ -128,8 +128,8 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         assertEq(mockPrice, answer, "Price should be the same as answer");
         assertEq(
             timestamp,
-            block.timestamp - 1,
-            "Timestamp should be the same as block.timestamp - 1"
+            block.timestamp,
+            "Timestamp should be the same as block.timestamp "
         );
 
         // assert round id and timestamp are cached
@@ -137,11 +137,6 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             wrapper.cachedRoundId(),
             latestRoundOnChain + 1,
             "Round id should be cached"
-        );
-        assertEq(
-            wrapper.cachedTimestamp(),
-            block.timestamp,
-            "Timestamp should be cached"
         );
     }
 
@@ -194,20 +189,14 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         testCanUpdatePriceEarly();
 
         uint256 cachedRoundId = wrapper.cachedRoundId();
-        uint256 cachedTimestamp = wrapper.cachedTimestamp();
 
         assertEq(
             cachedRoundId,
             latestRoundOnChain + 1,
             "Round id should be the same"
         );
-        assertEq(
-            cachedTimestamp,
-            vm.getBlockTimestamp(),
-            "Timestamp should be the same as block.timestamp"
-        );
 
-        vm.warp(vm.getBlockTimestamp() + wrapper.earlyUpdateWindow());
+        vm.warp(vm.getBlockTimestamp() + wrapper.maxRoundDelay());
         (uint256 roundId, int256 answer, , uint256 timestamp, ) = wrapper
             .latestRoundData();
 
@@ -396,25 +385,25 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         wrapper.setFeeMultiplier(1);
     }
 
-    function testmaxRoundDelay() public {
+    function testSetMaxRoundDelay() public {
         uint8 newWindow = 3;
 
-        uint8 originalWindow = wrapper.earlyUpdateWindow();
+        uint8 originalWindow = wrapper.maxRoundDelay();
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectEmit(address(wrapper));
         emit NewMaxRoundDelay(originalWindow, newWindow);
-        wrapper.maxRoundDelay(newWindow);
+        wrapper.setMaxRoundDelay(newWindow);
 
         assertEq(
-            wrapper.earlyUpdateWindow(),
+            wrapper.maxRoundDelay(),
             newWindow,
-            "Early update window not updated"
+            "Max round delay not updated"
         );
     }
 
     function testmaxRoundDelayRevertNonOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
-        wrapper.maxRoundDelay(10);
+        wrapper.setMaxRoundDelay(10);
     }
 
     function testGetRoundData() public {
