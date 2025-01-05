@@ -651,7 +651,8 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     }
 
     function testLatestRoundDataRevertOnStalePriceData() public {
-        vm.warp(vm.getBlockTimestamp() + uint256(wrapper.maxRoundDelay()));
+        uint256 timestampBefore = vm.getBlockTimestamp();
+        vm.warp(timestampBefore + uint256(wrapper.maxRoundDelay()));
 
         vm.mockCall(
             address(wrapper.originalFeed()),
@@ -662,7 +663,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
                 uint80(2), // roundId
                 int256(3_000e8), // answer
                 uint256(0), // startedAt
-                uint256(block.timestamp), // updatedAt
+                timestampBefore, // updatedAt
                 uint80(1) // answeredInRound - less than roundId to simulate stale price
             )
         );
