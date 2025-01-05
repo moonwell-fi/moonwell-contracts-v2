@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
+import {console} from "@forge-std/console.sol";
 
 import {WETH9} from "@protocol/router/IWETH.sol";
 import {MErc20} from "@protocol/MErc20.sol";
@@ -32,11 +33,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
     /// @notice Emitted when the early update window is changed
     /// @param oldEarlyUpdateWindow The old early update window value
-    /// @param newEarlyUpdateWindow The new early update window value
-    event NewEarlyUpdateWindow(
-        uint8 oldEarlyUpdateWindow,
-        uint8 newEarlyUpdateWindow
-    );
+    /// @param NewMaxRoundDelay The new early update window value
+    event NewMaxRoundDelay(uint8 oldEarlyUpdateWindow, uint8 NewMaxRoundDelay);
 
     /// @notice The original Chainlink price feed contract
     AggregatorV3Interface public immutable originalFeed;
@@ -54,14 +52,11 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @notice The maximum number of times to decrement the round before falling back to latest price
     uint8 public maxDecrements;
 
-    /// @notice The early update window
-    uint8 public earlyUpdateWindow;
+    /// @notice The max delay a round can have before falling back to latest price
+    uint8 public maxRoundDelay;
 
     /// @notice The last cached round id
     uint256 public cachedRoundId;
-
-    /// @notice The last cached timestamp
-    uint256 public cachedTimestamp;
 
     /// @notice Constructor to initialize the wrapper
     /// @param _originalFeed Address of the original Chainlink feed
@@ -69,7 +64,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @param _ethMarket Address of the ETH market
     /// @param _weth Address of the WETH contract
     /// @param _maxDecrements The maximum number of decrements before falling back to latest price
-    /// @param _earlyUpdateWindow The early update window
+    /// @param _maxRoundDelay The max delay a round can have before falling back to latest price
     constructor(
         address _originalFeed,
         uint8 _feeMultiplier,
@@ -85,7 +80,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
         feeMultiplier = _feeMultiplier;
         maxDecrements = _maxDecrements;
-        earlyUpdateWindow = _earlyUpdateWindow;
+        maxRoundDelay = _maxRoundDelay;
 
         cachedRoundId = originalFeed.latestRound();
         cachedTimestamp = block.timestamp;
@@ -113,6 +108,12 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         )
     {
         uint256 currentRoundId = originalFeed.latestRound();
+
+        console.log("block.timestamp", block.timestamp);
+        console.log("cached timestemp", cachedTimestamp);
+        console.log("early update window", earlyUpdateWindow);
+        console.log("currentRoundId", currentRoundId);
+        console.log("cachedRoundId", cachedRoundId);
 
         // if cached timestamp is within early update window and current round is the same as the cached round return cached round data
         if (
@@ -282,11 +283,11 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
     /// @notice Set the early update window
     /// @param _earlyUpdateWindow The new early update window
-    function setEarlyUpdateWindow(uint8 _earlyUpdateWindow) external onlyOwner {
+    function maxRoundDelay(uint8 _earlyUpdateWindow) external onlyOwner {
         uint8 oldEarlyUpdateWindow = earlyUpdateWindow;
         earlyUpdateWindow = _earlyUpdateWindow;
 
-        emit NewEarlyUpdateWindow(oldEarlyUpdateWindow, earlyUpdateWindow);
+        emit NewMaxRoundDelay(oldEarlyUpdateWindow, earlyUpdateWindow);
     }
 
     /// @notice Validate the round data from Chainlink

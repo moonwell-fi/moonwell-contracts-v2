@@ -21,7 +21,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         uint256 roundId
     );
     event MaxDecrementsChanged(uint8 oldMaxDecrements, uint8 newMaxDecrements);
-    event NewEarlyUpdateWindow(uint8 oldWindow, uint8 newWindow);
+    event NewMaxRoundDelay(uint8 oldWindow, uint8 newWindow);
 
     ChainlinkFeedOEVWrapper public wrapper;
     Comptroller comptroller;
@@ -396,14 +396,14 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         wrapper.setFeeMultiplier(1);
     }
 
-    function testSetEarlyUpdateWindow() public {
+    function testmaxRoundDelay() public {
         uint8 newWindow = 3;
 
         uint8 originalWindow = wrapper.earlyUpdateWindow();
         vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
         vm.expectEmit(address(wrapper));
-        emit NewEarlyUpdateWindow(originalWindow, newWindow);
-        wrapper.setEarlyUpdateWindow(newWindow);
+        emit NewMaxRoundDelay(originalWindow, newWindow);
+        wrapper.maxRoundDelay(newWindow);
 
         assertEq(
             wrapper.earlyUpdateWindow(),
@@ -412,9 +412,9 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         );
     }
 
-    function testSetEarlyUpdateWindowRevertNonOwner() public {
+    function testmaxRoundDelayRevertNonOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
-        wrapper.setEarlyUpdateWindow(10);
+        wrapper.maxRoundDelay(10);
     }
 
     function testGetRoundData() public {
