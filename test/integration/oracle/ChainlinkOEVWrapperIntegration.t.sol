@@ -21,6 +21,7 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
         uint256 roundId
     );
     event MaxDecrementsChanged(uint8 oldMaxDecrements, uint8 newMaxDecrements);
+    event NewEarlyUpdateWindow(uint8 oldWindow, uint8 newWindow);
 
     ChainlinkFeedOEVWrapper public wrapper;
     Comptroller comptroller;
@@ -124,13 +125,23 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
 
         (, int256 answer, , uint256 timestamp, ) = wrapper.latestRoundData();
 
-        vm.warp(vm.getBlockTimestamp() + 1);
-
         assertEq(mockPrice, answer, "Price should be the same as answer");
         assertEq(
             timestamp,
             block.timestamp - 1,
             "Timestamp should be the same as block.timestamp - 1"
+        );
+
+        // assert round id and timestamp are cached
+        assertEq(
+            wrapper.cachedRoundId(),
+            latestRoundOnChain + 1,
+            "Round id should be cached"
+        );
+        assertEq(
+            wrapper.cachedTimestamp(),
+            block.timestamp,
+            "Timestamp should be cached"
         );
     }
 
@@ -165,6 +176,55 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
             timestamp,
             mockTimestamp,
             "Timestamp should be the same as block.timestamp"
+        );
+    }
+
+    function testReturnPreviousRoundIfCachedTimestmapPlusEarlyUpdateWindowIsEqualToCurrentTimestamp()
+        public
+    {
+        // current round after testCanUpdatePriceEarly is latestRoundOnChain + 1, get data for latestRoundOnChain
+        (
+            uint256 expectedRoundId,
+            int256 expectedAnswer,
+            ,
+            uint256 expectedTimestamp,
+
+        ) = wrapper.getRoundData(uint80(latestRoundOnChain));
+
+        testCanUpdatePriceEarly();
+
+        uint256 cachedRoundId = wrapper.cachedRoundId();
+        uint256 cachedTimestamp = wrapper.cachedTimestamp();
+
+        assertEq(
+            cachedRoundId,
+            latestRoundOnChain + 1,
+            "Round id should be the same"
+        );
+        assertEq(
+            cachedTimestamp,
+            vm.getBlockTimestamp(),
+            "Timestamp should be the same as block.timestamp"
+        );
+
+        vm.warp(vm.getBlockTimestamp() + wrapper.earlyUpdateWindow());
+        (uint256 roundId, int256 answer, , uint256 timestamp, ) = wrapper
+            .latestRoundData();
+
+        assertEq(
+            roundId,
+            expectedRoundId,
+            "Round id should be the same as expectedRoundId"
+        );
+        assertEq(
+            answer,
+            expectedAnswer,
+            "Answer should be the same as expectedAnswer"
+        );
+        assertEq(
+            timestamp,
+            expectedTimestamp,
+            "Timestamp should be the same as expectedTimestamp"
         );
     }
 
@@ -334,6 +394,27 @@ contract ChainlinkOEVWrapperIntegrationTest is PostProposalCheck {
     function testSetFeeMultiplierRevertNonOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
         wrapper.setFeeMultiplier(1);
+    }
+
+    function testSetEarlyUpdateWindow() public {
+        uint8 newWindow = 3;
+
+        uint8 originalWindow = wrapper.earlyUpdateWindow();
+        vm.prank(addresses.getAddress("TEMPORAL_GOVERNOR"));
+        vm.expectEmit(address(wrapper));
+        emit NewEarlyUpdateWindow(originalWindow, newWindow);
+        wrapper.setEarlyUpdateWindow(newWindow);
+
+        assertEq(
+            wrapper.earlyUpdateWindow(),
+            newWindow,
+            "Early update window not updated"
+        );
+    }
+
+    function testSetEarlyUpdateWindowRevertNonOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        wrapper.setEarlyUpdateWindow(10);
     }
 
     function testGetRoundData() public {
