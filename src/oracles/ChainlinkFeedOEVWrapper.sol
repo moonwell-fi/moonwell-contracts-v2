@@ -30,6 +30,14 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @param newMaxDecrements The new maximum number of decrements
     event MaxDecrementsChanged(uint8 oldMaxDecrements, uint8 newMaxDecrements);
 
+    /// @notice Emitted when the early update window is changed
+    /// @param oldEarlyUpdateWindow The old early update window value
+    /// @param newEarlyUpdateWindow The new early update window value
+    event NewEarlyUpdateWindow(
+        uint8 oldEarlyUpdateWindow,
+        uint8 newEarlyUpdateWindow
+    );
+
     /// @notice The original Chainlink price feed contract
     AggregatorV3Interface public immutable originalFeed;
 
@@ -46,11 +54,14 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @notice The maximum number of times to decrement the round before falling back to latest price
     uint8 public maxDecrements;
 
+    /// @notice The early update window
+    uint8 public earlyUpdateWindow;
+
     /// @notice The last cached round id
     uint256 public cachedRoundId;
 
-    /// @notice The last cached price value
-    int256 public cachedPrice;
+    /// @notice The last cached timestamp
+    int256 public cachedTimestamp;
 
     /// @notice Constructor to initialize the wrapper
     /// @param _originalFeed Address of the original Chainlink feed
@@ -58,13 +69,15 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @param _ethMarket Address of the ETH market
     /// @param _weth Address of the WETH contract
     /// @param _maxDecrements The maximum number of decrements before falling back to latest price
+    /// @param _earlyUpdateWindow The early update window
     constructor(
         address _originalFeed,
         uint8 _feeMultiplier,
         address _owner,
         address _ethMarket,
         address _weth,
-        uint8 _maxDecrements
+        uint8 _maxDecrements,
+        uint8 _earlyUpdateWindow
     ) {
         originalFeed = AggregatorV3Interface(_originalFeed);
         WETHMarket = MErc20(_ethMarket);
@@ -72,14 +85,16 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
         feeMultiplier = _feeMultiplier;
         maxDecrements = _maxDecrements;
+        earlyUpdateWindow = _earlyUpdateWindow;
 
         cachedRoundId = originalFeed.latestRound();
+        cachedTimestamp = block.timestamp;
 
         transferOwnership(_owner);
     }
 
     /// @notice Get the latest round data
-    /// @dev Returns cached data if within early update window, otherwise fetches from original feed
+    /// @dev Returns cached data if the current round is the same as the cached round and 10 seconds have not passed
     /// @return roundId The round ID
     /// @return answer The price
     /// @return startedAt The timestamp when the round started
@@ -99,8 +114,11 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     {
         uint256 currentRoundId = originalFeed.latestRound();
 
-        // if cached round is latest round, return current price
-        if (currentRoundId == cachedRoundId) {
+        // if cached timestamp is within early update window and current round is the same as the cached round return cached round data
+        if (
+            cachedTimestamp + earlyUpdateWindow > block.timestamp &&
+            currentRoundId == cachedRoundId
+        ) {
             (
                 roundId,
                 answer,
@@ -113,7 +131,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
             return (roundId, answer, startedAt, updatedAt, answeredInRound);
         }
 
-        // Loop from 0 to maxDecrements, decrementing the round ID each time
+        // try to find a valid round within maxDecrements
         for (uint256 i = 0; i < maxDecrements && --currentRoundId > 0; i++) {
             try originalFeed.getRoundData(uint80(currentRoundId)) returns (
                 uint80 r,
@@ -122,7 +140,6 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
                 uint256 u,
                 uint80 ar
             ) {
-                // Validate the round data
                 _validateRoundData(r, a, u, ar);
 
                 roundId = r;
@@ -191,6 +208,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         );
 
         cachedRoundId = latestRoundId;
+        cachedTimestamp = block.timestamp;
         return cachedRoundId;
     }
 
@@ -246,9 +264,10 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     /// @notice Set a new fee multiplier for early updates
     /// @param newMultiplier The new fee multiplier to set
     /// @dev Only callable by the contract owner
-    function setFeeMultiplier(uint8 newMultiplier) public onlyOwner {
+    function setFeeMultiplier(uint8 newMultiplier) external onlyOwner {
         uint8 oldMultiplier = feeMultiplier;
         feeMultiplier = newMultiplier;
+
         emit FeeMultiplierChanged(oldMultiplier, newMultiplier);
     }
 
@@ -257,7 +276,17 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
     function setMaxDecrements(uint8 _maxDecrements) external onlyOwner {
         uint8 oldMaxDecrements = maxDecrements;
         maxDecrements = _maxDecrements;
+
         emit MaxDecrementsChanged(oldMaxDecrements, _maxDecrements);
+    }
+
+    /// @notice Set the early update window
+    /// @param _earlyUpdateWindow The new early update window
+    function setEarlyUpdateWindow(uint8 _earlyUpdateWindow) external onlyOwner {
+        uint8 oldEarlyUpdateWindow = earlyUpdateWindow;
+        earlyUpdateWindow = _earlyUpdateWindow;
+
+        emit NewEarlyUpdateWindow(oldEarlyUpdateWindow, earlyUpdateWindow);
     }
 
     /// @notice Validate the round data from Chainlink
