@@ -147,6 +147,55 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
         }
     }
 
+    /// @notice Get the number of decimals in the feed
+    /// @return The number of decimals
+    function decimals() external view override returns (uint8) {
+        return originalFeed.decimals();
+    }
+
+    /// @notice Get the description of the feed
+    /// @return The description string
+    function description() external view override returns (string memory) {
+        return originalFeed.description();
+    }
+
+    /// @notice Get the version number of the aggregator
+    /// @return The version number
+    function version() external view override returns (uint256) {
+        return originalFeed.version();
+    }
+
+    /// @notice Get data about a specific round
+    /// @param _roundId The round ID to retrieve data for
+    /// @return roundId The round ID
+    /// @return answer The price
+    /// @return startedAt The timestamp when the round started
+    /// @return updatedAt The timestamp when the round was updated
+    /// @return answeredInRound The round ID in which the answer was computed
+    function getRoundData(
+        uint80 _roundId
+    )
+        external
+        view
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {
+        (roundId, answer, startedAt, updatedAt, answeredInRound) = originalFeed
+            .getRoundData(_roundId);
+    }
+
+    /// @notice Get the latest round ID
+    /// @return The latest round ID
+    function latestRound() external view override returns (uint256) {
+        return originalFeed.latestRound();
+    }
+
     /// @notice Update the price earlier than the standard update interval
     /// @return The latest round ID
     /// @dev Requires payment of a fee based on gas price and fee multiplier
@@ -195,55 +244,6 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
 
         cachedRoundId = latestRoundId;
         return cachedRoundId;
-    }
-
-    /// @notice Get the number of decimals in the feed
-    /// @return The number of decimals
-    function decimals() external view override returns (uint8) {
-        return originalFeed.decimals();
-    }
-
-    /// @notice Get the description of the feed
-    /// @return The description string
-    function description() external view override returns (string memory) {
-        return originalFeed.description();
-    }
-
-    /// @notice Get the version number of the aggregator
-    /// @return The version number
-    function version() external view override returns (uint256) {
-        return originalFeed.version();
-    }
-
-    /// @notice Get data about a specific round
-    /// @param _roundId The round ID to retrieve data for
-    /// @return roundId The round ID
-    /// @return answer The price
-    /// @return startedAt The timestamp when the round started
-    /// @return updatedAt The timestamp when the round was updated
-    /// @return answeredInRound The round ID in which the answer was computed
-    function getRoundData(
-        uint80 _roundId
-    )
-        external
-        view
-        override
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
-    {
-        (roundId, answer, startedAt, updatedAt, answeredInRound) = originalFeed
-            .getRoundData(_roundId);
-    }
-
-    /// @notice Get the latest round ID
-    /// @return The latest round ID
-    function latestRound() external view override returns (uint256) {
-        return originalFeed.latestRound();
     }
 
     /// @notice Set a new fee multiplier for early updates
