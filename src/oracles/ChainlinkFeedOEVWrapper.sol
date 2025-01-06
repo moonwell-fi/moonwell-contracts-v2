@@ -140,10 +140,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
                 updatedAt = u;
                 answeredInRound = ar;
                 return (roundId, answer, startedAt, updatedAt, answeredInRound);
-            } catch {
-                // Decrement the round ID for next iteration
-                startRoundId--;
-            }
+            } catch {}
         }
         _validateRoundData(roundId, answer, updatedAt, answeredInRound);
     }
