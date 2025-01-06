@@ -145,6 +145,7 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
                 startRoundId--;
             }
         }
+        _validateRoundData(roundId, answer, updatedAt, answeredInRound);
     }
 
     /// @notice Get the number of decimals in the feed
