@@ -12,7 +12,7 @@
                 "multiplierPerYear": 0.15e18
             },
             "name": "Moonwell Well",
-            "priceFeedName": "CHAINLINK_WELL_COMPOSITE_ORACLE",
+            "priceFeedName": "CHAINLINK_WELL_USD",
             "reserveFactor": 0.15e18,
             "seizeShare": 0.03e18,
             "supplyCap": 1e18,
