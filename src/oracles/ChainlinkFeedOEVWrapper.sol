@@ -142,6 +142,8 @@ contract ChainlinkFeedOEVWrapper is AggregatorV3Interface, Ownable {
                 return (roundId, answer, startedAt, updatedAt, answeredInRound);
             } catch {}
         }
+
+        // Validate round data if we fall back to the latest price
         _validateRoundData(roundId, answer, updatedAt, answeredInRound);
     }
 
