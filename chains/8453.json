@@ -728,5 +728,15 @@
         "addr": "0xF08CEF2EE2e5BE584a581209637B02637F312072",
         "isContract": true,
         "name": "CYPHER_ERC4626_RATE_LIMITED_ALLOWANCE"
+    },
+    {
+        "addr": "0x2330aaE3bca5F05169d5f4597964D44522F62930",
+        "isContract": true,
+        "name": "CHAINLINK_USDS_USD"
+    },
+    {
+        "addr": "0x820c137fa70c8691f0e44dc420a5e53c168921dc",
+        "isContract": true,
+        "name": "USDS"
     }
 ]
