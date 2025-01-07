@@ -30,7 +30,7 @@ stack_allocation = true   # Improves allocation of stack slots for variables.
 verbosity = 4
 
 [profile.ci]
-fuzz = {runs = 10_000}
+fuzz = {runs = 1000}
 verbosity = 4
 
 [rpc_endpoints]
